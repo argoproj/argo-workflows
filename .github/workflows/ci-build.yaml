@@ -110,6 +110,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          clean: false
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
