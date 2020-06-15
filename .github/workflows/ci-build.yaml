@@ -56,8 +56,6 @@ jobs:
             cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
             kustomize version
 
-
-
       - name: Run tests
         env:
           GOPATH: /home/runner/work/argo/go
