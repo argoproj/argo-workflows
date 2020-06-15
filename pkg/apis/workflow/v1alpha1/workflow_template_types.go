@@ -9,6 +9,7 @@ import (
 // WorkflowTemplate is the definition of a workflow template resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=tmpl
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`

@@ -19,6 +19,8 @@ spec:
     kind: Workflow
     listKind: WorkflowList
     plural: workflows
+    shortNames:
+      - wf
     singular: workflow
   scope: Namespaced
   subresources: {}

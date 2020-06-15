@@ -9,6 +9,8 @@ spec:
     kind: ClusterWorkflowTemplate
     listKind: ClusterWorkflowTemplateList
     plural: clusterworkflowtemplates
+    shortNames:
+      - cwft
     singular: clusterworkflowtemplate
   scope: Cluster
   version: v1alpha1

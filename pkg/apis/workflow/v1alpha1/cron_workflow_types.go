@@ -8,6 +8,7 @@ import (
 // CronWorkflow is the definition of a scheduled workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=cronwf
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CronWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`

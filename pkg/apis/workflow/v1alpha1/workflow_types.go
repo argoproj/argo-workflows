@@ -73,6 +73,7 @@ const (
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=wf
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
 // +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -2011,18 +2012,26 @@ type Gauge struct {
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 }
 
+type Bucket json.Number
+
+func (b Bucket) OpenAPISchemaType() []string {
+	return []string{"number"}
+}
+
+func (b Bucket) OpenAPISchemaFormat() string { return "" }
+
 // Histogram is a Histogram prometheus metric
 type Histogram struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
-	Buckets []json.Number `json:"buckets" protobuf:"bytes,4,rep,name=buckets,casttype=encoding/json.Number"`
+	Buckets []Bucket `json:"buckets" protobuf:"bytes,4,rep,name=buckets,casttype=Bucket"`
 }
 
 func (in *Histogram) GetBuckets() []float64 {
 	buckets := make([]float64, len(in.Buckets))
 	for i, bucket := range in.Buckets {
-		buckets[i], _ = bucket.Float64()
+		buckets[i], _ = json.Number(bucket).Float64()
 	}
 	return buckets
 }

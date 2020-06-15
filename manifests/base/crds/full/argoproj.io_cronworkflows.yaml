@@ -9,6 +9,8 @@ spec:
     kind: CronWorkflow
     listKind: CronWorkflowList
     plural: cronworkflows
+    shortNames:
+      - cronwf
     singular: cronworkflow
   scope: Namespaced
   validation:
@@ -719,7 +721,7 @@ spec:
                             properties:
                               buckets:
                                 items:
-                                  type: string
+                                  $ref: '#/definitions/encoding~1json~0Number'
                                 type: array
                               value:
                                 type: string
@@ -3626,7 +3628,7 @@ spec:
                                   properties:
                                     buckets:
                                       items:
-                                        type: string
+                                        $ref: '#/definitions/encoding~1json~0Number'
                                       type: array
                                     value:
                                       type: string
