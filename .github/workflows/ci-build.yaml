@@ -51,6 +51,8 @@ jobs:
             kustomize version
 
       - name: Run tests
+        env:
+          GOPATH: /home/runner/go
         run: |
           trap 'make test-results/junit.xml' EXIT
           make test
