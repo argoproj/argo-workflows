@@ -73,6 +73,8 @@ const (
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
+// +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -321,7 +323,7 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 }
 
 type ParallelSteps struct {
-	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:"steps,omitempty" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -1995,7 +1997,7 @@ func (p *Prometheus) GetDesc() string {
 		desc += key + "=" + labels[key] + ","
 	}
 	if p.Histogram != nil {
-		sortedBuckets := p.Histogram.Buckets
+		sortedBuckets, _ := p.Histogram.GetBuckets()
 		sort.Float64s(sortedBuckets)
 		for _, bucket := range sortedBuckets {
 			desc += "bucket=" + fmt.Sprint(bucket) + ","
@@ -2037,7 +2039,15 @@ type Histogram struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
-	Buckets []float64 `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
+	Buckets []json.Number `json:"buckets" protobuf:"bytes,4,rep,name=buckets,casttype=encoding/json.Number"`
+}
+
+func (in *Histogram) GetBuckets() []float64 {
+	buckets := make([]float64, len(in.Buckets))
+	for i, bucket := range in.Buckets {
+		buckets[i], _ = bucket.Float64()
+	}
+	return buckets
 }
 
 // Counter is a Counter prometheus metric

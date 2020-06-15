@@ -266,7 +266,7 @@ codegen: status proto swagger crds schemas mocks docs
 
 .PHONY: crds
 crds:
-	go run ./hack gencrds
+	./hack/crdgen.sh
 
 .PHONY: schemas
 schemas:

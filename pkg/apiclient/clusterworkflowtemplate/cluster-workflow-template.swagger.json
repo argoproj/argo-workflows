@@ -493,7 +493,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec"
         }
       },
-      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+kubebuilder:resource:scope=Cluster\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplateList": {
       "type": "object",
@@ -801,8 +801,7 @@
         "buckets": {
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "type": "string"
           },
           "title": "Buckets is a list of bucket divisors for the histogram"
         }

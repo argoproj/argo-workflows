@@ -6,8 +6,6 @@ func main() {
 	switch os.Args[1] {
 	case "docgen":
 		generateDocs()
-	case "gencrds":
-		genCRDs()
 	case "genschemas":
 		genSchemas()
 	case "kubeifyswagger":

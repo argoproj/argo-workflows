@@ -773,8 +773,7 @@
         "buckets": {
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "type": "string"
           },
           "title": "Buckets is a list of bucket divisors for the histogram"
         }
