@@ -295,15 +295,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }
                                     this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
                                 }}
-                                select={wf => {
-                                    const wfUID = wf.metadata.uid;
+                                select={subWf => {
+                                    const wfUID = subWf.metadata.uid;
                                     if (!wfUID) {
                                         return;
                                     }
                                     const currentlySelected = this.state.selectedWorkflows;
                                     if (!(wfUID in currentlySelected)) {
-                                        currentlySelected[wfUID] = wf;
-                                        if (wf.status.finishedAt !== null) {
+                                        currentlySelected[wfUID] = subWf;
+                                        if (subWf.status.finishedAt !== null) {
                                             this.setState({canSuspendSelected: false});
                                         }
                                     } else {

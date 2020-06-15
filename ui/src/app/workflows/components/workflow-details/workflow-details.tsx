@@ -185,20 +185,20 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         return;
     }
 
-    private getHandleErrorFunction(title: string): (() => void) {
+    private getHandleErrorFunction(title: string): () => void {
         return () => {
             this.appContext.apis.notifications.show({
                 content: 'Unable to retry workflow',
                 type: NotificationType.Error
             });
-        }
+        };
     }
 
     private getItems(workflowPhase: NodePhase, ctx: any) {
         const defaultAction: Actions.WorkflowActionParams = {
             ctx,
             name: this.props.match.params.name,
-            namespace: this.props.match.params.namespace,
+            namespace: this.props.match.params.namespace
         };
         const items = [
             {
@@ -210,7 +210,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                     Actions.resubmitWorkflow({
                         ...defaultAction,
                         handleError: this.getHandleErrorFunction('retry')
-                    })
+                    });
                 }
             },
             {
@@ -220,26 +220,28 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                     Actions.resubmitWorkflow({
                         ...defaultAction,
                         handleError: this.getHandleErrorFunction('resubmit')
-                    })
+                    });
                 }
             },
             {
                 title: 'Suspend',
                 iconClassName: 'fa fa-pause',
                 disabled: !Utils.isWorkflowRunning(this.state.workflow) || Utils.isWorkflowSuspended(this.state.workflow),
-                action: () => Actions.suspendWorkflow({
-                    ...defaultAction,
-                    handleError: this.getHandleErrorFunction('suspend')
-                })
+                action: () =>
+                    Actions.suspendWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('suspend')
+                    })
             },
             {
                 title: 'Resume',
                 iconClassName: 'fa fa-play',
                 disabled: !Utils.isWorkflowSuspended(this.state.workflow),
-                action: () => Actions.resumeWorkflow({
-                    ...defaultAction,
-                    handleError: this.getHandleErrorFunction('resume')
-                })
+                action: () =>
+                    Actions.resumeWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('resume')
+                    })
             },
             {
                 title: 'Stop',

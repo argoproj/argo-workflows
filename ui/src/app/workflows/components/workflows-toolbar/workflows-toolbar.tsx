@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import * as Actions from '../../../shared/workflow-actions';
 import {Consumer} from '../../../shared/context';
+import * as Actions from '../../../shared/workflow-actions';
 
 require('./workflows-toolbar.scss');
 
@@ -27,7 +27,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
     constructor(props: WorkflowsToolbarProps) {
         super(props);
         this.state = {
-            message: '',
+            message: ''
         };
     }
 
@@ -41,13 +41,11 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                             &nbsp;workflow{this.getNumberSelected() === 1 ? '' : 's'} selected
                         </div>
                         <div className='workflows-toolbar__message'>{this.state.message}</div>
-                        <div className='workflows-toolbar__actions'>
-                            {this.renderActions(ctx)}
-                        </div>
+                        <div className='workflows-toolbar__actions'>{this.renderActions(ctx)}</div>
                     </div>
                 )}
             </Consumer>
-        )
+        );
     }
 
     private noneSelected(): boolean {
@@ -81,11 +79,11 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
         return;
     }
 
-    private getHandleErrorFunction(title: string): (() => void) {
+    private getHandleErrorFunction(title: string): () => void {
         return () => {
             this.setState({message: `Could not ${title} selected workflows`});
             this.props.loadWorkflows();
-        }
+        };
     }
 
     private getActions(ctx: any): WorkflowGroupAction[] {
@@ -125,13 +123,13 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                 title: 'Delete',
                 className: 'delete'
             }
-        ]
+        ];
     }
 
     private renderActions(ctx: any): JSX.Element[] {
         const actionButtons = [];
         for (const action of this.getActions(ctx)) {
-            actionButtons.push((
+            actionButtons.push(
                 <button
                     key={action.title}
                     onClick={action.action}
@@ -140,8 +138,8 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                     <i className={action.iconClassName} />
                     &nbsp;{action.title} Selected
                 </button>
-            ))
+            );
         }
-        return actionButtons
+        return actionButtons;
     }
 }
