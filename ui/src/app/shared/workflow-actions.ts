@@ -10,7 +10,7 @@ export interface WorkflowActionParams {
 }
 
 export function deleteWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .delete(action.name, action.namespace)
         .then(() => action.ctx.navigation.goto(uiUrl(`workflows/`)))
         .catch(() => {
@@ -22,7 +22,7 @@ export function deleteWorkflow(action: WorkflowActionParams) {
 }
 
 export function stopWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .stop(action.name, action.namespace)
         .then(wf => action.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
         .catch(() => {
@@ -34,7 +34,7 @@ export function stopWorkflow(action: WorkflowActionParams) {
 }
 
 export function terminateWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .terminate(action.name, action.namespace)
         .then(wf => action.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
         .catch(() => {
@@ -45,7 +45,7 @@ export function terminateWorkflow(action: WorkflowActionParams) {
 }
 
 export function resumeWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .resume(action.name, action.namespace)
         .then(wf => action.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
         .catch(() => {
@@ -56,7 +56,7 @@ export function resumeWorkflow(action: WorkflowActionParams) {
 }
 
 export function suspendWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .suspend(action.name, action.namespace)
         .then(wf => action.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
         .catch(() => {
@@ -67,7 +67,7 @@ export function suspendWorkflow(action: WorkflowActionParams) {
 }
 
 export function resubmitWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .resubmit(action.name, action.namespace)
         .then(wf => action.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
         .catch(() => {
@@ -78,7 +78,7 @@ export function resubmitWorkflow(action: WorkflowActionParams) {
 }
 
 export function retryWorkflow(action: WorkflowActionParams) {
-    services.workflows
+    return services.workflows
         .retry(action.name, action.namespace)
         .then(wf => action.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
         .catch(() => {

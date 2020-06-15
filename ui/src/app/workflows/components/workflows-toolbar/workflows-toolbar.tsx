@@ -58,7 +58,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
         return Object.keys(this.props.selectedWorkflows).length;
     }
 
-    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (params: Actions.WorkflowActionParams) => void): void {
+    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (params: Actions.WorkflowActionParams) => Promise<any>): void {
         this.confirmAction(title);
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
@@ -67,6 +67,9 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                 name: wf.metadata.name,
                 namespace: wf.metadata.namespace,
                 handleError: this.getHandleErrorFunction(title)
+            }).then(() => {
+                this.setState({message: `Successfully performed '${title}' on selected workflows.`});
+                this.props.loadWorkflows();
             });
         }
     }
@@ -81,6 +84,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
     private getHandleErrorFunction(title: string): (() => void) {
         return () => {
             this.setState({message: `Could not ${title} selected workflows`});
+            this.props.loadWorkflows();
         }
     }
 
@@ -129,6 +133,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
         for (const action of this.getActions(ctx)) {
             actionButtons.push((
                 <button
+                    key={action.title}
                     onClick={action.action}
                     className={`workflows-toolbar__actions--${action.className} workflows-toolbar__actions--action`}
                     disabled={this.noneSelected() || action.disabled}>
