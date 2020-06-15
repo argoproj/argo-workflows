@@ -20,6 +20,7 @@ Some use-case specific documentation is available:
 * [Argo Server Auth Mode](argo-server-auth-mode.md)
 * [Argo Server SSO](argo-server-sso.md)
 * [Argo Server](argo-server.md)
+* [Artifact Repository Ref](artifact-repository-ref.md)
 * [Asynchronous Job Pattern](async-pattern.md)
 * [CLI](cli.md)
 * [Cluster Workflow Templates](cluster-workflow-templates.md)

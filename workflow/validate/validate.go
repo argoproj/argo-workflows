@@ -533,6 +533,7 @@ func validateTemplateType(tmpl *wfv1.Template) error {
 	case 0:
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s template type unspecified. choose one of: container, steps, script, resource, dag, suspend, template, template ref", tmpl.Name)
 	case 1:
+		// Do nothing
 	default:
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s multiple template types specified. choose one of: container, steps, script, resource, dag, suspend, template, template ref", tmpl.Name)
 	}
@@ -676,6 +677,9 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			}
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		}
+		if tmpl.Container.Image == "" {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+		}
 	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
@@ -693,6 +697,11 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 			}
+		}
+	}
+	if tmpl.Script != nil {
+		if tmpl.Script.Image == "" {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {

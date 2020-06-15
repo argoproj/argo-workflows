@@ -2,60 +2,44 @@ package util
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestMergeParameters(t *testing.T) {
-	one := intstr.Parse("one")
-	two := intstr.Parse("two")
-	param1 := []wfv1.Parameter{
-		{
-			Name:  "p1",
-			Value: &one,
-		},
-		{
-			Name: "p2",
-		},
+func TestGenerateFieldSelectorFromWorkflowName(t *testing.T) {
+	type args struct {
+		wfName string
 	}
-	param2 := []wfv1.Parameter{
-		{
-			Name:  "p1",
-			Value: &two,
-		},
-		{
-			Name: "p3",
-		},
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"TestGenerateFieldSelectorFromWorkflowName", args{"whalesay"}, "metadata.name=whalesay"},
 	}
-	t.Run("MergeParameter-1", func(t *testing.T) {
-		result := MergeParameters(param1, param2)
-		assert.Equal(t, len(result), 3)
-		for _, item := range result {
-			if item.Name == "p1" {
-				assert.Equal(t, "one", item.Value.String())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GenerateFieldSelectorFromWorkflowName(tt.args.wfName); got != tt.want {
+				t.Errorf("GenerateFieldSelectorFromWorkflowName() = %v, want %v", got, tt.want)
 			}
-		}
-	})
-	t.Run("MergeParameter-2", func(t *testing.T) {
-		result := MergeParameters(param2, param1)
-		assert.Equal(t, len(result), 3)
-		for _, item := range result {
-			if item.Name == "p1" {
-				assert.Equal(t, "two", item.Value.String())
-			}
-		}
-	})
-
+		})
+	}
 }
 
-func TestRecoverIndexFromNodeName(t *testing.T) {
-	out := RecoverIndexFromNodeName("sleep(10:ten)")
-	assert.Equal(t, 10, out)
-	out = RecoverIndexFromNodeName("sleep(17:[foobar]])")
-	assert.Equal(t, 17, out)
-	out = RecoverIndexFromNodeName("sleep(1:a;skldfja)")
-	assert.Equal(t, 1, out)
+func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
+	type args struct {
+		selector string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"TestRecoverWorkflowNameFromSelectorString", args{"metadata.name=whalesay"}, "whalesay"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RecoverWorkflowNameFromSelectorString(tt.args.selector); got != tt.want {
+				t.Errorf("RecoverWorkflowNameFromSelectorString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
