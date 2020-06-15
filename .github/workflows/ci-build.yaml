@@ -15,6 +15,9 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/argoproj/argo
 
       - name: install-kustomize
         run: |
@@ -34,14 +37,14 @@ jobs:
 
       - name: Download all Go modules
         env:
-          GOPATH: ~/go
+          GOPATH: /home/runner/work/argo/go
         run: |
           echo $GOPATH
           go mod download
 
       - name: Check staticfiles
         env:
-          GOPATH: ~/go
+          GOPATH: /home/runner/work/argo/go
         run: |
           go get bou.ke/staticfiles
           echo $GOPATH
@@ -49,7 +52,7 @@ jobs:
 
       - name: Run tests
         env:
-          GOPATH: ~/go
+          GOPATH: /home/runner/work/argo/go
         run: |
           trap 'make test-results/junit.xml' EXIT
           make test
