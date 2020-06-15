@@ -114,6 +114,8 @@ jobs:
         run: |
           git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///'
           git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null
+          git status
+          git log | head -n 40
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
