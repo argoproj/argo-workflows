@@ -4,5 +4,5 @@ kind: Kustomization
 resources:
 - argoproj.io_clusterworkflowtemplates.yaml
 - argoproj.io_cronworkflows.yaml
-- workflows.argoproj.io-crd.yaml
-- workflowtemplates.argoproj.io-crd.yaml
+- argoproj.io_workflows.yaml
+- argoproj.io_workflowtemplates.yaml

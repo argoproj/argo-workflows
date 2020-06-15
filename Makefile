@@ -423,18 +423,6 @@ postgres-cli:
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
-.PHONY: test-examples
-test-examples:
-	# validate the generated manifests
-	kubectl create --dry-run -f examples/
-	kubectl create --dry-run -f test/e2e/ui
-	kubectl create --dry-run -f test/e2e/expectedfailures
-	kubectl create --dry-run -f test/e2e/functional
-	kubectl create --dry-run -f test/e2e/lintfail
-	kubectl create --dry-run -f test/e2e/smoke
-	kubectl create --dry-run -f test/e2e/stress
-	kubectl create --dry-run -f test/e2e/testdata
-
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
