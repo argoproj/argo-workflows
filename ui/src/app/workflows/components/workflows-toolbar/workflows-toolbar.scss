@@ -14,25 +14,30 @@
 
   &__actions {
     margin-left: 15px;
-    button {
+    &--action {
       cursor: pointer;
       color: white;
       border-radius: 3px;
       padding: 0.5em 10px;
       margin-right: 10px;
+      background-color: $argo-color-gray-6;
     }
 
     button:disabled {
-      background: $argo-color-gray-4;
+      background-color: $argo-color-gray-4;
       cursor: not-allowed;
     }
 
     &--suspend {
-      background: $argo-color-gray-6;
+      background-color: $argo-color-gray-6;
+    }
+
+    &--resume {
+      background-color: $argo-color-green;
     }
 
     &--delete {
-      background: $argo-color-red;
+      background-color: $argo-color-red;
     }
   }
 }

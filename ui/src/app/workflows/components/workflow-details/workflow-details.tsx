@@ -13,8 +13,9 @@ import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
-import {Consumer, ContextApis} from '../../../shared/context';
+import {Consumer} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
+import * as Actions from '../../../shared/workflow-actions';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowYamlPanel} from './workflow-yaml-panel';
 
@@ -177,47 +178,103 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         );
     }
 
+    private confirmAction(title: string): void {
+        if (!confirm(`Are you sure you want to ${title} this workflow?`)) {
+            return;
+        }
+        return;
+    }
+
+    private getHandleErrorFunction(title: string): (() => void) {
+        return () => {
+            this.appContext.apis.notifications.show({
+                content: 'Unable to retry workflow',
+                type: NotificationType.Error
+            });
+        }
+    }
+
     private getItems(workflowPhase: NodePhase, ctx: any) {
+        const defaultAction: Actions.WorkflowActionParams = {
+            ctx,
+            name: this.props.match.params.name,
+            namespace: this.props.match.params.namespace,
+        };
         const items = [
             {
                 title: 'Retry',
                 iconClassName: 'fa fa-undo',
                 disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
-                action: () => this.retryWorkflow(ctx)
+                action: () => {
+                    this.confirmAction('retry');
+                    Actions.resubmitWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('retry')
+                    })
+                }
             },
             {
                 title: 'Resubmit',
                 iconClassName: 'fa fa-plus-circle ',
-                action: () => this.resubmitWorkflow(ctx)
+                action: () => {
+                    Actions.resubmitWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('resubmit')
+                    })
+                }
             },
             {
                 title: 'Suspend',
                 iconClassName: 'fa fa-pause',
                 disabled: !Utils.isWorkflowRunning(this.state.workflow) || Utils.isWorkflowSuspended(this.state.workflow),
-                action: () => this.suspendWorkflow(ctx)
+                action: () => Actions.suspendWorkflow({
+                    ...defaultAction,
+                    handleError: this.getHandleErrorFunction('suspend')
+                })
             },
             {
                 title: 'Resume',
                 iconClassName: 'fa fa-play',
                 disabled: !Utils.isWorkflowSuspended(this.state.workflow),
-                action: () => this.resumeWorkflow(ctx)
+                action: () => Actions.resumeWorkflow({
+                    ...defaultAction,
+                    handleError: this.getHandleErrorFunction('resume')
+                })
             },
             {
                 title: 'Stop',
                 iconClassName: 'fa fa-stop-circle',
                 disabled: !Utils.isWorkflowRunning(this.state.workflow),
-                action: () => this.stopWorkflow(ctx)
+                action: () => {
+                    this.confirmAction('stop');
+                    Actions.stopWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('stop')
+                    });
+                }
             },
             {
                 title: 'Terminate',
                 iconClassName: 'fa fa-times-circle',
                 disabled: !Utils.isWorkflowRunning(this.state.workflow),
-                action: () => this.terminateWorkflow(ctx)
+                action: () => {
+                    this.confirmAction('terminate');
+                    Actions.terminateWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('terminate')
+                    });
+                }
             },
             {
                 title: 'Delete',
                 iconClassName: 'fa fa-trash',
-                action: () => this.deleteWorkflow(ctx)
+                action: () => {
+                    this.confirmAction('delete');
+                    Actions.deleteWorkflow({
+                        ...defaultAction,
+                        handleError: this.getHandleErrorFunction('delete')
+                    });
+                }
             }
         ];
         if (this.state.links) {
@@ -232,102 +289,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                 });
         }
         return items;
-    }
-
-    private deleteWorkflow(ctx: ContextApis) {
-        if (!confirm('Are you sure you want to delete this workflow?\nThere is no undo.')) {
-            return;
-        }
-        services.workflows
-            .delete(this.props.match.params.name, this.props.match.params.namespace)
-            .then(() => ctx.navigation.goto(uiUrl(`workflows/`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to delete workflow',
-                    type: NotificationType.Error
-                });
-            });
-    }
-
-    private stopWorkflow(ctx: ContextApis) {
-        if (!confirm('Are you sure you want to stop this workflow?')) {
-            return;
-        }
-        services.workflows
-            .stop(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to terminate workflow',
-                    type: NotificationType.Error
-                });
-            });
-    }
-
-    private terminateWorkflow(ctx: ContextApis) {
-        if (!confirm('Are you sure you want to terminate this workflow?')) {
-            return;
-        }
-        services.workflows
-            .terminate(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to terminate workflow',
-                    type: NotificationType.Error
-                });
-            });
-    }
-
-    private resumeWorkflow(ctx: ContextApis) {
-        services.workflows
-            .resume(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to resume workflow',
-                    type: NotificationType.Error
-                });
-            });
-    }
-
-    private suspendWorkflow(ctx: ContextApis) {
-        services.workflows
-            .suspend(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to suspend workflow',
-                    type: NotificationType.Error
-                });
-            });
-    }
-
-    private resubmitWorkflow(ctx: ContextApis) {
-        if (!confirm('Are you sure you want to re-submit this workflow?')) {
-            return;
-        }
-        services.workflows
-            .resubmit(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to resubmit workflow',
-                    type: NotificationType.Error
-                });
-            });
-    }
-
-    private retryWorkflow(ctx: ContextApis) {
-        services.workflows
-            .retry(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-            .catch(() => {
-                this.appContext.apis.notifications.show({
-                    content: 'Unable to retry workflow',
-                    type: NotificationType.Error
-                });
-            });
     }
 
     private openNodeYaml(nodeId: string) {

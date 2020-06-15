@@ -1,8 +1,7 @@
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {AppContext, Consumer, ContextApis} from '../../../shared/context';
-import {services} from '../../../shared/services';
-import { NotificationType } from '../../../../../node_modules/argo-ui';
+import * as Actions from '../../../shared/workflow-actions';
+import {Consumer} from '../../../shared/context';
 
 require('./workflows-toolbar.scss');
 
@@ -16,10 +15,17 @@ interface WorkflowsToolbarState {
     message: string;
 }
 
+interface WorkflowGroupAction {
+    action: () => void;
+    title: string;
+    disabled: boolean;
+    iconClassName: string;
+    className: string;
+}
+
 export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, WorkflowsToolbarState> {
     constructor(props: WorkflowsToolbarProps) {
         super(props);
-        this.deleteSelectedWorkflows = this.deleteSelectedWorkflows.bind(this);
         this.state = {
             message: '',
         };
@@ -36,20 +42,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                         </div>
                         <div className='workflows-toolbar__message'>{this.state.message}</div>
                         <div className='workflows-toolbar__actions'>
-                            <button
-                                onClick={() => this.deleteSelectedWorkflows(ctx)}
-                                className='workflows-toolbar__actions--delete'
-                                disabled={this.noneSelected()}>
-                                <i className='fas fa-trash-alt' />
-                                &nbsp;Delete Selected
-                            </button>
-                            <button
-                                onClick={() => this.suspendSelectedWorkflows(ctx)}
-                                className={'workflows-toolbar__actions--suspend'}
-                                disabled={this.noneSelected() || !this.props.canSuspendSelected}>
-                                <i className='fas fa-pause'></i>
-                                &nbsp;Suspend Selected
-                            </button>
+                            {this.renderActions(ctx)}
                         </div>
                     </div>
                 )}
@@ -65,46 +58,85 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
         return Object.keys(this.props.selectedWorkflows).length;
     }
 
-    private deleteSelectedWorkflows(ctx: ContextApis): void {
-        if (!confirm('Are you sure you want to delete all selected workflows?')) {
-            return;
-        }
+    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (params: Actions.WorkflowActionParams) => void): void {
+        this.confirmAction(title);
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
-            services.workflows
-                .delete(wf.metadata.name, wf.metadata.namespace)
-                .then(() => {
-                    this.setState({message: 'Successfully deleted workflows'});
-                    this.props.loadWorkflows();
-                })
-                .catch((err) => {
-                    this.appContext.apis.notifications.show({
-                        content: 'Unable to delete workflows',
-                        type: NotificationType.Error
-                    });
-                });
+            action({
+                ctx,
+                name: wf.metadata.name,
+                namespace: wf.metadata.namespace,
+                handleError: this.getHandleErrorFunction(title)
+            });
         }
     }
 
-    private suspendSelectedWorkflows(ctx: ContextApis): void {
-        if (!confirm('Are you sure you want to suspend all selected workflows?')) {
+    private confirmAction(title: string): void {
+        if (!confirm(`Are you sure you want to ${title} all selected workflows?`)) {
             return;
         }
-        for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
-            const wf = this.props.selectedWorkflows[wfUID];
-            services.workflows
-                .suspend(wf.metadata.name, wf.metadata.namespace)
-                .then(() => {
-                    this.setState({message: 'Successfully suspended workflows'});
-                    this.props.loadWorkflows();
-                })
-                .catch((err) => {
-                   this.setState({message: 'Unable to suspend workflows'})
-                });
+        return;
+    }
+
+    private getHandleErrorFunction(title: string): (() => void) {
+        return () => {
+            this.setState({message: `Could not ${title} selected workflows`});
         }
     }
 
-    private get appContext(): AppContext {
-        return this.context as AppContext;
+    private getActions(ctx: any): WorkflowGroupAction[] {
+        return [
+            {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'retry', Actions.retryWorkflow),
+                disabled: this.props.canSuspendSelected,
+                iconClassName: 'fas fa-redo-alt',
+                title: 'Retry',
+                className: 'retry'
+            },
+            {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'resubmit', Actions.resubmitWorkflow),
+                disabled: false,
+                iconClassName: 'fas fa-plus-circle',
+                title: 'Resubmit',
+                className: 'resubmit'
+            },
+            {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'suspend', Actions.suspendWorkflow),
+                disabled: !this.props.canSuspendSelected,
+                iconClassName: 'fas fa-pause',
+                title: 'Suspend',
+                className: 'suspend'
+            },
+            {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'resume', Actions.resumeWorkflow),
+                disabled: !this.props.canSuspendSelected,
+                iconClassName: 'fas fa-play',
+                title: 'Resume',
+                className: 'resume'
+            },
+            {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'delete', Actions.deleteWorkflow),
+                disabled: false,
+                iconClassName: 'fas fa-trash-alt',
+                title: 'Delete',
+                className: 'delete'
+            }
+        ]
+    }
+
+    private renderActions(ctx: any): JSX.Element[] {
+        const actionButtons = [];
+        for (const action of this.getActions(ctx)) {
+            actionButtons.push((
+                <button
+                    onClick={action.action}
+                    className={`workflows-toolbar__actions--${action.className} workflows-toolbar__actions--action`}
+                    disabled={this.noneSelected() || action.disabled}>
+                    <i className={action.iconClassName} />
+                    &nbsp;{action.title} Selected
+                </button>
+            ))
+        }
+        return actionButtons
     }
 }
