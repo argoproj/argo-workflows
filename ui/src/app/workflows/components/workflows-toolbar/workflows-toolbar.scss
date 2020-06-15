@@ -22,6 +22,11 @@
       margin-right: 10px;
     }
 
+    button:disabled {
+      background: $argo-color-gray-4;
+      cursor: not-allowed;
+    }
+
     &--suspend {
       background: $argo-color-gray-6;
     }

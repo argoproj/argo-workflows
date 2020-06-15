@@ -9,14 +9,19 @@ require('./workflows-toolbar.scss');
 interface WorkflowsToolbarProps {
     selectedWorkflows: {[index: string]: Workflow};
     loadWorkflows: () => void;
+    canSuspendSelected: boolean;
 }
 
-export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {message: string}> {
+interface WorkflowsToolbarState {
+    message: string;
+}
+
+export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, WorkflowsToolbarState> {
     constructor(props: WorkflowsToolbarProps) {
         super(props);
         this.deleteSelectedWorkflows = this.deleteSelectedWorkflows.bind(this);
         this.state = {
-            message: ''
+            message: '',
         };
     }
 
@@ -25,18 +30,24 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {me
             <Consumer>
                 {ctx => (
                     <div className='workflows-toolbar'>
-                        <div className='workflows-toolbar__count'>{this.getNumberSelected()} workflows selected</div>
+                        <div className='workflows-toolbar__count'>
+                            {this.noneSelected() ? 'No' : this.getNumberSelected()}
+                            &nbsp;workflow{this.getNumberSelected() === 1 ? '' : 's'} selected
+                        </div>
                         <div className='workflows-toolbar__message'>{this.state.message}</div>
                         <div className='workflows-toolbar__actions'>
-                            <button onClick={() => this.deleteSelectedWorkflows(ctx)} className='workflows-toolbar__actions--delete'>
+                            <button
+                                onClick={() => this.deleteSelectedWorkflows(ctx)}
+                                className='workflows-toolbar__actions--delete'
+                                disabled={this.noneSelected()}>
                                 <i className='fas fa-trash-alt' />
                                 &nbsp;Delete Selected
                             </button>
                             <button
                                 onClick={() => this.suspendSelectedWorkflows(ctx)}
                                 className={'workflows-toolbar__actions--suspend'}
-                                disabled={false}>
-                                <i className='fas fa-pause'/>
+                                disabled={this.noneSelected() || !this.props.canSuspendSelected}>
+                                <i className='fas fa-pause'></i>
                                 &nbsp;Suspend Selected
                             </button>
                         </div>
@@ -44,6 +55,10 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {me
                 )}
             </Consumer>
         )
+    }
+
+    private noneSelected(): boolean {
+        return Object.keys(this.props.selectedWorkflows).length < 1;
     }
 
     private getNumberSelected(): number {
@@ -59,8 +74,8 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {me
             services.workflows
                 .delete(wf.metadata.name, wf.metadata.namespace)
                 .then(() => {
-                    this.setState({ message: 'Successfully deleted workflows'});
-                    this.props.loadWorkflows()
+                    this.setState({message: 'Successfully deleted workflows'});
+                    this.props.loadWorkflows();
                 })
                 .catch((err) => {
                     this.appContext.apis.notifications.show({
@@ -80,12 +95,11 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {me
             services.workflows
                 .suspend(wf.metadata.name, wf.metadata.namespace)
                 .then(() => {
+                    this.setState({message: 'Successfully suspended workflows'});
+                    this.props.loadWorkflows();
                 })
                 .catch((err) => {
-                   this.appContext.apis.notifications.show({
-                        content: 'Unable to suspend workflows',
-                        type: NotificationType.Error
-                    });
+                   this.setState({message: 'Unable to suspend workflows'})
                 });
         }
     }

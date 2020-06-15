@@ -37,6 +37,7 @@ interface State {
     selectedWorkflows: {[index: string]: models.Workflow};
     workflows?: Workflow[];
     error?: Error;
+    canSuspendSelected: boolean;
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
@@ -56,7 +57,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
-            selectedWorkflows: {}
+            selectedWorkflows: {},
+            canSuspendSelected: true
         };
     }
 
@@ -99,8 +101,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             selectedWorkflows={this.state.selectedWorkflows}
                             loadWorkflows={() => {
                                 this.setState({selectedWorkflows: {}});
-                                this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit})
+                                this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
                             }}
+                            canSuspendSelected={this.state.canSuspendSelected}
                         />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
@@ -300,8 +303,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     const currentlySelected = this.state.selectedWorkflows;
                                     if (!(wfUID in currentlySelected)) {
                                         currentlySelected[wfUID] = wf;
+                                        if (wf.status.finishedAt !== null) {
+                                            this.setState({canSuspendSelected: false});
+                                        }
                                     } else {
-                                        delete currentlySelected[wfUID]
+                                        delete currentlySelected[wfUID];
+                                        for (const curWfUID of Object.keys(currentlySelected)) {
+                                            let canSuspend: boolean = true;
+                                            if (currentlySelected[curWfUID].status.finishedAt !== null) {
+                                                canSuspend = false;
+                                            }
+                                            this.setState({canSuspendSelected: canSuspend});
+                                        }
                                     }
                                     this.setState({selectedWorkflows: {...currentlySelected}});
                                 }}
