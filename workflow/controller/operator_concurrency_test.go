@@ -1,14 +1,20 @@
 package controller
 
 import (
+	"strconv"
+	"strings"
 	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
+	argoErr "github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/concurrency"
+	"github.com/argoproj/argo/workflow/sync"
 )
 
 const configMap = `
@@ -30,7 +36,7 @@ spec:
   entrypoint: whalesay
   templates: 
     - 
-      concurrency: 
+      synchronization: 
         semaphore: 
           configMapKeyRef: 
             key: template
@@ -43,6 +49,29 @@ spec:
         image: "docker/whalesay:latest"
       name: whalesay
 `
+
+func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
+	syncLimitConfig := func(lockName string) (int, error) {
+		items := strings.Split(lockName, "/")
+		if len(items) < 4 {
+			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
+		}
+
+		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(items[2], metav1.GetOptions{})
+
+		if err != nil {
+			return 0, err
+		}
+
+		value, found := configMap.Data[items[3]]
+
+		if !found {
+			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Sync configuration Key")
+		}
+		return strconv.Atoi(value)
+	}
+	return syncLimitConfig
+}
 
 func TestGetNodeType(t *testing.T) {
 	t.Run("getNodeType", func(t *testing.T) {
@@ -57,7 +86,7 @@ func TestGetNodeType(t *testing.T) {
 
 func TestSemaphoreTmplLevel(t *testing.T) {
 	_, controller := newController()
-	controller.concurrencyMgr = concurrency.NewLockManager(controller.kubeclientset, func(key string) {
+	controller.concurrencyMgr = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
@@ -73,9 +102,9 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 		// acquired the lock
 		woc.operate()
-		assert.NotNil(t, woc.wf.Status.Concurrency)
-		assert.NotNil(t, woc.wf.Status.Concurrency.Semaphore)
-		assert.Equal(t, 1, len(woc.wf.Status.Concurrency.Semaphore.Holding))
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
 
 		// Try to Acquire the lock, But lock is not available
 		wf_Two := wf.DeepCopy()
@@ -98,22 +127,23 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 		// Release the lock
 		woc.operate()
-		assert.NotNil(t, woc.wf.Status.Concurrency)
-		assert.NotNil(t, woc.wf.Status.Concurrency.Semaphore)
-		assert.Equal(t, 0, len(woc.wf.Status.Concurrency.Semaphore.Holding))
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding))
 
 		// Try to acquired the lock
 		woc_two.operate()
-		assert.NotNil(t, woc_two.wf.Status.Concurrency)
-		assert.NotNil(t, woc_two.wf.Status.Concurrency.Semaphore)
-		assert.Equal(t, 1, len(woc_two.wf.Status.Concurrency.Semaphore.Holding))
+		assert.NotNil(t, woc_two.wf.Status.Synchronization)
+		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
 
 	})
 }
 
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	_, controller := newController()
-	controller.concurrencyMgr = concurrency.NewLockManager(controller.kubeclientset, func(key string) {
+
+	controller.concurrencyMgr = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
@@ -129,7 +159,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		}
 		// Acquire the lock
 		woc.operate()
-		assert.Nil(t, woc.wf.Status.Concurrency)
+		assert.Nil(t, woc.wf.Status.Synchronization)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodeError, node.Phase)
 		}

@@ -1,4 +1,4 @@
-package concurrency
+package sync
 
 import (
 	"fmt"
@@ -79,14 +79,14 @@ func (s *Semaphore) release(key string) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[key]; ok {
+		delete(s.lockHolder, key)
 		// When TypeSemaphore resized downward
 		// Remove the excess holders from map once the done.
-		if len(s.lockHolder) > s.limit {
-			delete(s.lockHolder, key)
+		if len(s.lockHolder) >= s.limit {
 			return true
 		}
+
 		s.semaphore.Release(1)
-		delete(s.lockHolder, key)
 
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))
 		if s.pending.Len() > 0 {
@@ -107,18 +107,15 @@ func (s *Semaphore) release(key string) bool {
 func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	//log := s.log.WithField("HolderKey", holderKey)
 	if _, ok := s.lockHolder[holderKey]; ok {
-		s.log.Debugf("Already Lock is acquired %s ", holderKey)
+		s.log.Debugf("Already Lock is acquired %s", holderKey)
 		return
 	}
 
-	if _, ok := s.inPending[holderKey]; ok {
-		s.log.Debugf("Already is queue %s ", holderKey)
-		return
-	}
+	// Comment on Add functionality
 	s.pending.add(holderKey, priority, creationTime)
-	s.inPending[holderKey] = true
-	s.log.Debugf("Added into Queue %s ", holderKey)
+	s.log.Debugf("Added into Queue %s", holderKey)
 }
 
 func (s *Semaphore) acquire(holderKey string) bool {
@@ -140,6 +137,8 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	var nextKey string
 
 	waitingMsg := fmt.Sprintf("waiting for Lock. Lock status: %d/%d ", s.limit-len(s.lockHolder), s.limit)
+
+	// TODO-Comments
 	if s.pending.Len() > 0 {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
@@ -150,7 +149,6 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 
 	if s.acquire(holderKey) {
 		s.pending.pop()
-		delete(s.inPending, holderKey)
 		s.log.Infof("%s acquired by %s ", s.name, nextKey)
 		return true, ""
 	}

@@ -59,7 +59,7 @@ func (woc *cronWfOperationCtx) Run() {
 
 	proceed, err := woc.enforceRuntimePolicy()
 	if err != nil {
-		woc.reportCronWorkflowError(fmt.Sprintf("Concurrency policy error: %s", err))
+		woc.reportCronWorkflowError(fmt.Sprintf("Synchronization policy error: %s", err))
 		return
 	} else if !proceed {
 		return

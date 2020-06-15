@@ -150,17 +150,6 @@ message ClusterWorkflowTemplateList {
   repeated ClusterWorkflowTemplate items = 2;
 }
 
-// ConcurrencyRef is a reference of the concurrency
-message ConcurrencyRef {
-  // Semaphore will hold the Semaphore configuration
-  optional SemaphoreRef semaphore = 1;
-}
-
-message ConcurrencyStatus {
-  // SemaphoreHolders stores this workflow's Semaphore holder details
-  optional SemaphoreStatus semaphore = 1;
-}
-
 message Condition {
   // Type is the type of condition
   optional string type = 1;
@@ -439,6 +428,7 @@ message Histogram {
 }
 
 message HolderNames {
+  // Name stores the list of
   repeated string name = 1;
 }
 
@@ -815,8 +805,10 @@ message SemaphoreRef {
 }
 
 message SemaphoreStatus {
+  // Holding stores the list of resource acquired synchronization lock for workflows
   map<string, HolderNames> holding = 1;
 
+  // Waiting indicates the list of current synchronization lock holders
   map<string, WaitingStatus> waiting = 2;
 }
 
@@ -872,6 +864,17 @@ message SubmitOpts {
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
+}
+
+// Synchronization is a holds synchronization lock configuration
+message Synchronization {
+  // Semaphore will hold the Semaphore configuration
+  optional SemaphoreRef semaphore = 1;
+}
+
+message SynchronizationStatus {
+  // SemaphoreHolders stores this workflow's Semaphore holder details
+  optional SemaphoreStatus semaphore = 1;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
@@ -1030,8 +1033,8 @@ message Template {
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
 
-  // ConcurrencyRef will holds concurrency configuration for this Template.
-  optional ConcurrencyRef concurrency = 36;
+  // Synchronization will holds synchronization locks configuration for this Template.
+  optional Synchronization synchronization = 36;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1099,6 +1102,7 @@ message Version {
 }
 
 message WaitingStatus {
+  // Holder Names stores the list of current holder names
   optional HolderNames holder = 1;
 }
 
@@ -1275,8 +1279,8 @@ message WorkflowSpec {
   // WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
   optional WorkflowTemplateRef workflowTemplateRef = 34;
 
-  // ConcurrencyRef will holds concurrency configuration for this Workflow
-  optional ConcurrencyRef concurrency = 35;
+  // Synchronization will holds synchronization locks configuration for this Workflow
+  optional Synchronization synchronization = 35;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1322,8 +1326,8 @@ message WorkflowStatus {
   // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
   optional WorkflowSpec storedWorkflowTemplateSpec = 14;
 
-  // ConcurrencyLockStatus stores the currently holding locks
-  optional ConcurrencyStatus concurrency = 15;
+  // Synchronization stores the status of synchronization locks
+  optional SynchronizationStatus synchronization = 15;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

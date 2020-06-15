@@ -1,4 +1,4 @@
-package concurrency
+package sync
 
 import (
 	"testing"

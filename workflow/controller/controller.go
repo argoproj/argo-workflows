@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	v1Label "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
+	argoErr "github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -36,11 +39,11 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/concurrency"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -76,12 +79,12 @@ type WorkflowController struct {
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
-	throttler             concurrency.Throttler
+	throttler             sync.Throttler
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	concurrencyMgr        *concurrency.LockManager
+	concurrencyMgr        *sync.SyncManager
 	metrics               metrics.Metrics
 }
 
@@ -119,7 +122,7 @@ func NewWorkflowController(
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 	}
-	wfc.throttler = concurrency.NewThrottler(0, wfc.wfQueue)
+	wfc.throttler = sync.NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
@@ -167,17 +170,18 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.runCronController(ctx)
 	go wfc.metrics.RunServer(ctx)
 
-	wfc.concurrencyMgr = concurrency.NewLockManager(wfc.kubeclientset, func(key string) {
-		wfc.wfQueue.AddAfter(key, 0)
-	})
-	wfc.concurrencyMgr.Initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
-
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
 		}
+	}
+
+	// Create Synchronization Manager
+	err := wfc.createSynchronizationManager()
+	if err != nil {
+		panic(err)
 	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
@@ -189,6 +193,45 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+// Create and initialize the Synchronization Manager
+func (wfc *WorkflowController) createSynchronizationManager() error {
+	syncLimitConfig := func(lockName string) (int, error) {
+		items := strings.Split(lockName, "/")
+		if len(items) < 4 {
+			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
+		}
+
+		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(items[0]).Get(items[2], metav1.GetOptions{})
+
+		if err != nil {
+			return 0, err
+		}
+
+		value, found := configMap.Data[items[3]]
+
+		if !found {
+			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Sync configuration Key")
+		}
+		return strconv.Atoi(value)
+	}
+
+	wfc.concurrencyMgr = sync.NewLockManager(syncLimitConfig, func(key string) {
+		wfc.wfQueue.AddAfter(key, 0)
+	})
+
+	labelSelector := v1Label.NewSelector()
+	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
+	if req != nil {
+		labelSelector = labelSelector.Add(*req)
+	}
+
+	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
+	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(listOpts)
+
+	wfc.concurrencyMgr.Initialize(wfList)
+	return err
 }
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
@@ -443,9 +486,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if wf.Spec.Concurrency != nil {
+	if wf.Spec.Synchronization != nil {
 		priority, creationTime := getWfPriority(woc.wf)
-		acquired, wfUpdate, msg, err := wfc.concurrencyMgr.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Concurrency )
+		acquired, wfUpdate, msg, err := wfc.concurrencyMgr.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Synchronization)
 		if err != nil {
 			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))

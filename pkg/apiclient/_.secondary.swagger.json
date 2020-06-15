@@ -267,25 +267,6 @@
         }
       }
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef": {
-      "description": "ConcurrencyRef is a reference of the concurrency",
-      "type": "object",
-      "properties": {
-        "semaphore": {
-          "description": "Semaphore will hold the Semaphore configuration",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
-        }
-      }
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus": {
-      "type": "object",
-      "properties": {
-        "semaphore": {
-          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreStatus"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -823,6 +804,7 @@
       "type": "object",
       "properties": {
         "name": {
+          "description": "Name stores the list of",
           "type": "array",
           "items": {
             "type": "string"
@@ -1595,12 +1577,14 @@
       "type": "object",
       "properties": {
         "holding": {
+          "description": "Holding stores the list of resource acquired synchronization lock for workflows",
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
           }
         },
         "waiting": {
+          "description": "Waiting indicates the list of current synchronization lock holders",
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WaitingStatus"
@@ -1689,6 +1673,25 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization": {
+      "description": "Synchronization is a holds synchronization lock configuration",
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "Semaphore will hold the Semaphore configuration",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
+        }
+      }
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SynchronizationStatus": {
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreStatus"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy": {
       "description": "TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed",
       "type": "object",
@@ -1748,10 +1751,6 @@
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
-        },
-        "concurrency": {
-          "description": "ConcurrencyRef will holds concurrency configuration for this Template.",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef"
         },
         "container": {
           "description": "Container is the main container image to run in the pod",
@@ -1879,6 +1878,10 @@
         "suspend": {
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate"
+        },
+        "synchronization": {
+          "description": "Synchronization will holds synchronization locks configuration for this Template.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization"
         },
         "template": {
           "description": "Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used.",
@@ -2134,6 +2137,7 @@
       "type": "object",
       "properties": {
         "holder": {
+          "description": "Holder Names stores the list of current holder names",
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
         }
       }
@@ -2220,10 +2224,6 @@
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
-        },
-        "concurrency": {
-          "description": "ConcurrencyRef will holds concurrency configuration for this Workflow",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef"
         },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
@@ -2328,6 +2328,10 @@
           "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
           "type": "boolean"
         },
+        "synchronization": {
+          "description": "Synchronization will holds synchronization locks configuration for this Workflow",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization"
+        },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
           "type": "array",
@@ -2386,10 +2390,6 @@
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
-        },
-        "concurrency": {
-          "description": "ConcurrencyLockStatus stores the currently holding locks",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus"
         },
         "conditions": {
           "description": "Conditions is a list of conditions the Workflow may have",
@@ -2454,6 +2454,10 @@
         "storedWorkflowTemplateSpec": {
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.",
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec"
+        },
+        "synchronization": {
+          "description": "Synchronization stores the status of synchronization locks",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SynchronizationStatus"
         }
       }
     },
@@ -2598,10 +2602,6 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
-        "concurrency": {
-          "description": "ConcurrencyRef will holds concurrency configuration for this Workflow",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef"
-        },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodDNSConfig"
@@ -2704,6 +2704,10 @@
         "suspend": {
           "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
           "type": "boolean"
+        },
+        "synchronization": {
+          "description": "Synchronization will holds synchronization locks configuration for this Workflow",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization"
         },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",

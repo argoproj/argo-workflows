@@ -309,25 +309,6 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef": {
-      "type": "object",
-      "properties": {
-        "semaphore": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef",
-          "title": "Semaphore will hold the Semaphore configuration"
-        }
-      },
-      "title": "ConcurrencyRef is a reference of the concurrency"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus": {
-      "type": "object",
-      "properties": {
-        "semaphore": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreStatus",
-          "title": "SemaphoreHolders stores this workflow's Semaphore holder details"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -651,7 +632,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "Name stores the list of"
         }
       }
     },
@@ -1190,13 +1172,15 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
-          }
+          },
+          "title": "Holding stores the list of resource acquired synchronization lock for workflows"
         },
         "waiting": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WaitingStatus"
-          }
+          },
+          "title": "Waiting indicates the list of current synchronization lock holders"
         }
       }
     },
@@ -1231,6 +1215,25 @@
         }
       },
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization": {
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef",
+          "title": "Semaphore will hold the Semaphore configuration"
+        }
+      },
+      "title": "Synchronization is a holds synchronization lock configuration"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SynchronizationStatus": {
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreStatus",
+          "title": "SemaphoreHolders stores this workflow's Semaphore holder details"
+        }
+      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy": {
       "type": "object",
@@ -1434,9 +1437,9 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
           "title": "Metrics are a list of metrics emitted from this template"
         },
-        "concurrency": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef",
-          "description": "ConcurrencyRef will holds concurrency configuration for this Template."
+        "synchronization": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization",
+          "description": "Synchronization will holds synchronization locks configuration for this Template."
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1509,7 +1512,8 @@
       "type": "object",
       "properties": {
         "holder": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames",
+          "title": "Holder Names stores the list of current holder names"
         }
       }
     },
@@ -1711,9 +1715,9 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
           "title": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         },
-        "concurrency": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef",
-          "title": "ConcurrencyRef will holds concurrency configuration for this Workflow"
+        "synchronization": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization",
+          "title": "Synchronization will holds synchronization locks configuration for this Workflow"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -1789,9 +1793,9 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
         },
-        "concurrency": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus",
-          "title": "ConcurrencyLockStatus stores the currently holding locks"
+        "synchronization": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SynchronizationStatus",
+          "title": "Synchronization stores the status of synchronization locks"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

@@ -300,8 +300,8 @@ type WorkflowSpec struct {
 	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
 	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 
-	// ConcurrencyRef will holds concurrency configuration for this Workflow
-	Concurrency *ConcurrencyRef `json:"concurrency,omitempty" protobuf:"bytes,35,opt,name=concurrency,casttype=ConcurrencyRef"`
+	// Synchronization will holds synchronization locks configuration for this Workflow
+	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 }
 
 type ShutdownStrategy string
@@ -508,8 +508,8 @@ type Template struct {
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
-	// ConcurrencyRef will holds concurrency configuration for this Template.
-	Concurrency *ConcurrencyRef `json:"concurrency,omitempty" protobuf:"bytes,36,opt,name=concurrency,casttype=ConcurrencyRef"`
+	// Synchronization will holds synchronization locks configuration for this Template.
+	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,36,opt,name=synchronization,casttype=Synchronization"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -876,8 +876,8 @@ type TemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
-// ConcurrencyRef is a reference of the concurrency
-type ConcurrencyRef struct {
+// Synchronization is a holds synchronization lock configuration
+type Synchronization struct {
 	// Semaphore will hold the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 }
@@ -1002,23 +1002,28 @@ type WorkflowStatus struct {
 	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
 	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 
-	// ConcurrencyLockStatus stores the currently holding locks
-	Concurrency *ConcurrencyStatus `json:"concurrency,omitempty" protobuf:"bytes,15,opt,name=concurrency"`
+	// Synchronization stores the status of synchronization locks
+	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
 }
 
 type SemaphoreStatus struct {
-	Holding map[string]HolderNames   `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Holding stores the list of resource acquired synchronization lock for workflows
+	Holding map[string]HolderNames `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+
+	// Waiting indicates the list of current synchronization lock holders
 	Waiting map[string]WaitingStatus `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 type WaitingStatus struct {
+	// Holder Names stores the list of current holder names
 	Holders HolderNames `json:"holder,omitempty" protobuf:"bytes,1,opt,name=holder"`
 }
 
 type HolderNames struct {
+	// Name stores the list of
 	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 
-type ConcurrencyStatus struct {
+type SynchronizationStatus struct {
 	// SemaphoreHolders stores this workflow's Semaphore holder details
 	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 }

@@ -828,7 +828,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					// We want to resubmit. Continue and do not mark as error.
 					continue
 				}
-				if tmpl.Concurrency != nil {
+				if tmpl.Synchronization != nil {
 					// Wait to acquire the lock
 					continue
 				}
@@ -1403,9 +1403,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if node != nil {
 		if node.Fulfilled() {
-			if resolvedTmpl.Concurrency != nil {
+			if resolvedTmpl.Synchronization != nil {
 				woc.log.Debugf("Node %s is releasing Semaphore lock", node.ID)
-				woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Concurrency)
+				woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1453,9 +1453,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, err
 	}
 
-	if processedTmpl.Concurrency != nil {
+	if processedTmpl.Synchronization != nil {
 		priority, creationTime := getWfPriority(woc.wf)
-		acquireStatus, wfUpdate, msg, err := woc.controller.concurrencyMgr.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, resolvedTmpl.Concurrency)
+		acquireStatus, wfUpdate, msg, err := woc.controller.concurrencyMgr.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, resolvedTmpl.Synchronization)
 
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
@@ -1470,7 +1470,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if node != nil {
 			node.Message = ""
 		}
-		woc.log.Infof("Node %s acquired Concurrency lock", nodeName)
+		woc.log.Infof("Node %s acquired Synchronization lock", nodeName)
 	}
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
@@ -1541,10 +1541,10 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
-		if resolvedTmpl.Concurrency != nil {
+		if resolvedTmpl.Synchronization != nil {
 			woc.log.Debugf("Node %s is releasing Semaphore lock", node.ID)
 
-			woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Concurrency)
+			woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
@@ -1860,7 +1860,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if tmpl.Concurrency == nil && !isResubmitAllowed(tmpl) || !node.Pending() {
+	} else if tmpl.Synchronization == nil && !isResubmitAllowed(tmpl) || !node.Pending() {
 		// This is not our first time executing this node.
 		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
 		// false, return.
@@ -1999,7 +1999,7 @@ func getStepOrDAGTaskName(nodeName string) string {
 
 func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && !(tmpl.Concurrency != nil && node.Pending()) {
+	if node != nil && !(tmpl.Synchronization != nil && node.Pending()) {
 		return node, nil
 	}
 	if node == nil {
@@ -2253,7 +2253,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && !(tmpl.Concurrency!= nil && node.Pending()) {
+	if node != nil && !(tmpl.Synchronization != nil && node.Pending()) {
 		return node, nil
 	}
 	if node == nil {
