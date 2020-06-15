@@ -9,20 +9,12 @@ on:
 
 jobs:
   test:
-    defaults:
-      run:
-        shell: bash
-        working-directory: /home/runner/work/argo/go/src/github.com/argoproj/argo
-
     name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-          path: go/src/github.com/argoproj/argo
 
       - name: Restore go build cache
         uses: actions/cache@v1
@@ -35,16 +27,18 @@ jobs:
         with:
           go-version: '1.13.12'
 
+      - name: Add ~/go/bin to PATH
+        run: echo "::add-path::/home/runner/go/bin"
+
+      - name: Add /usr/local/bin to PATH
+        run: echo "::add-path::/usr/local/bin"
+
       - name: Download all Go modules
-        env:
-          GOPATH: /home/runner/work/argo/go
         run: |
           echo $GOPATH
           go mod download
 
       - name: Check staticfiles
-        env:
-          GOPATH: /home/runner/work/argo/go
         run: |
           go get bou.ke/staticfiles
           echo $GOPATH
@@ -56,8 +50,6 @@ jobs:
             kustomize version
 
       - name: Run tests
-        env:
-          GOPATH: /home/runner/work/argo/go
         run: |
           trap 'make test-results/junit.xml' EXIT
           make test
