@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/util"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
@@ -621,6 +627,24 @@ func TestWatchWorkflows(t *testing.T) {
 	cancel()
 }
 
+func TestWatchLatestWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	wf := &v1alpha1.Workflow{
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.NodeSucceeded},
+	}
+	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{
+			ListOptions: &metav1.ListOptions{
+				FieldSelector: util.GenerateFieldSelectorFromWorkflowName("@latest"),
+			},
+		}, &testWatchWorkflowServer{testServerStream{ctx}})
+		assert.EqualError(t, err, "context canceled")
+	}()
+	cancel()
+}
+
 func TestGetWorkflowWithNotFound(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	t.Run("Labelled", func(t *testing.T) {
@@ -633,6 +657,36 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 		_, err := getWorkflow(ctx, server, "test", "unlabelled")
 		assert.Error(t, err)
 	})
+
+}
+
+func TestGetLatestWorkflow(t *testing.T) {
+	_, ctx := getWorkflowServer()
+	wfClient := ctx.Value(auth.WfKey).(versioned.Interface)
+	wf, err := getLatestWorkflow(wfClient, "test")
+	if assert.NoError(t, err) {
+		assert.Equal(t, wf.Name, "hello-world-9tql2-test")
+	}
+}
+
+func TestGetWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	s := server.(*workflowServer)
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+	}
+}
+
+func TestValidateWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	s := server.(*workflowServer)
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.NoError(t, s.validateWorkflow(wf))
+	}
 }
 
 func TestListWorkflow(t *testing.T) {
@@ -661,6 +715,10 @@ func TestDeleteWorkflow(t *testing.T) {
 		_, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
+	t.Run("Latest", func(t *testing.T) {
+		_, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "@latest", Namespace: "workflows"})
+		assert.NoError(t, err)
+	})
 }
 
 func TestRetryWorkflow(t *testing.T) {
@@ -673,6 +731,10 @@ func TestRetryWorkflow(t *testing.T) {
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})
+		assert.Error(t, err)
+	})
+	t.Run("Latest", func(t *testing.T) {
+		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "latest", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
 }
@@ -756,6 +818,12 @@ func TestResubmitWorkflow(t *testing.T) {
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
+	})
+	t.Run("Latest", func(t *testing.T) {
+		wf, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "@latest", Namespace: "workflows"})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
 	})
 }
 
