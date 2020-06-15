@@ -10,7 +10,7 @@ spec:
     listKind: ClusterWorkflowTemplateList
     plural: clusterworkflowtemplates
     shortNames:
-    - cwft
+    - clusterwftmpl
     singular: clusterworkflowtemplate
   scope: Cluster
   version: v1alpha1
@@ -30,6 +30,7 @@ spec:
     listKind: CronWorkflowList
     plural: cronworkflows
     shortNames:
+    - cwf
     - cronwf
     singular: cronworkflow
   scope: Namespaced
@@ -81,7 +82,7 @@ spec:
     listKind: WorkflowTemplateList
     plural: workflowtemplates
     shortNames:
-    - tmpl
+    - wftmpl
     singular: workflowtemplate
   scope: Namespaced
   version: v1alpha1
