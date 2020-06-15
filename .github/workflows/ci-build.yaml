@@ -20,7 +20,6 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v2
-        working-directory: /home/runner/work/argo
         with:
           fetch-depth: 1
           path: go/src/github.com/argoproj/argo
