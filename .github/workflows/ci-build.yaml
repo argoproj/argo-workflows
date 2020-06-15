@@ -30,10 +30,13 @@ jobs:
       - name: Set env
         run: |
           echo $GOPATH
-          export GOPAHT=~/go
+          export GOPATH=~/go
+          echo $GOPATH
+
           echo $BASH_ENV
           echo "export GOPATH=~/go" | tee -a $BASH_ENV
           echo $BASH_ENV
+
       - name: Download all Go modules
         run: |
           echo $GOPATH
