@@ -110,8 +110,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          clean: false
+      - name: test
+        run: |
+          git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///'
+          git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
