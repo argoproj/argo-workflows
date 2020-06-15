@@ -11,6 +11,7 @@ spec:
     plural: clusterworkflowtemplates
     shortNames:
       - clusterwftmpl
+      - cwft
     singular: clusterworkflowtemplate
   scope: Cluster
   validation:

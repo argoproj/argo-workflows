@@ -10,7 +10,7 @@ import (
 // +genclient
 // +genclient:noStatus
 // +genclient:nonNamespaced
-// +kubebuilder:resource:shortName=clusterwftmpl;cwft,scope=Cluster
+// +kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ClusterWorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
