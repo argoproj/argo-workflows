@@ -368,6 +368,12 @@ func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
 }
 
+func (b ParallelSteps) OpenAPISchemaType() []string {
+	return []string{"array"}
+}
+
+func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
+
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }

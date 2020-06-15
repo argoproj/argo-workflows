@@ -10,7 +10,7 @@ spec:
     listKind: ClusterWorkflowTemplateList
     plural: clusterworkflowtemplates
     shortNames:
-      - cwft
+      - clusterwftmpl
     singular: clusterworkflowtemplate
   scope: Cluster
   validation:

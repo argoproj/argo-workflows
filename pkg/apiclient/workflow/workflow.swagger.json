@@ -2126,7 +2126,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus"
         }
       },
-      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+kubebuilder:printcolumn:name=\"Status\",type=\"string\",JSONPath=\".status.phase\",description=\"Status of the workflow\"\n+kubebuilder:printcolumn:name=\"Age\",type=\"date\",format=\"date-time\",JSONPath=\".status.startedAt\",description=\"When the workflow was started\"\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+kubebuilder:resource:shortName=wf\n+kubebuilder:printcolumn:name=\"Status\",type=\"string\",JSONPath=\".status.phase\",description=\"Status of the workflow\"\n+kubebuilder:printcolumn:name=\"Age\",type=\"date\",format=\"date-time\",JSONPath=\".status.startedAt\",description=\"When the workflow was started\"\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
       "type": "object",

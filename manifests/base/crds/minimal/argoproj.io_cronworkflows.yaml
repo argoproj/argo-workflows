@@ -10,6 +10,7 @@ spec:
     listKind: CronWorkflowList
     plural: cronworkflows
     shortNames:
+      - cwf
       - cronwf
     singular: cronworkflow
   scope: Namespaced
