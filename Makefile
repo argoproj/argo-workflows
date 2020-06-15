@@ -481,9 +481,11 @@ $(GOPATH)/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
-	$(call backup_go_mod)
+$(GOPATH)/bin/openapi-gen:
 	go install k8s.io/kube-openapi/cmd/openapi-gen
+
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
+	$(call backup_go_mod)
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \

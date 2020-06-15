@@ -2461,8 +2461,7 @@
           "description": "Buckets is a list of bucket divisors for the histogram",
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "type": "string"
           }
         },
         "value": {

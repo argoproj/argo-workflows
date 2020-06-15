@@ -106,6 +106,29 @@ func (i *Item) GetType() Type {
 	return i.Type
 }
 
+// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
+func (i *Item) DeepCopyInto(out *Item) {
+	inBytes, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(inBytes, out)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// OpenAPISchemaType is used by the kube-openapi generator when constructing
+// the OpenAPI spec of this type.
+// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
+func (i Item) OpenAPISchemaType() []string {
+	return []string{"string", "number", "boolean", "array", "object"}
+}
+
+// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
+// the OpenAPI spec of this type.
+func (i Item) OpenAPISchemaFormat() string { return "" }
+
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
@@ -188,3 +211,9 @@ func (iv ItemValue) MarshalJSON() ([]byte, error) {
 		return []byte{}, fmt.Errorf("impossible ItemValue.Type %v", iv.Type)
 	}
 }
+
+func (i ItemValue) OpenAPISchemaType() []string {
+	return []string{"string", "number", "boolean", "array", "object"}
+}
+
+func (i ItemValue) OpenAPISchemaFormat() string { return "" }

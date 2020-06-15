@@ -3143,7 +3143,7 @@ Histogram is a Histogram prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`buckets`|`Array< number >`|Buckets is a list of bucket divisors for the histogram|
+|`buckets`|`Array< string >`|Buckets is a list of bucket divisors for the histogram|
 |`value`|`string`|Value is the value of the metric|
 
 ## MetricLabel

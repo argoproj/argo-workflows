@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"sort"
 	"testing"
 	"time"
@@ -164,7 +165,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			{Key: "hello", Value: "World"},
 		},
 		Histogram: &Histogram{
-			Buckets: []float64{10, 20, 30},
+			Buckets: []json.Number{"10", "20", "30"},
 		},
 	}
 	stableDesc := metric.GetDesc()

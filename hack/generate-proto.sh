@@ -1,13 +1,20 @@
 #!/bin/bash
 set -eux -o pipefail
-go get k8s.io/code-generator/cmd/go-to-protobuf@v0.16.7-beta.0
-go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.12.2
-go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.2
-go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
-go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
-go get github.com/gogo/protobuf/gogoproto@v1.3.1
-go get golang.org/x/tools/cmd/goimports
-go install k8s.io/code-generator/cmd/go-to-protobuf
+
+if [ "$(command -v go-to-protobuf)" = "" ]; then
+  go get k8s.io/code-generator/cmd/go-to-protobuf@v0.17.3
+  go install k8s.io/code-generator/cmd/go-to-protobuf
+fi
+if [ "$(command -v protoc-gen-grpc-gateway)" = "" ] || [ "$(command -v protoc-gen-swagger)" = "" ]; then
+  go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.12.2
+  go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.2
+fi
+if [ "$(command -v protoc-gen-gogo)" = "" ] || [ "$(command -v protoc-gen-gogofast)" = "" ]; then
+  go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
+  go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
+  go get github.com/gogo/protobuf/gogoproto@v1.3.1
+fi
+
 go-to-protobuf \
     --go-header-file=./hack/custom-boilerplate.go.txt \
     --packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \

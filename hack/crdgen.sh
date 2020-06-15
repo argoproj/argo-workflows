@@ -1,11 +1,16 @@
 #!/bin/bash
-set -eux -o pipefail
+set -eu -o pipefail
 
 cd "$(dirname "$0")/.."
 
 del() {
-  yq delete $1 $2 > tmp
-  mv tmp $1
+  yq delete $1 $2 >tmp
+  mv tmp "$1"
+}
+
+add_header() {
+  cat "$1" | ./hack/auto-gen-msg.sh >tmp
+  mv tmp "$1"
 }
 
 if [ "$(command -v controller-gen)" = "" ]; then
@@ -16,14 +21,18 @@ if [ "$(command -v yq)" = "" ]; then
   brew install yq
 fi
 
+echo "Generating base CRDS"
 controller-gen crd:trivialVersions=true,maxDescLen=0 paths=./pkg/apis/... output:dir=manifests/base/crds/full
 
-find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file ; do
+find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do
+  echo "Patching ${file}"
   # remove junk fields
   del "$file" metadata.annotations
   del "$file" metadata.creationTimestamp
   del "$file" status
+  add_header "$file"
   # create minimal
-  yq delete "$file" spec.validation > "manifests/base/crds/minimal/$(basename "$file")"
+  minimal="manifests/base/crds/minimal/$(basename "$file")"
+  echo "Creating ${minimal}"
+  yq delete "$file" spec.validation > "$minimal"
 done
-
