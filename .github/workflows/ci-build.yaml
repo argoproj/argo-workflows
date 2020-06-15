@@ -9,20 +9,21 @@ on:
 
 jobs:
   test:
+    defaults:
+      run:
+        shell: bash
+        working-directory: /home/runner/work/argo/go/src/github.com/argoproj/argo
+
     name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout code
         uses: actions/checkout@v2
+        working-directory: /home/runner/work/argo
         with:
           fetch-depth: 1
           path: go/src/github.com/argoproj/argo
-
-      - name: install-kustomize
-        run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
 
       - name: Restore go build cache
         uses: actions/cache@v1
@@ -49,6 +50,13 @@ jobs:
           go get bou.ke/staticfiles
           echo $GOPATH
           ls $GOPATH/bin
+
+      - name: install-kustomize
+        run: |
+            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+            kustomize version
+
+
 
       - name: Run tests
         env:
