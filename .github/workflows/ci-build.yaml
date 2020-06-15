@@ -114,6 +114,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: test
         run: |
+          git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          
           git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///'
           git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null
           git status
