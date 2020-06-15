@@ -1,4 +1,4 @@
-name: Argo CI
+name: test
 on: 
   push:
     branches:
@@ -30,6 +30,11 @@ jobs:
       - name: Download all Go modules
         run: |
           go mod download
+      - name: Download all Go modules
+        run: |
+          go get bou.ke/staticfiles
+          echo $(GOPATH)
+          ls $(GOPATH)/bin
       - name: Run tests
         run: |
           trap 'make test-results/junit.xml' EXIT
