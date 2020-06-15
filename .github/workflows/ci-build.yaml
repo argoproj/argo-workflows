@@ -29,9 +29,14 @@ jobs:
           go-version: '1.13.12'
       - name: Set env
         run: |
+          echo $GOPATH
+          export GOPAHT=~/go
+          echo $BASH_ENV
           echo "export GOPATH=~/go" | tee -a $BASH_ENV
+          echo $BASH_ENV
       - name: Download all Go modules
         run: |
+          echo $GOPATH
           go mod download
       - name: Check staticfiles
         run: |
