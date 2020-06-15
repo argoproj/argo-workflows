@@ -8,8 +8,12 @@
   align-items: center;
   position: -webkit-sticky;
 
-  &__actions {
+  &__message {
     margin-left: auto;
+  }
+
+  &__actions {
+    margin-left: 15px;
     button {
       cursor: pointer;
       color: white;

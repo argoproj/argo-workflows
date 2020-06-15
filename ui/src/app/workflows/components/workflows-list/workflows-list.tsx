@@ -97,6 +97,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <WorkflowsToolbar
                             selectedWorkflows={this.state.selectedWorkflows}
+                            loadWorkflows={() => {
+                                this.setState({selectedWorkflows: {}});
+                                this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit})
+                            }}
                         />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
