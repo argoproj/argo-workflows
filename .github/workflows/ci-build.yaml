@@ -43,6 +43,7 @@ jobs:
           go get bou.ke/staticfiles
           echo $GOPATH
           ls $GOPATH/bin
+          which staticfiles
 
       - name: install-kustomize
         run: |
