@@ -179,6 +179,8 @@ endif
 $(GOPATH)/bin/staticfiles:
 	$(call backup_go_mod)
 	go get bou.ke/staticfiles
+	echo $(GOPATH)
+	ls $(GOPATH)/bin
 	$(call restore_go_mod)
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html

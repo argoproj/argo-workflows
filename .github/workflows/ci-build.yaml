@@ -30,7 +30,7 @@ jobs:
       - name: Download all Go modules
         run: |
           go mod download
-      - name: Download all Go modules
+      - name: Check staticfiles
         run: |
           go get bou.ke/staticfiles
           echo $(GOPATH)
