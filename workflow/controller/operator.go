@@ -230,7 +230,7 @@ func (woc *wfOperationCtx) operate() {
 			err = woc.failSuspendedNodesAfterDeadlineOrShutdown()
 		}
 		if err != nil {
-			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
+			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
@@ -271,26 +271,26 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
-		msg := fmt.Sprintf("%s volumes global param substitution error: %+v", woc.wf.ObjectMeta.Name, err)
-		woc.log.Errorf(msg)
+		woc.log.WithError(err).Error("volumes global param substitution error")
 		woc.markWorkflowError(err, true)
 		return
 	}
 
 	err = woc.createPVCs()
 	if err != nil {
-		msg := fmt.Sprintf("%s pvc create error: %+v", woc.wf.ObjectMeta.Name, err)
-		woc.log.Errorf(msg)
+		msg := "pvc created failed"
+		woc.log.WithError(err).Error(msg)
 		woc.markWorkflowError(err, true)
-		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("%s %s: %+v", woc.wf.ObjectMeta.Name, msg, err))
 		return
 	}
 
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, execTmplRef, tmplCtx, execArgs, &executeTemplateOpts{})
 	if err != nil {
-		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
-		woc.log.Errorf(msg)
+		msg := "error in entry template execution"
+		woc.log.WithError(err).Error(msg)
+		msg = fmt.Sprintf("%s %s: %+v", woc.wf.Name, msg, err)
 		switch err {
 		case ErrDeadlineExceeded:
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", msg)
@@ -352,13 +352,13 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.deletePVCs()
 	if err != nil {
-		msg := fmt.Sprintf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
-		woc.log.Errorf(msg)
+		msg := "failed to delete PVCs"
+		woc.log.WithError(err).Errorf(msg)
 		// Mark the workflow with an error message and return, but intentionally do not
 		// markCompletion so that we can retry PVC deletion (TODO: use workqueue.ReAdd())
 		// This error phase may be cleared if a subsequent delete attempt is successful.
 		woc.markWorkflowError(err, false)
-		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("%s %s: %+v", woc.wf.ObjectMeta.Name, msg, err))
 		return
 	}
 
@@ -973,13 +973,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 			if !ok {
-				log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
+				log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
 				return nil
 			}
 			var tmpl wfv1.Template
 			err := json.Unmarshal([]byte(tmplStr), &tmpl)
 			if err != nil {
-				log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
+				log.WithError(err).WithField("pod", pod.ObjectMeta.Name).Warn("template annotation unreadable")
 				return nil
 			}
 			if tmpl.Daemon != nil && *tmpl.Daemon {
@@ -1251,7 +1251,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil && apierr.IsAlreadyExists(err) {
-			woc.log.Infof("%s pvc already exists. Workflow is re-using it", pvcTmpl.Name)
+			woc.log.WithField("pvc", pvcTmpl.Name).Info("pvc already exists. Workflow is re-using it")
 			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -1762,7 +1762,7 @@ func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
-	woc.log.Errorf("Mark error node %s: %+v", nodeName, err)
+	woc.log.WithError(err).WithField("nodeName", nodeName).Error("Mark error node")
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 

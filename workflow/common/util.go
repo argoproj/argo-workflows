@@ -480,7 +480,7 @@ func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 			if wf.Name != "" {
 				name = fmt.Sprintf("%s '%s'", name, wf.Name)
 			}
-			log.Warnf("%s is not of kind Workflow. Ignoring...", name)
+			log.WithField("name", name).Warn("is not of kind Workflow. Ignoring...")
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about Workflow manifests.
 			continue
@@ -512,7 +512,7 @@ func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTem
 			if wftmpl.Name != "" {
 				name = fmt.Sprintf("%s '%s'", name, wftmpl.Name)
 			}
-			log.Warnf("%s is not of kind WorkflowTemplate. Ignoring...", name)
+			log.WithField("name", name).Warn("is not of kind WorkflowTemplate. Ignoring...")
 			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
 			// We ignore these since we only care about WorkflowTemplate manifests.
 			continue
@@ -544,7 +544,7 @@ func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, e
 			if cronWf.Name != "" {
 				name = fmt.Sprintf("%s '%s'", name, cronWf.Name)
 			}
-			log.Warnf("%s is not of kind CronWorkflow. Ignoring...", name)
+			log.WithField("name", name).Warn("is not of kind CronWorkflow. Ignoring...")
 			// If we get here, it was a k8s manifest which was not of type 'CronWorkflow'
 			// We ignore these since we only care about CronWorkflow manifests.
 			continue
@@ -682,7 +682,7 @@ func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.Clus
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &cwftmpl, opts...)
 		if cwftmpl.Kind != "" && cwftmpl.Kind != workflow.ClusterWorkflowTemplateKind {
-			log.Warnf("%s is not a cluster workflow template", cwftmpl.Kind)
+			log.WithField("kind", cwftmpl.Kind).Warn("is not a cluster workflow template")
 			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
 			// We ignore these since we only care about WorkflowTemplate manifests.
 			continue
