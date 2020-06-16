@@ -80,6 +80,11 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
+      - name: Upload test results
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}
+          path: test-results
 
   codegen:
     name: Codegen
@@ -159,14 +164,3 @@ jobs:
           yarn --cwd ui lint
       - name: Ensure nothing changed
         run: git diff --exit-code
-        
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v1
-        with:
-          version: v1.23
-          args: --timeout 5m --verbose

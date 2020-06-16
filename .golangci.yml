@@ -4,7 +4,8 @@ run:
     - pkg/client
     - vendor
     - ui
-    - server/static
+  skip-files:
+    - server/static/files.go
 linters:
   enable:
     - goimports
@@ -14,3 +15,5 @@ linters-settings:
 service:
   golangci-lint-version: 1.23.8
   project-path: github.com/argoproj/argo
+  prepare:
+    - make server/static/files.go CI=true
