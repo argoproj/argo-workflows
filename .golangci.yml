@@ -6,6 +6,7 @@ run:
     - ui
   skip-files:
     - server/static/files.go
+    - server/static/static.go
 linters:
   enable:
     - goimports
