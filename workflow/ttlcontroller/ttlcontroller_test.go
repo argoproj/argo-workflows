@@ -596,3 +596,32 @@ func TestTTLlExpired(t *testing.T) {
 	wf6.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	assert.Equal(t, true, controller.ttlExpired(wf6))
 }
+
+func TestGetTTLStrategy(t *testing.T) {
+	var ten int32 = 10
+	wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
+		SecondsAfterCompletion: &ten,
+	}
+
+	ttl := getTTLStrategy(wf)
+	assert.NotNil(t, ttl)
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
+	ttl = getTTLStrategy(wf1)
+	assert.NotNil(t, ttl)
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	wf1.Spec.TTLStrategy = nil
+	wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
+	ttl = getTTLStrategy(wf1)
+	assert.Nil(t, ttl)
+
+	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
+	ttl = getTTLStrategy(wf2)
+	assert.NotNil(t, ttl)
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
+	ttl = getTTLStrategy(wf2)
+	assert.Nil(t, ttl)
+}

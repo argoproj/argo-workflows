@@ -185,18 +185,12 @@ func (c *Controller) deleteWorkflow(key string) error {
 }
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
+	ttlStrategy := getTTLStrategy(wf)
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
-	if wf.DeletionTimestamp != nil || (wf.Spec.TTLStrategy == nil && (wf.Status.StoredWorkflowSpec == nil || wf.Status.StoredWorkflowSpec.TTLStrategy == nil)) || wf.Status.FinishedAt.IsZero() {
+	if wf.DeletionTimestamp != nil || ttlStrategy == nil  || wf.Status.FinishedAt.IsZero() {
 		return false
 	}
 	now := c.clock.Now()
-
-	ttlStrategy := wf.Spec.TTLStrategy
-	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
-		ttlStrategy = wf.Status.StoredWorkflowSpec.TTLStrategy
-	} else {
-		return false
-	}
 
 	if wf.Status.Failed() && ttlStrategy != nil && ttlStrategy.SecondsAfterFailure != nil {
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterFailure))
@@ -211,14 +205,8 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
-	if wf.DeletionTimestamp != nil || (wf.Spec.TTLStrategy == nil && (wf.Status.StoredWorkflowSpec == nil || wf.Status.StoredWorkflowSpec.TTLStrategy == nil)) || wf.Status.FinishedAt.IsZero() {
-		return nil, nil
-	}
-	ttlStrategy := wf.Spec.TTLStrategy
-
-	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
-		ttlStrategy = wf.Status.StoredWorkflowSpec.TTLStrategy
-	} else {
+	ttlStrategy := getTTLStrategy(wf)
+	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
 
@@ -242,4 +230,13 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 	} else {
 		return nil, nil
 	}
+}
+
+func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy{
+	ttlStrategy := wf.Spec.TTLStrategy
+
+	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
+		return wf.Status.StoredWorkflowSpec.TTLStrategy
+	}
+	return ttlStrategy
 }
