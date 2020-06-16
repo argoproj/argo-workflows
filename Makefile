@@ -167,7 +167,10 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-server/static/files.go: ui/dist/app/index.html
+$(GOPATH)/bin/staticfiles:
+	go get bou.ke/staticfiles
+
+server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 
@@ -258,8 +261,11 @@ crds:
 schemas:
 	go run ./hack genschemas
 
+$(GOPATH)/bin/go-to-protobuf:
+	go install k8s.io/code-generator/cmd/go-to-protobuf
+
 .PHONY: proto
-proto:
+proto: $(GOPATH)/bin/go-to-protobuf
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
