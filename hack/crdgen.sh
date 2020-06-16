@@ -15,6 +15,7 @@ add_header() {
 
 if [ "$(command -v controller-gen)" = "" ]; then
   go install sigs.k8s.io/controller-tools/cmd/controller-gen
+  go mod tidy
 fi
 
 export PATH=$PATH:dist

@@ -259,18 +259,24 @@ $(GOPATH)/bin/mockery:
 
 .PHONY: mocks
 mocks: $(GOPATH)/bin/mockery
+	$(call backup_go_mod)
 	./hack/update-mocks.sh $(MOCK_FILES)
+	$(call restore_go_mod)
 
 .PHONY: codegen
 codegen: status proto swagger crds schemas mocks docs
 
 .PHONY: crds
 crds:
+	$(call backup_go_mod)
 	./hack/crdgen.sh
+	$(call restore_go_mod)
 
 .PHONY: schemas
 schemas:
+	$(call backup_go_mod)
 	go run ./hack genschemas
+	$(call restore_go_mod)
 
 .PHONY: proto
 proto:
@@ -509,8 +515,10 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 
 .PHONY: docs
 docs: swagger
+	$(call backup_go_mod)
 	go run ./hack docgen
 	go run ./hack readmegen
+	$(call restore_go_mod)
 
 # pre-push
 
