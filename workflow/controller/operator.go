@@ -278,7 +278,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.createPVCs()
 	if err != nil {
-		msg := "pvc created failed"
+		msg := "pvc create error"
 		woc.log.WithError(err).Error(msg)
 		woc.markWorkflowError(err, true)
 		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("%s %s: %+v", woc.wf.ObjectMeta.Name, msg, err))
