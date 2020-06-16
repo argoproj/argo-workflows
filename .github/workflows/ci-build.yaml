@@ -11,6 +11,9 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test: ["test-e2e", "test-e2e-cron"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -71,7 +74,7 @@ jobs:
           GOPATH: /home/runner/go
         run: |
           trap 'make test-results/junit.xml' EXIT
-          make smoke test-e2e
+          make smoke ${{ matrix.test }}
 
   tests:
     name: Unit Tests
@@ -109,7 +112,6 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make test
-
 
   codegen:
     name: Codegen
@@ -183,7 +185,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
-      - name: Specify branch
+      - name: Install and Lint
         run: |
           yarn --cwd ui install
           yarn --cwd ui lint
