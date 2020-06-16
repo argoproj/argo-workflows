@@ -1,5 +1,9 @@
 {
   "definitions": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Amount": {
+      "description": "Amount represent a numeric amount.",
+      "type": "number"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArchiveStrategy": {
       "description": "ArchiveStrategy describes how to archive files/directory when saving artifacts",
       "type": "object",
@@ -791,7 +795,7 @@
           "description": "Buckets is a list of bucket divisors for the histogram",
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Amount"
           }
         },
         "value": {

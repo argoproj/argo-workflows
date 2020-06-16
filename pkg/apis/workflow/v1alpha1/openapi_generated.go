@@ -13,6 +13,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Amount":                      schema_pkg_apis_workflow_v1alpha1_Amount(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy":             schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments":                   schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact":                    schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
@@ -83,6 +84,18 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateList":        schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef":         schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateRef(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec":        schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref),
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_Amount(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Amount represent a numeric amount.",
+				Type:        Amount{}.OpenAPISchemaType(),
+				Format:      Amount{}.OpenAPISchemaFormat(),
+			},
+		},
 	}
 }
 
@@ -1464,8 +1477,7 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"string"},
-										Format: "",
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Amount"),
 									},
 								},
 							},
@@ -1475,6 +1487,8 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 				Required: []string{"value", "buckets"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Amount"},
 	}
 }
 

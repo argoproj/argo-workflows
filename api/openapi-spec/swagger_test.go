@@ -63,7 +63,11 @@ func TestSwagger(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Histogram"].(obj)
 		buckets := definition["properties"].(obj)["buckets"].(obj)
 		assert.Equal(t, "array", buckets["type"])
-		assert.Equal(t, obj{"type": "string"}, buckets["items"])
+		assert.Equal(t, obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Amount"}, buckets["items"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Amount", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Amount"].(obj)
+		assert.Equal(t, "number", definition["type"])
 	})
 	// this test makes sure we deal with `inline`
 	t.Run("io.argoproj.workflow.v1alpha1.UserContainer", func(t *testing.T) {

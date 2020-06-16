@@ -15,6 +15,10 @@ import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 // Package-wide variables from generator "generated".
 option go_package = "v1alpha1";
 
+// Amount represent a numeric amount.
+message Amount {
+}
+
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
 message ArchiveStrategy {
   optional TarStrategy tar = 1;
@@ -427,7 +431,7 @@ message Histogram {
   optional string value = 3;
 
   // Buckets is a list of bucket divisors for the histogram
-  repeated string buckets = 4;
+  repeated Amount buckets = 4;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another

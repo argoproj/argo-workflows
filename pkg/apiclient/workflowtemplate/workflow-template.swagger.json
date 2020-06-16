@@ -310,6 +310,10 @@
     }
   },
   "definitions": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Amount": {
+      "type": "object",
+      "description": "Amount represent a numeric amount."
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArchiveStrategy": {
       "type": "object",
       "properties": {
@@ -773,7 +777,7 @@
         "buckets": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Amount"
           },
           "title": "Buckets is a list of bucket divisors for the histogram"
         }

@@ -2025,7 +2025,7 @@ type Histogram struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
-	Buckets []json.Number `json:"buckets" protobuf:"bytes,4,rep,name=buckets,casttype=Bucket"`
+	Buckets []Amount `json:"buckets" protobuf:"bytes,4,rep,name=buckets"`
 }
 
 func (in *Histogram) GetBuckets() []float64 {
