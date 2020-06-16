@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {labels, Workflow} from '../../../../models';
+import {labels, Workflow, WorkflowAction} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -16,7 +16,7 @@ import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import {ActionDisabled} from '../../../shared/workflow-actions';
+import * as Actions from '../../../shared/workflow-actions';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
@@ -38,7 +38,17 @@ interface State {
     selectedWorkflows: {[index: string]: models.Workflow};
     workflows?: Workflow[];
     error?: Error;
-    batchActionDisabled: ActionDisabled;
+    batchActionDisabled: Actions.ActionDisabled;
+}
+
+const allBatchActionsEnabled = {
+    retry: false,
+    resubmit: false,
+    suspend: false,
+    resume: false,
+    stop: false,
+    terminate: false,
+    delete: false
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
@@ -59,15 +69,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
             selectedWorkflows: {},
-            batchActionDisabled: {
-                retry: false,
-                resubmit: false,
-                suspend: false,
-                resume: false,
-                stop: false,
-                terminate: false,
-                delete: false
-            }
+            batchActionDisabled: {...allBatchActionsEnabled},
         };
     }
 
@@ -310,10 +312,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         return;
                                     }
                                     const currentlySelected = this.state.selectedWorkflows;
-                                    // const currentlyDisabled = this.state.batchActionDisabled;
                                     if (!(wfUID in currentlySelected)) {
+                                        this.updateBatchActionsDisabled(subWf, false);
                                         currentlySelected[wfUID] = subWf;
                                     } else {
+                                        this.updateBatchActionsDisabled(subWf, true);
                                         delete currentlySelected[wfUID];
                                     }
                                     this.setState({selectedWorkflows: {...currentlySelected}});
@@ -328,6 +331,24 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 />
             </>
         );
+    }
+
+    private updateBatchActionsDisabled(wf: Workflow, deselect: boolean): void {
+        const currentlyDisabled: any = this.state.batchActionDisabled;
+        const nowDisabled: any = {...allBatchActionsEnabled};
+        for (const action of Object.keys(currentlyDisabled)) {
+            if (deselect) {
+                for (const wfUID of Object.keys(this.state.selectedWorkflows)) {
+                    if (wfUID === wf.metadata.uid) {
+                        continue;
+                    }
+                    nowDisabled[action] = Actions.isDisabled(action as WorkflowAction, this.state.selectedWorkflows[wfUID]) || nowDisabled[action];
+                }
+            } else {
+                nowDisabled[action] = Actions.isDisabled(action as WorkflowAction, wf) || currentlyDisabled[action];
+            }
+        }
+        this.setState({batchActionDisabled: nowDisabled});
     }
 
     private renderQuery(ctx: any) {

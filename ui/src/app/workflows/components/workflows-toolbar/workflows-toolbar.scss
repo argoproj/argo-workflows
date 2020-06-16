@@ -7,6 +7,7 @@
   display: flex;
   align-items: center;
   position: -webkit-sticky;
+  font-size: 15px;
 
   &__message {
     margin-left: auto;
@@ -26,6 +27,7 @@
     button:disabled {
       background-color: $argo-color-gray-4;
       cursor: not-allowed;
+      color: $argo-color-gray-6;
     }
 
     &--suspend {

@@ -11,15 +11,9 @@ export interface WorkflowActionParams {
     handleError?: () => void;
 }
 
-export interface ActionDisabled {
-    retry: boolean;
-    resubmit: boolean;
-    suspend: boolean;
-    resume: boolean;
-    stop: boolean;
-    terminate: boolean;
-    delete: boolean;
-}
+export type ActionDisabled = {
+    [action in WorkflowAction]: boolean;
+};
 
 export function isDisabled(action: WorkflowAction, wf: Workflow) {
     const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
