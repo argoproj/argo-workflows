@@ -84,3 +84,5 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
+
+require k8s.io/code-generator => k8s.io/code-generator v0.17.3
