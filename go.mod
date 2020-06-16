@@ -95,3 +95,6 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
+
+// do not delete this line
+replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v11.1.2+incompatible
