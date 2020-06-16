@@ -168,7 +168,8 @@ else
 endif
 
 server/static/files.go: ui/dist/app/index.html
-	staticfiles -o server/static/files.go ui/dist/app
+	# Pack UI into a Go file.
+	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -301,8 +302,11 @@ test: server/static/files.go
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
+$(GOPATH)/bin/go-junit-report:
+	go get github.com/jstemmer/go-junit-report
+
 # note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: test-results/test.out
+test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
@@ -346,7 +350,7 @@ stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
 $(GOPATH)/bin/goreman:
-	cd hack && go get github.com/mattn/goreman
+	go get github.com/mattn/goreman
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
@@ -433,6 +437,7 @@ clean:
 	rm -Rf vendor dist/* ui/dist
 
 # swagger
+
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
@@ -471,10 +476,8 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 
 .PHONY: docs
 docs: swagger
-	
 	go run ./hack docgen
 	go run ./hack readmegen
-	
 
 # pre-push
 
