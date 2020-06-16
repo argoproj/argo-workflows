@@ -1036,7 +1036,7 @@ export const WORKFLOW_ACTION = {
     RESUME: 'resume',
     STOP: 'stop',
     TERMINATE: 'terminate',
-    DELETE: 'delete',
+    DELETE: 'delete'
 };
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';

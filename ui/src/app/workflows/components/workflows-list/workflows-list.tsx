@@ -9,7 +9,6 @@ import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
-import {ActionDisabled} from '../../../shared/workflow-actions';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {Query} from '../../../shared/components/query';
@@ -17,6 +16,7 @@ import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
+import {ActionDisabled} from '../../../shared/workflow-actions';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
@@ -66,7 +66,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 resume: false,
                 stop: false,
                 terminate: false,
-                delete: false,
+                delete: false
             }
         };
     }

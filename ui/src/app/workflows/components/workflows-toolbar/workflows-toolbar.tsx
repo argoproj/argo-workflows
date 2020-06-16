@@ -27,7 +27,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
     constructor(props: WorkflowsToolbarProps) {
         super(props);
         this.state = {
-            message: '',
+            message: ''
         };
     }
 
