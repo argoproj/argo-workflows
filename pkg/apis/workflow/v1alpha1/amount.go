@@ -31,5 +31,5 @@ func (n Amount) OpenAPISchemaType() []string {
 func (n Amount) OpenAPISchemaFormat() string { return "" }
 
 func (n *Amount) Float64() (float64, error) {
-	return strconv.ParseFloat(string(n.value), 64)
+	return strconv.ParseFloat(string(n.Value), 64)
 }
