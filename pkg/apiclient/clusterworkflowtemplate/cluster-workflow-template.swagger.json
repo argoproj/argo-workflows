@@ -493,7 +493,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec"
         }
       },
-      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+kubebuilder:resource:shortName=clusterwftmpl,scope=Cluster\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplateList": {
       "type": "object",

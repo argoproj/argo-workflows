@@ -808,7 +808,7 @@ func (in *Histogram) DeepCopyInto(out *Histogram) {
 	*out = *in
 	if in.Buckets != nil {
 		in, out := &in.Buckets, &out.Buckets
-		*out = make([]Bucket, len(*in))
+		*out = make([]json.Number, len(*in))
 		copy(*out, *in)
 	}
 	return

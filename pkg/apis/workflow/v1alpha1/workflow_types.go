@@ -2018,26 +2018,18 @@ type Gauge struct {
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 }
 
-type Bucket json.Number
-
-func (b Bucket) OpenAPISchemaType() []string {
-	return []string{"number"}
-}
-
-func (b Bucket) OpenAPISchemaFormat() string { return "" }
-
 // Histogram is a Histogram prometheus metric
 type Histogram struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
-	Buckets []Bucket `json:"buckets" protobuf:"bytes,4,rep,name=buckets,casttype=Bucket"`
+	Buckets []json.Number `json:"buckets" protobuf:"bytes,4,rep,name=buckets,casttype=Bucket"`
 }
 
 func (in *Histogram) GetBuckets() []float64 {
 	buckets := make([]float64, len(in.Buckets))
 	for i, bucket := range in.Buckets {
-		buckets[i], _ = json.Number(bucket).Float64()
+		buckets[i], _ = bucket.Float64()
 	}
 	return buckets
 }

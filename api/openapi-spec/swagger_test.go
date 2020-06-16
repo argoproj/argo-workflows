@@ -59,6 +59,12 @@ func TestSwagger(t *testing.T) {
 		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["default"].(obj)["$ref"])
 		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["value"].(obj)["$ref"])
 	})
+	t.Run("io.argoproj.workflow.v1alpha1.Histogram", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Histogram"].(obj)
+		buckets := definition["properties"].(obj)["buckets"].(obj)
+		assert.Equal(t, "array", buckets["type"])
+		assert.Equal(t, obj{"type": "string"}, buckets["items"])
+	})
 	// this test makes sure we deal with `inline`
 	t.Run("io.argoproj.workflow.v1alpha1.UserContainer", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.UserContainer"].(obj)
