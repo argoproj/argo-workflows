@@ -301,11 +301,8 @@ test: server/static/files.go
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
-$(GOPATH)/bin/go-junit-report:
-	cd hack && go get github.com/jstemmer/go-junit-report
-
 # note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
+test-results/junit.xml: test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
