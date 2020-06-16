@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ["smoke", "test", "test-e2e", "test-e2e-cron"]
+        test: ["test", "test-e2e", "test-e2e-cron"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -159,7 +159,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+      - name: Specify branch
+        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
