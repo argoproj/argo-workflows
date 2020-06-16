@@ -75,9 +75,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     public componentDidMount(): void {
         this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+        this.setState({selectedWorkflows:{}});
     }
 
     public componentWillUnmount(): void {
+        this.setState({selectedWorkflows:{}});
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
