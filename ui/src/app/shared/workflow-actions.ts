@@ -1,12 +1,38 @@
+import {NodePhase, Workflow} from '../../models';
 import {uiUrl} from './base';
 import {ContextApis} from './context';
 import {services} from './services';
+import {Utils} from './utils';
 
 export interface WorkflowActionParams {
     ctx: ContextApis;
     name: string;
     namespace: string;
     handleError?: () => void;
+}
+
+export function isDisabled(action: string, wf: Workflow) {
+    const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
+    switch (action) {
+        case 'retry':
+            return workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error');
+        case 'resubmit':
+            return false;
+        case 'suspend':
+            return !Utils.isWorkflowRunning(wf) || Utils.isWorkflowSuspended(wf);
+        case 'suspend':
+            return !Utils.isWorkflowRunning(wf) || Utils.isWorkflowSuspended(wf);
+        case 'resume':
+            return !Utils.isWorkflowSuspended(wf);
+        case 'stop':
+            return !Utils.isWorkflowRunning(wf);
+        case 'terminate':
+            return !Utils.isWorkflowRunning(wf);
+        case 'delete':
+            return false;
+        default:
+            return false;
+    }
 }
 
 export function deleteWorkflow(action: WorkflowActionParams) {

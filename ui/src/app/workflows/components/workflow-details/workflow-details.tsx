@@ -14,7 +14,6 @@ import {CostOptimisationNudge} from '../../../shared/components/cost-optimisatio
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer} from '../../../shared/context';
-import {Utils} from '../../../shared/utils';
 import * as Actions from '../../../shared/workflow-actions';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowYamlPanel} from './workflow-yaml-panel';
@@ -204,7 +203,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             {
                 title: 'Retry',
                 iconClassName: 'fa fa-undo',
-                disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
+                disabled: Actions.isDisabled('retry', this.state.workflow),
                 action: () => {
                     this.confirmAction('retry');
                     Actions.resubmitWorkflow({
@@ -226,7 +225,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             {
                 title: 'Suspend',
                 iconClassName: 'fa fa-pause',
-                disabled: !Utils.isWorkflowRunning(this.state.workflow) || Utils.isWorkflowSuspended(this.state.workflow),
+                disabled: Actions.isDisabled('suspend', this.state.workflow),
                 action: () =>
                     Actions.suspendWorkflow({
                         ...defaultAction,
@@ -236,7 +235,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             {
                 title: 'Resume',
                 iconClassName: 'fa fa-play',
-                disabled: !Utils.isWorkflowSuspended(this.state.workflow),
+                disabled: Actions.isDisabled('resume', this.state.workflow),
                 action: () =>
                     Actions.resumeWorkflow({
                         ...defaultAction,
@@ -246,7 +245,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             {
                 title: 'Stop',
                 iconClassName: 'fa fa-stop-circle',
-                disabled: !Utils.isWorkflowRunning(this.state.workflow),
+                disabled: Actions.isDisabled('stop', this.state.workflow),
                 action: () => {
                     this.confirmAction('stop');
                     Actions.stopWorkflow({
@@ -258,7 +257,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             {
                 title: 'Terminate',
                 iconClassName: 'fa fa-times-circle',
-                disabled: !Utils.isWorkflowRunning(this.state.workflow),
+                disabled: Actions.isDisabled('terminate', this.state.workflow),
                 action: () => {
                     this.confirmAction('terminate');
                     Actions.terminateWorkflow({
