@@ -52,6 +52,7 @@ jobs:
       - install_golang
       - restore_go_mod
       - run: |
+          mkdir dist
           cp sonar-project.properties dist/
           if [ "$(echo "$CIRCLE_BRANCH" | grep 'master\|release-')" = '' ]; then
             echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
