@@ -169,3 +169,4 @@ jobs:
         uses: golangci/golangci-lint-action@v1
         with:
           version: v1.23
+          args: --timeout 5m --verbose
