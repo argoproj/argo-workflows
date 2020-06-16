@@ -115,7 +115,7 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 func (woc *cronWfOperationCtx) persistUpdate() {
 	_, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		woc.log.Error(fmt.Sprintf("failed to update CronWorkflow: %s", err))
+		woc.log.WithError(err).Error("failed to update CronWorkflow")
 	}
 }
 
@@ -327,7 +327,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 }
 
 func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.ConditionType, errString string) {
-	woc.log.Errorf("%s: %s", conditionType, errString)
+	woc.log.WithField("conditionType", conditionType).Error(errString)
 	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
 		Type:    conditionType,
 		Message: errString,
