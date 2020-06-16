@@ -292,7 +292,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 	for _, depName := range targetTasks {
 		depNode := dagCtx.getTaskNode(depName)
 		if depNode == nil {
-			woc.log.Println(depName)
+			woc.logger.Println(depName)
 			continue
 		}
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
@@ -301,7 +301,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 	node := woc.getNodeByName(nodeName)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
-	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
+	woc.logger.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
 }
 
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
@@ -413,7 +413,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		node = dagCtx.getTaskNode(t.Name)
 		if node == nil {
-			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, taskDependencies)
+			woc.logger.Infof("All of node %s dependencies %s completed", taskNodeName, taskDependencies)
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 

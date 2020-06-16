@@ -80,7 +80,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			} else {
 				for _, childID := range prevStepGroupNode.Children {
 					outboundNodeIDs := woc.getOutboundNodes(childID)
-					woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
+					woc.logger.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
 					for _, outNodeID := range outboundNodeIDs {
 						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
 					}
@@ -91,13 +91,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
 
 		if !sgNode.Fulfilled() {
-			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
+			woc.logger.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
 
 		if sgNode.FailedOrError() {
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
-			woc.log.Info(failMessage)
+			woc.logger.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message), nil
 		}
@@ -132,7 +132,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 						return node, err
 					}
 				} else {
-					woc.log.Infof("Step '%s' has no expanded child nodes", childNode)
+					woc.logger.Infof("Step '%s' has no expanded child nodes", childNode)
 				}
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
@@ -167,16 +167,16 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 		}
 	}
 	if lastSGNode == nil {
-		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", nodeName)
+		woc.logger.Warnf("node '%s' had no initialized StepGroup nodes", nodeName)
 		return
 	}
 	for _, childID := range lastSGNode.Children {
 		outboundNodeIDs := woc.getOutboundNodes(childID)
-		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
+		woc.logger.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
 		outbound = append(outbound, outboundNodeIDs...)
 	}
 	node := woc.getNodeByName(nodeName)
-	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
+	woc.logger.Infof("Outbound nodes of %s is %s", node.ID, outbound)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 }
@@ -186,7 +186,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
 	node := woc.getNodeByName(sgNodeName)
 	if node.Fulfilled() {
-		woc.log.Debugf("Step group node %v already marked completed", node)
+		woc.logger.Debugf("Step group node %v already marked completed", node)
 		return node
 	}
 
@@ -223,7 +223,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if !proceed {
 			if woc.getNodeByName(childNodeName) == nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
-				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
+				woc.logger.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
@@ -238,7 +238,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrParallelismReached:
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
+				woc.logger.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
 			}
@@ -277,11 +277,11 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		step := nodeSteps[childNode.Name]
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
-			woc.log.Infof("Step group node %s deemed failed: %s", node.ID, failMessage)
+			woc.logger.Infof("Step group node %s deemed failed: %s", node.ID, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
-	woc.log.Infof("Step group node %v successful", node)
+	woc.logger.Infof("Step group node %v successful", node)
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
@@ -415,7 +415,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			if woc.getNodeByName(childNodeName) == nil {
 				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 				skipReason := fmt.Sprint("Skipped, empty params")
-				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
+				woc.logger.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}

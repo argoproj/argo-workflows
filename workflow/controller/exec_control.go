@@ -31,7 +31,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
-				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
+				woc.logger.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
@@ -41,7 +41,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 					return nil
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
-				woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
+				woc.logger.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
 			}
 		}
 		// Check if we are past the workflow deadline. If we are, and the pod is still pending
@@ -50,7 +50,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			//pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
-				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
+				woc.logger.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
@@ -60,7 +60,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 					return nil
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
-				woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
+				woc.logger.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
 			}
 		}
 	}
@@ -69,7 +69,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	if execCtlStr, ok := pod.Annotations[common.AnnotationKeyExecutionControl]; ok && execCtlStr != "" {
 		err := json.Unmarshal([]byte(execCtlStr), &podExecCtl)
 		if err != nil {
-			woc.log.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
+			woc.logger.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
 		}
 	}
 
@@ -88,7 +88,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		} else if podExecCtl.Deadline != nil && podExecCtl.Deadline.IsZero() {
 			// If the pod has already been explicitly signaled to terminate, then do nothing.
 			// This can happen when daemon steps are terminated.
-			woc.log.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
+			woc.logger.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
 			return nil
 		}
 		newDeadline = woc.workflowDeadline
@@ -96,13 +96,13 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	// Assign new deadline value to PodExeCtl
 	podExecCtl.Deadline = newDeadline
 
-	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, woc.workflowDeadline, podExecCtl.Deadline)
+	woc.logger.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, woc.workflowDeadline, podExecCtl.Deadline)
 	return woc.updateExecutionControl(pod.Name, podExecCtl)
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
 func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
-	woc.log.Infof("Checking daemoned children of %s", nodeID)
+	woc.logger.Infof("Checking daemoned children of %s", nodeID)
 	var firstErr error
 	execCtl := common.ExecutionControl{
 		Deadline: &time.Time{},
@@ -116,7 +116,7 @@ func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
 		}
 		err := woc.updateExecutionControl(childNode.ID, execCtl)
 		if err != nil {
-			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
+			woc.logger.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
 			if firstErr == nil {
 				firstErr = err
 			}
@@ -132,7 +132,7 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 		return errors.InternalWrapError(err)
 	}
 
-	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
+	woc.logger.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
 	err = common.AddPodAnnotation(
 		woc.controller.kubeclientset,
 		podName,
@@ -149,7 +149,7 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 	// mounted file. However, updates to the Downward API volumes take a very long time to
 	// propagate (minutes). The following code fast-tracks this by signaling the executor
 	// using SIGUSR2 that something changed.
-	woc.log.Infof("Signalling %s of updates", podName)
+	woc.logger.Infof("Signalling %s of updates", podName)
 	exec, err := common.ExecPodContainer(
 		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
 		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
@@ -162,10 +162,10 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 		// it is launched as a goroutine and the error is discarded
 		_, _, err = common.GetExecutorOutput(exec)
 		if err != nil {
-			woc.log.Warnf("Signal command failed: %v", err)
+			woc.logger.Warnf("Signal command failed: %v", err)
 			return
 		}
-		woc.log.Infof("Signal of %s (%s) successfully issued", podName, common.WaitContainerName)
+		woc.logger.Infof("Signal of %s (%s) successfully issued", podName, common.WaitContainerName)
 	}()
 
 	return nil

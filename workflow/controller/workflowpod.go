@@ -94,7 +94,7 @@ type createWorkflowPodOpts struct {
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
-	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
+	woc.logger.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wfSpec.DeepCopy()
 
@@ -299,16 +299,16 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+			woc.logger.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
 		if apierr.IsForbidden(err) {
 			return nil, err
 		}
-		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
+		woc.logger.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
+	woc.logger.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
 }
@@ -778,7 +778,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
 		if !art.HasLocation() && art.Optional {
-			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
+			woc.logger.Infof("skip volume mount of %s (%s): optional artifact was not provided",
 				art.Name, art.Path)
 			continue
 		}
@@ -787,7 +787,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// artifact path overlaps with a mounted volume. do not mount the
 			// artifacts emptydir to the main container. init would have copied
 			// the artifact to the user's volume instead
-			woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
+			woc.logger.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
 				art.Name, art.Path, overlap.Name, overlap.MountPath)
 			continue
 		}
@@ -868,7 +868,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 		needLocation = true
 	}
 	if !needLocation {
-		woc.log.Debugf("archive location unnecessary")
+		woc.logger.Debugf("archive location unnecessary")
 		return nil
 	}
 	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
@@ -878,7 +878,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
 	if s3Location := woc.artifactRepository.S3; s3Location != nil {
-		woc.log.Debugf("Setting s3 artifact repository information")
+		woc.logger.Debugf("Setting s3 artifact repository information")
 		artLocationKey := s3Location.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
 		if artLocationKey == "" {
@@ -889,7 +889,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 			Key:      artLocationKey,
 		}
 	} else if woc.artifactRepository.Artifactory != nil {
-		woc.log.Debugf("Setting artifactory artifact repository information")
+		woc.logger.Debugf("Setting artifactory artifact repository information")
 		repoURL := ""
 		if woc.artifactRepository.Artifactory.RepoURL != "" {
 			repoURL = woc.artifactRepository.Artifactory.RepoURL + "/"
@@ -900,14 +900,14 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 			URL:             artURL,
 		}
 	} else if hdfsLocation := woc.artifactRepository.HDFS; hdfsLocation != nil {
-		woc.log.Debugf("Setting HDFS artifact repository information")
+		woc.logger.Debugf("Setting HDFS artifact repository information")
 		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
 			HDFSConfig: hdfsLocation.HDFSConfig,
 			Path:       hdfsLocation.PathFormat,
 			Force:      hdfsLocation.Force,
 		}
 	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
-		woc.log.Debugf("Setting OSS artifact repository information")
+		woc.logger.Debugf("Setting OSS artifact repository information")
 		artLocationKey := ossLocation.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
 		if artLocationKey == "" {
@@ -923,7 +923,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 			Key: artLocationKey,
 		}
 	} else if gcsLocation := woc.artifactRepository.GCS; gcsLocation != nil {
-		woc.log.Debugf("Setting GCS artifact repository information")
+		woc.logger.Debugf("Setting GCS artifact repository information")
 		artLocationKey := gcsLocation.KeyFormat
 		if artLocationKey == "" {
 			artLocationKey = common.DefaultArchivePattern
