@@ -2,19 +2,16 @@
 
 .workflows-toolbar {
   background: $argo-color-gray-2;
-  padding: 1em 20px;
+  padding: 0.5em 20px;
   margin-bottom: 0.5em;
   display: flex;
   align-items: center;
   position: -webkit-sticky;
   font-size: 15px;
 
-  &__message {
-    margin-left: auto;
-  }
-
   &__actions {
-    margin-left: 15px;
+    margin-left: auto;
+    line-height: 3em;
     &--action {
       cursor: pointer;
       color: white;

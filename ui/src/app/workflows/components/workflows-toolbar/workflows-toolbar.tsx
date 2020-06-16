@@ -1,6 +1,8 @@
+import {NotificationType} from 'argo-ui';
+import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {Consumer} from '../../../shared/context';
+import {AppContext, Consumer} from '../../../shared/context';
 import * as Actions from '../../../shared/workflow-actions';
 
 require('./workflows-toolbar.scss');
@@ -11,10 +13,6 @@ interface WorkflowsToolbarProps {
     isDisabled: Actions.ActionDisabled;
 }
 
-interface WorkflowsToolbarState {
-    message: string;
-}
-
 interface WorkflowGroupAction {
     action: () => void;
     title: string;
@@ -23,12 +21,14 @@ interface WorkflowGroupAction {
     className: string;
 }
 
-export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, WorkflowsToolbarState> {
+export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}> {
+    public static contextTypes = {
+        router: PropTypes.object,
+        apis: PropTypes.object
+    };
+
     constructor(props: WorkflowsToolbarProps) {
         super(props);
-        this.state = {
-            message: ''
-        };
     }
 
     public render() {
@@ -40,7 +40,6 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                             {this.noneSelected() ? 'No' : this.getNumberSelected()}
                             &nbsp;workflow{this.getNumberSelected() === 1 ? '' : 's'} selected
                         </div>
-                        <div className='workflows-toolbar__message'>{this.state.message}</div>
                         <div className='workflows-toolbar__actions'>{this.renderActions(ctx)}</div>
                     </div>
                 )}
@@ -58,12 +57,16 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: (name: string, namespace: string) => Promise<any>): void {
         this.confirmAction(title);
+        const appCtx = this.appContext;
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
             action(wf.metadata.name, wf.metadata.namespace)
                 .catch(this.getHandleErrorFunction(title))
                 .then(() => {
-                    this.setState({message: `Successfully performed '${title}' on selected workflows.`});
+                    appCtx.apis.notifications.show({
+                        content: `Performed '${title}' on selected workflows.`,
+                        type: NotificationType.Success
+                    });
                     this.props.loadWorkflows();
                 });
         }
@@ -78,8 +81,11 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
 
     private getHandleErrorFunction(title: string): () => void {
         return () => {
-            this.setState({message: `Could not ${title} selected workflows`});
             this.props.loadWorkflows();
+            this.appContext.apis.notifications.show({
+                content: `Unable to ${title} workflow`,
+                type: NotificationType.Error
+            });
         };
     }
 
@@ -113,5 +119,9 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
             );
         }
         return actionButtons;
+    }
+
+    private get appContext(): AppContext {
+        return this.context as AppContext;
     }
 }
