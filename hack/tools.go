@@ -5,7 +5,15 @@
 package tools
 
 import (
-	_ "github.com/ahmetb/gen-crd-api-reference-docs"
+	_ "bou.ke/staticfiles"
+	_ "github.com/go-swagger/go-swagger/cmd/swagger"
+	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/gogo/protobuf/protoc-gen-gogo"
+	_ "github.com/gogo/protobuf/protoc-gen-gogofast"
+	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"
+	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger"
+	_ "github.com/vektra/mockery/cmd/mockery"
+	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
 	_ "k8s.io/code-generator/cmd/client-gen"
 	_ "k8s.io/code-generator/cmd/conversion-gen"

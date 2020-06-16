@@ -167,14 +167,8 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-$(GOPATH)/bin/staticfiles:
-	cd hack
-	go get bou.ke/staticfiles
-	
-
-server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file.
-	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
+server/static/files.go: ui/dist/app/index.html
+	staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -239,6 +233,7 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
+
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
 	tar zxvf dist/mockery.tar.gz mockery
@@ -252,7 +247,7 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger crds schemas mocks docs
+codegen: status proto swagger manifests schemas mocks docs
 
 .PHONY: crds
 crds:
@@ -441,17 +436,10 @@ clean:
 	rm -Rf vendor dist/* ui/dist
 
 # swagger
-
-$(GOPATH)/bin/swagger:
-	cd hack && go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
-
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-$(GOPATH)/bin/openapi-gen:
-	cd hack && go install k8s.io/kube-openapi/cmd/openapi-gen
-
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
@@ -462,13 +450,13 @@ dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	cd hack && go run . secondaryswaggergen
+	go run ./hack secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
-dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+dist/swagger-conflicts: $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
-dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+dist/mixed.swagger.json: $(SWAGGER_FILES) dist/swagger-conflicts
 	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
 	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
 
