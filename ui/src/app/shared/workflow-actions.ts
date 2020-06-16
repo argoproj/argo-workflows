@@ -11,6 +11,16 @@ export interface WorkflowActionParams {
     handleError?: () => void;
 }
 
+export interface ActionDisabled {
+    retry: boolean;
+    resubmit: boolean;
+    suspend: boolean;
+    resume: boolean;
+    stop: boolean;
+    terminate: boolean;
+    delete: boolean;
+}
+
 export function isDisabled(action: string, wf: Workflow) {
     const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
     switch (action) {
@@ -18,8 +28,6 @@ export function isDisabled(action: string, wf: Workflow) {
             return workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error');
         case 'resubmit':
             return false;
-        case 'suspend':
-            return !Utils.isWorkflowRunning(wf) || Utils.isWorkflowSuspended(wf);
         case 'suspend':
             return !Utils.isWorkflowRunning(wf) || Utils.isWorkflowSuspended(wf);
         case 'resume':

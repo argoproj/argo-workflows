@@ -103,7 +103,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 this.setState({selectedWorkflows: {}});
                                 this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
                             }}
-                            canSuspendSelected={this.state.canSuspendSelected}
+                            isDisabled={{
+                                retry: false,
+                                resubmit: false,
+                                suspend: false,
+                                resume: false,
+                                stop: false,
+                                terminate: false,
+                                delete: false,
+                            }}
                         />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>

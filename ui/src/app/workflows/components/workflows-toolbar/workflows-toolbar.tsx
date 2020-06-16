@@ -8,7 +8,7 @@ require('./workflows-toolbar.scss');
 interface WorkflowsToolbarProps {
     selectedWorkflows: {[index: string]: Workflow};
     loadWorkflows: () => void;
-    canSuspendSelected: boolean;
+    isDisabled: Actions.ActionDisabled;
 }
 
 interface WorkflowsToolbarState {
@@ -27,7 +27,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
     constructor(props: WorkflowsToolbarProps) {
         super(props);
         this.state = {
-            message: ''
+            message: '',
         };
     }
 
@@ -90,7 +90,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
         return [
             {
                 action: () => this.performActionOnSelectedWorkflows(ctx, 'retry', Actions.retryWorkflow),
-                disabled: this.props.canSuspendSelected,
+                disabled: this.props.isDisabled.retry,
                 iconClassName: 'fas fa-redo-alt',
                 title: 'Retry',
                 className: 'retry'
@@ -104,28 +104,28 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
             },
             {
                 action: () => this.performActionOnSelectedWorkflows(ctx, 'suspend', Actions.suspendWorkflow),
-                disabled: !this.props.canSuspendSelected,
+                disabled: this.props.isDisabled.suspend,
                 iconClassName: 'fas fa-pause',
                 title: 'Suspend',
                 className: 'suspend'
             },
             {
                 action: () => this.performActionOnSelectedWorkflows(ctx, 'resume', Actions.resumeWorkflow),
-                disabled: !this.props.canSuspendSelected,
+                disabled: this.props.isDisabled.resume,
                 iconClassName: 'fas fa-play',
                 title: 'Resume',
                 className: 'resume'
             },
             {
                 action: () => this.performActionOnSelectedWorkflows(ctx, 'stop', Actions.stopWorkflow),
-                disabled: false,
+                disabled: this.props.isDisabled.stop,
                 iconClassName: 'fas fa-stop-circle',
                 title: 'Stop',
                 className: 'stop'
             },
             {
                 action: () => this.performActionOnSelectedWorkflows(ctx, 'terminate', Actions.terminateWorkflow),
-                disabled: false,
+                disabled: this.props.isDisabled.terminate,
                 iconClassName: 'fas fa-times-circle',
                 title: 'Terminate',
                 className: 'terminate'
