@@ -17,8 +17,14 @@ if [ "$(command -v controller-gen)" = "" ]; then
   go install sigs.k8s.io/controller-tools/cmd/controller-gen
 fi
 
+export PATH=$PATH:dist
+
 if [ "$(command -v yq)" = "" ]; then
-  brew install yq
+  if [ "$(uname)" = "Darwin" ]; then
+    brew install yq
+  else
+    ./hack/recurl.sh dist/yq https://github.com/mikefarah/yq/releases/download/3.3.2/yq_linux_amd64
+  fi
 fi
 
 echo "Generating CRDs"
@@ -34,5 +40,5 @@ find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do
   # create minimal
   minimal="manifests/base/crds/minimal/$(basename "$file")"
   echo "Creating ${minimal}"
-  yq delete "$file" spec.validation > "$minimal"
+  yq delete "$file" spec.validation >"$minimal"
 done
