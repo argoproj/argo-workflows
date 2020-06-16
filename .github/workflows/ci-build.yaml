@@ -14,6 +14,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         test: ["smoke", "test", "test-e2e", "test-e2e-cron"]
     steps:
@@ -83,6 +84,7 @@ jobs:
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
       - name: Upload test results
+        if: failure()
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}
