@@ -170,7 +170,7 @@ type WorkflowSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,4,opt,name=serviceAccountName"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
+	// ServiceAccountName of ExecutorConfig must be specified if this Value is false.
 	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,28,opt,name=automountServiceAccountToken"`
 
 	// Executor holds configurations of executor containers of the workflow.
@@ -254,7 +254,7 @@ type WorkflowSpec struct {
 	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
-	// allowed to run before the controller terminates the workflow. A value of zero is used to
+	// allowed to run before the controller terminates the workflow. A Value of zero is used to
 	// terminate a Running workflow
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,19,opt,name=activeDeadlineSeconds"`
 
@@ -456,7 +456,7 @@ type Template struct {
 	ArchiveLocation *ArtifactLocation `json:"archiveLocation,omitempty" protobuf:"bytes,20,opt,name=archiveLocation"`
 
 	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
-	// before the system actively tries to terminate the pod; value must be positive integer
+	// before the system actively tries to terminate the pod; Value must be positive integer
 	// This field is only applicable to container and script templates.
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
 
@@ -489,7 +489,7 @@ type Template struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,28,opt,name=serviceAccountName"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
+	// ServiceAccountName of ExecutorConfig must be specified if this Value is false.
 	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,32,opt,name=automountServiceAccountToken"`
 
 	// Executor holds configurations of the executor container.
@@ -578,19 +578,19 @@ type Metadata struct {
 	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
 }
 
-// Parameter indicate a passed string parameter to a service template with an optional default value
+// Parameter indicate a passed string parameter to a service template with an optional default Value
 type Parameter struct {
 	// Name is the parameter name
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
-	// Default is the default value to use for an input parameter if a value was not supplied
+	// Default is the default Value to use for an input parameter if a Value was not supplied
 	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
-	// Value is the literal value to use for the parameter.
-	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	// Value is the literal Value to use for the parameter.
+	// If specified in the context of an input parameter, the Value takes precedence over any passed values
+	Value *intstr.IntOrString `json:"Value,omitempty" protobuf:"bytes,3,opt,name=Value"`
 
-	// ValueFrom is the source for the output parameter's value
+	// ValueFrom is the source for the output parameter's Value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
 
 	// GlobalName exports an output parameter to the global scope, making it available as
@@ -598,22 +598,22 @@ type Parameter struct {
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 }
 
-// ValueFrom describes a location in which to obtain the value to a parameter
+// ValueFrom describes a location in which to obtain the Value to a parameter
 type ValueFrom struct {
-	// Path in the container to retrieve an output parameter value from in container templates
+	// Path in the container to retrieve an output parameter Value from in container templates
 	Path string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
 
-	// JSONPath of a resource to retrieve an output parameter value from in resource templates
+	// JSONPath of a resource to retrieve an output parameter Value from in resource templates
 	JSONPath string `json:"jsonPath,omitempty" protobuf:"bytes,2,opt,name=jsonPath"`
 
 	// JQFilter expression against the resource object in resource templates
 	JQFilter string `json:"jqFilter,omitempty" protobuf:"bytes,3,opt,name=jqFilter"`
 
-	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
+	// Parameter reference to a step or dag task in which to retrieve an output parameter Value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
-	// Default specifies a value to be used if retrieving the value from the specified source fails
+	// Default specifies a Value to be used if retrieving the Value from the specified source fails
 	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
@@ -625,7 +625,7 @@ type Artifact struct {
 	// Path is the container path to the artifact
 	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
 
-	// mode bits to use on this file, must be a value between 0 and 0777
+	// mode bits to use on this file, must be a Value between 0 and 0777
 	// set when loading input artifacts.
 	Mode *int32 `json:"mode,omitempty" protobuf:"varint,3,opt,name=mode"`
 
@@ -763,7 +763,7 @@ type WorkflowStep struct {
 	// WithItems expands a step into multiple parallel steps from the items in the list
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,5,rep,name=withItems"`
 
-	// WithParam expands a step into multiple parallel steps from the value in the parameter,
+	// WithParam expands a step into multiple parallel steps from the Value in the parameter,
 	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty" protobuf:"bytes,6,opt,name=withParam"`
 
@@ -808,7 +808,7 @@ type Sequence struct {
 	// Number at which to end the sequence (default: 0). Not to be used with Count
 	End string `json:"end,omitempty" protobuf:"bytes,3,opt,name=end"`
 
-	// Format is a printf format string to format the value in the sequence
+	// Format is a printf format string to format the Value in the sequence
 	Format string `json:"format,omitempty" protobuf:"bytes,4,opt,name=format"`
 }
 
@@ -1135,11 +1135,11 @@ type NodeStatus struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
 
 	// StoredTemplateID is the ID of stored template.
-	// DEPRECATED: This value is not used anymore.
+	// DEPRECATED: This Value is not used anymore.
 	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
 
 	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	// DEPRECATED: This value is not used anymore.
+	// DEPRECATED: This Value is not used anymore.
 	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// TemplateScope is the template scope in which the template of this node was retrieved.
@@ -1668,7 +1668,7 @@ type DAGTask struct {
 	// WithItems expands a task into multiple parallel tasks from the items in the list
 	WithItems []Item `json:"withItems,omitempty" protobuf:"bytes,6,rep,name=withItems"`
 
-	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
+	// WithParam expands a task into multiple parallel tasks from the Value in the parameter,
 	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty" protobuf:"bytes,7,opt,name=withParam"`
 
@@ -2009,21 +2009,21 @@ func (p *Prometheus) IsRealtime() bool {
 // MetricLabel is a single label for a prometheus metric
 type MetricLabel struct {
 	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
-	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+	Value string `json:"Value" protobuf:"bytes,2,opt,name=Value"`
 }
 
 // Gauge is a Gauge prometheus metric
 type Gauge struct {
-	// Value is the value of the metric
-	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+	// Value is the Value of the metric
+	Value string `json:"Value" protobuf:"bytes,1,opt,name=Value"`
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 }
 
 // Histogram is a Histogram prometheus metric
 type Histogram struct {
-	// Value is the value of the metric
-	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
+	// Value is the Value of the metric
+	Value string `json:"Value" protobuf:"bytes,3,opt,name=Value"`
 	// Buckets is a list of bucket divisors for the histogram
 	Buckets []Amount `json:"buckets" protobuf:"bytes,4,rep,name=buckets"`
 }
@@ -2038,6 +2038,6 @@ func (in *Histogram) GetBuckets() []float64 {
 
 // Counter is a Counter prometheus metric
 type Counter struct {
-	// Value is the value of the metric
-	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+	// Value is the Value of the metric
+	Value string `json:"Value" protobuf:"bytes,1,opt,name=Value"`
 }

@@ -8,20 +8,20 @@ This inspired by intstr.IntOrStr and json.Number.
 
 // Amount represent a numeric amount.
 type Amount struct {
-	value []byte
+	Value []byte `json:"value"`
 }
 
 func NewAmount(s string) Amount {
-	return Amount{value: []byte(s)}
+	return Amount{Value: []byte(s)}
 }
 
 func (n *Amount) UnmarshalJSON(value []byte) error {
-	n.value = value
+	n.Value = value
 	return nil
 }
 
 func (n Amount) MarshalJSON() ([]byte, error) {
-	return n.value, nil
+	return n.Value, nil
 }
 
 func (n Amount) OpenAPISchemaType() []string {

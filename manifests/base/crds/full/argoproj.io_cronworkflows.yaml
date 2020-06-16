@@ -1,7 +1,11 @@
-# This is an auto-generated file. DO NOT EDIT
+
+---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
   name: cronworkflows.argoproj.io
 spec:
   group: argoproj.io
@@ -601,6 +605,11 @@ spec:
                     parameters:
                       items:
                         properties:
+                          Value:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
                           default:
                             anyOf:
                             - type: integer
@@ -610,11 +619,6 @@ spec:
                             type: string
                           name:
                             type: string
-                          value:
-                            anyOf:
-                            - type: integer
-                            - type: string
-                            x-kubernetes-int-or-string: true
                           valueFrom:
                             properties:
                               default:
@@ -701,45 +705,51 @@ spec:
                         properties:
                           counter:
                             properties:
-                              value:
+                              Value:
                                 type: string
                             required:
-                            - value
+                            - Value
                             type: object
                           gauge:
                             properties:
+                              Value:
+                                type: string
                               realtime:
                                 type: boolean
-                              value:
-                                type: string
                             required:
+                            - Value
                             - realtime
-                            - value
                             type: object
                           help:
                             type: string
                           histogram:
                             properties:
+                              Value:
+                                type: string
                               buckets:
                                 items:
-                                  type: string
+                                  properties:
+                                    value:
+                                      format: byte
+                                      type: string
+                                  required:
+                                  - value
+                                  type: object
                                 type: array
-                              value:
-                                type: string
                             required:
+                            - Value
                             - buckets
-                            - value
                             type: object
                           labels:
                             items:
                               properties:
+                                Value:
+                                  type: string
                                 key:
                                   type: string
-                                value:
-                                  type: string
                               required:
+                              - Value
                               - key
-                              - value
                               type: object
                             type: array
                           name:
@@ -1688,6 +1698,11 @@ spec:
                           parameters:
                             items:
                               properties:
+                                Value:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 default:
                                   anyOf:
                                   - type: integer
@@ -1697,11 +1712,6 @@ spec:
                                   type: string
                                 name:
                                   type: string
-                                value:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
                                 valueFrom:
                                   properties:
                                     default:
@@ -2560,6 +2570,11 @@ spec:
                                     parameters:
                                       items:
                                         properties:
+                                          Value:
+                                            anyOf:
+                                            - type: integer
+                                            - type: string
+                                            x-kubernetes-int-or-string: true
                                           default:
                                             anyOf:
                                             - type: integer
@@ -2569,11 +2584,6 @@ spec:
                                             type: string
                                           name:
                                             type: string
-                                          value:
-                                            anyOf:
-                                            - type: integer
-                                            - type: string
-                                            x-kubernetes-int-or-string: true
                                           valueFrom:
                                             properties:
                                               default:
@@ -3555,6 +3565,11 @@ spec:
                           parameters:
                             items:
                               properties:
+                                Value:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 default:
                                   anyOf:
                                   - type: integer
@@ -3564,11 +3579,6 @@ spec:
                                   type: string
                                 name:
                                   type: string
-                                value:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
                                 valueFrom:
                                   properties:
                                     default:
@@ -3608,45 +3618,51 @@ spec:
                               properties:
                                 counter:
                                   properties:
-                                    value:
+                                    Value:
                                       type: string
                                   required:
-                                  - value
+                                  - Value
                                   type: object
                                 gauge:
                                   properties:
+                                    Value:
+                                      type: string
                                     realtime:
                                       type: boolean
-                                    value:
-                                      type: string
                                   required:
+                                  - Value
                                   - realtime
-                                  - value
                                   type: object
                                 help:
                                   type: string
                                 histogram:
                                   properties:
+                                    Value:
+                                      type: string
                                     buckets:
                                       items:
-                                        type: string
+                                        properties:
+                                          value:
+                                            format: byte
+                                            type: string
+                                        required:
+                                        - value
+                                        type: object
                                       type: array
-                                    value:
-                                      type: string
                                   required:
+                                  - Value
                                   - buckets
-                                  - value
                                   type: object
                                 labels:
                                   items:
                                     properties:
+                                      Value:
+                                        type: string
                                       key:
                                         type: string
-                                      value:
-                                        type: string
                                     required:
+                                    - Value
                                     - key
-                                    - value
                                     type: object
                                   type: array
                                 name:
@@ -3959,6 +3975,11 @@ spec:
                           parameters:
                             items:
                               properties:
+                                Value:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 default:
                                   anyOf:
                                   - type: integer
@@ -3968,11 +3989,6 @@ spec:
                                   type: string
                                 name:
                                   type: string
-                                value:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
                                 valueFrom:
                                   properties:
                                     default:
@@ -5473,6 +5489,11 @@ spec:
                                       parameters:
                                         items:
                                           properties:
+                                            Value:
+                                              anyOf:
+                                              - type: integer
+                                              - type: string
+                                              x-kubernetes-int-or-string: true
                                             default:
                                               anyOf:
                                               - type: integer
@@ -5482,11 +5503,6 @@ spec:
                                               type: string
                                             name:
                                               type: string
-                                            value:
-                                              anyOf:
-                                              - type: integer
-                                              - type: string
-                                              x-kubernetes-int-or-string: true
                                             valueFrom:
                                               properties:
                                                 default:
@@ -7043,3 +7059,9 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
