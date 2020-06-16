@@ -22,7 +22,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+      - name: Specify branch
+        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
