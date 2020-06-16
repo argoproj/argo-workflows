@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - 'master' 
+      - 'release-*'
+      - '!release-2.8'
   pull_request:
     branches:
       - 'master'
@@ -158,6 +160,11 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
+      - name: Restore node dependency cache
+        uses: actions/cache@v1
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
       - name: Install and Lint
         run: |
           yarn --cwd ui install
