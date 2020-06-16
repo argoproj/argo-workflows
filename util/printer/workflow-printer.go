@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util"
