@@ -8,28 +8,28 @@ This inspired by intstr.IntOrStr and json.Number.
 
 // Amount represent a numeric amount.
 type Amount struct {
-	Value []byte `json:"value"`
+	Value []byte `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
 func NewAmount(s string) Amount {
 	return Amount{Value: []byte(s)}
 }
 
-func (n *Amount) UnmarshalJSON(value []byte) error {
-	n.Value = value
+func (a *Amount) UnmarshalJSON(value []byte) error {
+	a.Value = value
 	return nil
 }
 
-func (n Amount) MarshalJSON() ([]byte, error) {
-	return n.Value, nil
+func (a Amount) MarshalJSON() ([]byte, error) {
+	return a.Value, nil
 }
 
-func (n Amount) OpenAPISchemaType() []string {
+func (a Amount) OpenAPISchemaType() []string {
 	return []string{"number"}
 }
 
-func (n Amount) OpenAPISchemaFormat() string { return "" }
+func (a Amount) OpenAPISchemaFormat() string { return "" }
 
-func (n *Amount) Float64() (float64, error) {
-	return strconv.ParseFloat(string(n.Value), 64)
+func (a *Amount) Float64() (float64, error) {
+	return strconv.ParseFloat(string(a.Value), 64)
 }

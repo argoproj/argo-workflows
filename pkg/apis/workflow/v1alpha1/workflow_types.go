@@ -588,7 +588,7 @@ type Parameter struct {
 
 	// Value is the literal Value to use for the parameter.
 	// If specified in the context of an input parameter, the Value takes precedence over any passed values
-	Value *intstr.IntOrString `json:"Value,omitempty" protobuf:"bytes,3,opt,name=Value"`
+	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's Value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -2009,13 +2009,13 @@ func (p *Prometheus) IsRealtime() bool {
 // MetricLabel is a single label for a prometheus metric
 type MetricLabel struct {
 	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
-	Value string `json:"Value" protobuf:"bytes,2,opt,name=Value"`
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
 // Gauge is a Gauge prometheus metric
 type Gauge struct {
 	// Value is the Value of the metric
-	Value string `json:"Value" protobuf:"bytes,1,opt,name=Value"`
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 	// Realtime emits this metric in real time if applicable
 	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 }
@@ -2023,7 +2023,7 @@ type Gauge struct {
 // Histogram is a Histogram prometheus metric
 type Histogram struct {
 	// Value is the Value of the metric
-	Value string `json:"Value" protobuf:"bytes,3,opt,name=Value"`
+	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
 	Buckets []Amount `json:"buckets" protobuf:"bytes,4,rep,name=buckets"`
 }
@@ -2039,5 +2039,5 @@ func (in *Histogram) GetBuckets() []float64 {
 // Counter is a Counter prometheus metric
 type Counter struct {
 	// Value is the Value of the metric
-	Value string `json:"Value" protobuf:"bytes,1,opt,name=Value"`
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }

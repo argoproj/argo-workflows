@@ -17,6 +17,7 @@ option go_package = "v1alpha1";
 
 // Amount represent a numeric amount.
 message Amount {
+  optional bytes value = 1;
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -47,7 +48,7 @@ message Artifact {
   // Path is the container path to the artifact
   optional string path = 2;
 
-  // mode bits to use on this file, must be a value between 0 and 0777
+  // mode bits to use on this file, must be a Value between 0 and 0777
   // set when loading input artifacts.
   optional int32 mode = 3;
 
@@ -179,7 +180,7 @@ message ContinueOn {
 
 // Counter is a Counter prometheus metric
 message Counter {
-  // Value is the value of the metric
+  // Value is the Value of the metric
   optional string value = 1;
 }
 
@@ -267,7 +268,7 @@ message DAGTask {
   // WithItems expands a task into multiple parallel tasks from the items in the list
   repeated Item withItems = 6;
 
-  // WithParam expands a task into multiple parallel tasks from the value in the parameter,
+  // WithParam expands a task into multiple parallel tasks from the Value in the parameter,
   // which is expected to be a JSON list.
   optional string withParam = 7;
 
@@ -334,7 +335,7 @@ message GCSBucket {
 
 // Gauge is a Gauge prometheus metric
 message Gauge {
-  // Value is the value of the metric
+  // Value is the Value of the metric
   optional string value = 1;
 
   // Realtime emits this metric in real time if applicable
@@ -427,7 +428,7 @@ message HTTPArtifact {
 
 // Histogram is a Histogram prometheus metric
 message Histogram {
-  // Value is the value of the metric
+  // Value is the Value of the metric
   optional string value = 3;
 
   // Buckets is a list of bucket divisors for the histogram
@@ -448,7 +449,7 @@ message Inputs {
 }
 
 // Item expands a single workflow step into multiple parallel steps
-// The value of Item can be a map, string, bool, or number
+// The Value of Item can be a map, string, bool, or number
 //
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
@@ -542,11 +543,11 @@ message NodeStatus {
   optional TemplateRef templateRef = 6;
 
   // StoredTemplateID is the ID of stored template.
-  // DEPRECATED: This value is not used anymore.
+  // DEPRECATED: This Value is not used anymore.
   optional string storedTemplateID = 18;
 
   // WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-  // DEPRECATED: This value is not used anymore.
+  // DEPRECATED: This Value is not used anymore.
   optional string workflowTemplateName = 19;
 
   // TemplateScope is the template scope in which the template of this node was retrieved.
@@ -656,19 +657,19 @@ message ParallelSteps {
   repeated WorkflowStep steps = 1;
 }
 
-// Parameter indicate a passed string parameter to a service template with an optional default value
+// Parameter indicate a passed string parameter to a service template with an optional default Value
 message Parameter {
   // Name is the parameter name
   optional string name = 1;
 
-  // Default is the default value to use for an input parameter if a value was not supplied
+  // Default is the default Value to use for an input parameter if a Value was not supplied
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 2;
 
-  // Value is the literal value to use for the parameter.
-  // If specified in the context of an input parameter, the value takes precedence over any passed values
+  // Value is the literal Value to use for the parameter.
+  // If specified in the context of an input parameter, the Value takes precedence over any passed values
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString value = 3;
 
-  // ValueFrom is the source for the output parameter's value
+  // ValueFrom is the source for the output parameter's Value
   optional ValueFrom valueFrom = 4;
 
   // GlobalName exports an output parameter to the global scope, making it available as
@@ -810,7 +811,7 @@ message Sequence {
   // Number at which to end the sequence (default: 0). Not to be used with Count
   optional string end = 3;
 
-  // Format is a printf format string to format the value in the sequence
+  // Format is a printf format string to format the Value in the sequence
   optional string format = 4;
 }
 
@@ -950,7 +951,7 @@ message Template {
   optional ArtifactLocation archiveLocation = 20;
 
   // Optional duration in seconds relative to the StartTime that the pod may be active on a node
-  // before the system actively tries to terminate the pod; value must be positive integer
+  // before the system actively tries to terminate the pod; Value must be positive integer
   // This field is only applicable to container and script templates.
   optional int64 activeDeadlineSeconds = 21;
 
@@ -983,7 +984,7 @@ message Template {
   optional string serviceAccountName = 28;
 
   // AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-  // ServiceAccountName of ExecutorConfig must be specified if this value is false.
+  // ServiceAccountName of ExecutorConfig must be specified if this Value is false.
   optional bool automountServiceAccountToken = 32;
 
   // Executor holds configurations of the executor container.
@@ -1037,22 +1038,22 @@ message UserContainer {
   optional bool mirrorVolumeMounts = 2;
 }
 
-// ValueFrom describes a location in which to obtain the value to a parameter
+// ValueFrom describes a location in which to obtain the Value to a parameter
 message ValueFrom {
-  // Path in the container to retrieve an output parameter value from in container templates
+  // Path in the container to retrieve an output parameter Value from in container templates
   optional string path = 1;
 
-  // JSONPath of a resource to retrieve an output parameter value from in resource templates
+  // JSONPath of a resource to retrieve an output parameter Value from in resource templates
   optional string jsonPath = 2;
 
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
-  // Parameter reference to a step or dag task in which to retrieve an output parameter value from
+  // Parameter reference to a step or dag task in which to retrieve an output parameter Value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
 
-  // Default specifies a value to be used if retrieving the value from the specified source fails
+  // Default specifies a Value to be used if retrieving the Value from the specified source fails
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
 }
 
@@ -1116,7 +1117,7 @@ message WorkflowSpec {
   optional string serviceAccountName = 4;
 
   // AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-  // ServiceAccountName of ExecutorConfig must be specified if this value is false.
+  // ServiceAccountName of ExecutorConfig must be specified if this Value is false.
   optional bool automountServiceAccountToken = 28;
 
   // Executor holds configurations of executor containers of the workflow.
@@ -1200,7 +1201,7 @@ message WorkflowSpec {
   optional TTLStrategy ttlStrategy = 30;
 
   // Optional duration in seconds relative to the workflow start time which the workflow is
-  // allowed to run before the controller terminates the workflow. A value of zero is used to
+  // allowed to run before the controller terminates the workflow. A Value of zero is used to
   // terminate a Running workflow
   optional int64 activeDeadlineSeconds = 19;
 
@@ -1312,7 +1313,7 @@ message WorkflowStep {
   // WithItems expands a step into multiple parallel steps from the items in the list
   repeated Item withItems = 5;
 
-  // WithParam expands a step into multiple parallel steps from the value in the parameter,
+  // WithParam expands a step into multiple parallel steps from the Value in the parameter,
   // which is expected to be a JSON list.
   optional string withParam = 6;
 

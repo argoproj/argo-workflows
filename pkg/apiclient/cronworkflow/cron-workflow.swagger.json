@@ -354,6 +354,12 @@
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Amount": {
       "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
       "description": "Amount represent a numeric amount."
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArchiveStrategy": {
@@ -402,7 +408,7 @@
         "mode": {
           "type": "integer",
           "format": "int32",
-          "description": "mode bits to use on this file, must be a value between 0 and 0777\nset when loading input artifacts."
+          "description": "mode bits to use on this file, must be a Value between 0 and 0777\nset when loading input artifacts."
         },
         "from": {
           "type": "string",
@@ -566,7 +572,7 @@
       "properties": {
         "value": {
           "type": "string",
-          "title": "Value is the value of the metric"
+          "title": "Value is the Value of the metric"
         }
       },
       "title": "Counter is a Counter prometheus metric"
@@ -706,7 +712,7 @@
         },
         "withParam": {
           "type": "string",
-          "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter,\nwhich is expected to be a JSON list."
+          "description": "WithParam expands a task into multiple parallel tasks from the Value in the parameter,\nwhich is expected to be a JSON list."
         },
         "withSequence": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence",
@@ -795,7 +801,7 @@
       "properties": {
         "value": {
           "type": "string",
-          "title": "Value is the value of the metric"
+          "title": "Value is the Value of the metric"
         },
         "realtime": {
           "type": "boolean",
@@ -931,7 +937,7 @@
       "properties": {
         "value": {
           "type": "string",
-          "title": "Value is the value of the metric"
+          "title": "Value is the Value of the metric"
         },
         "buckets": {
           "type": "array",
@@ -994,7 +1000,7 @@
         }
       },
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
-      "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number"
+      "title": "Item expands a single workflow step into multiple parallel steps\nThe Value of Item can be a map, string, bool, or number"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue": {
       "type": "object",
@@ -1159,22 +1165,22 @@
         },
         "default": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default Value to use for an input parameter if a Value was not supplied"
         },
         "value": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
-          "title": "Value is the literal value to use for the parameter.\nIf specified in the context of an input parameter, the value takes precedence over any passed values"
+          "title": "Value is the literal Value to use for the parameter.\nIf specified in the context of an input parameter, the Value takes precedence over any passed values"
         },
         "valueFrom": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ValueFrom",
-          "title": "ValueFrom is the source for the output parameter's value"
+          "title": "ValueFrom is the source for the output parameter's Value"
         },
         "globalName": {
           "type": "string",
           "title": "GlobalName exports an output parameter to the global scope, making it available as\n'{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters"
         }
       },
-      "title": "Parameter indicate a passed string parameter to a service template with an optional default value"
+      "title": "Parameter indicate a passed string parameter to a service template with an optional default Value"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.PodGC": {
       "type": "object",
@@ -1373,7 +1379,7 @@
         },
         "format": {
           "type": "string",
-          "title": "Format is a printf format string to format the value in the sequence"
+          "title": "Format is a printf format string to format the Value in the sequence"
         }
       },
       "title": "Sequence expands a workflow step into numeric range"
@@ -1522,7 +1528,7 @@
         "activeDeadlineSeconds": {
           "type": "string",
           "format": "int64",
-          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node\nbefore the system actively tries to terminate the pod; value must be positive integer\nThis field is only applicable to container and script templates."
+          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node\nbefore the system actively tries to terminate the pod; Value must be positive integer\nThis field is only applicable to container and script templates."
         },
         "retryStrategy": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RetryStrategy",
@@ -1560,7 +1566,7 @@
         "automountServiceAccountToken": {
           "type": "boolean",
           "format": "boolean",
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this Value is false."
         },
         "executor": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig",
@@ -1636,11 +1642,11 @@
       "properties": {
         "path": {
           "type": "string",
-          "title": "Path in the container to retrieve an output parameter value from in container templates"
+          "title": "Path in the container to retrieve an output parameter Value from in container templates"
         },
         "jsonPath": {
           "type": "string",
-          "title": "JSONPath of a resource to retrieve an output parameter value from in resource templates"
+          "title": "JSONPath of a resource to retrieve an output parameter Value from in resource templates"
         },
         "jqFilter": {
           "type": "string",
@@ -1648,14 +1654,14 @@
         },
         "parameter": {
           "type": "string",
-          "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+          "title": "Parameter reference to a step or dag task in which to retrieve an output parameter Value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
         },
         "default": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
-          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+          "title": "Default specifies a Value to be used if retrieving the Value from the specified source fails"
         }
       },
-      "title": "ValueFrom describes a location in which to obtain the value to a parameter"
+      "title": "ValueFrom describes a location in which to obtain the Value to a parameter"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec": {
       "type": "object",
@@ -1682,7 +1688,7 @@
         "automountServiceAccountToken": {
           "type": "boolean",
           "format": "boolean",
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this Value is false."
         },
         "executor": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig",
@@ -1770,7 +1776,7 @@
         "activeDeadlineSeconds": {
           "type": "string",
           "format": "int64",
-          "title": "Optional duration in seconds relative to the workflow start time which the workflow is\nallowed to run before the controller terminates the workflow. A value of zero is used to\nterminate a Running workflow"
+          "title": "Optional duration in seconds relative to the workflow start time which the workflow is\nallowed to run before the controller terminates the workflow. A Value of zero is used to\nterminate a Running workflow"
         },
         "priority": {
           "type": "integer",
@@ -1856,7 +1862,7 @@
         },
         "withParam": {
           "type": "string",
-          "description": "WithParam expands a step into multiple parallel steps from the value in the parameter,\nwhich is expected to be a JSON list."
+          "description": "WithParam expands a step into multiple parallel steps from the Value in the parameter,\nwhich is expected to be a JSON list."
         },
         "withSequence": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence",
