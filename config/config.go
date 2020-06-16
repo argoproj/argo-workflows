@@ -14,6 +14,9 @@ type Config struct {
 	// SSO in settings for single-sign on
 	SSO sso.Config `json:"sso,omitempty"`
 
+	// NodeEvents configures how node events are omitted
+	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+
 	// ExecutorImage is the image name of the executor to use when running pods
 	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`
