@@ -170,20 +170,3 @@ jobs:
           make lint
       - name: Ensure nothing changed
         run: git diff --exit-code
-
-  ui:
-    name: UI
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
-      - name: Specify branch
-        uses: docker://node:latest
-        run: |
-          yarn --cwd ui install
-          yarn --cwd ui lint
-      - name: Ensure nothing changed
-        run: git diff --exit-code
