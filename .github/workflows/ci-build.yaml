@@ -181,7 +181,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Specify branch
-        uses: docker://node
+        uses: docker://node:latest
         run: |
           yarn --cwd ui install
           yarn --cwd ui lint
