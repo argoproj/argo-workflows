@@ -29,16 +29,12 @@ interface State {
     pagination: Pagination;
     loading: boolean;
     initialized: boolean;
-
-
     managedNamespace: boolean;
     namespace: string;
     selectedPhases: string[];
-
     selectedLabels: string[];
     workflows?: Workflow[];
     error?: Error;
-
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
@@ -52,8 +48,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             loading: true,
-            pagination: {offset: this.queryParam('offset'),
-                limit: parseLimit(this.queryParam('limit'))},
+            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit'))},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -63,7 +58,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        this.fetchWorkflows(this.state.namespace,this.state.selectedPhases,this.state.selectedLabels, this.state.pagination);
+        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
     }
 
     public componentWillUnmount(): void {

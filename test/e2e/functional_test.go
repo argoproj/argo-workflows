@@ -84,7 +84,7 @@ spec:
 			nodeStatus := status.Nodes.FindByDisplayName("B")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-				assert.Len(t, nodeStatus.Children, 7)
+				assert.Len(t, nodeStatus.Children, 1)
 				assert.Len(t, nodeStatus.OutboundNodes, 1)
 			}
 		})
@@ -152,7 +152,7 @@ spec:
 
 			bStatus := status.Nodes.FindByDisplayName("B")
 			if assert.NotNil(t, bStatus) {
-				assert.Equal(t, wfv1.NodeRunning, bStatus.Phase)
+				assert.Equal(t, wfv1.NodeFailed, bStatus.Phase)
 			}
 
 			dStatus := status.Nodes.FindByDisplayName("D")

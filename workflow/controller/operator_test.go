@@ -3685,12 +3685,12 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 }
 
 func TestGenerateNodeName(t *testing.T) {
-	assert.Equal(t, "sleep(1klasdf0:ten)", generateNodeName("sleep", 10, "ten"))
-	assert.Equal(t, `sleep(10:[{"foasdfo":"bar"}])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
+	assert.Equal(t, "sleep(10:ten)", generateNodeName("sleep", 10, "ten"))
+	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
 		Type:   wfv1.Map,
 		MapVal: map[string]string{"foo": "bar"},
 	}}))
-	assert.Equal(t, `sleepasdf(10:[10])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
+	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
 		Type:   wfv1.Number,
 		NumVal: "10",
 	}}))

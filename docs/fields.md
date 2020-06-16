@@ -4,8 +4,6 @@
 
 Workflow is the definition of a workflow resource
 
-HELLO
-
 <details>
 <summary>Examples (click to open)</summary>
 <br>
