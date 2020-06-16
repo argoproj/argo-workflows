@@ -30,7 +30,7 @@ spec:
     inputs:
       parameters:
       - name: seconds
-    concurrency:
+    synchronization:
       semaphore:
         configMapKeyRef:
           name: my-config

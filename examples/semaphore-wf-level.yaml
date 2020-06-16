@@ -11,7 +11,7 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: whalesay
-  concurrency:
+  synchronization:
     semaphore:
       configMapKeyRef:
         name: my-config
