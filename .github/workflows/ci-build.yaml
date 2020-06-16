@@ -1,4 +1,4 @@
-name: test
+name: CI
 on: 
   push:
     branches:
@@ -54,7 +54,7 @@ jobs:
       - name: Start Argo
         env:
           GOPATH: /home/runner/go
-          PROFILE: minimal
+          PROFILE: mysql
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
@@ -81,7 +81,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+      - name: Specify branch
+        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
@@ -118,7 +119,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+      - name: Specify branch
+        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
@@ -166,5 +168,22 @@ jobs:
           GOPATH: /home/runner/go
         run: |
           make lint
+      - name: Ensure nothing changed
+        run: git diff --exit-code
+
+  ui:
+    name: UI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
+      - name: Specify branch
+        uses: docker://node
+        run: |
+          yarn --cwd ui install
+          yarn --cwd ui lint
       - name: Ensure nothing changed
         run: git diff --exit-code
