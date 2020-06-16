@@ -61,5 +61,4 @@ export const WorkflowActions = {
         disabled: () => false,
         action: services.workflows.delete
     }
-}
-
+};

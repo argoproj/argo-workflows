@@ -49,7 +49,7 @@ const allBatchActionsEnabled = {
     stop: false,
     terminate: false,
     delete: false
-}
+};
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private get wfInput() {
@@ -69,17 +69,17 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
             selectedWorkflows: {},
-            batchActionDisabled: {...allBatchActionsEnabled},
+            batchActionDisabled: {...allBatchActionsEnabled}
         };
     }
 
     public componentDidMount(): void {
         this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
-        this.setState({selectedWorkflows:{}});
+        this.setState({selectedWorkflows: {}});
     }
 
     public componentWillUnmount(): void {
-        this.setState({selectedWorkflows:{}});
+        this.setState({selectedWorkflows: {}});
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
