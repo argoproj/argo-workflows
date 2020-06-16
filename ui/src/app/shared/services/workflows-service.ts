@@ -32,7 +32,7 @@ export class WorkflowsService {
             'items.status.phase',
             'items.status.finishedAt',
             'items.status.startedAt',
-            'items.spec'
+            'items.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
