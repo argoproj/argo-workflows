@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eux -o pipefail
 
+go mod vendor
+
 go-to-protobuf \
   --go-header-file=./hack/custom-boilerplate.go.txt \
   --packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
@@ -20,3 +22,5 @@ for f in $(find pkg/apis -name '*.proto'); do
     --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
     $f
 done
+
+rm -Rf vendor
