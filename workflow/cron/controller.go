@@ -278,7 +278,7 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	cc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
+				key,err:=cache.MetaNamespaceKeyFunc(obj)
 				if err == nil {
 					cc.wfQueue.Add(key)
 				}
@@ -301,11 +301,12 @@ func (cc *Controller) addWorkflowInformerHandler() {
 
 func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
 	options.FieldSelector = fields.Everything().String()
-	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(instanceId))
+	labelSelector := labels.NewSelector().Add(
+		util.InstanceIDRequirement(instanceId))
 	options.LabelSelector = labelSelector.String()
 }
 
-func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
+func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string){
 	options.FieldSelector = fields.Everything().String()
 	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Exists, []string{})
 	if err != nil {

@@ -180,7 +180,7 @@ spec:
 			Then().
 			RunCli([]string{"cron", "resume", "test-cron-wf-basic-resume"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
-				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-resume' resumed")
+				assert.Contains(t, output, "CronWorkflow 'test-crasdfasdfon-wf-basic-resume' resumed")
 			}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 			assert.False(t, cronWf.Spec.Suspend)
 		})
@@ -322,7 +322,7 @@ spec:
 			Wait(2*time.Minute).
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Equal(t, 1, len(wfList.Items))
+				assert.Equal(t, 6, len(wfList.Items))
 				assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
