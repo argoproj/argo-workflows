@@ -120,15 +120,6 @@ SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_C
 MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
-define backup_go_mod
-	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
-	@mkdir -p dist
-	[ -e dist/go.mod ] || cp go.mod go.sum dist/
-endef
-define restore_go_mod
-	# Restore the back-ups.
-	mv dist/go.mod dist/go.sum .
-endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
@@ -177,9 +168,9 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	$(call backup_go_mod)
+	cd hack
 	go get bou.ke/staticfiles
-	$(call restore_go_mod)
+	
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
@@ -248,7 +239,6 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
-
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
 	tar zxvf dist/mockery.tar.gz mockery
@@ -259,35 +249,23 @@ $(GOPATH)/bin/mockery:
 
 .PHONY: mocks
 mocks: $(GOPATH)/bin/mockery
-	$(call backup_go_mod)
 	./hack/update-mocks.sh $(MOCK_FILES)
-	$(call restore_go_mod)
 
 .PHONY: codegen
 codegen: status proto swagger crds schemas mocks docs
 
 .PHONY: crds
 crds:
-	$(call backup_go_mod)
 	./hack/crdgen.sh
-	$(call restore_go_mod)
 
 .PHONY: schemas
 schemas:
-	$(call backup_go_mod)
 	go run ./hack genschemas
-	$(call restore_go_mod)
 
 .PHONY: proto
 proto:
-	$(call backup_go_mod)
-	# We need the folder for compatibility
-	go mod vendor
-	# Generate proto
 	./hack/generate-proto.sh
-	# Updated codegen
 	./hack/update-codegen.sh
-	$(call restore_go_mod)
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 $(MANIFESTS_VERSION_FILE):
@@ -295,7 +273,7 @@ $(MANIFESTS_VERSION_FILE):
 	touch $(MANIFESTS_VERSION_FILE)
 
 .PHONY: manifests
-manifests:
+manifests: crds
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -329,9 +307,7 @@ test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
 $(GOPATH)/bin/go-junit-report:
-	$(call backup_go_mod)
-	go get github.com/jstemmer/go-junit-report
-	$(call restore_go_mod)
+	cd hack && go get github.com/jstemmer/go-junit-report
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
@@ -378,7 +354,7 @@ stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
 $(GOPATH)/bin/goreman:
-	go get github.com/mattn/goreman
+	cd hack && go get github.com/mattn/goreman
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
@@ -393,7 +369,6 @@ endif
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
 	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
-
 
 .PHONY: wait
 wait:
@@ -463,35 +438,31 @@ test-cli: cli
 .PHONY: clean
 clean:
 	# Delete build files
-	rm -Rf dist/* ui/dist
+	rm -Rf vendor dist/* ui/dist
 
 # swagger
 
 $(GOPATH)/bin/swagger:
-	$(call backup_go_mod)
-	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
-	$(call restore_go_mod)
+	cd hack && go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
 $(GOPATH)/bin/openapi-gen:
-	go install k8s.io/kube-openapi/cmd/openapi-gen
+	cd hack && go install k8s.io/kube-openapi/cmd/openapi-gen
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
-	$(call backup_go_mod)
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	$(call restore_go_mod)
 
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
+	cd hack && go run . secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
@@ -515,10 +486,10 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 
 .PHONY: docs
 docs: swagger
-	$(call backup_go_mod)
+	
 	go run ./hack docgen
 	go run ./hack readmegen
-	$(call restore_go_mod)
+	
 
 # pre-push
 

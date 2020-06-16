@@ -8,10 +8,6 @@ add_header() {
   mv tmp "$1"
 }
 
-if [ "$(command -v controller-gen)" = "" ]; then
-  go install sigs.k8s.io/controller-tools/cmd/controller-gen
-fi
-
 echo "Generating CRDs"
 controller-gen crd:trivialVersions=true,maxDescLen=0 paths=./pkg/apis/... output:dir=manifests/base/crds/full
 
