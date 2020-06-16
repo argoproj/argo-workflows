@@ -1094,6 +1094,8 @@ const (
 	ConditionTypeCompleted ConditionType = "Completed"
 	// ConditionTypeSpecWarning is a warning on the current application spec
 	ConditionTypeSpecWarning ConditionType = "SpecWarning"
+	// ConditionTypeSpecWarning is an error on the current application spec
+	ConditionTypeSpecError ConditionType = "SpecError"
 	// ConditionTypeMetricsError is an error during metric emission
 	ConditionTypeMetricsError ConditionType = "MetricsError"
 )
