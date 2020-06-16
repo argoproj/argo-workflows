@@ -16,6 +16,7 @@ import (
 	_ "github.com/vektra/mockery/cmd/mockery"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
+	_ "k8s.io/code-generator/cmd/go-to-protobuf"
 	_ "k8s.io/code-generator/cmd/client-gen"
 	_ "k8s.io/code-generator/cmd/conversion-gen"
 	_ "k8s.io/code-generator/cmd/deepcopy-gen"
