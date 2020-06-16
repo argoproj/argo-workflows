@@ -1,15 +1,76 @@
 version: 2.1
-jobs:
-  dummy:
-    docker:
-      - image: cimg/base:2020.01
+orbs:
+  sonarcloud: sonarsource/sonarcloud@1.0.1
+commands:
+  restore_go_mod:
+    steps:
+      - restore_cache:
+          name: Restore go mod cache
+          keys:
+            - go-mod-v3-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+  save_go_mod:
+    steps:
+      - save_cache:
+          name: Save go mod cache
+          key:  go-mod-v3-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+          paths:
+            - /home/circleci/.go_workspace/go/pkg/mod
+          when: always
+  install_golang:
     steps:
       - run:
-          name: Dummy step
+          name: Install Golang v1.13.4
           command: |
-            echo "This is a dummy step to satisfy CircleCI"
+            go get golang.org/dl/go1.13.4
+            [ -e /home/circleci/sdk/go1.13.4 ] || go1.13.4 download
+            echo "export GOPATH=/home/circleci/.go_workspace" | tee -a $BASH_ENV
+            echo "export PATH=/home/circleci/sdk/go1.13.4/bin:\$PATH" | tee -a $BASH_ENV
+  save_go_cache:
+    steps:
+      - save_cache:
+          name: Save Golang cache
+          key: go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          paths:
+            - /home/circleci/.cache/go-build
+            - /home/circleci/sdk/go1.13.4
+          when: always
+  restore_go_cache:
+    steps:
+      - restore_cache:
+          name: Restore Golang cache
+          keys:
+            - go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v7-master-{{ .Environment.CIRCLE_JOB }}
+jobs:
+  test:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    docker:
+      - image: golang:1.13.12-alpine3.12
+    steps:
+      - checkout
+      - restore_go_cache
+      - install_golang
+      - restore_go_mod
+      - run: |
+          cp sonar-project.properties dist/
+          if [ "$(echo "$CIRCLE_BRANCH" | grep 'master\|release-')" = '' ]; then
+            echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
+            echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
+          fi
+      - sonarcloud/scan
+      - run: cp dist/sonar-project.properties .
+      - store_test_results:
+          path: test-results
+          when: always
+      - store_artifacts:
+          path: test-results
+          destination: .
+          when: always
+      - save_go_cache
+      - save_go_mod
+
 workflows:
   version: 2
-  workflow:
+  argo-workflow:
     jobs:
-      - dummy
+      - test
