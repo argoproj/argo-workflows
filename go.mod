@@ -85,4 +85,4 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-require k8s.io/code-generator => k8s.io/code-generator v0.17.3
+replace k8s.io/code-generator => k8s.io/code-generator v0.17.3
