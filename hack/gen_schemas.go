@@ -30,8 +30,8 @@ func genSchemas() {
 		schema := obj{
 			"$id":         "http://workflows.argoproj.io/" + crd.Kind + ".json",
 			"$schema":     "http://json-schema.org/draft-07/schema",
-			"definitions": swagger["definitions"],
 			"$ref":        "#/definitions/" + name,
+			"definitions": swagger["definitions"],
 		}
 		data, err = json.MarshalIndent(schema, "", "  ")
 		if err != nil {
