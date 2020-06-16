@@ -42,10 +42,10 @@ commands:
             - go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v7-master-{{ .Environment.CIRCLE_JOB }}
 jobs:
-  test:
+  sonar:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
-    docker:
-      - image: golang:1.13.12-alpine3.12
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - restore_go_cache
@@ -72,6 +72,6 @@ jobs:
 
 workflows:
   version: 2
-  argo-workflow:
+  CI:
     jobs:
-      - test
+      - sonar
