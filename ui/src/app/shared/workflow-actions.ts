@@ -1,4 +1,4 @@
-import {NodePhase, Workflow} from '../../models';
+import {NodePhase, Workflow, WorkflowAction} from '../../models';
 import {uiUrl} from './base';
 import {ContextApis} from './context';
 import {services} from './services';
@@ -21,7 +21,7 @@ export interface ActionDisabled {
     delete: boolean;
 }
 
-export function isDisabled(action: string, wf: Workflow) {
+export function isDisabled(action: WorkflowAction, wf: Workflow) {
     const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
     switch (action) {
         case 'retry':

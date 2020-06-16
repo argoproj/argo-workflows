@@ -9,6 +9,7 @@ import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
+import {ActionDisabled} from '../../../shared/workflow-actions';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {Query} from '../../../shared/components/query';
@@ -37,7 +38,7 @@ interface State {
     selectedWorkflows: {[index: string]: models.Workflow};
     workflows?: Workflow[];
     error?: Error;
-    canSuspendSelected: boolean;
+    batchActionDisabled: ActionDisabled;
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
@@ -58,7 +59,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
             selectedWorkflows: {},
-            canSuspendSelected: true
+            batchActionDisabled: {
+                retry: false,
+                resubmit: false,
+                suspend: false,
+                resume: false,
+                stop: false,
+                terminate: false,
+                delete: false,
+            }
         };
     }
 
@@ -103,15 +112,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 this.setState({selectedWorkflows: {}});
                                 this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
                             }}
-                            isDisabled={{
-                                retry: false,
-                                resubmit: false,
-                                suspend: false,
-                                resume: false,
-                                stop: false,
-                                terminate: false,
-                                delete: false,
-                            }}
+                            isDisabled={this.state.batchActionDisabled}
                         />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
@@ -309,20 +310,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         return;
                                     }
                                     const currentlySelected = this.state.selectedWorkflows;
+                                    // const currentlyDisabled = this.state.batchActionDisabled;
                                     if (!(wfUID in currentlySelected)) {
                                         currentlySelected[wfUID] = subWf;
-                                        if (subWf.status.finishedAt !== null) {
-                                            this.setState({canSuspendSelected: false});
-                                        }
                                     } else {
                                         delete currentlySelected[wfUID];
-                                        for (const curWfUID of Object.keys(currentlySelected)) {
-                                            let canSuspend: boolean = true;
-                                            if (currentlySelected[curWfUID].status.finishedAt !== null) {
-                                                canSuspend = false;
-                                            }
-                                            this.setState({canSuspendSelected: canSuspend});
-                                        }
                                     }
                                     this.setState({selectedWorkflows: {...currentlySelected}});
                                 }}

@@ -1017,6 +1017,7 @@ export interface WorkflowStep {
 }
 
 export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
+export type WorkflowAction = 'retry' | 'resubmit' | 'suspend' | 'resume' | 'stop' | 'terminate' | 'delete';
 
 export const NODE_PHASE = {
     PENDING: 'Pending',
@@ -1026,6 +1027,16 @@ export const NODE_PHASE = {
     FAILED: 'Failed',
     ERROR: 'Error',
     OMITTED: 'Omitted'
+};
+
+export const WORKFLOW_ACTION = {
+    RETRY: 'retry',
+    RESUBMIT: 'resubmit',
+    SUSPEND: 'suspend',
+    RESUME: 'resume',
+    STOP: 'stop',
+    TERMINATE: 'terminate',
+    DELETE: 'delete',
 };
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
