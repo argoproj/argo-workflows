@@ -187,7 +187,7 @@ func (c *Controller) deleteWorkflow(key string) error {
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	ttlStrategy := getTTLStrategy(wf)
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
-	if wf.DeletionTimestamp != nil || ttlStrategy == nil  || wf.Status.FinishedAt.IsZero() {
+	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return false
 	}
 	now := c.clock.Now()
@@ -232,7 +232,7 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 	}
 }
 
-func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy{
+func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy {
 	ttlStrategy := wf.Spec.TTLStrategy
 
 	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
