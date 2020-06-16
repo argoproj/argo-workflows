@@ -2490,3 +2490,43 @@ func TestValidateFieldsWithWFTRef(t *testing.T) {
 	_, err = validate(invalidWFWithWFTRef)
 	assert.Error(t, err)
 }
+
+var invalidWfNoImage = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestInvalidWfNoImageField(t *testing.T) {
+	_, err := validate(invalidWfNoImage)
+	assert.EqualError(t, err, "templates.whalesay.container.image may not be empty")
+}
+
+var invalidWfNoImageScript = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    script:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestInvalidWfNoImageFieldScript(t *testing.T) {
+	_, err := validate(invalidWfNoImageScript)
+	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}

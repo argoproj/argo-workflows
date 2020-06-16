@@ -39,6 +39,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -517,10 +518,9 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	// TODO: currently we reawaken the workflow on *any* pod updates.
-	// But this could be be much improved to become smarter by only
-	// requeue the workflow when there are changes that we care about.
-	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
+	// add this change after 1s - this reduces the number of workflow reconciliations -
+	//with each reconciliation doing more work
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
 	return true
 }
 
@@ -578,6 +578,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				},
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
@@ -600,7 +601,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
-
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			wfc.metrics.WorkflowAdded(getWfPhase(obj))
@@ -660,7 +660,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if oldPod.ResourceVersion == newPod.ResourceVersion {
 					return
 				}
-
+				if !pod.SignificantPodChange(oldPod, newPod) {
+					return
+				}
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					wfc.podQueue.Add(key)

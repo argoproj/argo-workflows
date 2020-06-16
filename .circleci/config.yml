@@ -88,7 +88,7 @@ commands:
             echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
             echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
             mkdir dist
-            KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
+            KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true
             # CircleCI will kill spawned processes, so lets block for 20m
             sleep 20m
           background: true
@@ -185,16 +185,16 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     environment:
-      DB: mysql
+      PROFILE: mysql
       SUITE: test-e2e-cron
     steps:
       - e2e
-  e2e-no-db:
+  e2e-minimal:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
     environment:
-      DB: no-db
+      PROFILE: minimal
       SUITE: test-e2e
     steps:
       - e2e
@@ -203,7 +203,7 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     environment:
-      DB: postgres
+      PROFILE: postgres
       SUITE: test-e2e
     steps:
       - e2e
@@ -212,7 +212,7 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     environment:
-      DB: mysql
+      PROFILE: mysql
       SUITE: test-e2e
     steps:
       - e2e
@@ -255,6 +255,6 @@ workflows:
       - codegen
       - e2e-cron
       - e2e-mysql
-      - e2e-no-db
+      - e2e-minimal
       - e2e-postgres
       - docker-build
