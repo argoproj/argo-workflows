@@ -38,7 +38,7 @@ jobs:
             cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
             kustomize version
       - name: Install and start K3S v1.0.1
-        if: '${{ matrix.test != "test" }}'
+        if: ${{ matrix.test != 'test' }}
         run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
         if: ${{ matrix.test != 'test' }}
