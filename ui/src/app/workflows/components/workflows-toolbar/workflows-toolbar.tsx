@@ -56,19 +56,16 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
         return Object.keys(this.props.selectedWorkflows).length;
     }
 
-    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (params: Actions.WorkflowActionParams) => Promise<any>): void {
+    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (name: string, namespace: string) => Promise<any>): void {
         this.confirmAction(title);
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
-            action({
-                ctx,
-                name: wf.metadata.name,
-                namespace: wf.metadata.namespace,
-                handleError: this.getHandleErrorFunction(title)
-            }).then(() => {
-                this.setState({message: `Successfully performed '${title}' on selected workflows.`});
-                this.props.loadWorkflows();
-            });
+            action(wf.metadata.name, wf.metadata.namespace)
+                .catch(this.getHandleErrorFunction(title))
+                .then(() => {
+                    this.setState({message: `Successfully performed '${title}' on selected workflows.`});
+                    this.props.loadWorkflows();
+                });
         }
     }
 
@@ -87,57 +84,18 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
     }
 
     private getActions(ctx: any): WorkflowGroupAction[] {
-        return [
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'retry', Actions.retryWorkflow),
-                disabled: this.props.isDisabled.retry,
-                iconClassName: 'fas fa-redo-alt',
-                title: 'Retry',
-                className: 'retry'
-            },
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'resubmit', Actions.resubmitWorkflow),
-                disabled: false,
-                iconClassName: 'fas fa-plus-circle',
-                title: 'Resubmit',
-                className: 'resubmit'
-            },
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'suspend', Actions.suspendWorkflow),
-                disabled: this.props.isDisabled.suspend,
-                iconClassName: 'fas fa-pause',
-                title: 'Suspend',
-                className: 'suspend'
-            },
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'resume', Actions.resumeWorkflow),
-                disabled: this.props.isDisabled.resume,
-                iconClassName: 'fas fa-play',
-                title: 'Resume',
-                className: 'resume'
-            },
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'stop', Actions.stopWorkflow),
-                disabled: this.props.isDisabled.stop,
-                iconClassName: 'fas fa-stop-circle',
-                title: 'Stop',
-                className: 'stop'
-            },
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'terminate', Actions.terminateWorkflow),
-                disabled: this.props.isDisabled.terminate,
-                iconClassName: 'fas fa-times-circle',
-                title: 'Terminate',
-                className: 'terminate'
-            },
-            {
-                action: () => this.performActionOnSelectedWorkflows(ctx, 'delete', Actions.deleteWorkflow),
-                disabled: false,
-                iconClassName: 'fas fa-trash-alt',
-                title: 'Delete',
-                className: 'delete'
-            }
-        ];
+        const actions: any = Actions.WorkflowActions;
+        const disabled: any = this.props.isDisabled;
+        return Object.keys(actions).map(actionName => {
+            const action = actions[actionName];
+            return {
+                title: action.title.charAt(0).toUpperCase() + action.title.slice(1),
+                iconClassName: action.iconClassName,
+                disabled: disabled[actionName],
+                action: () => this.performActionOnSelectedWorkflows(ctx, action.title, action.action),
+                className: action.title
+            };
+        });
     }
 
     private renderActions(ctx: any): JSX.Element[] {

@@ -13,7 +13,7 @@ import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
-import {Consumer} from '../../../shared/context';
+import {Consumer, ContextApis} from '../../../shared/context';
 import * as Actions from '../../../shared/workflow-actions';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowYamlPanel} from './workflow-yaml-panel';
@@ -187,97 +187,31 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     private getHandleErrorFunction(title: string): () => void {
         return () => {
             this.appContext.apis.notifications.show({
-                content: 'Unable to retry workflow',
+                content: `Unable to ${title} workflow`,
                 type: NotificationType.Error
             });
         };
     }
 
+    private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
+        this.confirmAction(title);
+        action(this.props.match.params.name, this.props.match.params.namespace)
+            .then(() => ctx.navigation.goto(uiUrl(redirect)))
+            .catch(this.getHandleErrorFunction(title));
+    }
+
     private getItems(workflowPhase: NodePhase, ctx: any) {
-        const defaultAction: Actions.WorkflowActionParams = {
-            ctx,
-            name: this.props.match.params.name,
-            namespace: this.props.match.params.namespace
-        };
-        const items = [
-            {
-                title: 'Retry',
-                iconClassName: 'fa fa-undo',
-                disabled: Actions.isDisabled('retry', this.state.workflow),
-                action: () => {
-                    this.confirmAction('retry');
-                    Actions.resubmitWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('retry')
-                    });
-                }
-            },
-            {
-                title: 'Resubmit',
-                iconClassName: 'fa fa-plus-circle ',
-                action: () => {
-                    Actions.resubmitWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('resubmit')
-                    });
-                }
-            },
-            {
-                title: 'Suspend',
-                iconClassName: 'fa fa-pause',
-                disabled: Actions.isDisabled('suspend', this.state.workflow),
-                action: () =>
-                    Actions.suspendWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('suspend')
-                    })
-            },
-            {
-                title: 'Resume',
-                iconClassName: 'fa fa-play',
-                disabled: Actions.isDisabled('resume', this.state.workflow),
-                action: () =>
-                    Actions.resumeWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('resume')
-                    })
-            },
-            {
-                title: 'Stop',
-                iconClassName: 'fa fa-stop-circle',
-                disabled: Actions.isDisabled('stop', this.state.workflow),
-                action: () => {
-                    this.confirmAction('stop');
-                    Actions.stopWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('stop')
-                    });
-                }
-            },
-            {
-                title: 'Terminate',
-                iconClassName: 'fa fa-times-circle',
-                disabled: Actions.isDisabled('terminate', this.state.workflow),
-                action: () => {
-                    this.confirmAction('terminate');
-                    Actions.terminateWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('terminate')
-                    });
-                }
-            },
-            {
-                title: 'Delete',
-                iconClassName: 'fa fa-trash',
-                action: () => {
-                    this.confirmAction('delete');
-                    Actions.deleteWorkflow({
-                        ...defaultAction,
-                        handleError: this.getHandleErrorFunction('delete')
-                    });
-                }
-            }
-        ];
+        const actions: any = Actions.WorkflowActions;
+        const items = Object.keys(actions).map(actionName => {
+            const action = actions[actionName];
+            return {
+                title: action.title.charAt(0).toUpperCase() + action.title.slice(1),
+                iconClassName: action.iconClassName,
+                disabled: action.disabled(this.state.workflow),
+                action: () => this.performAction(action.action, action.title, ``, ctx)
+            };
+        });
+
         if (this.state.links) {
             this.state.links
                 .filter(link => link.scope === 'workflow')
@@ -285,6 +219,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                     items.push({
                         title: link.name,
                         iconClassName: 'fa fa-link',
+                        disabled: false,
                         action: () => this.openLink(link)
                     });
                 });

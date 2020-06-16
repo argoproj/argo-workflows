@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {labels, Workflow, WorkflowAction} from '../../../../models';
+import {labels, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -335,6 +335,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private updateBatchActionsDisabled(wf: Workflow, deselect: boolean): void {
         const currentlyDisabled: any = this.state.batchActionDisabled;
+        const actions: any = Actions.WorkflowActions;
         const nowDisabled: any = {...allBatchActionsEnabled};
         for (const action of Object.keys(currentlyDisabled)) {
             if (deselect) {
@@ -342,10 +343,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     if (wfUID === wf.metadata.uid) {
                         continue;
                     }
-                    nowDisabled[action] = Actions.isDisabled(action as WorkflowAction, this.state.selectedWorkflows[wfUID]) || nowDisabled[action];
+                    nowDisabled[action] = actions[action].disabled(this.state.selectedWorkflows[wfUID]) || nowDisabled[action];
                 }
             } else {
-                nowDisabled[action] = Actions.isDisabled(action as WorkflowAction, wf) || currentlyDisabled[action];
+                nowDisabled[action] = actions[action].disabled(wf) || currentlyDisabled[action];
             }
         }
         this.setState({batchActionDisabled: nowDisabled});
