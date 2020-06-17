@@ -2100,7 +2100,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"valueFrom": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ValueFrom is the source for the output parameter's Value",
+							Description: "ValueFrom is the source for the output parameter's value",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"),
 						},
 					},

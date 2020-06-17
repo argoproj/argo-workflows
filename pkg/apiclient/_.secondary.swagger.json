@@ -1155,7 +1155,7 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString"
         },
         "valueFrom": {
-          "description": "ValueFrom is the source for the output parameter's Value",
+          "description": "ValueFrom is the source for the output parameter's value",
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ValueFrom"
         }
       }

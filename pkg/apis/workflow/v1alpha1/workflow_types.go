@@ -590,7 +590,7 @@ type Parameter struct {
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
 	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
-	// ValueFrom is the source for the output parameter's Value
+	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
 
 	// GlobalName exports an output parameter to the global scope, making it available as
