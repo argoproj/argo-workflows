@@ -267,8 +267,11 @@ $(GOPATH)/bin/go-to-protobuf:
 $(GOPATH)/bin/protoc-gen-gogo:
 	go install github.com/gogo/protobuf/protoc-gen-gogo
 
+$(GOPATH)/bin/goimports:
+	go get golang.org/x/tools/cmd/goimports
+
 .PHONY: proto
-proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo
+proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/goimports
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
