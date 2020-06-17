@@ -1,6 +1,8 @@
 package fixtures
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -38,7 +40,16 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 			panic(err)
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
+
+		archiveSelector := labels.Everything()
+		if wcConfig.Persistence.ArchiveLabelSelector != nil {
+			archiveSelector, err = metav1.LabelSelectorAsSelector(persistence.ArchiveLabelSelector)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService, archiveSelector)
 		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}
 	} else {
 		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, workflowArchive: sqldb.NullWorkflowArchive}

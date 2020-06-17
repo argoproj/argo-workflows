@@ -2,6 +2,7 @@ package config
 
 import (
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth/sso"
@@ -132,6 +133,8 @@ type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
 	Archive bool `json:"archive,omitempty"`
+	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
+	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
