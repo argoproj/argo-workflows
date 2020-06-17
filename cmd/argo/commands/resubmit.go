@@ -16,6 +16,13 @@ func NewResubmitCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "resubmit [WORKFLOW...]",
 		Short: "resubmit one or more workflows",
+		Example: `# Resubmit a workflow:
+
+  argo resubmit my-wf
+
+# Resubmit the latest workflow:
+  argo resubmit @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()

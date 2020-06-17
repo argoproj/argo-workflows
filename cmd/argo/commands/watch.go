@@ -28,6 +28,13 @@ func NewWatchCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
+		Example: `# Watch a workflow:
+
+  argo watch my-wf
+
+# Watch the latest workflow:
+  argo watch @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
