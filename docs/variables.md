@@ -91,4 +91,4 @@ For `Template`-level metrics:
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
-| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Includes `name`, `message`, `templateName`, `finishedAt`, and `phase`. |
+| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
