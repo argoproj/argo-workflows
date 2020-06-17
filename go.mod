@@ -17,6 +17,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153 // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect/v2 v2.0.3
@@ -27,6 +28,7 @@ require (
 	github.com/go-swagger/go-swagger v0.23.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
+	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
 	github.com/gorilla/websocket v1.4.2
@@ -43,6 +45,7 @@ require (
 	github.com/mattn/goreman v0.3.5
 	github.com/minio/minio-go v6.0.14+incompatible // indirect
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
+	github.com/onsi/ginkgo v1.11.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/prometheus/client_model v0.1.0
@@ -78,6 +81,7 @@ require (
 	k8s.io/gengo v0.0.0-20200114144118-36b2048a9120
 	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
+	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
