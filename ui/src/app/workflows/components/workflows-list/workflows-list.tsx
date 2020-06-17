@@ -41,14 +41,14 @@ interface State {
     batchActionDisabled: Actions.ActionDisabled;
 }
 
-const allBatchActionsEnabled = {
-    retry: false,
-    resubmit: false,
-    suspend: false,
-    resume: false,
-    stop: false,
-    terminate: false,
-    delete: false
+const allBatchActionsEnabled: Actions.ActionDisabled = {
+    RETRY: false,
+    RESUBMIT: false,
+    SUSPEND: false,
+    RESUME: false,
+    STOP: false,
+    TERMINATE: false,
+    DELETE: false
 };
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
@@ -185,14 +185,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         }
         workflowList
             .then(wfList => {
-                const selectedWorkflows: {[index: string]: models.Workflow} = {};
                 this.setState({
                     workflows: wfList.items || [],
                     pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
                     namespace: newNamespace,
                     selectedPhases,
                     selectedLabels,
-                    selectedWorkflows
+                    selectedWorkflows: {}
                 });
                 Utils.setCurrentNamespace(newNamespace);
                 return wfList.metadata.resourceVersion;

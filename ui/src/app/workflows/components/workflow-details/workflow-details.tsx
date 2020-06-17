@@ -181,23 +181,18 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         if (!confirm(`Are you sure you want to ${title} this workflow?`)) {
             return;
         }
-        return;
-    }
-
-    private getHandleErrorFunction(title: string): () => void {
-        return () => {
-            this.appContext.apis.notifications.show({
-                content: `Unable to ${title} workflow`,
-                type: NotificationType.Error
-            });
-        };
     }
 
     private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
         this.confirmAction(title);
         action(this.props.match.params.name, this.props.match.params.namespace)
             .then(() => ctx.navigation.goto(uiUrl(redirect)))
-            .catch(this.getHandleErrorFunction(title));
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: `Unable to ${title} workflow`,
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private getItems(workflowPhase: NodePhase, ctx: any) {

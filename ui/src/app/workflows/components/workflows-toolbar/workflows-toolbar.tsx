@@ -4,6 +4,7 @@ import * as React from 'react';
 import {Workflow} from '../../../../models';
 import {AppContext, Consumer} from '../../../shared/context';
 import * as Actions from '../../../shared/workflow-actions';
+import {WorkflowAction} from '../../../shared/workflow-actions';
 
 require('./workflows-toolbar.scss');
 
@@ -13,11 +14,8 @@ interface WorkflowsToolbarProps {
     isDisabled: Actions.ActionDisabled;
 }
 
-interface WorkflowGroupAction {
-    action: () => void;
-    title: string;
-    disabled: boolean;
-    iconClassName: string;
+interface WorkflowGroupAction extends WorkflowAction {
+    groupIsDisabled: boolean;
     className: string;
 }
 
@@ -37,7 +35,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                 {ctx => (
                     <div className='workflows-toolbar'>
                         <div className='workflows-toolbar__count'>
-                            {this.noneSelected() ? 'No' : this.getNumberSelected()}
+                            {this.getNumberSelected() === 0 ? 'No' : this.getNumberSelected()}
                             &nbsp;workflow{this.getNumberSelected() === 1 ? '' : 's'} selected
                         </div>
                         <div className='workflows-toolbar__actions'>{this.renderActions(ctx)}</div>
@@ -47,29 +45,35 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         );
     }
 
-    private noneSelected(): boolean {
-        return Object.keys(this.props.selectedWorkflows).length < 1;
-    }
-
     private getNumberSelected(): number {
         return Object.keys(this.props.selectedWorkflows).length;
     }
 
-    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (name: string, namespace: string) => Promise<any>): void {
+    private performActionOnSelectedWorkflows(ctx: any, title: string, action: (name: string, namespace: string) => Promise<any>): Promise<any> {
         this.confirmAction(title);
         const appCtx = this.appContext;
+        const promises = [];
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
-            action(wf.metadata.name, wf.metadata.namespace)
-                .catch(this.getHandleErrorFunction(title))
-                .then(() => {
-                    appCtx.apis.notifications.show({
-                        content: `Performed '${title}' on selected workflows.`,
-                        type: NotificationType.Success
-                    });
-                    this.props.loadWorkflows();
-                });
+            promises.push(
+                action(wf.metadata.name, wf.metadata.namespace)
+                    .catch(() => {
+                        this.props.loadWorkflows();
+                        this.appContext.apis.notifications.show({
+                            content: `Unable to ${title} workflow`,
+                            type: NotificationType.Error
+                        });
+                    })
+                    .then(() => {
+                        appCtx.apis.notifications.show({
+                            content: `Performed '${title}' on selected workflows.`,
+                            type: NotificationType.Success
+                        });
+                        this.props.loadWorkflows();
+                    })
+            );
         }
+        return Promise.all(promises);
     }
 
     private confirmAction(title: string): void {
@@ -79,40 +83,28 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         return;
     }
 
-    private getHandleErrorFunction(title: string): () => void {
-        return () => {
-            this.props.loadWorkflows();
-            this.appContext.apis.notifications.show({
-                content: `Unable to ${title} workflow`,
-                type: NotificationType.Error
-            });
-        };
-    }
-
-    private getActions(ctx: any): WorkflowGroupAction[] {
+    private renderActions(ctx: any): JSX.Element[] {
+        const actionButtons = [];
         const actions: any = Actions.WorkflowActions;
         const disabled: any = this.props.isDisabled;
-        return Object.keys(actions).map(actionName => {
+        const groupActions: WorkflowGroupAction[] = Object.keys(actions).map(actionName => {
             const action = actions[actionName];
             return {
                 title: action.title.charAt(0).toUpperCase() + action.title.slice(1),
                 iconClassName: action.iconClassName,
-                disabled: disabled[actionName],
+                groupIsDisabled: disabled[actionName],
                 action: () => this.performActionOnSelectedWorkflows(ctx, action.title, action.action),
-                className: action.title
+                className: action.title,
+                disabled: () => false
             };
         });
-    }
-
-    private renderActions(ctx: any): JSX.Element[] {
-        const actionButtons = [];
-        for (const action of this.getActions(ctx)) {
+        for (const action of groupActions) {
             actionButtons.push(
                 <button
                     key={action.title}
                     onClick={action.action}
                     className={`workflows-toolbar__actions--${action.className} workflows-toolbar__actions--action`}
-                    disabled={this.noneSelected() || action.disabled}>
+                    disabled={this.getNumberSelected() === 0 || action.groupIsDisabled}>
                     <i className={action.iconClassName} />
                     &nbsp;{action.title} Selected
                 </button>

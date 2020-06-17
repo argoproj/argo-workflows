@@ -6,7 +6,7 @@ export type ActionDisabled = {
     [action in WorkflowActionName]: boolean;
 };
 
-export type WorkflowActionName = 'retry' | 'resubmit' | 'suspend' | 'resume' | 'stop' | 'terminate' | 'delete';
+export type WorkflowActionName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
 
 export interface WorkflowAction {
     title: string;
