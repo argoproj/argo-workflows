@@ -22,8 +22,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -80,6 +83,7 @@ type WorkflowController struct {
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	metrics               metrics.Metrics
+	eventRecorder         record.EventRecorder
 }
 
 const (
@@ -101,6 +105,10 @@ func NewWorkflowController(
 	containerRuntimeExecutor,
 	configMap string,
 ) *WorkflowController {
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(log.Debugf)
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events(namespace)})
+	eventRecorder := eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: "workflow-controller"})
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
@@ -115,6 +123,7 @@ func NewWorkflowController(
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		eventRecorder:              eventRecorder,
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
@@ -508,10 +517,9 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	// TODO: currently we reawaken the workflow on *any* pod updates.
-	// But this could be be much improved to become smarter by only
-	// requeue the workflow when there are changes that we care about.
-	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
+	// add this change after 1s - this reduces the number of workflow reconciliations -
+	//with each reconciliation doing more work
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
 	return true
 }
 
@@ -569,6 +577,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				},
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
@@ -591,7 +600,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
-
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			wfc.metrics.WorkflowAdded(getWfPhase(obj))

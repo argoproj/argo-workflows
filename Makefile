@@ -70,18 +70,22 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-DB                    ?= no-db
-ifeq ($(CI),false)
+PROFILE               ?= minimal
 AUTH_MODE             := hybrid
-else
+ifeq ($(PROFILE),sso)
+AUTH_MODE             := sso
+endif
+ifeq ($(CI),true)
 AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 
-ifeq ($(DB),no-db)
 ALWAYS_OFFLOAD_NODE_STATUS := false
-else
+ifeq ($(PROFILE),mysql)
+ALWAYS_OFFLOAD_NODE_STATUS := true
+endif
+ifeq ($(PROFILE),postgres)
 ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
@@ -113,7 +117,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 define backup_go_mod
@@ -179,7 +183,7 @@ $(GOPATH)/bin/staticfiles:
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
-	staticfiles -o server/static/files.go ui/dist/app
+	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -281,7 +285,7 @@ manifests:
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-	kustomize build --load_restrictor=none manifests/quick-start/no-db | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
@@ -323,16 +327,16 @@ $(VERSION_FILE):
 	@mkdir -p dist
 	touch $(VERSION_FILE)
 
-dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
+dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
 .PHONY: install
-install: dist/$(DB).yaml
+install: dist/$(PROFILE).yaml
 ifeq ($(K3D),true)
 	k3d start
 endif
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
-	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(DB).yaml
+	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -367,11 +371,14 @@ start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
-	# Check minio, postgres and mysql are in hosts file
+	# Check dex, minio, postgres and mysql are in hosts file
+ifeq ($(AUTH_MODE),sso)
+	grep '127.0.0.1 *dex' /etc/hosts
+endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) goreman -set-ports=false -logtime=false start
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
 
 .PHONY: wait
@@ -427,12 +434,12 @@ smoke: test-images
 	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
-test-api: test-images
+test-api:
 	# Run API tests
 	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images cli
+test-cli: cli
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
 	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e

@@ -11,12 +11,12 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
@@ -2739,54 +2739,18 @@ func TestEventInvalidSpec(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
-	invalidSpecEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, invalidSpecEvent.Reason)
-	assert.Equal(t, "invalid spec: template name '123' undefined", invalidSpecEvent.Message)
+	events := getEvents(controller, 2)
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
+	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", events[1])
 }
 
-var timeout = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: timeout-template
-spec:
-  entrypoint: sleep
-  activeDeadlineSeconds: 1
-  templates:
-  - name: sleep
-    container:
-      image: alpine:latest
-      command: [sh, -c, sleep 10]
-`
-
-func TestEventTimeout(t *testing.T) {
-	// Test whether a WorkflowTimedOut event is emitted in case of timeout
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(timeout)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	woc = newWorkflowOperationCtx(wf, controller)
-	time.Sleep(10 * time.Second)
-	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
-	timeoutEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, timeoutEvent.Reason)
+func getEvents(controller *WorkflowController, num int) []string {
+	c := controller.eventRecorder.(*record.FakeRecorder).Events
+	events := make([]string, num)
+	for i := 0; i < num; i++ {
+		events[i] = <-c
+	}
+	return events
 }
 
 var failLoadArtifactRepoCm = `
@@ -2821,14 +2785,9 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
-	failEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, failEvent.Reason)
-	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
+	events := getEvents(controller, 2)
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
+	assert.Equal(t, "Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", events[1])
 }
 
 var pdbwf = `

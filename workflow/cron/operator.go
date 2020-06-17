@@ -16,7 +16,10 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 type cronWfOperationCtx struct {
@@ -30,7 +33,7 @@ type cronWfOperationCtx struct {
 	log         *log.Entry
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister) (*cronWfOperationCtx, error) {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister, metrics *metrics.Metrics) *cronWfOperationCtx {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
@@ -42,21 +45,27 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 			"workflow":  cronWorkflow.ObjectMeta.Name,
 			"namespace": cronWorkflow.ObjectMeta.Namespace,
 		}),
-	}, nil
+		metrics: metrics,
+	}
 }
 
 func (woc *cronWfOperationCtx) Run() {
 	woc.log.Infof("Running %s", woc.name)
 
-	err := woc.reconcileDeletedWfs()
+	err := woc.validateCronWorkflow()
 	if err != nil {
-		woc.reportCronWorkflowError(fmt.Sprintf("Could not remove deleted Workflow: %s", err))
+		return
+	}
+
+	err = woc.reconcileDeletedWfs()
+	if err != nil {
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not remove deleted Workflow: %s", err))
 		return
 	}
 
 	proceed, err := woc.enforceRuntimePolicy()
 	if err != nil {
-		woc.reportCronWorkflowError(fmt.Sprintf("Concurrency policy error: %s", err))
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Concurrency policy error: %s", err))
 		return
 	} else if !proceed {
 		return
@@ -66,7 +75,7 @@ func (woc *cronWfOperationCtx) Run() {
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
-		woc.reportCronWorkflowError(fmt.Sprintf("Failed to submit Workflow: %s", err))
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
 		return
 	}
 
@@ -74,6 +83,19 @@ func (woc *cronWfOperationCtx) Run() {
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 	woc.persistUpdate()
+}
+
+func (woc *cronWfOperationCtx) validateCronWorkflow() error {
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(woc.cronWf.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, woc.cronWf)
+	if err != nil {
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
+	} else {
+		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSpecError)
+		woc.persistUpdate()
+	}
+	return err
 }
 
 func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) corev1.ObjectReference {
@@ -92,7 +114,7 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 func (woc *cronWfOperationCtx) persistUpdate() {
 	_, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		woc.log.Error(fmt.Sprintf("failed to update CronWorkflow: %s", err))
+		woc.log.WithError(err).Error("failed to update CronWorkflow")
 	}
 }
 
@@ -303,10 +325,10 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 	return nil
 }
 
-func (woc *cronWfOperationCtx) reportCronWorkflowError(errString string) {
-	woc.log.Errorf(errString)
+func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.ConditionType, errString string) {
+	woc.log.WithField("conditionType", conditionType).Error(errString)
 	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
-		Type:    v1alpha1.ConditionTypeSubmissionError,
+		Type:    conditionType,
 		Message: errString,
 		Status:  v1.ConditionTrue,
 	})

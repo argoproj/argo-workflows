@@ -6,7 +6,7 @@ interface Props {
 }
 
 const WarningConditions: ConditionType[] = ['SpecWarning'];
-const ErrorConditions: ConditionType[] = ['MetricsError', 'SubmissionError'];
+const ErrorConditions: ConditionType[] = ['MetricsError', 'SubmissionError', 'SpecError'];
 
 export function hasWarningConditionBadge(conditions: Condition[]): boolean {
     if (conditions.length === 0) {
