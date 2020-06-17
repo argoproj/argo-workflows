@@ -1624,9 +1624,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.Status.Message = err.Error()
 			}
 
-			if archiveStrategy, found := woc.wf.ObjectMeta.Labels[common.LabelKeyArchiveStrategy]; !found || archiveStrategy != "Never" {
-				err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
-			}
+			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
 				woc.log.WithField("err", err).Error("Failed to archive workflow")
 			}

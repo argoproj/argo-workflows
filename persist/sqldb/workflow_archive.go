@@ -58,16 +58,22 @@ type workflowArchive struct {
 	managedNamespace  string
 	instanceIDService instanceid.Service
 	dbType            dbType
+	archiveSelector   labels.Selector
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session)}
+func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service, archiveSelector labels.Selector) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session), archiveSelector: archiveSelector}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
-	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
-	logCtx.Debug("Archiving workflow")
+	logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "namespace": wf.Namespace})
+
+	logCtx.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()}).Debug("Archiving workflow")
+	if !r.archiveSelector.Matches(labels.Set(wf.Labels)) {
+		logCtx.Infof("Doesn't match with archive label selector. Skipping archive")
+		return nil
+	}
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
