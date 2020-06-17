@@ -32,7 +32,7 @@ require (
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
-	github.com/grpc-ecosystem/grpc-gateway v1.12.1
+	github.com/grpc-ecosystem/grpc-gateway v1.12.2
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
