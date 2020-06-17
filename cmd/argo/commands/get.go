@@ -60,6 +60,13 @@ func NewGetCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
+		Example: `# Get information about a workflow:
+
+  argo get my-wf
+
+# Get the latest workflow:
+  argo get @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
