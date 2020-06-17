@@ -20,7 +20,6 @@ require (
 	github.com/evanphx/json-patch v4.2.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect/v2 v2.0.3
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-ini/ini v1.51.1 // indirect
 	github.com/go-openapi/jsonreference v0.19.3
 	github.com/go-openapi/spec v0.19.8
@@ -79,7 +78,6 @@ require (
 	k8s.io/gengo v0.0.0-20200114144118-36b2048a9120
 	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
-	sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e // indirect
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
