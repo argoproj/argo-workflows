@@ -273,11 +273,14 @@ $(GOPATH)/bin/protoc-gen-gogofast:
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 
+$(GOPATH)/bin/protoc-gen-swagger:
+	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports
 
 .PHONY: proto
-proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway
+proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
