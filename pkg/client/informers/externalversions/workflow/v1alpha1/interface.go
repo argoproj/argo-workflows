@@ -31,7 +31,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 
 // ClusterWorkflowTemplates returns a ClusterWorkflowTemplateInformer.
 func (v *version) ClusterWorkflowTemplates() ClusterWorkflowTemplateInformer {
-	return &clusterWorkflowTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &clusterWorkflowTemplateInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // CronWorkflows returns a CronWorkflowInformer.

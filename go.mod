@@ -72,13 +72,14 @@ require (
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	k8s.io/api v0.0.0-20191219150132-17cfeff5d095
-	k8s.io/apimachinery v0.17.3
-	k8s.io/client-go v0.0.0-20191225075139-73fd2ddc9180
-	k8s.io/code-generator v0.17.3
+	k8s.io/api v0.17.5
+	k8s.io/apimachinery v0.17.5
+	k8s.io/client-go v0.17.5
+	k8s.io/code-generator v0.17.5
 	k8s.io/gengo v0.0.0-20200114144118-36b2048a9120
 	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
+	sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e // indirect
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
