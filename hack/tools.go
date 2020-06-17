@@ -7,8 +7,6 @@ package tools
 import (
 	_ "bou.ke/staticfiles"
 	_ "github.com/go-swagger/go-swagger/cmd/swagger"
-	_ "github.com/gogo/protobuf/gogoproto"
-	_ "github.com/gogo/protobuf"
 	_ "github.com/gogo/protobuf/protoc-gen-gogo"
 	_ "github.com/gogo/protobuf/protoc-gen-gogofast"
 	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway"
@@ -16,7 +14,6 @@ import (
 	_ "github.com/jstemmer/go-junit-report"
 	_ "github.com/mattn/goreman"
 	_ "golang.org/x/tools/cmd/goimports"
-	_ "k8s.io/code-generator"
 	_ "k8s.io/code-generator/cmd/client-gen"
 	_ "k8s.io/code-generator/cmd/conversion-gen"
 	_ "k8s.io/code-generator/cmd/deepcopy-gen"
@@ -28,6 +25,5 @@ import (
 	_ "k8s.io/code-generator/cmd/openapi-gen"
 	_ "k8s.io/code-generator/cmd/register-gen"
 	_ "k8s.io/code-generator/cmd/set-gen"
-	_ "k8s.io/gengo/examples/deepcopy-gen"
 	_ "k8s.io/kube-openapi/cmd/openapi-gen"
 )
