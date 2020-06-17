@@ -64,24 +64,37 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 }
 
 func TestGitArtifactDriverLoad_SSL(t *testing.T) {
-	_ = os.Remove("git-ask-pass.sh")
-	tmp, err := ioutil.TempDir("", "")
-	assert.NoError(t, err)
-	println(tmp)
-	key := os.Getenv("HOME") + "/.ssh/id_rsa"
-	data, err := ioutil.ReadFile(key)
-	assert.NoError(t, err)
-	driver := &GitArtifactDriver{SSHPrivateKey: string(data)}
-	err = driver.Load(&wfv1.Artifact{
-		ArtifactLocation: wfv1.ArtifactLocation{
-			Git: &wfv1.GitArtifact{
-				Repo:                  "git@github.com:argoproj/argo.git",
-				Fetch:                 []string{"+refs/heads/*:refs/remotes/origin/*"},
-				Revision:              "HEAD",
-				InsecureIgnoreHostKey: true,
-				Depth:                 &d,
-			},
-		},
-	}, tmp)
-	assert.NoError(t, err)
+	for _, tt := range []struct {
+		name     string
+		insecure bool
+	}{
+		{"Insecure", true},
+		{"Secure", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_ = os.Remove("git-ask-pass.sh")
+			key := os.Getenv("HOME") + "/.ssh/id_rsa"
+			data, err := ioutil.ReadFile(key)
+			if err != nil && os.IsNotExist(err) {
+				t.Skip(key + " does not exist")
+			}
+			assert.NoError(t, err)
+			tmp, err := ioutil.TempDir("", "")
+			assert.NoError(t, err)
+			println(tmp)
+			driver := &GitArtifactDriver{SSHPrivateKey: string(data)}
+			err = driver.Load(&wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{
+					Git: &wfv1.GitArtifact{
+						Repo:                  "git@github.com:argoproj/argo.git",
+						Fetch:                 []string{"+refs/heads/*:refs/remotes/origin/*"},
+						Revision:              "HEAD",
+						InsecureIgnoreHostKey: tt.insecure,
+						Depth:                 &d,
+					},
+				},
+			}, tmp)
+			assert.NoError(t, err)
+		})
+	}
 }
