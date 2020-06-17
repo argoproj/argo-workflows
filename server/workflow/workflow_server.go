@@ -343,6 +343,7 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 	if err != nil {
 		return nil, err
 	}
+	
 	stopOpts := util.StopOpts{Name: req.Name, NodeFieldSelector: req.NodeFieldSelector, Message: req.Message}
 	err = util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, stopOpts)
 	if err != nil {

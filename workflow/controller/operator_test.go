@@ -1604,13 +1604,21 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
-	// resume the workflow, but with matching selector
-	resumeOpts = util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.parameters.param1.value=value1", Result: ""}
+	// resume the workflow, but with matching selector and a result string
+	resumeOpts = util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.parameters.param1.value=value1", Result: "Success"}
 	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.False(t, util.IsWorkflowSuspended(wf))
+	matchingNodeFound := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "suspend") {
+			assert.Equal(t, "Success", *node.Outputs.Result)
+			matchingNodeFound = true
+		}
+	}
+	assert.True(t, matchingNodeFound)
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
