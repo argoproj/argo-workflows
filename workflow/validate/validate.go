@@ -97,6 +97,7 @@ var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
 	"Priority":              true,
 	"Arguments":             true,
 	"WorkflowTemplateRef":   true,
+	"TTLStrategy":           true,
 }
 
 type FakeArguments struct{}
