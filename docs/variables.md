@@ -18,6 +18,7 @@ The following variables are made available to reference various metadata of a wo
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
+| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 
 ## DAG Templates
 | Variable | Description|
