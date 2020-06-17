@@ -23,6 +23,13 @@ func NewResumeCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "resume WORKFLOW1 WORKFLOW2...",
 		Short: "resume zero or more workflows",
+		Example: `# Resume a workflow that has been stopped or suspended:
+
+  argo resume my-wf
+
+# Resume the latest workflow:
+  argo resume @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
