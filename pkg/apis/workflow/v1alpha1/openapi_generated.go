@@ -200,7 +200,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a Value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -640,7 +640,7 @@ func schema_pkg_apis_workflow_v1alpha1_Counter(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the Value of the metric",
+							Description: "Value is the value of the metric",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -930,7 +930,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"withParam": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithParam expands a task into multiple parallel tasks from the Value in the parameter, which is expected to be a JSON list.",
+							Description: "WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1120,7 +1120,7 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the Value of the metric",
+							Description: "Value is the value of the metric",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1465,7 +1465,7 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the Value of the metric",
+							Description: "Value is the value of the metric",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1549,7 +1549,7 @@ func schema_pkg_apis_workflow_v1alpha1_Item(ref common.ReferenceCallback) common
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Item expands a single workflow step into multiple parallel steps The Value of Item can be a map, string, bool, or number",
+				Description: "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
 				Type:        Item{}.OpenAPISchemaType(),
 				Format:      Item{}.OpenAPISchemaFormat(),
 			},
@@ -1755,14 +1755,14 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"storedTemplateID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StoredTemplateID is the ID of stored template. DEPRECATED: This Value is not used anymore.",
+							Description: "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"workflowTemplateName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This Value is not used anymore.",
+							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2076,7 +2076,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Parameter indicate a passed string parameter to a service template with an optional default Value",
+				Description: "Parameter indicate a passed string parameter to a service template with an optional default value",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -2088,13 +2088,13 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"default": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Default is the default Value to use for an input parameter if a Value was not supplied",
+							Description: "Default is the default value to use for an input parameter if a value was not supplied",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the literal Value to use for the parameter. If specified in the context of an input parameter, the Value takes precedence over any passed values",
+							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
@@ -2755,7 +2755,7 @@ func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) co
 					},
 					"format": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Format is a printf format string to format the Value in the sequence",
+							Description: "Format is a printf format string to format the value in the sequence",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3118,7 +3118,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"activeDeadlineSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; Value must be positive integer This field is only applicable to container and script templates.",
+							Description: "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -3185,7 +3185,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this Value is false.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -3539,19 +3539,19 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ValueFrom describes a location in which to obtain the Value to a parameter",
+				Description: "ValueFrom describes a location in which to obtain the value to a parameter",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"path": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Path in the container to retrieve an output parameter Value from in container templates",
+							Description: "Path in the container to retrieve an output parameter value from in container templates",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"jsonPath": {
 						SchemaProps: spec.SchemaProps{
-							Description: "JSONPath of a resource to retrieve an output parameter Value from in resource templates",
+							Description: "JSONPath of a resource to retrieve an output parameter value from in resource templates",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3565,14 +3565,14 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"parameter": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameter reference to a step or dag task in which to retrieve an output parameter Value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+							Description: "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"default": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Default specifies a Value to be used if retrieving the Value from the specified source fails",
+							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
@@ -3785,7 +3785,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this Value is false.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -3955,7 +3955,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"activeDeadlineSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow. A Value of zero is used to terminate a Running workflow",
+							Description: "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow. A value of zero is used to terminate a Running workflow",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
@@ -4242,7 +4242,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"withParam": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithParam expands a step into multiple parallel steps from the Value in the parameter, which is expected to be a JSON list.",
+							Description: "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4443,7 +4443,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this Value is false.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -4613,7 +4613,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					},
 					"activeDeadlineSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow. A Value of zero is used to terminate a Running workflow",
+							Description: "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow. A value of zero is used to terminate a Running workflow",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},

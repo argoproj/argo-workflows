@@ -123,7 +123,7 @@
           "description": "HTTP contains HTTP artifact location details"
         },
         "mode": {
-          "description": "mode bits to use on this file, must be a Value between 0 and 0777 set when loading input artifacts.",
+          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
           "format": "int32",
           "type": "integer"
         },
@@ -371,7 +371,7 @@
       "description": "Counter is a Counter prometheus metric",
       "properties": {
         "value": {
-          "description": "Value is the Value of the metric",
+          "description": "Value is the value of the metric",
           "type": "string"
         }
       },
@@ -574,7 +574,7 @@
           "type": "array"
         },
         "withParam": {
-          "description": "WithParam expands a task into multiple parallel tasks from the Value in the parameter, which is expected to be a JSON list.",
+          "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.",
           "type": "string"
         },
         "withSequence": {
@@ -654,7 +654,7 @@
           "type": "boolean"
         },
         "value": {
-          "description": "Value is the Value of the metric",
+          "description": "Value is the value of the metric",
           "type": "string"
         }
       },
@@ -786,7 +786,7 @@
           "type": "array"
         },
         "value": {
-          "description": "Value is the Value of the metric",
+          "description": "Value is the value of the metric",
           "type": "string"
         }
       },
@@ -835,7 +835,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "description": "Item expands a single workflow step into multiple parallel steps The Value of Item can be a map, string, bool, or number",
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
       "type": [
         "string",
         "number",
@@ -1019,7 +1019,7 @@
           "description": "Time at which this node started"
         },
         "storedTemplateID": {
-          "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This Value is not used anymore.",
+          "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
           "type": "string"
         },
         "templateName": {
@@ -1039,7 +1039,7 @@
           "type": "string"
         },
         "workflowTemplateName": {
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This Value is not used anymore.",
+          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
           "type": "string"
         }
       },
@@ -1126,11 +1126,11 @@
       "type": "array"
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
-      "description": "Parameter indicate a passed string parameter to a service template with an optional default Value",
+      "description": "Parameter indicate a passed string parameter to a service template with an optional default value",
       "properties": {
         "default": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Default is the default Value to use for an input parameter if a Value was not supplied"
+          "description": "Default is the default value to use for an input parameter if a value was not supplied"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -1142,7 +1142,7 @@
         },
         "value": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Value is the literal Value to use for the parameter. If specified in the context of an input parameter, the Value takes precedence over any passed values"
+          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values"
         },
         "valueFrom": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ValueFrom",
@@ -1473,7 +1473,7 @@
           "type": "string"
         },
         "format": {
-          "description": "Format is a printf format string to format the Value in the sequence",
+          "description": "Format is a printf format string to format the value in the sequence",
           "type": "string"
         },
         "start": {
@@ -1578,7 +1578,7 @@
       "description": "Template is a reusable and composable unit of execution in a workflow",
       "properties": {
         "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; Value must be positive integer This field is only applicable to container and script templates.",
+          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
           "format": "int64",
           "type": "integer"
         },
@@ -1595,7 +1595,7 @@
           "description": "Arguments hold arguments to the template. DEPRECATED: This field is not used."
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this Value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
         "container": {
@@ -1930,26 +1930,26 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ValueFrom": {
-      "description": "ValueFrom describes a location in which to obtain the Value to a parameter",
+      "description": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
         "default": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
-          "description": "Default specifies a Value to be used if retrieving the Value from the specified source fails"
+          "description": "Default specifies a value to be used if retrieving the value from the specified source fails"
         },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",
           "type": "string"
         },
         "jsonPath": {
-          "description": "JSONPath of a resource to retrieve an output parameter Value from in resource templates",
+          "description": "JSONPath of a resource to retrieve an output parameter value from in resource templates",
           "type": "string"
         },
         "parameter": {
-          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter Value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
           "type": "string"
         },
         "path": {
-          "description": "Path in the container to retrieve an output parameter Value from in container templates",
+          "description": "Path in the container to retrieve an output parameter value from in container templates",
           "type": "string"
         }
       },
@@ -2135,7 +2135,7 @@
       "description": "WorkflowSpec is the specification of a Workflow.",
       "properties": {
         "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A Value of zero is used to terminate a Running workflow",
+          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
           "format": "int64",
           "type": "integer"
         },
@@ -2152,7 +2152,7 @@
           "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config."
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this Value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
         "dnsConfig": {
@@ -2423,7 +2423,7 @@
           "type": "array"
         },
         "withParam": {
-          "description": "WithParam expands a step into multiple parallel steps from the Value in the parameter, which is expected to be a JSON list.",
+          "description": "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
           "type": "string"
         },
         "withSequence": {
@@ -2578,7 +2578,7 @@
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "properties": {
         "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A Value of zero is used to terminate a Running workflow",
+          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
           "format": "int64",
           "type": "integer"
         },
@@ -2595,7 +2595,7 @@
           "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config."
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this Value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
         "dnsConfig": {
