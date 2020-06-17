@@ -473,6 +473,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(she
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 
 dist/kubernetes.swagger.json:
+	@mkdir -p dist
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
