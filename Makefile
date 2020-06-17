@@ -264,8 +264,11 @@ schemas:
 $(GOPATH)/bin/go-to-protobuf:
 	go install k8s.io/code-generator/cmd/go-to-protobuf
 
+$(GOPATH)/bin/protoc-gen-gogo:
+	go install github.com/gogo/protobuf/protoc-gen-gogo
+
 .PHONY: proto
-proto: $(GOPATH)/bin/go-to-protobuf
+proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
