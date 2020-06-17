@@ -17,7 +17,10 @@ import (
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
-	printNode(w, node, nodePrefix, getArgs)
+	filtered, _ := filterNode(node, getArgs)
+	if !filtered {
+		printNode(w, node, nodePrefix, getArgs)
+	}
 	err := w.Flush()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result.String())

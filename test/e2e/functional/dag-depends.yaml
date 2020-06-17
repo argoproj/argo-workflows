@@ -19,7 +19,7 @@ spec:
             depends: "A"
             template: fail
           - name: should-execute-1
-            depends: "A && C.Completed"
+            depends: "A && (C.Succeeded || C.Failed)"
             template: pass
           - name: should-execute-2
             depends: "B || C"

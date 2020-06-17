@@ -839,7 +839,7 @@ export interface Condition {
     message: string;
 }
 
-export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError';
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
@@ -1016,7 +1016,7 @@ export interface WorkflowStep {
     templateRef?: TemplateRef;
 }
 
-export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error';
+export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
 
 export const NODE_PHASE = {
     PENDING: 'Pending',
@@ -1024,7 +1024,8 @@ export const NODE_PHASE = {
     SUCCEEDED: 'Succeeded',
     SKIPPED: 'Skipped',
     FAILED: 'Failed',
-    ERROR: 'Error'
+    ERROR: 'Error',
+    OMITTED: 'Omitted'
 };
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';

@@ -80,6 +80,7 @@ rules:
   - events
   verbs:
   - create
+  - patch
 - apiGroups:
     - "policy"
   resources:
