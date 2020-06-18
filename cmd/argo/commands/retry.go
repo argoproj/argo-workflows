@@ -24,6 +24,16 @@ func NewRetryCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "retry [WORKFLOW...]",
 		Short: "retry zero or more workflows",
+		Example: `# Retry a workflow:
+
+  argo retry my-wf
+
+# Retry several workflows: 
+  argo retry my-wf my-other-wf my-third-wf
+
+# Retry the latest workflow:
+  argo retry @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
