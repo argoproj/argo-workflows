@@ -25,6 +25,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [CoreFiling](https://www.corefiling.com/)
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [CoreWeave Cloud](https://www.coreweave.com)
+1. [Cruise](https://getcruise.com/)
 1. [CyberAgent](https://www.cyberagent.co.jp/en/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Datadog](https://www.datadoghq.com/)
