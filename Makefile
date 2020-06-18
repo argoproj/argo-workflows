@@ -168,7 +168,7 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	go get bou.ke/staticfiles
+	O111MODULE=off go get bou.ke/staticfiles
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
@@ -239,7 +239,7 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 $(GOPATH)/bin/mockery:
-	go get github.com/vektra/mockery/.../@v1.1.1
+	O111MODULE=off go get github.com/vektra/mockery/.../@v1.1.1
 
 .PHONY: mocks
 mocks: $(GOPATH)/bin/mockery
@@ -276,7 +276,7 @@ $(GOPATH)/bin/openapi-gen: tools
 $(GOPATH)/bin/swagger: tools
 
 $(GOPATH)/bin/goimports:
-	go get golang.org/x/tools/cmd/goimports
+	O111MODULE=off go get golang.org/x/tools/cmd/goimports
 
 .PHONY: proto
 proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
@@ -323,7 +323,7 @@ test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
 $(GOPATH)/bin/go-junit-report:
-	go get github.com/jstemmer/go-junit-report
+	O111MODULE=off go get github.com/jstemmer/go-junit-report
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
