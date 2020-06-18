@@ -2715,7 +2715,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	executionParameters := woc.wf.Spec.Arguments
 
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
-		if woc.controller.Config.ReferenceMode.GetReferenceModeForNamespace(woc.wf.Namespace).MustUseReference() {
+		if woc.controller.Config.ReferenceMode.MustUseReference() {
 			return nil, wfv1.Arguments{}, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		}
 
@@ -2730,7 +2730,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec
 		woc.updated = true
-	} else if woc.controller.Config.ReferenceMode.GetReferenceModeForNamespace(woc.wf.Namespace).MustNotChangeSpec() {
+	} else if woc.controller.Config.ReferenceMode.MustNotChangeSpec() {
 		// If the controller is in reference mode, ensure that the stored spec is identical to the reference spec at every operation
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
