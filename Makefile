@@ -255,6 +255,7 @@ codegen: status proto swagger manifests schemas mocks docs
 
 $(GOPATH)/bin/controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen
+	go mod tidy
 
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
@@ -266,18 +267,23 @@ schemas:
 
 $(GOPATH)/bin/go-to-protobuf:
 	go install k8s.io/code-generator/cmd/go-to-protobuf
+	go mod tidy
 
 $(GOPATH)/bin/protoc-gen-gogo:
 	go install github.com/gogo/protobuf/protoc-gen-gogo
+	go mod tidy
 
 $(GOPATH)/bin/protoc-gen-gogofast:
 	go install github.com/gogo/protobuf/protoc-gen-gogofast
+	go mod tidy
 
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	go mod tidy
 
 $(GOPATH)/bin/protoc-gen-swagger:
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go mod tidy
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports
@@ -467,6 +473,7 @@ swagger: api/openapi-spec/swagger.json
 
 $(GOPATH)/bin/openapi-gen:
 	go install k8s.io/kube-openapi/cmd/openapi-gen
+	go mod tidy
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	openapi-gen \
@@ -484,6 +491,7 @@ pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/wor
 
 $(GOPATH)/bin/swagger:
 	go install github.com/go-swagger/go-swagger/cmd/swagger
+	go mod tidy
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
