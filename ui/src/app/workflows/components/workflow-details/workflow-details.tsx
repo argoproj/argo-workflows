@@ -178,7 +178,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private confirmAction(title: string): void {
-        if (!confirm(`Are you sure you want to ${title} this workflow?`)) {
+        if (!confirm(`Are you sure you want to ${title.toLowerCase()} this workflow?`)) {
             return;
         }
     }

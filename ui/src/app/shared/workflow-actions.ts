@@ -16,8 +16,8 @@ export interface WorkflowAction {
 }
 
 export const WorkflowActions = {
-    retry: {
-        title: 'retry',
+    RETRY: {
+        title: 'RETRY',
         iconClassName: 'fa fa-undo',
         disabled: (wf: Workflow) => {
             const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
@@ -25,38 +25,38 @@ export const WorkflowActions = {
         },
         action: services.workflows.retry
     },
-    resubmit: {
-        title: 'resubmit',
+    RESUBMIT: {
+        title: 'RESUBMIT',
         iconClassName: 'fa fa-plus-circle',
         disabled: () => false,
         action: services.workflows.resubmit
     },
-    suspend: {
-        title: 'suspend',
+    SUSPEND: {
+        title: 'SUSPEND',
         iconClassName: 'fa fa-pause',
         disabled: (wf: Workflow) => !Utils.isWorkflowRunning(wf) || Utils.isWorkflowSuspended(wf),
         action: services.workflows.suspend
     },
-    resume: {
-        title: 'resume',
+    RESUME: {
+        title: 'RESUME',
         iconClassName: 'fa fa-play',
         disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
         action: services.workflows.resume
     },
-    stop: {
-        title: 'stop',
+    STOP: {
+        title: 'STOP',
         iconClassName: 'fa fa-stop-circle',
         disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
         action: services.workflows.stop
     },
-    terminate: {
-        title: 'terminate',
+    TERMINATE: {
+        title: 'TERMINATE',
         iconClassName: 'fa fa-times-circle',
         disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
         action: services.workflows.terminate
     },
-    delete: {
-        title: 'delete',
+    DELETE: {
+        title: 'DELETE',
         iconClassName: 'fa fa-trash',
         disabled: () => false,
         action: services.workflows.delete

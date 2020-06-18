@@ -33,7 +33,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         return (
             <Consumer>
                 {ctx => (
-                    <div className='workflows-toolbar'>
+                    <div className={`workflows-toolbar ${this.getNumberSelected() === 0 ? 'hidden' : ''}`}>
                         <div className='workflows-toolbar__count'>
                             {this.getNumberSelected() === 0 ? 'No' : this.getNumberSelected()}
                             &nbsp;workflow{this.getNumberSelected() === 1 ? '' : 's'} selected
@@ -51,33 +51,24 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: (name: string, namespace: string) => Promise<any>): Promise<any> {
         this.confirmAction(title);
-        const appCtx = this.appContext;
         const promises = [];
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
             promises.push(
-                action(wf.metadata.name, wf.metadata.namespace)
-                    .catch(() => {
-                        this.props.loadWorkflows();
-                        this.appContext.apis.notifications.show({
-                            content: `Unable to ${title} workflow`,
-                            type: NotificationType.Error
-                        });
-                    })
-                    .then(() => {
-                        appCtx.apis.notifications.show({
-                            content: `Performed '${title}' on selected workflows.`,
-                            type: NotificationType.Success
-                        });
-                        this.props.loadWorkflows();
-                    })
+                action(wf.metadata.name, wf.metadata.namespace).catch(() => {
+                    this.props.loadWorkflows();
+                    this.appContext.apis.notifications.show({
+                        content: `Unable to ${title} workflow`,
+                        type: NotificationType.Error
+                    });
+                })
             );
         }
         return Promise.all(promises);
     }
 
     private confirmAction(title: string): void {
-        if (!confirm(`Are you sure you want to ${title} all selected workflows?`)) {
+        if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
             return;
         }
         return;
@@ -90,10 +81,18 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
         const groupActions: WorkflowGroupAction[] = Object.keys(actions).map(actionName => {
             const action = actions[actionName];
             return {
-                title: action.title.charAt(0).toUpperCase() + action.title.slice(1),
+                title: action.title,
                 iconClassName: action.iconClassName,
                 groupIsDisabled: disabled[actionName],
-                action: () => this.performActionOnSelectedWorkflows(ctx, action.title, action.action),
+                action: () => {
+                    return this.performActionOnSelectedWorkflows(ctx, action.title, action.action).then(() => {
+                        this.appContext.apis.notifications.show({
+                            content: `Performed '${action.title}' on selected workflows.`,
+                            type: NotificationType.Success
+                        });
+                        this.props.loadWorkflows();
+                    });
+                },
                 className: action.title,
                 disabled: () => false
             };
@@ -106,7 +105,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                     className={`workflows-toolbar__actions--${action.className} workflows-toolbar__actions--action`}
                     disabled={this.getNumberSelected() === 0 || action.groupIsDisabled}>
                     <i className={action.iconClassName} />
-                    &nbsp;{action.title} Selected
+                    &nbsp;{action.title}
                 </button>
             );
         }
