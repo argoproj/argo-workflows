@@ -831,6 +831,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
+			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
+			// See processNodeRetries for more details.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true
