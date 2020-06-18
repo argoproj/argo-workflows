@@ -13,11 +13,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -27,6 +27,13 @@ func NewWaitCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "wait [WORKFLOW...]",
 		Short: "waits for workflows to complete",
+		Example: `# Wait on a workflow:
+
+  argo wait my-wf
+
+# Wait on the latest workflow:
+  argo wait @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			WaitWorkflows(args, ignoreNotFound, false)
 		},
@@ -67,7 +74,7 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String(),
+			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(wfName),
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)

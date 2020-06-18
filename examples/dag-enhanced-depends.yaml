@@ -19,7 +19,7 @@ spec:
             depends: "A"
             template: fail
           - name: should-execute-1
-            depends: "A && C.Completed"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
+            depends: "A && (C.Succeeded || C.Failed)"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
             template: pass
           - name: should-execute-2
             depends: "B || C"

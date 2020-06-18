@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
@@ -102,6 +103,7 @@ spec:
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -120,7 +122,8 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		},
 		kubeclientset:   kube,
 		wfclientset:     wfclientset,
-		completedPods:   make(chan string, 512),
+		completedPods:   make(chan string, 16),
+		wfInformer:      wfInformer,
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
@@ -128,6 +131,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfArchive:       sqldb.NullWorkflowArchive,
 		hydrator:        hydratorfake.Noop,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		eventRecorder:   record.NewFakeRecorder(16),
 	}
 	return cancel, controller
 }

@@ -13,12 +13,12 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
@@ -186,8 +186,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.NoError(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
@@ -198,8 +197,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	}
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.NoError(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -260,8 +258,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.Nil(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
@@ -272,8 +269,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	}
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.Nil(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -339,16 +335,14 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.Nil(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, "child-node-1")
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.Nil(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -392,8 +386,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.Nil(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
@@ -404,8 +397,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	}
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.Nil(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -566,13 +558,11 @@ func TestBackoffMessage(t *testing.T) {
 	retryNode := woc.getNodeByName("retry-backoff-s69z6")
 
 	// Simulate backoff of 4 secods
-	firstNode, err := woc.getFirstChildNode(retryNode)
-	assert.NoError(t, err)
+	firstNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, 0)
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-8 * time.Second)}
 	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-6 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
-	lastNode, err := woc.getLastChildNode(retryNode)
-	assert.NoError(t, err)
+	lastNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, -1)
 	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
@@ -2358,11 +2348,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: artifact-repo-config-ref-
+  namespace: my-ns
 spec:
   entrypoint: whalesay
   artifactRepositoryRef:
-    configMap: artifact-repository
-    key: config
+    key: minio
   templates:
   - name: whalesay
     container:
@@ -2395,10 +2385,10 @@ func TestArtifactRepositoryRef(t *testing.T) {
 	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(wf.ObjectMeta.Namespace).Create(
 		&apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "artifact-repository",
+				Name: "artifact-repositories",
 			},
 			Data: map[string]string{
-				"config": artifactRepositoryConfigMapData,
+				"minio": artifactRepositoryConfigMapData,
 			},
 		},
 	)
@@ -2740,54 +2730,18 @@ func TestEventInvalidSpec(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
-	invalidSpecEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, invalidSpecEvent.Reason)
-	assert.Equal(t, "invalid spec: template name '123' undefined", invalidSpecEvent.Message)
+	events := getEvents(controller, 2)
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
+	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", events[1])
 }
 
-var timeout = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: timeout-template
-spec:
-  entrypoint: sleep
-  activeDeadlineSeconds: 1
-  templates:
-  - name: sleep
-    container:
-      image: alpine:latest
-      command: [sh, -c, sleep 10]
-`
-
-func TestEventTimeout(t *testing.T) {
-	// Test whether a WorkflowTimedOut event is emitted in case of timeout
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(timeout)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	woc = newWorkflowOperationCtx(wf, controller)
-	time.Sleep(10 * time.Second)
-	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
-	timeoutEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, timeoutEvent.Reason)
+func getEvents(controller *WorkflowController, num int) []string {
+	c := controller.eventRecorder.(*record.FakeRecorder).Events
+	events := make([]string, num)
+	for i := 0; i < num; i++ {
+		events[i] = <-c
+	}
+	return events
 }
 
 var failLoadArtifactRepoCm = `
@@ -2822,14 +2776,9 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
-	failEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, failEvent.Reason)
-	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
+	events := getEvents(controller, 2)
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
+	assert.Equal(t, "Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", events[1])
 }
 
 var pdbwf = `

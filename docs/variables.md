@@ -16,6 +16,7 @@ The following variables are made available to reference various metadata of a wo
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
+| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
@@ -26,6 +27,7 @@ The following variables are made available to reference various metadata of a wo
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
+| `tasks.<STEPNAME>.outputs.parameters` | When the previous task uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
@@ -91,4 +93,4 @@ For `Template`-level metrics:
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
-| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Includes `name`, `message`, `templateName`, `finishedAt`, and `phase`. |
+| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |

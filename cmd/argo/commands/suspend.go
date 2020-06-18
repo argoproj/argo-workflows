@@ -14,6 +14,13 @@ func NewSuspendCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "suspend WORKFLOW1 WORKFLOW2...",
 		Short: "suspend zero or more workflow",
+		Example: `# Suspend a workflow:
+
+  argo suspend my-wf
+
+# Suspend the latest workflow:
+  argo suspend @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()

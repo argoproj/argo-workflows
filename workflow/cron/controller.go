@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -126,7 +127,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get CronWorkflow '%s' from informer index: %+v", key, err)
+		log.WithError(err).Error(fmt.Sprintf("Failed to get CronWorkflow '%s' from informer index", key))
 		return true
 	}
 	cc.nameEntryIDMapLock.Lock()
@@ -146,15 +147,17 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+
+	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
-		log.Error(err)
+		log.WithError(err).Error("invalid cron workflow")
 		return true
 	}
 
 	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
 	if err != nil {
-		log.Errorf("could not run outstanding Workflow: %s", err)
+		log.WithError(err).Error("could not run outstanding Workflow")
 		return true
 	}
 
@@ -171,7 +174,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	entryId, err := cc.cron.AddJob(cronSchedule, cronWorkflowOperationCtx)
 	if err != nil {
-		log.Errorf("could not schedule CronWorkflow: %s", err)
+		log.WithError(err).Error("could not schedule CronWorkflow")
 		return true
 	}
 	cc.nameEntryIDMap[key.(string)] = entryId
@@ -195,7 +198,7 @@ func (cc *Controller) processNextWorkflowItem() bool {
 
 	obj, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+		log.WithError(err).Error(fmt.Sprintf("Failed to get Workflow '%s' from informer index", key))
 		return true
 	}
 

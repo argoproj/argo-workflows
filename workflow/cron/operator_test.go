@@ -183,6 +183,63 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
-	assert.Equal(t, v1alpha1.ConditionTypeSubmissionError, submissionErrorCond.Type)
+	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
 	assert.Contains(t, submissionErrorCond.Message, "'bad template name' is invalid")
+}
+
+var specError = `
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world
+spec:
+  concurrencyPolicy: Replace
+  failedJobsHistoryLimit: 4
+  schedule: 10 * * 12737123 *
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  timezone: America/Los_Angeles
+  workflowSpec:
+    arguments: {}
+    entrypoint: whalesay
+    templates:
+    - arguments: {}
+      container:
+        args:
+        - "\U0001F553 hello world"
+        command:
+        - cowsay
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: whalesay
+      outputs: {}
+`
+
+func TestSpecError(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(specError), &cronWf)
+	assert.NoError(t, err)
+
+	cs := fake.NewSimpleClientset()
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfLister:    &fakeLister{},
+		cronWf:      &cronWf,
+		log:         logrus.WithFields(logrus.Fields{}),
+		metrics:     &testMetrics,
+	}
+
+	err = woc.validateCronWorkflow()
+	assert.Error(t, err)
+	assert.Len(t, woc.cronWf.Status.Conditions, 1)
+	submissionErrorCond := woc.cronWf.Status.Conditions[0]
+	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
+	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
+	assert.Contains(t, submissionErrorCond.Message, "cron schedule is malformed: End of range (12737123) above maximum (12): 12737123")
 }

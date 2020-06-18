@@ -60,6 +60,13 @@ func NewGetCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
+		Example: `# Get information about a workflow:
+
+  argo get my-wf
+
+# Get the latest workflow:
+  argo get @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -415,11 +422,15 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 // two things. First argument tells if the node is filtered and second argument
 // tells whether the children need special indentation due to filtering
 // Return Values: (is node filtered, do children need special indent)
-func filterNode(node wfv1.NodeStatus) (bool, bool) {
+func filterNode(node wfv1.NodeStatus, getArgs getFlags) (bool, bool) {
 	if node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1 {
 		return true, false
 	} else if node.Type == wfv1.NodeTypeStepGroup {
 		return true, true
+	} else if node.Type == wfv1.NodeTypeSkipped && node.Phase == wfv1.NodeOmitted {
+		return true, false
+	} else if !getArgs.shouldPrint(node) {
+		return true, false
 	}
 	return false, false
 }
@@ -471,9 +482,6 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if !getArgs.shouldPrint(node) {
-		return
-	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
 		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
@@ -508,7 +516,7 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 // renderNodes for each renderNode Type
 // boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
-	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
@@ -521,7 +529,7 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 
 // nonBoundaryParentNode
 func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
-	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
@@ -534,7 +542,7 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 
 // executionNode
 func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, _ int, nodePrefix string, _ string, getArgs getFlags) {
-	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}

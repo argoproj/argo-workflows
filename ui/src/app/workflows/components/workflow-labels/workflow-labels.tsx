@@ -21,7 +21,7 @@ export class WorkflowLabels extends React.Component<WorkflowLabelsProps, {}> {
                 Object.keys(w.metadata.labels).map(key => (
                     <div
                         className='tag'
-                        key={`${w.metadata.namespace}-${w.metadata.name}-${key}`}
+                        key={`${w.metadata.uid}-${key}`}
                         onClick={async e => {
                             e.preventDefault();
                             this.props.onChange(key);
@@ -32,7 +32,7 @@ export class WorkflowLabels extends React.Component<WorkflowLabelsProps, {}> {
                 ))
             );
         } else {
-            labels.push(<div key={`${w.metadata.namespace}-${w.metadata.name}-none`}> No labels </div>);
+            labels.push(<div key={`${w.metadata.uid}-none`}> No labels </div>);
         }
 
         return <div className='wf-row-labels'>{labels}</div>;
