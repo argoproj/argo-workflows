@@ -678,11 +678,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			// Formula: timeToWait = duration * factor^retry_number
 			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
 		}
-
-		// The deadline is based on StartedAt instead of FinishedAt, because:
-		// * FinishedAt may not be available, e.g. when the node fails due to a "pod-deleted" error.
-		// * It's more consistent with the behavior of MaxDuration.
-		waitingDeadline := lastChildNode.StartedAt.Add(timeToWait)
+		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
 		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
@@ -836,6 +832,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
+			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
+			// See processNodeRetries for more details.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true

@@ -563,7 +563,7 @@ func TestBackoffMessage(t *testing.T) {
 	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-6 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
 	lastNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, -1)
-	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
@@ -576,7 +576,7 @@ func TestBackoffMessage(t *testing.T) {
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-9 * time.Second)}
 	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-7 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
-	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-4 * time.Second)}
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
@@ -586,25 +586,12 @@ func TestBackoffMessage(t *testing.T) {
 	// Message should not change
 	assert.Equal(t, "Backoff for 4 seconds", newRetryNode.Message)
 
-	// Advance time one second, and simulate a pod-deleted error by clearing FinishedAt
-	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-10 * time.Second)}
-	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-8 * time.Second)}
-	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
-	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
-	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
-
-	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
-	assert.NoError(t, err)
-	assert.False(t, proceed)
-	// Message should not change
-	assert.Equal(t, "Backoff for 4 seconds", newRetryNode.Message)
-
-	// Advance time 2 seconds
+	// Advance time 3 seconds
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-12 * time.Second)}
 	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-10 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
-	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-5 * time.Second)}
-	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
+	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-7 * time.Second)}
+	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-5 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
 	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
