@@ -254,9 +254,6 @@ mocks: $(GOPATH)/bin/mockery
 .PHONY: codegen
 codegen: status proto swagger manifests schemas docs
 
-$(GOPATH)/bin/controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen
-
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
@@ -265,20 +262,28 @@ crds: $(GOPATH)/bin/controller-gen
 schemas:
 	go run ./hack genschemas
 
-$(GOPATH)/bin/go-to-protobuf:
-	go install k8s.io/code-generator/cmd/go-to-protobuf
+# you cannot install a specific version using `go install`, so we do this business
+.PHONY: tools
+tools:
+	go mod vendor
+	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	rm -Rf vendor
 
-$(GOPATH)/bin/protoc-gen-gogo:
-	go install github.com/gogo/protobuf/protoc-gen-gogo
-
-$(GOPATH)/bin/protoc-gen-gogofast:
-	go install github.com/gogo/protobuf/protoc-gen-gogofast
-
-$(GOPATH)/bin/protoc-gen-grpc-gateway:
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-
-$(GOPATH)/bin/protoc-gen-swagger:
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+$(GOPATH)/bin/controller-gen: tools
+$(GOPATH)/bin/go-to-protobuf: tools
+$(GOPATH)/bin/protoc-gen-gogo: tools
+$(GOPATH)/bin/protoc-gen-gogofast: tools
+$(GOPATH)/bin/protoc-gen-grpc-gateway: tools
+$(GOPATH)/bin/protoc-gen-swagger: tools
+$(GOPATH)/bin/openapi-gen: tools
+$(GOPATH)/bin/swagger: tools
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports
@@ -374,9 +379,6 @@ test-images:
 stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
-$(GOPATH)/bin/goreman:
-	go get github.com/mattn/goreman
-
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
@@ -466,10 +468,6 @@ clean:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-$(GOPATH)/bin/openapi-gen:
-	go install k8s.io/kube-openapi/cmd/openapi-gen
-	go mod tidy
-
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
@@ -483,9 +481,6 @@ dist/kubernetes.swagger.json:
 
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
-
-$(GOPATH)/bin/swagger:
-	go install github.com/go-swagger/go-swagger/cmd/swagger
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
