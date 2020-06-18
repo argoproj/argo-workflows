@@ -83,8 +83,10 @@ type Config struct {
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
-	// PodSpecLogStrategy enable the logging of podspec on controller log.
+	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+
+	ReferenceMode ReferenceModeConfig `json:"referenceMode,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -152,6 +154,7 @@ type ConnectionPool struct {
 	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
+
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
@@ -234,4 +237,33 @@ type MetricsConfig struct {
 	Port string `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
+}
+
+type ReferenceMode string
+
+const (
+	ReferenceModeAny ReferenceMode = "Any"
+	ReferenceModeReference ReferenceMode = "Reference"
+	ReferenceModeStrict ReferenceMode = "Strict"
+)
+
+func (ref ReferenceMode) MustUseReference() bool {
+	return ref == ReferenceModeReference || ref == ReferenceModeStrict
+}
+
+func (ref ReferenceMode) MustNotChangeSpec() bool {
+	return ref == ReferenceModeStrict
+}
+
+type ReferenceModeConfig struct {
+	Namespaces map[string]ReferenceMode `json:"namespaces"`
+}
+
+func (ref *ReferenceModeConfig) GetReferenceModeForNamespace(namespace string) ReferenceMode {
+	if mode, ok := ref.Namespaces[namespace]; ok {
+		return mode
+	} else if mode, ok := ref.Namespaces["*"]; ok {
+		return mode
+	}
+	return ReferenceModeAny
 }

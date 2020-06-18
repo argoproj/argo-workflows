@@ -53,9 +53,6 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
-	// referenceMode restricts execution of Workflows to only those referencing WorkflowTemplates via workflowTemplateRef
-	referenceMode bool
-
 	configController config.Controller
 	// Config is the workflow controller's configuration
 	Config config.Config
@@ -98,18 +95,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(
-	restConfig *rest.Config,
-	kubeclientset kubernetes.Interface,
-	wfclientset wfclientset.Interface,
-	namespace string,
-	managedNamespace string,
-	executorImage,
-	executorImagePullPolicy,
-	containerRuntimeExecutor,
-	configMap string,
-	referenceMode bool,
-) *WorkflowController {
+func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace string, managedNamespace string, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) *WorkflowController {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Debugf)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events(namespace)})
@@ -120,7 +106,6 @@ func NewWorkflowController(
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
-		referenceMode:              referenceMode,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,

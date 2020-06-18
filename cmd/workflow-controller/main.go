@@ -44,7 +44,6 @@ func NewRootCommand() *cobra.Command {
 		qps                      float32
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
-		referenceMode            bool
 	)
 
 	var command = cobra.Command{
@@ -80,7 +79,7 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, referenceMode)
+			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -104,7 +103,6 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&burst, "burst", 30, "Maximum burst for throttle.")
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
-	command.Flags().BoolVar(&referenceMode, "reference-mode", false, "run workflow-controller in reference mode, where only Workflows consisting of a workflowTemplateRef will be executed")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	return &command
 }
