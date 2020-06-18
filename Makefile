@@ -479,11 +479,14 @@ dist/kubernetes.swagger.json:
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
+$(GOPATH)/bin/swagger:
+	go install github.com/go-swagger/go-swagger/cmd/swagger
+
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
-dist/swagger-conflicts: $(SWAGGER_FILES)
+dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
-dist/mixed.swagger.json: $(SWAGGER_FILES) dist/swagger-conflicts
+dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
 	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
 	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
 
