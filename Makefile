@@ -253,8 +253,11 @@ mocks: $(GOPATH)/bin/mockery
 .PHONY: codegen
 codegen: status proto swagger manifests schemas mocks docs
 
+$(GOPATH)/bin/controller-gen:
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen
+
 .PHONY: crds
-crds:
+crds: $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
 
 .PHONY: schemas
