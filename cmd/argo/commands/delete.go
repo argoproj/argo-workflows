@@ -25,6 +25,13 @@ func NewDeleteCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]]",
 		Short: "delete workflows",
+		Example: `# Delete a workflow:
+
+  argo delete my-wf
+
+# Delete the latest workflow:
+  argo delete @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
