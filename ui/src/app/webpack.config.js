@@ -65,7 +65,7 @@ const config = {
     }, {
       from: "node_modules/@fortawesome/fontawesome-free/webfonts", to: "assets/fonts"
     }, {
-      from: "src/app/assets", to: "assets"
+      from: "../api/openapi-spec/swagger.json", to: "assets/openapi-spec/swagger.json"
     }, {
       from: 'node_modules/monaco-editor/min/vs/base/browser/ui/codiconLabel/codicon/codicon.ttf', to: "."
     }]),

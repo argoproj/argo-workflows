@@ -246,15 +246,11 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger manifests schemas docs
+codegen: status proto swagger manifests docs
 
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
-
-.PHONY: schemas
-schemas:
-	go run ./hack genschemas
 
 # you cannot install a specific version using `go install`, so we do this business
 .PHONY: tools

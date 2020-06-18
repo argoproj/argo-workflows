@@ -34,14 +34,25 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     }
 
     public componentDidMount() {
-        const uri = uiUrl('assets/schemas/' + this.props.kind + '.json');
+        const uri = uiUrl('assets/openapi-spec/swagger.json');
         fetch(uri)
             .then(res => res.json())
-            .then(schema => {
+            .then(swagger => {
                 // adds auto-completion to JSON only
                 languages.json.jsonDefaults.setDiagnosticsOptions({
                     validate: true,
-                    schemas: [{uri, fileMatch: ['*'], schema}]
+                    schemas: [
+                        {
+                            uri,
+                            fileMatch: ['*'],
+                            schema: {
+                                $id: 'http://workflows.argoproj.io/' + this.props.kind + '.json',
+                                $ref: '#/definitions/io.argoproj.workflow.v1alpha1.' + this.props.kind,
+                                $schema: 'http://json-schema.org/draft-07/schema',
+                                definitions: swagger.definitions
+                            }
+                        }
+                    ]
                 });
             })
             .catch(error => this.setState({error}));
