@@ -3693,19 +3693,20 @@ func TestControllerReferenceMode(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	cancel, controller := newController()
 	defer cancel()
-	controller.Config.ReferenceMode = config.ReferenceModeReferenceOnly
+	controller.Config.WorkflowRequirements = &config.WorkflowRequirements{}
+	controller.Config.WorkflowRequirements.ReferenceOnly = true
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
 
-	controller.Config.ReferenceMode = config.ReferenceModeStrictReferenceOnly
+	controller.Config.WorkflowRequirements.StrictReferenceOnly = true
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
 
-	controller.Config.ReferenceMode = ""
+	controller.Config.WorkflowRequirements = nil
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
@@ -3716,7 +3717,8 @@ func TestValidReferenceMode(t *testing.T) {
 	wfTmpl := test.LoadTestWorkflowTemplate("testdata/workflow-template-submittable.yaml")
 	cancel, controller := newController(wf, wfTmpl)
 	defer cancel()
-	controller.Config.ReferenceMode = config.ReferenceModeStrictReferenceOnly
+	controller.Config.WorkflowRequirements = &config.WorkflowRequirements{}
+	controller.Config.WorkflowRequirements.StrictReferenceOnly = true
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
@@ -3727,7 +3729,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
 
-	controller.Config.ReferenceMode = config.ReferenceModeReferenceOnly
+	controller.Config.WorkflowRequirements.ReferenceOnly = true
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)

@@ -86,8 +86,8 @@ type Config struct {
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 
-	// ReferenceMode
-	ReferenceMode ReferenceMode `json:"referenceMode,omitempty"`
+	// WorkflowRequirements
+	WorkflowRequirements *WorkflowRequirements `json:"referenceMode,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -240,17 +240,21 @@ type MetricsConfig struct {
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 }
 
-type ReferenceMode string
-
-const (
-	ReferenceModeReferenceOnly       ReferenceMode = "ReferenceOnly"
-	ReferenceModeStrictReferenceOnly ReferenceMode = "StrictReferenceOnly"
-)
-
-func (ref ReferenceMode) MustUseReference() bool {
-	return ref == ReferenceModeReferenceOnly || ref == ReferenceModeStrictReferenceOnly
+type WorkflowRequirements struct {
+	ReferenceOnly       bool `json:"referenceOnly"`
+	StrictReferenceOnly bool `json:"strictReferenceOnly"`
 }
 
-func (ref ReferenceMode) MustNotChangeSpec() bool {
-	return ref == ReferenceModeStrictReferenceOnly
+func (req *WorkflowRequirements) MustUseReference() bool {
+	if req == nil {
+		return false
+	}
+	return req.ReferenceOnly || req.StrictReferenceOnly
+}
+
+func (req *WorkflowRequirements) MustNotChangeSpec() bool {
+	if req == nil {
+		return false
+	}
+	return req.StrictReferenceOnly
 }
