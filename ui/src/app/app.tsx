@@ -13,6 +13,7 @@ import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import help from './help';
 import login from './login';
+import sensors from './sensors';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import workflowTemplates from './workflow-templates';
@@ -27,9 +28,11 @@ const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
+const sensorsUrl = uiUrl('sensors');
 const routes: {
     [path: string]: {component: React.ComponentType<RouteComponentProps<any>>};
 } = {
+    [sensorsUrl]: {component: sensors.component},
     [workflowsUrl]: {component: workflows.component},
     [workflowTemplatesUrl]: {component: workflowTemplates.component},
     [clusterWorkflowTemplatesUrl]: {component: clusterWorkflowTemplates.component},
@@ -42,6 +45,11 @@ const routes: {
 export const history = createBrowserHistory();
 
 const navItems = [
+    {
+        title: 'Sensors',
+        path: sensorsUrl,
+        iconClassName: 'fa fa-meteor'
+    },
     {
         title: 'Timeline',
         path: workflowsUrl,
