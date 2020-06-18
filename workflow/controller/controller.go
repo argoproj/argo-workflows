@@ -85,6 +85,7 @@ type WorkflowController struct {
 	wfArchive             sqldb.WorkflowArchive
 	metrics               metrics.Metrics
 	eventRecorder         record.EventRecorder
+	archiveLabelSelector  labels.Selector
 }
 
 const (
@@ -764,4 +765,9 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	}
 
 	return metricsConfig, telemetryConfig
+}
+
+func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
+	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
+
 }

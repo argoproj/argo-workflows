@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/labels"
 	"testing"
 	"time"
 
@@ -380,5 +381,35 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
 
+	})
+}
+var labelSelector =`
+  matchLabels:
+	workflows.argoproj.io/archive-strategy: true
+`
+
+func TestIsArchive(t *testing.T) {
+	_, controller := newController()
+	var lblSelector metav1.LabelSelector
+	lblSelector.MatchLabels = make(map[string]string)
+	lblSelector.MatchLabels["workflows.argoproj.io/archive-strategy"] = "true"
+
+	workflow := unmarshalWF(helloWorldWf)
+	t.Run("EverythingSelector", func(t *testing.T) {
+		controller.archiveLabelSelector = labels.Everything()
+		assert.True(t, controller.isArchivable(workflow))
+	})
+	t.Run("NothingSelector", func(t *testing.T) {
+		controller.archiveLabelSelector = labels.Nothing()
+		assert.False(t, controller.isArchivable(workflow))
+	})
+	t.Run("ConfiguredSelector", func(t *testing.T) {
+		selector, err := metav1.LabelSelectorAsSelector(&lblSelector)
+		assert.NoError(t, err)
+		controller.archiveLabelSelector = selector
+		assert.False(t, controller.isArchivable(workflow))
+		workflow.Labels = make(map[string]string)
+		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
+		assert.True(t, controller.isArchivable(workflow))
 	})
 }

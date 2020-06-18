@@ -5,8 +5,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -60,14 +58,12 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		}
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
-			archiveSelector := labels.Everything()
-			if persistence.ArchiveLabelSelector != nil {
-				archiveSelector, err = metav1.LabelSelectorAsSelector(persistence.ArchiveLabelSelector)
-				if err != nil {
-					return err
-				}
+
+			wfc.archiveLabelSelector, err = persistence.GetArchiveLabelSelector()
+			if err != nil {
+				return err
 			}
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService, archiveSelector)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")

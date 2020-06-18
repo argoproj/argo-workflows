@@ -1600,9 +1600,14 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.updated = true
 				woc.wf.Status.Message = err.Error()
 			}
-			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
-			if err != nil {
-				woc.log.WithField("err", err).Error("Failed to archive workflow")
+
+			if woc.controller.isArchivable(woc.wf) {
+				err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
+				if err != nil {
+					woc.log.WithField("err", err).Error("Failed to archive workflow")
+				}
+			} else {
+				woc.log.Infof("Does't match with archive label selector. Skipping Archive")
 			}
 			woc.updated = true
 		}
