@@ -3,8 +3,18 @@
 .workflows-list {
   padding: 1em;
 
+  &__row-container {
+      a {
+        color: $argo-color-gray-6;
+      }
+
+      a:hover {
+        color: $argo-color-teal-5;
+      }
+  }
+
   &__status {
-    max-width: 60px;
+    max-width: 80px;
     display: flex; 
     align-items: center; 
 
@@ -12,6 +22,11 @@
       margin-right: 12px;
       z-index: 10;
     }
+  }
+
+  &__link-wrapper {
+    display: flex;
+    width: 100%;
   }
 
   &__labels-container {
