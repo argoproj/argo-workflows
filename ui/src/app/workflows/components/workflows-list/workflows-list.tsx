@@ -16,7 +16,7 @@ import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import * as Actions from '../../../shared/workflow-actions';
+import * as Actions from '../../../shared/workflow-operations';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
@@ -38,10 +38,10 @@ interface State {
     selectedWorkflows: {[index: string]: models.Workflow};
     workflows?: Workflow[];
     error?: Error;
-    batchActionDisabled: Actions.ActionDisabled;
+    batchActionDisabled: Actions.OperationDisabled;
 }
 
-const allBatchActionsEnabled: Actions.ActionDisabled = {
+const allBatchActionsEnabled: Actions.OperationDisabled = {
     RETRY: false,
     RESUBMIT: false,
     SUSPEND: false,
@@ -338,7 +338,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private updateBatchActionsDisabled(wf: Workflow, deselect: boolean): void {
         const currentlyDisabled: any = this.state.batchActionDisabled;
-        const actions: any = Actions.WorkflowActions;
+        const actions: any = Actions.WorkflowOperations;
         const nowDisabled: any = {...allBatchActionsEnabled};
         for (const action of Object.keys(currentlyDisabled)) {
             if (deselect) {

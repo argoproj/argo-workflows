@@ -2,11 +2,11 @@ import {NodePhase, Workflow} from '../../models';
 import {services} from './services';
 import {Utils} from './utils';
 
-export type ActionDisabled = {
-    [action in WorkflowActionName]: boolean;
+export type OperationDisabled = {
+    [action in WorkflowOperationName]: boolean;
 };
 
-export type WorkflowActionName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
+export type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
 
 export interface WorkflowAction {
     title: string;
@@ -15,7 +15,7 @@ export interface WorkflowAction {
     disabled: (wf: Workflow) => boolean;
 }
 
-export const WorkflowActions = {
+export const WorkflowOperations = {
     RETRY: {
         title: 'RETRY',
         iconClassName: 'fa fa-undo',

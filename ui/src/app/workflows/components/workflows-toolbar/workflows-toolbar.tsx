@@ -3,15 +3,15 @@ import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Workflow} from '../../../../models';
 import {AppContext, Consumer} from '../../../shared/context';
-import * as Actions from '../../../shared/workflow-actions';
-import {WorkflowAction} from '../../../shared/workflow-actions';
+import * as Actions from '../../../shared/workflow-operations';
+import {WorkflowAction} from '../../../shared/workflow-operations';
 
 require('./workflows-toolbar.scss');
 
 interface WorkflowsToolbarProps {
     selectedWorkflows: {[index: string]: Workflow};
     loadWorkflows: () => void;
-    isDisabled: Actions.ActionDisabled;
+    isDisabled: Actions.OperationDisabled;
 }
 
 interface WorkflowGroupAction extends WorkflowAction {
@@ -76,7 +76,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
 
     private renderActions(ctx: any): JSX.Element[] {
         const actionButtons = [];
-        const actions: any = Actions.WorkflowActions;
+        const actions: any = Actions.WorkflowOperations;
         const disabled: any = this.props.isDisabled;
         const groupActions: WorkflowGroupAction[] = Object.keys(actions).map(actionName => {
             const action = actions[actionName];
