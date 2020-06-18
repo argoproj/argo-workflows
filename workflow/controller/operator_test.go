@@ -3700,6 +3700,7 @@ func TestControllerReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
 
+	controller.Config.WorkflowRequirements = &config.WorkflowRequirements{}
 	controller.Config.WorkflowRequirements.StrictReferenceOnly = true
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
@@ -3729,6 +3730,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
 
+	controller.Config.WorkflowRequirements = &config.WorkflowRequirements{}
 	controller.Config.WorkflowRequirements.ReferenceOnly = true
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
