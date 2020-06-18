@@ -124,7 +124,6 @@ jobs:
       - name: Download all Go modules
         run: |
           go mod download
-          git diff --exit-code
       - name: Install Kustomize
         run: |
             cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
