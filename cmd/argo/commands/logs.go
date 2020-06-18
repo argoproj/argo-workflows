@@ -46,6 +46,8 @@ func NewLogsCommand() *cobra.Command {
 
   argo logs --since=1h my-pod
 
+# Print the logs of the latest workflow:
+  argo logs @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 
