@@ -134,6 +134,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		hydrator:        hydratorfake.Noop,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorder:   record.NewFakeRecorder(16),
+		archiveLabelSelector: labels.Everything(),
 	}
 	return cancel, controller
 }
