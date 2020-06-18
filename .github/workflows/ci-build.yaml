@@ -84,6 +84,12 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
+      - name: Make lint
+        if: ${{ matrix.test == 'test' }}
+        env:
+          GOPATH: /home/runner/go
+        run: |
+          make lint
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1
@@ -143,11 +149,6 @@ jobs:
           GOPATH: /home/runner/go
         run: |
           make manifests
-      - name: Make lint
-        env:
-          GOPATH: /home/runner/go
-        run: |
-          make lint
       - name: Ensure nothing changed
         run: git diff --exit-code
 
