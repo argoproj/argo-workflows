@@ -86,7 +86,8 @@ type Config struct {
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 
-	ReferenceMode ReferenceModeConfig `json:"referenceMode,omitempty"`
+	// ReferenceMode
+	ReferenceMode ReferenceMode `json:"referenceMode,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -242,28 +243,14 @@ type MetricsConfig struct {
 type ReferenceMode string
 
 const (
-	ReferenceModeAny ReferenceMode = "Any"
-	ReferenceModeReference ReferenceMode = "Reference"
-	ReferenceModeStrict ReferenceMode = "Strict"
+	ReferenceModeReferenceOnly       ReferenceMode = "ReferenceOnly"
+	ReferenceModeStrictReferenceOnly ReferenceMode = "StrictReferenceOnly"
 )
 
 func (ref ReferenceMode) MustUseReference() bool {
-	return ref == ReferenceModeReference || ref == ReferenceModeStrict
+	return ref == ReferenceModeReferenceOnly || ref == ReferenceModeStrictReferenceOnly
 }
 
 func (ref ReferenceMode) MustNotChangeSpec() bool {
-	return ref == ReferenceModeStrict
-}
-
-type ReferenceModeConfig struct {
-	Namespaces map[string]ReferenceMode `json:"namespaces"`
-}
-
-func (ref *ReferenceModeConfig) GetReferenceModeForNamespace(namespace string) ReferenceMode {
-	if mode, ok := ref.Namespaces[namespace]; ok {
-		return mode
-	} else if mode, ok := ref.Namespaces["*"]; ok {
-		return mode
-	}
-	return ReferenceModeAny
+	return ref == ReferenceModeStrictReferenceOnly
 }
