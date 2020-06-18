@@ -2,9 +2,10 @@ package controller
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/labels"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -383,12 +384,8 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 
 	})
 }
-var labelSelector =`
-  matchLabels:
-	workflows.argoproj.io/archive-strategy: true
-`
 
-func TestIsArchive(t *testing.T) {
+func TestIsArchivable(t *testing.T) {
 	_, controller := newController()
 	var lblSelector metav1.LabelSelector
 	lblSelector.MatchLabels = make(map[string]string)
