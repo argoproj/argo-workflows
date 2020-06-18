@@ -252,7 +252,7 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger manifests schemas mocks docs
+codegen: status proto swagger manifests schemas docs
 
 $(GOPATH)/bin/controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen
