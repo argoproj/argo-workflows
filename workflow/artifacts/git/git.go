@@ -125,7 +125,7 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 			return err
 		}
 		err = repo.Fetch(&fetchOptions)
-		if err != nil && err.Error() != "already up-to-date" {
+		if isAlreadyUpToDateErr(err) {
 			return err
 		}
 	}
@@ -146,11 +146,15 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		submodulesCmd.Env = env
 		submoduleOutput, err := submodulesCmd.Output()
 		if err != nil {
-			return g.error(err, submodulesCmd)
+			return g.error(err, cmd)
 		}
-		log.Infof("`%s` stdout:\n%s", submodulesCmd.Args, string(submoduleOutput))
+		log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
 	}
 	return nil
+}
+
+func isAlreadyUpToDateErr(err error) bool {
+	return err != nil && err.Error() != "already up-to-date"
 }
 
 func (g *GitArtifactDriver) error(err error, cmd *exec.Cmd) error {
