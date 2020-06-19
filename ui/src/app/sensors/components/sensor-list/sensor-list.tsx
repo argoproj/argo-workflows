@@ -2,13 +2,16 @@ import {Page} from 'argo-ui';
 
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Sensor} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
+import {Sensor} from '../../model/sensors';
+import {PhaseIcon} from '../shared/phases-icon';
+import {SensorFilters} from './sensor-filters';
 
 interface State {
     initialized: boolean;
@@ -19,18 +22,6 @@ interface State {
 }
 
 export class SensorList extends BasePage<RouteComponentProps<any>, State> {
-    private static renderPhase(phase: string) {
-        switch (phase) {
-            case 'Complete':
-                return <i className='fa fa-check-circle status-icon--success' />;
-            case 'Active':
-                return <i className='fa fa-circle-notch fa-spin status-icon--running' />;
-            case 'Error':
-                return <i className='fa fa-times-circle status-icon--failed' />;
-            default:
-                return <i className='fa fa-clock status-icon--init' />;
-        }
-    }
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
@@ -61,12 +52,17 @@ export class SensorList extends BasePage<RouteComponentProps<any>, State> {
                     },
                     tools: []
                 }}>
-                {this.renderSensors()}
+                <div className='row'>
+                    <div className='columns small-12 xlarge-2'>
+                        <SensorFilters namespace={this.state.namespace} onChange={namespace => this.changeFilters(namespace)} />
+                    </div>
+                    <div className='columns small-12 xlarge-10'>{this.renderSensors()}</div>
+                </div>
             </Page>
         );
     }
 
-    private fetchSensors(namespace: string): void {
+    private fetchSensors(namespace: string) {
         let sensorList;
         let newNamespace = namespace;
         if (!this.state.initialized) {
@@ -101,39 +97,44 @@ export class SensorList extends BasePage<RouteComponentProps<any>, State> {
         if (this.state.sensors.length === 0) {
             return (
                 <ZeroState title='No senors'>
-                    <p>No sensors set-up.</p>
+                    <p>No sensors found</p>
+                    <p><a href='https://argoproj.github.io/argo-events/'>Learn more</a></p>
                 </ZeroState>
             );
         }
-
         return (
             <>
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
-                        <div className='columns small-2'>NAME</div>
-                        <div className='columns small-2'>NAMESPACE</div>
-                        <div className='columns small-3'>MESSAGE</div>
-                        <div className='columns small-2'>DEPENDENCIES</div>
-                        <div className='columns small-2'>TRIGGERS</div>
+                        <div className='columns small-3'>Name</div>
+                        <div className='columns small-3'>Namespace</div>
+                        <div className='columns small-2'>Started At</div>
+                        <div className='columns small-2'>Completed At</div>
                     </div>
                     {this.state.sensors.map(s => (
                         <Link className='row argo-table-list__row' key={`${s.metadata.uid}`} to={uiUrl(`sensors/${s.metadata.namespace}/${s.metadata.name}`)}>
-                            <div className='columns small-1'>{SensorList.renderPhase(s.status.phase)}</div>
-                            <div className='columns small-2'>{s.metadata.name}</div>
-                            <div className='columns small-2'>{s.metadata.namespace}</div>
-                            <div className='columns small-3'>{s.status.message || '-'}</div>
-                            <div className='columns small-2'>{s.spec.dependencies.map(d => d.name).join(',')}</div>
+                            <div className='columns small-1'>
+                                <PhaseIcon value={s.status.phase} />
+                            </div>
+                            <div className='columns small-3'>{s.metadata.name}</div>
+                            <div className='columns small-3'>{s.metadata.namespace}</div>
                             <div className='columns small-2'>
-                                {s.spec.triggers
-                                    .map(t => t.template)
-                                    .map(t => t.name)
-                                    .join(',')}
+                                <Timestamp date={s.status.startedAt} />
+                            </div>
+                            <div className='columns small-2'>
+                                <Timestamp date={s.status.completedAt} />
                             </div>
                         </Link>
                     ))}
                 </div>
             </>
         );
+    }
+
+    private changeFilters(namespace: string) {
+        this.setState({namespace});
+        history.pushState(null, '', uiUrl('sensors/' + namespace));
+        this.fetchSensors(namespace);
     }
 }

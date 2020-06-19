@@ -11,10 +11,21 @@ package sensor;
 message ListSensorsRequest {
     string namespace = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+    string fields = 4;
+}
+
+message GetSensorRequest {
+    string namespace = 1;
+    string name = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+    string fields = 4;
 }
 
 service SensorService {
     rpc ListSensors (ListSensorsRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList) {
         option (google.api.http).get = "/api/v1/sensors/{namespace}";
+    }
+    rpc GetSensor (GetSensorRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor) {
+        option (google.api.http).get = "/api/v1/sensors/{namespace}/{name}";
     }
 }

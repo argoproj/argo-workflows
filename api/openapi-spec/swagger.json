@@ -738,13 +738,59 @@
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
             "name": "listOptions.continue",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "fields",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList"
+              "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.SensorList"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sensors/{namespace}/{name}": {
+      "get": {
+        "tags": [
+          "SensorService"
+        ],
+        "operationId": "GetSensor",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "name": "getOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "fields",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.Sensor"
             }
           }
         }
@@ -1764,7 +1810,54 @@
     }
   },
   "definitions": {
-    "github.com.argoproj.argo_events.pkg.apis.common.Backoff": {
+    "google.protobuf.Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "grpc.gateway.runtime.StreamError": {
+      "type": "object",
+      "properties": {
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/google.protobuf.Any"
+          }
+        },
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.event.common.Amount": {
+      "description": "Amount represent a numeric amount.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "io.argoproj.event.common.Backoff": {
       "type": "object",
       "title": "Backoff for an operation",
       "properties": {
@@ -1774,14 +1867,12 @@
           "title": "Duration is the duration in nanoseconds"
         },
         "factor": {
-          "type": "number",
-          "format": "double",
-          "title": "Duration is multiplied by factor each iteration"
+          "title": "Duration is multiplied by factor each iteration",
+          "$ref": "#/definitions/io.argoproj.event.common.Amount"
         },
         "jitter": {
-          "type": "number",
-          "format": "double",
-          "title": "The amount of jitter applied each iteration"
+          "title": "The amount of jitter applied each iteration",
+          "$ref": "#/definitions/io.argoproj.event.common.Amount"
         },
         "steps": {
           "type": "integer",
@@ -1790,7 +1881,17 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.common.S3Artifact": {
+    "io.argoproj.event.common.Resource": {
+      "description": "Resource represent arbitrary structured data.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "io.argoproj.event.common.S3Artifact": {
       "type": "object",
       "title": "S3Artifact contains information about an S3 connection and bucket",
       "properties": {
@@ -1798,20 +1899,19 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "bucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Bucket"
+          "$ref": "#/definitions/io.argoproj.event.common.S3Bucket"
         },
         "endpoint": {
           "type": "string"
         },
         "events": {
           "type": "array",
-          "title": "+listType=string",
           "items": {
             "type": "string"
           }
         },
         "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Filter"
+          "$ref": "#/definitions/io.argoproj.event.common.S3Filter"
         },
         "insecure": {
           "type": "boolean",
@@ -1825,7 +1925,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.common.S3Bucket": {
+    "io.argoproj.event.common.S3Bucket": {
       "type": "object",
       "title": "S3Bucket contains information to describe an S3 Bucket",
       "properties": {
@@ -1837,7 +1937,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.common.S3Filter": {
+    "io.argoproj.event.common.S3Filter": {
       "type": "object",
       "title": "S3Filter represents filters to apply to bucket nofifications for specifying constraints on objects",
       "properties": {
@@ -1849,7 +1949,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.AWSLambdaTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.AWSLambdaTrigger": {
       "type": "object",
       "title": "AWSLambdaTrigger refers to specification of the trigger to invoke an AWS Lambda function",
       "properties": {
@@ -1867,16 +1967,15 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+listType=triggerParameters\n+optional",
+          "title": "+optional",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "payload": {
           "type": "array",
-          "title": "Payload is the list of key-value extracted from an event payload to construct the request payload.\n+listType=payloadParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "region": {
@@ -1889,7 +1988,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ArgoWorkflowTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.ArgoWorkflowTrigger": {
       "type": "object",
       "title": "ArgoWorkflowTrigger is the trigger for the Argo Workflow",
       "properties": {
@@ -1903,53 +2002,51 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of parameters to pass to resolved Argo Workflow object\n+listType=triggerParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "source": {
           "title": "Source of the K8 resource file(s)",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ArtifactLocation"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.ArtifactLocation"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ArtifactLocation": {
+    "io.argoproj.event.sensor.v1alpha1.ArtifactLocation": {
       "type": "object",
       "title": "ArtifactLocation describes the source location for an external artifact",
       "properties": {
         "configmap": {
           "title": "Configmap that stores the artifact",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ConfigmapArtifact"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.ConfigmapArtifact"
         },
         "file": {
           "title": "File artifact is artifact stored in a file",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.FileArtifact"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.FileArtifact"
         },
         "git": {
           "title": "Git repository hosting the artifact",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.GitArtifact"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.GitArtifact"
         },
         "inline": {
           "type": "string",
           "title": "Inline artifact is embedded in sensor spec as a string"
         },
         "resource": {
-          "type": "string",
-          "format": "byte",
-          "title": "Resource is generic template for K8s resource"
+          "title": "Resource is generic template for K8s resource",
+          "$ref": "#/definitions/io.argoproj.event.common.Resource"
         },
         "s3": {
           "title": "S3 compliant artifact",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Artifact"
+          "$ref": "#/definitions/io.argoproj.event.common.S3Artifact"
         },
         "url": {
           "title": "URL to fetch the artifact from",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.URLArtifact"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.URLArtifact"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.BasicAuth": {
+    "io.argoproj.event.sensor.v1alpha1.BasicAuth": {
       "type": "object",
       "title": "BasicAuth contains the reference to K8s secrets that holds the username and password",
       "properties": {
@@ -1967,7 +2064,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ConfigmapArtifact": {
+    "io.argoproj.event.sensor.v1alpha1.ConfigmapArtifact": {
       "type": "object",
       "title": "ConfigmapArtifact contains information about artifact in k8 configmap",
       "properties": {
@@ -1985,7 +2082,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.CustomTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.CustomTrigger": {
       "description": "CustomTrigger refers to the specification of the custom trigger.",
       "type": "object",
       "properties": {
@@ -1995,16 +2092,14 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of parameters that is applied to resolved custom trigger trigger object.\n+listType=triggerParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "payload": {
           "type": "array",
-          "title": "Payload is the list of key-value extracted from an event payload to construct the request payload.\n+listType=payloadParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "secure": {
@@ -2029,7 +2124,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.DataFilter": {
+    "io.argoproj.event.sensor.v1alpha1.DataFilter": {
       "type": "object",
       "title": "DataFilter describes constraints and filters for event data\nRegular Expressions are purposefully not a feature as they are overkill for our uses here\nSee Rob Pike's Post: https://commandcenter.blogspot.com/2011/08/regular-expressions-in-lexing-and.html",
       "properties": {
@@ -2047,20 +2142,20 @@
         },
         "value": {
           "type": "array",
-          "title": "+listType=value\nValue is the allowed string values for this key\nBooleans are passed using strconv.ParseBool()\nNumbers are parsed using as float64 using strconv.ParseFloat()\nStrings are taken as is\nNils this value is ignored",
+          "title": "Value is the allowed string values for this key\nBooleans are passed using strconv.ParseBool()\nNumbers are parsed using as float64 using strconv.ParseFloat()\nStrings are taken as is\nNils this value is ignored",
           "items": {
             "type": "string"
           }
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.DependencyGroup": {
+    "io.argoproj.event.sensor.v1alpha1.DependencyGroup": {
       "type": "object",
       "title": "DependencyGroup is the group of dependencies",
       "properties": {
         "dependencies": {
           "type": "array",
-          "title": "+listType=dependencies\nDependencies of events",
+          "title": "Dependencies of events",
           "items": {
             "type": "string"
           }
@@ -2071,12 +2166,12 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Event": {
+    "io.argoproj.event.sensor.v1alpha1.Event": {
       "description": "Event represents the cloudevent received from a gateway.",
       "type": "object",
       "properties": {
         "context": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventContext"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.EventContext"
         },
         "data": {
           "type": "string",
@@ -2084,7 +2179,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventContext": {
+    "io.argoproj.event.sensor.v1alpha1.EventContext": {
       "description": "EventContext holds the context of the cloudevent received from a gateway.",
       "type": "object",
       "properties": {
@@ -2118,7 +2213,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventDependency": {
+    "io.argoproj.event.sensor.v1alpha1.EventDependency": {
       "type": "object",
       "title": "EventDependency describes a dependency",
       "properties": {
@@ -2128,7 +2223,7 @@
         },
         "filters": {
           "title": "Filters and rules governing toleration of success and constraints on the context and data of an event",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventDependencyFilter"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.EventDependencyFilter"
         },
         "gatewayName": {
           "type": "string",
@@ -2140,19 +2235,19 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventDependencyFilter": {
+    "io.argoproj.event.sensor.v1alpha1.EventDependencyFilter": {
       "description": "EventDependencyFilter defines filters and constraints for a event.",
       "type": "object",
       "properties": {
         "context": {
           "title": "Context filter constraints",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventContext"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.EventContext"
         },
         "data": {
           "type": "array",
-          "title": "+listType=data\nData filter constraints with escalation",
+          "title": "Data filter constraints with escalation",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.DataFilter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.DataFilter"
           }
         },
         "name": {
@@ -2161,11 +2256,11 @@
         },
         "time": {
           "title": "Time filter on the event with escalation",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TimeFilter"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TimeFilter"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.FileArtifact": {
+    "io.argoproj.event.sensor.v1alpha1.FileArtifact": {
       "type": "object",
       "title": "FileArtifact contains information about an artifact in a filesystem",
       "properties": {
@@ -2174,7 +2269,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.GitArtifact": {
+    "io.argoproj.event.sensor.v1alpha1.GitArtifact": {
       "type": "object",
       "title": "GitArtifact contains information about an artifact stored in git",
       "properties": {
@@ -2188,7 +2283,7 @@
         },
         "creds": {
           "title": "Creds contain reference to git username and password\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.GitCreds"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.GitCreds"
         },
         "filePath": {
           "type": "string",
@@ -2204,7 +2299,7 @@
         },
         "remote": {
           "title": "Remote to manage set of tracked repositories. Defaults to \"origin\".\nRefer https://git-scm.com/docs/git-remote\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.GitRemoteConfig"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.GitRemoteConfig"
         },
         "sshKeyPath": {
           "type": "string",
@@ -2220,7 +2315,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.GitCreds": {
+    "io.argoproj.event.sensor.v1alpha1.GitCreds": {
       "type": "object",
       "title": "GitCreds contain reference to git username and password",
       "properties": {
@@ -2232,7 +2327,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.GitRemoteConfig": {
+    "io.argoproj.event.sensor.v1alpha1.GitRemoteConfig": {
       "type": "object",
       "title": "GitRemoteConfig contains the configuration of a Git remote",
       "properties": {
@@ -2241,7 +2336,7 @@
           "type": "string"
         },
         "urls": {
-          "description": "+listType=urls\nURLs the URLs of a remote repository. It must be non-empty. Fetch will\nalways use the first URL, while push will use all of them.",
+          "description": "URLs the URLs of a remote repository. It must be non-empty. Fetch will\nalways use the first URL, while push will use all of them.",
           "type": "array",
           "items": {
             "type": "string"
@@ -2249,7 +2344,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.HTTPSubscription": {
+    "io.argoproj.event.sensor.v1alpha1.HTTPSubscription": {
       "description": "HTTPSubscription holds the context of the HTTP subscription of events for the sensor.",
       "type": "object",
       "properties": {
@@ -2260,13 +2355,13 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.HTTPTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.HTTPTrigger": {
       "type": "object",
       "title": "HTTPTrigger is the trigger for the HTTP request",
       "properties": {
         "basicAuth": {
           "title": "BasicAuth configuration for the http request.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.BasicAuth"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.BasicAuth"
         },
         "headers": {
           "type": "object",
@@ -2281,16 +2376,14 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe HTTP trigger resource.\n+listType=atomic",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "payload": {
           "type": "array",
-          "title": "Payload is the list of key-value extracted from an event payload to construct the HTTP request payload.\n+listType=atomic",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "timeout": {
@@ -2300,7 +2393,7 @@
         },
         "tls": {
           "title": "TLS configuration for the HTTP client.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TLSConfig"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TLSConfig"
         },
         "url": {
           "description": "URL refers to the URL to send HTTP request to.",
@@ -2308,13 +2401,13 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.K8SResourcePolicy": {
+    "io.argoproj.event.sensor.v1alpha1.K8SResourcePolicy": {
       "type": "object",
       "title": "K8SResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels",
       "properties": {
         "backoff": {
           "title": "Backoff before checking resource state",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.Backoff"
+          "$ref": "#/definitions/io.argoproj.event.common.Backoff"
         },
         "errorOnBackoffTimeout": {
           "type": "boolean",
@@ -2330,7 +2423,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.KafkaTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.KafkaTrigger": {
       "description": "KafkaTrigger refers to the specification of the Kafka trigger.",
       "type": "object",
       "properties": {
@@ -2346,9 +2439,8 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.\n+listType=triggerParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "partition": {
@@ -2362,9 +2454,8 @@
         },
         "payload": {
           "type": "array",
-          "title": "Payload is the list of key-value extracted from an event payload to construct the request payload.\n+listType=payloadParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "requiredAcks": {
@@ -2374,7 +2465,7 @@
         },
         "tls": {
           "title": "TLS configuration for the Kafka producer.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TLSConfig"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TLSConfig"
         },
         "topic": {
           "type": "string",
@@ -2386,7 +2477,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.NATSSubscription": {
+    "io.argoproj.event.sensor.v1alpha1.NATSSubscription": {
       "type": "object",
       "title": "NATSSubscription holds the context of the NATS subscription of events for the sensor",
       "properties": {
@@ -2400,22 +2491,20 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.NATSTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.NATSTrigger": {
       "description": "NATSTrigger refers to the specification of the NATS trigger.",
       "type": "object",
       "properties": {
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of parameters that is applied to resolved NATS trigger object.\n+listType=triggerParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "payload": {
           "type": "array",
-          "title": "Payload is the list of key-value extracted from an event payload to construct the request payload.\n+listType=payloadParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "subject": {
@@ -2424,7 +2513,7 @@
         },
         "tls": {
           "title": "TLS configuration for the NATS producer.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TLSConfig"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TLSConfig"
         },
         "url": {
           "description": "URL of the NATS cluster.",
@@ -2432,7 +2521,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.NodeStatus": {
+    "io.argoproj.event.sensor.v1alpha1.NodeStatus": {
       "description": "NodeStatus describes the status for an individual node in the sensor's FSM.\nA single node can represent the status for event or a trigger.",
       "type": "object",
       "properties": {
@@ -2446,7 +2535,7 @@
         },
         "event": {
           "title": "Event stores the last seen event for this node",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Event"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.Event"
         },
         "id": {
           "type": "string",
@@ -2482,7 +2571,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.OpenWhiskTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.OpenWhiskTrigger": {
       "description": "OpenWhiskTrigger refers to the specification of the OpenWhisk trigger.",
       "type": "object",
       "properties": {
@@ -2504,16 +2593,15 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+listType=triggerParameters\n+optional",
+          "title": "+optional",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "payload": {
           "type": "array",
-          "title": "Payload is the list of key-value extracted from an event payload to construct the request payload.\n+listType=payloadParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "version": {
@@ -2522,30 +2610,29 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor": {
+    "io.argoproj.event.sensor.v1alpha1.Sensor": {
       "type": "object",
-      "title": "Sensor is the definition of a sensor resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
+      "title": "Sensor is the definition of a sensor resource\n+genclient\n+genclient:noStatus\n+kubebuilder:resource:shortName=sn\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object\n+k8s:openapi-gen=true",
       "properties": {
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorSpec"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.SensorSpec"
         },
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorStatus"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.SensorStatus"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList": {
+    "io.argoproj.event.sensor.v1alpha1.SensorList": {
       "type": "object",
       "title": "SensorList is the list of Sensor resources\n+k8s:deepcopy-gen:interfaces=io.k8s.apimachinery/pkg/runtime.Object",
       "properties": {
         "items": {
           "type": "array",
-          "title": "+listType=items",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.Sensor"
           }
         },
         "metadata": {
@@ -2553,7 +2640,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorResources": {
+    "io.argoproj.event.sensor.v1alpha1.SensorResources": {
       "type": "object",
       "title": "SensorResources holds the metadata of the resources created for the sensor",
       "properties": {
@@ -2567,7 +2654,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorSpec": {
+    "io.argoproj.event.sensor.v1alpha1.SensorSpec": {
       "type": "object",
       "title": "SensorSpec represents desired sensor state",
       "properties": {
@@ -2576,17 +2663,17 @@
           "title": "Circuit is a boolean expression of dependency groups"
         },
         "dependencies": {
-          "description": "+listType=dependencies\nDependencies is a list of the events that this sensor is dependent on.",
+          "description": "Dependencies is a list of the events that this sensor is dependent on.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.EventDependency"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.EventDependency"
           }
         },
         "dependencyGroups": {
-          "description": "+listType=dependencyGroups\nDependencyGroups is a list of the groups of events.",
+          "description": "DependencyGroups is a list of the groups of events.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.DependencyGroup"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.DependencyGroup"
           }
         },
         "errorOnFailedRound": {
@@ -2610,22 +2697,22 @@
         },
         "subscription": {
           "description": "Subscription refers to the modes of events subscriptions for the sensor.\nAt least one of the types of subscription must be defined in order for sensor to be meaningful.",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Subscription"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.Subscription"
         },
         "template": {
           "title": "Template is the pod specification for the sensor\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Template"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.Template"
         },
         "triggers": {
-          "description": "+listType=triggers\nTriggers is a list of the things that this sensor evokes. These are the outputs from this sensor.",
+          "description": "Triggers is a list of the things that this sensor evokes. These are the outputs from this sensor.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Trigger"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.Trigger"
           }
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorStatus": {
+    "io.argoproj.event.sensor.v1alpha1.SensorStatus": {
       "description": "SensorStatus contains information about the status of a sensor.",
       "type": "object",
       "properties": {
@@ -2645,7 +2732,7 @@
           "description": "Nodes is a mapping between a node ID and the node's status\nit records the states for the FSM of this sensor.",
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.NodeStatus"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.NodeStatus"
           }
         },
         "phase": {
@@ -2654,7 +2741,7 @@
         },
         "resources": {
           "title": "Resources refers to metadata of the resources created for the sensor",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorResources"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.SensorResources"
         },
         "startedAt": {
           "title": "StartedAt is the time at which this sensor was initiated",
@@ -2671,7 +2758,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SlackTrigger": {
+    "io.argoproj.event.sensor.v1alpha1.SlackTrigger": {
       "description": "SlackTrigger refers to the specification of the slack notification trigger.",
       "type": "object",
       "properties": {
@@ -2689,9 +2776,9 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of key-value extracted from event's payload that are applied to\nthe trigger resource.\n+listType=triggerParameters\n+optional",
+          "title": "+optional",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "slackToken": {
@@ -2700,7 +2787,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StandardK8STrigger": {
+    "io.argoproj.event.sensor.v1alpha1.StandardK8STrigger": {
       "type": "object",
       "title": "StandardK8STrigger is the standard Kubernetes resource trigger",
       "properties": {
@@ -2719,9 +2806,8 @@
         },
         "parameters": {
           "type": "array",
-          "title": "Parameters is the list of parameters that is applied to resolved K8s trigger object.\n+listType=triggerParameters",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "patchStrategy": {
@@ -2730,17 +2816,16 @@
         },
         "source": {
           "title": "Source of the K8 resource file(s)",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ArtifactLocation"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.ArtifactLocation"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StatusPolicy": {
+    "io.argoproj.event.sensor.v1alpha1.StatusPolicy": {
       "type": "object",
       "title": "StatusPolicy refers to the policy used to check the state of the trigger using response status",
       "properties": {
         "allow": {
           "type": "array",
-          "title": "Allow refers to the list of allowed response statuses. If the response status of the the trigger is within the list,\nthe trigger will marked as successful else it will result in trigger failure.\n+listType=allowedStatuses",
           "items": {
             "type": "integer",
             "format": "int32"
@@ -2748,21 +2833,21 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Subscription": {
+    "io.argoproj.event.sensor.v1alpha1.Subscription": {
       "description": "Subscription holds different modes of subscription available for sensor to consume events.",
       "type": "object",
       "properties": {
         "http": {
           "title": "HTTP refers to the HTTP subscription of events for the sensor.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.HTTPSubscription"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.HTTPSubscription"
         },
         "nats": {
           "title": "NATS refers to the NATS subscription of events for the sensor\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.NATSSubscription"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.NATSSubscription"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TLSConfig": {
+    "io.argoproj.event.sensor.v1alpha1.TLSConfig": {
       "type": "object",
       "title": "TLSConfig refers to TLS configuration for the HTTP client",
       "properties": {
@@ -2780,7 +2865,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Template": {
+    "io.argoproj.event.sensor.v1alpha1.Template": {
       "type": "object",
       "title": "Template holds the information of a sensor deployment template",
       "properties": {
@@ -2809,7 +2894,7 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TimeFilter": {
+    "io.argoproj.event.sensor.v1alpha1.TimeFilter": {
       "description": "TimeFilter describes a window in time.\nDataFilters out event events that occur outside the time limits.\nIn other words, only events that occur after Start and before Stop\nwill pass this filter.",
       "type": "object",
       "properties": {
@@ -2823,28 +2908,28 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Trigger": {
+    "io.argoproj.event.sensor.v1alpha1.Trigger": {
       "type": "object",
       "title": "Trigger is an action taken, output produced, an event created, a message sent",
       "properties": {
         "parameters": {
           "type": "array",
-          "title": "+listType=templateParameters\nParameters is the list of parameters applied to the trigger template definition",
+          "title": "Parameters is the list of parameters applied to the trigger template definition",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter"
+            "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameter"
           }
         },
         "policy": {
           "title": "Policy to configure backoff and execution criteria for the trigger",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerPolicy"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerPolicy"
         },
         "template": {
           "description": "Template describes the trigger specification.",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerTemplate"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerTemplate"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameter": {
+    "io.argoproj.event.sensor.v1alpha1.TriggerParameter": {
       "type": "object",
       "title": "TriggerParameter indicates a passed parameter to a service template",
       "properties": {
@@ -2858,11 +2943,11 @@
         },
         "src": {
           "title": "Src contains a source reference to the value of the parameter from a dependency",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameterSource"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerParameterSource"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerParameterSource": {
+    "io.argoproj.event.sensor.v1alpha1.TriggerParameterSource": {
       "type": "object",
       "title": "TriggerParameterSource defines the source for a parameter from a event event",
       "properties": {
@@ -2892,67 +2977,67 @@
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerPolicy": {
+    "io.argoproj.event.sensor.v1alpha1.TriggerPolicy": {
       "type": "object",
       "title": "TriggerPolicy dictates the policy for the trigger retries",
       "properties": {
         "k8s": {
           "title": "K8SResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.K8SResourcePolicy"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.K8SResourcePolicy"
         },
         "status": {
           "title": "Status refers to the policy used to check the state of the trigger using response status",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StatusPolicy"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.StatusPolicy"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerSwitch": {
+    "io.argoproj.event.sensor.v1alpha1.TriggerSwitch": {
       "description": "TriggerSwitch describes condition which must be satisfied in order to execute a trigger.\nDepending upon condition type, status of dependency groups is used to evaluate the result.",
       "type": "object",
       "properties": {
         "all": {
           "type": "array",
-          "title": "+listType=all\nAll acts as a AND operator between dependencies",
+          "title": "All acts as a AND operator between dependencies",
           "items": {
             "type": "string"
           }
         },
         "any": {
           "type": "array",
-          "title": "+listType=any\nAny acts as a OR operator between dependencies",
+          "title": "Any acts as a OR operator between dependencies",
           "items": {
             "type": "string"
           }
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerTemplate": {
+    "io.argoproj.event.sensor.v1alpha1.TriggerTemplate": {
       "description": "TriggerTemplate is the template that describes trigger specification.",
       "type": "object",
       "properties": {
         "argoWorkflow": {
           "title": "ArgoWorkflow refers to the trigger that can perform various operations on an Argo io.argoproj.workflow.v1alpha1.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ArgoWorkflowTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.ArgoWorkflowTrigger"
         },
         "awsLambda": {
           "title": "AWSLambda refers to the trigger designed to invoke AWS Lambda function with with on-the-fly constructable payload.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.AWSLambdaTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.AWSLambdaTrigger"
         },
         "custom": {
           "title": "CustomTrigger refers to the trigger designed to connect to a gRPC trigger server and execute a custom trigger.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.CustomTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.CustomTrigger"
         },
         "http": {
           "title": "HTTP refers to the trigger designed to dispatch a HTTP request with on-the-fly constructable payload.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.HTTPTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.HTTPTrigger"
         },
         "k8s": {
           "title": "StandardK8STrigger refers to the trigger designed to create or update a generic Kubernetes resource.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StandardK8STrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.StandardK8STrigger"
         },
         "kafka": {
           "description": "Kafka refers to the trigger designed to place messages on Kafka topic.\n+optional.",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.KafkaTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.KafkaTrigger"
         },
         "name": {
           "description": "Name is a unique name of the action to take.",
@@ -2960,23 +3045,23 @@
         },
         "nats": {
           "description": "NATS refers to the trigger designed to place message on NATS subject.\n+optional.",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.NATSTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.NATSTrigger"
         },
         "openWhisk": {
           "title": "OpenWhisk refers to the trigger designed to invoke OpenWhisk action.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.OpenWhiskTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.OpenWhiskTrigger"
         },
         "slack": {
           "title": "Slack refers to the trigger designed to send slack notification message.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SlackTrigger"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.SlackTrigger"
         },
         "switch": {
           "title": "Switch is the condition to execute the trigger.\n+optional",
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.TriggerSwitch"
+          "$ref": "#/definitions/io.argoproj.event.sensor.v1alpha1.TriggerSwitch"
         }
       }
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.URLArtifact": {
+    "io.argoproj.event.sensor.v1alpha1.URLArtifact": {
       "description": "URLArtifact contains information about an artifact at an http endpoint.",
       "type": "object",
       "properties": {
@@ -2988,43 +3073,6 @@
           "type": "boolean",
           "format": "boolean",
           "title": "VerifyCert decides whether the connection is secure or not"
-        }
-      }
-    },
-    "google.protobuf.Any": {
-      "type": "object",
-      "properties": {
-        "type_url": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "grpc.gateway.runtime.StreamError": {
-      "type": "object",
-      "properties": {
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          }
-        },
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
         }
       }
     },

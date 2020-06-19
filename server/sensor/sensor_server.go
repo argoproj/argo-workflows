@@ -17,12 +17,35 @@ import (
 type sensorServer struct {
 }
 
+func (s sensorServer) GetSensor(ctx context.Context, req *sensor.GetSensorRequest) (*sensorv1.Sensor, error) {
+	resourceIf, err := resourceInterface(ctx, req.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	un, err := resourceIf.Get(req.Name, getOptions(req.GetOptions))
+	if err != nil {
+		return nil, err
+	}
+	item, err := unstructuredToStruct(*un)
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+func getOptions(opts *metav1.GetOptions) metav1.GetOptions {
+	if opts != nil {
+		return *opts
+	}
+	return metav1.GetOptions{}
+}
+
 func (s sensorServer) ListSensors(ctx context.Context, req *sensor.ListSensorsRequest) (*sensorv1.SensorList, error) {
 	resourceIf, err := resourceInterface(ctx, req.Namespace)
 	if err != nil {
 		return nil, err
 	}
-	list, err := resourceIf.List(listOptions(req))
+	list, err := resourceIf.List(listOptions(req.ListOptions))
 	if err != nil {
 		return nil, err
 	}
@@ -42,12 +65,11 @@ func resourceInterface(ctx context.Context, namespace string) (dynamic.ResourceI
 	return config.Resource(versionResource).Namespace(namespace), nil
 }
 
-func listOptions(req *sensor.ListSensorsRequest) metav1.ListOptions {
-	listOptions := metav1.ListOptions{}
-	if req.ListOptions != nil {
-		listOptions = *req.ListOptions
+func listOptions(opts *metav1.ListOptions) metav1.ListOptions {
+	if opts != nil {
+		return *opts
 	}
-	return listOptions
+	return metav1.ListOptions{}
 }
 
 func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]sensorv1.Sensor, error) {
