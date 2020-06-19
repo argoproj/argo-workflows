@@ -444,7 +444,10 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.
 	return err
 }
 
-const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+const (
+	letters                      = "abcdefghijklmnopqrstuvwxyz0123456789"
+	previousWorkflowNameLabelKey = "workflows.argoproj.io/previous-workflow-name"
+)
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -504,7 +507,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 	// append an additional label so it's easy for user to see what the original workflow is
 	// that has been resubmitted.
-	newWF.ObjectMeta.Labels["workflows.argoproj.io/previous-workflow-name"] = wf.ObjectMeta.Name
+	newWF.ObjectMeta.Labels[previousWorkflowNameLabelKey] = wf.ObjectMeta.Name
 	for key, val := range wf.ObjectMeta.Annotations {
 		if newWF.ObjectMeta.Annotations == nil {
 			newWF.ObjectMeta.Annotations = make(map[string]string)
