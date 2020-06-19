@@ -136,7 +136,7 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 	var nextKey string
 
-	waitingMsg := fmt.Sprintf("waiting for Lock. Lock status: %d/%d ", s.limit-len(s.lockHolder), s.limit)
+	waitingMsg := fmt.Sprintf("waiting for %s lock. Lock status: %d/%d ", s.name, s.limit-len(s.lockHolder), s.limit)
 
 	// TODO-Comments
 	if s.pending.Len() > 0 {

@@ -1609,7 +1609,7 @@
         },
         "synchronization": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization",
-          "description": "Synchronization will holds synchronization locks configuration for this Template."
+          "title": "Synchronization holds synchronization lock configuration for this template"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1848,7 +1848,7 @@
         },
         "synchronization": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization",
-          "title": "Synchronization will holds synchronization locks configuration for this Workflow"
+          "title": "Synchronization holds synchronization lock configuration for this Workflow"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

@@ -2474,7 +2474,7 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "Name stores the list of",
+          "description": "Name stores the name of the resource holding lock",
           "type": "array",
           "items": {
             "type": "string"
@@ -3150,6 +3150,22 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SemaphoreHolding": {
+      "type": "object",
+      "properties": {
+        "holders": {
+          "description": "Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "semaphore": {
+          "description": "Semaphore stores the semaphore name.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SemaphoreRef": {
       "description": "SemaphoreRef is a reference of Semaphore",
       "type": "object",
@@ -3164,17 +3180,17 @@
       "type": "object",
       "properties": {
         "holding": {
-          "description": "Holding stores the list of resource acquired synchronization lock for workflows",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HolderNames"
+          "description": "Holding stores the list of resource acquired synchronization lock for workflows.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
           }
         },
         "waiting": {
           "description": "Waiting indicates the list of current synchronization lock holders",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WaitingStatus"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
           }
         }
       }
@@ -3467,7 +3483,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
         },
         "synchronization": {
-          "description": "Synchronization will holds synchronization locks configuration for this Template.",
+          "description": "Synchronization holds synchronization lock configuration for this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "template": {
@@ -3732,15 +3748,6 @@
         },
         "version": {
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.WaitingStatus": {
-      "type": "object",
-      "properties": {
-        "holder": {
-          "description": "Holder Names stores the list of current holder names",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HolderNames"
         }
       }
     },
@@ -4014,7 +4021,7 @@
           "type": "boolean"
         },
         "synchronization": {
-          "description": "Synchronization will holds synchronization locks configuration for this Workflow",
+          "description": "Synchronization holds synchronization lock configuration for this Workflow",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "templates": {
@@ -4467,7 +4474,7 @@
           "type": "boolean"
         },
         "synchronization": {
-          "description": "Synchronization will holds synchronization locks configuration for this Workflow",
+          "description": "Synchronization holds synchronization lock configuration for this Workflow",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "templates": {

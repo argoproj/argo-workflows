@@ -1244,18 +1244,6 @@
       },
       "title": "Histogram is a Histogram prometheus metric"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "Name stores the list of"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs": {
       "type": "object",
       "properties": {
@@ -1774,6 +1762,22 @@
       },
       "title": "ScriptTemplate is a template subtype to enable scripting through code steps"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreHolding": {
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "type": "string",
+          "description": "Semaphore stores the semaphore name."
+        },
+        "holders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Holders stores the list of current holder names in the workflow."
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef": {
       "type": "object",
       "properties": {
@@ -1788,16 +1792,16 @@
       "type": "object",
       "properties": {
         "holding": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreHolding"
           },
-          "title": "Holding stores the list of resource acquired synchronization lock for workflows"
+          "description": "Holding stores the list of resource acquired synchronization lock for workflows."
         },
         "waiting": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WaitingStatus"
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreHolding"
           },
           "title": "Waiting indicates the list of current synchronization lock holders"
         }
@@ -2109,7 +2113,7 @@
         },
         "synchronization": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization",
-          "description": "Synchronization will holds synchronization locks configuration for this Template."
+          "title": "Synchronization holds synchronization lock configuration for this template"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -2177,15 +2181,6 @@
         }
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WaitingStatus": {
-      "type": "object",
-      "properties": {
-        "holder": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames",
-          "title": "Holder Names stores the list of current holder names"
-        }
-      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow": {
       "type": "object",
@@ -2387,7 +2382,7 @@
         },
         "synchronization": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Synchronization",
-          "title": "Synchronization will holds synchronization locks configuration for this Workflow"
+          "title": "Synchronization holds synchronization lock configuration for this Workflow"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

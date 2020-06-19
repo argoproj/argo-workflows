@@ -129,7 +129,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		woc.operate()
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
 
 		// Try to acquired the lock
 		woc_two.operate()

@@ -300,7 +300,7 @@ type WorkflowSpec struct {
 	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
 	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 
-	// Synchronization will holds synchronization locks configuration for this Workflow
+	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 }
 
@@ -508,7 +508,7 @@ type Template struct {
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
-	// Synchronization will holds synchronization locks configuration for this Template.
+	// Synchronization holds synchronization lock configuration for this template
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,36,opt,name=synchronization,casttype=Synchronization"`
 }
 
@@ -1007,19 +1007,27 @@ type WorkflowStatus struct {
 }
 
 type SemaphoreStatus struct {
-	// Holding stores the list of resource acquired synchronization lock for workflows
-	Holding map[string]HolderNames `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Holding stores the list of resource acquired synchronization lock for workflows.
+	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
 
 	// Waiting indicates the list of current synchronization lock holders
-	Waiting map[string]WaitingStatus `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
+
+type SemaphoreHolding struct {
+	// Semaphore stores the semaphore name.
+	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Holders stores the list of current holder names in the workflow.
+	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
+}
+
 type WaitingStatus struct {
-	// Holder Names stores the list of current holder names
-	Holders HolderNames `json:"holder,omitempty" protobuf:"bytes,1,opt,name=holder"`
+	// Holders stores the list of current holder names
+	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
 }
 
 type HolderNames struct {
-	// Name stores the list of
+	// Name stores the name of the resource holding lock
 	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 

@@ -428,7 +428,7 @@ message Histogram {
 }
 
 message HolderNames {
-  // Name stores the list of
+  // Name stores the name of the resource holding lock
   repeated string name = 1;
 }
 
@@ -798,6 +798,14 @@ message ScriptTemplate {
   optional string source = 2;
 }
 
+message SemaphoreHolding {
+  // Semaphore stores the semaphore name.
+  optional string semaphore = 1;
+
+  // Holders stores the list of current holder names in the workflow.
+  repeated string holders = 2;
+}
+
 // SemaphoreRef is a reference of Semaphore
 message SemaphoreRef {
   // ConfigMapKeyRef is configmap selector for Semaphore configuration
@@ -805,11 +813,11 @@ message SemaphoreRef {
 }
 
 message SemaphoreStatus {
-  // Holding stores the list of resource acquired synchronization lock for workflows
-  map<string, HolderNames> holding = 1;
+  // Holding stores the list of resource acquired synchronization lock for workflows.
+  repeated SemaphoreHolding holding = 1;
 
   // Waiting indicates the list of current synchronization lock holders
-  map<string, WaitingStatus> waiting = 2;
+  repeated SemaphoreHolding waiting = 2;
 }
 
 // Sequence expands a workflow step into numeric range
@@ -1033,7 +1041,7 @@ message Template {
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
 
-  // Synchronization will holds synchronization locks configuration for this Template.
+  // Synchronization holds synchronization lock configuration for this template
   optional Synchronization synchronization = 36;
 }
 
@@ -1102,8 +1110,8 @@ message Version {
 }
 
 message WaitingStatus {
-  // Holder Names stores the list of current holder names
-  optional HolderNames holder = 1;
+  // Holders stores the list of current holder names
+  optional HolderNames holders = 1;
 }
 
 // Workflow is the definition of a workflow resource
@@ -1279,7 +1287,7 @@ message WorkflowSpec {
   // WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
   optional WorkflowTemplateRef workflowTemplateRef = 34;
 
-  // Synchronization will holds synchronization locks configuration for this Workflow
+  // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
 }
 

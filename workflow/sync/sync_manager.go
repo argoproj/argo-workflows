@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+
 	"strings"
 	"sync"
 	"time"
@@ -64,23 +65,23 @@ func (cm *SyncManager) Initialize(wfList *wfv1.WorkflowList) {
 		if wf.Status.Synchronization == nil || wf.Status.Synchronization.Semaphore == nil || wf.Status.Synchronization.Semaphore.Holding == nil {
 			continue
 		}
-		for k, v := range wf.Status.Synchronization.Semaphore.Holding {
+		for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
 
-			semaphore := cm.syncLockMap[k]
+			semaphore := cm.syncLockMap[holding.Semaphore]
 			if semaphore == nil {
-				semaphore, err := cm.initializeSemaphore(k)
+				semaphore, err := cm.initializeSemaphore(holding.Semaphore)
 				if err != nil {
-					log.Warnf("Synchronization configmap %s is not found. %v", v, err)
+					log.Warnf("Synchronization configmap %s is not found. %v", holding.Semaphore, err)
 					continue
 				}
 
-				cm.syncLockMap[k] = semaphore
+				cm.syncLockMap[holding.Semaphore] = semaphore
 			}
-			for _, ele := range v.Name {
+			for _, ele := range holding.Holders {
 
 				resourceKey := getResourceKey(wf.Namespace, wf.Name, ele)
 				if semaphore != nil && semaphore.acquire(resourceKey) {
-					log.Infof("Lock acquired by %s from %s", resourceKey, k)
+					log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
 				}
 			}
 		}
@@ -207,16 +208,16 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 		return true
 	}
 	if wf.Status.Synchronization.Semaphore != nil {
-		for k, v := range wf.Status.Synchronization.Semaphore.Holding {
-			concurrency := cm.syncLockMap[k]
+		for _, ele := range wf.Status.Synchronization.Semaphore.Holding {
+			concurrency := cm.syncLockMap[ele.Semaphore]
 			if concurrency == nil {
 				continue
 			}
-			for _, ele := range v.Name {
-				resourceKey := getResourceKey(wf.Namespace, wf.Name, ele)
+			for _, holderName := range ele.Holders {
+				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderName)
 				concurrency.release(resourceKey)
-				cm.updateConcurrencyStatus(ele, k, TypeSemaphore, released, wf)
-				log.Infof("%s released a lock from %s", resourceKey, k)
+				cm.updateConcurrencyStatus(holderName, ele.Semaphore, TypeSemaphore, released, wf)
+				log.Infof("%s released a lock from %s", resourceKey, ele.Semaphore)
 			}
 		}
 		// Clear the Synchronization details
@@ -234,47 +235,42 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
 	}
 	if lockType == TypeSemaphore {
-		if wf.Status.Synchronization.Semaphore == nil {
-			wf.Status.Synchronization.Semaphore = &wfv1.SemaphoreStatus{}
-		}
-
 		if lockAction == waiting {
-			if wf.Status.Synchronization.Semaphore.Waiting == nil {
-				wf.Status.Synchronization.Semaphore.Waiting = make(map[string]wfv1.WaitingStatus)
+			index, semaphoreWaiting := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Waiting, lockKey)
+			currentHolder := cm.getCurrentLockHolders(lockKey)
+			if index == -1 {
+				wf.Status.Synchronization.Semaphore.Waiting = append(wf.Status.Synchronization.Semaphore.Waiting, wfv1.SemaphoreHolding{Semaphore: lockKey, Holders: currentHolder})
+			} else {
+				semaphoreWaiting.Holders = currentHolder
+				wf.Status.Synchronization.Semaphore.Waiting[index] = semaphoreWaiting
 			}
-			wf.Status.Synchronization.Semaphore.Waiting[lockKey] = wfv1.WaitingStatus{Holders: wfv1.HolderNames{Name: cm.getCurrentLockHolders(lockKey)}}
 			return true
 		}
 
 		if lockAction == acquired {
-			if wf.Status.Synchronization.Semaphore.Holding == nil {
-				wf.Status.Synchronization.Semaphore.Holding = make(map[string]wfv1.HolderNames)
-			}
-			holding := wf.Status.Synchronization.Semaphore.Holding[lockKey]
-			if holding.Name == nil {
-				holding = wfv1.HolderNames{}
-			}
+			index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
 			items := strings.Split(holderKey, "/")
 			holdingName := items[len(items)-1]
-			if !slice.Contains(holding.Name, holdingName) {
-				holding.Name = append(holding.Name, items[len(items)-1])
-				wf.Status.Synchronization.Semaphore.Holding[lockKey] = holding
+			if index == -1 {
+				wf.Status.Synchronization.Semaphore.Holding = append(wf.Status.Synchronization.Semaphore.Holding, wfv1.SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
 				return true
+			} else {
+				if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+					semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
+					wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
+					return true
+				}
 			}
 			return false
 		}
 		if lockAction == released {
-			log.Debugf("%s removed from Status", holderKey)
-			holding := wf.Status.Synchronization.Semaphore.Holding[lockKey]
-			if holding.Name != nil {
-				holding.Name = slice.RemoveFromSlice(holding.Name, holderKey)
+			items := strings.Split(holderKey, "/")
+			holdingName := items[len(items)-1]
+			index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
+			if index != -1 {
+				semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+				wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
 			}
-			if len(holding.Name) == 0 {
-				delete(wf.Status.Synchronization.Semaphore.Holding, lockKey)
-			} else {
-				wf.Status.Synchronization.Semaphore.Holding[lockKey] = holding
-			}
-			return true
 		}
 	}
 	return false
@@ -305,4 +301,13 @@ func getResourceKey(namespace, wfName, resourceName string) string {
 		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
 	}
 	return resourceKey
+}
+
+func getSemaphoreHolding(semaphoreHolding []wfv1.SemaphoreHolding, semaphoreName string) (int, wfv1.SemaphoreHolding) {
+	for idx, holder := range semaphoreHolding {
+		if holder.Semaphore == semaphoreName {
+			return idx, holder
+		}
+	}
+	return -1, wfv1.SemaphoreHolding{}
 }

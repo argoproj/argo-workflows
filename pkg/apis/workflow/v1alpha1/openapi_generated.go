@@ -65,6 +65,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":                  schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":                    schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate":              schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding":            schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef":                schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreStatus":             schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":                    schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
@@ -1492,7 +1493,7 @@ func schema_pkg_apis_workflow_v1alpha1_HolderNames(ref common.ReferenceCallback)
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name stores the list of",
+							Description: "Name stores the name of the resource holding lock",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -2814,6 +2815,39 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Semaphore stores the semaphore name.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"holders": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Holders stores the list of current holder names in the workflow.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2843,13 +2877,12 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"holding": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Holding stores the list of resource acquired synchronization lock for workflows",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
+							Description: "Holding stores the list of resource acquired synchronization lock for workflows.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HolderNames"),
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
 									},
 								},
 							},
@@ -2858,12 +2891,11 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 					"waiting": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Waiting indicates the list of current synchronization lock holders",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WaitingStatus"),
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
 									},
 								},
 							},
@@ -2873,7 +2905,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HolderNames", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WaitingStatus"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"},
 	}
 }
 
@@ -3436,7 +3468,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"synchronization": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization will holds synchronization locks configuration for this Template.",
+							Description: "Synchronization holds synchronization lock configuration for this template",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
@@ -3849,9 +3881,9 @@ func schema_pkg_apis_workflow_v1alpha1_WaitingStatus(ref common.ReferenceCallbac
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
-					"holder": {
+					"holders": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Holder Names stores the list of current holder names",
+							Description: "Holders stores the list of current holder names",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HolderNames"),
 						},
 					},
@@ -4270,7 +4302,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"synchronization": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization will holds synchronization locks configuration for this Workflow",
+							Description: "Synchronization holds synchronization lock configuration for this Workflow",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
@@ -4941,7 +4973,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					},
 					"synchronization": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Synchronization will holds synchronization locks configuration for this Workflow",
+							Description: "Synchronization holds synchronization lock configuration for this Workflow",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},

@@ -584,7 +584,7 @@ WorkflowSpec is the specification of a Workflow.
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
-|`synchronization`|[`Synchronization`](#synchronization)|Synchronization will holds synchronization locks configuration for this Workflow|
+|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
@@ -1179,7 +1179,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
-|`synchronization`|[`Synchronization`](#synchronization)|Synchronization will holds synchronization locks configuration for this Workflow|
+|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
@@ -1386,6 +1386,15 @@ PodGC describes how to delete completed pods as they complete
 ## Synchronization
 
 Synchronization is a holds synchronization lock configuration
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -1675,7 +1684,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
 |`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
-|`synchronization`|[`Synchronization`](#synchronization)|Synchronization will holds synchronization locks configuration for this Template.|
+|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
@@ -1825,6 +1834,15 @@ Outputs hold parameters, artifacts, and results from a step
 ## SynchronizationStatus
 
 _No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2646,6 +2664,8 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -2948,8 +2968,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holding`|[`HolderNames`](#holdernames)|Holding stores the list of resource acquired synchronization lock for workflows|
-|`waiting`|[`WaitingStatus`](#waitingstatus)|Waiting indicates the list of current synchronization lock holders|
+|`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
+|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
 
 ## ArchiveStrategy
 
@@ -3430,23 +3450,15 @@ Sequence expands a workflow step into numeric range
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|`string`|Number at which to start the sequence (default: 0)|
 
-## HolderNames
+## SemaphoreHolding
 
 _No description available_
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`name`|`Array< string >`|Name stores the list of|
-
-## WaitingStatus
-
-_No description available_
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`holder`|[`HolderNames`](#holdernames)|Holder Names stores the list of current holder names|
+|`holders`|`Array< string >`|Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.|
+|`semaphore`|`string`|Semaphore stores the semaphore name.|
 
 ## NoneStrategy
 
