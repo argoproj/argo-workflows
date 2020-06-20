@@ -88,8 +88,8 @@ type Config struct {
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 
-	// WorkflowRequirements
-	WorkflowRequirements *WorkflowRequirements `json:"referenceMode,omitempty"`
+	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
+	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -251,21 +251,27 @@ type MetricsConfig struct {
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 }
 
-type WorkflowRequirements struct {
-	ReferenceOnly       bool `json:"referenceOnly"`
-	StrictReferenceOnly bool `json:"strictReferenceOnly"`
+type WorkflowRestrictions struct {
+	TemplateReferencing TemplateReferencing `json:"templateReferencing"`
 }
 
-func (req *WorkflowRequirements) MustUseReference() bool {
+type TemplateReferencing string
+
+const (
+	TemplateReferencingStrict TemplateReferencing = "Strict"
+	TemplateReferencingSecure TemplateReferencing = "Secure"
+)
+
+func (req *WorkflowRestrictions) MustUseReference() bool {
 	if req == nil {
 		return false
 	}
-	return req.ReferenceOnly || req.StrictReferenceOnly
+	return req.TemplateReferencing == TemplateReferencingStrict || req.TemplateReferencing == TemplateReferencingSecure
 }
 
-func (req *WorkflowRequirements) MustNotChangeSpec() bool {
+func (req *WorkflowRestrictions) MustNotChangeSpec() bool {
 	if req == nil {
 		return false
 	}
-	return req.StrictReferenceOnly
+	return req.TemplateReferencing == TemplateReferencingSecure
 }

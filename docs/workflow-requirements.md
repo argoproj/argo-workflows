@@ -1,4 +1,4 @@
-# Workflow Requirements
+# Workflow Restrictions
 
 ![alpha](assets/alpha.svg)
 
@@ -6,16 +6,16 @@
 
 ## Introduction
 
-As the administrator of the controller, you may want to limit which types of Workflows your users can run. Setting Workflow requirements allows you to ensure that Workflows comply with certain requirements. 
+As the administrator of the controller, you may want to limit which types of Workflows your users can run. Setting workflow restrictions allows you to ensure that Workflows comply with certain requirements. 
 
-## Available Requirements
+## Available Restrictions
 
-* `referenceOnly`: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller to set a "library" of templates that may be run by its opeartor, limiting arbitrary Workflow execution.
-* `strictReferenceOnly`: Only Workflows using "workflowTemplateRef" will be processed and the controller will enforce that the WorkflowTemplate that is referenced hasn't changed between operations. If you want to make sure the operator of the Workflow cannot run an arbitrary Workflow, use this option.
+* `templateReferencing: Strict`: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller to set a "library" of templates that may be run by its opeartor, limiting arbitrary Workflow execution.
+* `templateReferencing: Secure`: Only Workflows using "workflowTemplateRef" will be processed and the controller will enforce that the WorkflowTemplate that is referenced hasn't changed between operations. If you want to make sure the operator of the Workflow cannot run an arbitrary Workflow, use this option.
 
-## Setting Execution Requirements
+## Setting Workflow Restrictions
 
-Workflow Requirements can be specified by adding them under the `workflowRequirements` key in the [`workflow-controller-configmap`](./workflow-controller-configmap.yaml).
+Workflow Restrictions can be specified by adding them under the `workflowRestrictions` key in the [`workflow-controller-configmap`](./workflow-controller-configmap.yaml).
 
 For example, to specify that Workflows may only run with `workflowTemplateRef`
 
@@ -26,7 +26,6 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data: |
-  workflowRequirements:
-    referenceOnly: true
-
+  workflowRestrictions:
+    templateReferencing: Secure
 ```
