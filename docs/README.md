@@ -59,5 +59,5 @@ Some use-case specific documentation is available:
 * [Workflow Executors](workflow-executors.md)
 * [Workflow Notifications](workflow-notifications.md)
 * [Workfow RBAC](workflow-rbac.md)
-* [Workflow Requirements](workflow-requirements.md)
+* [Workflow Restrictions](workflow-requirements.md)
 * [Workflow Templates](workflow-templates.md)
