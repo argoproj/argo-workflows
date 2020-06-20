@@ -2700,20 +2700,22 @@ func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactReposi
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
+	if woc.wf.Spec.WorkflowTemplateRef == nil {
+		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
+	}
+
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
-			specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-		} else {
-			specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-		}
-		if err != nil {
-			return nil, err
-		}
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+	} else {
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 	}
-	return specHolder.GetWorkflowSpec().DeepCopy(), nil
+	if err != nil {
+		return nil, err
+	}
+	return specHolder.GetWorkflowSpec(), nil
 }
 
 func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {
@@ -2721,17 +2723,30 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	executionParameters := woc.wf.Spec.Arguments
 
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
-		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+			return nil, executionParameters, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
+		}
+
+		tmplRef := &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}
 		return tmplRef, executionParameters, nil
 	}
 
 	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
-			return nil, wfv1.Arguments{}, err
+			return nil, executionParameters, err
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec
 		woc.updated = true
+	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
+		// If the controller is in reference mode, ensure that the stored spec is identical to the reference spec at every operation
+		wftSpec, err := woc.fetchWorkflowSpec()
+		if err != nil {
+			return nil, executionParameters, err
+		}
+		if woc.wf.Status.StoredWorkflowSpec.String() != wftSpec.String() {
+			return nil, executionParameters, fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
+		}
 	}
 
 	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec

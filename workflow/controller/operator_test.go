@@ -3687,3 +3687,55 @@ func TestPanicMetric(t *testing.T) {
 	}
 	assert.True(t, seen)
 }
+
+// Assert Workflows cannot be run without using workflowTemplateRef in reference mode
+func TestControllerReferenceMode(t *testing.T) {
+	wf := unmarshalWF(globalVariablePlaceholders)
+	cancel, controller := newController()
+	defer cancel()
+	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
+	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
+
+	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
+
+	controller.Config.WorkflowRestrictions = nil
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
+
+func TestValidReferenceMode(t *testing.T) {
+	wf := test.LoadTestWorkflow("testdata/workflow-template-ref.yaml")
+	wfTmpl := test.LoadTestWorkflowTemplate("testdata/workflow-template-submittable.yaml")
+	cancel, controller := newController(wf, wfTmpl)
+	defer cancel()
+	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
+	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+
+	// Change stored Workflow Spec
+	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc.operate()
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
+
+	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+
+	// Change stored Workflow Spec
+	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
