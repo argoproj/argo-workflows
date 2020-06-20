@@ -831,6 +831,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
+			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
+			// See processNodeRetries for more details.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true
@@ -1600,9 +1603,14 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.updated = true
 				woc.wf.Status.Message = err.Error()
 			}
-			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
-			if err != nil {
-				woc.log.WithField("err", err).Error("Failed to archive workflow")
+
+			if woc.controller.isArchivable(woc.wf) {
+				err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
+				if err != nil {
+					woc.log.WithField("err", err).Error("Failed to archive workflow")
+				}
+			} else {
+				woc.log.Infof("Does't match with archive label selector. Skipping Archive")
 			}
 			woc.updated = true
 		}

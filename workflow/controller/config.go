@@ -58,6 +58,11 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		}
 		if persistence.Archive {
 			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
+
+			wfc.archiveLabelSelector, err = persistence.GetArchiveLabelSelector()
+			if err != nil {
+				return err
+			}
 			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			log.Info("Workflow archiving is enabled")
 		} else {

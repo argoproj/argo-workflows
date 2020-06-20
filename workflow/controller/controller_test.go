@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -120,18 +122,19 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:   kube,
-		wfclientset:     wfclientset,
-		completedPods:   make(chan string, 16),
-		wfInformer:      wfInformer,
-		wftmplInformer:  wftmplInformer,
-		cwftmplInformer: cwftmplInformer,
-		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		wfArchive:       sqldb.NullWorkflowArchive,
-		hydrator:        hydratorfake.Noop,
-		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		eventRecorder:   record.NewFakeRecorder(16),
+		kubeclientset:        kube,
+		wfclientset:          wfclientset,
+		completedPods:        make(chan string, 16),
+		wfInformer:           wfInformer,
+		wftmplInformer:       wftmplInformer,
+		cwftmplInformer:      cwftmplInformer,
+		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:            sqldb.NullWorkflowArchive,
+		hydrator:             hydratorfake.Noop,
+		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		eventRecorder:        record.NewFakeRecorder(16),
+		archiveLabelSelector: labels.Everything(),
 	}
 	return cancel, controller
 }
@@ -375,4 +378,30 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
 	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+}
+
+func TestIsArchivable(t *testing.T) {
+	_, controller := newController()
+	var lblSelector metav1.LabelSelector
+	lblSelector.MatchLabels = make(map[string]string)
+	lblSelector.MatchLabels["workflows.argoproj.io/archive-strategy"] = "true"
+
+	workflow := unmarshalWF(helloWorldWf)
+	t.Run("EverythingSelector", func(t *testing.T) {
+		controller.archiveLabelSelector = labels.Everything()
+		assert.True(t, controller.isArchivable(workflow))
+	})
+	t.Run("NothingSelector", func(t *testing.T) {
+		controller.archiveLabelSelector = labels.Nothing()
+		assert.False(t, controller.isArchivable(workflow))
+	})
+	t.Run("ConfiguredSelector", func(t *testing.T) {
+		selector, err := metav1.LabelSelectorAsSelector(&lblSelector)
+		assert.NoError(t, err)
+		controller.archiveLabelSelector = selector
+		assert.False(t, controller.isArchivable(workflow))
+		workflow.Labels = make(map[string]string)
+		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
+		assert.True(t, controller.isArchivable(workflow))
+	})
 }

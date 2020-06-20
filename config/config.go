@@ -2,6 +2,8 @@ package config
 
 import (
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth/sso"
@@ -135,12 +137,21 @@ type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
 	Archive bool `json:"archive,omitempty"`
+	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
+	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
 	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
+}
+
+func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
+	if c.ArchiveLabelSelector == nil {
+		return labels.Everything(), nil
+	}
+	return metav1.LabelSelectorAsSelector(c.ArchiveLabelSelector)
 }
 
 func (c PersistConfig) GetClusterName() string {
