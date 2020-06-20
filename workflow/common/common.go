@@ -145,6 +145,7 @@ const (
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
+	PreviousWorkflowNameLabelKey  = "workflows.argoproj.io/resubmitted-from-workflow"
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
 	ServiceAccountTokenVolumeName = "exec-sa-token"
 	SecretVolMountPath            = "/argo/secret"
