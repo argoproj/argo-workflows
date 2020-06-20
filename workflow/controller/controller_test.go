@@ -370,20 +370,14 @@ spec:
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
-	//_, controller := newController()
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 	_, controller := newController(wf, wftmpl)
-	//_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wftmpl)
-	//assert.NoError(t, err)
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
-	t.Run("WithWorkflowTmplRef", func(t *testing.T) {
-		_, _, err := woc.loadExecutionSpec()
-		assert.NoError(t, err)
-		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
-
-	})
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
+	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
 }
 
 func TestIsArchivable(t *testing.T) {
