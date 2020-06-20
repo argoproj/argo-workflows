@@ -57,6 +57,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
+	// LabelKeyPreviousWorkflowName is a label applied to resubmitted workflows
+	LabelKeyPreviousWorkflowName = workflow.WorkflowFullName + "/resubmitted-from-workflow"
 	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
@@ -145,7 +147,6 @@ const (
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
-	PreviousWorkflowNameLabelKey  = "workflows.argoproj.io/resubmitted-from-workflow"
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
 	ServiceAccountTokenVolumeName = "exec-sa-token"
 	SecretVolMountPath            = "/argo/secret"
