@@ -23,6 +23,8 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 
 Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/stable/manifests).
 
+> NOTE: If you are installing argo in a `kind` cluster, you will need to tweak the `install.yaml` file as suggested in this issue: https://github.com/argoproj/argo/issues/2376
+
 Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust
 the commands accordingly.
 
