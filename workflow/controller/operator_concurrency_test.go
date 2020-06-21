@@ -75,12 +75,12 @@ func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 
 func TestGetNodeType(t *testing.T) {
 	t.Run("getNodeType", func(t *testing.T) {
-		assert.Equal(t, wfv1.NodeTypePod, getNodeType(wfv1.TemplateTypeScript))
-		assert.Equal(t, wfv1.NodeTypePod, getNodeType(wfv1.TemplateTypeContainer))
-		assert.Equal(t, wfv1.NodeTypePod, getNodeType(wfv1.TemplateTypeResource))
-		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(wfv1.TemplateTypeSteps))
-		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(wfv1.TemplateTypeDAG))
-		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(wfv1.TemplateTypeSuspend))
+		assert.Equal(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
+		assert.Equal(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Container: &v1.Container{}}))
+		assert.Equal(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Resource: &wfv1.ResourceTemplate{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{DAG: &wfv1.DAGTemplate{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Suspend: &wfv1.SuspendTemplate{}}))
 	})
 }
 

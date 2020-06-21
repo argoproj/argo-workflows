@@ -1369,8 +1369,11 @@ type executeTemplateOpts struct {
 	onExitTemplate bool
 }
 
-func getNodeType(tmplType wfv1.TemplateType) wfv1.NodeType {
-	switch tmplType {
+func getNodeType(tmpl *wfv1.Template) wfv1.NodeType {
+	if tmpl.RetryStrategy != nil {
+		return wfv1.NodeTypeRetry
+	}
+	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
 		return wfv1.NodeTypePod
 	case wfv1.TemplateTypeDAG:
@@ -1464,7 +1467,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		if !acquireStatus {
 			if node == nil {
-				node = woc.initializeExecutableNode(nodeName, getNodeType(processedTmpl.GetType()), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
+				node = woc.initializeExecutableNode(nodeName, getNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
 			return node, nil
 		}

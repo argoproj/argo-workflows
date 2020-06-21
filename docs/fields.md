@@ -2664,8 +2664,6 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 

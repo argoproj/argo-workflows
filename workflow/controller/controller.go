@@ -844,7 +844,6 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	return metricsConfig, telemetryConfig
 }
 
-
 func (wfc *WorkflowController) cleanupWorkflowDeletion(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
@@ -855,9 +854,8 @@ func (wfc *WorkflowController) cleanupWorkflowDeletion(obj interface{}) {
 		log.Warnf("Invalid Workflow Object. %v", obj)
 	}
 	wfc.concurrencyMgr.ReleaseAll(wf)
-
+}
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
-
 
 }
