@@ -647,10 +647,10 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
-  workflowMetadata:
-    labels:
-      argo-e2e: true
   template:
+    metadata:
+      labels:
+        argo-e2e: true
     spec:
       podGC:
         strategy: OnPodCompletion
