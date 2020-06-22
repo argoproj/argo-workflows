@@ -505,10 +505,10 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
 	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
+	if newWF.ObjectMeta.Annotations == nil {
+		newWF.ObjectMeta.Annotations = make(map[string]string)
+	}
 	for key, val := range wf.ObjectMeta.Annotations {
-		if newWF.ObjectMeta.Annotations == nil {
-			newWF.ObjectMeta.Annotations = make(map[string]string)
-		}
 		newWF.ObjectMeta.Annotations[key] = val
 	}
 
