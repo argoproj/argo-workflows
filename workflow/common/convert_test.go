@@ -30,6 +30,27 @@ spec:
           command: [cowsay]
           args: ["hello world"]
 `
+	templatedCronWfString := `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world
+spec:
+  schedule: "* * * * *"
+  template:
+    metadata:
+      labels:
+        label1: value1
+      annotations:
+        annotation2: value2
+    spec:
+      entrypoint: whalesay
+      templates:
+        - name: whalesay
+          container:
+            image: docker/whalesay:latest
+            command: [cowsay]
+            args: ["hello world"]
+`
 	expectedWf := `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -78,6 +99,15 @@ status:
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
 
+	cronWf = v1alpha1.CronWorkflow{}
+	err = yaml.Unmarshal([]byte(templatedCronWfString), &cronWf)
+	assert.NoError(t, err)
+	wf, err = ConvertCronWorkflowToWorkflow(&cronWf)
+	assert.NoError(t, err)
+	wfString, err = yaml.Marshal(wf)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedWf, string(wfString))
+
 	cronWfInstanceIdString := `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -101,6 +131,30 @@ spec:
           args: ["hello world"]
 `
 
+	templatedCronWfInstanceIdString := `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world
+  labels:
+    workflows.argoproj.io/controller-instanceid: test-controller
+spec:
+  schedule: "* * * * *"
+  template:
+    metadata:
+      labels:
+        label1: value1
+      annotations:
+        annotation2: value2
+    spec:
+      entrypoint: whalesay
+      templates:
+        - name: whalesay
+          container:
+            image: docker/whalesay:latest
+            command: [cowsay]
+            args: ["hello world"]
+`
+
 	cronWf = v1alpha1.CronWorkflow{}
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	assert.NoError(t, err)
@@ -109,6 +163,52 @@ spec:
 	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
 		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
 	}
+
+	cronWf = v1alpha1.CronWorkflow{}
+	err = yaml.Unmarshal([]byte(templatedCronWfInstanceIdString), &cronWf)
+	assert.NoError(t, err)
+	wf, err = ConvertCronWorkflowToWorkflow(&cronWf)
+	assert.NoError(t, err)
+	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
+		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
+	}
+}
+
+func TestCannotUseBothTemplatedAndNot(t *testing.T) {
+	invalid := `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world
+spec:
+  schedule: "* * * * *"
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: docker/whalesay:latest
+          command: [cowsay]
+          args: ["hello world"]
+  template:
+    metadata:
+      labels:
+        label1: value1
+      annotations:
+        annotation2: value2
+    spec:
+      entrypoint: whalesay
+      templates:
+        - name: whalesay
+          container:
+            image: docker/whalesay:latest
+            command: [cowsay]
+            args: ["hello world"]
+`
+	var cronWf v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(invalid), &cronWf)
+	assert.NoError(t, err)
+	_, err = ConvertCronWorkflowToWorkflow(&cronWf)
+	assert.EqualError(t, err, "cannot use both CronWorkflow.spec.workflowSpec and CronWorkflow.spec.template to specify a Workflow to run. Please use only CronWorkflow.spec.template instead")
 }
 
 const workflowTmpl = `

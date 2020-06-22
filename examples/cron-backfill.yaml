@@ -34,9 +34,10 @@ metadata:
 spec:
   # run daily at 2am
   schedule: "0 2 * * *"
-  workflowSpec:
-    workflowTemplateRef:
-      name: job
+  template:
+    spec:
+      workflowTemplateRef:
+        name: job
 ---
 # This version will create jobs as fast as it can - not waiting for
 # each to complete. Use this when you really need each workflow separate.

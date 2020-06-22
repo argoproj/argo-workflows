@@ -16,7 +16,7 @@ import (
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
-	var unlabelled, cronWf wfv1.CronWorkflow
+	var unlabelled, cronWf, templatedCronWf wfv1.CronWorkflow
 	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -45,6 +45,32 @@ spec:
 	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
+  name: my-name-temp
+  namespace: my-ns
+  labels:
+    workflows.argoproj.io/controller-instanceid: my-instanceid
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  template:
+    spec:
+      podGC:
+        strategy: OnPodCompletion
+      entrypoint: whalesay
+      templates:
+        - name: whalesay
+          container:
+            image: python:alpine3.6
+            imagePullPolicy: IfNotPresent
+            command: ["sh", -c]
+            args: ["echo hello"]`, &templatedCronWf)
+
+	testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
   name: unlabelled
   namespace: my-ns
 `, &unlabelled)
@@ -54,24 +80,50 @@ metadata:
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
-		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
-			Namespace:    "my-ns",
-			CronWorkflow: &cronWf,
+		t.Run("Untemplated", func(t *testing.T) {
+			created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
+				Namespace:    "my-ns",
+				CronWorkflow: &cronWf,
+			})
+			if assert.NoError(t, err) {
+				assert.NotNil(t, created)
+				assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
+			}
 		})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, created)
-			assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
-		}
+
+		t.Run("Templated", func(t *testing.T) {
+			created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
+				Namespace:    "my-ns",
+				CronWorkflow: &templatedCronWf,
+			})
+			if assert.NoError(t, err) {
+				assert.NotNil(t, created)
+				assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
+			}
+		})
 	})
 	t.Run("LintWorkflow", func(t *testing.T) {
-		wf, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{
-			Namespace:    "my-ns",
-			CronWorkflow: &cronWf,
+		t.Run("Untemplated", func(t *testing.T) {
+			wf, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{
+				Namespace:    "my-ns",
+				CronWorkflow: &cronWf,
+			})
+			if assert.NoError(t, err) {
+				assert.NotNil(t, wf)
+				assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			}
 		})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wf)
-			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
-		}
+
+		t.Run("Templated", func(t *testing.T) {
+			wf, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{
+				Namespace:    "my-ns",
+				CronWorkflow: &templatedCronWf,
+			})
+			if assert.NoError(t, err) {
+				assert.NotNil(t, wf)
+				assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			}
+		})
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})

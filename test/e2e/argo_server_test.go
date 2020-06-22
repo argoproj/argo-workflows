@@ -650,17 +650,18 @@ spec:
   workflowMetadata:
     labels:
       argo-e2e: true
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: argoproj/argosay:v2
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]
+  template:
+    spec:
+      podGC:
+        strategy: OnPodCompletion
+      entrypoint: whalesay
+      templates:
+        - name: whalesay
+          container:
+            image: argoproj/argosay:v2
+            imagePullPolicy: IfNotPresent
+            command: ["sh", -c]
+            args: ["echo hello"]
 `)
 
 		s.e().GET("/api/v1/cron-workflows/argo").

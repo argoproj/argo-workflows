@@ -1,5 +1,5 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {Condition, WorkflowSpec} from './workflows';
+import {Condition, Workflow, WorkflowSpec} from './workflows';
 
 export interface CronWorkflow {
     apiVersion?: string;
@@ -10,7 +10,7 @@ export interface CronWorkflow {
 }
 
 export interface CronWorkflowSpec {
-    workflowSpec: WorkflowSpec;
+    workflowSpec?: WorkflowSpec;
     schedule: string;
     concurrencyPolicy?: string;
     suspend?: boolean;
@@ -18,6 +18,7 @@ export interface CronWorkflowSpec {
     successfulJobsHistoryLimit?: number;
     failedJobsHistoryLimit?: number;
     timezone?: string;
+    template?: Workflow;
 }
 
 export interface CronWorkflowStatus {

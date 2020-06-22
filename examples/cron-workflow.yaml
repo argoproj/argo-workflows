@@ -10,11 +10,12 @@ spec:
   successfulJobsHistoryLimit: 4     # Default 3
   failedJobsHistoryLimit: 4         # Default 1
   suspend: false                    # Set to "true" to suspend scheduling
-  workflowSpec:
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: docker/whalesay:latest
-          command: [cowsay]
-          args: ["🕓 hello world"]
+  template:
+    spec:
+      entrypoint: whalesay
+      templates:
+        - name: whalesay
+          container:
+            image: docker/whalesay:latest
+            command: [cowsay]
+            args: ["🕓 hello world"]

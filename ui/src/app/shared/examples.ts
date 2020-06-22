@@ -71,14 +71,16 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     },
     spec: {
         schedule: '* * * * *',
-        workflowSpec: {
-            entrypoint: 'argosay',
-            templates: [
-                {
-                    name: 'argosay',
-                    container
-                }
-            ]
+        template: {
+            spec: {
+                entrypoint: 'argosay',
+                templates: [
+                    {
+                        name: 'argosay',
+                        container
+                    }
+                ]
+            }
         }
     }
 });

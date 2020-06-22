@@ -644,7 +644,7 @@ export interface Workflow {
      * Cannot be updated. In CamelCase.
      */
     kind?: string;
-    metadata: kubernetes.ObjectMeta;
+    metadata?: kubernetes.ObjectMeta;
     spec: WorkflowSpec;
     status?: WorkflowStatus;
 }

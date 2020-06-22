@@ -21,21 +21,28 @@ spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Replace"
   startingDeadlineSeconds: 0
-  workflowSpec:
-    entrypoint: whalesay
-    templates:
-    - name: whalesay
-      container:
-        image: alpine:3.6
-        command: [sh, -c]
-        args: ["date; sleep 90"]
+  template:
+    spec:
+      entrypoint: whalesay
+      templates:
+      - name: whalesay
+        container:
+          image: alpine:3.6
+          command: [sh, -c]
+          args: ["date; sleep 90"]
 ```
+
+### `template`
+
+`CronWorkflow.spec.template` is the same type as `Workflow` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
+
+The resuling `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
 
 ### `workflowSpec` and `workflowMetadata`
 
-`CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
+These fields were previously used to specify the Workflow spec to be run. They are now deprecated, but still available for compatibility reasons.
 
-The resuling `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
+`CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
 
 `CronWorkflow.spec.workflowMetadata` can be used to add `labels` and `annotations`.
 

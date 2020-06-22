@@ -144,22 +144,23 @@ var invalidWf = `
   spec:
     schedule: '* * * * *'
     startingDeadlineSeconds: 30
-    workflowSpec:
-      arguments: {}
-      entrypoint: whalesay
-      templates:
-      - container:
-          args:
-          - "\U0001F553 hello world"
-          command:
-          - cowsay
-          image: docker/whalesay:latest
-          name: ""
-          resources: {}
-        inputs: {}
-        metadata: {}
-        name: "bad template name"
-        outputs: {}
+    template:
+      spec:
+        arguments: {}
+        entrypoint: whalesay
+        templates:
+        - container:
+            args:
+            - "\U0001F553 hello world"
+            command:
+            - cowsay
+            image: docker/whalesay:latest
+            name: ""
+            resources: {}
+          inputs: {}
+          metadata: {}
+          name: "bad template name"
+          outputs: {}
 `
 
 func TestCronWorkflowConditionSubmissionError(t *testing.T) {
@@ -199,23 +200,24 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   timezone: America/Los_Angeles
-  workflowSpec:
-    arguments: {}
-    entrypoint: whalesay
-    templates:
-    - arguments: {}
-      container:
-        args:
-        - "\U0001F553 hello world"
-        command:
-        - cowsay
-        image: docker/whalesay:latest
-        name: ""
-        resources: {}
-      inputs: {}
-      metadata: {}
-      name: whalesay
-      outputs: {}
+  template:
+    spec:
+      arguments: {}
+      entrypoint: whalesay
+      templates:
+      - arguments: {}
+        container:
+          args:
+          - "\U0001F553 hello world"
+          command:
+          - cowsay
+          image: docker/whalesay:latest
+          name: ""
+          resources: {}
+        inputs: {}
+        metadata: {}
+        name: whalesay
+        outputs: {}
 `
 
 func TestSpecError(t *testing.T) {
