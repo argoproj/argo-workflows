@@ -77,7 +77,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 
 	if submitOpts != nil {
 		for i := range cronWorkflows {
-			err = common.ConvertToTemplatedWorkflow(&cronWorkflows[i])
+			err = common.ConvertToTemplatedCronWorkflow(&cronWorkflows[i])
 			if err != nil {
 				log.Fatal(err)
 			}

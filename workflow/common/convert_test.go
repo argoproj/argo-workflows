@@ -101,6 +101,7 @@ spec:
           args: ["hello world"]
 `
 
+	cronWf = v1alpha1.CronWorkflow{}
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	assert.NoError(t, err)
 	wf, err = ConvertCronWorkflowToWorkflow(&cronWf)

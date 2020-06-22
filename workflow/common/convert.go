@@ -10,7 +10,7 @@ import (
 )
 
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
-	err := ConvertToTemplatedWorkflow(cronWf)
+	err := ConvertToTemplatedCronWorkflow(cronWf)
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +20,7 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, e
 	return wf, nil
 }
 
-func ConvertToTemplatedWorkflow(cronWf *wfv1.CronWorkflow) error {
+func ConvertToTemplatedCronWorkflow(cronWf *wfv1.CronWorkflow) error {
 	if cronWf.Spec.WorkflowSpec != nil && cronWf.Spec.Template != nil {
 		return fmt.Errorf("cannot use both CronWorkflow.spec.workflowSpec and CronWorkflow.spec.template to specify a Workflow to run. Please use only CronWorkflow.spec.template instead")
 	}
@@ -30,10 +30,14 @@ func ConvertToTemplatedWorkflow(cronWf *wfv1.CronWorkflow) error {
 	if cronWf.Spec.Template != nil {
 		return nil
 	}
-	cronWf.Spec.Template = &wfv1.Workflow{
-		ObjectMeta: *cronWf.Spec.WorkflowMetadata,
-		Spec:       *cronWf.Spec.WorkflowSpec,
+	var template wfv1.Workflow
+	if cronWf.Spec.WorkflowSpec != nil {
+		template.Spec = *cronWf.Spec.WorkflowSpec
 	}
+	if cronWf.Spec.WorkflowMetadata != nil {
+		template.ObjectMeta = *cronWf.Spec.WorkflowMetadata
+	}
+	cronWf.Spec.Template = &template
 	cronWf.Spec.WorkflowMetadata = nil
 	cronWf.Spec.WorkflowSpec = nil
 	return nil
