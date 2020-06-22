@@ -71,7 +71,7 @@ export class WorkflowsService {
             'result.object.status.startedAt',
             'result.type',
             'result.object.metadata.labels',
-            'result.object.spec'
+            'result.object.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;

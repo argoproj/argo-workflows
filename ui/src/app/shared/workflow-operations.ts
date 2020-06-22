@@ -8,7 +8,7 @@ export type OperationDisabled = {
 
 export type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
 
-export interface WorkflowAction {
+export interface WorkflowOperation {
     title: string;
     action: () => Promise<any>;
     iconClassName: string;

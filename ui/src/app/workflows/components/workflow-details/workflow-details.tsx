@@ -14,7 +14,7 @@ import {CostOptimisationNudge} from '../../../shared/components/cost-optimisatio
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
-import * as Actions from '../../../shared/workflow-operations';
+import * as Operations from '../../../shared/workflow-operations';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowYamlPanel} from './workflow-yaml-panel';
 
@@ -196,7 +196,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private getItems(workflowPhase: NodePhase, ctx: any) {
-        const actions: any = Actions.WorkflowOperations;
+        const actions: any = Operations.WorkflowOperations;
         const items = Object.keys(actions).map(actionName => {
             const action = actions[actionName];
             return {
