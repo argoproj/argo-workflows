@@ -5,6 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -33,6 +34,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	wfc.session = nil
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
+	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
