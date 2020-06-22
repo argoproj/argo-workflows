@@ -1790,6 +1790,13 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 			return &t
 		}
 	}
+	if wf.Status.StoredWorkflowSpec != nil {
+		for _, t := range wf.Status.StoredWorkflowSpec.Templates {
+			if t.Name == name {
+				return &t
+			}
+		}
+	}
 	return nil
 }
 

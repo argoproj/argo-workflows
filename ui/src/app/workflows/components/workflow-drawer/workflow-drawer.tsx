@@ -3,6 +3,7 @@ import {Workflow} from '../../../../models';
 
 import {Loading} from '../../../shared/components/loading';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
+import {formatDuration} from '../../../shared/duration';
 import {services} from '../../../shared/services';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
@@ -62,11 +63,11 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                             </div>
                             <div className='workflow-drawer__resourcesDuration--container'>
                                 <div>
-                                    <span className='workflow-drawer__resourcesDuration--value'>{wf.status.resourcesDuration.cpu} sec</span>
+                                    <span className='workflow-drawer__resourcesDuration--value'>{formatDuration(wf.status.resourcesDuration.cpu, 1)}</span>
                                     <span className='workflow-drawer__resourcesDuration--label'>(*1 CPU)</span>
                                 </div>
                                 <div>
-                                    <span className='workflow-drawer__resourcesDuration--value'>{wf.status.resourcesDuration.memory} sec</span>
+                                    <span className='workflow-drawer__resourcesDuration--value'>{formatDuration(wf.status.resourcesDuration.memory, 1)}</span>
                                     <span className='workflow-drawer__resourcesDuration--label'>(*100Mi Memory)</span>
                                 </div>
                             </div>
