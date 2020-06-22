@@ -72,7 +72,11 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
+	wf, err := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
+	if err != nil {
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not convert CronWorkflow: %s", err))
+		return
+	}
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {

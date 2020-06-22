@@ -2128,7 +2128,6 @@
       "description": "CronWorkflowSpec is the specification of a CronWorkflow",
       "type": "object",
       "required": [
-        "workflowSpec",
         "schedule"
       ],
       "properties": {
@@ -2159,16 +2158,20 @@
           "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",
           "type": "boolean"
         },
+        "template": {
+          "description": "Template is a template of the Workflow to be run",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+        },
         "timezone": {
           "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
           "type": "string"
         },
         "workflowMetadata": {
-          "description": "WorkflowMetadata contains some metadata of the workflow to be run",
+          "description": "WorkflowMetadata contains some metadata of the workflow to be run DEPRECATED: Using WorkflowSpec to specify the metadata of a Workflow to be run by a CronWorkflow is deprecated. Specify the spec by using `CronWorkflow.spec.template.metadata` instead.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "workflowSpec": {
-          "description": "WorkflowSpec is the spec of the workflow to be run",
+          "description": "WorkflowSpec is the spec of the workflow to be run DEPRECATED: Using WorkflowSpec to specify the spec of a Workflow to be run by a CronWorkflow is deprecated. Specify the spec by using `CronWorkflow.spec.template.spec` instead.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       }

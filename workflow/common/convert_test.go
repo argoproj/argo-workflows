@@ -72,7 +72,8 @@ status:
 	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
-	wf := ConvertCronWorkflowToWorkflow(&cronWf)
+	wf, err := ConvertCronWorkflowToWorkflow(&cronWf)
+	assert.NoError(t, err)
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
@@ -102,7 +103,8 @@ spec:
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	assert.NoError(t, err)
-	wf = ConvertCronWorkflowToWorkflow(&cronWf)
+	wf, err = ConvertCronWorkflowToWorkflow(&cronWf)
+	assert.NoError(t, err)
 	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
 		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
 	}

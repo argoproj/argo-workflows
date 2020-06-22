@@ -431,7 +431,10 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		if err != nil {
 			return nil, err
 		}
-		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
+		wf, err = common.ConvertCronWorkflowToWorkflow(cronWf)
+		if err != nil {
+			return nil, err
+		}
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
 		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, false)
 	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:

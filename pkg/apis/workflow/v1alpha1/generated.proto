@@ -200,6 +200,8 @@ message CronWorkflowList {
 // CronWorkflowSpec is the specification of a CronWorkflow
 message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
+  // DEPRECATED: Using WorkflowSpec to specify the spec of a Workflow to be run by a CronWorkflow is deprecated. Specify
+  // the spec by using `CronWorkflow.spec.template.spec` instead.
   optional WorkflowSpec workflowSpec = 1;
 
   // Schedule is a schedule to run the Workflow in Cron format
@@ -225,7 +227,12 @@ message CronWorkflowSpec {
   optional string timezone = 8;
 
   // WorkflowMetadata contains some metadata of the workflow to be run
+  // DEPRECATED: Using WorkflowSpec to specify the metadata of a Workflow to be run by a CronWorkflow is deprecated. Specify
+  // the spec by using `CronWorkflow.spec.template.metadata` instead.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
+
+  // Template is a template of the Workflow to be run
+  optional Workflow template = 10;
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow

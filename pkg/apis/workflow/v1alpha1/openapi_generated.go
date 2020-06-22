@@ -740,7 +740,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 				Properties: map[string]spec.Schema{
 					"workflowSpec": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowSpec is the spec of the workflow to be run",
+							Description: "WorkflowSpec is the spec of the workflow to be run DEPRECATED: Using WorkflowSpec to specify the spec of a Workflow to be run by a CronWorkflow is deprecated. Specify the spec by using `CronWorkflow.spec.template.spec` instead.",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
@@ -795,16 +795,22 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"workflowMetadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowMetadata contains some metadata of the workflow to be run",
+							Description: "WorkflowMetadata contains some metadata of the workflow to be run DEPRECATED: Using WorkflowSpec to specify the metadata of a Workflow to be run by a CronWorkflow is deprecated. Specify the spec by using `CronWorkflow.spec.template.metadata` instead.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
+					"template": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Template is a template of the Workflow to be run",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow"),
+						},
+					},
 				},
-				Required: []string{"workflowSpec", "schedule"},
+				Required: []string{"schedule"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

@@ -24,6 +24,7 @@ type cliCreateOpts struct {
 
 func NewCreateCommand() *cobra.Command {
 	var (
+		submitOpts    wfv1.SubmitOpts
 		cliCreateOpts cliCreateOpts
 	)
 	var command = &cobra.Command{
@@ -35,16 +36,18 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			CreateCronWorkflows(args, &cliCreateOpts)
+			CreateCronWorkflows(args, &cliCreateOpts, &submitOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().StringVar(&cliCreateOpts.schedule, "schedule", "", "override cron workflow schedule")
+	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	return command
 }
 
-func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
+func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewCronWorkflowServiceClient()
@@ -69,6 +72,20 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts.schedule != "" {
 		for i := range cronWorkflows {
 			cronWorkflows[i].Spec.Schedule = cliOpts.schedule
+		}
+	}
+
+	if submitOpts != nil {
+		for i := range cronWorkflows {
+			err = common.ConvertToTemplatedWorkflow(&cronWorkflows[i])
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = util.ApplySubmitOpts(cronWorkflows[i].Spec.Template, submitOpts)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 

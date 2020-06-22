@@ -35,7 +35,9 @@ const (
 // CronWorkflowSpec is the specification of a CronWorkflow
 type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
-	WorkflowSpec WorkflowSpec `json:"workflowSpec" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
+	// DEPRECATED: Using WorkflowSpec to specify the spec of a Workflow to be run by a CronWorkflow is deprecated. Specify
+	// the spec by using `CronWorkflow.spec.template.spec` instead.
+	WorkflowSpec *WorkflowSpec `json:"workflowSpec,omitempty" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
 	// Schedule is a schedule to run the Workflow in Cron format
 	Schedule string `json:"schedule" protobuf:"bytes,2,opt,name=schedule"`
 	// ConcurrencyPolicy is the K8s-style concurrency policy that will be used
@@ -52,7 +54,11 @@ type CronWorkflowSpec struct {
 	// Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
 	// WorkflowMetadata contains some metadata of the workflow to be run
+	// DEPRECATED: Using WorkflowSpec to specify the metadata of a Workflow to be run by a CronWorkflow is deprecated. Specify
+	// the spec by using `CronWorkflow.spec.template.metadata` instead.
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
+	// Template is a template of the Workflow to be run
+	Template *Workflow `json:"template,omitempty" protobuf:"bytes,10,opt,name=template"`
 }
 
 // CronWorkflowStatus is the status of a CronWorkflow
