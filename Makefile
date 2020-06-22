@@ -511,13 +511,13 @@ pre-commit: test lint codegen manifests start smoke test-api test-cli
 ifneq ($(findstring release,$(GIT_BRANCH)),)
 
 .PHONY: prepare-release
-prepare-release: clean codegen manifests
+prepare-release: check-version-warning clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 	git tag $(VERSION)
 
 .PHONY: publish-release
-publish-release: build
+publish-release: check-version-warning build
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
@@ -525,3 +525,7 @@ publish-release: build
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
+
+.PHONY: check-version-warning
+check-version-warning:
+	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
