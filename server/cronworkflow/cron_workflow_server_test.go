@@ -128,7 +128,7 @@ metadata:
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
 		if assert.NoError(t, err) {
-			assert.Len(t, cronWfs.Items, 1)
+			assert.Len(t, cronWfs.Items, 2)
 		}
 	})
 	t.Run("GetCronWorkflow", func(t *testing.T) {

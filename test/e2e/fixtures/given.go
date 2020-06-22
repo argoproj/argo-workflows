@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -168,7 +169,11 @@ func (g *Given) CronWorkflow(text string) *Given {
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		g.checkImages(g.cronWf.Spec.WorkflowSpec.Templates)
+		err = common.ConvertToTemplatedCronWorkflow(g.cronWf)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		g.checkImages(g.cronWf.Spec.Template.Spec.Templates)
 		g.checkLabels(g.cronWf.ObjectMeta)
 	}
 	return g

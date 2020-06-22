@@ -2061,6 +2061,8 @@ Workflow is the definition of a workflow resource
 
 - [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
