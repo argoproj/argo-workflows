@@ -3843,7 +3843,7 @@ status:
 `
 
 func TestWorkflowStatusMetric(t *testing.T) {
-	wf := unmarshalWF(noOnExitWhenSkipped)
+	wf := unmarshalWF(workflowStatusMetric)
 	woc := newWoc(*wf)
 	woc.operate()
 	// Must only be one (completed: true)
