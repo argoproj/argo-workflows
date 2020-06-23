@@ -30,6 +30,7 @@ func NewDeleteCommand() *cobra.Command {
   argo delete my-wf
 
 # Delete the latest workflow:
+
   argo delete @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
