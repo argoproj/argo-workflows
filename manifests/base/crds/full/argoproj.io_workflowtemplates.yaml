@@ -2241,7 +2241,7 @@ spec:
                       workingDir:
                         type: string
                     required:
-                    - name
+                    - image
                     type: object
                   daemon:
                     type: boolean
@@ -4573,7 +4573,7 @@ spec:
                       workingDir:
                         type: string
                     required:
-                    - name
+                    - image
                     - source
                     type: object
                   securityContext:
