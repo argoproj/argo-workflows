@@ -400,6 +400,7 @@ func (woc *wfOperationCtx) operate() {
 		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}}
+		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		woc.computeMetrics(woc.wfSpec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
 	}
 }
