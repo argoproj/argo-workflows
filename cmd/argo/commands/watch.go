@@ -33,6 +33,7 @@ func NewWatchCommand() *cobra.Command {
   argo watch my-wf
 
 # Watch the latest workflow:
+
   argo watch @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {

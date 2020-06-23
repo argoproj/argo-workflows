@@ -32,6 +32,7 @@ func NewWaitCommand() *cobra.Command {
   argo wait my-wf
 
 # Wait on the latest workflow:
+
   argo wait @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {

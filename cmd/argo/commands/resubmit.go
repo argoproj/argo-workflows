@@ -20,7 +20,20 @@ func NewResubmitCommand() *cobra.Command {
 
   argo resubmit my-wf
 
+# Resubmit and wait for completion:
+
+  argo resubmit --wait my-wf.yaml
+
+# Resubmit and watch until completion:
+
+  argo resubmit --watch my-wf.yaml
+
+# Resubmit and tail logs until completion:
+
+  argo resubmit --log my-wf.yaml
+
 # Resubmit the latest workflow:
+
   argo resubmit @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {

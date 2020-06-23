@@ -29,9 +29,23 @@ func NewRetryCommand() *cobra.Command {
   argo retry my-wf
 
 # Retry several workflows: 
+
   argo retry my-wf my-other-wf my-third-wf
 
+# Retry and wait for completion:
+
+  argo retry --wait my-wf.yaml
+
+# Retry and watch until completion:
+
+  argo retry --watch my-wf.yaml
+
+# Retry and tail logs until completion:
+
+  argo retry --log my-wf.yaml
+
 # Retry the latest workflow:
+
   argo retry @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
