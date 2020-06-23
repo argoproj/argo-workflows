@@ -55,6 +55,64 @@ spec:
             - name: message
               value: "hello world"
 ```
+> 2.9 and after
+#### Create `Workflow` from `ClusterWorkflowTemplate` Spec
+You can create `Workflow` from `ClusterWorkflowTemplate` spec using `workflowTemplateRef` with `clusterScope: true`. If you pass the arguments to created `Workflow`, it will be merged with ClusterWorkflowTemplate arguments 
+
+Here is an example for `ClusterWorkflowTemplate` with `entrypoint` and `arguments`
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-submittable
+spec:
+  entryPoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+
+```
+Here is an example for creating `ClusterWorkflowTemplate` as Workflow with passing `entrypoint` and `arguments` to `ClusterWorkflowTemplate`
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cluster-workflow-template-hello-world-
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: "from workflow"
+  workflowTemplateRef:
+    name: cluster-workflow-template-submittable
+    clusterScope: true
+```  
+
+Here is an example of a creating `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cluster-workflow-template-hello-world-
+spec:
+  workflowTemplateRef:
+    name: cluster-workflow-template-submittable
+    clusterScope: true
+
+```
+
+
 
 ## Managing `ClusterWorkflowTemplates`
 
@@ -70,6 +128,13 @@ The submit a workflow using one of those templates:
 
 ```
 argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
+```
+
+> 2.7 and after
+>
+The submit a `ClusterWorkflowTemplate` as a `Workflow`:
+```shell script
+argo submit --from clusterworkflowtemplate/workflow-template-submittable
 ```
 
 ### `kubectl`
