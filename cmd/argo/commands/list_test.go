@@ -15,20 +15,26 @@ import (
 )
 
 func Test_listWorkflows(t *testing.T) {
+	t.Run("Nothing", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{}, listFlags{})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
 	t.Run("Status", func(t *testing.T) {
-		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase in (Pending,Running),"}, listFlags{status: []string{"Running", "Pending"}})
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase in (Pending,Running)"}, listFlags{status: []string{"Running", "Pending"}})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, workflows)
 		}
 	})
 	t.Run("Completed", func(t *testing.T) {
-		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed=true,"}, listFlags{completed: true})
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed=true"}, listFlags{completed: true})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, workflows)
 		}
 	})
 	t.Run("Running", func(t *testing.T) {
-		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed!=true,"}, listFlags{running: true})
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed!=true"}, listFlags{running: true})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, workflows)
 		}
