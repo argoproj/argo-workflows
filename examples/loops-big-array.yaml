@@ -1,0 +1,47 @@
+# Output parameters can't be larger than 256kb. To loop over larger arrays, use an artifact.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-sequence-
+spec:
+  entrypoint: loops-sequence
+  templates:
+    - name: loops-sequence
+      steps:
+        - - name: get-items
+            template: get-items
+        - - name: sequence-param
+            template: echo
+            arguments:
+              parameters:
+                - name: index
+                  value: "{{item}}"
+              artifacts:
+                - name: items
+                  from: "{{steps.get-items.outputs.artifacts.items}}"
+            withSequence:
+              count: "{{steps.get-items.outputs.parameters.count}}"
+    - name: get-items
+      container:
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args: ["echo '[\"a\", \"b\", \"c\"]' > /tmp/items && echo '3' > /tmp/count"]
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/items
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+    - name: echo
+      inputs:
+        parameters:
+          - name: index
+        artifacts:
+          - name: items
+            path: /tmp/items
+      container:
+        image: stedolan/jq:latest
+        command: [sh, -c]
+        args: ["cat /tmp/items | jq '.[{{inputs.parameters.index}}]'"]
