@@ -1,12 +1,17 @@
-# Output parameters can't be larger than 256kb. To loop over larger arrays, use an artifact.
+# Output parameters and 'results' are passed between pods with annotations. Annotations have a size
+# limit. If your output is larger than 256 kB, you should use an artifact instead of a parameter.
+#
+# If you're looping over an output parameter using withParam, and your parameter gets too large, you
+# can use an output artifact combined with a 'count' and withSequence loop to work around the size
+# limit. See (https://stackoverflow.com/q/62537126/684776) for further explanation.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: loops-sequence-
+  generateName: handle-large-output-results-
 spec:
-  entrypoint: loops-sequence
+  entrypoint: handle-large-output-results
   templates:
-    - name: loops-sequence
+    - name: handle-large-output-results
       steps:
         - - name: get-items
             template: get-items
