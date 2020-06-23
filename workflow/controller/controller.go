@@ -85,6 +85,7 @@ type WorkflowController struct {
 	wfArchive             sqldb.WorkflowArchive
 	metrics               metrics.Metrics
 	eventRecorder         record.EventRecorder
+	archiveLabelSelector  labels.Selector
 }
 
 const (
@@ -95,17 +96,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(
-	restConfig *rest.Config,
-	kubeclientset kubernetes.Interface,
-	wfclientset wfclientset.Interface,
-	namespace string,
-	managedNamespace string,
-	executorImage,
-	executorImagePullPolicy,
-	containerRuntimeExecutor,
-	configMap string,
-) *WorkflowController {
+func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace string, managedNamespace string, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) *WorkflowController {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(log.Debugf)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events(namespace)})
@@ -764,4 +755,9 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	}
 
 	return metricsConfig, telemetryConfig
+}
+
+func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
+	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
+
 }

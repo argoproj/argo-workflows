@@ -155,13 +155,13 @@ func (woc *wfOperationCtx) operate() {
 	}()
 	defer func() {
 		if r := recover(); r != nil {
+			woc.log.WithFields(log.Fields{"stack": debug.Stack(), "r": r}).Errorf("Recovered from panic")
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(rerr, true)
 			} else {
 				woc.markWorkflowPhase(wfv1.NodeError, true, fmt.Sprintf("%v", r))
 			}
 			woc.controller.metrics.OperationPanic()
-			woc.log.Errorf("Recovered from panic: %+v\n%s", r, debug.Stack())
 		}
 	}()
 
@@ -170,7 +170,7 @@ func (woc *wfOperationCtx) operate() {
 	// Load the WorkflowSpec for execution
 	execTmplRef, execArgs, err := woc.loadExecutionSpec()
 	if err != nil {
-		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
+		woc.log.WithError(err).Errorf("Unable to get Workflow Template Reference for workflow")
 		woc.markWorkflowError(err, true)
 		return
 	}
@@ -245,8 +245,7 @@ func (woc *wfOperationCtx) operate() {
 	// Create a starting template context.
 	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
 	if err != nil {
-		msg := fmt.Sprintf("Failed to create a template context: %+v", err)
-		woc.log.Errorf(msg)
+		woc.log.WithError(err).Error("Failed to create a template context")
 		woc.markWorkflowError(err, true)
 		return
 	}
@@ -339,7 +338,7 @@ func (woc *wfOperationCtx) operate() {
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wfSpec.OnExit}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
-			woc.log.Errorf("error in exit template execution: %+v", err)
+			woc.log.WithError(err).Error("error in exit template execution")
 			return
 		}
 		if onExitNode == nil || !onExitNode.Fulfilled() {
@@ -397,6 +396,7 @@ func (woc *wfOperationCtx) operate() {
 		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}}
+		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		woc.computeMetrics(woc.wfSpec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
 	}
 }
@@ -828,6 +828,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
+			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
+			// See processNodeRetries for more details.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true
@@ -1597,9 +1600,14 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.updated = true
 				woc.wf.Status.Message = err.Error()
 			}
-			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
-			if err != nil {
-				woc.log.WithField("err", err).Error("Failed to archive workflow")
+
+			if woc.controller.isArchivable(woc.wf) {
+				err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
+				if err != nil {
+					woc.log.WithField("err", err).Error("Failed to archive workflow")
+				}
+			} else {
+				woc.log.Infof("Does't match with archive label selector. Skipping Archive")
 			}
 			woc.updated = true
 		}
@@ -1707,7 +1715,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		panic(fmt.Sprintf("node %s uninitialized", nodeName))
+		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
 	}
 	if node.Phase != phase {
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
@@ -2689,20 +2697,22 @@ func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactReposi
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
+	if woc.wf.Spec.WorkflowTemplateRef == nil {
+		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
+	}
+
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
-			specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-		} else {
-			specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-		}
-		if err != nil {
-			return nil, err
-		}
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+	} else {
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 	}
-	return specHolder.GetWorkflowSpec().DeepCopy(), nil
+	if err != nil {
+		return nil, err
+	}
+	return specHolder.GetWorkflowSpec(), nil
 }
 
 func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {
@@ -2710,17 +2720,30 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	executionParameters := woc.wf.Spec.Arguments
 
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
-		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+			return nil, executionParameters, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
+		}
+
+		tmplRef := &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}
 		return tmplRef, executionParameters, nil
 	}
 
 	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
-			return nil, wfv1.Arguments{}, err
+			return nil, executionParameters, err
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec
 		woc.updated = true
+	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
+		// If the controller is in reference mode, ensure that the stored spec is identical to the reference spec at every operation
+		wftSpec, err := woc.fetchWorkflowSpec()
+		if err != nil {
+			return nil, executionParameters, err
+		}
+		if woc.wf.Status.StoredWorkflowSpec.String() != wftSpec.String() {
+			return nil, executionParameters, fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
+		}
 	}
 
 	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec

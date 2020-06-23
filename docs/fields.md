@@ -3280,6 +3280,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
