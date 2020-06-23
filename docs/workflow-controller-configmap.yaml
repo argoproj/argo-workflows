@@ -162,7 +162,7 @@ data:
       # the number of days to keep archived workflows (the default is forever)
       archiveTTL: 180d
 
-      # LabelSelector to determine workflow need to be archived.
+      # LabelSelector determines the workflow that matches with the matchlabels or matchrequirements, will be archived.
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
       archiveLabelSelector:
         matchLabels:
