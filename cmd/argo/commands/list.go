@@ -94,10 +94,9 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
 		labelSelector = labelSelector.Add(*req)
 	}
-	if listOpts.LabelSelector = labelSelector.String(); listOpts.LabelSelector != "" {
-		listOpts.LabelSelector = listOpts.LabelSelector + ","
+	if listOpts.LabelSelector = labelSelector.String(); listOpts.LabelSelector != "" && flags.labels != "" {
+		listOpts.LabelSelector = listOpts.LabelSelector + "," + flags.labels
 	}
-	listOpts.LabelSelector = listOpts.LabelSelector + flags.labels
 	listOpts.FieldSelector = flags.fields
 	var workflows wfv1.Workflows
 	for {
