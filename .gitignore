@@ -9,6 +9,7 @@ hack/**/debug
 /argo
 /argoexec
 debug.test
+git-ask-pass.sh
 *.iml
 /coverage.out
 .envrc
