@@ -520,6 +520,11 @@
         "maxDuration": {
           "type": "string",
           "title": "MaxDuration is the maximum amount of time allowed for the backoff strategy"
+        },
+        "propagateMaxDuration": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "PropagateMaxDuration is a flag to control if the max duration is propagated to child pods. If true, all child pods\nwill have their activeDeadlineSeconds to the amount of time remaining in the backoff's maxDuration (if less that their\nexisting value). This ensures that running pods terminate when the maxDuration is exceeded whereas normally the pod\nwould be allowed to finish."
         }
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"

@@ -88,8 +88,9 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 }
 
 type createWorkflowPodOpts struct {
-	includeScriptOutput bool
-	onExitPod           bool
+	includeScriptOutput   bool
+	onExitPod             bool
+	activeDeadlineSeconds *int64
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
@@ -113,6 +114,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		} else {
 			activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
 		}
+	}
+
+	// If we're passed down an activeDeadlineSeconds, only set it if there isn't one set already, or if it's less than
+	// the one already set.
+	if opts.activeDeadlineSeconds != nil && (activeDeadlineSeconds == nil || *opts.activeDeadlineSeconds < *activeDeadlineSeconds) {
+		activeDeadlineSeconds = opts.activeDeadlineSeconds
 	}
 
 	pod := &apiv1.Pod{

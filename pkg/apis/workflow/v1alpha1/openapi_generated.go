@@ -467,6 +467,13 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"propagateMaxDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PropagateMaxDuration is a flag to control if the max duration is propagated to child pods. If true, all child pods will have their activeDeadlineSeconds to the amount of time remaining in the backoff's maxDuration (if less that their existing value). This ensures that running pods terminate when the maxDuration is exceeded whereas normally the pod would be allowed to finish.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
