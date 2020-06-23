@@ -20,6 +20,8 @@ DOCKERFILE            := Dockerfile
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
+# The name of the namespace where Kubernetes resources/RBAC will be installed
+KUBE_NAMESPACE        ?= argo
 
 # The rules for what version are, in order of precedence
 # 1. If anything passed at the command line (e.g. make release VERSION=...)
@@ -335,8 +337,9 @@ install: dist/$(PROFILE).yaml
 ifeq ($(K3D),true)
 	k3d start
 endif
-	kubectl apply -f test/e2e/manifests/argo-ns.yaml
-	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
+	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
+	kubectl apply -f dist/argo-ns.yaml
+	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -368,8 +371,8 @@ $(GOPATH)/bin/goreman:
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
-	kubectl config set-context --current --namespace=argo
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
+	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
+	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
@@ -405,7 +408,7 @@ env:
 .PHONY: logs
 logs:
 	# Tail logs
-	kubectl -n argo logs -f -l app --max-log-requests 10 --tail 100
+	kubectl -n $(KUBE_NAMESPACE) logs -f -l app --max-log-requests 10 --tail 100
 
 .PHONY: postgres-cli
 postgres-cli:
