@@ -79,7 +79,8 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	listOpts := &metav1.ListOptions{
 		Limit: flags.chunkSize,
 	}
-	labelSelector := labels.NewSelector()
+	labelSelector, err := labels.Parse(flags.labels)
+	errors.CheckError(err)
 	if len(flags.status) != 0 {
 		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, flags.status)
 		if req != nil {
@@ -94,10 +95,7 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
 		labelSelector = labelSelector.Add(*req)
 	}
-	if listOpts.LabelSelector = labelSelector.String(); listOpts.LabelSelector != "" {
-		listOpts.LabelSelector = listOpts.LabelSelector + ","
-	}
-	listOpts.LabelSelector = listOpts.LabelSelector + flags.labels
+	listOpts.LabelSelector = labelSelector.String()
 	listOpts.FieldSelector = flags.fields
 	var workflows wfv1.Workflows
 	for {

@@ -391,7 +391,7 @@ func (s *workflowServer) getWorkflow(wfClient versioned.Interface, namespace str
 		if err != nil {
 			return nil, err
 		}
-		log.Infof("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
+		log.Debugf("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
 	}
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
