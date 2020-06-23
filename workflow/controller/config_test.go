@@ -9,7 +9,8 @@ import (
 )
 
 func TestUpdateConfig(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.throttler = NewThrottler(0, workqueue.NewNamedRateLimitingQueue(nil, ""))
 	controller.updateConfig(config.Config{ExecutorImage: "argoexec:latest", })
 	assert.NotNil(t, controller.Config)

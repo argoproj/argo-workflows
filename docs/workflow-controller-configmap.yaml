@@ -166,7 +166,7 @@ data:
       # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
       archiveLabelSelector:
         matchLabels:
-          workflows.argoproj.io/archive-strategy: "true"
+          workflows.argoproj.io/archive-strategy: "always"
 
       # Optional name of the cluster I'm running in. This must be unique for your cluster.
       clusterName: default
