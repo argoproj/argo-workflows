@@ -36,7 +36,7 @@ func NewResubmitCommand() *cobra.Command {
 				})
 				errors.CheckError(err)
 				printWorkflow(created, getFlags{output: cliSubmitOpts.output})
-				waitOrWatch([]string{created.Name}, cliSubmitOpts)
+				waitWatchOrLog(ctx, serviceClient, namespace, []string{created.Name}, cliSubmitOpts)
 			}
 		},
 	}
@@ -44,6 +44,7 @@ func NewResubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&memoized, "memoized", false, "re-use successful steps & outputs from the previous run (experimental)")
 	return command
 }

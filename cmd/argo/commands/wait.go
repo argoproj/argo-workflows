@@ -35,21 +35,20 @@ func NewWaitCommand() *cobra.Command {
   argo wait @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			WaitWorkflows(args, ignoreNotFound, false)
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
+			waitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)
 		},
 	}
 	command.Flags().BoolVar(&ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")
 	return command
 }
 
-// WaitWorkflows waits for the given workflowNames.
-func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
+// waitWorkflows waits for the given workflowNames.
+func waitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
-
-	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
-	namespace := client.Namespace()
 
 	for _, name := range workflowNames {
 		wg.Add(1)
