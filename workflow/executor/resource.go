@@ -330,7 +330,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			if resourceNamespace != "" {
 				resArgs = append(resArgs, "-n", resourceNamespace)
 			}
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -c '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
+			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
 			cmd = exec.Command("sh", "-c", cmdStr)
 		} else {
 			continue
