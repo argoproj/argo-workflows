@@ -1,4 +1,4 @@
-# Output parameters and 'results' are passed between pods with annotations. Annotations have a size
+# Output parameters and 'results' are passed between pods via annotations. Annotations have a size
 # limit. If your output is larger than 256 kB, you should use an artifact instead of a parameter.
 #
 # If you're looping over an output parameter using withParam, and your parameter gets too large, you
