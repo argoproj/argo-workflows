@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
