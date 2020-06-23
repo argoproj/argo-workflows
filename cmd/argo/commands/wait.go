@@ -27,6 +27,13 @@ func NewWaitCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "wait [WORKFLOW...]",
 		Short: "waits for workflows to complete",
+		Example: `# Wait on a workflow:
+
+  argo wait my-wf
+
+# Wait on the latest workflow:
+  argo wait @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			WaitWorkflows(args, ignoreNotFound, false)
 		},

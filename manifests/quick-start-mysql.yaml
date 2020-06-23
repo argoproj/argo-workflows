@@ -555,7 +555,7 @@ spec:
         image: mysql:8
         name: main
         ports:
-        - containerPort: 5432
+        - containerPort: 3306
         readinessProbe:
           exec:
             command:
