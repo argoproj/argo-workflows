@@ -30,6 +30,8 @@ spec:
       container:
         image: alpine:latest
         command: ["/bin/sh", "-c"]
+        # This small array is just for an example. Make sure the count matches the actual size of
+        # your JSON array.
         args: ["echo '[\"a\", \"b\", \"c\"]' > /tmp/items && echo '3' > /tmp/count"]
       outputs:
         artifacts:
@@ -49,4 +51,5 @@ spec:
       container:
         image: stedolan/jq:latest
         command: [sh, -c]
+        # jq is just one way to get the appropriate item.
         args: ["cat /tmp/items | jq '.[{{inputs.parameters.index}}]'"]
