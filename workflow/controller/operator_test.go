@@ -1239,7 +1239,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeSuspend {
 			assert.Equal(t, node.Phase, wfv1.NodeFailed)
-			assert.Contains(t, node.Message, "step exceeded workflow deadline")
+			assert.Contains(t, node.Message, "Step exceeded its deadline")
 			found = true
 		}
 	}
@@ -3848,4 +3848,103 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	woc.operate()
 	// Must only be one (completed: true)
 	assert.Len(t, woc.wf.Status.Conditions, 1)
+}
+
+var propagate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-backoff
+spec:
+  entrypoint: retry-backoff
+  templates:
+  - name: retry-backoff
+    retryStrategy:
+      limit: 10
+      backoff:
+        duration: "1"
+        factor: 1
+        maxDuration: "20"
+        propagateMaxDuration: true
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["sleep $(( {{retries}} * 100 )); exit 1"]
+`
+
+func TestPropagateMaxDurationProcess(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(propagate)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	retryLimit := int32(2)
+	retries := wfv1.RetryStrategy{
+		Limit: &retryLimit,
+		Backoff: &wfv1.Backoff{
+			Duration:             "0",
+			Factor:               1,
+			MaxDuration:          "20",
+			PropagateMaxDuration: true,
+		},
+	}
+	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
+
+	childNode := fmt.Sprintf("child-node-%d", 0)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.addChildNode(nodeName, childNode)
+
+	var opts executeTemplateOpts
+	n := woc.getNodeByName(nodeName)
+	_, _, err = woc.processNodeRetries(n, retries, &opts)
+	if assert.NoError(t, err) {
+		assert.Equal(t, n.StartedAt.Add(20*time.Second), opts.executionDeadline)
+	}
+}
+
+func TestNotPropagateMaxDurationProcess(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(propagate)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	retryLimit := int32(2)
+	retries := wfv1.RetryStrategy{
+		Limit: &retryLimit,
+		Backoff: &wfv1.Backoff{
+			Duration:    "0",
+			Factor:      1,
+			MaxDuration: "20",
+		},
+	}
+	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
+
+	childNode := fmt.Sprintf("child-node-%d", 0)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.addChildNode(nodeName, childNode)
+
+	var opts executeTemplateOpts
+	n := woc.getNodeByName(nodeName)
+	_, _, err = woc.processNodeRetries(n, retries, &opts)
+	if assert.NoError(t, err) {
+		assert.Equal(t, time.Time{}, opts.executionDeadline)
+	}
 }

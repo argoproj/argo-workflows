@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -1108,4 +1109,33 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
+}
+
+var propagateMaxDuration = `
+name: retry-backoff
+retryStrategy:
+  limit: 10
+  backoff:
+    duration: "1"
+    factor: 1
+    maxDuration: "20"
+    propagateMaxDuration: true
+container:
+  image: alpine
+  command: [sh, -c]
+  args: ["sleep $(( {{retries}} * 100 )); exit 1"]
+
+`
+
+func TestPropagateMaxDuration(t *testing.T) {
+	// Ensure that volume mount is added when artifact is provided
+	tmpl := unmarshalTemplate(propagateMaxDuration)
+	woc := newWoc()
+	deadline := time.Now()
+	pod, err := woc.createWorkflowPod(tmpl.Name, *tmpl.Container, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
+	assert.NoError(t, err)
+	out, err := json.Marshal(map[string]time.Time{"deadline": deadline})
+	if assert.NoError(t, err) {
+		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
+	}
 }

@@ -649,13 +649,12 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if retryStrategy.Backoff != nil {
 		maxDurationDeadline := time.Time{}
 		// Process max duration limit
-		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
+		if retryStrategy.Backoff.MaxDuration != "" {
 			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
-			firstChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, 0)
-			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
+			maxDurationDeadline = node.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
 				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
@@ -692,11 +691,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
 
-		// If PropagateMaxDuration is set, ensure that child pods have an activeDeadlineSeconds set to the time remaining
-		// in the maxDuration (or a lower value)
+		// If PropagateMaxDuration is set, ensure that child pods have an executionDeadline set to the maxDurationDeadline
 		if retryStrategy.Backoff.PropagateMaxDuration {
-			deadline := int64(time.Until(maxDurationDeadline).Seconds())
-			opts.activeDeadlineSeconds = &deadline
+			woc.log.WithField("node", node.Name).Infof("node has propagateMaxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
+			opts.executionDeadline = maxDurationDeadline
 		}
 
 		node = woc.markNodePhase(node.Name, node.Phase, "")
@@ -873,7 +871,7 @@ func (woc *wfOperationCtx) failSuspendedNodesAfterDeadlineOrShutdown() error {
 				if woc.wfSpec.Shutdown != "" {
 					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
 				} else {
-					message = fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline)
+					message = fmt.Sprintf("Step exceeded its deadline")
 				}
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			}
@@ -1372,7 +1370,7 @@ type executeTemplateOpts struct {
 	// Necessary for graceful shutdowns
 	onExitTemplate bool
 	// activeDeadlineSeconds is a deadline to set to any pods executed. This is necessary for pods to inherit backoff.maxDuration
-	activeDeadlineSeconds *int64
+	executionDeadline time.Time
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -1864,6 +1862,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	_, err = woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
+		executionDeadline:   opts.executionDeadline,
 	})
 
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
@@ -2002,6 +2001,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	_, err = woc.createWorkflowPod(nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
+		executionDeadline:   opts.executionDeadline,
 	})
 	return node, err
 }
@@ -2264,7 +2264,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate})
+	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	return node, err
 }
 
