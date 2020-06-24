@@ -19,3 +19,10 @@ git-ask-pass.sh
 /test-results/
 /argo-server.crt
 /argo-server.key
+/pkg/apiclient/_.secondary.swagger.json
+/pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json
+/pkg/apiclient/cronworkflow/cron-workflow.swagger.json
+/pkg/apiclient/info/info.swagger.json
+/pkg/apiclient/workflow/workflow.swagger.json
+/pkg/apiclient/workflowarchive/workflow-archive.swagger.json
+/pkg/apiclient/workflowtemplate/workflow-template.swagger.json
