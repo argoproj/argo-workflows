@@ -118,13 +118,13 @@ MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
-					pkg/apiclient/_.secondary.swagger.json \
-                    pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
-                    pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
-                    pkg/apiclient/info/info.swagger.json \
-                    pkg/apiclient/workflow/workflow.swagger.json \
-                    pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
-                    pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+	pkg/apiclient/_.secondary.swagger.json \
+	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
+	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
+	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/workflow/workflow.swagger.json \
+	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
+	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
