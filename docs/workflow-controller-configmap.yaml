@@ -161,6 +161,13 @@ data:
       archive: false
       # the number of days to keep archived workflows (the default is forever)
       archiveTTL: 180d
+
+      # LabelSelector determines the workflow that matches with the matchlabels or matchrequirements, will be archived.
+      # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+      archiveLabelSelector:
+        matchLabels:
+          workflows.argoproj.io/archive-strategy: "always"
+
       # Optional name of the cluster I'm running in. This must be unique for your cluster.
       clusterName: default
       postgresql:
