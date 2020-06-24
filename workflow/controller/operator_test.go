@@ -3907,7 +3907,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	n := woc.getNodeByName(nodeName)
 	_, _, err = woc.processNodeRetries(n, retries, &opts)
 	if assert.NoError(t, err) {
-		assert.Equal(t, n.StartedAt.Add(20*time.Second), opts.executionDeadline)
+		assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
 	}
 }
 
