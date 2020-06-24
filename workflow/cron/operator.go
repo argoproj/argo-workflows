@@ -143,7 +143,8 @@ func (woc *cronWfOperationCtx) reapplyUpdate() error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < 5; i++ {
+	attempts := 0
+	for {
 		currCronWf, err := woc.cronWfIf.Get(woc.name, v1.GetOptions{})
 		if err != nil {
 			return err
@@ -165,8 +166,11 @@ func (woc *cronWfOperationCtx) reapplyUpdate() error {
 		if err == nil {
 			return nil
 		}
+		attempts++
+		if attempts == 5 {
+			return fmt.Errorf("ran out of retries when trying to reapply update: %s", err)
+		}
 	}
-	return fmt.Errorf("ran out of retries when trying to reapply updates")
 }
 
 func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
