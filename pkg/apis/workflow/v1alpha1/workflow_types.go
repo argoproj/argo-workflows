@@ -1125,9 +1125,6 @@ type WorkflowStatus struct {
 
 	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
 	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
-
-	// DefaultArtifactRepository stores the default (typically configured) artifact repository
-	DefaultArtifactRepository *ArtifactRepository `json:"defaultArtifactRepository,omitempty" protobuf:"bytes,15,rep,name=defaultArtifactRepository"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1517,10 +1514,10 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
 
 	// Region contains the optional bucket region
 	Region string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
@@ -1529,10 +1526,10 @@ type S3Bucket struct {
 	Insecure *bool `json:"insecure,omitempty" protobuf:"varint,4,opt,name=insecure"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,5,opt,name=accessKeySecret"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,5,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,6,opt,name=secretKeySecret"`
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
@@ -1600,7 +1597,7 @@ type ArtifactoryAuth struct {
 // ArtifactoryArtifact is the location of an artifactory artifact
 type ArtifactoryArtifact struct {
 	// URL of the artifact
-	URL             string `json:"url,omitempty" protobuf:"bytes,1,opt,name=url"`
+	URL             string `json:"url" protobuf:"bytes,1,opt,name=url"`
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
@@ -1613,7 +1610,7 @@ type HDFSArtifact struct {
 	HDFSConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSConfig"`
 
 	// Path is a file path in HDFS
-	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
+	Path string `json:"path" protobuf:"bytes,2,opt,name=path"`
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
@@ -1624,7 +1621,7 @@ type HDFSConfig struct {
 	HDFSKrbConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSKrbConfig"`
 
 	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses,omitempty" protobuf:"bytes,2,rep,name=addresses"`
+	Addresses []string `json:"addresses" protobuf:"bytes,2,rep,name=addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
@@ -1674,7 +1671,7 @@ type HTTPArtifact struct {
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
+	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
 	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
@@ -1685,22 +1682,22 @@ type GCSArtifact struct {
 	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
 
 	// Key is the path in the bucket where the artifact resides
-	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
 // OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -1708,7 +1705,7 @@ type OSSArtifact struct {
 	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 
 	// Key is the path in the bucket where the artifact resides
-	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -1757,7 +1754,7 @@ type ResourceTemplate struct {
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
-// getType returns the type of this template
+// GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
 		return TemplateTypeContainer

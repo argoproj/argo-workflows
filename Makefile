@@ -494,9 +494,11 @@ dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) h
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
 	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
-	mv dist/swagger.json api/openapi-spec/swagger.json
+dist/swagger.json: dist/kubeified.swagger.json
+	swagger flatten --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.json
+
+api/openapi-spec/swagger.json: dist/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 

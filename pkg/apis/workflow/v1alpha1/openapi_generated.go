@@ -462,6 +462,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref common.ReferenceC
 						},
 					},
 				},
+				Required: []string{"url"},
 			},
 		},
 		Dependencies: []string{
@@ -1152,6 +1153,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 						},
 					},
 				},
+				Required: []string{"bucket", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -1187,6 +1189,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifactRepository(ref common.Referenc
 						},
 					},
 				},
+				Required: []string{"bucket"},
 			},
 		},
 		Dependencies: []string{
@@ -1215,6 +1218,7 @@ func schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"bucket"},
 			},
 		},
 		Dependencies: []string{
@@ -1408,6 +1412,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 						},
 					},
 				},
+				Required: []string{"addresses", "path"},
 			},
 		},
 		Dependencies: []string{
@@ -1497,6 +1502,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref common.Referen
 						},
 					},
 				},
+				Required: []string{"addresses"},
 			},
 		},
 		Dependencies: []string{
@@ -1572,6 +1578,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 						},
 					},
 				},
+				Required: []string{"addresses"},
 			},
 		},
 		Dependencies: []string{
@@ -2194,6 +2201,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -2242,6 +2250,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
@@ -2283,6 +2292,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
@@ -2717,7 +2727,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"key"},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -2801,6 +2811,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
@@ -2870,6 +2881,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
@@ -4582,17 +4594,11 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
-					"defaultArtifactRepository": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DefaultArtifactRepository stores the default (typically configured) artifact repository",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
-						},
-					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepository", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

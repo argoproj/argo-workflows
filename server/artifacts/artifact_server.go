@@ -133,14 +133,6 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 		return nil, fmt.Errorf("artifact not found")
 	}
 
-	if !art.HasBucket() {
-		location, err := wf.Status.DefaultArtifactRepository.AsArtifactLocation()
-		if err != nil {
-			return nil, err
-		}
-		art.SetBucket(location)
-	}
-
 	driver, err := artifact.NewDriver(art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return nil, err

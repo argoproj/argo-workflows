@@ -1352,9 +1352,6 @@ message WorkflowStatus {
 
   // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
   optional WorkflowSpec storedWorkflowTemplateSpec = 14;
-
-  // DefaultArtifactRepository stores the default (typically configured) artifact repository
-  optional ArtifactRepository defaultArtifactRepository = 15;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

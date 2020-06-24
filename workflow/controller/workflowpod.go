@@ -861,14 +861,14 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 			break
 		}
 	}
-	if woc.wf.Status.DefaultArtifactRepository.IsArchiveLogs() {
+	if woc.artifactRepository.IsArchiveLogs() {
 		needLocation = true
 	}
 	if !needLocation {
 		woc.log.Debugf("archive location unnecessary")
 		return nil
 	}
-	location, err := woc.wf.Status.DefaultArtifactRepository.AsArtifactLocation()
+	location, err := woc.artifactRepository.AsArtifactLocation()
 	if err != nil {
 		return err
 	}

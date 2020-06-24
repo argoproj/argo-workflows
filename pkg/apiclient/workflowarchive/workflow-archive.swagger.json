@@ -252,37 +252,6 @@
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository": {
-      "type": "object",
-      "properties": {
-        "archiveLogs": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "ArchiveLogs enables log archiving"
-        },
-        "s3": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3ArtifactRepository",
-          "title": "S3 stores artifact in a S3-compliant object store"
-        },
-        "artifactory": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryArtifactRepository",
-          "title": "Artifactory stores artifacts to JFrog Artifactory"
-        },
-        "hdfs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSArtifactRepository",
-          "title": "HDFS stores artifacts in HDFS"
-        },
-        "oss": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifactRepository",
-          "title": "OSS stores artifact in a OSS-compliant object store"
-        },
-        "gcs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifactRepository",
-          "title": "GCS stores artifact in a GCS object store"
-        }
-      },
-      "title": "ArtifactRepository represents a artifact repository in which a controller will store its artifacts"
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepositoryRef": {
       "type": "object",
       "properties": {
@@ -306,19 +275,6 @@
         }
       },
       "title": "ArtifactoryArtifact is the location of an artifactory artifact"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryArtifactRepository": {
-      "type": "object",
-      "properties": {
-        "artifactoryAuth": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryAuth"
-        },
-        "repoURL": {
-          "type": "string",
-          "description": "RepoURL is the url for artifactory repo."
-        }
-      },
-      "title": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryAuth": {
       "type": "object",
@@ -501,19 +457,6 @@
       },
       "title": "GCSArtifact is the location of a GCS artifact"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifactRepository": {
-      "type": "object",
-      "properties": {
-        "gCSBucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket"
-        },
-        "keyFormat": {
-          "type": "string",
-          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables"
-        }
-      },
-      "title": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository"
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket": {
       "type": "object",
       "properties": {
@@ -603,24 +546,6 @@
         }
       },
       "title": "HDFSArtifact is the location of an HDFS artifact"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSArtifactRepository": {
-      "type": "object",
-      "properties": {
-        "hDFSConfig": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSConfig"
-        },
-        "pathFormat": {
-          "type": "string",
-          "title": "PathFormat is defines the format of path to store a file. Can reference workflow variables"
-        },
-        "force": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Force copies a file forcibly even if it exists (default: false)"
-        }
-      },
-      "title": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSConfig": {
       "type": "object",
@@ -951,19 +876,6 @@
       },
       "title": "OSSArtifact is the location of an Alibaba Cloud OSS artifact"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifactRepository": {
-      "type": "object",
-      "properties": {
-        "oSSBucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket"
-        },
-        "keyFormat": {
-          "type": "string",
-          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables"
-        }
-      },
-      "title": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository"
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
       "type": "object",
       "properties": {
@@ -1177,23 +1089,6 @@
         }
       },
       "title": "S3Artifact is the location of an S3 artifact"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3ArtifactRepository": {
-      "type": "object",
-      "properties": {
-        "s3Bucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Bucket"
-        },
-        "keyFormat": {
-          "type": "string",
-          "title": "KeyFormat is defines the format of how to store keys. Can reference workflow variables"
-        },
-        "keyPrefix": {
-          "type": "string",
-          "title": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\nDEPRECATED. Use KeyFormat instead"
-        }
-      },
-      "title": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Bucket": {
       "type": "object",
@@ -1820,10 +1715,6 @@
         "storedWorkflowTemplateSpec": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
-        },
-        "defaultArtifactRepository": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository",
-          "title": "DefaultArtifactRepository stores the default (typically configured) artifact repository"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

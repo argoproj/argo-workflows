@@ -196,6 +196,9 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryArtifact": {
       "description": "ArtifactoryArtifact is the location of an artifactory artifact",
       "type": "object",
+      "required": [
+        "url"
+      ],
       "properties": {
         "passwordSecret": {
           "description": "PasswordSecret is the secret selector to the repository password",
@@ -584,6 +587,10 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact": {
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
+      "required": [
+        "bucket",
+        "key"
+      ],
       "properties": {
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -602,6 +609,9 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifactRepository": {
       "description": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
       "type": "object",
+      "required": [
+        "bucket"
+      ],
       "properties": {
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -620,6 +630,9 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket": {
       "description": "GCSBucket contains the access information for interfacring with a GCS bucket",
       "type": "object",
+      "required": [
+        "bucket"
+      ],
       "properties": {
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -697,6 +710,10 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSArtifact": {
       "description": "HDFSArtifact is the location of an HDFS artifact",
       "type": "object",
+      "required": [
+        "addresses",
+        "path"
+      ],
       "properties": {
         "addresses": {
           "description": "Addresses is accessible addresses of HDFS name nodes",
@@ -746,6 +763,9 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSArtifactRepository": {
       "description": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
       "type": "object",
+      "required": [
+        "addresses"
+      ],
       "properties": {
         "addresses": {
           "description": "Addresses is accessible addresses of HDFS name nodes",
@@ -795,6 +815,9 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSConfig": {
       "description": "HDFSConfig is configurations for HDFS",
       "type": "object",
+      "required": [
+        "addresses"
+      ],
       "properties": {
         "addresses": {
           "description": "Addresses is accessible addresses of HDFS name nodes",
@@ -1158,6 +1181,13 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact": {
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret",
+        "key"
+      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -1184,6 +1214,12 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifactRepository": {
       "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
       "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -1210,6 +1246,12 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
       "description": "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket",
       "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -1437,6 +1479,10 @@
       "description": "S3Artifact is the location of an S3 artifact",
       "type": "object",
       "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret",
         "key"
       ],
       "properties": {
@@ -1481,6 +1527,12 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3ArtifactRepository": {
       "description": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
       "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -1527,6 +1579,12 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Bucket": {
       "description": "S3Bucket contains the access information required for interfacing with an S3 bucket",
       "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -2467,10 +2525,6 @@
           "items": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           }
-        },
-        "defaultArtifactRepository": {
-          "description": "DefaultArtifactRepository stores the default (typically configured) artifact repository",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",
