@@ -649,12 +649,13 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if retryStrategy.Backoff != nil {
 		maxDurationDeadline := time.Time{}
 		// Process max duration limit
-		if retryStrategy.Backoff.MaxDuration != "" {
+		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
 			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
-			maxDurationDeadline = node.StartedAt.Add(maxDuration)
+			firstChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, 0)
+			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
 				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
