@@ -1,10 +1,12 @@
 package cron
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -26,6 +28,7 @@ type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
 	name        string
 	cronWf      *v1alpha1.CronWorkflow
+	origCronWf  *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
 	wfClient    typed.WorkflowInterface
 	wfLister    util.WorkflowLister
@@ -38,6 +41,7 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
+		origCronWf:  cronWorkflow.DeepCopy(),
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
 		wfLister:    wfLister,
@@ -115,7 +119,57 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 func (woc *cronWfOperationCtx) persistUpdate() {
 	_, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		woc.log.WithError(err).Error("failed to update CronWorkflow")
+		if errors.IsConflict(err) {
+			reapplyErr := woc.reapplyUpdate()
+			if reapplyErr != nil {
+				woc.log.WithError(reapplyErr).WithField("original error", err).Error("failed to update CronWorkflow after reapply attempt")
+			}
+		} else {
+			woc.log.WithError(err).Error("failed to update CronWorkflow")
+		}
+	}
+}
+
+func (woc *cronWfOperationCtx) reapplyUpdate() error {
+	orig, err := json.Marshal(woc.origCronWf)
+	if err != nil {
+		return err
+	}
+	curr, err := json.Marshal(woc.cronWf)
+	if err != nil {
+		return err
+	}
+	patch, err := jsonpatch.CreateMergePatch(orig, curr)
+	if err != nil {
+		return err
+	}
+	attempts := 0
+	for {
+		currCronWf, err := woc.cronWfIf.Get(woc.name, v1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		currCronWfBytes, err := json.Marshal(currCronWf)
+		if err != nil {
+			return err
+		}
+		newCronWfBytes, err := jsonpatch.MergePatch(currCronWfBytes, patch)
+		if err != nil {
+			return err
+		}
+		var newCronWf v1alpha1.CronWorkflow
+		err = json.Unmarshal(newCronWfBytes, &newCronWf)
+		if err != nil {
+			return err
+		}
+		_, err = woc.cronWfIf.Update(&newCronWf)
+		if err == nil {
+			return nil
+		}
+		attempts++
+		if attempts == 5 {
+			return fmt.Errorf("ran out of retries when trying to reapply update: %s", err)
+		}
 	}
 }
 
