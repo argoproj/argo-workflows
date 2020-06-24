@@ -729,6 +729,8 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+// HasLocation whether or not an artifact has a location defined.
+// An artifact that has a location has enough information to determine where to store the data.
 func (a *ArtifactLocation) HasLocation() bool {
 	if a == nil {
 		return false
@@ -737,13 +739,14 @@ func (a *ArtifactLocation) HasLocation() bool {
 		return false
 	}
 	switch a.GetType() {
-	case Git, HTTP, Raw:
+	case Artifactory, Git, HTTP, Raw:
 		return true
 	}
 	return a.HasBucket()
 }
 
-// Has a key (or key-like field) set
+// Has a key (or key-like field) set.
+// A "key-like" field might be a key (e.g. S3) or something else (e.g. path on an HDFS volume).
 func (a *ArtifactLocation) HasKey() bool {
 	return a != nil && (a.S3 != nil && a.S3.Key != "" ||
 		a.Git != nil && a.Git.Repo != "" ||
@@ -780,15 +783,10 @@ func (a *ArtifactLocation) SetKey(fileName string) error {
 }
 
 // If the location has a bucket (or bucket-like field)
+// A "bucket-like" field might be a bucket (e.g. S3) or something else (e.g. URL for a Git repository).
 func (a *ArtifactLocation) HasBucket() bool {
-	// you'll see we skip HTTP and Raw as these do not have anything bucket-like at all
+	// you'll see we skip Artifactory, Git, HTTP and Raw as these do not have anything bucket-like
 	switch a.GetType() {
-	case Artifactory:
-		return a.Artifactory.UsernameSecret != nil
-	case Git:
-		return a.Git.UsernameSecret != nil ||
-			a.Git.PasswordSecret != nil ||
-			a.Git.SSHPrivateKeySecret != nil
 	case GCS:
 		return a.GCS.Bucket != ""
 	case HDFS:

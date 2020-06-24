@@ -103,8 +103,8 @@ func TestArtifactLocation_HasKey(t *testing.T) {
 
 func TestArtifactLocation_HasBucket(t *testing.T) {
 	assert.False(t, (&ArtifactLocation{}).HasBucket())
-	assert.True(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{ArtifactoryAuth: ArtifactoryAuth{UsernameSecret: &corev1.SecretKeySelector{}}}}).HasBucket())
-	assert.True(t, (&ArtifactLocation{Git: &GitArtifact{UsernameSecret: &corev1.SecretKeySelector{}}}).HasBucket())
+	assert.False(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}}).HasBucket())
+	assert.False(t, (&ArtifactLocation{}).HasBucket())
 	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).HasBucket())
 	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}}).HasBucket())
 	assert.False(t, (&ArtifactLocation{HTTP: &HTTPArtifact{}}).HasBucket())
