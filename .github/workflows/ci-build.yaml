@@ -90,6 +90,12 @@ jobs:
         with:
           name: ${{ matrix.test }}
           path: test-results
+      - name: Upload diagnostics
+        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}-diagnostics
+          path: /tmp/log/argo-e2e
 
   codegen:
     name: Codegen
