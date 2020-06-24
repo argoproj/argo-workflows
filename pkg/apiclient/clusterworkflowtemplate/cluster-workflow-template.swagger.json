@@ -832,68 +832,13 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item": {
       "type": "object",
       "properties": {
-        "type": {
+        "value": {
           "type": "string",
-          "format": "int64"
-        },
-        "numVal": {
-          "type": "string"
-        },
-        "boolVal": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "strVal": {
-          "type": "string"
-        },
-        "mapVal": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue"
-          }
-        },
-        "listVal": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue"
-          }
+          "format": "byte"
         }
       },
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
       "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "format": "int64"
-        },
-        "numVal": {
-          "type": "string"
-        },
-        "boolVal": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "strVal": {
-          "type": "string"
-        },
-        "mapVal": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "listVal": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          }
-        }
-      },
-      "title": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metadata": {
       "type": "object",
