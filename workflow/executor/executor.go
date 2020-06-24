@@ -123,15 +123,11 @@ func (we *WorkflowExecutor) HandleError() {
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
 
-	for _, inputArt := range we.Template.Inputs.Artifacts {
+	for _, art := range we.Template.Inputs.Artifacts {
 
-		log.Infof("Downloading artifact: %s", inputArt.Name)
+		log.Infof("Downloading artifact: %s", art.Name)
 
-		art := inputArt.DeepCopy()
-		if !art.HasBucket() {
-			art.SetBucket(we.Template.ArchiveLocation)
-		}
-		if !art.HasKey() {
+		if !art.HasLocation() {
 			if art.Optional {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
@@ -139,8 +135,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
-
-		artDriver, err := we.InitDriver(art)
+		artDriver, err := we.InitDriver(&art)
 		if err != nil {
 			return err
 		}
@@ -166,7 +161,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
-		err = artDriver.Load(art, tempArtPath)
+		err = artDriver.Load(&art, tempArtPath)
 		if err != nil {
 			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
@@ -385,7 +380,7 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
 			// the input artifact volume. Since this function was called, we know that we want to use this path as an
 			// ourput artifact, so we should look for it in the base image path.
-			if inArt.Optional && !inArt.HasKey() {
+			if inArt.Optional && !inArt.HasLocation() {
 				return true
 			}
 			return false
@@ -484,28 +479,20 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 }
 
 func (we *WorkflowExecutor) saveFileToArtifactRepository(art *wfv1.Artifact, localArtPath, fileName string) error {
-	saveArt := art.DeepCopy()
-	if !saveArt.HasBucket() {
-		saveArt.SetBucket(we.Template.ArchiveLocation)
-	}
 	if !art.HasBucket() {
-		art.SetType(we.Template.ArchiveLocation.GetType())
+		art.SetBucket(we.Template.ArchiveLocation)
 	}
-	if !saveArt.HasKey() {
-		err := saveArt.SetKey(fileName)
-		if err != nil {
-			return err
-		}
-		err = art.SetKey(fileName)
+	if !art.HasKey() {
+		err := art.SetKey(fileName)
 		if err != nil {
 			return err
 		}
 	}
-	artDriver, err := we.InitDriver(saveArt)
+	artDriver, err := we.InitDriver(art)
 	if err != nil {
 		return err
 	}
-	err = artDriver.Save(localArtPath, saveArt)
+	err = artDriver.Save(localArtPath, art)
 	if err != nil {
 		return err
 	}

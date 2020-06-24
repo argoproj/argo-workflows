@@ -272,7 +272,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
 	for i, inArt := range newTmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
-		if inArt.HasKey() {
+		if inArt.HasLocation() {
 			newInputArtifacts[i] = inArt
 			continue
 		}
@@ -282,7 +282,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			if argArt == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
 			}
-			if !argArt.HasKey() && !validateOnly {
+			if !argArt.HasLocation() && !validateOnly {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
 			}
 		}
