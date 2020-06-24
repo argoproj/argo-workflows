@@ -149,7 +149,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfArgs := wf.Spec.Arguments
 
 	if wf.Spec.WorkflowTemplateRef != nil {
-		wfArgs.Parameters = util.MergeParameters(wfSpecHolder.GetWorkflowSpec().Arguments.Parameters, wfArgs.Parameters)
+		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
