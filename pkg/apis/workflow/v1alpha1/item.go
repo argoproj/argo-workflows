@@ -24,15 +24,16 @@ const (
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
 type Item struct {
-	Value []byte `json:"value" protobuf:"bytes,1,opt,name=value"`
+	Value json.RawMessage `json:"value" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
 }
 
-func ParseItem(s string) Item {
-	return Item{Value: []byte(s)}
+func ParseItem(s string) (Item, error) {
+	item := Item{}
+	return item, json.Unmarshal([]byte(s), &item)
 }
 
 func (i *Item) GetType() Type {
-	strValue := i.String()
+	strValue := string(i.Value)
 	if _, err := strconv.Atoi(strValue); err == nil {
 		return Number
 	}
@@ -53,12 +54,8 @@ func (i *Item) GetType() Type {
 	return String
 }
 
-func (i Item) MarshalJSON() ([]byte, error) {
-	return json.Marshal(i.Value)
-}
-
 func (i *Item) UnmarshalJSON(value []byte) error {
-	return json.Unmarshal(value, &i.Value)
+	return i.Value.UnmarshalJSON(value)
 }
 
 func (i *Item) String() string {
@@ -74,6 +71,10 @@ func (i *Item) String() string {
 
 func (i Item) Format(s fmt.State, _ rune) {
 	_, _ = fmt.Fprintf(s, i.String()) // nolint
+}
+
+func (i Item) MarshalJSON() ([]byte, error) {
+	return i.Value.MarshalJSON()
 }
 
 func (i *Item) DeepCopyInto(out *Item) {

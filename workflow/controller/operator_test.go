@@ -3645,11 +3645,11 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 
 func TestGenerateNodeName(t *testing.T) {
 	assert.Equal(t, "sleep(10:ten)", generateNodeName("sleep", 10, "ten"))
-	item := wfv1.ParseItem(`[{"foo": "bar"}]`)
+	item, err := wfv1.ParseItem(`[{"foo": "bar"}]`)
 	assert.NoError(t, err)
 	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, item))
 	assert.NoError(t, err)
-	item = wfv1.ParseItem("[10]")
+	item, err = wfv1.ParseItem("[10]")
 	assert.NoError(t, err)
 	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, item))
 }

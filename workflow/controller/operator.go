@@ -2407,7 +2407,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 	if start <= end {
 		for i := start; i <= end; i++ {
-			item := wfv1.ParseItem(`"` + fmt.Sprintf(format, i) + `"`)
+			item, err := wfv1.ParseItem(`"` + fmt.Sprintf(format, i) + `"`)
 			if err != nil {
 				return nil, err
 			}
@@ -2415,7 +2415,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 		}
 	} else {
 		for i := start; i >= end; i-- {
-			item := wfv1.ParseItem(`"` + fmt.Sprintf(format, i) + `"`)
+			item, err := wfv1.ParseItem(`"` + fmt.Sprintf(format, i) + `"`)
 			if err != nil {
 				return nil, err
 			}

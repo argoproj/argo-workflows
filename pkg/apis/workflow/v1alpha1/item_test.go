@@ -27,7 +27,7 @@ func TestItem(t *testing.T) {
 }
 
 func runItemTest(t *testing.T, data string, expectedType Type) {
-	itm := ParseItem(data)
+	itm, err := ParseItem(data)
 	assert.NoError(t, err)
 	assert.Equal(t, itm.GetType(), expectedType)
 	jsonBytes, err := json.Marshal(itm)
