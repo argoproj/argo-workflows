@@ -20,22 +20,11 @@ Bind the service account to the role (in this case in the `argo` namespace):
 kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 ```
 
-Create a secret:
-
-```yaml
-kind: Secret
-apiVersion: v1
-metadata:
-  name: jenkins
-  annotations:
-    kubernetes.io/service-account.name: jenkins
-type: kubernetes.io/service-account-token
-```
-
-This secret will be automatically populated with a token under ([learn more](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/)):
+You now need to get a token:
 
 ```shell script
-ARGO_TOKEN=$(kubectl get secret jenkins -o yaml | grep -o 'token:.*' | sed 's/token: //')
+SECRET=$(kubectl get secret  -o name | grep '^secret/jenkins-token-' | sed 's/secret\///')
+ARGO_TOKEN=$(kubectl get secret $SECRET -o yaml | grep -o 'token:.*' | sed 's/token: //')
 echo $ARGO_TOKEN
 ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
@@ -61,8 +50,12 @@ curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Be
 # 403 error
 ```
 
+## Token Revocation
+
 Token compromised?
 
 ```shell script
-kubectl delete secret jenkins
+kubectl delete secret $SECRET
 ```
+
+A new one will be created.
