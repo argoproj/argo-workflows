@@ -31,7 +31,8 @@ export class WorkflowsService {
             'items.metadata.labels',
             'items.status.phase',
             'items.status.finishedAt',
-            'items.status.startedAt'
+            'items.status.startedAt',
+            'items.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
@@ -69,7 +70,8 @@ export class WorkflowsService {
             'result.object.status.phase',
             'result.object.status.startedAt',
             'result.type',
-            'result.object.metadata.labels'
+            'result.object.metadata.labels',
+            'result.object.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
