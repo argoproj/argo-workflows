@@ -14,6 +14,7 @@ import {ClusterWorkflowTemplateSummaryPanel} from '../cluster-workflow-template-
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
+    namespace?: string;
     template?: models.ClusterWorkflowTemplate;
     error?: Error;
 }
@@ -37,11 +38,13 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
     }
 
     public componentDidMount(): void {
+        services.info
+            .getInfo()
+            .then(info => this.setState({namespace: info.managedNamespace || 'default'}))
+            .catch(error => this.setState(error));
         services.clusterWorkflowTemplate
             .get(this.name)
-            .then(template => {
-                this.setState({template});
-            })
+            .then(template => this.setState({template}))
             .catch(error => this.setState({error}));
     }
 
@@ -127,10 +130,10 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
         return {
             metadata: {
                 generateName: template.metadata.name + '-',
-                namespace: '<enter the namespace>'
+                namespace: this.state.namespace
             },
             spec: {
-                entrypoint: template.spec.templates[0].name,
+                entrypoint: !!template.spec.templates ? template.spec.templates[0].name : '',
                 workflowTemplateRef: {
                     name: template.metadata.name,
                     clusterScope: true

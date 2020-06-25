@@ -3739,3 +3739,113 @@ func TestValidReferenceMode(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
+
+var workflowStatusMetric = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-to-completion-rngcr
+spec:
+  arguments: {}
+  entrypoint: retry-to-completion
+  metrics:
+    prometheus:
+    - counter:
+        value: "1"
+      gauge: null
+      help: Count of step execution by result status
+      histogram: null
+      labels:
+      - key: name
+        value: retry
+      - key: status
+        value: '{{workflow.status}}'
+      name: result_counter
+      when: ""
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)
+      command:
+      - python
+      - -c
+      image: python
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: retry-to-completion
+    outputs: {}
+    retryStrategy: {}
+status:
+  nodes:
+    retry-to-completion-rngcr:
+      children:
+      - retry-to-completion-rngcr-1856960714
+      displayName: retry-to-completion-rngcr
+      finishedAt: "2020-06-22T20:33:10Z"
+      id: retry-to-completion-rngcr
+      name: retry-to-completion-rngcr
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: retry-to-completion-rngcr/retry-to-completion-rngcr-4003951493/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Succeeded
+      startedAt: "2020-06-22T20:32:15Z"
+      templateName: retry-to-completion
+      templateScope: local/retry-to-completion-rngcr
+      type: Retry
+    retry-to-completion-rngcr-1856960714:
+      displayName: retry-to-completion-rngcr(0)
+      finishedAt: "2020-06-22T20:32:25Z"
+      hostNodeName: minikube
+      id: retry-to-completion-rngcr-1856960714
+      message: failed with exit code 3
+      name: retry-to-completion-rngcr(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: retry-to-completion-rngcr/retry-to-completion-rngcr-1856960714/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "3"
+      phase: Failed
+      resourcesDuration:
+        cpu: 10
+        memory: 6
+      startedAt: "2020-06-22T20:32:15Z"
+      templateName: retry-to-completion
+      templateScope: local/retry-to-completion-rngcr
+      type: Pod
+  phase: Running
+  startedAt: "2020-06-22T20:32:15Z"
+`
+
+func TestWorkflowStatusMetric(t *testing.T) {
+	wf := unmarshalWF(workflowStatusMetric)
+	woc := newWoc(*wf)
+	woc.operate()
+	// Must only be one (completed: true)
+	assert.Len(t, woc.wf.Status.Conditions, 1)
+}

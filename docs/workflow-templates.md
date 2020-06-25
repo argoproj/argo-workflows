@@ -187,6 +187,37 @@ to pass in "live" arguments and reference other templates (those other templates
 
 This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.
 
+> 2.9 and after
+#### Create `Workflow` from `WorkflowTemplate` Spec
+You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with WorkflowTemplate arguments 
+Here is an example for referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: "from workflow"
+  workflowTemplateRef:
+    name: workflow-template-submittable
+```  
+
+Here is an example of a referring `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+  workflowTemplateRef:
+    name: workflow-template-submittable
+
+```
+
 ## Managing `WorkflowTemplates`
 
 ### CLI
@@ -201,6 +232,12 @@ The submit a workflow using one of those templates:
 
 ```
 argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/hello-world.yaml
+```
+> 2.7 and after
+The submit a `WorkflowTemplate` as a `Workflow`:
+```shell script
+argo submit --from workflowtemplate/workflow-template-submittable
+
 ```
 
 ### `kubectl`
