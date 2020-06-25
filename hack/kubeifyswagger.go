@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type obj = map[string]interface{}
@@ -32,7 +30,7 @@ func kubeifySwagger(in, out string) {
 	for n, d := range definitions {
 		kd, ok := kubernetesDefinitions[n]
 		if ok && !reflect.DeepEqual(d, kd) {
-			log.Infof("replacing bad definition %s", n)
+			println("replacing bad definition " + n)
 			definitions[n] = kd
 		}
 	}
