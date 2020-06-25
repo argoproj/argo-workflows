@@ -33,14 +33,14 @@ spec:
       eventProducer:
         http:
           insecureSkipVerify: true
-          url: https://localhost:2746/api/v1/events
+          url: https://localhost:2746/api/v1/events/argo
           headers:
             - name: Authorization
               value: Bearer token:PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq
           body:
             context:
               type: test
-              id: b
+              id: "{{workflow.uid}}"
 
     - name: c
       eventConsumer:
