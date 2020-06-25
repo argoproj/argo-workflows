@@ -10,7 +10,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
-1. [Ant Financial](https://www.antfin.com/)
+1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
 1. [BasisAI](https://basis-ai.com/)
 1. [BioBox Analytics](https://biobox.io)
