@@ -8,6 +8,7 @@ API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,HDFSConfig,Addresses
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Histogram,Buckets
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Inputs,Parameters
+API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Item,Value
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Metrics,Prometheus
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,NodeStatus,Children
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,NodeStatus,OutboundNodes
