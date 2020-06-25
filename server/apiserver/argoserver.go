@@ -219,7 +219,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
-	eventpkg.RegisterEventServiceServer(grpcServer, event.NewEventServer())
+	eventpkg.RegisterEventServiceServer(grpcServer, event.NewEventServer(hydrator.New(offloadNodeStatusRepo)))
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))

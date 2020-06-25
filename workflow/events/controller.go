@@ -16,6 +16,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type Controller interface {
@@ -25,11 +26,12 @@ type Controller interface {
 
 type controller struct {
 	wfIf  versioned.Interface
+	hydrator hydrator.Interface
 	queue workqueue.RateLimitingInterface
 }
 
-func NewController(wfIf versioned.Interface) Controller {
-	return &controller{wfIf, workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())}
+func NewController(wfIf versioned.Interface, hydrator hydrator.Interface) Controller {
+	return &controller{wfIf, hydrator, workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())}
 }
 
 type item struct {
@@ -63,13 +65,15 @@ func (c *controller) processNextItem() bool {
 	item := next.(item)
 	logCtx := log.WithFields(log.Fields{"namespace": item.namespace, "workflow": item.name, "nodeID": item.nodeID})
 	httpError := makeHTTPRequest(item.artifact)
-
-	// TODO retry
-
 	wfIf := c.wfIf.ArgoprojV1alpha1().Workflows(item.namespace)
 	wf, err := wfIf.Get(item.name, metav1.GetOptions{})
 	if err != nil {
 		logCtx.WithError(err).Error("failed to get workflow")
+		return true
+	}
+	err = c.hydrator.Hydrate(wf)
+	if err != nil {
+		logCtx.WithError(err).Error("failed to hydrate workflow")
 		return true
 	}
 	node := wf.Status.Nodes.FindByID(item.nodeID)
@@ -84,6 +88,11 @@ func (c *controller) processNextItem() bool {
 		node.Phase = wfv1.NodeSucceeded
 	}
 	wf.Status.Nodes[node.ID] = *node
+	err = c.hydrator.Dehydrate(wf)
+	if err != nil {
+		logCtx.WithError(err).Error("failed to de-hydrate workflow")
+		return true
+	}
 	_, err = wfIf.Update(wf)
 	if err != nil {
 		logCtx.WithError(err).Error("failed to update workflow")

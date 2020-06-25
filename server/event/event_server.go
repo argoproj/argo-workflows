@@ -16,11 +16,14 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
-type eventServer struct{}
+type eventServer struct {
+	hydrator hydrator.Interface
+}
 
-func (e *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (*eventpkg.EventReceived, error) {
+func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (*eventpkg.EventReceived, error) {
 	data, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
@@ -41,6 +44,10 @@ func (e *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (
 	}
 	for _, wf := range list.Items {
 		updated := false
+		err := s.hydrator.Hydrate(&wf)
+		if err != nil {
+			return nil, err
+		}
 		for _, node := range wf.Status.Nodes {
 			if node.Phase == wfv1.NodeRunning && node.Type == wfv1.NodeTypeEventConsumer {
 				t := wf.GetTemplateByName(node.TemplateName)
@@ -71,6 +78,10 @@ func (e *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (
 			}
 		}
 		if updated {
+			err := s.hydrator.Dehydrate(&wf)
+			if err != nil {
+				return nil, err
+			}
 			_, err = wfClient.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(&wf)
 			if err != nil {
 				return nil, err
@@ -89,6 +100,6 @@ func markNodeStatus(wf wfv1.Workflow, node wfv1.NodeStatus, phase wfv1.NodePhase
 
 var _ eventpkg.EventServiceServer = &eventServer{}
 
-func NewEventServer() eventpkg.EventServiceServer {
-	return &eventServer{}
+func NewEventServer(hydrator hydrator.Interface) eventpkg.EventServiceServer {
+	return &eventServer{hydrator}
 }
