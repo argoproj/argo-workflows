@@ -6,5 +6,5 @@
 
 It is possible to create a workflow that waits for one or more Cloud Events to occur continuing. 
 
-* [Example Workflow](../examples/event-consumer.yaml)
+* [Example Workflow](../examples/events.yaml)
 * [CloudEvents Specification](https://github.com/cloudevents/spec)

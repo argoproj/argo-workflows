@@ -1,7 +1,0 @@
-kind: Secret
-apiVersion: v1
-metadata:
-  name: automation
-  annotations:
-    kubernetes.io/service-account.name: automation
-type: kubernetes.io/service-account-token
