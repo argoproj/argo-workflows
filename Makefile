@@ -117,8 +117,14 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-# The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
-SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
+SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
+	pkg/apiclient/_.secondary.swagger.json \
+	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
+	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
+	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/workflow/workflow.swagger.json \
+	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
+	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
@@ -476,6 +482,13 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/
 
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
+
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: proto
+pkg/apiclient/cronworkflow/cron-workflow.swagger.json: proto
+pkg/apiclient/info/info.swagger.json: proto
+pkg/apiclient/workflow/workflow.swagger.json: proto
+pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
+pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
