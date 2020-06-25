@@ -319,7 +319,7 @@ message EventConsumerTemplate {
 }
 
 message EventProducerTemplate {
-  optional HTTPRequest http = 1 [(gogoproto.customname) = "HTTP", (gogoproto.nullable) = false];
+  optional HTTPArtifact http = 1 [(gogoproto.customname) = "HTTP"];
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -436,6 +436,15 @@ message HDFSKrbConfig {
 message HTTPArtifact {
   // URL of the artifact
   optional string url = 1 [(gogoproto.customname) = "URL", (gogoproto.nullable) = false];
+
+  // HTTP method to use - default is POST
+  optional string method = 3 [(gogoproto.customname) = "Method", (gogoproto.nullable) = false];
+
+  repeated HTTPHeader headers = 2 [(gogoproto.customname) = "Headers", (gogoproto.nullable) = false];
+
+  optional Item body = 4 [(gogoproto.customname) = "Body"];
+
+  optional bool insecureSkipVerify = 5 [(gogoproto.customname) = "InsecureSkipVerify", (gogoproto.nullable) = false];
 }
 
 message HTTPHeader {
@@ -444,19 +453,6 @@ message HTTPHeader {
   optional string value = 2 [(gogoproto.customname) = "Value", (gogoproto.nullable) = false];
 
   optional k8s.io.api.core.v1.SecretKeySelector valueFrom = 3 [(gogoproto.customname) = "ValueFrom"];
-}
-
-message HTTPRequest {
-  // HTTP method to use - default is POST
-  optional string method = 1 [(gogoproto.customname) = "Method", (gogoproto.nullable) = false];
-
-  repeated HTTPHeader headers = 2 [(gogoproto.customname) = "Headers", (gogoproto.nullable) = false];
-
-  optional string url = 3 [(gogoproto.customname) = "URL", (gogoproto.nullable) = false];
-
-  optional Item body = 4 [(gogoproto.customname) = "Body"];
-
-  optional bool insecureSkipVerify = 5 [(gogoproto.customname) = "InsecureSkipVerify", (gogoproto.nullable) = false];
 }
 
 // Histogram is a Histogram prometheus metric
