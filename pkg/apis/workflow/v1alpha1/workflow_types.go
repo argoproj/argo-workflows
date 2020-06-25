@@ -20,13 +20,14 @@ type TemplateType string
 
 // Possible template types
 const (
-	TemplateTypeContainer TemplateType = "Container"
-	TemplateTypeSteps     TemplateType = "Steps"
-	TemplateTypeScript    TemplateType = "Script"
-	TemplateTypeResource  TemplateType = "Resource"
-	TemplateTypeDAG       TemplateType = "DAG"
-	TemplateTypeSuspend   TemplateType = "Suspend"
-	TemplateTypeUnknown   TemplateType = "Unknown"
+	TemplateTypeContainer     TemplateType = "Container"
+	TemplateTypeSteps         TemplateType = "Steps"
+	TemplateTypeScript        TemplateType = "Script"
+	TemplateTypeResource      TemplateType = "Resource"
+	TemplateTypeDAG           TemplateType = "DAG"
+	TemplateTypeSuspend       TemplateType = "Suspend"
+	TemplateTypeEventConsumer TemplateType = "Event"
+	TemplateTypeUnknown       TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -48,14 +49,15 @@ type NodeType string
 
 // Node types
 const (
-	NodeTypePod       NodeType = "Pod"
-	NodeTypeSteps     NodeType = "Steps"
-	NodeTypeStepGroup NodeType = "StepGroup"
-	NodeTypeDAG       NodeType = "DAG"
-	NodeTypeTaskGroup NodeType = "TaskGroup"
-	NodeTypeRetry     NodeType = "Retry"
-	NodeTypeSkipped   NodeType = "Skipped"
-	NodeTypeSuspend   NodeType = "Suspend"
+	NodeTypePod           NodeType = "Pod"
+	NodeTypeSteps         NodeType = "Steps"
+	NodeTypeStepGroup     NodeType = "StepGroup"
+	NodeTypeDAG           NodeType = "DAG"
+	NodeTypeTaskGroup     NodeType = "TaskGroup"
+	NodeTypeRetry         NodeType = "Retry"
+	NodeTypeSkipped       NodeType = "Skipped"
+	NodeTypeSuspend       NodeType = "Suspend"
+	NodeTypeEventConsumer NodeType = "EventConsumer"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -413,6 +415,8 @@ type Template struct {
 
 	// Script runs a portion of code against an interpreter
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
+
+	EventConsumer *EventConsumerTemplate `json:"eventConsumer,omitempty" protobuf:"bytes,36,opt,name=eventConsumer"`
 
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty" protobuf:"bytes,14,opt,name=resource"`
@@ -1640,6 +1644,12 @@ type ResourceTemplate struct {
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
+type EventConsumerTemplate struct {
+	// An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).
+	// E.g. `.context.type == "test"`
+	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
+}
+
 // GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
@@ -1660,6 +1670,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
+	if tmpl.EventConsumer != nil {
+		return TemplateTypeEventConsumer
+	}
 	return TemplateTypeUnknown
 }
 
@@ -1675,7 +1688,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeEventConsumer:
 		return true
 	}
 	return false

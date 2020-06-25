@@ -17,18 +17,18 @@ func TestServer_GetWFClient(t *testing.T) {
 	wfClient := &fakewfclientset.Clientset{}
 	kubeClient := &fake.Clientset{}
 	t.Run("None", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
+		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil, "")
 		assert.Error(t, err)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil)
+		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil, "")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("invalid"))
 			assert.Error(t, err)
 		}
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, nil)
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, nil, "")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer "))
 			assert.Error(t, err)
@@ -36,7 +36,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	// not possible to unit test client auth today
 	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
+		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil, "")
 		assert.NoError(t, err)
 		ctx, err := g.Context(x(""))
 		if assert.NoError(t, err) {
@@ -47,7 +47,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, "")
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {

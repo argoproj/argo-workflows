@@ -1,0 +1,46 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo/pkg/apiclient/event";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+package event;
+
+// Nhe context of the CloudEvent
+message EventContext {
+    // ID of the event; must be non-empty and unique within the scope of the producer.
+    string id = 1;
+    //  A URI describing the event producer.
+    string source = 2;
+    //  The version of the CloudEvents specification used by the event.
+    string specversion = 3;
+    // Type - The type of the occurrence which has happened.
+    string type = 4;
+    // A MIME (RFC2046) string describing the media type of `data`.
+    string datacontenttype = 5;
+    // The subject of the event in the context of the event producer
+    string subject = 6;
+    // When the event happened.
+    k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 7;
+}
+
+message Event {
+    // All API requests must have a namespace (which can be empty string for cluster scope installations),
+    // but this is not part of the CloudEvents spec.
+    string namespace = 1;
+    EventContext context = 2;
+    bytes data = 3;
+}
+
+message EventReceived {}
+
+service EventService {
+    // https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md
+    rpc ReceiveEvent (Event) returns (EventReceived) {
+        option (google.api.http) = {
+			post: "/api/v1/events/{namespace}"
+			body: "*"
+		};
+    }
+}

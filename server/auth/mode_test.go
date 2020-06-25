@@ -35,6 +35,12 @@ func TestModes_Add(t *testing.T) {
 			assert.Contains(t, m, SSO)
 		}
 	})
+	t.Run("Token", func(t *testing.T) {
+		m := Modes{}
+		if assert.NoError(t, m.Add("token")) {
+			assert.Contains(t, m, Token)
+		}
+	})
 }
 func TestModes_GetMode(t *testing.T) {
 	t.Run("Client", func(t *testing.T) {
@@ -53,6 +59,12 @@ func TestModes_GetMode(t *testing.T) {
 		mode, err := GetMode("Bearer id_token:")
 		if assert.NoError(t, err) {
 			assert.Equal(t, SSO, mode)
+		}
+	})
+	t.Run("Token", func(t *testing.T) {
+		mode, err := GetMode("Bearer token:")
+		if assert.NoError(t, err) {
+			assert.Equal(t, Token, mode)
 		}
 	})
 }

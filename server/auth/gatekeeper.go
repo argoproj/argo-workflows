@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -38,13 +40,14 @@ type gatekeeper struct {
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 	ssoIf      sso.Interface
+	namespace  string
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, namespace string) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf, namespace}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -136,6 +139,39 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		return s.wfClient, s.kubeClient, nil
+	case Token:
+		tokenSecret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get("argo-server-tokens", metav1.GetOptions{})
+		if err != nil {
+			return nil, nil, err
+		}
+		serviceAccountName := string(tokenSecret.Data[strings.TrimPrefix(authorization, tokenPrefix)])
+		sa, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccountName, metav1.GetOptions{})
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(sa.Secrets) == 0 {
+			return nil, nil, status.Errorf(codes.Internal, "zero service account tokens found")
+		}
+		ref := sa.Secrets[0]
+		secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(ref.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, nil, err
+		}
+		authorization := string(secret.Data["token"])
+		restConfig, err := kubeconfig.GetBearerRestConfig(authorization)
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
+		}
+		wfClient, err := versioned.NewForConfig(restConfig)
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
+		}
+		kubeClient, err := kubernetes.NewForConfig(restConfig)
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+		}
+		return wfClient, kubeClient, nil
+
 	default:
 		panic("this should never happen")
 	}

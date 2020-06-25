@@ -434,6 +434,15 @@
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EventConsumerTemplate": {
+      "type": "object",
+      "properties": {
+        "expression": {
+          "type": "string",
+          "title": "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).\nE.g. `.context.type == \"test\"`"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig": {
       "type": "object",
       "properties": {
@@ -1268,6 +1277,9 @@
         "script": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ScriptTemplate",
           "title": "Script runs a portion of code against an interpreter"
+        },
+        "eventConsumer": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EventConsumerTemplate"
         },
         "resource": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ResourceTemplate",

@@ -1496,6 +1496,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node, err = woc.executeDAG(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
+	case wfv1.TemplateTypeEventConsumer:
+		node, err = woc.executeEventConsumer(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
@@ -1867,7 +1869,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeEventConsumer:
 		return []string{node.ID}
 	case wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {
@@ -2298,6 +2300,20 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		woc.requeue(time.Until(*requeueTime))
 	}
 
+	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	return node, nil
+}
+
+func (woc *wfOperationCtx) executeEventConsumer(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+	node := woc.getNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeEventConsumer, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	}
+	woc.log.Infof("node %s event consumer", nodeName)
+	if node.Phase != wfv1.NodeRunning {
+		count, _ := strconv.Atoi(woc.wf.GetLabels()[common.LabelKeyEventWait])
+		woc.wf.GetLabels()[common.LabelKeyEventWait] = strconv.Itoa(count + 1)
+	}
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
 }

@@ -302,6 +302,12 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
+message EventConsumerTemplate {
+  // An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).
+  // E.g. `.context.type == "test"`
+  optional string expression = 1;
+}
+
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -911,6 +917,8 @@ message Template {
 
   // Script runs a portion of code against an interpreter
   optional ScriptTemplate script = 13;
+
+  optional EventConsumerTemplate eventConsumer = 36;
 
   // Resource template subtype which can run k8s resources
   optional ResourceTemplate resource = 14;
