@@ -4,44 +4,20 @@ If you want to automate tasks with the Argo Server API or CLI, you will need an 
 
 Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:
 
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: jenkins-role
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - workflows
-    verbs:
-      - list
-      - update
+```shell script
+kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io 
 ```
 
 Create a service account for your service:
 
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: jenkins
+```shell script
+kubectl create sa jenkins
 ```
 
-Bind the service account to the role:
+Bind the service account to the role (in this case in the `argo` namespace):
 
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: jenkins
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: jenkins
-subjects:
-  - kind: ServiceAccount
-    name: jenkins
+```shell script
+kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 ```
 
 Create a secret:
