@@ -595,7 +595,7 @@
       "properties": {
         "expression": {
           "type": "string",
-          "title": "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).\nE.g. `.context.type == \"test\"`"
+          "title": "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).\nE.g. `context.type == \"test\"`"
         }
       }
     },

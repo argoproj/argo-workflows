@@ -76,6 +76,8 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
@@ -376,6 +378,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -689,6 +693,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
@@ -965,6 +971,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -1452,6 +1460,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
@@ -1630,6 +1640,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
+|`eventConsumer`|[`EventConsumerTemplate`](#eventconsumertemplate)|_No description available_|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
@@ -2088,6 +2099,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
@@ -2109,6 +2122,22 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 |`failFast`|`boolean`|This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo/issues/1442|
 |`target`|`string`|Target are one or more names of targets to execute in a DAG|
 |`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks|
+
+## EventConsumerTemplate
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `context.type == "test"`|
 
 ## UserContainer
 
@@ -2356,6 +2385,8 @@ Pod metdata
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -3235,6 +3266,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
@@ -3478,6 +3511,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -3950,6 +3985,8 @@ A single application container that you want to run within a pod.
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -4564,6 +4601,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -5536,6 +5575,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 

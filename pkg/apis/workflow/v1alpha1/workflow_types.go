@@ -26,7 +26,7 @@ const (
 	TemplateTypeResource      TemplateType = "Resource"
 	TemplateTypeDAG           TemplateType = "DAG"
 	TemplateTypeSuspend       TemplateType = "Suspend"
-	TemplateTypeEventConsumer TemplateType = "Event"
+	TemplateTypeEventConsumer TemplateType = "EventConsumer"
 	TemplateTypeUnknown       TemplateType = "Unknown"
 )
 
@@ -1646,7 +1646,7 @@ type ResourceTemplate struct {
 
 type EventConsumerTemplate struct {
 	// An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).
-	// E.g. `.context.type == "test"`
+	// E.g. `context.type == "test"`
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 }
 

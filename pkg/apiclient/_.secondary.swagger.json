@@ -526,6 +526,18 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EventConsumerTemplate": {
+      "type": "object",
+      "required": [
+        "expression"
+      ],
+      "properties": {
+        "expression": {
+          "description": "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `context.type == \"test\"`",
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -1703,6 +1715,9 @@
         "dag": {
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTemplate"
+        },
+        "eventConsumer": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EventConsumerTemplate"
         },
         "executor": {
           "description": "Executor holds configurations of the executor container.",
