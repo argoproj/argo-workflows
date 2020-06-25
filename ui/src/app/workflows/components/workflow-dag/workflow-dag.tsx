@@ -263,7 +263,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 'type:Retry',
                 'type:Skipped',
                 'type:Suspend',
-                'type:EventConsumer'
+                'type:EventConsumer',
+                'type:EventProducer'
             ]
         } as WorkflowDagRenderOptions;
     }
