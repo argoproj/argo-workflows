@@ -10,7 +10,7 @@ go-to-protobuf \
   --proto-import ./vendor \
   --proto-import ./vendor/third_party/protobuf
 
-for f in $(find pkg/apis -name '*.proto'); do
+for f in $(find pkg -name '*.proto'); do
   protoc \
     -I /usr/local/include \
     -I . \

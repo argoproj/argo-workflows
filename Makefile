@@ -491,8 +491,7 @@ dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
 dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
-	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
-	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) -o dist/mixed.swagger.json
 
 dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
@@ -500,9 +499,8 @@ dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) h
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
 	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
-	mv dist/swagger.json api/openapi-spec/swagger.json
+api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
