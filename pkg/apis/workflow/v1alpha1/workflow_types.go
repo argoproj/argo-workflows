@@ -1565,7 +1565,7 @@ type HTTPArtifact struct {
 	Method             string       `json:"method" protobuf:"bytes,3,opt,name=method"`
 	Headers            []HTTPHeader `json:"headers,omitempty" protobuf:"bytes,2,rep,name=headers"`
 	Body               *Item        `json:"body,omitempty" protobuf:"bytes,4,opt,name=body"`
-	InsecureSkipVerify bool         `json:"insecureSkipVerify,omitempty"`
+	InsecureSkipVerify bool         `json:"insecureSkipVerify,omitempty" protobuf:"varint,5,opt,name=insecureSkipVerify"`
 }
 
 func (h *HTTPArtifact) HasLocation() bool {

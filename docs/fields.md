@@ -76,7 +76,7 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -379,7 +379,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -693,7 +693,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -972,7 +972,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -1460,7 +1460,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -1641,6 +1641,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
 |`eventConsumer`|[`EventConsumerTemplate`](#eventconsumertemplate)|_No description available_|
+|`eventProducer`|[`EventProducerTemplate`](#eventproducertemplate)|_No description available_|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
@@ -2099,7 +2100,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
@@ -2131,13 +2132,29 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `context.type == "test"`|
+
+## EventProducerTemplate
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`events.yaml`](../examples/events.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`http`|[`HTTPArtifact`](#httpartifact)|_No description available_|
 
 ## UserContainer
 
@@ -2386,7 +2403,7 @@ Pod metdata
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -3042,6 +3059,8 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
 
+- [`events.yaml`](../examples/events.yaml)
+
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
@@ -3056,6 +3075,10 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`body`|[`Item`](#item)|_No description available_|
+|`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|_No description available_|
+|`insecureSkipVerify`|`boolean`|_No description available_|
+|`method`|`string`|HTTP method to use - default is POST|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -3266,7 +3289,7 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
@@ -3429,6 +3452,24 @@ TarStrategy will tar and gzip the file or directory when saving
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
 
+## HTTPHeader
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`events.yaml`](../examples/events.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|_No description available_|
+|`value`|`string`|_No description available_|
+|`valueFrom`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
+
 # External Fields
 
 
@@ -3512,7 +3553,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -3985,8 +4026,6 @@ A single application container that you want to run within a pod.
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -4602,7 +4641,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -5576,7 +5615,7 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+- [`events.yaml`](../examples/events.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
