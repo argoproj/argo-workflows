@@ -1,5 +1,3 @@
-# This secret will be automatically populated with a token under data/token.
-# See https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/
 kind: Secret
 apiVersion: v1
 metadata:
