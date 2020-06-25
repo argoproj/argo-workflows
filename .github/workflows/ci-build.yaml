@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: Specify branch
         run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Restore go build cache
@@ -85,11 +86,16 @@ jobs:
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
       - name: Upload test results
-        if: failure()
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}
           path: test-results
+      - name: SonarCloud Scan
+        if: ${{ matrix.test == 'test' }}
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Upload diagnostics
         if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
         uses: actions/upload-artifact@v1
