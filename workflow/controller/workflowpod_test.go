@@ -1109,3 +1109,59 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
 }
+
+var helloWindowsWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-hybrid-win
+spec:
+  entrypoint: hello-win
+  templates:
+    - name: hello-win
+      nodeSelector:
+        kubernetes.io/os: windows
+      container:
+        image: mcr.microsoft.com/windows/nanoserver:1809
+        command: ["cmd", "/c"]
+        args: ["echo", "Hello from Windows Container!"]
+`
+
+var helloLinuxWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-hybrid-lin
+spec:
+  entrypoint: hello-linux
+  templates:
+    - name: hello-linux
+      nodeSelector:
+        kubernetes.io/os: linux
+      container:
+        image: alpine
+        command: [echo]
+        args: ["Hello from Linux Container!"]
+`
+
+func TestHybridWfVolumesWindows(t *testing.T) {
+	wf := unmarshalWF(helloWindowsWf)
+	woc := newWoc(*wf)
+
+	mainCtr := woc.wfSpec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
+	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
+}
+
+func TestHybridWfVolumesLinux(t *testing.T) {
+	wf := unmarshalWF(helloLinuxWf)
+	woc := newWoc(*wf)
+
+	mainCtr := woc.wfSpec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
+	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
+}
