@@ -16,6 +16,7 @@ For a full list of all the fields available in for use in Argo, and a link to ex
 Some use-case specific documentation is available:
 
 * [Contributing](CONTRIBUTING.md)
+* [Access Token](access-token.md)
 * [Argo Workflow Architecture](architecture.md)
 * [Argo Server Auth Mode](argo-server-auth-mode.md)
 * [Argo Server SSO](argo-server-sso.md)
