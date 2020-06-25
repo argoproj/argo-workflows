@@ -1790,8 +1790,6 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
@@ -1989,8 +1987,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
@@ -3062,8 +3058,6 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -3121,8 +3115,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -3416,8 +3408,6 @@ RawValueFrom is a placeholder for a value to be filled in directly, either throu
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 # External Fields
@@ -5185,8 +5175,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
