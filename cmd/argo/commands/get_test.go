@@ -2,7 +2,11 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/stretchr/testify/mock"
+	"sigs.k8s.io/yaml"
 	"testing"
 	"text/tabwriter"
 	"time"
@@ -13,6 +17,65 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+var wfWithStatus =`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-24T22:53:35Z"
+  generateName: hello-world-
+  generation: 6
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: hello-world-2xg9p
+  namespace: default
+  resourceVersion: "1110858"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-2xg9p
+  uid: 8c25e2e7-6b35-4a49-a667-87b4cd1afa3c
+spec:
+  arguments: {}
+  entrypoint: whalesay
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-06-24T22:53:41Z"
+  nodes:
+    hello-world-2xg9p:
+      displayName: hello-world-2xg9p
+      finishedAt: "2020-06-24T22:53:39Z"
+      id: hello-world-2xg9p
+      name: hello-world-2xg9p
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2020-06-24T22:53:35Z"
+      templateName: whalesay
+      templateScope: local/hello-world-2xg9p
+      type: Pod
+  phase: Succeeded
+  resourcesDuration:
+    cpu: 3
+    memory: 0
+  startedAt: "2020-06-24T22:53:35Z"
+`
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
@@ -66,4 +129,29 @@ func TestPrintNode(t *testing.T) {
 
 	getArgs.status = "foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+}
+
+func TestGetCommand(t *testing.T) {
+	client := mocks.Client{}
+	wfClient := mocks.WorkflowServiceClient{}
+	var wf wfv1.Workflow
+	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
+	assert.NoError(t, err)
+	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything ).Return(&wf, nil)
+	client.On("NewWorkflowServiceClient").Return(&wfClient)
+	CLIOpt.client = &client
+	CLIOpt.ctx = context.TODO()
+	getCommand :=  NewGetCommand()
+	execFunc := func(){
+		err := getCommand.Execute()
+		assert.NoError(t, err)
+	}
+	output := CaptureOutput(execFunc)
+	assert.Contains(t, output, "Status:              Succeeded")
+	assert.Contains(t, output, "ResourcesDuration:   3s*cpu,0s*memory")
+	assert.Contains(t, output, "STEP")
+	assert.Contains(t, output, "TEMPLATE")
+	assert.Contains(t, output, "PODNAME")
+	assert.Contains(t, output, "DURATION")
+	assert.Contains(t, output, "MESSAGE")
 }

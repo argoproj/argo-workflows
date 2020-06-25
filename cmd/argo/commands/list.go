@@ -64,14 +64,14 @@ func NewListCommand() *cobra.Command {
 			}
 			listOpts.LabelSelector = labelSelector.String()
 
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = ""
 			}
 
-			wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+			wfList, err := serviceClient.ListWorkflows(CLIOpt.ctx, &workflowpkg.WorkflowListRequest{
 				Namespace:   namespace,
 				ListOptions: &listOpts,
 			})
@@ -80,7 +80,7 @@ func NewListCommand() *cobra.Command {
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
 				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+				wfList, err := serviceClient.ListWorkflows(CLIOpt.ctx, &workflowpkg.WorkflowListRequest{
 					Namespace:   namespace,
 					ListOptions: &listOpts,
 				})

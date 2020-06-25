@@ -39,11 +39,11 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
-				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+				wf, err := serviceClient.GetWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowGetRequest{
 					Name:      name,
 					Namespace: namespace,
 				})
