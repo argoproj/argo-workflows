@@ -24,7 +24,7 @@ func NewResumeCommand() *cobra.Command {
 		Use:   "resume WORKFLOW1 WORKFLOW2...",
 		Short: "resume zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
@@ -34,7 +34,7 @@ func NewResumeCommand() *cobra.Command {
 			}
 
 			for _, wfName := range args {
-				_, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
+				_, err := serviceClient.ResumeWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowResumeRequest{
 					Name:              wfName,
 					Namespace:         namespace,
 					NodeFieldSelector: selector.String(),
