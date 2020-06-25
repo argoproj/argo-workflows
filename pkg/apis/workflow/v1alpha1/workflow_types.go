@@ -919,6 +919,15 @@ var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
 
+func (n Nodes) FindByID(id string) *NodeStatus {
+	for _, i := range n {
+		if i.ID == id {
+			return &i
+		}
+	}
+	return nil
+}
+
 func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	for _, i := range n {
 		if i.DisplayName == name {

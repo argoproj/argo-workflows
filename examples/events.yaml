@@ -10,20 +10,13 @@ spec:
     - name: events
       dag:
         tasks:
-          - name: start
-            template: whalesay
           - name: a
             template: a
-            dependencies: [start]
           - name: b
             template: b
             dependencies: [a]
           - name: c
             template: c
-            dependencies: [start]
-          - name: run
-            template: whalesay
-            dependencies: [a, b, c]
 
     - name: a
       eventConsumer:
@@ -37,15 +30,13 @@ spec:
           headers:
             - name: Authorization
               value: Bearer token:PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq
+          method: POST
           body:
             context:
               type: test
-              id: "{{workflow.uid}}"
+              id: b
 
     - name: c
       eventConsumer:
         expression: context.type == "test" && (context.id contains "b")
 
-    - name: whalesay
-      container:
-        image: docker/whalesay

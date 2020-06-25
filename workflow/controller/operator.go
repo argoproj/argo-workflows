@@ -2326,11 +2326,8 @@ func (woc *wfOperationCtx) executeEventProducer(nodeName string, templateScope s
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeEventProducer, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 	}
 	woc.log.Infof("node %s event producer", nodeName)
-	err := makeHTTPRequest(tmpl.EventProducer.HTTP)
-	if err != nil {
-		return nil, err
-	}
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	woc.controller.httpController.Queue(woc.wf.Namespace, woc.wf.Name, node.ID, tmpl.EventProducer.HTTP)
+	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
 }
 
