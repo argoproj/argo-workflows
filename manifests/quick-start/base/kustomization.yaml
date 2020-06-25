@@ -6,7 +6,6 @@ resources:
   - minio
   - automation
   - argo-server-sso-secret.yaml
-  - argo-server-tokens-secret.yaml
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml

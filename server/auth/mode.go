@@ -15,12 +15,11 @@ const (
 	Client Mode = "client"
 	Server Mode = "server"
 	SSO    Mode = "sso"
-	Token  Mode = "token"
 )
 
 func (m Modes) Add(value string) error {
 	switch value {
-	case "client", "server", "sso", "token":
+	case "client", "server", "sso":
 		m[Mode(value)] = true
 	case "hybrid":
 		m[Client] = true
@@ -31,14 +30,9 @@ func (m Modes) Add(value string) error {
 	return nil
 }
 
-const tokenPrefix = "Bearer token:"
-
 func GetMode(authorisation string) (Mode, error) {
 	if authorisation == "" {
 		return Server, nil
-	}
-	if strings.HasPrefix(authorisation, tokenPrefix) {
-		return Token, nil
 	}
 	if strings.HasPrefix(authorisation, sso.Prefix) {
 		return SSO, nil

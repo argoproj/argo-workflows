@@ -101,9 +101,8 @@ func (s *ArgoServerSuite) TestVersion() {
 }
 
 func (s *ArgoServerSuite) TestEvents() {
-	s.bearerToken = "Bearer token:PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq"
 	s.e().
-		PUT("/api/v1/events", make(map[string]interface{})).
+		POST("/api/v1/events/argo", make(map[string]interface{})).
 		Expect().
 		Status(200)
 }

@@ -5,3 +5,4 @@ resources:
   - automation-role.yaml
   - automation-sa.yaml
   - automation-rolebinding.yaml
+  - automation-secret.yaml
