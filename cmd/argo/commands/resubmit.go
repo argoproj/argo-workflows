@@ -11,7 +11,7 @@ import (
 func NewResubmitCommand() *cobra.Command {
 	var (
 		memoized      bool
-		priority      *int32
+		priority      int32
 		cliSubmitOpts cliSubmitOpts
 	)
 	var command = &cobra.Command{
@@ -39,7 +39,7 @@ func NewResubmitCommand() *cobra.Command {
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmd.Flag("priority").Changed {
-				cliSubmitOpts.priority = priority
+				cliSubmitOpts.priority = &priority
 			}
 
 			ctx, apiClient := client.NewAPIClient()
@@ -59,7 +59,7 @@ func NewResubmitCommand() *cobra.Command {
 		},
 	}
 
-	command.Flags().Int32Var(priority, "priority", 0, "workflow priority")
+	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
