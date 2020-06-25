@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
