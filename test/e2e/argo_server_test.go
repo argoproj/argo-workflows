@@ -100,6 +100,14 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
+func (s *ArgoServerSuite) TestEvents() {
+	s.bearerToken = "Bearer token:PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq"
+	s.e().
+		PUT("/api/v1/events", make(map[string]interface{})).
+		Expect().
+		Status(200)
+}
+
 // we can only really tests these endpoint respond, not worthwhile checking more
 func (s *ArgoServerSuite) TestOauth() {
 	s.Run("Redirect", func() {

@@ -658,40 +658,6 @@
         }
       }
     },
-    "/api/v1/events/{namespace}": {
-      "post": {
-        "tags": [
-          "EventService"
-        ],
-        "summary": "https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md",
-        "operationId": "ReceiveEvent",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "All API requests must have a namespace (which can be empty string for cluster scope installations),\nbut this is not part of the CloudEvents spec.",
-            "name": "namespace",
-            "in": "path",
-            "required": true
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/event.Event"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/event.EventReceived"
-            }
-          }
-        }
-      }
-    },
     "/api/v1/info": {
       "get": {
         "tags": [
@@ -1715,59 +1681,6 @@
     }
   },
   "definitions": {
-    "event.Event": {
-      "type": "object",
-      "properties": {
-        "context": {
-          "$ref": "#/definitions/event.EventContext"
-        },
-        "data": {
-          "type": "string",
-          "format": "byte"
-        },
-        "namespace": {
-          "description": "All API requests must have a namespace (which can be empty string for cluster scope installations),\nbut this is not part of the CloudEvents spec.",
-          "type": "string"
-        }
-      }
-    },
-    "event.EventContext": {
-      "type": "object",
-      "title": "Nhe context of the CloudEvent",
-      "properties": {
-        "datacontenttype": {
-          "description": "A MIME (RFC2046) string describing the media type of `data`.",
-          "type": "string"
-        },
-        "id": {
-          "description": "ID of the event; must be non-empty and unique within the scope of the producer.",
-          "type": "string"
-        },
-        "source": {
-          "description": "A URI describing the event producer.",
-          "type": "string"
-        },
-        "specversion": {
-          "description": "The version of the CloudEvents specification used by the event.",
-          "type": "string"
-        },
-        "subject": {
-          "type": "string",
-          "title": "The subject of the event in the context of the event producer"
-        },
-        "time": {
-          "description": "When the event happened.",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
-        },
-        "type": {
-          "description": "Type - The type of the occurrence which has happened.",
-          "type": "string"
-        }
-      }
-    },
-    "event.EventReceived": {
-      "type": "object"
-    },
     "google.protobuf.Any": {
       "type": "object",
       "properties": {

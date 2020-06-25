@@ -430,7 +430,7 @@ kind: Secret
 metadata:
   name: argo-server-tokens
 stringData:
-  my-token: automation
+  PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq: automation
 ---
 apiVersion: v1
 kind: Secret
