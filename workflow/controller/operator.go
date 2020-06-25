@@ -158,7 +158,7 @@ func (woc *wfOperationCtx) operate() {
 	}()
 	defer func() {
 		if r := recover(); r != nil {
-			woc.log.WithFields(log.Fields{"stack": debug.Stack(), "r": r}).Errorf("Recovered from panic")
+			woc.log.WithFields(log.Fields{"stack": string(debug.Stack()), "r": r}).Errorf("Recovered from panic")
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(rerr, true)
 			} else {
