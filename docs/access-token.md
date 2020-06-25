@@ -23,8 +23,8 @@ kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 You now need to get a token:
 
 ```shell script
-SECRET=$(kubectl get secret  -o name | grep '^secret/jenkins-token-' | sed 's/secret\///')
-ARGO_TOKEN=$(kubectl get secret $SECRET -o yaml | grep -o 'token:.*' | sed 's/token: //')
+SECRET=$(kubectl -n argo get sa jenkins -o=jsonpath='{.secrets[0].name}')
+ARGO_TOKEN=$(kubectl -n argo get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)
 echo $ARGO_TOKEN
 ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
