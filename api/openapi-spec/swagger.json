@@ -1458,6 +1458,44 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/set": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "SetWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSetRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/stop": {
       "put": {
         "tags": [
@@ -2893,6 +2931,10 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.RawValueFrom": {
+      "description": "RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ResourceTemplate": {
       "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
       "type": "object",
@@ -3629,6 +3671,10 @@
         "path": {
           "description": "Path in the container to retrieve an output parameter value from in container templates",
           "type": "string"
+        },
+        "raw": {
+          "description": "Raw value to be filled in directly, either through the CLI, API, etc.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawValueFrom"
         }
       }
     },
@@ -3806,6 +3852,29 @@
         "restartSuccessful": {
           "type": "boolean",
           "format": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowSetRequest": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "outputParameters": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
         }
       }
     },

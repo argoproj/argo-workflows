@@ -59,6 +59,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC":                       schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Prometheus":                  schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":                 schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawValueFrom":                schema_pkg_apis_workflow_v1alpha1_RawValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate":            schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy":               schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":                  schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
@@ -2286,6 +2287,17 @@ func schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref common.ReferenceCallback)
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_RawValueFrom(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
+				Type:        []string{"object"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3627,6 +3639,12 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
+					"raw": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Raw value to be filled in directly, either through the CLI, API, etc.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawValueFrom"),
+						},
+					},
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
@@ -3637,6 +3655,8 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawValueFrom"},
 	}
 }
 

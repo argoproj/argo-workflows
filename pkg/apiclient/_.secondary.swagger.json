@@ -1262,6 +1262,10 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawValueFrom": {
+      "description": "RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
+      "type": "object"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ResourceTemplate": {
       "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
       "type": "object",
@@ -2027,6 +2031,10 @@
         "path": {
           "description": "Path in the container to retrieve an output parameter value from in container templates",
           "type": "string"
+        },
+        "raw": {
+          "description": "Raw value to be filled in directly, either through the CLI, API, etc.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawValueFrom"
         }
       }
     },

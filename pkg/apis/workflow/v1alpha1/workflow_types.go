@@ -637,8 +637,15 @@ type ValueFrom struct {
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
+	// Raw value to be filled in directly, either through the CLI, API, etc.
+	Raw *RawValueFrom `json:"raw,omitempty" protobuf:"bytes,6,opt,name=raw"`
+
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+}
+
+// RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+type RawValueFrom struct {
 }
 
 // Artifact indicates an artifact to place at a specified path

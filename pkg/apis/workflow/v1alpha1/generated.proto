@@ -706,6 +706,10 @@ message RawArtifact {
   optional string data = 1;
 }
 
+// RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+message RawValueFrom {
+}
+
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
 message ResourceTemplate {
   // Action is the action to perform to the resource.
@@ -1045,6 +1049,9 @@ message ValueFrom {
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
+
+  // Raw value to be filled in directly, either through the CLI, API, etc.
+  optional RawValueFrom raw = 6;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;

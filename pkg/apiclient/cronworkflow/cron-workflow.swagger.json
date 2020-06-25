@@ -1230,6 +1230,10 @@
       },
       "title": "RawArtifact allows raw string content to be placed as an artifact in a container"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawValueFrom": {
+      "type": "object",
+      "description": "RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc."
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ResourceTemplate": {
       "type": "object",
       "properties": {
@@ -1646,6 +1650,10 @@
         "parameter": {
           "type": "string",
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "raw": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawValueFrom",
+          "description": "Raw value to be filled in directly, either through the CLI, API, etc."
         },
         "default": {
           "type": "string",

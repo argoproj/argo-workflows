@@ -1056,12 +1056,15 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 			paramTypes++
 		}
 	}
+	if param.ValueFrom.Raw != nil {
+		paramTypes++
+	}
 	switch paramTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "valueFrom type unspecified. choose one of: path, jqFilter, jsonPath, parameter")
+		return errors.New(errors.CodeBadRequest, "valueFrom type unspecified. choose one of: path, jqFilter, jsonPath, parameter, raw")
 	case 1:
 	default:
-		return errors.New(errors.CodeBadRequest, "multiple valueFrom types specified. choose one of: path, jqFilter, jsonPath, parameter")
+		return errors.New(errors.CodeBadRequest, "multiple valueFrom types specified. choose one of: path, jqFilter, jsonPath, parameter, raw")
 	}
 	return nil
 }

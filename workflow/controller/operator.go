@@ -1654,6 +1654,10 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
+	if nodeType == wfv1.NodeTypeSuspend {
+		node = addRawOutputFields(node, executeTmpl)
+	}
+
 	// Update the node
 	woc.wf.Status.Nodes[node.ID] = *node
 	woc.updated = true
@@ -2299,6 +2303,21 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
+}
+
+func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
+	if tmpl.GetType() != wfv1.TemplateTypeSuspend || node.Type != wfv1.NodeTypeSuspend {
+		panic("addRawOutputFields should only be used for nodes and templates of type suspend")
+	}
+	for _, param := range tmpl.Outputs.Parameters {
+		if param.ValueFrom.Raw != nil {
+			if node.Outputs == nil {
+				node.Outputs = &wfv1.Outputs{Parameters: []wfv1.Parameter{}}
+			}
+			node.Outputs.Parameters = append(node.Outputs.Parameters, param)
+		}
+	}
+	return node
 }
 
 func parseStringToDuration(durationString string) (time.Duration, error) {

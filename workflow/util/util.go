@@ -325,7 +325,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 // Retries conflict errors
 func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateWorkflowNodeByKey(wfIf, hydrator, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
+		return updateSuspendedNode(wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded})
 	} else {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
@@ -393,7 +393,13 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	return selector.Matches(nodeFields)
 }
 
-func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
+type SetOperationValues struct {
+	Phase            wfv1.NodePhase
+	Message          string
+	OutputParameters map[string]string
+}
+
+func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
 		return err
@@ -413,32 +419,70 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.
 		for nodeID, node := range wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
 				if SelectorMatchesNode(selector, node) {
-					node.Phase = phase
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					if len(message) > 0 {
-						node.Message = message
-					}
-					wf.Status.Nodes[nodeID] = node
-					nodeUpdated = true
-				}
-			}
-		}
-		if nodeUpdated {
-			err := hydrator.Dehydrate(wf)
-			if err != nil {
-				return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-			}
 
-			_, err = wfIf.Update(wf)
-			if err != nil {
-				if apierr.IsConflict(err) {
-					return false, nil
+					// Update phase
+					if values.Phase != "" {
+						node.Phase = values.Phase
+						if values.Phase.Fulfilled() {
+							node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+						}
+						nodeUpdated = true
+					}
+
+					// Update message
+					if values.Message != "" {
+						node.Message = values.Message
+						nodeUpdated = true
+					}
+
+					// Update output parameters
+					if len(values.OutputParameters) > 0 {
+						if node.Outputs == nil {
+							return true, fmt.Errorf("cannot set output parameters because node is not expecting any raw parameters")
+						}
+						for name, val := range values.OutputParameters {
+							hit := false
+							for i, param := range node.Outputs.Parameters {
+								if param.Name == name {
+									if param.ValueFrom.Raw == nil {
+										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw", param.Name)
+									}
+									node.Outputs.Parameters[i].Value = pointer.StringPtr(val)
+									node.Outputs.Parameters[i].ValueFrom = nil
+									nodeUpdated = true
+									hit = true
+									break
+								}
+							}
+							if !hit {
+								return true, fmt.Errorf("node is not expecting output parameter '%s'", name)
+							}
+						}
+					}
+
+					wf.Status.Nodes[nodeID] = node
 				}
-				return false, err
 			}
-		} else {
-			return true, fmt.Errorf("No nodes matching nodeFieldSelector: %s", nodeFieldSelector)
 		}
+
+		if !nodeUpdated {
+			return true, fmt.Errorf("no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
+		}
+
+		err = hydrator.Dehydrate(wf)
+		if err != nil {
+			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
+		}
+
+		_, err = wfIf.Update(wf)
+		if err != nil {
+			if apierr.IsConflict(err) {
+				// Try again if we have a conflict
+				return false, nil
+			}
+			return true, err
+		}
+
 		return true, nil
 	})
 	return err
@@ -749,7 +793,7 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 // Or terminates a single resume step referenced by nodeFieldSelector
 func StopWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateWorkflowNodeByKey(wfClient, hydrator, name, nodeFieldSelector, wfv1.NodeFailed, message)
+		return updateSuspendedNode(wfClient, hydrator, name, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeFailed, Message: message})
 	} else {
 		patchObj := map[string]interface{}{
 			"spec": map[string]interface{}{
@@ -774,6 +818,13 @@ func StopWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interfa
 		}
 		return err
 	}
+}
+
+func SetWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, values SetOperationValues) error {
+	if nodeFieldSelector != "" {
+		return updateSuspendedNode(wfClient, hydrator, name, nodeFieldSelector, values)
+	}
+	return fmt.Errorf("'set' currently only targets suspend nodes, use a node-field-selector to target them")
 }
 
 // Reads from stdin

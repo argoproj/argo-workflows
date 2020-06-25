@@ -1776,6 +1776,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
@@ -1969,6 +1971,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
@@ -3034,6 +3038,8 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -3089,6 +3095,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -3099,6 +3107,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
+|`raw`|[`RawValueFrom`](#rawvaluefrom)|Raw value to be filled in directly, either through the CLI, API, etc.|
 
 ## Counter
 
@@ -3367,6 +3376,21 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## RawValueFrom
+
+RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+</details>
 
 # External Fields
 
@@ -5125,6 +5149,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
