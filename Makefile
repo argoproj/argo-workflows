@@ -516,7 +516,6 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 .PHONY: docs
 docs: swagger
 	go run ./hack docgen
-	go run ./hack readmegen
 
 # pre-push
 

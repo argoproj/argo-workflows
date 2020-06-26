@@ -20,7 +20,7 @@ Learn more on [how to generate an access token](access-token.md).
 To view the API:
  
 1. Open [https://editor.swagger.io/](https://editor.swagger.io/)
-2. Copy and paste `../api/openapi-spec/swagger.json`
+2. Copy and paste `https://github.com/argoproj/argo/blob/master/api/openapi-spec/swagger.json`
 
 ## Classic API
 
@@ -47,7 +47,7 @@ CRUD operation on custom resource objects.
 ### Golang 
 
 A kubernetes Workflow clientset library is auto-generated under [argoproj/argo/pkg/client](https://github.com/argoproj/argo/tree/master/pkg/client) and can be imported by golang
-applications. See the [golang code example](../examples/example-golang/main.go) on how to make use of this client.
+applications. See the [golang code example](examples/example-golang/main.go) on how to make use of this client.
 
 ### Python
 The python kubernetes client has libraries for interacting with custom objects. See: https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CustomObjectsApi.md

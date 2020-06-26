@@ -1,0 +1,82 @@
+site_name: Argo Workflows - The workflow engine for Kubernetes
+repo_url: https://github.com/argoproj/argo
+strict: true
+theme:
+  name: material
+  palette:
+    primary: blue
+  font:
+    text: Work Sans
+  logo: assets/logo.png
+google_analytics:
+  # TODO - ask Alex to create this
+  - UA-105170809-3
+  - auto
+markdown_extensions:
+  - codehilite
+  - admonition
+  - toc:
+      permalink: true
+nav:
+  - Overview: README.md
+  - core-concepts.md
+  - getting-started.md
+  - architecture.md
+  - User Guide:
+      - Beginner:
+          - cli.md
+          - variables.md
+          - workflow-templates.md
+          - cluster-workflow-templates.md
+      - Advanced:
+          - workflow-rbac.md
+          - service-accounts.md
+          - work-avoidance.md
+          - enhanced-depends-logic.md
+          - workflow-notifications.md
+          - artifact-repository-ref.md
+          - workflow-events.md
+          - cron-backfill.md
+          - workflow-requirements.md
+          - async-pattern.md
+          - node-field-selector.md
+          - cron-workflows.md
+          - resource-duration.md
+      - Expert:
+          - access-token.md
+          - workflow-creator.md
+          - security.md
+          - rest-api.md
+      - examples/README.md
+      - fields.md
+  - Operator Manual:
+      - Configuration:
+          - workflow-controller-configmap.md
+          - workflow-executors.md
+          - managed-namespace.md
+          - configure-artifact-repository.md
+          - default-workflow-specs.md
+          - offloading-large-workflows.md
+          - workflow-archive.md
+          - metrics.md
+          - links.md
+      - Argo Server:
+          - argo-server.md
+          - argo-server-auth-mode.md
+          - tls.md
+          - argo-server-sso.md
+      - scaling.md
+      - cost-optimisation.md
+      - windows.md
+  - Developer Guide:
+      - CONTRIBUTING.md
+      - running-locally.md
+      - versioning.md
+      - public-api.md
+      - static-code-analysis.md
+      - releasing.md
+  - Releases ⧉: https://github.com/argoproj/argo/releases
+  - Roadmap ⧉: https://github.com/argoproj/argo/milestones
+  - Blog ⧉: https://blog.argoproj.io/
+  - Slack ⧉: https://argoproj.github.io/community/join-slack
+  - Twitter ⧉: https://twitter.com/argoproj

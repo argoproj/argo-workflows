@@ -4,17 +4,17 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 For the latter, you'll set up an artifact repository for storing the artifacts that are passed in
 the workflows. Here are the requirements and steps to run the workflows.
 
-## 0. Requirements
+## Requirements
 * Kubernetes 1.9 or later
 * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * Have a [kubeconfig](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/) file (default location is `~/.kube/config`)
 * [Helm](https://helm.sh/docs/intro/quickstart/) (Optional): this tutorial uses helm to install MinIO, if you are going to use it (to try out "artifact-passing" for example).
 
-## 1. Download the Argo CLI
+## Download the Argo CLI
 
 Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo/releases).
 
-## 2. Install the Controller
+## Install the Controller
 
 ```sh
 kubectl create namespace argo
@@ -32,7 +32,7 @@ NOTE: On GKE, you may need to grant your account the ability to create new `clus
 kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
 ```
 
-## 3. Configure the service account to run Workflows
+## Configure the service account to run Workflows
 
 ### Roles, RoleBindings, and ServiceAccounts
 
@@ -61,7 +61,7 @@ kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=ar
 **Note that this will grant admin privileges to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
 run Workflows in the namespace where the `RoleBinding` was made.**
 
-## 4. Run Sample Workflows
+## Run Sample Workflows
 ```sh
 argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
 argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
@@ -71,7 +71,7 @@ argo get xxx-workflow-name-xxx -n argo
 argo logs xxx-pod-name-xxx -n argo #from get command above
 ```
 
-Additional examples and more information about the CLI are available on the [Argo Workflows by Example](../examples/README.md) page.
+Additional examples and more information about the CLI are available on the [Argo Workflows by Example](examples/README.md) page.
 
 You can also create Workflows directly with `kubectl`. However, the Argo CLI offers extra features
 that `kubectl` does not, such as YAML validation, workflow visualization, parameter passing, retries
@@ -85,7 +85,7 @@ kubectl logs hello-world-yyy -c main -n argo
 ```
 
 
-## 5. Install an Artifact Repository
+## Install an Artifact Repository
 
 Argo supports S3 (AWS, GCS, Minio) and Artifactory as artifact repositories. Instructions on how to configure artifact repositories are available on the [Configuring your Artifact Repository](configure-artifact-repository.md) page.
 
@@ -118,7 +118,7 @@ which you will use to login to the UI:
 
 There should be a bucket named `my-bucket`. If not create one from the Minio UI.
 
-## 6. Reconfigure the workflow controller to use the Minio artifact repository
+## Reconfigure the workflow controller to use the Minio artifact repository
 
 Edit the `workflow-controller` `ConfigMap` to reference the service name (`argo-artifacts`) and
 secret (`argo-artifacts`) created by the Helm install:
@@ -152,12 +152,12 @@ NOTE: the Minio secret is retrieved from the namespace you use to run Workflows.
 installed in a different namespace then you will need to create a copy of its secret in the
 namespace you use for Workflows.
 
-## 7. Run a workflow which uses artifacts
+## Run a workflow which uses artifacts
 ```sh
 argo submit -n argo https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
 
-## 8. Access the Argo UI
+## Access the Argo UI
 
 > v2.5 and after
 

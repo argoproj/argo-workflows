@@ -17,7 +17,7 @@ Use this mode if:
 * You want a drop-in replacement for the Argo UI.
 * If you need to prevent users from directly accessing the database.
 
-Hosted mode is provided as part of the standard [manifests](../manifests), [specifically in argo-server-deployment.yaml](../manifests/base/argo-server/argo-server-deployment.yaml) .
+Hosted mode is provided as part of the standard [manifests](https://github.com/argoproj/argo/blob/master/manifests), [specifically in argo-server-deployment.yaml](https://github.com/argoproj/argo/blob/master/manifests/base/argo-server/argo-server-deployment.yaml) .
 
 ## Local Mode
 
@@ -32,7 +32,7 @@ To run locally:
 argo server
 ```
 
-This will start a server on port 2746 which you can view at [http://localhost:2746](http://localhost:2746]).
+This will start a server on port 2746 which you can view at [http://localhost:2746](http://localhost:2746).
 
 ## Options
 
