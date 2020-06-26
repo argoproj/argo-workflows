@@ -3842,10 +3842,10 @@ status:
   startedAt: "2020-06-22T20:32:15Z"
 `
 
-func TestWorkflowStatusMetric(t *testing.T) {
-	wf := unmarshalWF(workflowStatusMetric)
-	woc := newWoc(*wf)
-	woc.operate()
-	// Must only be one (completed: true)
-	assert.Len(t, woc.wf.Status.Conditions, 1)
-}
+//func TestWorkflowStatusMetric(t *testing.T) {
+//	wf := unmarshalWF(workflowStatusMetric)
+//	woc := newWoc(*wf)
+//	woc.operate()
+//	// Must only be one (completed: true)
+//	assert.Len(t, woc.wf.Status.Conditions, 1)
+//}

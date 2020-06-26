@@ -1058,7 +1058,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 
 			if tmpl.Memoize != nil {
-				c := NewConfigMapCache(tmpl.Memoize.Cache.ConfigMapName.Name, woc.controller.namespace, woc.controller.kubeclientset)
+				c := woc.controller.cache.(configMapCache)
+				c.configMapName = tmpl.Memoize.Cache.ConfigMapName.Name
 				c.Save(tmpl.Memoize.Key, node.Outputs)
 			}
 		}

@@ -86,6 +86,7 @@ type WorkflowController struct {
 	metrics               metrics.Metrics
 	eventRecorder         record.EventRecorder
 	archiveLabelSelector  labels.Selector
+	cache                 Cache
 }
 
 const (
@@ -116,6 +117,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		eventRecorder:              eventRecorder,
+		cache:                      NewConfigMapCache("", namespace, kubeclientset),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()

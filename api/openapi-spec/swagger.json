@@ -1924,6 +1924,14 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Cache": {
+      "type": "object",
+      "properties": {
+        "configMapName": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "type": "object",
