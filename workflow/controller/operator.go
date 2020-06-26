@@ -1409,8 +1409,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil {
 		if node.Fulfilled() {
 			if resolvedTmpl.Synchronization != nil {
-				woc.log.Debugf("Node %s is releasing Semaphore lock", node.ID)
 				woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+				woc.log.Debugf("Node %s released Semaphore lock", node.ID)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1547,9 +1547,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
 		if resolvedTmpl.Synchronization != nil {
-			woc.log.Debugf("Node %s is releasing Semaphore lock", node.ID)
-
 			woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+			woc.log.Debugf("Node %s released Semaphore lock", node.ID)
+
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container

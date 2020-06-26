@@ -2478,7 +2478,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         }
       }
     },
@@ -3158,7 +3159,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "semaphore": {
           "description": "Semaphore stores the semaphore name.",

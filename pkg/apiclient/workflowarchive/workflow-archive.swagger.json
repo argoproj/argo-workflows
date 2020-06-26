@@ -1155,7 +1155,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Holders stores the list of current holder names in the workflow."
+          "title": "Holders stores the list of current holder names in the workflow.\n+listType=atomic"
         }
       }
     },

@@ -2,7 +2,6 @@ package sync
 
 import (
 	"fmt"
-
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +17,6 @@ type ReleaseNotifyCallbackFunc func(string)
 type SyncLimitConfigFunc func(string) (int, error)
 
 type SyncManager struct {
-	//kubeClient          kubernetes.Interface
 	syncLockMap         map[string]Synchronization
 	lock                *sync.Mutex
 	releaseNotifyFunc   ReleaseNotifyCallbackFunc

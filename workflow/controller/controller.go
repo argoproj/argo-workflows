@@ -672,7 +672,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					// key function.
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.cleanupWorkflowDeletion(obj)
+						wfc.releaseAllWorkflowLocks(obj)
 						wfc.wfQueue.Add(key)
 						wfc.throttler.Remove(key)
 					}
@@ -844,7 +844,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	return metricsConfig, telemetryConfig
 }
 
-func (wfc *WorkflowController) cleanupWorkflowDeletion(obj interface{}) {
+func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		log.Warnf("Key '%s' in index is not an unstructured", obj)

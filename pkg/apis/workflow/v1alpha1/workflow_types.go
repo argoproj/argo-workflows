@@ -876,9 +876,9 @@ type TemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
-// Synchronization is a holds synchronization lock configuration
+// Synchronization holds synchronization lock configuration
 type Synchronization struct {
-	// Semaphore will hold the Semaphore configuration
+	// Semaphore holds the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 }
 
@@ -1009,7 +1009,6 @@ type WorkflowStatus struct {
 type SemaphoreStatus struct {
 	// Holding stores the list of resource acquired synchronization lock for workflows.
 	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-
 	// Waiting indicates the list of current synchronization lock holders
 	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
@@ -1018,6 +1017,7 @@ type SemaphoreHolding struct {
 	// Semaphore stores the semaphore name.
 	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 	// Holders stores the list of current holder names in the workflow.
+	// +listType=atomic
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
@@ -1028,6 +1028,7 @@ type WaitingStatus struct {
 
 type HolderNames struct {
 	// Name stores the name of the resource holding lock
+	// +listType=atomic
 	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 

@@ -1492,6 +1492,11 @@ func schema_pkg_apis_workflow_v1alpha1_HolderNames(ref common.ReferenceCallback)
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Name stores the name of the resource holding lock",
 							Type:        []string{"array"},
@@ -2829,6 +2834,11 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref common.ReferenceCall
 						},
 					},
 					"holders": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Holders stores the list of current holder names in the workflow.",
 							Type:        []string{"array"},

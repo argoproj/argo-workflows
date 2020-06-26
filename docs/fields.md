@@ -204,10 +204,6 @@ Workflow is the definition of a workflow resource
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -219,6 +215,10 @@ Workflow is the definition of a workflow resource
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -507,10 +507,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -522,6 +518,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -823,10 +823,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -838,6 +834,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -1102,10 +1102,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -1117,6 +1113,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -1302,9 +1302,9 @@ Arguments to a template
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
@@ -1391,9 +1391,9 @@ Synchronization is a holds synchronization lock configuration
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -1609,10 +1609,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -1624,6 +1620,10 @@ Template is a reusable and composable unit of execution in a workflow
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -1839,9 +1839,9 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -2030,9 +2030,9 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
@@ -2086,9 +2086,9 @@ SemaphoreRef is a reference of Semaphore
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -2326,8 +2326,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -2549,10 +2547,6 @@ Pod metdata
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -2564,6 +2558,10 @@ Pod metdata
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -2714,8 +2712,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -2856,13 +2852,13 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -2958,9 +2954,9 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -3700,10 +3696,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -3715,6 +3707,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -4156,10 +4152,6 @@ A single application container that you want to run within a pod.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -4171,6 +4163,10 @@ A single application container that you want to run within a pod.
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -4222,9 +4218,9 @@ Selects a key from a ConfigMap.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
 
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -4792,10 +4788,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -4807,6 +4799,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -5764,10 +5760,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
-- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
-
-- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
-
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -5779,6 +5771,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 

@@ -23,13 +23,12 @@ type Semaphore struct {
 }
 
 func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore {
-	holder := make(map[string]bool)
 	return &Semaphore{
 		name:              name,
 		limit:             limit,
 		pending:           &priorityQueue{itemByKey: make(map[interface{}]*item)},
 		semaphore:         sema.NewWeighted(int64(limit)),
-		lockHolder:        holder,
+		lockHolder:        make(map[string]bool),
 		inPending:         make(map[string]bool),
 		lock:              &sync.Mutex{},
 		releaseNotifyFunc: callbackFunc,
@@ -107,9 +106,9 @@ func (s *Semaphore) release(key string) bool {
 func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	//log := s.log.WithField("HolderKey", holderKey)
+
 	if _, ok := s.lockHolder[holderKey]; ok {
-		s.log.Debugf("Already Lock is acquired %s", holderKey)
+		s.log.Debugf("Lock is already acquired by %s", holderKey)
 		return
 	}
 
@@ -154,5 +153,5 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 	s.log.Debugf("Current TypeSemaphore Holders. %v", s.lockHolder)
 	return false, waitingMsg
-
 }
+

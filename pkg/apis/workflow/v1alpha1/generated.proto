@@ -429,6 +429,7 @@ message Histogram {
 
 message HolderNames {
   // Name stores the name of the resource holding lock
+  // +listType=atomic
   repeated string name = 1;
 }
 
@@ -803,6 +804,7 @@ message SemaphoreHolding {
   optional string semaphore = 1;
 
   // Holders stores the list of current holder names in the workflow.
+  // +listType=atomic
   repeated string holders = 2;
 }
 
