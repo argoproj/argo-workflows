@@ -247,7 +247,12 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 $(GOPATH)/bin/mockery:
-	go get github.com/vektra/mockery/.../@v1.1.1
+	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
+	tar zxvf dist/mockery.tar.gz mockery
+	chmod +x mockery
+	mkdir -p $(GOPATH)/bin
+	mv mockery $(GOPATH)/bin/mockery
+	mockery -version
 
 .PHONY: mocks
 mocks: $(GOPATH)/bin/mockery
