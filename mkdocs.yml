@@ -47,7 +47,8 @@ nav:
           - workflow-creator.md
           - security.md
           - rest-api.md
-      - examples/README.md
+          - rest-examples.md
+      - Examples: examples/README.md
       - fields.md
   - Operator Manual:
       - Configuration:
