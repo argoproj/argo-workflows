@@ -1,0 +1,15 @@
+# This example demonstrates the use of infinite retries for running the container to completion.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-to-completion-
+spec:
+  entrypoint: retry-to-completion
+  templates:
+  - name: retry-to-completion
+    retryStrategy: {}
+    container:
+      image: python
+      command: ["python", "-c"]
+      # fail with a 80% probability
+      args: ["import random; import sys; exit_code = random.choice(range(0, 5)); sys.exit(exit_code)"]

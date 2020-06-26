@@ -1,0 +1,44 @@
+# This example demonstrates the ability for a workflow to create a 
+# temporary, ephemeral volume used by the workflow, and delete it
+# when the workflow completes. It uses the same volumeClaimTemplates
+# syntax as statefulsets.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: volumes-pvc-
+spec:
+  entrypoint: volumes-pvc-example
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+
+  templates:
+  - name: volumes-pvc-example
+    steps:
+    - - name: generate
+        template: whalesay
+    - - name: print
+        template: print-message
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+
+  - name: print-message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
