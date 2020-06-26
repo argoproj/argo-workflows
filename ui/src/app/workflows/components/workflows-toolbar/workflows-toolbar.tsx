@@ -4,7 +4,7 @@ import * as React from 'react';
 import {Workflow} from '../../../../models';
 import {AppContext, Consumer} from '../../../shared/context';
 import * as Actions from '../../../shared/workflow-operations';
-import {WorkflowAction} from '../../../shared/workflow-operations';
+import {WorkflowOperation} from '../../../shared/workflow-operations';
 
 require('./workflows-toolbar.scss');
 
@@ -14,7 +14,7 @@ interface WorkflowsToolbarProps {
     isDisabled: Actions.OperationDisabled;
 }
 
-interface WorkflowGroupAction extends WorkflowAction {
+interface WorkflowGroupAction extends WorkflowOperation {
     groupIsDisabled: boolean;
     className: string;
 }
