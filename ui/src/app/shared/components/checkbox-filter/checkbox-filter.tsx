@@ -40,7 +40,7 @@ export class CheckboxFilter extends React.Component<Props> {
                                         }}
                                     />{' '}
                                     <label title={item.name} htmlFor={`filter-${this.props.type}-${item.name}`}>
-                                        {item.name} ({item.count})
+                                        {item.name}
                                     </label>
                                 </div>
                             </div>

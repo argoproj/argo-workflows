@@ -41,6 +41,12 @@ interface State {
     batchActionDisabled: Actions.OperationDisabled;
 }
 
+interface WorkflowListRenderOptions {
+    paginationLimit: number;
+    selectedPhases: string[];
+    selectedLabels: string[];
+}
+
 const allBatchActionsEnabled: Actions.OperationDisabled = {
     RETRY: false,
     RESUBMIT: false,
@@ -51,23 +57,40 @@ const allBatchActionsEnabled: Actions.OperationDisabled = {
     DELETE: false
 };
 
+const LOCAL_STORAGE_KEY = 'ListOptions';
+
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
+    }
+
+    private static saveOptions(newChanges: WorkflowListRenderOptions) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
+    }
+
+    private static getOptions(): WorkflowListRenderOptions {
+        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
+            return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as WorkflowListRenderOptions;
+        }
+        return {} as WorkflowListRenderOptions;
     }
 
     private subscription: Subscription;
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
+        const savedOptions = WorkflowsList.getOptions();
         this.state = {
             loading: true,
-            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit'))},
+            pagination: {
+                offset: this.queryParam('offset'),
+                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit
+            },
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
-            selectedPhases: this.queryParams('phase'),
-            selectedLabels: this.queryParams('label'),
+            selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
+            selectedLabels: this.queryParams('label').length > 0 ? this.queryParams('label') : savedOptions.selectedLabels,
             selectedWorkflows: {},
             batchActionDisabled: {...allBatchActionsEnabled}
         };
@@ -231,19 +254,25 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination) {
+        const newOptions: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
         });
+        newOptions.selectedPhases = selectedPhases;
         selectedLabels.forEach(label => {
             params.append('label', label);
+            newOptions.selectedLabels.push(label);
         });
+        newOptions.selectedLabels = selectedLabels;
         if (pagination.offset) {
             params.append('offset', pagination.offset);
         }
         if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
+            newOptions.paginationLimit = pagination.limit;
         }
+        WorkflowsList.saveOptions(newOptions);
         const url = 'workflows/' + namespace + '?' + params.toString();
         history.pushState(null, '', uiUrl(url));
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
