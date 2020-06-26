@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/antonmedv/expr"
@@ -24,16 +25,6 @@ type eventServer struct {
 }
 
 func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (*eventpkg.EventReceived, error) {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-	log.WithFields(log.Fields{"event": string(data)}).Info("Received CloudEvent")
-	env := make(map[string]interface{})
-	err = json.Unmarshal(data, &env)
-	if err != nil {
-		return nil, err
-	}
 	wfClient := auth.GetWfClient(ctx)
 	selector, _ := labels.Parse(common.LabelKeyEventWait)
 	req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
@@ -45,6 +36,26 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (
 	for _, wf := range list.Items {
 		updated := false
 		err := s.hydrator.Hydrate(&wf)
+		if err != nil {
+			return nil, err
+		}
+		mapEnv := map[string]interface{}{
+			"event": map[string]interface{}{
+				"context": event.Context,
+				"data":    event.Data,
+			},
+			"workflow": wf,
+		}
+		if strings.Contains(event.Context.Datacontenttype, "json") {
+			mapEnv["data"] = json.RawMessage(event.Data)
+		}
+		data, err := json.Marshal(mapEnv)
+		if err != nil {
+			return nil, err
+		}
+		log.WithField("data", string(data)).Debug("Expression environment")
+		env := make(map[string]interface{})
+		err = json.Unmarshal(data, &env)
 		if err != nil {
 			return nil, err
 		}

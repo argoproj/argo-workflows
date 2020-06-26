@@ -2138,7 +2138,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `context.type == "test"`|
+|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `event.context.type == "test"`|
 
 ## EventProducerTemplate
 

@@ -57,7 +57,7 @@ spec:
 
     - name: a
       eventConsumer:
-        expression: context.type == "test"
+        expression: event.context.type == "test"
 
     - name: b
       eventProducer:

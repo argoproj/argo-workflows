@@ -304,7 +304,7 @@ message DAGTemplate {
 
 message EventConsumerTemplate {
   // An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).
-  // E.g. `context.type == "test"`
+  // E.g. `event.context.type == "test"`
   optional string expression = 1;
 }
 

@@ -1024,7 +1024,7 @@ func schema_pkg_apis_workflow_v1alpha1_EventConsumerTemplate(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `context.type == \"test\"`",
+							Description: "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `event.context.type == \"test\"`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
