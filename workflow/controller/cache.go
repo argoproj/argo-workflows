@@ -36,11 +36,9 @@ type configMapCache struct {
 	namespace string
 	configMapName string
 	kubeClient kubernetes.Interface
-	Load(key string) (*wfv1.Outputs, bool)
-	Save(key string, value *wfv1.Outputs) bool
 }
 
-func NewConfigMapCache(cm string, ns string, ki kubernetes.Interface) *configMapCache {
+func NewConfigMapCache(cm string, ns string, ki kubernetes.Interface) Cache {
 	return &configMapCache{
 		configMapName: cm,
 		namespace: ns,
