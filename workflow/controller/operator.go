@@ -40,6 +40,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -1369,23 +1370,6 @@ type executeTemplateOpts struct {
 	onExitTemplate bool
 }
 
-func getNodeType(tmpl *wfv1.Template) wfv1.NodeType {
-	if tmpl.RetryStrategy != nil {
-		return wfv1.NodeTypeRetry
-	}
-	switch tmpl.GetType() {
-	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
-		return wfv1.NodeTypePod
-	case wfv1.TemplateTypeDAG:
-		return wfv1.NodeTypeDAG
-	case wfv1.TemplateTypeSteps:
-		return wfv1.NodeTypeSteps
-	case wfv1.TemplateTypeSuspend:
-		return wfv1.NodeTypeSuspend
-	}
-	return ""
-}
-
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
@@ -1409,7 +1393,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil {
 		if node.Fulfilled() {
 			if resolvedTmpl.Synchronization != nil {
-				woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+				woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
 				woc.log.Debugf("Node %s released Semaphore lock", node.ID)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
@@ -1460,21 +1444,22 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if processedTmpl.Synchronization != nil {
 		priority, creationTime := getWfPriority(woc.wf)
-		acquireStatus, wfUpdate, msg, err := woc.controller.concurrencyMgr.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, resolvedTmpl.Synchronization)
-
+		lockAcquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, resolvedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
-		if !acquireStatus {
+		if !lockAcquired {
 			if node == nil {
-				node = woc.initializeExecutableNode(nodeName, getNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
+				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
 			return node, nil
 		}
-		woc.updated = wfUpdate
+
 		if node != nil {
 			node.Message = ""
 		}
+		woc.updated = wfUpdate
+
 		woc.log.Infof("Node %s acquired Synchronization lock", nodeName)
 	}
 	// If the user has specified retries, node becomes a special retry node.
@@ -1547,7 +1532,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
 		if resolvedTmpl.Synchronization != nil {
-			woc.controller.concurrencyMgr.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+			woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
 			woc.log.Debugf("Node %s released Semaphore lock", node.ID)
 
 		}
@@ -1890,7 +1875,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if tmpl.Synchronization == nil && !isResubmitAllowed(tmpl) || !node.Pending() {
+	} else if !isResubmitAllowed(tmpl) || !node.Pending() {
 		// This is not our first time executing this node.
 		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
 		// false, return.
@@ -2029,12 +2014,13 @@ func getStepOrDAGTaskName(nodeName string) string {
 
 func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && !(tmpl.Synchronization != nil && node.Pending()) {
-		return node, nil
-	}
+
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	} else if !node.Pending() {
+		return node, nil
 	}
+
 	// Check if the output of this script is referenced elsewhere in the Workflow. If so, make sure to include it during
 	// execution.
 	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
@@ -2283,12 +2269,13 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && !(tmpl.Synchronization != nil && node.Pending()) {
-		return node, nil
-	}
+
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
+	} else if !node.Pending() {
+		return node, nil
 	}
+
 	tmpl = tmpl.DeepCopy()
 
 	// Try to unmarshal the given manifest.
@@ -2776,7 +2763,6 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 	executionParameters := woc.wf.Spec.Arguments
 
-	woc.wfSpec = &woc.wf.Spec
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 		return tmplRef, executionParameters, nil

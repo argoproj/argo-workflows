@@ -87,7 +87,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	concurrencyMgr        *sync.SyncManager
+	syncManager           *sync.SyncManager
 	metrics               metrics.Metrics
 	eventRecorder         record.EventRecorder
 	archiveLabelSelector  labels.Selector
@@ -207,27 +207,24 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 // Create and initialize the Synchronization Manager
 func (wfc *WorkflowController) createSynchronizationManager() error {
-	syncLimitConfig := func(lockName string) (int, error) {
-		items := strings.Split(lockName, "/")
-		if len(items) < 4 {
-			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
+	syncLimitConfig := func(lockKey string) (int, error) {
+		lockName, err := sync.DecodeLockName(lockKey)
+		if err != nil {
+			return 0, err
 		}
-
-		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(items[0]).Get(items[2], metav1.GetOptions{})
-
+		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
 
-		value, found := configMap.Data[items[3]]
-
+		value, found := configMap.Data[lockName.Key]
 		if !found {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Sync configuration Key")
 		}
 		return strconv.Atoi(value)
 	}
 
-	wfc.concurrencyMgr = sync.NewLockManager(syncLimitConfig, func(key string) {
+	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
 		wfc.wfQueue.AddAfter(key, 0)
 	})
 
@@ -239,8 +236,11 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 
 	listOpts := metav1.ListOptions{LabelSelector: labelSelector.String()}
 	wfList, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.namespace).List(listOpts)
+	if err != nil {
+		return err
+	}
 
-	wfc.concurrencyMgr.Initialize(wfList)
+	wfc.syncManager.Initialize(wfList)
 	return err
 }
 
@@ -498,10 +498,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	if wf.Spec.Synchronization != nil {
 		priority, creationTime := getWfPriority(woc.wf)
-		acquired, wfUpdate, msg, err := wfc.concurrencyMgr.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Synchronization)
+		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Synchronization)
 		if err != nil {
 			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
-			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			woc.persistUpdates()
 			wfc.throttler.Remove(key)
 			return true
@@ -516,11 +516,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	startTime := time.Now()
 	woc.operate()
-
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
 		// Release all acquired lock for completed workflow
-		if wfc.concurrencyMgr.ReleaseAll(woc.wf) {
+		if wfc.syncManager.ReleaseAll(woc.wf) {
 			log.Infof("%s released all acquired locks", wf.Name)
 			woc.updated = true
 			woc.persistUpdates()
@@ -853,7 +852,7 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	if err != nil {
 		log.Warnf("Invalid Workflow Object. %v", obj)
 	}
-	wfc.concurrencyMgr.ReleaseAll(wf)
+	wfc.syncManager.ReleaseAll(wf)
 }
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))

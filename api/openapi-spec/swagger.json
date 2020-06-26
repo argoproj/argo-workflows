@@ -3279,11 +3279,11 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Synchronization": {
-      "description": "Synchronization is a holds synchronization lock configuration",
+      "description": "Synchronization holds synchronization lock configuration",
       "type": "object",
       "properties": {
         "semaphore": {
-          "description": "Semaphore will hold the Semaphore configuration",
+          "description": "Semaphore holds the Semaphore configuration",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
         }
       }

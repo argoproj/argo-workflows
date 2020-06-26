@@ -876,9 +876,9 @@ message SuspendTemplate {
   optional string duration = 1;
 }
 
-// Synchronization is a holds synchronization lock configuration
+// Synchronization holds synchronization lock configuration
 message Synchronization {
-  // Semaphore will hold the Semaphore configuration
+  // Semaphore holds the Semaphore configuration
   optional SemaphoreRef semaphore = 1;
 }
 

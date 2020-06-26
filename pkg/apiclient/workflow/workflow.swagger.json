@@ -1895,10 +1895,10 @@
       "properties": {
         "semaphore": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef",
-          "title": "Semaphore will hold the Semaphore configuration"
+          "title": "Semaphore holds the Semaphore configuration"
         }
       },
-      "title": "Synchronization is a holds synchronization lock configuration"
+      "title": "Synchronization holds synchronization lock configuration"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SynchronizationStatus": {
       "type": "object",

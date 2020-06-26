@@ -50,6 +50,55 @@ spec:
       name: whalesay
 `
 
+const ScriptWfWithSemaphore = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: 
+  name: script-wf
+  namespace: default
+spec: 
+  entrypoint: scriptTmpl
+  templates:
+  - name: scriptTmpl
+    synchronization: 
+      semaphore: 
+        configMapKeyRef: 
+          key: template
+          name: my-config
+    script:
+      image: python:alpine3.6
+      command: ["python"]
+      # fail with a 66% probability
+      source: |
+        import random;
+        import sys; 
+        exit_code = random.choice([0, 1, 1]); 
+        sys.exit(exit_code)
+`
+const ResourceWfWithSemaphore = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata: 
+  name: resource-wf
+  namespace: default
+spec: 
+  entrypoint: resourceTmpl
+  templates:
+  - name: resourceTmpl 
+    synchronization: 
+      semaphore: 
+        configMapKeyRef: 
+          key: template
+          name: my-config
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: workflow-controller-configmap1
+`
+
 func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
@@ -73,26 +122,16 @@ func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 	return syncLimitConfig
 }
 
-func TestGetNodeType(t *testing.T) {
-	t.Run("getNodeType", func(t *testing.T) {
-		assert.Equal(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
-		assert.Equal(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Container: &v1.Container{}}))
-		assert.Equal(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Resource: &wfv1.ResourceTemplate{}}))
-		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
-		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{DAG: &wfv1.DAGTemplate{}}))
-		assert.NotEqual(t, wfv1.NodeTypePod, getNodeType(&wfv1.Template{Suspend: &wfv1.SuspendTemplate{}}))
-	})
-}
-
 func TestSemaphoreTmplLevel(t *testing.T) {
 	_, controller := newController()
-	controller.concurrencyMgr = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
+
 	t.Run("TmplLevelAcquireAndRelease", func(t *testing.T) {
 		wf := unmarshalWF(wfWithSemaphore)
 		wf.Name = "one"
@@ -106,6 +145,10 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
 
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+
 		// Try to Acquire the lock, But lock is not available
 		wf_Two := wf.DeepCopy()
 		wf_Two.Name = "two"
@@ -114,15 +157,21 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		woc_two := newWorkflowOperationCtx(wf_Two, controller)
 		// Try Acquire the lock
 		woc_two.operate()
-		for _, node := range woc.wf.Status.Nodes {
-			assert.Equal(t, wfv1.NodePending, node.Phase)
-		}
 
 		// Check Node status
 		err = woc_two.podReconciliation()
 		assert.NoError(t, err)
 		for _, node := range woc_two.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+
+		// Updating Pod state
+		podList, err := controller.kubeclientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+		assert.NoError(t, err)
+		for _, pod := range podList.Items {
+			pod.Status.Phase = v1.PodFailed
+			_, err := controller.kubeclientset.CoreV1().Pods("default").Update(&pod)
+			assert.NoError(t, err)
 		}
 
 		// Release the lock
@@ -140,10 +189,142 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	})
 }
 
+func TestSemaphoreScriptTmplLevel(t *testing.T) {
+	_, controller := newController()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	})
+	var cm v1.ConfigMap
+	err := yaml.Unmarshal([]byte(configMap), &cm)
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
+	assert.NoError(t, err)
+
+	t.Run("ScriptTmplLevelAcquireAndRelease", func(t *testing.T) {
+		wf := unmarshalWF(ScriptWfWithSemaphore)
+		wf.Name = "one"
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		// acquired the lock
+		woc.operate()
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+
+		// Try to Acquire the lock, But lock is not available
+		wf_Two := wf.DeepCopy()
+		wf_Two.Name = "two"
+		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf_Two)
+		assert.NoError(t, err)
+		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		// Try Acquire the lock
+		woc_two.operate()
+
+		// Check Node status
+		err = woc_two.podReconciliation()
+		assert.NoError(t, err)
+		for _, node := range woc_two.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+		// Updating Pod state
+		podList, err := controller.kubeclientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+		assert.NoError(t, err)
+		for _, pod := range podList.Items {
+			pod.Status.Phase = v1.PodFailed
+			_, err := controller.kubeclientset.CoreV1().Pods("default").Update(&pod)
+			assert.NoError(t, err)
+		}
+
+		// Release the lock
+		woc.operate()
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
+
+		// Try to acquired the lock
+		woc_two.operate()
+		assert.NotNil(t, woc_two.wf.Status.Synchronization)
+		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+
+	})
+}
+
+func TestSemaphoreResourceTmplLevel(t *testing.T) {
+	_, controller := newController()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	})
+	var cm v1.ConfigMap
+	err := yaml.Unmarshal([]byte(configMap), &cm)
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
+	assert.NoError(t, err)
+
+	t.Run("ResourceTmplLevelAcquireAndRelease", func(t *testing.T) {
+		wf := unmarshalWF(ResourceWfWithSemaphore)
+		wf.Name = "one"
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		// acquired the lock
+		woc.operate()
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc.wf.Status.Synchronization.Semaphore.Holding))
+
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+
+		// Try to Acquire the lock, But lock is not available
+		wf_Two := wf.DeepCopy()
+		wf_Two.Name = "two"
+		wf_Two, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf_Two)
+		assert.NoError(t, err)
+		woc_two := newWorkflowOperationCtx(wf_Two, controller)
+		// Try Acquire the lock
+		woc_two.operate()
+
+		// Check Node status
+		err = woc_two.podReconciliation()
+		assert.NoError(t, err)
+		for _, node := range woc_two.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+
+		// Updating Pod state
+		podList, err := controller.kubeclientset.CoreV1().Pods("default").List(metav1.ListOptions{})
+		assert.NoError(t, err)
+		for _, pod := range podList.Items {
+			pod.Status.Phase = v1.PodFailed
+			_, err := controller.kubeclientset.CoreV1().Pods("default").Update(&pod)
+			assert.NoError(t, err)
+		}
+
+		// Release the lock
+		woc.operate()
+		assert.NotNil(t, woc.wf.Status.Synchronization)
+		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
+
+		// Try to acquired the lock
+		woc_two.operate()
+		assert.NotNil(t, woc_two.wf.Status.Synchronization)
+		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
+		assert.Equal(t, 1, len(woc_two.wf.Status.Synchronization.Semaphore.Holding))
+
+	})
+}
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	_, controller := newController()
 
-	controller.concurrencyMgr = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {

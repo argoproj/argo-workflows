@@ -154,4 +154,3 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	s.log.Debugf("Current TypeSemaphore Holders. %v", s.lockHolder)
 	return false, waitingMsg
 }
-

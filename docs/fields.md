@@ -1385,7 +1385,7 @@ PodGC describes how to delete completed pods as they complete
 
 ## Synchronization
 
-Synchronization is a holds synchronization lock configuration
+Synchronization holds synchronization lock configuration
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -1399,7 +1399,7 @@ Synchronization is a holds synchronization lock configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore will hold the Semaphore configuration|
+|`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration|
 
 ## Template
 

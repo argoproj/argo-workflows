@@ -23,6 +23,13 @@ type SyncManager struct {
 	syncLimitConfigFunc SyncLimitConfigFunc
 }
 
+type LockName struct {
+	Namespace    string
+	Kind         string
+	ResourceName string
+	Key          string
+}
+
 type Synchronization interface {
 	acquire(holderKey string) bool
 	tryAcquire(holderKey string) (bool, string)
@@ -135,65 +142,67 @@ func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority i
 	var lockType LockType
 	var err error
 
-	lockKey := ""
+	var syncLockName *LockName
 
 	if syncLockRef.Semaphore != nil {
-		lockKey = getSemaphoreKey(wf.Namespace, syncLockRef.Semaphore)
-		semaphoreLock, found := cm.syncLockMap[lockKey]
+		syncLockName = getSemaphoreLockName(wf.Namespace, syncLockRef.Semaphore)
+		semaphoreLockKey := syncLockName.getLockKey()
 
+		semaphoreLock, found := cm.syncLockMap[semaphoreLockKey]
 		if !found {
-			semaphoreLock, err = cm.initializeSemaphore(lockKey)
+			semaphoreLock, err = cm.initializeSemaphore(semaphoreLockKey)
 			if err != nil {
 				return false, false, "", err
 			}
-			cm.syncLockMap[lockKey] = semaphoreLock
+			cm.syncLockMap[semaphoreLockKey] = semaphoreLock
 		}
 
-		// Check lock configmap changes
+		// Check syncLock configmap changes
 		err := cm.checkAndUpdateSemaphoreSize(semaphoreLock)
-
 		if err != nil {
 			return false, false, "", err
 		}
 		lockType = TypeSemaphore
 	}
-	if lockKey == "" {
+
+	if syncLockName == nil {
 		return false, false, "", errors.New(errors.CodeBadRequest, "Requested Synchronization is invalid")
 	}
 
-	lock, found := cm.syncLockMap[lockKey]
+	syncLockKey := syncLockName.getLockKey()
+	syncLock, found := cm.syncLockMap[syncLockKey]
 	if !found {
-		return false, false, "", errors.New(errors.CodeBadRequest, "Requested Synchronized lock is invalid")
+		return false, false, "", errors.New(errors.CodeBadRequest, "Requested Synchronized syncLock is invalid")
 	}
 
 	holderKey := getHolderKey(wf, nodeName)
+	syncLock.addToQueue(holderKey, priority, creationTime)
 
-	lock.addToQueue(holderKey, priority, creationTime)
-
-	status, msg := lock.tryAcquire(holderKey)
+	status, msg := syncLock.tryAcquire(holderKey)
 	if status {
-		updated := cm.updateConcurrencyStatus(holderKey, lockKey, lockType, acquired, wf)
+		updated := cm.updateConcurrencyStatus(holderKey, syncLockKey, lockType, acquired, wf)
 		return true, updated, "", nil
 	}
 
-	updated := cm.updateConcurrencyStatus(holderKey, lockKey, lockType, waiting, wf)
+	updated := cm.updateConcurrencyStatus(holderKey, syncLockKey, lockType, waiting, wf)
 	return false, updated, msg, nil
 }
 
-func (cm *SyncManager) Release(wf *wfv1.Workflow, nodeName, namespace string, concurrencyRef *wfv1.Synchronization) {
+func (cm *SyncManager) Release(wf *wfv1.Workflow, nodeName, namespace string, syncRef *wfv1.Synchronization) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
-	if concurrencyRef == nil {
+	if syncRef == nil {
 		return
 	}
 	holderKey := getHolderKey(wf, nodeName)
-	if concurrencyRef.Semaphore != nil {
-		concurrencyKey := getSemaphoreKey(namespace, concurrencyRef.Semaphore)
-		if concurrency, ok := cm.syncLockMap[concurrencyKey]; ok {
-			concurrency.release(holderKey)
-			log.Debugf("%s sync lock is released by %s", concurrencyKey, holderKey)
-			cm.updateConcurrencyStatus(holderKey, concurrencyKey, TypeSemaphore, released, wf)
+
+	if syncRef.Semaphore != nil {
+		lockName := getSemaphoreLockName(namespace, syncRef.Semaphore)
+		if syncLockHolder, ok := cm.syncLockMap[lockName.getLockKey()]; ok {
+			syncLockHolder.release(holderKey)
+			log.Debugf("%s sync lock is released by %s", lockName.getLockKey(), holderKey)
+			cm.updateConcurrencyStatus(holderKey, lockName.getLockKey(), TypeSemaphore, released, wf)
 		}
 	}
 }
@@ -207,13 +216,13 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 	}
 	if wf.Status.Synchronization.Semaphore != nil {
 		for _, ele := range wf.Status.Synchronization.Semaphore.Holding {
-			concurrency := cm.syncLockMap[ele.Semaphore]
-			if concurrency == nil {
+			syncLockHolder := cm.syncLockMap[ele.Semaphore]
+			if syncLockHolder == nil {
 				continue
 			}
 			for _, holderName := range ele.Holders {
 				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderName)
-				concurrency.release(resourceKey)
+				syncLockHolder.release(resourceKey)
 				cm.updateConcurrencyStatus(holderName, ele.Semaphore, TypeSemaphore, released, wf)
 				log.Infof("%s released a lock from %s", resourceKey, ele.Semaphore)
 			}
@@ -274,6 +283,46 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 	return false
 }
 
+func (ln *LockName) getLockKey() string {
+	return fmt.Sprintf("%s/%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key)
+}
+func (ln *LockName) validate() error {
+	if ln.Namespace == "" {
+		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. Namespace is missing")
+	}
+	if ln.Kind == "" {
+		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. Kind is missing")
+	}
+	if ln.ResourceName == "" {
+		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. ResourceName is missing")
+	}
+	if ln.Key == "" {
+		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. Key is missing")
+	}
+	return nil
+}
+
+func DecodeLockName(lockName string) (*LockName, error) {
+	items := strings.Split(lockName, "/")
+	if len(items) < 4 {
+		return nil, errors.New(errors.CodeBadRequest, "Invalid Lock Key")
+	}
+	lock := &LockName{Namespace: items[0], Kind: items[1], ResourceName: items[2], Key: items[3]}
+	err := lock.validate()
+	if err != nil {
+		return nil, err
+	}
+	return lock, nil
+}
+func NewLockName(namespace, kind, resourceName, lockKey string) *LockName {
+	return &LockName{
+		Namespace:    namespace,
+		Kind:         kind,
+		ResourceName: resourceName,
+		Key:          lockKey,
+	}
+}
+
 func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	if wf == nil {
 		return ""
@@ -285,11 +334,11 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	return key
 }
 
-func getSemaphoreKey(namespace string, semaphoreRef *wfv1.SemaphoreRef) string {
+func getSemaphoreLockName(namespace string, semaphoreRef *wfv1.SemaphoreRef) *LockName {
 	if semaphoreRef.ConfigMapKeyRef != nil {
-		return fmt.Sprintf("%s/configmap/%s/%s", namespace, semaphoreRef.ConfigMapKeyRef.Name, semaphoreRef.ConfigMapKeyRef.Key)
+		return NewLockName(namespace, "configmap", semaphoreRef.ConfigMapKeyRef.Name, semaphoreRef.ConfigMapKeyRef.Key)
 	}
-	return ""
+	return nil
 }
 
 func getResourceKey(namespace, wfName, resourceName string) string {

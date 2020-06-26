@@ -100,6 +100,7 @@ type priorityQueue struct {
 func (pq *priorityQueue) pop() *item {
 	return heap.Pop(pq).(*item)
 }
+
 func (pq *priorityQueue) peek() *item {
 	return pq.items[0]
 }

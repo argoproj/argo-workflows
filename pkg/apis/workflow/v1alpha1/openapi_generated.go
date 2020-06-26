@@ -3075,12 +3075,12 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Synchronization is a holds synchronization lock configuration",
+				Description: "Synchronization holds synchronization lock configuration",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"semaphore": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Semaphore will hold the Semaphore configuration",
+							Description: "Semaphore holds the Semaphore configuration",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
 						},
 					},
