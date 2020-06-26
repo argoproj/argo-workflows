@@ -1058,7 +1058,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 
 			if tmpl.Memoize != nil {
-				c := woc.controller.cache.(configMapCache)
+				c := woc.controller.cache.(*configMapCache)
 				c.configMapName = tmpl.Memoize.Cache.ConfigMapName.Name
 				c.Save(tmpl.Memoize.Key, node.Outputs)
 			}
@@ -1432,7 +1432,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
-		c = NewConfigMapCache(resolvedTmpl.Memoize.Cache.ConfigMapName.Name, woc.controller.namespace, woc.controller.kubeclientset)
+		c = woc.controller.cache.(*configMapCache)
+		c.configMapName = processedTmpl.Memoize.Cache.ConfigMapName.Name
 		storedOutput, ok := c.Load(processedTmpl.Memoize.Key)
 		if (storedOutput != nil && ok != false) {
 			node = woc.initializeCacheHitNode(nodeName, processedTmpl.GetNodeType(), templateScope, orgTmpl, opts.boundaryID, storedOutput)

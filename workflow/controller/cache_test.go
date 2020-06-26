@@ -1,34 +1,30 @@
 package controller
 
-//type MockCache struct {
-//	mock.Mock
-//}
-//
-//var MockParamValue string = "Hello world"
-//
-//var MockParam = wfv1.Parameter{
-//	Name: "hello",
-//	Value: &MockParamValue,
-//}
-//
-//func (_m *MockCache) Load(key []byte) (*wfv1.Outputs, bool) {
-//	outputs := wfv1.Outputs{}
-//	outputs.Parameters = append(outputs.Parameters, MockParam)
-//	return &outputs, true
-//}
-//
-//func (_m *MockCache) Save(key []byte, value string) bool {
-//	return true
-//}
-//
-//func TestCacheLoad(t *testing.T) {
-//	mc := MockCache{}
-//	entry, ok := mc.Load([]byte(""))
-//	assert.Greater(t, len(entry.Parameters), 0)
-//	assert.True(t, ok)
-//}
-//
-//func TestCacheSave(t *testing.T) {
-//	mc := MockCache{}
-//	assert.True(t, mc.Save([]byte(""), ""))
-//}
+import (
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/controller/mocks"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+var MockParamValue string = "Hello world"
+
+var MockParam = wfv1.Parameter{
+	Name: "hello",
+	Value: &MockParamValue,
+}
+
+func TestCacheLoad(t *testing.T) {
+	mockCache := mocks.MemoizationCache{}
+	entry, ok := mockCache.Load("")
+	assert.Greater(t, len(entry.Parameters), 0)
+	assert.True(t, ok)
+}
+
+func TestCacheSave(t *testing.T) {
+	outputs := wfv1.Outputs{}
+	outputs.Parameters = append(outputs.Parameters, MockParam)
+	mockCache := mocks.MemoizationCache{}
+	ok := mockCache.Save("", &outputs)
+	assert.True(t, ok)
+}

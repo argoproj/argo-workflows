@@ -17,11 +17,11 @@ var sampleEntry = CacheEntry{
 }
 
 // TWO INTERFACES:
-// Top level of abstraction: Cache for operator to interact with cache
+// Top level of abstraction: MemoizationCache for operator to interact with cache
 // Lower level: Interface for interacting with K8S that can be substituted w mock for testing
 
 
-type Cache interface {
+type MemoizationCache interface {
 	Load(key string) (*wfv1.Outputs, bool)
 	Save(key string, value *wfv1.Outputs) bool
 }
@@ -38,7 +38,7 @@ type configMapCache struct {
 	kubeClient kubernetes.Interface
 }
 
-func NewConfigMapCache(cm string, ns string, ki kubernetes.Interface) Cache {
+func NewConfigMapCache(cm string, ns string, ki kubernetes.Interface) MemoizationCache {
 	return &configMapCache{
 		configMapName: cm,
 		namespace: ns,
@@ -64,14 +64,14 @@ func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
 		return nil, false
 	}
 	if cm == nil {
-		log.Infof("Cache miss: ConfigMap does not exist")
+		log.Infof("MemoizationCache miss: ConfigMap does not exist")
 		return nil, false
 	}
 	log.Infof("ConfigMap cache %s loaded", c.configMapName)
 	key = validateCacheKey(key)
 	rawEntry, ok := cm.Data[key];
 	if !ok || rawEntry == "" {
-		log.Infof("Cache miss: Entry for %s doesn't exist", key)
+		log.Infof("MemoizationCache miss: Entry for %s doesn't exist", key)
 		return nil, false
 	}
 	var entry CacheEntry

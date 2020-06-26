@@ -3842,10 +3842,57 @@ status:
   startedAt: "2020-06-22T20:32:15Z"
 `
 
-//func TestWorkflowStatusMetric(t *testing.T) {
-//	wf := unmarshalWF(workflowStatusMetric)
-//	woc := newWoc(*wf)
-//	woc.operate()
-//	// Must only be one (completed: true)
-//	assert.Len(t, woc.wf.Status.Conditions, 1)
-//}
+func TestWorkflowStatusMetric(t *testing.T) {
+	wf := unmarshalWF(workflowStatusMetric)
+	woc := newWoc(*wf)
+	woc.operate()
+	// Must only be one (completed: true)
+	assert.Len(t, woc.wf.Status.Conditions, 1)
+}
+
+var workflowCached = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-workflow-test
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi there world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      maxAge: 1d
+      cache:
+        configMapName:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestWorkflowMemoization(t *testing.T) {
+	wf := unmarshalWF(workflowCached)
+	woc := newWoc(*wf)
+	woc.operate()
+	outputs := wf.Status.Outputs
+
+	dup := unmarshalWF(workflowCached)
+	woc = newWoc(*dup)
+	woc.operate()
+	dupOutputs := dup.Status.Outputs
+	
+	assert.Equal(t, outputs, dupOutputs)
+}
