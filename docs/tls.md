@@ -1,6 +1,6 @@
 # Transport Layer Security
 
-![alpha](assets/alpha.svg)
+![GA](assets/GA.svg)
 
 > v2.8 and after
 

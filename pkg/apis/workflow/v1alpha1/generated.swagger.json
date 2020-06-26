@@ -4,6 +4,10 @@
     "title": "pkg/apis/workflow/v1alpha1/generated.proto",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],

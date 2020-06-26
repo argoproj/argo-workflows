@@ -1,6 +1,6 @@
 # Prometheus Metrics
 
-![alpha](assets/alpha.svg)
+![beta](assets/beta.svg)
 
 > v2.7 and after
 

@@ -1,6 +1,6 @@
 # Workflow Archive
 
-![beta](assets/beta.svg)
+![GA](assets/GA.svg)
 
 > v2.5 and after
 

@@ -1,6 +1,6 @@
 # Resource Duration
 
-![alpha](assets/alpha.svg)
+![GA](assets/GA.svg)
 
 > v2.7 and after
 
