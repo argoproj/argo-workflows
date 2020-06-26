@@ -103,6 +103,7 @@ func (s *Semaphore) release(key string) bool {
 	return true
 }
 
+// addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
 func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -112,7 +113,6 @@ func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime ti
 		return
 	}
 
-	// Comment on Add functionality
 	s.pending.add(holderKey, priority, creationTime)
 	s.log.Debugf("Added into Queue %s", holderKey)
 }
@@ -137,7 +137,9 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 
 	waitingMsg := fmt.Sprintf("waiting for %s lock. Lock status: %d/%d ", s.name, s.limit-len(s.lockHolder), s.limit)
 
-	// TODO-Comments
+	// Check whether requested holdkey is in front of priority queue.
+	// If it is in front position, it will allow to acquire lock.
+	// If it is not a front key, it needs to wait for its turn.
 	if s.pending.Len() > 0 {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
