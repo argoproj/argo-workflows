@@ -158,7 +158,7 @@ func (woc *wfOperationCtx) operate() {
 	}()
 	defer func() {
 		if r := recover(); r != nil {
-			woc.log.WithFields(log.Fields{"stack": string(debug.Stack()), "r": r}).Errorf("Recovered from panic")
+			woc.log.WithFields(log.Fields{"stack": debug.Stack(), "r": r}).Errorf("Recovered from panic")
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(rerr, true)
 			} else {
@@ -1032,6 +1032,35 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			node.Phase = wfv1.NodeError
 		} else {
 			node.Outputs = &outputs
+			tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+			if err != nil {
+				log.Errorf("Failed to create template context for node %s", node.ID)
+				return nil
+			}
+			_, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(node)
+			if err != nil {
+				log.Errorf("Failed to resolve template for node %s", node.ID)
+				return nil
+			}
+
+			localParams := make(map[string]string)
+			_, localArgs, err := woc.loadExecutionSpec()
+			woc.setGlobalParameters(localArgs)
+			// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
+			// is determined
+			if resolvedTmpl.IsPodType() && resolvedTmpl.RetryStrategy == nil {
+				localParams[common.LocalVarPodName] = woc.wf.NodeID(node.Name)
+			}
+
+			tmpl, err := common.ProcessArgs(resolvedTmpl, &localArgs, woc.globalParams, localParams, false)
+			if err != nil {
+				log.Errorf("Failed to process template for node %s: %s", node.ID, err)
+			}
+
+			if tmpl.Memoize != nil {
+				c := NewConfigMapCache(tmpl.Memoize.Cache.ConfigMapName.Name, woc.controller.namespace, woc.controller.kubeclientset)
+				c.Save(tmpl.Memoize.Key, node.Outputs)
+			}
 		}
 	}
 	if node.Phase != newPhase {
@@ -1385,6 +1414,31 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		woc.updated = true
 	}
 
+	localParams := make(map[string]string)
+	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
+	// is determined
+	if resolvedTmpl.IsPodType() && resolvedTmpl.RetryStrategy == nil {
+		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+	}
+
+	// Inputs has been processed with arguments already, so pass empty arguments.
+	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
+	}
+
+	var c *configMapCache
+
+	// If memoization is on, check if node output exists in cache
+	if resolvedTmpl.Memoize != nil && node == nil {
+		c = NewConfigMapCache(resolvedTmpl.Memoize.Cache.ConfigMapName.Name, woc.controller.namespace, woc.controller.kubeclientset)
+		storedOutput, ok := c.Load(processedTmpl.Memoize.Key)
+		if (storedOutput != nil && ok != false) {
+			node = woc.initializeCacheHitNode(nodeName, processedTmpl.GetNodeType(), templateScope, orgTmpl, opts.boundaryID, storedOutput)
+			return node, nil
+		}
+	}
+
 	if node != nil {
 		if node.Fulfilled() {
 			woc.log.Debugf("Node %s already completed", nodeName)
@@ -1413,19 +1467,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		woc.log.Warnf("Deadline exceeded")
 		woc.requeue(0)
 		return node, ErrDeadlineExceeded
-	}
-
-	localParams := make(map[string]string)
-	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
-	// is determined
-	if resolvedTmpl.IsPodType() && resolvedTmpl.RetryStrategy == nil {
-		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
-	}
-
-	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
-	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
@@ -1668,6 +1709,42 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 		return woc.markNodeError(nodeName, err)
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
+}
+
+// Creates a node status that's completely initialized and marked as finished
+func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, messages ...string) *wfv1.NodeStatus {
+	woc.log.Debugf("Initializing node %s from cache: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
+	nodeID := woc.wf.NodeID(nodeName)
+	_, ok := woc.wf.Status.Nodes[nodeID]
+	if ok {
+		panic(fmt.Sprintf("node %s already initialized", nodeName))
+	}
+	now := metav1.Time{Time: time.Now().UTC()}
+	node := wfv1.NodeStatus{
+		ID:            nodeID,
+		Name:          nodeName,
+		TemplateName:  orgTmpl.GetTemplateName(),
+		TemplateRef:   orgTmpl.GetTemplateRef(),
+		TemplateScope: templateScope,
+		Type:          nodeType,
+		BoundaryID:    boundaryID,
+		Phase:         wfv1.NodeSucceeded, // For now we only store succeeded nodes in the cache
+		StartedAt:     now,
+		FinishedAt:    now,
+		Memoized:      true,
+		DisplayName:   nodeName,
+		Outputs:       outputs,
+	}
+
+	var message string
+	if len(messages) > 0 {
+		message = fmt.Sprintf(" (message: %s)", messages[0])
+		node.Message = messages[0]
+	}
+	woc.wf.Status.Nodes[nodeID] = node
+	woc.log.Infof("%s cached node %v completed %s%s", node.Type, node.ID, node.Phase, message)
+	woc.updated = true
+	return &node
 }
 
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {

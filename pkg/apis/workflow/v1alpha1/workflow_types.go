@@ -504,6 +504,9 @@ type Template struct {
 
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
+
+	// Memoize allows templates to use outputs generated from already executed templates
+	Memoize *Memoize `json:"memoize,omitempty"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -1240,6 +1243,8 @@ type NodeStatus struct {
 
 	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
 	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
+
+	Memoized bool `json:"memoized,omitempty"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -1661,6 +1666,27 @@ func (tmpl *Template) GetType() TemplateType {
 		return TemplateTypeSuspend
 	}
 	return TemplateTypeUnknown
+}
+
+// GetNodeType returns the type of this template as a Node Type
+//
+func (tmpl *Template) GetNodeType() NodeType {
+	if tmpl.Container != nil {
+		return NodeTypePod
+	}
+	if tmpl.Steps != nil {
+		return NodeTypeSteps
+	}
+	if tmpl.DAG != nil {
+		return NodeTypeDAG
+	}
+	if tmpl.Script != nil {
+		return NodeTypePod
+	}
+	if tmpl.Suspend != nil {
+		return NodeTypeSuspend
+	}
+	return NodeTypePod
 }
 
 // IsPodType returns whether or not the template is a pod type
@@ -2091,4 +2117,15 @@ type Histogram struct {
 type Counter struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+}
+
+// Memoization
+type Memoize struct {
+	MaxAge string `json:"maxAge"`
+	Key string `json:"key"`
+	Cache *Cache `json:"cache"`
+}
+
+type Cache struct {
+	ConfigMapName *apiv1.ConfigMapKeySelector `json:"configMapName"`
 }
