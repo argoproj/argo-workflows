@@ -25,7 +25,7 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                 {this.props.pagination.limit ? (
                     <>
                         <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />
-                        There is no global Workflow sort when pagination is enabled
+                        Workflows cannot be globally sorted when paginated
                     </>
                 ) : (
                     <span />
