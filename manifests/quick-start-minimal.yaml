@@ -464,6 +464,8 @@ spec:
         - --namespaced
         - --auth-mode
         - server
+        - --auth-mode
+        - client
         image: argoproj/argocli:latest
         name: argo-server
         ports:
