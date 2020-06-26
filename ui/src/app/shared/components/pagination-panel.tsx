@@ -22,6 +22,14 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                     }>
                     Next page <i className='fa fa-chevron-right' />
                 </button>
+                {this.props.pagination.limit ? (
+                    <>
+                        <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />
+                        Workflows cannot be globally sorted when paginated
+                    </>
+                ) : (
+                    <span />
+                )}
                 <small className='fa-pull-right'>
                     <select
                         className='small'
