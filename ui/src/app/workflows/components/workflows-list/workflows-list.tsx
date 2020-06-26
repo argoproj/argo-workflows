@@ -72,7 +72,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
             return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as WorkflowListRenderOptions;
         }
-        return {} as WorkflowListRenderOptions;
+        return {
+            paginationLimit: 0,
+            selectedPhases: [],
+            selectedLabels: []
+        } as WorkflowListRenderOptions;
     }
 
     private subscription: Subscription;
