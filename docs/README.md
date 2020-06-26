@@ -23,6 +23,7 @@ Some use-case specific documentation is available:
 * [Argo Server](argo-server.md)
 * [Artifact Repository Ref](artifact-repository-ref.md)
 * [Asynchronous Job Pattern](async-pattern.md)
+* [Automation](automation.md)
 * [CLI](cli.md)
 * [Cluster Workflow Templates](cluster-workflow-templates.md)
 * [Configuring Your Artifact Repository](configure-artifact-repository.md)

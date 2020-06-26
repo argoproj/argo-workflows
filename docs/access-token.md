@@ -39,14 +39,14 @@ argo list
 Use that token in your API requests, e.g. to list workflows:
 
 ```shell script
-curl https://localhost:2746/api/v1/workflows/argo -H "Authorisation: Bearer $ARGO_TOKEN"
+curl https://localhost:2746/api/v1/workflows/argo -H "Authorization: Bearer $ARGO_TOKEN"
 # 200 OK
 ```
 
 You should check you cannot do things you're not allowed!
 
 ```shell script
-curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Bearer $ARGO_TOKEN"
+curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorization: Bearer $ARGO_TOKEN"
 # 403 error
 ```
 
