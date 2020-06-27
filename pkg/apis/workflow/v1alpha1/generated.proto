@@ -308,10 +308,6 @@ message EventConsumerTemplate {
   optional string expression = 1;
 }
 
-message EventProducerTemplate {
-  optional HTTPArtifact http = 1;
-}
-
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -940,8 +936,6 @@ message Template {
   optional ScriptTemplate script = 13;
 
   optional EventConsumerTemplate eventConsumer = 36;
-
-  optional EventProducerTemplate eventProducer = 37;
 
   // Resource template subtype which can run k8s resources
   optional ResourceTemplate resource = 14;

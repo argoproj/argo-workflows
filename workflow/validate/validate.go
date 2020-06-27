@@ -428,8 +428,6 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		err = ctx.validateDAG(scope, tmplCtx, newTmpl)
 	case wfv1.TemplateTypeEventConsumer:
 		err = ctx.validateEventConsumer(scope, newTmpl)
-	case wfv1.TemplateTypeEventProducer:
-		err = ctx.validateEventProducer(scope, newTmpl)
 	default:
 		err = ctx.validateLeaf(scope, newTmpl)
 	}
@@ -526,7 +524,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 // validateTemplateType validates that only one template type is defined
 func validateTemplateType(tmpl *wfv1.Template) error {
 	numTypes := 0
-	for _, tmplType := range []interface{}{tmpl.TemplateRef, tmpl.Container, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.EventConsumer, tmpl.EventProducer} {
+	for _, tmplType := range []interface{}{tmpl.TemplateRef, tmpl.Container, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend, tmpl.EventConsumer} {
 		if !reflect.ValueOf(tmplType).IsNil() {
 			numTypes++
 		}
@@ -743,12 +741,6 @@ func (ctx *templateValidationCtx) validateEventConsumer(scope map[string]interfa
 	}
 	return ctx.validateLeaf(scope, tmpl)
 }
-
-func (ctx *templateValidationCtx) validateEventProducer(scope map[string]interface{}, tmpl *wfv1.Template) error {
-	// TODO
-	return ctx.validateLeaf(scope, tmpl)
-}
-
 func validateArguments(prefix string, arguments wfv1.Arguments) error {
 	err := validateArgumentsFieldNames(prefix, arguments)
 	if err != nil {

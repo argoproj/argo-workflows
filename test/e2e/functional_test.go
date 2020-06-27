@@ -30,56 +30,6 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
-func (s *FunctionalSuite) TestEvents() {
-	// this test runs a workflow with an event consumer and producer nodes,
-	// the consumer fulfills the producer and this passes
-	token, err := s.GetServiceAccountToken()
-	assert.NoError(s.T(), err)
-	s.Given().
-		Workflow(`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: events-
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: events
-
-  templates:
-    - name: events
-      dag:
-        tasks:
-          - name: a
-            template: a
-          - name: b
-            template: b
-
-    - name: a
-      eventConsumer:
-        expression: event.context.type == "test"
-
-    - name: b
-      eventProducer:
-        http:
-          insecureSkipVerify: true
-          url: https://localhost:2746/api/v1/events/argo
-          headers:
-            - name: Authorization
-              value: Bearer ` + token + `
-          method: POST
-          body:
-            context:
-              type: test
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(10 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`

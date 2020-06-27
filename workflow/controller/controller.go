@@ -41,7 +41,6 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
-	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
@@ -55,7 +54,6 @@ type WorkflowController struct {
 	managedNamespace string
 
 	configController config.Controller
-	httpController   events.Controller
 	// Config is the workflow controller's configuration
 	Config config.Config
 
@@ -165,7 +163,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	go wfc.runTTLController(ctx)
 	go wfc.runCronController(ctx)
-	go wfc.httpController.Run(ctx)
 	go wfc.metrics.RunServer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started

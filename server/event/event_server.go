@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/antonmedv/expr"
@@ -25,13 +24,9 @@ type eventServer struct {
 	hydrator hydrator.Interface
 }
 
-func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (*eventpkg.EventReceived, error) {
+func (s *eventServer) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
-
-	selector, _ := labels.Parse(common.LabelKeyEventWait)
-	req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
-	selector.Add(*req)
-	list, err := wfClient.ArgoprojV1alpha1().Workflows(event.Namespace).List(metav1.ListOptions{LabelSelector: selector.String()})
+	list, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(listOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -41,27 +36,18 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (
 		if err != nil {
 			return nil, err
 		}
-		mapEnv := map[string]interface{}{
-			"event": map[string]interface{}{
-				"context": event.Context,
-				"data":    event.Data,
-			},
-			"workflow": wf,
-		}
-		if strings.Contains(event.Context.Datacontenttype, "json") {
-			mapEnv["data"] = json.RawMessage(event.Data)
-		}
+		mapEnv := map[string]interface{}{"event": req.Event, "workflow": wf}
 		md, ok := metadata.FromIncomingContext(ctx)
 		if ok {
-			md2 := make(map[string][]string)
+			meta := make(map[string][]string)
 			for k, v := range md {
 				log.Debug(k)
 				switch k {
 				case "X-GitHub-Event":
-					md2[k] = v
+					meta[k] = v
 				}
 			}
-			mapEnv["metadata"] = md2
+			mapEnv["metadata"] = meta
 		}
 		data, err := json.Marshal(mapEnv)
 		if err != nil {
@@ -113,7 +99,14 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (
 			}
 		}
 	}
-	return &eventpkg.EventReceived{}, nil
+	return &eventpkg.EventResponse{}, nil
+}
+
+func listOptions() metav1.ListOptions {
+	req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
+	selector, _ := labels.Parse(common.LabelKeyEventWait)
+	selector.Add(*req)
+	return metav1.ListOptions{LabelSelector: selector.String()}
 }
 
 func markNodeStatus(wf wfv1.Workflow, node wfv1.NodeStatus, phase wfv1.NodePhase, message string) {

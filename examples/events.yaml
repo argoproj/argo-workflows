@@ -1,5 +1,5 @@
 # This example demonstrates creating a workflow that waits on two CloudEvents.
-# curl -d '{"context": {"type": "test", "datacontenttype": "application/json"}, "data": "ImJhciI="}' https://localhost:2746/api/v1/events/argo -k -H 'Authorization: Bearer PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq'
+# curl -d '"test"' https://localhost:2746/api/v1/events/argo -k -H "Authorization: Bearer $ARGO_TOKEN"
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -12,33 +12,7 @@ spec:
         tasks:
           - name: a
             template: a
-          - name: b
-            template: b
-            dependencies: [a]
-          - name: c
-            template: c
 
     - name: a
       eventConsumer:
-        expression: event.context.type == "test" && data == "bar"
-
-    - name: b
-      eventProducer:
-        http:
-          insecureSkipVerify: true
-          url: https://localhost:2746/api/v1/events/argo
-          headers:
-            - name: Authorization
-              value: Bearer PXnB9D6CGvFYzAFa0WeOj97Ik6uLEHXq
-          method: POST
-          body:
-            context:
-              type: test
-              datacontenttype: application/json
-            # `"baz"` in base64
-            data: ImJheiI=
-
-    - name: c
-      eventConsumer:
-        expression: event.context.type == "test" && data == "baz"
-
+        expression: event.type == "test"

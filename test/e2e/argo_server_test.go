@@ -100,12 +100,42 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestEvents() {
-	s.e().
-		POST("/api/v1/events/argo", make(map[string]interface{})).
-		WithHeader("X-GitHub-Event", "1").
-		Expect().
-		Status(200)
+func (s *ArgoServerSuite) TestEventConsumer() {
+	s.Given().
+		Workflow(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+      - - name: a
+          template: consume-event
+    - name: consume-event
+      eventConsumer:
+        expression: event == "test"
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(3 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeRunning, status.Nodes.FindByDisplayName("a").Phase)
+			s.e().
+				POST("/api/v1/events/argo").
+				WithBytes([]byte(`"test"`)).
+				Expect().
+				Status(200)
+		}).
+		When().
+		WaitForWorkflow(3 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
 }
 
 // we can only really tests these endpoint respond, not worthwhile checking more

@@ -13,30 +13,30 @@
   "paths": {
     "/api/v1/events/{namespace}": {
       "post": {
-        "summary": "https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md",
         "operationId": "ReceiveEvent",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/event.EventReceived"
+              "$ref": "#/definitions/event.EventResponse"
             }
           }
         },
         "parameters": [
           {
             "name": "namespace",
-            "description": "All API requests must have a namespace (which can be empty string for cluster scope installations),\nbut this is not part of the CloudEvents spec.",
+            "description": "this can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in\nall namespaces, or if set - only to workflows in the specified namespace",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
             "name": "body",
+            "description": "the event itself can be any data",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/event.Event"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item"
             }
           }
         ],
@@ -47,74 +47,74 @@
     }
   },
   "definitions": {
-    "event.Event": {
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "type": "string",
-          "description": "All API requests must have a namespace (which can be empty string for cluster scope installations),\nbut this is not part of the CloudEvents spec."
-        },
-        "context": {
-          "$ref": "#/definitions/event.EventContext"
-        },
-        "data": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "event.EventContext": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "ID of the event; must be non-empty and unique within the scope of the producer."
-        },
-        "source": {
-          "type": "string",
-          "description": "A URI describing the event producer."
-        },
-        "specversion": {
-          "type": "string",
-          "description": "The version of the CloudEvents specification used by the event."
-        },
-        "type": {
-          "type": "string",
-          "description": "Type - The type of the occurrence which has happened."
-        },
-        "datacontenttype": {
-          "type": "string",
-          "description": "A MIME (RFC2046) string describing the media type of `data`."
-        },
-        "subject": {
-          "type": "string",
-          "title": "The subject of the event in the context of the event producer"
-        },
-        "time": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "description": "When the event happened."
-        }
-      },
-      "title": "Nhe context of the CloudEvent"
-    },
-    "event.EventReceived": {
+    "event.EventResponse": {
       "type": "object"
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.Time": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item": {
       "type": "object",
       "properties": {
-        "seconds": {
+        "type": {
           "type": "string",
-          "format": "int64",
-          "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive."
+          "format": "int64"
         },
-        "nanos": {
-          "type": "integer",
-          "format": "int32",
-          "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context."
+        "numVal": {
+          "type": "string"
+        },
+        "boolVal": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "strVal": {
+          "type": "string"
+        },
+        "mapVal": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue"
+          }
+        },
+        "listVal": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue"
+          }
         }
       },
-      "description": "Time is a wrapper around time.Time which supports correct\nmarshaling to YAML and JSON.  Wrappers are provided for many\nof the factory methods that the time package offers.\n\n+protobuf.options.marshal=false\n+protobuf.as=Timestamp\n+protobuf.options.(gogoproto.goproto_stringer)=false"
+      "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
+      "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "format": "int64"
+        },
+        "numVal": {
+          "type": "string"
+        },
+        "boolVal": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "strVal": {
+          "type": "string"
+        },
+        "mapVal": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "listVal": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "title": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true"
     }
   }
 }

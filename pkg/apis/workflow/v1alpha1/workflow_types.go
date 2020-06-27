@@ -27,7 +27,6 @@ const (
 	TemplateTypeDAG           TemplateType = "DAG"
 	TemplateTypeSuspend       TemplateType = "Suspend"
 	TemplateTypeEventConsumer TemplateType = "EventConsumer"
-	TemplateTypeEventProducer TemplateType = "EventProducer"
 	TemplateTypeUnknown       TemplateType = "Unknown"
 )
 
@@ -59,7 +58,6 @@ const (
 	NodeTypeSkipped       NodeType = "Skipped"
 	NodeTypeSuspend       NodeType = "Suspend"
 	NodeTypeEventConsumer NodeType = "EventConsumer"
-	NodeTypeEventProducer NodeType = "EventProducer"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -419,7 +417,6 @@ type Template struct {
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
 
 	EventConsumer *EventConsumerTemplate `json:"eventConsumer,omitempty" protobuf:"bytes,36,opt,name=eventConsumer"`
-	EventProducer *EventProducerTemplate `json:"eventProducer,omitempty" protobuf:"bytes,37,opt,name=eventProducer"`
 
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty" protobuf:"bytes,14,opt,name=resource"`
@@ -1673,10 +1670,6 @@ type EventConsumerTemplate struct {
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 }
 
-type EventProducerTemplate struct {
-	HTTP *HTTPArtifact `json:"http" protobuf:"bytes,1,opt,name=http"`
-}
-
 // GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
@@ -1700,9 +1693,6 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.EventConsumer != nil {
 		return TemplateTypeEventConsumer
 	}
-	if tmpl.EventProducer != nil {
-		return TemplateTypeEventProducer
-	}
 	return TemplateTypeUnknown
 }
 
@@ -1718,7 +1708,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeEventConsumer, TemplateTypeEventProducer:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource, TemplateTypeEventConsumer:
 		return true
 	}
 	return false
