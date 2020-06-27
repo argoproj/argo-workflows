@@ -741,6 +741,7 @@ func (ctx *templateValidationCtx) validateEventConsumer(scope map[string]interfa
 	}
 	return ctx.validateLeaf(scope, tmpl)
 }
+
 func validateArguments(prefix string, arguments wfv1.Arguments) error {
 	err := validateArgumentsFieldNames(prefix, arguments)
 	if err != nil {

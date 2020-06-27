@@ -916,15 +916,6 @@ var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
 
-func (n Nodes) FindByID(id string) *NodeStatus {
-	for _, i := range n {
-		if i.ID == id {
-			return &i
-		}
-	}
-	return nil
-}
-
 func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	for _, i := range n {
 		if i.DisplayName == name {
@@ -1548,21 +1539,10 @@ func (r *RawArtifact) HasLocation() bool {
 	return r != nil
 }
 
-type HTTPHeader struct {
-	Name      string                   `json:"name" protobuf:"bytes,1,opt,name=name"`
-	Value     string                   `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
-	ValueFrom *apiv1.SecretKeySelector `json:"valueFrom,omitempty" protobuf:"bytes,3,opt,name=valueFrom"`
-}
-
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
-	// HTTP method to use - default is POST
-	Method             string       `json:"method" protobuf:"bytes,3,opt,name=method"`
-	Headers            []HTTPHeader `json:"headers,omitempty" protobuf:"bytes,2,rep,name=headers"`
-	Body               *Item        `json:"body,omitempty" protobuf:"bytes,4,opt,name=body"`
-	InsecureSkipVerify bool         `json:"insecureSkipVerify,omitempty" protobuf:"varint,5,opt,name=insecureSkipVerify"`
 }
 
 func (h *HTTPArtifact) HasLocation() bool {

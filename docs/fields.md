@@ -1641,7 +1641,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
 |`eventConsumer`|[`EventConsumerTemplate`](#eventconsumertemplate)|_No description available_|
-|`eventProducer`|[`EventProducerTemplate`](#eventproducertemplate)|_No description available_|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
@@ -2139,22 +2138,6 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `event.context.type == "test"`|
-
-## EventProducerTemplate
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`events.yaml`](../examples/events.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`http`|[`HTTPArtifact`](#httpartifact)|_No description available_|
 
 ## UserContainer
 
@@ -3059,8 +3042,6 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
-
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
 - [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
@@ -3075,10 +3056,6 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`body`|[`Item`](#item)|_No description available_|
-|`headers`|`Array<`[`HTTPHeader`](#httpheader)`>`|_No description available_|
-|`insecureSkipVerify`|`boolean`|_No description available_|
-|`method`|`string`|HTTP method to use - default is POST|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -3451,24 +3428,6 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
-
-## HTTPHeader
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`events.yaml`](../examples/events.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`name`|`string`|_No description available_|
-|`value`|`string`|_No description available_|
-|`valueFrom`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
 # External Fields
 

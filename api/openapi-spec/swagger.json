@@ -2299,17 +2299,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.EventProducerTemplate": {
-      "type": "object",
-      "required": [
-        "http"
-      ],
-      "properties": {
-        "http": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -2462,46 +2451,12 @@
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
       "type": "object",
       "required": [
-        "url",
-        "method"
+        "url"
       ],
       "properties": {
-        "body": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
-        },
-        "headers": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPHeader"
-          }
-        },
-        "insecureSkipVerify": {
-          "type": "boolean"
-        },
-        "method": {
-          "description": "HTTP method to use - default is POST",
-          "type": "string"
-        },
         "url": {
           "description": "URL of the artifact",
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.HTTPHeader": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        },
-        "valueFrom": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -3350,9 +3305,6 @@
         },
         "eventConsumer": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventConsumerTemplate"
-        },
-        "eventProducer": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventProducerTemplate"
         },
         "executor": {
           "description": "Executor holds configurations of the executor container.",

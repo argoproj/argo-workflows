@@ -38,14 +38,13 @@ type gatekeeper struct {
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 	ssoIf      sso.Interface
-	namespace  string
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, namespace string) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf, namespace}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {

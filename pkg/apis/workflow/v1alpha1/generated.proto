@@ -422,23 +422,6 @@ message HDFSKrbConfig {
 message HTTPArtifact {
   // URL of the artifact
   optional string url = 1;
-
-  // HTTP method to use - default is POST
-  optional string method = 3;
-
-  repeated HTTPHeader headers = 2;
-
-  optional Item body = 4;
-
-  optional bool insecureSkipVerify = 5;
-}
-
-message HTTPHeader {
-  optional string name = 1;
-
-  optional string value = 2;
-
-  optional k8s.io.api.core.v1.SecretKeySelector valueFrom = 3;
 }
 
 // Histogram is a Histogram prometheus metric
