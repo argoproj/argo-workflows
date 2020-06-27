@@ -135,6 +135,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorder:        record.NewFakeRecorder(16),
 		archiveLabelSelector: labels.Everything(),
+		cache:                NewConfigMapCache("", "default", kube),
 	}
 	return cancel, controller
 }
