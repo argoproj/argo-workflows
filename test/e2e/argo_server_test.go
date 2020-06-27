@@ -103,6 +103,7 @@ func (s *ArgoServerSuite) TestVersion() {
 func (s *ArgoServerSuite) TestEvents() {
 	s.e().
 		POST("/api/v1/events/argo", make(map[string]interface{})).
+		WithHeader("X-GitHub-Event", "1").
 		Expect().
 		Status(200)
 }

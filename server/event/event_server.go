@@ -9,6 +9,7 @@ import (
 
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -26,6 +27,7 @@ type eventServer struct {
 
 func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (*eventpkg.EventReceived, error) {
 	wfClient := auth.GetWfClient(ctx)
+
 	selector, _ := labels.Parse(common.LabelKeyEventWait)
 	req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
 	selector.Add(*req)
@@ -48,6 +50,18 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, event *eventpkg.Event) (
 		}
 		if strings.Contains(event.Context.Datacontenttype, "json") {
 			mapEnv["data"] = json.RawMessage(event.Data)
+		}
+		md, ok := metadata.FromIncomingContext(ctx)
+		if ok {
+			md2 := make(map[string][]string)
+			for k, v := range md {
+				log.Debug(k)
+				switch k {
+				case "X-GitHub-Event":
+					md2[k] = v
+				}
+			}
+			mapEnv["metadata"] = md2
 		}
 		data, err := json.Marshal(mapEnv)
 		if err != nil {

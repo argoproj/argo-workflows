@@ -1,67 +1,39 @@
 # Access Token
 
-If you want to automate tasks with Argo Server, you need an access token. 
+If you want to automate tasks with the Argo Server API or CLI, you will need an access token. 
 
 Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:
 
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: jenkins-role
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - workflows
-    verbs:
-      - list
-      - update
+```shell script
+kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io 
 ```
 
 Create a service account for your service:
 
-```yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: jenkins
+```shell script
+kubectl create sa jenkins
 ```
 
-Bind the service account to the role:
-
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: jenkins
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: jenkins
-subjects:
-  - kind: ServiceAccount
-    name: jenkins
-```
-
-Create a secret:
-
-```yaml
-kind: Secret
-apiVersion: v1
-metadata:
-  name: jenkins
-  annotations:
-    kubernetes.io/service-account.name: jenkins
-type: kubernetes.io/service-account-token
-```
-
-This secret will be automatically populated with a token under data/token ([learn more](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/));
+Bind the service account to the role (in this case in the `argo` namespace):
 
 ```shell script
-ARGO_TOKEN=$(kubectl get secret jenkins -o yaml | grep -o 'token:.*' | sed 's/token: //')
+kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
+```
+
+You now need to get a token:
+
+```shell script
+SECRET=$(kubectl -n argo get sa jenkins -o=jsonpath='{.secrets[0].name}')
+ARGO_TOKEN=$(kubectl -n argo get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)
 echo $ARGO_TOKEN
 ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
+```
+
+Use that token with the CLI (you need to set `ARGO_SERVER` too):
+
+```shell script
+ARGO_SERVER=http://localhost:2746 
+argo list
 ```
 
 Use that token in your API requests, e.g. to list workflows:
@@ -78,3 +50,12 @@ curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Be
 # 403 error
 ```
 
+## Token Revocation
+
+Token compromised?
+
+```shell script
+kubectl delete secret $SECRET
+```
+
+A new one will be created.
