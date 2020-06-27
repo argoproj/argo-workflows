@@ -1645,8 +1645,8 @@ type ResourceTemplate struct {
 }
 
 type EventConsumerTemplate struct {
-	// An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).
-	// E.g. `event.context.type == "test"`
+	// An expression (https://github.com/antonmedv/expr) that we must must match the event.
+	// E.g. `event.type == "test"`
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 }
 

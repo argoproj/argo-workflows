@@ -649,7 +649,7 @@ export interface Workflow {
     status?: WorkflowStatus;
 }
 
-export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend' | 'EventConsumer' | 'EventProducer';
+export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend' | 'EventConsumer';
 
 export interface NodeStatus {
     /**

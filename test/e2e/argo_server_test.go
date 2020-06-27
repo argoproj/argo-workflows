@@ -16,6 +16,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -114,9 +115,21 @@ spec:
       steps:
       - - name: a
           template: consume-event
+          arguments:
+            parameters:
+            - name: type
+              value: test
+
     - name: consume-event
+      inputs:
+        parameters:
+          - name: type
       eventConsumer:
-        expression: event == "test"
+        expression: event.type == inputs.parameters[0].value
+      outputs:
+        parameters:
+          - name: eventType
+            value: event.type
 `).
 		When().
 		SubmitWorkflow().
@@ -126,7 +139,8 @@ spec:
 			assert.Equal(t, wfv1.NodeRunning, status.Nodes.FindByDisplayName("a").Phase)
 			s.e().
 				POST("/api/v1/events/argo").
-				WithBytes([]byte(`"test"`)).
+				WithHeader("Argo-E2E", "true").
+				WithBytes([]byte(`{"type": "test"}`)).
 				Expect().
 				Status(200)
 		}).
@@ -135,6 +149,15 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			node := status.Nodes.FindByDisplayName("a")
+			if assert.NotNil(t, node) {
+				if assert.NotNil(t, node.Outputs) {
+					if assert.Len(t, node.Outputs.Parameters, 1) {
+						assert.Equal(t, pointer.StringPtr("test"), node.Outputs.Parameters[0].Value)
+					}
+				}
+
+			}
 		})
 }
 

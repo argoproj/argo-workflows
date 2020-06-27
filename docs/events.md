@@ -14,3 +14,8 @@ If you're sending events from a new system, we recommend Cloud Events:
 
 * [CloudEvents Specification](https://github.com/cloudevents/spec)
 * [CloudEvents HTTP Webhook](https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md)
+
+For an event consumer node can match in the following ways:
+
+* The expression evaluate errors (due to invalid expression), or does not evaluate to a boolean: node will be marked as "failed".
+* The expression evaluates to true: the node will be marked as "success" and the workflow will resume.
