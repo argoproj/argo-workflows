@@ -178,7 +178,7 @@ spec:
 
     - name: argosay
       container:
-         image: argoproj/argosay:v1
+         image: argoproj/argosay:v2
 `).
 		When().
 		CreateWorkflowTemplates().
