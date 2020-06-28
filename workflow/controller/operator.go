@@ -2271,7 +2271,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	var requeueTime *time.Time
 
 	if node.Phase != wfv1.NodeRunning && tmpl.Suspend.Event != nil {
-		suspend.IncrementWaitCount(woc.wf)
+		suspend.IncrementEventWaitCount(woc.wf)
 	}
 	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
@@ -2285,7 +2285,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
 			if tmpl.Suspend.Event != nil {
-				suspend.DecrementEventWait(woc.wf)
+				suspend.DecrementEventWaitCount(woc.wf)
 			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return node, nil

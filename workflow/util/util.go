@@ -351,8 +351,12 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					wf.Status.Nodes[nodeID] = node
-					if wf.GetTemplateByName(node.TemplateName).Suspend.Event != nil {
-						suspend.DecrementEventWait(wf)
+					tmpl := wf.GetTemplateByName(node.TemplateName)
+					if tmpl == nil {
+						return false, fmt.Errorf("template %s not found", node.TemplateName)
+					}
+					if tmpl.Suspend.Event != nil {
+						suspend.DecrementEventWaitCount(wf)
 					}
 				}
 				workflowUpdated = true

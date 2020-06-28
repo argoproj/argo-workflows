@@ -7,16 +7,16 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
-func IncrementWaitCount(wf *wfv1.Workflow) {
-	count, _ := strconv.Atoi(wf.GetLabels()[common.LabelKeyEventWait])
-	wf.GetLabels()[common.LabelKeyEventWait] = strconv.Itoa(count + 1)
+func IncrementEventWaitCount(wf *wfv1.Workflow) {
+	count, _ := strconv.Atoi(wf.GetLabels()[common.LabelKeyEventWaitCount])
+	wf.GetLabels()[common.LabelKeyEventWaitCount] = strconv.Itoa(count + 1)
 }
 
-func DecrementEventWait(wf *wfv1.Workflow) {
-	count, _ := strconv.Atoi(wf.GetLabels()[common.LabelKeyEventWait])
+func DecrementEventWaitCount(wf *wfv1.Workflow) {
+	count, _ := strconv.Atoi(wf.GetLabels()[common.LabelKeyEventWaitCount])
 	if count > 1 {
-		wf.GetLabels()[common.LabelKeyEventWait] = strconv.Itoa(count - 1)
+		wf.GetLabels()[common.LabelKeyEventWaitCount] = strconv.Itoa(count - 1)
 	} else {
-		delete(wf.GetLabels(), common.LabelKeyEventWait)
+		delete(wf.GetLabels(), common.LabelKeyEventWaitCount)
 	}
 }

@@ -100,7 +100,7 @@ func (s *eventServer) resumeSuspendedWorkflows(ctx context.Context, workflows []
 						continue
 					}
 					log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "nodeId": node.ID, "phase": node.Phase, "message": node.Message}).Info("Matched event")
-					suspend.DecrementEventWait(&wf)
+					suspend.DecrementEventWaitCount(&wf)
 				}
 				updated = true
 			}
@@ -181,7 +181,7 @@ func metaData(ctx context.Context) map[string][]string {
 
 func listOptions() metav1.ListOptions {
 	req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
-	selector, _ := labels.Parse(common.LabelKeyEventWait)
+	selector, _ := labels.Parse(common.LabelKeyEventWaitCount)
 	selector.Add(*req)
 	return metav1.ListOptions{LabelSelector: selector.String()}
 }
