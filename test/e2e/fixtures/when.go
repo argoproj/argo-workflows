@@ -215,6 +215,7 @@ func (w *When) DeleteQuota() *When {
 	w.resourceQuota = nil
 	return w
 }
+
 func (w *When) Then() *Then {
 	return &Then{
 		t:                w.t,
