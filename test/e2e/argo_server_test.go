@@ -168,7 +168,7 @@ metadata:
     workflows.argoproj.io/event: "true"
 spec:
   event:
-    expression: event.type == "test"
+    expression: event.type == "test" && metadata["x-argo-e2e"] == ["true"]
   entrypoint: main
   templates:
     - name: main
@@ -185,6 +185,7 @@ spec:
 		And(func() {
 			s.e().
 				POST("/api/v1/events/argo").
+				WithHeader("X-Argo-E2E", "true").
 				WithBytes([]byte(`{"type": "test"}`)).
 				Expect().
 				Status(200)

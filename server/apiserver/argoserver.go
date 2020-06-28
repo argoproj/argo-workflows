@@ -256,7 +256,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
-	gwmux := runtime.NewServeMux(gwMuxOpts)
+	gwmux := runtime.NewServeMux(gwMuxOpts, runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }))
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
