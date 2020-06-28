@@ -101,7 +101,7 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestEventConsumer() {
+func (s *ArgoServerSuite) TestSuspendEvent() {
 	s.Given().
 		Workflow(`
 metadata:
@@ -124,8 +124,9 @@ spec:
       inputs:
         parameters:
           - name: type
-      eventConsumer:
-        expression: event.type == inputs.parameters[0].value
+      suspend:
+        event:
+          expression: event.type == inputs.parameters[0].value
       outputs:
         parameters:
           - name: eventType

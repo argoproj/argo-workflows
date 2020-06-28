@@ -302,9 +302,8 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
-message EventConsumerTemplate {
-  // An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec).
-  // E.g. `event.context.type == "test"`
+message Event {
+  // An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
   optional string expression = 1;
 }
 
@@ -851,6 +850,9 @@ message SubmitOpts {
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
+
+  // An event to resume this node on.
+  optional Event event = 2;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
@@ -917,8 +919,6 @@ message Template {
 
   // Script runs a portion of code against an interpreter
   optional ScriptTemplate script = 13;
-
-  optional EventConsumerTemplate eventConsumer = 36;
 
   // Resource template subtype which can run k8s resources
   optional ResourceTemplate resource = 14;

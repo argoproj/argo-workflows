@@ -27,7 +27,6 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                 {value: 'type:Retry', label: 'Retry'},
                 {value: 'type:Skipped', label: 'Skipped'},
                 {value: 'type:Suspend', label: 'Suspend'},
-                {value: 'type:EventConsumer', label: 'EventConsumer'},
                 {value: 'type:TaskGroup', label: 'TaskGroup'},
                 {value: 'type:StepGroup', label: 'StepGroup'}
             ],

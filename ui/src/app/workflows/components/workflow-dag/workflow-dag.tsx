@@ -23,7 +23,7 @@ export interface WorkflowDagProps {
 
 require('./workflow-dag.scss');
 
-type DagPhase = NodePhase | 'Suspended' | 'EventWait';
+type DagPhase = NodePhase | 'Suspended';
 
 const LOCAL_STORAGE_KEY = 'DagOptions';
 
@@ -104,16 +104,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         // tslint:disable-next-line
             d='M288 39.056v16.659c0 10.804 7.281 20.159 17.686 23.066C383.204 100.434 440 171.518 440 256c0 101.689-82.295 184-184 184-101.689 0-184-82.295-184-184 0-84.47 56.786-155.564 134.312-177.219C216.719 75.874 224 66.517 224 55.712V39.064c0-15.709-14.834-27.153-30.046-23.234C86.603 43.482 7.394 141.206 8.003 257.332c.72 137.052 111.477 246.956 248.531 246.667C393.255 503.711 504 392.788 504 256c0-115.633-79.14-212.779-186.211-240.236C302.678 11.889 288 23.456 288 39.056z'
                     />
-                );
-            case 'EventWait':
-                return (
-                    <g transform='translate(-50,-20)'>
-                        <path
-                            fill='currentColor'
-                            // tslint:disable-next-line
-                        d="M537.6 226.6c4.1-10.7 6.4-22.4 6.4-34.6 0-53-43-96-96-96-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32c-88.4 0-160 71.6-160 160 0 2.7.1 5.4.2 8.1C40.2 219.8 0 273.2 0 336c0 79.5 64.5 144 144 144h368c70.7 0 128-57.3 128-128 0-61.9-44-113.6-102.4-125.4zm-132.9 88.7L299.3 420.7c-6.2 6.2-16.4 6.2-22.6 0L171.3 315.3c-10.1-10.1-2.9-27.3 11.3-27.3H248V176c0-8.8 7.2-16 16-16h48c8.8 0 16 7.2 16 16v112h65.4c14.2 0 21.4 17.2 11.3 27.3z"
-                        />
-                    </g>
                 );
             case 'Suspended':
                 return (
@@ -202,12 +192,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 const node = this.props.nodes[nodeId];
-                                const phase: DagPhase =
-                                    node.type === 'EventConsumer' && node.phase === 'Running'
-                                        ? 'EventWait'
-                                        : node.type === 'Suspend' && node.phase === 'Running'
-                                        ? 'Suspended'
-                                        : node.phase;
+                                const phase: DagPhase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
                                 const hidden = this.hiddenNode(nodeId);
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
@@ -262,8 +247,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 'type:DAG',
                 'type:Retry',
                 'type:Skipped',
-                'type:Suspend',
-                'type:EventConsumer'
+                'type:Suspend'
             ]
         } as WorkflowDagRenderOptions;
     }

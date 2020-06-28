@@ -39,6 +39,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/suspend"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 
@@ -1496,8 +1497,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node, err = woc.executeDAG(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, opts)
-	case wfv1.TemplateTypeEventConsumer:
-		node, err = woc.executeEventConsumer(nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, wfv1.NodeError, err.Error()), err
@@ -1869,7 +1868,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeEventConsumer:
+	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
 	case wfv1.NodeTypeTaskGroup:
 		if len(node.Children) == 0 {
@@ -2271,6 +2270,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	// will need to be requeued after a certain amount of time
 	var requeueTime *time.Time
 
+	if node.Phase != wfv1.NodeRunning && tmpl.Suspend.Event != nil {
+		suspend.IncrementWaitCount(woc.wf)
+	}
 	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
 		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration)
@@ -2282,6 +2284,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		if time.Now().UTC().After(suspendDeadline) {
 			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
+			if tmpl.Suspend.Event != nil {
+				suspend.DecrementEventWait(woc.wf)
+			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return node, nil
 		}
@@ -2300,20 +2305,6 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		woc.requeue(time.Until(*requeueTime))
 	}
 
-	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	return node, nil
-}
-
-func (woc *wfOperationCtx) executeEventConsumer(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.getNodeByName(nodeName)
-	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeEventConsumer, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	}
-	woc.log.Infof("node %s event consumer", nodeName)
-	if node.Phase != wfv1.NodeRunning {
-		count, _ := strconv.Atoi(woc.wf.GetLabels()[common.LabelKeyEventWait])
-		woc.wf.GetLabels()[common.LabelKeyEventWait] = strconv.Itoa(count + 1)
-	}
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
 }

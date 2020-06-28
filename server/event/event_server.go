@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/antonmedv/expr"
@@ -21,6 +20,7 @@ import (
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/workflow/suspend"
 )
 
 type eventServer struct {
@@ -40,7 +40,7 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, req *eventpkg.EventReque
 			return nil, err
 		}
 		for _, node := range wf.Status.Nodes {
-			if !node.Phase.Fulfilled() && node.Type == wfv1.NodeTypeEventConsumer {
+			if !node.Phase.Fulfilled() && node.Type == wfv1.NodeTypeSuspend {
 				env, err := expressionEnvironment(ctx, req.Event, wf, node)
 				if err != nil {
 					return nil, err
@@ -49,7 +49,10 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, req *eventpkg.EventReque
 				if t == nil {
 					continue
 				}
-				result, err := expr.Eval(t.EventConsumer.Expression, env)
+				if t.Suspend.Event == nil {
+					continue
+				}
+				result, err := expr.Eval(t.Suspend.Event.Expression, env)
 				if err != nil {
 					node = markNodeStatus(wf, node, wfv1.NodeError, "expression evaluation error: "+err.Error())
 				} else {
@@ -78,16 +81,12 @@ func (s *eventServer) ReceiveEvent(ctx context.Context, req *eventpkg.EventReque
 					}
 				}
 				log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "nodeId": node.ID, "phase": node.Phase, "message": node.Message}).Info("Matched event")
-				count, _ := strconv.Atoi(wf.GetLabels()[common.LabelKeyEventWait])
-				if count > 1 {
-					wf.GetLabels()[common.LabelKeyEventWait] = strconv.Itoa(count - 1)
-				} else {
-					delete(wf.GetLabels(), common.LabelKeyEventWait)
-				}
+				suspend.DecrementEventWait(&wf)
 				updated = true
 			}
 		}
 		if updated {
+			// TODO - we need a way to share code that applies updates with retry and backoff
 			err := s.hydrator.Dehydrate(&wf)
 			if err != nil {
 				return nil, err

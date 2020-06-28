@@ -658,6 +658,40 @@
         }
       }
     },
+    "/api/v1/events/{namespace}": {
+      "post": {
+        "tags": [
+          "EventService"
+        ],
+        "operationId": "ReceiveEvent",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "this can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in\nall namespaces, or if set - only to workflows in the specified namespace",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "the event itself can be any data",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/event.EventResponse"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/info": {
       "get": {
         "tags": [
@@ -1681,6 +1715,9 @@
     }
   },
   "definitions": {
+    "event.EventResponse": {
+      "type": "object"
+    },
     "google.protobuf.Any": {
       "type": "object",
       "properties": {
@@ -2287,14 +2324,14 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.EventConsumerTemplate": {
+    "io.argoproj.workflow.v1alpha1.Event": {
       "type": "object",
       "required": [
         "expression"
       ],
       "properties": {
         "expression": {
-          "description": "An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `event.context.type == \"test\"`",
+          "description": "An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == \"test\"`",
           "type": "string"
         }
       }
@@ -3228,6 +3265,10 @@
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template",
           "type": "string"
+        },
+        "event": {
+          "description": "An event to resume this node on.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
         }
       }
     },
@@ -3302,9 +3343,6 @@
         "dag": {
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
-        },
-        "eventConsumer": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventConsumerTemplate"
         },
         "executor": {
           "description": "Executor holds configurations of the executor container.",

@@ -76,7 +76,7 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -379,7 +379,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -693,7 +693,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -972,7 +972,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -1235,6 +1235,8 @@ Arguments to a template
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
@@ -1460,7 +1462,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -1640,7 +1642,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
-|`eventConsumer`|[`EventConsumerTemplate`](#eventconsumertemplate)|_No description available_|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of the executor container.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
@@ -1770,6 +1771,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
 
@@ -1930,6 +1933,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -2099,8 +2104,6 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
-
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
@@ -2122,22 +2125,6 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 |`failFast`|`boolean`|This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo/issues/1442|
 |`target`|`string`|Target are one or more names of targets to execute in a DAG|
 |`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks|
-
-## EventConsumerTemplate
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`events.yaml`](../examples/events.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the CloudEvent to (https://github.com/cloudevents/spec). E.g. `event.context.type == "test"`|
 
 ## UserContainer
 
@@ -2222,6 +2209,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -2386,7 +2375,7 @@ Pod metdata
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -2755,6 +2744,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
@@ -2870,6 +2861,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
@@ -2877,6 +2870,7 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
+|`event`|[`Event`](#event)|An event to resume this node on.|
 
 ## TemplateRef
 
@@ -3266,8 +3260,6 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
-
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
@@ -3400,6 +3392,22 @@ Sequence expands a workflow step into numeric range
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|`string`|Number at which to start the sequence (default: 0)|
 
+## Event
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`|
+
 ## NoneStrategy
 
 NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.
@@ -3512,7 +3520,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -4600,7 +4608,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
@@ -5574,7 +5582,7 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
-- [`events.yaml`](../examples/events.yaml)
+- [`event-consumer.yaml`](../examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 

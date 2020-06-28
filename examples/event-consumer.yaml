@@ -20,8 +20,9 @@ spec:
       inputs:
         parameters:
           - name: type
-      eventConsumer:
-        expression: event.type == inputs.parameters[0].value
+      suspend:
+        event:
+           expression: event.type == inputs.parameters[0].value
       outputs:
         parameters:
           - name: eventType
