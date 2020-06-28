@@ -686,7 +686,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/event.EventResponse"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventResponse"
             }
           }
         }
@@ -1715,9 +1715,6 @@
     }
   },
   "definitions": {
-    "event.EventResponse": {
-      "type": "object"
-    },
     "google.protobuf.Any": {
       "type": "object",
       "properties": {
@@ -2331,10 +2328,13 @@
       ],
       "properties": {
         "expression": {
-          "description": "An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == \"test\"`",
+          "description": "An expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == \"test\"`",
           "type": "string"
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.EventResponse": {
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
