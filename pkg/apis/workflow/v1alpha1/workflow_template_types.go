@@ -43,6 +43,7 @@ var _ TemplateHolder = &WorkflowTemplate{}
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 type WorkflowTemplateSpec struct {
 	WorkflowSpec `json:",inline" protobuf:"bytes,1,opt,name=workflowSpec"`
+	Event        *Event `json:"event,omitempty" protobuf:"bytes,2,opt,name=event"`
 }
 
 // GetTemplateByName retrieves a defined template by its name

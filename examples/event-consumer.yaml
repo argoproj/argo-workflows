@@ -6,15 +6,16 @@ metadata:
   generateName: event-consumer-
 spec:
   entrypoint: main
-  templates:
-    - name: main
-      steps:
-      - - name: a
-          template: consume-event
   arguments:
     parameters:
       - name: type
         value: test
+
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: consume-event
 
     - name: consume-event
       inputs:
@@ -22,7 +23,7 @@ spec:
           - name: type
       suspend:
         event:
-           expression: event.type == inputs.parameters[0].value
+          expression: event.type == inputs.parameters[0].value
       outputs:
         parameters:
           - name: eventType

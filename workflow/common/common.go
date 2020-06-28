@@ -55,6 +55,8 @@ const (
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
 	// The count of the number of events we are waiting for. Must > 0 if specified.
 	LabelKeyEventWait = workflow.WorkflowFullName + "/event-wait-count"
+	// Templates labelled with this will be trigger by events.
+	LabelKeyEvent = workflow.WorkflowFullName + "/event"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)

@@ -4347,6 +4347,9 @@
           "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
           "type": "string"
         },
+        "event": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
+        },
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"

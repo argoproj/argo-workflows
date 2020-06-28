@@ -134,30 +134,66 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(3 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeRunning, status.Nodes.FindByDisplayName("a").Phase)
+		WaitForWorkflowToStart(10 * time.Second).
+		And(func() {
 			s.e().
 				POST("/api/v1/events/argo").
-				WithHeader("Argo-E2E", "true").
 				WithBytes([]byte(`{"type": "test"}`)).
 				Expect().
 				Status(200)
 		}).
-		When().
-		WaitForWorkflow(3 * time.Second).
+		WaitForWorkflow(10 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			node := status.Nodes.FindByDisplayName("a")
 			if assert.NotNil(t, node) {
 				if assert.NotNil(t, node.Outputs) {
-					if assert.Len(t, node.Outputs.Parameters, 1) {
-						assert.Equal(t, pointer.StringPtr("test"), node.Outputs.Parameters[0].Value)
+					parameters := node.Outputs.Parameters
+					if assert.Len(t, parameters, 1) {
+						assert.Equal(t, pointer.StringPtr("test"), parameters[0].Value)
 					}
 				}
+			}
+		})
+}
 
+func (s *ArgoServerSuite) TestEventTemplate() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+    workflows.argoproj.io/event: "true"
+spec:
+  event:
+    expression: event.type == "test"
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+      - - name: a
+          template: argosay
+
+    - name: argosay
+      container:
+         image: argoproj/argosay:v1
+`).
+		When().
+		CreateWorkflowTemplates().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo").
+				WithBytes([]byte(`{"type": "test"}`)).
+				Expect().
+				Status(200)
+		}).
+		WaitForWorkflow(10*time.Second).
+		Then().
+		ExpectWorkflowList(metav1.ListOptions{}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			if assert.Len(t, wfList.Items, 1) {
+				assert.Contains(t, wfList.Items[0].Name, "event-consumer-")
 			}
 		})
 }

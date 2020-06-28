@@ -2173,6 +2173,11 @@ func (in *WorkflowTemplateRef) DeepCopy() *WorkflowTemplateRef {
 func (in *WorkflowTemplateSpec) DeepCopyInto(out *WorkflowTemplateSpec) {
 	*out = *in
 	in.WorkflowSpec.DeepCopyInto(&out.WorkflowSpec)
+	if in.Event != nil {
+		in, out := &in.Event, &out.Event
+		*out = new(Event)
+		**out = **in
+	}
 	return
 }
 

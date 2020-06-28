@@ -1361,5 +1361,7 @@ message WorkflowTemplateRef {
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 message WorkflowTemplateSpec {
   optional WorkflowSpec workflowSpec = 1;
+
+  optional Event event = 2;
 }
 

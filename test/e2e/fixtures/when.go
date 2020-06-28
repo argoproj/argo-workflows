@@ -181,6 +181,14 @@ func (w *When) DeleteWorkflow() *When {
 	return w
 }
 
+func (w *When) And(block func()) *When {
+	block()
+	if w.t.Failed() {
+		w.t.FailNow()
+	}
+	return w
+}
+
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
 	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
@@ -207,7 +215,6 @@ func (w *When) DeleteQuota() *When {
 	w.resourceQuota = nil
 	return w
 }
-
 func (w *When) Then() *Then {
 	return &Then{
 		t:                w.t,
