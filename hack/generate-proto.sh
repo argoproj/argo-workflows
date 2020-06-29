@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux -o pipefail
 
-go mod vender
+go mod vendor
 
 ${GOPATH}/bin/go-to-protobuf \
   --go-header-file=./hack/custom-boilerplate.go.txt \
