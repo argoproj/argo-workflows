@@ -439,7 +439,6 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-
 	noSpaceWf := unmarshalWF(susWorkflow)
 	noSpaceWf.Name = "suspend-template-no-outputs"
 	node := noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"]
@@ -448,6 +447,6 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	_, err = wfIf.Create(noSpaceWf)
 	if assert.NoError(t, err) {
 		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
-		assert.EqualError(t, err,"cannot set output parameters because node is not expecting any raw parameters")
+		assert.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
 	}
 }

@@ -347,6 +347,18 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 			// To resume a workflow with a suspended node we simply mark the node as Successful
 			for nodeID, node := range wf.Status.Nodes {
 				if node.IsActiveSuspendNode() {
+					if node.Outputs != nil {
+						for i, param := range node.Outputs.Parameters {
+							if param.ValueFrom != nil && param.ValueFrom.Raw != nil {
+								if param.ValueFrom.Default != nil {
+									node.Outputs.Parameters[i].Value = pointer.StringPtr(*param.ValueFrom.Default)
+									node.Outputs.Parameters[i].ValueFrom = nil
+								} else {
+									return false, fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
+								}
+							}
+						}
+					}
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					wf.Status.Nodes[nodeID] = node
@@ -466,7 +478,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 		}
 
 		if !nodeUpdated {
-			return true, fmt.Errorf("no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
+			return true, fmt.Errorf("currently, set only targets suspend nodes. No suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
 		}
 
 		err = hydrator.Dehydrate(wf)
@@ -824,7 +836,7 @@ func SetWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interfac
 	if nodeFieldSelector != "" {
 		return updateSuspendedNode(wfClient, hydrator, name, nodeFieldSelector, values)
 	}
-	return fmt.Errorf("'set' currently only targets suspend nodes, use a node-field-selector to target them")
+	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }
 
 // Reads from stdin

@@ -26,16 +26,30 @@ func NewSetCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "set WORKFLOW WORKFLOW2...",
+		Use:   "set FIELD WORKFLOW SET_TO",
 		Short: "set values to zero or more workflows",
-		Example: `# Set about a workflow:
+		Example: `# Set outputs to a node within a workflow:
 
-  argo set my-wf
+  argo set outputs my-wf '{"parameter-name": "Hello, world!"}' --node-field-selector displayName=approve
 
-# Set the latest workflow:
-  argo set @latest
+# Set the message of a node within a workflow:
+
+  argo set message my-wf 'We did it!' --node-field-selector displayName=approve
 `,
 		Run: func(cmd *cobra.Command, args []string) {
+
+			if len(args) != 3 {
+				cmd.HelpFunc()(cmd, args)
+			}
+
+			switch args[0] {
+			case "outputs", "output":
+				setArgs.outputParameters = args[2]
+			case "message":
+				setArgs.message = args[2]
+			default:
+				log.Fatalf("cannot set '%s'", args[0])
+			}
 
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
@@ -47,28 +61,25 @@ func NewSetCommand() *cobra.Command {
 			}
 
 			outputParams := make(map[string]string)
-			err = json.Unmarshal([]byte(setArgs.outputParameters), &outputParams)
-			if err != nil {
-				log.Fatalf("unable to parse output parameter set request: %s", err)
+			if setArgs.outputParameters != "" {
+				err = json.Unmarshal([]byte(setArgs.outputParameters), &outputParams)
+				if err != nil {
+					log.Fatalf("unable to parse output parameter set request: %s", err)
+				}
 			}
 
-			for _, name := range args {
-				wf, err := serviceClient.SetWorkflow(ctx, &workflowpkg.WorkflowSetRequest{
-					Name:              name,
-					Namespace:         namespace,
-					NodeFieldSelector: selector.String(),
-					Message:           setArgs.message,
-					Phase:             setArgs.phase,
-					OutputParameters:  setArgs.outputParameters,
-				})
-				errors.CheckError(err)
-				fmt.Printf("workflow %s setped\n", wf.Name)
-			}
+			_, err = serviceClient.SetWorkflow(ctx, &workflowpkg.WorkflowSetRequest{
+				Name:              args[1],
+				Namespace:         namespace,
+				NodeFieldSelector: selector.String(),
+				Message:           setArgs.message,
+				Phase:             setArgs.phase,
+				OutputParameters:  setArgs.outputParameters,
+			})
+			errors.CheckError(err)
+			fmt.Printf("workflow values set\n")
 		},
 	}
-	command.Flags().StringVar(&setArgs.message, "message", "", "Message to add to previously running nodes")
-	command.Flags().StringVar(&setArgs.phase, "phase", "", "Phase to set node")
-	command.Flags().StringVar(&setArgs.outputParameters, "output-parameters", "", "Output parameters to set in a JSON dict, eg: --output-parameters {\"hello\": \"world\"}")
 	command.Flags().StringVar(&setArgs.nodeFieldSelector, "node-field-selector", "", "Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	return command
 }
