@@ -190,11 +190,11 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		WaitForWorkflow(10*time.Second).
+		Wait(1*time.Second).
 		Then().
 		ExpectWorkflowList(metav1.ListOptions{}, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			if assert.Len(t, wfList.Items, 1) {
-				assert.Contains(t, wfList.Items[0].Name, "event-consumer-")
+				assert.Equal(t, "event-consumer", wfList.Items[0].Labels["workflows.argoproj.io/workflow-template"])
 			}
 		})
 }

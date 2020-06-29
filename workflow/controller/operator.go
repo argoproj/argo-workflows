@@ -39,7 +39,6 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/suspend"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 
@@ -2269,9 +2268,6 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 	// will need to be requeued after a certain amount of time
 	var requeueTime *time.Time
 
-	if node.Phase != wfv1.NodeRunning && tmpl.Suspend.Event != nil {
-		suspend.IncrementEventWaitCount(woc.wf)
-	}
 	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
 		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration)
@@ -2283,9 +2279,6 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 		if time.Now().UTC().After(suspendDeadline) {
 			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
-			if tmpl.Suspend.Event != nil {
-				suspend.DecrementEventWaitCount(woc.wf)
-			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return node, nil
 		}

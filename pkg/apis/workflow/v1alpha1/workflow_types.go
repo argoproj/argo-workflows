@@ -1623,6 +1623,7 @@ type ResourceTemplate struct {
 
 type Event struct {
 	// An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
+	// +kubebuilder:validation:MinLength=4
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 }
 

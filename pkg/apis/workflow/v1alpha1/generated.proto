@@ -304,6 +304,7 @@ message DAGTemplate {
 
 message Event {
   // An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
+  // +kubebuilder:validation:MinLength=4
   optional string expression = 1;
 }
 

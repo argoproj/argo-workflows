@@ -53,10 +53,6 @@ const (
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
-	// The count of the number of events we are waiting for. Must > 0 if specified.
-	LabelKeyEventWaitCount = workflow.WorkflowFullName + "/event-wait-count"
-	// Templates labelled with this will be trigger by events.
-	LabelKeyEvent = workflow.WorkflowFullName + "/event"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)

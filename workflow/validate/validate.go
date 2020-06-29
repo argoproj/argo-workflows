@@ -282,11 +282,6 @@ func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) er
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
-	_, hasLabel := wftmpl.GetLabels()[common.LabelKeyEvent]
-	hasEvent := wftmpl.Spec.Event != nil
-	if hasLabel && !hasEvent || !hasLabel && hasEvent {
-		return nil, fmt.Errorf("labelled with %s but missing spec.event (or vice-versa)", common.LabelKeyEvent)
-	}
 	wf := &wfv1.Workflow{
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
