@@ -10,7 +10,7 @@ Choose [a manifests from the list](https://github.com/argoproj/argo/tree/stable/
 
 E.g.
 
-```shell script
+```sh
 kubectl create ns argo
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/namespace-install.yaml 
 ```

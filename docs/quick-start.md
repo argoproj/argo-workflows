@@ -22,7 +22,7 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 
 If you are running Argo Workflows locally (e.g. using Minikube or Docker for Desktop), the open a port forward so you can access the namespace:
 
-```shell script
+```sh
 kubectl -n argo port-forward deployment/argo-server 2746:2746
 ```
 

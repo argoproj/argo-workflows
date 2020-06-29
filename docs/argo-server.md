@@ -61,7 +61,7 @@ See [SSO](argo-server-sso.md).
 
 ## Access the Argo Workflows UI
 
-```shell script
+```sh
 kubectl -n argo port-forward deployment/argo-server 2746:2746
 ```
 
