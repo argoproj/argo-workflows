@@ -216,6 +216,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -516,6 +518,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -829,6 +833,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -1106,6 +1112,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -1294,6 +1302,10 @@ Arguments to a template
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
@@ -1592,6 +1604,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -1790,6 +1804,10 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
@@ -1987,6 +2005,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
@@ -2266,6 +2288,10 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
@@ -2496,6 +2522,8 @@ Pod metdata
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -2794,6 +2822,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -2838,6 +2868,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 <br>
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
@@ -3058,6 +3090,10 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -3115,6 +3151,10 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -3408,6 +3448,10 @@ RawValueFrom is a placeholder for a value to be filled in directly, either throu
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 # External Fields
@@ -3632,6 +3676,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -4086,6 +4132,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -4719,6 +4767,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -5175,6 +5225,10 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -5690,6 +5744,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](../examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 

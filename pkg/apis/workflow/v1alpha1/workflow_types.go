@@ -843,27 +843,6 @@ type Sequence struct {
 	Format string `json:"format,omitempty" protobuf:"bytes,4,opt,name=format"`
 }
 
-// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
-func (i *Item) DeepCopyInto(out *Item) {
-	inBytes, err := json.Marshal(i)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(inBytes, out)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// OpenAPISchemaType is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
-
-// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-func (i Item) OpenAPISchemaFormat() string { return "item" }
-
 // TemplateRef is a reference of template resource.
 type TemplateRef struct {
 	// Name is the resource name of the template.
