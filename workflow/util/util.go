@@ -203,9 +203,9 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
-	labels := wf.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
+	wfLabels := wf.GetLabels()
+	if wfLabels == nil {
+		wfLabels = make(map[string]string)
 	}
 	if opts.Labels != "" {
 		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
@@ -213,10 +213,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			return fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
 		}
 		for k, v := range passedLabels {
-			labels[k] = v
+			wfLabels[k] = v
 		}
 	}
-	wf.SetLabels(labels)
+	wf.SetLabels(wfLabels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
@@ -493,19 +493,22 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
+	if newWF.ObjectMeta.Labels == nil {
+		newWF.ObjectMeta.Labels = make(map[string]string)
+	}
 	for key, val := range wf.ObjectMeta.Labels {
 		if strings.HasPrefix(key, workflow.WorkflowFullName+"/") && key != common.LabelKeyControllerInstanceID {
 			continue
 		}
-		if newWF.ObjectMeta.Labels == nil {
-			newWF.ObjectMeta.Labels = make(map[string]string)
-		}
 		newWF.ObjectMeta.Labels[key] = val
 	}
+	// Append an additional label so it's easy for user to see the
+	// name of the original workflow that has been resubmitted.
+	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
+	if newWF.ObjectMeta.Annotations == nil {
+		newWF.ObjectMeta.Annotations = make(map[string]string)
+	}
 	for key, val := range wf.ObjectMeta.Annotations {
-		if newWF.ObjectMeta.Annotations == nil {
-			newWF.ObjectMeta.Annotations = make(map[string]string)
-		}
 		newWF.ObjectMeta.Annotations[key] = val
 	}
 

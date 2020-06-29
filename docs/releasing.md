@@ -6,7 +6,7 @@ Allow 1h to do a release.
 
 Cherry-pick your changes from master onto the release branch.
 
-The release branch should be green [in CircleCI](https://app.circleci.com/github/argoproj/argo/pipelines) before you start.
+The release branch should be green in CI before you start.
 
 ## Release
 
@@ -17,7 +17,7 @@ To generate new manifests and perform basic checks:
 Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):
 
     make publish-release K3D=false VERSION=v2.7.2
-
+    
 * [ ] Check the images were pushed successfully.
 
 ```
@@ -35,6 +35,8 @@ docker run argoproj/argocli:v2.7.2 version
 ```
 
 * [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/v2.7.2/manifests/install.yaml
+
+* [ ] Check the manifests apply: `kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo/v2.7.2/manifests/install.yaml`
 
 ### Release Notes
 

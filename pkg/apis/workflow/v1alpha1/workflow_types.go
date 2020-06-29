@@ -1492,6 +1492,13 @@ func (g *GitArtifact) HasLocation() bool {
 	return g != nil && g.Repo != ""
 }
 
+func (g *GitArtifact) GetDepth() int {
+	if g == nil || g.Depth == nil {
+		return 0
+	}
+	return int(*g.Depth)
+}
+
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
 type ArtifactoryAuth struct {
 	// UsernameSecret is the secret selector to the repository username
@@ -1885,6 +1892,13 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	for _, t := range wf.Spec.Templates {
 		if t.Name == name {
 			return &t
+		}
+	}
+	if wf.Status.StoredWorkflowSpec != nil {
+		for _, t := range wf.Status.StoredWorkflowSpec.Templates {
+			if t.Name == name {
+				return &t
+			}
 		}
 	}
 	return nil

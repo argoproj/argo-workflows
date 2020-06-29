@@ -85,8 +85,11 @@ type Config struct {
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
-	// PodSpecLogStrategy enable the logging of podspec on controller log.
+	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+
+	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
+	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
@@ -163,6 +166,7 @@ type ConnectionPool struct {
 	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
+
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
@@ -245,4 +249,29 @@ type MetricsConfig struct {
 	Port string `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
+}
+
+type WorkflowRestrictions struct {
+	TemplateReferencing TemplateReferencing `json:"templateReferencing"`
+}
+
+type TemplateReferencing string
+
+const (
+	TemplateReferencingStrict TemplateReferencing = "Strict"
+	TemplateReferencingSecure TemplateReferencing = "Secure"
+)
+
+func (req *WorkflowRestrictions) MustUseReference() bool {
+	if req == nil {
+		return false
+	}
+	return req.TemplateReferencing == TemplateReferencingStrict || req.TemplateReferencing == TemplateReferencingSecure
+}
+
+func (req *WorkflowRestrictions) MustNotChangeSpec() bool {
+	if req == nil {
+		return false
+	}
+	return req.TemplateReferencing == TemplateReferencingSecure
 }

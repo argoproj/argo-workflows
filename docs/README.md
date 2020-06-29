@@ -16,6 +16,7 @@ For a full list of all the fields available in for use in Argo, and a link to ex
 Some use-case specific documentation is available:
 
 * [Contributing](CONTRIBUTING.md)
+* [Access Token](access-token.md)
 * [Argo Workflow Architecture](architecture.md)
 * [Argo Server Auth Mode](argo-server-auth-mode.md)
 * [Argo Server SSO](argo-server-sso.md)
@@ -59,4 +60,5 @@ Some use-case specific documentation is available:
 * [Workflow Executors](workflow-executors.md)
 * [Workflow Notifications](workflow-notifications.md)
 * [Workfow RBAC](workflow-rbac.md)
+* [Workflow Restrictions](workflow-requirements.md)
 * [Workflow Templates](workflow-templates.md)

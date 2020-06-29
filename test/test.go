@@ -51,6 +51,25 @@ func LoadWorkflowFromBytes(yamlBytes []byte) *wfv1.Workflow {
 	return &wf
 }
 
+// LoadTestWorkflow returns a workflow relative to the test file
+func LoadTestWorkflowTemplate(path string) *wfv1.WorkflowTemplate {
+	yamlBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return LoadWorkflowTemplateFromBytes(yamlBytes)
+}
+
+// LoadWorkflowFromBytes returns a workflow unmarshalled from an yaml byte array
+func LoadWorkflowTemplateFromBytes(yamlBytes []byte) *wfv1.WorkflowTemplate {
+	var wf wfv1.WorkflowTemplate
+	err := yaml.Unmarshal(yamlBytes, &wf)
+	if err != nil {
+		panic(err)
+	}
+	return &wf
+}
+
 // LoadUnstructuredFromBytes returns an Unstructured unmarshalled from an yaml byte array
 func LoadUnstructuredFromBytes(yamlBytes []byte) *unstructured.Unstructured {
 	var un unstructured.Unstructured

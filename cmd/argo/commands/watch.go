@@ -33,6 +33,7 @@ func NewWatchCommand() *cobra.Command {
   argo watch my-wf
 
 # Watch the latest workflow:
+
   argo watch @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -40,7 +41,10 @@ func NewWatchCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			watchWorkflow(args[0], getArgs)
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
+			watchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
 		},
 	}
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
@@ -48,17 +52,13 @@ func NewWatchCommand() *cobra.Command {
 	return command
 }
 
-func watchWorkflow(wfName string, getArgs getFlags) {
-
-	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
-	namespace := client.Namespace()
+func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflow string, getArgs getFlags) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(wfName),
+			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(workflow),
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
