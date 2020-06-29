@@ -2,7 +2,7 @@
 
 ### Getting Started
 
-For set-up information and running your first Workflows, please see our [Getting Started](getting-started.md) guide.
+For set-up information and running your first Workflows, please see our [Getting Started](quick-start.md) guide.
 
 ### Examples
 

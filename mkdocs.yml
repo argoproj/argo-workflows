@@ -20,42 +20,48 @@ markdown_extensions:
 nav:
   - Overview: README.md
   - core-concepts.md
-  - getting-started.md
-  - architecture.md
+  - quick-start.md
   - User Guide:
+      # topics are ones that can be done using the UI only
       - Beginner:
+          - workflow-concepts.md
           - cli.md
           - variables.md
+      # topics that don't require kubctl or re-configuration
+      - Advanced:
+          - service-accounts.md
+          - workflow-rbac.md
+          - node-field-selector.md
           - workflow-templates.md
           - cluster-workflow-templates.md
-      - Advanced:
-          - workflow-rbac.md
-          - service-accounts.md
+          - cron-workflows.md
+          - cron-backfill.md
           - work-avoidance.md
           - enhanced-depends-logic.md
-          - workflow-notifications.md
           - artifact-repository-ref.md
-          - workflow-events.md
-          - cron-backfill.md
-          - workflow-requirements.md
-          - async-pattern.md
-          - node-field-selector.md
-          - cron-workflows.md
           - resource-duration.md
-      - Expert:
-          - access-token.md
           - workflow-creator.md
-          - security.md
+      # all other topics, including API access
+      - Expert:
+          - workflow-requirements.md
+          - workflow-notifications.md
+          - workflow-events.md
+          - kubectl.md
+          - access-token.md
           - rest-api.md
+          - async-pattern.md
+          - security.md
           - rest-examples.md
       - Examples: examples/README.md
       - fields.md
   - Operator Manual:
+      - installation.md
       - Configuration:
+          - managed-namespace.md
+          - service-accounts.md
+          - configure-artifact-repository.md
           - workflow-controller-configmap.md
           - workflow-executors.md
-          - managed-namespace.md
-          - configure-artifact-repository.md
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md
@@ -71,6 +77,7 @@ nav:
       - windows.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - architecture.md
       - running-locally.md
       - versioning.md
       - public-api.md
