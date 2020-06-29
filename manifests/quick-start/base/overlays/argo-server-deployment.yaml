@@ -13,4 +13,4 @@ spec:
             - --auth-mode
             - server
             - --auth-mode
-            - sso
+            - client
