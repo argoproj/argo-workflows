@@ -478,7 +478,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 		}
 
 		if !nodeUpdated {
-			return true, fmt.Errorf("currently, set only targets suspend nodes. No suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
+			return true, fmt.Errorf("currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
 		}
 
 		err = hydrator.Dehydrate(wf)

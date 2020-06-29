@@ -432,7 +432,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 		assert.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
 		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
-		assert.EqualError(t, err, "no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
+		assert.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
 		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
 		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
