@@ -41,29 +41,6 @@ spec:
           path: /tmp/hello_world.txt
 
   - name: print-message
-    metadata:
-      annotations:
-        test1: "{{inputs.parameters.message}}"
-        test: |
-          {{- with secret "{{inputs.parameters.message}}" -}}
-            {{ .Data.data.gitcreds }}
-          {{- end }}
-        test2: |
-          {{- with {{ secret "{{inputs.parameters.message}}" -}}
-            {{ .Data.data.gitcreds }}
-          {{- end }}
-        test3: |
-          {{- with {{ secret "{{inputs.parameters.message}}" -}} }}
-            {{ .Data.data.gitcreds }}
-          {{- end }}
-        test6: |
-          {{- with secret "{{inputs.parameters.message}}" -}} }}
-            {{ .Data.data.gitcreds }}
-          {{- end }}
-        test7: |
-          {{- with {{ {{ }} secret "{{inputs.parameters.message}}" -}} }}
-            {{ .Data.data.gitcreds }}
-          {{- end }}
     inputs:
       parameters:
       - name: message
