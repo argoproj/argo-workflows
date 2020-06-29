@@ -2615,64 +2615,11 @@ spec:
                             withItems:
                               items:
                                 properties:
-                                  boolVal:
-                                    type: boolean
-                                  listVal:
-                                    items:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      required:
-                                      - type
-                                      type: object
-                                    type: array
-                                  mapVal:
-                                    additionalProperties:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      required:
-                                      - type
-                                      type: object
-                                    type: object
-                                  numVal:
+                                  value:
+                                    format: byte
                                     type: string
-                                  strVal:
-                                    type: string
-                                  type:
-                                    type: integer
                                 required:
-                                - type
+                                - value
                                 type: object
                               type: array
                             withParam:
@@ -5528,64 +5475,11 @@ spec:
                               withItems:
                                 items:
                                   properties:
-                                    boolVal:
-                                      type: boolean
-                                    listVal:
-                                      items:
-                                        properties:
-                                          boolVal:
-                                            type: boolean
-                                          listVal:
-                                            items:
-                                              format: byte
-                                              type: string
-                                            type: array
-                                          mapVal:
-                                            additionalProperties:
-                                              type: string
-                                            type: object
-                                          numVal:
-                                            type: string
-                                          strVal:
-                                            type: string
-                                          type:
-                                            type: integer
-                                        required:
-                                        - type
-                                        type: object
-                                      type: array
-                                    mapVal:
-                                      additionalProperties:
-                                        properties:
-                                          boolVal:
-                                            type: boolean
-                                          listVal:
-                                            items:
-                                              format: byte
-                                              type: string
-                                            type: array
-                                          mapVal:
-                                            additionalProperties:
-                                              type: string
-                                            type: object
-                                          numVal:
-                                            type: string
-                                          strVal:
-                                            type: string
-                                          type:
-                                            type: integer
-                                        required:
-                                        - type
-                                        type: object
-                                      type: object
-                                    numVal:
+                                    value:
+                                      format: byte
                                       type: string
-                                    strVal:
-                                      type: string
-                                    type:
-                                      type: integer
                                   required:
-                                  - type
+                                  - value
                                   type: object
                                 type: array
                               withParam:

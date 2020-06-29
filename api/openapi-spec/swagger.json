@@ -45,7 +45,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -161,7 +161,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -412,7 +412,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -725,7 +725,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -810,7 +810,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1091,7 +1091,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1657,6 +1657,13 @@
             "format": "int64",
             "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
             "name": "logOptions.limitBytes",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
+            "name": "logOptions.insecureSkipTLSVerifyBackend",
             "in": "query"
           }
         ],
