@@ -1,8 +1,9 @@
 package common
 
 import (
-	"github.com/valyala/fasttemplate"
 	"testing"
+
+	"github.com/valyala/fasttemplate"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
