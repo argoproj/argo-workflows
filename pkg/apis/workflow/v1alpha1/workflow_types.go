@@ -125,6 +125,11 @@ var (
 			return !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(t)
 		}
 	}
+	WorkflowHappenedBetween = func(startTime time.Time, endTime time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return wf.ObjectMeta.CreationTimestamp.After(startTime) && !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(endTime)
+		}
+	}
 )
 
 // WorkflowList is list of Workflow resources
