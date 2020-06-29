@@ -129,5 +129,5 @@ spec:
         source: >
           curl http://argo-server:2746/api/v1/workflows/argo/submit \
             -fs \
-            -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Img5QmdsNDU5dFVWY3ZNbWVIdW1RQnlaZDNEUlR5SWJmYUtFWTl2TjRMaFUifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJhcmdvIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImplbmtpbnMtdG9rZW4tbnNyeHAiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiamVua2lucyIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjA0ZjU4NmU2LTI3NTEtNDk3Yi04OTMxLWNjNGYwNTg0YTdjMCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDphcmdvOmplbmtpbnMifQ.IP8sluWZUNJob4mzGMALdqjaXSzq3-2oCmq14ey2GjnTsdp0irBXtrlrhlE43Wr0ZpsRrQi099ymnbTttTdTs4pZ-LaPjvzZz_7NRfGt2rKaAmakBmTBJdzGESKyy_mi-w92YLXPlK_6mn9pN6pCXHs80MGmkm4D_2VTGk1XiSUQeuLxdapJf6hbicurJqzDZrUtTihDxPdErmdBXOss4ZudX9DKxHaU4YOKuy_4aohKekY20HlXFtWGiBbJTLD2ZFMEZklmmHrb6Xfxl5Wu2tNj7QXfVAvB3PWg4ag9WlkqN5Hb4GwNrph_t8GTcsymzP9InENOAjCEtBmAto63Wg" \
+            -H "Authorization: Bearer eyJhbGci..." \
             -d '{"resourceKind": "WorkflowTemplate", "resourceName": "wait", "submitOptions": {"labels": "workflows.argoproj.io/workflow-template=wait"}}' ```
