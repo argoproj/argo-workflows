@@ -12,26 +12,23 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestNewResubmitCommand(t *testing.T) {
+func TestNewSuspendCommand(t *testing.T) {
 	client := mocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
+	err := yaml.Unmarshal([]byte(workflow), &wf)
 	assert.NoError(t, err)
-	wfClient.On("ResubmitWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything ).Return(&wf, nil)
+	wfClient.On("SuspendWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything ).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	CLIOpt.client = &client
 	CLIOpt.ctx = context.TODO()
-	resumeCommand := NewResubmitCommand()
-	resumeCommand.SetArgs([]string{"hello-world"})
+	suspendCommand := NewSuspendCommand()
+	suspendCommand.SetArgs([]string{"hello-world-2xg9p"})
 	execFunc := func() {
-		err := resumeCommand.Execute()
+		err := suspendCommand.Execute()
 		assert.NoError(t, err)
 	}
 	output := CaptureOutput(execFunc)
-	assert.Contains(t, output, "Name:")
-	assert.Contains(t, output, "Namespace:")
-	assert.Contains(t, output, "ServiceAccount:")
-	assert.Contains(t, output, "Status:")
-	assert.Contains(t, output, "Created:")
+	assert.Contains(t, output, "suspended")
+	assert.Contains(t, output, "hello-world-2xg9p")
 }

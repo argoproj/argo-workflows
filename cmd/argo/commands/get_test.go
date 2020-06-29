@@ -4,30 +4,30 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
-	"github.com/stretchr/testify/mock"
+
 	"sigs.k8s.io/yaml"
 	"testing"
-	"text/tabwriter"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"text/tabwriter"
 
+	"github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/stretchr/testify/mock"
 )
 
-var wfWithStatus =`
+var wfWithStatus = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-24T22:53:35Z"
-  generateName: hello-world-
   generation: 6
   labels:
     workflows.argoproj.io/completed: "true"
     workflows.argoproj.io/phase: Succeeded
-  name: hello-world-2xg9p
+  name: hello-world
   namespace: default
   resourceVersion: "1110858"
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-2xg9p
@@ -76,6 +76,7 @@ status:
     memory: 0
   startedAt: "2020-06-24T22:53:35Z"
 `
+
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
@@ -137,21 +138,19 @@ func TestGetCommand(t *testing.T) {
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
 	assert.NoError(t, err)
-	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything ).Return(&wf, nil)
+	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	CLIOpt.client = &client
 	CLIOpt.ctx = context.TODO()
-	getCommand :=  NewGetCommand()
-	execFunc := func(){
+	getCommand := NewGetCommand()
+	getCommand.SetArgs([]string{"hello-world"})
+	execFunc := func() {
 		err := getCommand.Execute()
 		assert.NoError(t, err)
 	}
 	output := CaptureOutput(execFunc)
-	assert.Contains(t, output, "Status:              Succeeded")
-	assert.Contains(t, output, "ResourcesDuration:   3s*cpu,0s*memory")
-	assert.Contains(t, output, "STEP")
-	assert.Contains(t, output, "TEMPLATE")
-	assert.Contains(t, output, "PODNAME")
-	assert.Contains(t, output, "DURATION")
-	assert.Contains(t, output, "MESSAGE")
+	assert.Contains(t, output, "Name:")
+	assert.Contains(t, output, "Namespace:")
+	assert.Contains(t, output, "ServiceAccount:")
+	assert.Contains(t, output, "Status:")
 }

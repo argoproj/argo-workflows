@@ -16,11 +16,11 @@ func NewTerminateCommand() *cobra.Command {
 		Short: "terminate zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
-				wf, err := serviceClient.TerminateWorkflow(ctx, &workflowpkg.WorkflowTerminateRequest{
+				wf, err := serviceClient.TerminateWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowTerminateRequest{
 					Name:      name,
 					Namespace: namespace,
 				})

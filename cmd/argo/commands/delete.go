@@ -30,7 +30,7 @@ func NewDeleteCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use: "delete WORKFLOW...",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			var workflowsToDelete []metav1.ObjectMeta
@@ -56,7 +56,7 @@ func NewDeleteCommand() *cobra.Command {
 					olderTime, err = argotime.ParseSince(older)
 					errors.CheckError(err)
 				}
-				list, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+				list, err := serviceClient.ListWorkflows(CLIOpt.ctx, &workflowpkg.WorkflowListRequest{
 					Namespace:   namespace,
 					ListOptions: &metav1.ListOptions{LabelSelector: selector},
 				})
@@ -69,7 +69,7 @@ func NewDeleteCommand() *cobra.Command {
 				}
 			}
 			for _, md := range workflowsToDelete {
-				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{
+				_, err := serviceClient.DeleteWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowDeleteRequest{
 					Name:      md.Name,
 					Namespace: md.Namespace,
 				})

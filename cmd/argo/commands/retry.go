@@ -25,7 +25,7 @@ func NewRetryCommand() *cobra.Command {
 		Use:   "retry [WORKFLOW...]",
 		Short: "retry zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
@@ -35,7 +35,7 @@ func NewRetryCommand() *cobra.Command {
 			}
 
 			for _, name := range args {
-				wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
+				wf, err := serviceClient.RetryWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowRetryRequest{
 					Name:              name,
 					Namespace:         namespace,
 					RestartSuccesful:  retryOps.restartSuccessful,

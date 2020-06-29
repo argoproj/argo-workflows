@@ -17,12 +17,12 @@ func NewResubmitCommand() *cobra.Command {
 		Use:   "resubmit [WORKFLOW...]",
 		Short: "resubmit one or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
 			for _, name := range args {
-				created, err := serviceClient.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{
+				created, err := serviceClient.ResubmitWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowResubmitRequest{
 					Namespace: namespace,
 					Name:      name,
 					Memoized:  memoized,

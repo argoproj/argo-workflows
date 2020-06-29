@@ -27,7 +27,7 @@ func NewStopCommand() *cobra.Command {
 		Short: "stop zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
@@ -37,7 +37,7 @@ func NewStopCommand() *cobra.Command {
 			}
 
 			for _, name := range args {
-				wf, err := serviceClient.StopWorkflow(ctx, &workflowpkg.WorkflowStopRequest{
+				wf, err := serviceClient.StopWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowStopRequest{
 					Name:              name,
 					Namespace:         namespace,
 					NodeFieldSelector: selector.String(),

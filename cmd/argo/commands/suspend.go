@@ -15,11 +15,11 @@ func NewSuspendCommand() *cobra.Command {
 		Use:   "suspend WORKFLOW1 WORKFLOW2...",
 		Short: "suspend zero or more workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			apiClient := CLIOpt.client
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, wfName := range args {
-				_, err := serviceClient.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{
+				_, err := serviceClient.SuspendWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowSuspendRequest{
 					Name:      wfName,
 					Namespace: namespace,
 				})
