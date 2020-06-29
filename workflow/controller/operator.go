@@ -2106,13 +2106,12 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 		}
 		if node.Outputs.Result != nil {
 			// Support the case where item may be a map
-			var itemMap map[string]wfv1.ItemValue
-			err := json.Unmarshal([]byte(*node.Outputs.Result), &itemMap)
-			if err == nil {
-				resultsList = append(resultsList, wfv1.Item{Type: wfv1.Map, MapVal: itemMap})
-			} else {
-				resultsList = append(resultsList, wfv1.Item{Type: wfv1.String, StrVal: *node.Outputs.Result})
+			var item wfv1.Item
+			err := json.Unmarshal([]byte(*node.Outputs.Result), &item)
+			if err != nil {
+				return err
 			}
+			resultsList = append(resultsList, item)
 		}
 	}
 	if tmpl.GetType() == wfv1.TemplateTypeScript {
@@ -2319,7 +2318,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	replaceMap := make(map[string]string)
 	var newName string
 
-	switch item.Type {
+	switch item.GetType() {
 	case wfv1.String, wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", item)
 		newName = generateNodeName(name, index, item)
@@ -2330,12 +2329,13 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		// the vals would be: ["name:jesse", "group:developer"]
 		// This would eventually be part of the step name (group:developer,name:jesse)
 		vals := make([]string, 0)
-		for itemKey, itemVal := range item.MapVal {
+		mapVal := item.GetMapVal()
+		for itemKey, itemVal := range mapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 			vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 
 		}
-		jsonByteVal, err := json.Marshal(item.MapVal)
+		jsonByteVal, err := json.Marshal(mapVal)
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
@@ -2345,12 +2345,13 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		sort.Strings(vals)
 		newName = generateNodeName(name, index, strings.Join(vals, ","))
 	case wfv1.List:
-		byteVal, err := json.Marshal(item.ListVal)
+		listVal := item.GetListVal()
+		byteVal, err := json.Marshal(listVal)
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
 		replaceMap["item"] = string(byteVal)
-		newName = generateNodeName(name, index, item.ListVal)
+		newName = generateNodeName(name, index, listVal)
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
@@ -2406,11 +2407,19 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 	if start <= end {
 		for i := start; i <= end; i++ {
-			items = append(items, wfv1.Item{Type: wfv1.String, StrVal: fmt.Sprintf(format, i)})
+			item, err := wfv1.ParseItem(`"` + fmt.Sprintf(format, i) + `"`)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, item)
 		}
 	} else {
 		for i := start; i >= end; i-- {
-			items = append(items, wfv1.Item{Type: wfv1.String, StrVal: fmt.Sprintf(format, i)})
+			item, err := wfv1.ParseItem(`"` + fmt.Sprintf(format, i) + `"`)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, item)
 		}
 	}
 	return items, nil

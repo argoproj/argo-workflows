@@ -1879,8 +1879,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "0", items[0].StrVal)
-	assert.Equal(t, "9", items[9].StrVal)
+	assert.Equal(t, "0", items[0].GetStrVal())
+	assert.Equal(t, "9", items[9].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Start: "101",
@@ -1889,8 +1889,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "101", items[0].StrVal)
-	assert.Equal(t, "110", items[9].StrVal)
+	assert.Equal(t, "101", items[0].GetStrVal())
+	assert.Equal(t, "110", items[9].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Start: "50",
@@ -1899,8 +1899,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 11, len(items))
-	assert.Equal(t, "50", items[0].StrVal)
-	assert.Equal(t, "60", items[10].StrVal)
+	assert.Equal(t, "50", items[0].GetStrVal())
+	assert.Equal(t, "60", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Start: "60",
@@ -1909,8 +1909,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 11, len(items))
-	assert.Equal(t, "60", items[0].StrVal)
-	assert.Equal(t, "50", items[10].StrVal)
+	assert.Equal(t, "60", items[0].GetStrVal())
+	assert.Equal(t, "50", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Count: "0",
@@ -1926,7 +1926,7 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(items))
-	assert.Equal(t, "8", items[0].StrVal)
+	assert.Equal(t, "8", items[0].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
@@ -1936,8 +1936,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "testuser01", items[0].StrVal)
-	assert.Equal(t, "testuser0A", items[9].StrVal)
+	assert.Equal(t, "testuser01", items[0].GetStrVal())
+	assert.Equal(t, "testuser0A", items[9].GetStrVal())
 }
 
 var metadataTemplate = `
@@ -3645,14 +3645,13 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 
 func TestGenerateNodeName(t *testing.T) {
 	assert.Equal(t, "sleep(10:ten)", generateNodeName("sleep", 10, "ten"))
-	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
-		Type:   wfv1.Map,
-		MapVal: map[string]string{"foo": "bar"},
-	}}))
-	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
-		Type:   wfv1.Number,
-		NumVal: "10",
-	}}))
+	item, err := wfv1.ParseItem(`[{"foo": "bar"}]`)
+	assert.NoError(t, err)
+	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, item))
+	assert.NoError(t, err)
+	item, err = wfv1.ParseItem("[10]")
+	assert.NoError(t, err)
+	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, item))
 }
 
 // This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
