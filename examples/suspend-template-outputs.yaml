@@ -2,8 +2,9 @@
 # with the 'argo set' command, the API with the '/set' endpoint, or directly via K8s.
 #
 # Example:
-#   argo set WF_NAME --node-field-selector displayName=approve --output-parameters '{"message": "Hello, World"}'
-#   argo resume WF_NAME
+#   argo set outputs my-wf '{"message": "Hello, world!"}' --node-field-selector displayName=approve
+#   argo set message my-wf 'Test message' --node-field-selector displayName=approve
+#   argo resume my-wf
 
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
