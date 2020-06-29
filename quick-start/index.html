@@ -1244,21 +1244,18 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 
 
 <p>If you are running Argo Workflows locally (e.g. using Minikube or Docker for Desktop), the open a port forward so you can access the namespace:</p>
-<p>```shell script
-kubectl -n argo port-forward deployment/argo-server 2746:2746</p>
-<div class="codehilite"><pre><span></span><span class="n">This</span> <span class="n">well</span> <span class="n">server</span> <span class="n">the</span> <span class="n">user</span> <span class="n">interface</span> <span class="n">on</span> <span class="nl">https</span><span class="p">:</span><span class="c1">//localhost:2746</span>
+<div class="codehilite"><pre><span></span>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
+</pre></div>
 
-<span class="n">If</span> <span class="n">you</span><span class="err">&#39;</span><span class="n">re</span> <span class="n">using</span> <span class="n">running</span> <span class="n">Argo</span> <span class="n">Workflows</span> <span class="n">on</span> <span class="n">a</span> <span class="n">remote</span> <span class="n">cluster</span> <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">g</span><span class="p">.</span> <span class="n">on</span> <span class="n">EKS</span> <span class="n">or</span> <span class="n">GKE</span><span class="p">)</span> <span class="n">then</span> <span class="p">[</span><span class="n">follow</span> <span class="n">these</span> <span class="n">instructions</span><span class="p">](</span><span class="n">argo</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">md</span><span class="err">#</span><span class="n">access</span><span class="o">-</span><span class="n">the</span><span class="o">-</span><span class="n">argo</span><span class="o">-</span><span class="n">workflows</span><span class="o">-</span><span class="n">ui</span><span class="p">).</span> 
 
-<span class="n">Next</span><span class="p">,</span> <span class="n">Download</span> <span class="n">the</span> <span class="n">latest</span> <span class="n">Argo</span> <span class="n">CLI</span> <span class="n">from</span> <span class="n">our</span> <span class="p">[</span><span class="n">releases</span> <span class="n">page</span><span class="p">](</span><span class="nl">https</span><span class="p">:</span><span class="c1">//github.com/argoproj/argo/releases).</span>
-
-<span class="n">Finally</span><span class="p">,</span> <span class="n">submit</span> <span class="n">an</span> <span class="n">example</span> <span class="nl">workflow</span><span class="p">:</span>  
-
-<span class="err">```</span><span class="n">sh</span>
-<span class="n">argo</span> <span class="n">submit</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="o">--</span><span class="n">watch</span> <span class="nl">https</span><span class="p">:</span><span class="c1">//raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml</span>
-<span class="n">argo</span> <span class="n">list</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span>
-<span class="n">argo</span> <span class="n">get</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="p">@</span><span class="n">latest</span>
-<span class="n">argo</span> <span class="n">logs</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="p">@</span><span class="n">latest</span>
+<p>This well server the user interface on https://localhost:2746</p>
+<p>If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then <a href="../argo-server/#access-the-argo-workflows-ui">follow these instructions</a>. </p>
+<p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo/releases">releases page</a>.</p>
+<p>Finally, submit an example workflow:  </p>
+<div class="codehilite"><pre><span></span>argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+argo list -n argo
+argo get -n argo @latest
+argo logs -n argo @latest
 </pre></div>
                 
                   

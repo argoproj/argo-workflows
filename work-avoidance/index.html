@@ -1196,17 +1196,17 @@
 <li>A workflow has unreliable tasks - you want to be able resubmit the workflow.</li>
 </ul>
 <p>A <strong>marker file</strong> is a file on that indicates the work has already been done, before doing the work you check to see if the marker has already been done:</p>
-<p>```shell script
-if [ -e /work/markers/name-of-task ]; then
-    echo "work already done"
-    exit 0
-fi
-echo "working very hard"
-touch /work/markers/name-of-task</p>
-<div class="codehilite"><pre><span></span><span class="nv">Choose</span> <span class="nv">a</span> <span class="nv">name</span> <span class="k">for</span> <span class="nv">the</span> <span class="nv">file</span> <span class="nv">that</span> <span class="nv">is</span> <span class="nv">unique</span> <span class="k">for</span> <span class="nv">the</span> <span class="nv">task</span>, <span class="nv">e</span>.<span class="nv">g</span>. <span class="nv">the</span> <span class="nv">template</span> <span class="nv">name</span> <span class="nv">and</span> <span class="nv">all</span> <span class="nv">the</span> <span class="nv">parameters</span>:
+<div class="codehilite"><pre><span></span><span class="k">if</span> <span class="o">[</span> -e /work/markers/name-of-task <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nb">echo</span> <span class="s2">&quot;work already done&quot;</span>
+    <span class="nb">exit</span> <span class="m">0</span>
+<span class="k">fi</span>
+<span class="nb">echo</span> <span class="s2">&quot;working very hard&quot;</span>
+touch /work/markers/name-of-task
+</pre></div>
 
-```<span class="nv">shell</span> <span class="nv">script</span>
-<span class="nv">touch</span> <span class="o">/</span><span class="nv">work</span><span class="o">/</span><span class="nv">markers</span><span class="o">/</span>$<span class="ss">(</span><span class="nv">date</span> <span class="o">+%</span><span class="nv">Y</span><span class="o">-%</span><span class="nv">m</span><span class="o">-%</span><span class="nv">d</span><span class="ss">)</span><span class="o">-</span><span class="nv">echo</span><span class="o">-</span>{{<span class="nv">inputs</span>.<span class="nv">parameters</span>.<span class="nv">num</span>}}
+
+<p>Choose a name for the file that is unique for the task, e.g. the template name and all the parameters:</p>
+<div class="codehilite"><pre><span></span>touch /work/markers/<span class="k">$(</span>date +%Y-%m-%d<span class="k">)</span>-echo-<span class="o">{{</span>inputs.parameters.num<span class="o">}}</span>
 </pre></div>
 
 

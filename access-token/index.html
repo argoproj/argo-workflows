@@ -609,9 +609,38 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Access Token
+      </label>
+    
     <a href="./" title="Access Token" class="md-nav__link md-nav__link--active">
       Access Token
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation" class="md-nav__link">
+    Token Revocation
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -1171,6 +1200,22 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#token-revocation" class="md-nav__link">
+    Token Revocation
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1187,50 +1232,49 @@
                 <h1 id="access-token">Access Token<a class="headerlink" href="#access-token" title="Permanent link">&para;</a></h1>
 <p>If you want to automate tasks with the Argo Server API or CLI, you will need an access token. </p>
 <p>Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:</p>
-<p>```shell script
-kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io </p>
-<div class="codehilite"><pre><span></span><span class="nv">Create</span> <span class="nv">a</span> <span class="nv">service</span> <span class="nv">account</span> <span class="k">for</span> <span class="nv">your</span> <span class="nv">service</span>:
+<div class="codehilite"><pre><span></span>kubectl create role jenkins --verb<span class="o">=</span>list,update --resource<span class="o">=</span>workflows.argoproj.io 
+</pre></div>
 
-```<span class="nv">shell</span> <span class="nv">script</span>
-<span class="nv">kubectl</span> <span class="nv">create</span> <span class="nv">sa</span> <span class="nv">jenkins</span>
+
+<p>Create a service account for your service:</p>
+<div class="codehilite"><pre><span></span>kubectl create sa jenkins
 </pre></div>
 
 
 <p>Bind the service account to the role (in this case in the <code>argo</code> namespace):</p>
-<p>```shell script
-kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins</p>
-<div class="codehilite"><pre><span></span><span class="n">You</span> <span class="n">now</span> <span class="n">need</span> <span class="k">to</span> <span class="k">get</span> <span class="n">a</span> <span class="n">token</span><span class="p">:</span>
+<div class="codehilite"><pre><span></span>kubectl create rolebinding jenkins --role<span class="o">=</span>jenkins --serviceaccount<span class="o">=</span>argo:jenkins
+</pre></div>
 
-<span class="o">```</span><span class="n">shell</span> <span class="n">script</span>
-<span class="n">SECRET</span><span class="o">=</span><span class="err">$</span><span class="p">(</span><span class="n">kubectl</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="k">get</span> <span class="n">sa</span> <span class="n">jenkins</span> <span class="o">-</span><span class="n">o</span><span class="o">=</span><span class="n">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="p">)</span>
-<span class="n">ARGO_TOKEN</span><span class="o">=</span><span class="err">$</span><span class="p">(</span><span class="n">kubectl</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="k">get</span> <span class="n">secret</span> <span class="err">$</span><span class="n">SECRET</span> <span class="o">-</span><span class="n">o</span><span class="o">=</span><span class="n">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="o">|</span> <span class="n">base64</span> <span class="c1">--decode)</span>
-<span class="n">echo</span> <span class="err">$</span><span class="n">ARGO_TOKEN</span>
-<span class="n">ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS</span><span class="p">...</span>
+
+<p>You now need to get a token:</p>
+<div class="codehilite"><pre><span></span><span class="nv">SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl -n argo get sa jenkins -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
+<span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="k">$(</span>kubectl -n argo get secret <span class="nv">$SECRET</span> -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span>
+<span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
+ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </pre></div>
 
 
 <p>Use that token with the CLI (you need to set <code>ARGO_SERVER</code> too):</p>
-<p>```shell script
-ARGO_SERVER=http://localhost:2746 
-argo list</p>
-<div class="codehilite"><pre><span></span><span class="n">Use</span> <span class="n">that</span> <span class="n">token</span> <span class="k">in</span> <span class="n">your</span> <span class="n">API</span> <span class="n">requests</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="k">g</span><span class="p">.</span> <span class="k">to</span> <span class="n">list</span> <span class="n">workflows</span><span class="p">:</span>
+<div class="codehilite"><pre><span></span><span class="nv">ARGO_SERVER</span><span class="o">=</span>http://localhost:2746 
+argo list
+</pre></div>
 
-<span class="o">```</span><span class="n">shell</span> <span class="n">script</span>
-<span class="n">curl</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">2746</span><span class="o">/</span><span class="n">api</span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">workflows</span><span class="o">/</span><span class="n">argo</span> <span class="o">-</span><span class="n">H</span> <span class="ss">&quot;Authorisation: Bearer $ARGO_TOKEN&quot;</span>
-<span class="o">#</span> <span class="mi">200</span> <span class="n">OK</span>
+
+<p>Use that token in your API requests, e.g. to list workflows:</p>
+<div class="codehilite"><pre><span></span>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorisation: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<span class="c1"># 200 OK</span>
 </pre></div>
 
 
 <p>You should check you cannot do things you're not allowed!</p>
-<p>```shell script
-curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Bearer $ARGO_TOKEN"</p>
-<h1 id="403-error">403 error<a class="headerlink" href="#403-error" title="Permanent link">&para;</a></h1>
-<div class="codehilite"><pre><span></span><span class="o">##</span> <span class="n">Token</span> <span class="n">Revocation</span>
+<div class="codehilite"><pre><span></span>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorisation: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<span class="c1"># 403 error</span>
+</pre></div>
 
-<span class="n">Token</span> <span class="n">compromised</span><span class="o">?</span>
 
-<span class="o">```</span><span class="n">shell</span> <span class="n">script</span>
-<span class="n">kubectl</span> <span class="k">delete</span> <span class="n">secret</span> <span class="err">$</span><span class="n">SECRET</span>
+<h2 id="token-revocation">Token Revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
+<p>Token compromised?</p>
+<div class="codehilite"><pre><span></span>kubectl delete secret <span class="nv">$SECRET</span>
 </pre></div>
 
 

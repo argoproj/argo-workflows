@@ -982,6 +982,33 @@
     Access the Argo Workflows UI
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-1-kubectl-port-forward" class="md-nav__link">
+    Method 1: kubectl port-forward
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-2-kubectl-proxy" class="md-nav__link">
+    Method 2: kubectl proxy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-3-expose-a-loadbalancer" class="md-nav__link">
+    Method 3: Expose a LoadBalancer
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
       
@@ -1332,6 +1359,33 @@
     Access the Argo Workflows UI
   </a>
   
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#method-1-kubectl-port-forward" class="md-nav__link">
+    Method 1: kubectl port-forward
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-2-kubectl-proxy" class="md-nav__link">
+    Method 2: kubectl proxy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method-3-expose-a-loadbalancer" class="md-nav__link">
+    Method 3: Expose a LoadBalancer
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
       
@@ -1394,50 +1448,43 @@ environment variable.</p>
 <h3 id="sso">SSO<a class="headerlink" href="#sso" title="Permanent link">&para;</a></h3>
 <p>See <a href="../argo-server-sso/">SSO</a>.</p>
 <h2 id="access-the-argo-workflows-ui">Access the Argo Workflows UI<a class="headerlink" href="#access-the-argo-workflows-ui" title="Permanent link">&para;</a></h2>
-<p>```shell script
-kubectl -n argo port-forward deployment/argo-server 2746:2746</p>
-<div class="codehilite"><pre><span></span><span class="k">Then</span> <span class="nv">visit</span>: <span class="nv">http</span>:<span class="o">//</span><span class="mi">127</span>.<span class="mi">0</span>.<span class="mi">0</span>.<span class="mi">1</span>:<span class="mi">2746</span>
-
-<span class="nv">By</span> <span class="nv">default</span>, <span class="nv">the</span> <span class="nv">Argo</span> <span class="nv">UI</span> <span class="nv">service</span> <span class="nv">is</span> <span class="nv">not</span> <span class="nv">exposed</span> <span class="nv">with</span> <span class="nv">an</span> <span class="nv">external</span> <span class="nv">IP</span>. <span class="nv">To</span> <span class="nv">access</span> <span class="nv">the</span> <span class="nv">UI</span>, <span class="nv">use</span> <span class="nv">one</span> <span class="nv">of</span> <span class="nv">the</span>
-<span class="nv">following</span>:
-
-### <span class="nv">Method</span> <span class="mi">1</span>: <span class="nv">kubectl</span> <span class="nv">port</span><span class="o">-</span><span class="nv">forward</span>
+<div class="codehilite"><pre><span></span>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
 </pre></div>
 
 
-<p>kubectl -n argo port-forward deployment/argo-server 2746:2746</p>
-<div class="codehilite"><pre><span></span><span class="k">Then</span> <span class="nv">visit</span>: <span class="nv">http</span>:<span class="o">//</span><span class="mi">127</span>.<span class="mi">0</span>.<span class="mi">0</span>.<span class="mi">1</span>:<span class="mi">8001</span>
-
-### <span class="nv">Method</span> <span class="mi">2</span>: <span class="nv">kubectl</span> <span class="nv">proxy</span>
+<p>Then visit: http://127.0.0.1:2746</p>
+<p>By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
+following:</p>
+<h3 id="method-1-kubectl-port-forward">Method 1: kubectl port-forward<a class="headerlink" href="#method-1-kubectl-port-forward" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><span class="n">kubectl</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="n">port</span><span class="o">-</span><span class="k">forward</span> <span class="n">deployment</span><span class="o">/</span><span class="n">argo</span><span class="o">-</span><span class="n">server</span> <span class="mi">2746</span><span class="p">:</span><span class="mi">2746</span>
 </pre></div>
 
 
-<p>kubectl proxy</p>
-<div class="codehilite"><pre><span></span><span class="k">Then</span> <span class="nv">visit</span>: <span class="nv">http</span>:<span class="o">//</span><span class="mi">127</span>.<span class="mi">0</span>.<span class="mi">0</span>.<span class="mi">1</span>:<span class="mi">8001</span><span class="o">/</span><span class="nv">api</span><span class="o">/</span><span class="nv">v1</span><span class="o">/</span><span class="nv">namespaces</span><span class="o">/</span><span class="nv">argo</span><span class="o">/</span><span class="nv">services</span><span class="o">/</span><span class="nv">argo</span><span class="o">-</span><span class="nv">ui</span><span class="o">/</span><span class="nv">proxy</span><span class="o">/</span>
-
-<span class="nv">NOTE</span>: <span class="nv">artifact</span> <span class="nv">download</span> <span class="nv">and</span> <span class="nv">webconsole</span> <span class="nv">is</span> <span class="nv">not</span> <span class="nv">supported</span> <span class="nv">using</span> <span class="nv">this</span> <span class="nv">method</span>
-
-### <span class="nv">Method</span> <span class="mi">3</span>: <span class="nv">Expose</span> <span class="nv">a</span> <span class="nv">LoadBalancer</span>
-
-<span class="nv">Update</span> <span class="nv">the</span> <span class="nv">argo</span><span class="o">-</span><span class="nv">ui</span> <span class="nv">service</span> <span class="nv">to</span> <span class="nv">be</span> <span class="nv">of</span> <span class="nv">type</span> `<span class="nv">LoadBalancer</span>`.
+<p>Then visit: http://127.0.0.1:8001</p>
+<h3 id="method-2-kubectl-proxy">Method 2: kubectl proxy<a class="headerlink" href="#method-2-kubectl-proxy" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><span class="n">kubectl</span> <span class="n">proxy</span>
 </pre></div>
 
 
-<p>kubectl patch svc argo-ui -n argo -p '{"spec": {"type": "LoadBalancer"}}'</p>
-<div class="codehilite"><pre><span></span><span class="k">Then</span> <span class="k">wait</span> <span class="k">for</span> <span class="nv">the</span> <span class="nv">external</span> <span class="nv">IP</span> <span class="nv">to</span> <span class="nv">be</span> <span class="nv">made</span> <span class="nv">available</span>:
+<p>Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-ui/proxy/</p>
+<p>NOTE: artifact download and webconsole is not supported using this method</p>
+<h3 id="method-3-expose-a-loadbalancer">Method 3: Expose a LoadBalancer<a class="headerlink" href="#method-3-expose-a-loadbalancer" title="Permanent link">&para;</a></h3>
+<p>Update the argo-ui service to be of type <code>LoadBalancer</code>.</p>
+<div class="codehilite"><pre><span></span><span class="n">kubectl</span> <span class="n">patch</span> <span class="n">svc</span> <span class="n">argo</span><span class="o">-</span><span class="n">ui</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="o">-</span><span class="n">p</span> <span class="s1">&#39;{&quot;spec&quot;: {&quot;type&quot;: &quot;LoadBalancer&quot;}}&#39;</span>
 </pre></div>
 
 
-<p>kubectl get svc argo-ui -n argo
-NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
-argo-ui   LoadBalancer   10.19.255.205   35.197.49.167   80:30999/TCP   1m</p>
-<div class="codehilite"><pre><span></span><span class="nv">NOTE</span>: <span class="nv">On</span> <span class="nv">Minikube</span>, <span class="nv">you</span> <span class="nv">won</span><span class="s1">&#39;</span><span class="s">t get an external IP after updating the service -- it will always show</span>
-`<span class="nv">pending</span>`. <span class="nv">Run</span> <span class="nv">the</span> <span class="nv">following</span> <span class="nv">command</span> <span class="nv">to</span> <span class="nv">determine</span> <span class="nv">the</span> <span class="nv">Argo</span> <span class="nv">UI</span> <span class="nv">URL</span>:
+<p>Then wait for the external IP to be made available:</p>
+<div class="codehilite"><pre><span></span><span class="n">kubectl</span> <span class="k">get</span> <span class="n">svc</span> <span class="n">argo</span><span class="o">-</span><span class="n">ui</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span>
+<span class="n">NAME</span>      <span class="k">TYPE</span>           <span class="k">CLUSTER</span><span class="o">-</span><span class="n">IP</span>      <span class="k">EXTERNAL</span><span class="o">-</span><span class="n">IP</span>     <span class="n">PORT</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>        <span class="n">AGE</span>
+<span class="n">argo</span><span class="o">-</span><span class="n">ui</span>   <span class="n">LoadBalancer</span>   <span class="mi">10</span><span class="p">.</span><span class="mi">19</span><span class="p">.</span><span class="mi">255</span><span class="p">.</span><span class="mi">205</span>   <span class="mi">35</span><span class="p">.</span><span class="mi">197</span><span class="p">.</span><span class="mi">49</span><span class="p">.</span><span class="mi">167</span>   <span class="mi">80</span><span class="p">:</span><span class="mi">30999</span><span class="o">/</span><span class="n">TCP</span>   <span class="mi">1</span><span class="n">m</span>
 </pre></div>
 
 
-<p>minikube service -n argo --url argo-ui
-```</p>
+<p>NOTE: On Minikube, you won't get an external IP after updating the service -- it will always show
+<code>pending</code>. Run the following command to determine the Argo UI URL:</p>
+<div class="codehilite"><pre><span></span><span class="n">minikube</span> <span class="n">service</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="c1">--url argo-ui</span>
+</pre></div>
                 
                   
                 
