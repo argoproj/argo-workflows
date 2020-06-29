@@ -368,6 +368,16 @@ func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		replacement, ok := replaceMap[tag]
 		if !ok {
+			// Attempt to resolve nested tags, if possible
+			if index := strings.LastIndex(tag, "{{"); index > 0 {
+				nestedTagPrefix := tag[:index]
+				nestedTag := tag[index+2:]
+				if replacement, ok := replaceMap[nestedTag]; ok {
+					replacement = strconv.Quote(replacement)
+					replacement = replacement[1 : len(replacement)-1]
+					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
+				}
+			}
 			if allowUnresolved {
 				// just write the same string back
 				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
