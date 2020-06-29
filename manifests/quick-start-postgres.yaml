@@ -509,7 +509,7 @@ spec:
         - --auth-mode
         - server
         - --auth-mode
-        - sso
+        - client
         image: argoproj/argocli:latest
         name: argo-server
         ports:
