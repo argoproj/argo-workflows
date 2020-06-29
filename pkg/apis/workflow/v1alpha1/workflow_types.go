@@ -1445,6 +1445,13 @@ func (g *GitArtifact) HasLocation() bool {
 	return g != nil && g.Repo != ""
 }
 
+func (g *GitArtifact) GetDepth() int {
+	if g == nil || g.Depth == nil {
+		return 0
+	}
+	return int(*g.Depth)
+}
+
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
 type ArtifactoryAuth struct {
 	// UsernameSecret is the secret selector to the repository username

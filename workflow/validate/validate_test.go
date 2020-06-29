@@ -2530,3 +2530,42 @@ func TestInvalidWfNoImageFieldScript(t *testing.T) {
 	_, err := validate(invalidWfNoImageScript)
 	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
 }
+
+var templateRefWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-param
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: some-param
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+var wfWithWFTRefOverrideParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: some-param
+      value: a-value
+  workflowTemplateRef:
+    name: template-ref-with-param
+`
+
+func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithParam)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefOverrideParam)
+	assert.NoError(t, err)
+}
