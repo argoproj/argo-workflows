@@ -259,6 +259,7 @@ func TestReapplyUpdate(t *testing.T) {
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
 		origCronWf:  cronWf.DeepCopy(),
+		name:        cronWf.Name,
 		log:         logrus.WithFields(logrus.Fields{}),
 		metrics:     &testMetrics,
 	}
