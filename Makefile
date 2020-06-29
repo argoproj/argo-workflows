@@ -514,7 +514,7 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	go test ./api/openapi-spec
 
 .PHONY: docs
-docs: swagger
+docs: api/openapi-spec/swagger.json
 	go run ./hack docgen
 
 # pre-push

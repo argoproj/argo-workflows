@@ -9,6 +9,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/spf13/cobra/doc"
+
+	commands "github.com/argoproj/argo/cmd/argo/commands"
 )
 
 const sectionHeader = `
@@ -339,8 +343,12 @@ func (c *DocGeneratorContext) generate() string {
 }
 
 func generateDocs() {
+	err := doc.GenMarkdownTree(commands.NewCommand(), "docs/cli")
+	if err != nil {
+		panic(err)
+	}
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
+	err = ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
 	if err != nil {
 		panic(err)
 	}
