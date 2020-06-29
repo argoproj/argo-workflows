@@ -316,6 +316,10 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 				return false, err
 			}
 		}
+		if wf.ObjectMeta.Labels == nil {
+			wf.ObjectMeta.Labels = make(map[string]string)
+		}
+		wf.ObjectMeta.Labels[common.LabelKeySuspended] = "true"
 		return true, nil
 	})
 	return err
@@ -368,6 +372,10 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 					return false, err
 				}
 			}
+			if wf.ObjectMeta.Labels == nil {
+				wf.ObjectMeta.Labels = make(map[string]string)
+			}
+			wf.ObjectMeta.Labels[common.LabelKeySuspended] = "false"
 			return true, nil
 		})
 		return err

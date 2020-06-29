@@ -53,6 +53,8 @@ const (
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
+	// LabelKeySuspended is the metadata label applied to workflows to indicate if a workflow is currently suspended
+	LabelKeySuspended = workflow.WorkflowFullName + "/suspended"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
