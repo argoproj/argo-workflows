@@ -18,28 +18,24 @@ spec:
   templates:
   - name: suspend
     steps:
+    - - name: build
+        template: whalesay
     - - name: approve
         template: approve
-    - - name: build
-        arguments:
-          parameters:
-            - name: test
-              value: "{{steps.approve.outputs.parameters.test}}"
+    - - name: delay
+        template: delay
+    - - name: release
         template: whalesay
 
   - name: approve
     suspend: {}
-    outputs:
-      parameters:
-        - name: test
-          valueFrom:
-            raw: {}
+
+  - name: delay
+    suspend:
+      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
 
   - name: whalesay
-    inputs:
-      parameters:
-        - name: test
     container:
       image: docker/whalesay
       command: [cowsay]
-      args: ["{{inputs.parameters.test}}"]
+      args: ["hello world"]
