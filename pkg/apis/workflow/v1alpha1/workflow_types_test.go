@@ -52,23 +52,23 @@ func TestWorkflowHappenedBetween(t *testing.T) {
 	t1 := t0.Add(time.Second)
 	t2 := t1.Add(time.Second)
 	t3 := t2.Add(time.Second)
-	assert.False(t, WorkflowHappenedBetween(t0, t3)(Workflow{}))
-	assert.False(t, WorkflowHappenedBetween(t0, t1)(Workflow{
+	assert.False(t, WorkflowRanBetween(t0, t3)(Workflow{}))
+	assert.False(t, WorkflowRanBetween(t0, t1)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
-	assert.False(t, WorkflowHappenedBetween(t1, t2)(Workflow{
+	assert.False(t, WorkflowRanBetween(t1, t2)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
-	assert.False(t, WorkflowHappenedBetween(t2, t3)(Workflow{
+	assert.False(t, WorkflowRanBetween(t2, t3)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
-	assert.False(t, WorkflowHappenedBetween(t0, t1)(Workflow{
+	assert.False(t, WorkflowRanBetween(t0, t1)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
-	assert.False(t, WorkflowHappenedBetween(t2, t3)(Workflow{
+	assert.False(t, WorkflowRanBetween(t2, t3)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
-	assert.True(t, WorkflowHappenedBetween(t0, t3)(Workflow{
+	assert.True(t, WorkflowRanBetween(t0, t3)(Workflow{
 		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
 		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
 }

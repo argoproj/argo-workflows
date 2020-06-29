@@ -119,7 +119,7 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		errors.CheckError(err)
 		endTime, err := argotime.ParseSince(flags.finishedAfter)
 		errors.CheckError(err)
-		workflows = workflows.Filter(wfv1.WorkflowHappenedBetween(*startTime, *endTime))
+		workflows = workflows.Filter(wfv1.WorkflowRanBetween(*startTime, *endTime))
 	} else {
 		if flags.createdSince != "" {
 			t, err := argotime.ParseSince(flags.createdSince)
