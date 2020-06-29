@@ -618,7 +618,6 @@ spec:
         duration: "1"
         factor: 1
         maxDuration: "10"
-        propagateMaxDuration: true
     container:
       image: python:alpine3.6
       command: [sh, -c]

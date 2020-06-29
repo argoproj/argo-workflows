@@ -3864,7 +3864,6 @@ spec:
         duration: "1"
         factor: 1
         maxDuration: "20"
-        propagateMaxDuration: true
     container:
       image: alpine
       command: [sh, -c]
@@ -3893,7 +3892,6 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 			Duration:             "0",
 			Factor:               1,
 			MaxDuration:          "20",
-			PropagateMaxDuration: true,
 		},
 	}
 	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node

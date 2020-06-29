@@ -992,11 +992,6 @@ type Backoff struct {
 	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
 	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
-	// PropagateMaxDuration is a flag to control if the max duration is propagated to child pods. If true, all child pods
-	// will have their activeDeadlineSeconds to the amount of time remaining in the backoff's maxDuration (if less that their
-	// existing value). This ensures that running pods terminate when the maxDuration is exceeded whereas normally the pod
-	// would be allowed to finish.
-	PropagateMaxDuration bool `json:"propagateMaxDuration,omitempty" protobuf:"varint,4,opt,name=propagateMaxDuration"`
 }
 
 // RetryStrategy provides controls on how to retry a workflow step

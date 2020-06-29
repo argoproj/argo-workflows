@@ -3283,7 +3283,6 @@ Backoff is a backoff strategy to use within retryStrategy
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|`int32`|Factor is a factor to multiply the base duration after each failed retry|
 |`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
-|`propagateMaxDuration`|`boolean`|PropagateMaxDuration is a flag to control if the max duration is propagated to child pods. If true, all child pods will have their activeDeadlineSeconds to the amount of time remaining in the backoff's maxDuration (if less that their existing value). This ensures that running pods terminate when the maxDuration is exceeded whereas normally the pod would be allowed to finish.|
 
 ## ContinueOn
 

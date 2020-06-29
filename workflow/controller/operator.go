@@ -692,11 +692,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
 
-		// If PropagateMaxDuration is set, ensure that child pods have an executionDeadline set to the maxDurationDeadline
-		if retryStrategy.Backoff.PropagateMaxDuration {
-			woc.log.WithField("node", node.Name).Infof("node has propagateMaxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
-			opts.executionDeadline = maxDurationDeadline
-		}
+		woc.log.WithField("node", node.Name).Infof("node has maxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
+		opts.executionDeadline = maxDurationDeadline
 
 		node = woc.markNodePhase(node.Name, node.Phase, "")
 	}

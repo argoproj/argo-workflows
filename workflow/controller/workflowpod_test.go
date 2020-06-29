@@ -1119,7 +1119,6 @@ retryStrategy:
     duration: "1"
     factor: 1
     maxDuration: "20"
-    propagateMaxDuration: true
 container:
   image: alpine
   command: [sh, -c]
