@@ -1,5 +1,8 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import * as moment from 'moment';
+
+export const labels = {
+    completed: 'workflows.argoproj.io/completed'
+};
 
 /**
  * Arguments to a template
@@ -55,6 +58,10 @@ export interface Artifact {
      * S3 contains S3 artifact location details
      */
     s3?: S3Artifact;
+    /**
+     * OSS contains Alibaba Cloud OSS artifact location details
+     */
+    oss?: OSSArtifact;
 }
 
 /**
@@ -84,6 +91,10 @@ export interface ArtifactLocation {
      * S3 contains S3 artifact location details
      */
     s3?: S3Artifact;
+    /**
+     * OSS contains Alibaba Cloud OSS artifact location details
+     */
+    oss?: OSSArtifact;
 }
 
 /**
@@ -308,6 +319,54 @@ export interface S3Bucket {
      * Region contains the optional bucket region
      */
     region?: string;
+    /**
+     * SecretKeySecret is the secret selector to the bucket's secret key
+     */
+    secretKeySecret: kubernetes.SecretKeySelector;
+}
+
+/**
+ * OSSArtifact is the location of an Alibaba Cloud OSS artifact
+ */
+export interface OSSArtifact {
+    /**
+     * AccessKeySecret is the secret selector to the bucket's access key
+     */
+    accessKeySecret: kubernetes.SecretKeySelector;
+    /**
+     * Bucket is the name of the bucket
+     */
+    bucket: string;
+    /**
+     * Endpoint is the hostname of the bucket endpoint
+     */
+    endpoint: string;
+    /**
+     * Key is the key in the bucket where the artifact resides
+     */
+    key: string;
+    /**
+     * SecretKeySecret is the secret selector to the bucket's secret key
+     */
+    secretKeySecret: kubernetes.SecretKeySelector;
+}
+
+/**
+ * OSSBucket contains the access information required for interfacing with an OSS bucket
+ */
+export interface OSSBucket {
+    /**
+     * AccessKeySecret is the secret selector to the bucket's access key
+     */
+    accessKeySecret: kubernetes.SecretKeySelector;
+    /**
+     * Bucket is the name of the bucket
+     */
+    bucket: string;
+    /**
+     * Endpoint is the hostname of the bucket endpoint
+     */
+    endpoint: string;
     /**
      * SecretKeySecret is the secret selector to the bucket's secret key
      */
@@ -590,25 +649,6 @@ export interface Workflow {
     status?: WorkflowStatus;
 }
 
-export function compareWorkflows(first: Workflow, second: Workflow) {
-    const iStart = first.metadata.creationTimestamp;
-    const iFinish = (first.status || {finishedAt: null}).finishedAt;
-    const jStart = second.metadata.creationTimestamp;
-    const jFinish = (second.status || {finishedAt: null}).finishedAt;
-
-    if (!iFinish && !jFinish) {
-        return moment(jStart).diff(iStart);
-    }
-
-    if (!iFinish && jFinish) {
-        return -1;
-    }
-    if (iFinish && !jFinish) {
-        return 1;
-    }
-    return moment(jStart).diff(iStart);
-}
-
 export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
@@ -660,7 +700,7 @@ export interface NodeStatus {
     finishedAt: kubernetes.Time;
 
     /**
-     * How much resource was used.
+     * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
 
@@ -720,6 +760,11 @@ export interface NodeStatus {
      * TemplateScope is the template scope in which the template of this node was retrieved.
      */
     templateScope?: string;
+
+    /**
+     * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.
+     */
+    hostNodeName: string;
 }
 
 export interface TemplateRef {
@@ -736,6 +781,10 @@ export interface TemplateRef {
      * By enabling this option, you can create the referred workflow template before the actual runtime.
      */
     runtimeResolution?: boolean;
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
+    clusterScope?: boolean;
 }
 
 export interface WorkflowStatus {
@@ -769,22 +818,28 @@ export interface WorkflowStatus {
     storedTemplates: {[name: string]: Template};
 
     /**
-     * ResourcesDuration tracks how much resources were used.
+     * ResourcesDuration tracks how much resources were requested.
      */
     resourcesDuration?: {[resource: string]: number};
 
     /**
      * Conditions is a list of WorkflowConditions
      */
-    conditions?: WorkflowCondition[];
+    conditions?: Condition[];
+
+    /**
+     * StoredWorkflowSpec is a Workflow Spec of top level WorkflowTemplate.
+     */
+    storedWorkflowSpec?: WorkflowSpec;
 }
 
-export interface WorkflowCondition {
-    type: WorkflowConditionType;
+export interface Condition {
+    type: ConditionType;
     status: ConditionStatus;
     message: string;
 }
-export type WorkflowConditionType = 'Completed' | 'SpecWarning' | 'MetricsError';
+
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
@@ -809,6 +864,23 @@ export interface WorkflowList {
  * WorkflowSpec is the specification of a Workflow.
  */
 export interface WorkflowSpec {
+    /**
+     * Optional duration in seconds relative to the workflow start time which the workflow is
+     * allowed to run before the controller terminates the workflow. A value of zero is used to
+     * terminate a Running workflow
+     */
+    activeDeadlineSeconds?: number;
+    /**
+     * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+     * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+     * deleted after the time to live expires. If this field is unset,
+     * the controller config map will hold the default values.
+     */
+    ttlStrategy?: {};
+    /**
+     * PodGC describes the strategy to use when to deleting completed pods
+     */
+    podGC?: {};
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
@@ -844,7 +916,7 @@ export interface WorkflowSpec {
     /**
      * Templates is a list of workflow templates used in a workflow
      */
-    templates: Template[];
+    templates?: Template[];
     /**
      * VolumeClaimTemplates is a list of claims that containers are allowed to reference.
      * The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow
@@ -859,6 +931,23 @@ export interface WorkflowSpec {
      * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
      */
     suspend?: boolean;
+
+    /**
+     * workflowTemplateRef is the reference to the workflow template resource to execute.
+     */
+    workflowTemplateRef?: WorkflowTemplateRef;
+}
+
+export interface WorkflowTemplateRef {
+    /**
+     * Name is the resource name of the template.
+     */
+    name: string;
+
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
+    clusterScope?: boolean;
 }
 
 export interface DAGTemplate {
@@ -921,9 +1010,13 @@ export interface WorkflowStep {
      * WithParam expands a step into from the value in the parameter
      */
     withParam?: string;
+    /**
+     * TemplateRef is the reference to the template resource which is used as the base of this template.
+     */
+    templateRef?: TemplateRef;
 }
 
-export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error';
+export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
 
 export const NODE_PHASE = {
     PENDING: 'Pending',
@@ -931,5 +1024,8 @@ export const NODE_PHASE = {
     SUCCEEDED: 'Succeeded',
     SKIPPED: 'Skipped',
     FAILED: 'Failed',
-    ERROR: 'Error'
+    ERROR: 'Error',
+    OMITTED: 'Omitted'
 };
+
+export type ResourceScope = 'local' | 'namespaced' | 'cluster';

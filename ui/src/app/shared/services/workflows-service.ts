@@ -3,6 +3,7 @@ import {Observable, Observer} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Workflow, WorkflowList} from '../../../models';
+import {Pagination} from '../pagination';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
@@ -14,16 +15,66 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public list(namespace: string, phases: string[], labels: string[]) {
-        return requests.get(`api/v1/workflows/${namespace}?${this.queryParams({phases, labels}).join('&')}`).then(res => res.body as WorkflowList);
+    public list(namespace: string, phases: string[], labels: string[], pagination: Pagination) {
+        const params = this.queryParams({phases, labels});
+        if (pagination.offset) {
+            params.push(`listOptions.continue=${pagination.offset}`);
+        }
+        if (pagination.limit) {
+            params.push(`listOptions.limit=${pagination.limit}`);
+        }
+        const fields = [
+            'metadata',
+            'items.metadata.uid',
+            'items.metadata.name',
+            'items.metadata.namespace',
+            'items.metadata.labels',
+            'items.status.phase',
+            'items.status.finishedAt',
+            'items.status.startedAt',
+            'items.spec.suspend'
+        ];
+        params.push(`fields=${fields.join(',')}`);
+        return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
 
     public get(namespace: string, name: string) {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     }
 
-    public watch(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
+    public watch(filter: {
+        namespace?: string;
+        name?: string;
+        phases?: Array<string>;
+        labels?: Array<string>;
+        resourceVersion?: string;
+    }): Observable<models.kubernetes.WatchEvent<Workflow>> {
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
+        return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
+    }
+
+    public watchFields(filter: {
+        namespace?: string;
+        name?: string;
+        phases?: Array<string>;
+        labels?: Array<string>;
+        resourceVersion?: string;
+    }): Observable<models.kubernetes.WatchEvent<Workflow>> {
+        const params = this.queryParams(filter);
+        const fields = [
+            'result.object.metadata.name',
+            'result.object.metadata.namespace',
+            'result.object.metadata.resourceVersion',
+            'result.object.metadata.uid',
+            'result.object.status.finishedAt',
+            'result.object.status.phase',
+            'result.object.status.startedAt',
+            'result.type',
+            'result.object.metadata.labels',
+            'result.object.spec.suspend'
+        ];
+        params.push(`fields=${fields.join(',')}`);
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
 
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
     }
@@ -54,6 +105,13 @@ export class WorkflowsService {
 
     public delete(name: string, namespace: string): Promise<WorkflowDeleteResponse> {
         return requests.delete(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as WorkflowDeleteResponse);
+    }
+
+    public submit(kind: string, name: string, namespace: string) {
+        return requests
+            .post(`api/v1/workflows/${namespace}/submit`)
+            .send({namespace, resourceKind: kind, resourceName: name})
+            .then(res => res.body as Workflow);
     }
 
     public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean): Observable<string> {
@@ -89,7 +147,7 @@ export class WorkflowsService {
             : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
     }
 
-    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}) {
+    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>; resourceVersion?: string}) {
         const queryParams: string[] = [];
         if (filter.name) {
             queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
@@ -97,6 +155,9 @@ export class WorkflowsService {
         const labelSelector = this.labelSelectorParams(filter.phases, filter.labels);
         if (labelSelector.length > 0) {
             queryParams.push(`listOptions.labelSelector=${labelSelector}`);
+        }
+        if (filter.resourceVersion) {
+            queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
         }
         return queryParams;
     }

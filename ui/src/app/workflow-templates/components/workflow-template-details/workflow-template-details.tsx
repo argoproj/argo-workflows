@@ -43,9 +43,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     public componentDidMount(): void {
         services.workflowTemplate
             .get(this.name, this.namespace)
-            .then(template => {
-                this.setState({template});
-            })
+            .then(template => this.setState({template}))
             .catch(error => this.setState({error}));
     }
 
@@ -134,14 +132,10 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                 namespace: template.metadata.namespace
             },
             spec: {
-                entrypoint: template.spec.templates[0].name,
-                templates: template.spec.templates.map(t => ({
-                    name: t.name,
-                    templateRef: {
-                        name: template.metadata.name,
-                        template: t.name
-                    }
-                }))
+                entrypoint: !!template.spec.templates ? template.spec.templates[0].name : '',
+                workflowTemplateRef: {
+                    name: template.metadata.name
+                }
             }
         };
     }

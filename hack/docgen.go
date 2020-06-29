@@ -79,7 +79,7 @@ func cleanDesc(desc string) string {
 
 func getRow(name, objType, desc string) string {
 	if index := strings.Index(desc, "DEPRECATED"); index != -1 {
-		return fmt.Sprintf(depTableRow, name, objType, "~"+desc[:index]+"~ "+desc[index:])
+		return fmt.Sprintf(depTableRow, name, objType, "~"+desc[:index-1]+"~ "+desc[index:])
 	}
 	return fmt.Sprintf(tableRow, name, objType, desc)
 }
@@ -133,8 +133,8 @@ func getObjectType(field map[string]interface{}, addToQueue func(string)) string
 			addToQueue(refString)
 
 			name := getNameFromFullName(refString)
-			if refString == "io.argoproj.workflow.v1alpha1.WorkflowStep" {
-				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
+			if refString == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
+				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", "WorkflowStep"), fmt.Sprintf("#"+strings.ToLower("WorkflowStep"))))
 			}
 			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
 		}
@@ -320,7 +320,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 func (c *DocGeneratorContext) generate() string {
 	c.loadFiles()
 
-	out := fmt.Sprintf(sectionHeader, "Argo Fields")
+	out := fmt.Sprintf("# Argo Fields")
 	for len(c.queue) > 0 {
 		var temp string
 		temp, c.queue = c.queue[0], c.queue[1:]

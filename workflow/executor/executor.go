@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
 	"compress/gzip"
@@ -11,13 +12,11 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"syscall"
 	"time"
 
 	argofile "github.com/argoproj/pkg/file"
@@ -36,6 +35,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 const (
@@ -133,7 +133,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.Errorf("", "required artifact %s not supplied", art.Name)
+				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
 		artDriver, err := we.InitDriver(&art)
@@ -164,9 +164,29 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		tempArtPath := artPath + ".tmp"
 		err = artDriver.Load(&art, tempArtPath)
 		if err != nil {
+			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
+				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
+				continue
+			}
 			return err
 		}
-		if isTarball(tempArtPath) {
+
+		isTar := false
+		if art.GetArchive().None != nil {
+			// explicitly not a tar
+			isTar = false
+		} else if art.GetArchive().Tar != nil {
+			// explicitly a tar
+			isTar = true
+		} else {
+			// auto-detect
+			isTar, err = isTarball(tempArtPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		if isTar {
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
@@ -409,6 +429,12 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
 	for _, inArt := range we.Template.Inputs.Artifacts {
 		if path == inArt.Path {
+			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
+			// the input artifact volume. Since this function was called, we know that we want to use this path as an
+			// ourput artifact, so we should look for it in the base image path.
+			if inArt.Optional && !inArt.HasLocation() {
+				return true
+			}
 			return false
 		}
 		if strings.HasPrefix(path, inArt.Path+"/") {
@@ -443,8 +469,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -455,8 +481,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			out, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -521,6 +547,10 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		shallowCopy := *we.Template.ArchiveLocation.GCS
 		art.GCS = &shallowCopy
 		art.GCS.Key = path.Join(art.GCS.Key, fileName)
+	} else if we.Template.ArchiveLocation.OSS != nil {
+		shallowCopy := *we.Template.ArchiveLocation.OSS
+		art.OSS = &shallowCopy
+		art.OSS.Key = path.Join(art.OSS.Key, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
@@ -791,11 +821,21 @@ func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(filePath string) bool {
-	cmd := exec.Command("tar", "-tf", filePath)
-	log.Info(cmd.Args)
-	err := cmd.Run()
-	return err == nil
+func isTarball(filePath string) (bool, error) {
+	log.Infof("Detecting if %s is a tarball", filePath)
+	f, err := os.Open(filePath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	gzr, err := gzip.NewReader(f)
+	if err != nil {
+		return false, nil
+	}
+	defer gzr.Close()
+	tarr := tar.NewReader(gzr)
+	_, err = tarr.Next()
+	return err == nil, nil
 }
 
 // untar extracts a tarball to a temporary directory,
@@ -963,7 +1003,7 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
 	// instead of waiting for the volume file to get updated (which can take minutes)
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR2)
+	signal.Notify(sigs, os_specific.GetOsSignal())
 
 	we.setExecutionControl()
 

@@ -5,6 +5,17 @@ repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
 and Minio. This section shows how to configure the artifact repository.
 Subsequent sections will show how to use it.
 
+| Name | Inputs | Outputs | Usage (Feb 2020) |
+|---|---|---|---|
+| Artifactory | Yes | Yes | 11% |
+| GCS | Yes | Yes | - |
+| Git | Yes | No | - |
+| HDFS | Yes | Yes | 3% |
+| HTTP | Yes | No | 2% |
+| OSS | Yes | Yes | - |
+| Raw | Yes | No | 5% |
+| S3 | Yes | Yes | 86% | 
+
 ## Configuring Minio
 
 ```
@@ -140,7 +151,7 @@ artifacts:
     s3:
       endpoint: storage.googleapis.com
       bucket: my-gcs-bucket-name
-      # NOTE that all output artifacts are automatically tarred and
+      # NOTE that, by default, all output artifacts are automatically tarred and
       # gzipped before saving. So as a best practice, .tgz or .tar.gz
       # should be incorporated into the key name so the resulting file
       # has an accurate file extension.
@@ -199,24 +210,23 @@ Example:
 $ kubectl edit configmap workflow-controller-configmap -n argo		# assumes argo was installed in the argo namespace
 ...
 data:
-  config: |
-    artifactRepository:
-      s3:
-        bucket: my-bucket
-        keyPrefix: prefix/in/bucket     #optional
-        endpoint: my-minio-endpoint.default:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
-        insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
-        accessKeySecret:                #omit if accessing via AWS IAM
-          name: my-minio-cred
-          key: accessKey
-        secretKeySecret:                #omit if accessing via AWS IAM
-          name: my-minio-cred
-          key: secretKey
-        useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
+  artifactRepository: |
+    s3:
+      bucket: my-bucket
+      keyFormat: prefix/in/bucket     #optional
+      endpoint: my-minio-endpoint.default:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
+      insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
+      accessKeySecret:                #omit if accessing via AWS IAM
+        name: my-minio-cred
+        key: accessKey
+      secretKeySecret:                #omit if accessing via AWS IAM
+        name: my-minio-cred
+        key: secretKey
+      useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
 ```
 
 The secrets are retrieved from the namespace you use to run your workflows. Note
-that you can specify a `keyPrefix`.
+that you can specify a `keyFormat`.
 
 ## Google Cloud Storage (GCS)
 
@@ -231,14 +241,13 @@ Example:
 $ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
 ...
 data:
-  config: |
-    artifactRepository:
-      gcs:
-        bucket: my-bucket
-        keyFormat: prefix/in/bucket     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
-        serviceAccountKeySecret:
-          name: my-gcs-credentials
-          key: serviceAccountKey
+  artifactRepository: |
+    gcs:
+      bucket: my-bucket
+      keyFormat: prefix/in/bucket     #optional, it could reference workflow variables, such as "{{workflow.name}}/{{pod.name}}"
+      serviceAccountKeySecret:
+        name: my-gcs-credentials
+        key: serviceAccountKey
 ```
 
 # Accessing Non-Default Artifact Repositories
@@ -273,7 +282,7 @@ configuring the default artifact repository described previously.
         s3:
           endpoint: storage.googleapis.com
           bucket: my-gcs-bucket-name
-          # NOTE that all output artifacts are automatically tarred and
+          # NOTE that, by default, all output artifacts are automatically tarred and
           # gzipped before saving. So as a best practice, .tgz or .tar.gz
           # should be incorporated into the key name so the resulting file
           # has an accurate file extension.

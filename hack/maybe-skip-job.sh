@@ -13,7 +13,7 @@ job=$1
 diffs=$(git diff --name-only origin/master)
 
 # if certain files change, then we always run
-[ "$(echo "$diffs" | grep Makefile)" != "" ] && exit
+[ "$(echo "$diffs" | grep 'Dockerfile\|Makefile')" != "" ] && exit
 
 # if there are changes to this areas, we must run
 rx=

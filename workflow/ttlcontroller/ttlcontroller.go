@@ -8,12 +8,9 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/clock"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -36,20 +33,7 @@ type Controller struct {
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(config *rest.Config, wfClientset wfclientset.Interface, namespace, instanceID string) *Controller {
-	filterCompletedWithTTL := func(options *metav1.ListOptions) {
-		// completed equals (true)
-		completedReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
-		if err != nil {
-			panic(err)
-		}
-		labelSelector := labels.NewSelector().
-			Add(*completedReq).
-			Add(util.InstanceIDRequirement(instanceID))
-		options.LabelSelector = labelSelector.String()
-	}
-	wfInformer := util.NewWorkflowInformer(config, namespace, workflowTTLResyncPeriod, filterCompletedWithTTL)
-
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
 	controller := &Controller{
 		wfclientset:  wfClientset,
 		wfInformer:   wfInformer,
@@ -58,12 +42,15 @@ func NewController(config *rest.Config, wfClientset wfclientset.Interface, names
 		clock:        clock.RealClock{},
 	}
 
-	wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueWF,
-		UpdateFunc: func(old, new interface{}) {
-			controller.enqueueWF(new)
+	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: common.UnstructuredHasCompletedLabel,
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: controller.enqueueWF,
+			UpdateFunc: func(old, new interface{}) {
+				controller.enqueueWF(new)
+			},
+			DeleteFunc: controller.enqueueWF,
 		},
-		DeleteFunc: controller.enqueueWF,
 	})
 	return controller
 }
@@ -198,45 +185,58 @@ func (c *Controller) deleteWorkflow(key string) error {
 }
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
+	ttlStrategy := getTTLStrategy(wf)
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
-	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
+	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return false
 	}
 	now := c.clock.Now()
-	if wf.Status.Failed() && wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterFailure != nil {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailure))
+
+	if wf.Status.Failed() && ttlStrategy != nil && ttlStrategy.SecondsAfterFailure != nil {
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterFailure))
 		return now.After(expiry)
-	} else if wf.Status.Successful() && wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess))
+	} else if wf.Status.Successful() && ttlStrategy != nil && ttlStrategy.SecondsAfterSuccess != nil {
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterSuccess))
 		return now.After(expiry)
 	} else {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterCompletion))
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterCompletion))
 		return now.After(expiry)
 	}
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
-	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
+	ttlStrategy := getTTLStrategy(wf)
+	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
+
 	sinceUTC := since.UTC()
 	finishAtUTC := wf.Status.FinishedAt.UTC()
 	if finishAtUTC.After(sinceUTC) {
 		log.Infof("Warning: Found Workflow %s/%s finished in the future. This is likely due to time skew in the cluster. Workflow cleanup will be deferred.", wf.Namespace, wf.Name)
 	}
-	if wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailure != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailure) * time.Second)
+	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
+		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else if wf.Status.Successful() && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess) * time.Second)
+	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
+		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterCompletion) * time.Second)
+	} else if ttlStrategy.SecondsAfterCompletion != nil {
+		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterCompletion) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
 	} else {
 		return nil, nil
 	}
+}
+
+func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy {
+	ttlStrategy := wf.Spec.TTLStrategy
+
+	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
+		return wf.Status.StoredWorkflowSpec.TTLStrategy
+	}
+	return ttlStrategy
 }

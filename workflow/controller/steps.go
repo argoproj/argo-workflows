@@ -38,7 +38,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	}
 
 	defer func() {
-		if woc.wf.Status.Nodes[node.ID].Completed() {
+		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
 			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
@@ -90,17 +90,16 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
 
-		if !sgNode.Completed() {
-			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
+		if !sgNode.Fulfilled() {
+			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
 
-		if !sgNode.Successful() {
+		if sgNode.FailedOrError() {
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
-			_ = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
-			return node, nil
+			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message), nil
 		}
 
 		// Add all outputs of each step in the group to the scope
@@ -149,6 +148,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	if outputs != nil {
 		node := woc.getNodeByName(nodeName)
 		node.Outputs = outputs
+		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
@@ -185,7 +185,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
 func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
 	node := woc.getNodeByName(sgNodeName)
-	if node.Completed() {
+	if node.Fulfilled() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return node
 	}
@@ -238,7 +238,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrParallelismReached:
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
+				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
 			}
@@ -255,11 +255,11 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
-		if !childNode.Completed() {
+		if !childNode.Fulfilled() {
 			completed = false
-		} else {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID, stepsCtx.tmplCtx)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+		} else if childNode.Completed() {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
 			}
@@ -275,9 +275,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
-		if !childNode.Successful() && !step.ContinuesOn(childNode.Phase) {
+		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
-			woc.log.Infof("Step group node %s deemed failed: %s", node, failMessage)
+			woc.log.Infof("Step group node %s deemed failed: %s", node.ID, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
@@ -336,7 +336,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err := woc.substituteParamsInVolumes(scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +349,8 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, errors.InternalWrapError(err)
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
+
+		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
 			return nil, err
 		}
@@ -465,25 +466,22 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)
-	localScope := make(map[string]string)
-	for key, val := range woc.globalParams {
-		localScope[key] = val
-	}
+	localScope := woc.globalParams.DeepCopy()
 
-	if node.Completed() {
-		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
-		realTimeScope["duration"] = func() float64 {
+	if node.Fulfilled() {
+		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}
 	} else {
-		localScope["duration"] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
-		realTimeScope["duration"] = func() float64 {
+		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
 	}
 
 	if node.Phase != "" {
-		localScope["status"] = string(node.Phase)
+		localScope[common.LocalVarStatus] = string(node.Phase)
 	}
 
 	if node.Inputs != nil {
@@ -500,6 +498,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
 			localScope[key] = *param.Value
+		}
+	}
+
+	if node.ResourcesDuration != nil {
+		localScope[common.LocalVarResourcesDuration] = node.ResourcesDuration.String()
+		for name, duration := range node.ResourcesDuration {
+			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = duration.String()
 		}
 	}
 

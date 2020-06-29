@@ -3,12 +3,10 @@ package controller
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/stretchr/testify/assert"
-
 	dto "github.com/prometheus/client_model/go"
-
+	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 )
 
@@ -60,11 +58,11 @@ func TestBasicMetric(t *testing.T) {
 	woc.operate()
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricDesc)
-	metric := controller.Metrics[metricDesc].(prometheus.Gauge)
-	metrtcString, err := getMetricStringValue(metric)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metric := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Gauge)
+	metricString, err := getMetricStringValue(metric)
 	assert.NoError(t, err)
-	assert.Contains(t, metrtcString, `label:<name:"name" value:"random-int" > gauge:<value:`)
+	assert.Contains(t, metricString, `label:<name:"name" value:"random-int" > gauge:<value:`)
 }
 
 var counterMetric = `
@@ -116,16 +114,16 @@ func TestCounterMetric(t *testing.T) {
 	woc.operate()
 
 	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricTotalDesc)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricTotalDesc))
 	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
-	assert.Contains(t, controller.Metrics, metricErrorDesc)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
 
-	metricTotalCounter := controller.Metrics[metricTotalDesc].(prometheus.Counter)
+	metricTotalCounter := controller.metrics.GetCustomMetric(metricTotalDesc).(prometheus.Counter)
 	metricTotalCounterString, err := getMetricStringValue(metricTotalCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricTotalCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
 
-	metricErrorCounter := controller.Metrics[metricErrorDesc].(prometheus.Counter)
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
@@ -138,4 +136,82 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 		return "", err
 	}
 	return proto.CompactTextString(metricString), nil
+}
+
+var testMetricEmissionSameOperationCreationAndFailure = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-05-14T14:30:31Z"
+  name: steps-s5rz4
+spec:
+  arguments: {}
+  entrypoint: steps-1
+  onExit: whalesay
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: steps-1
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: hello2a
+        template: steps-2
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        gauge: null
+        help: Failure
+        histogram: null
+        labels: null
+        name: failure
+        when: '{{status}} == Failed'
+    name: steps-2
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: hello1
+        template: whalesay
+        withParam: mary had a little lamb
+  - arguments: {}
+    container:
+      args:
+      - hello
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  phase: Running
+  startedAt: "2020-05-14T14:30:31Z"
+`
+
+func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(testMetricEmissionSameOperationCreationAndFailure)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	metricErrorDesc := wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
 }

@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,13 +14,13 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -31,6 +32,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/info"
@@ -39,7 +41,9 @@ import (
 	"github.com/argoproj/argo/server/workflowarchive"
 	"github.com/argoproj/argo/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo/util/grpc"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 const (
@@ -48,37 +52,65 @@ const (
 )
 
 type argoServer struct {
-	baseHRef         string
+	baseHRef string
+	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
+	tlsConfig        *tls.Config
+	hsts             bool
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	authenticator    auth.Gatekeeper
+	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
 }
 
 type ArgoServerOpts struct {
 	BaseHRef      string
+	TLSConfig     *tls.Config
 	Namespace     string
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
-	AuthMode      string
+	AuthModes     auth.Modes
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
+	HSTS             bool
 }
 
-func NewArgoServer(opts ArgoServerOpts) *argoServer {
+func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
+	ssoIf := sso.NullSSO
+	if opts.AuthModes[auth.SSO] {
+		c, err := configController.Get()
+		if err != nil {
+			return nil, err
+		}
+		ssoIf, err = sso.New(c.SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		if err != nil {
+			return nil, err
+		}
+		log.Info("SSO enabled")
+	} else {
+		log.Info("SSO disabled")
+	}
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf)
+	if err != nil {
+		return nil, err
+	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
+		tlsConfig:        opts.TLSConfig,
+		hsts:             opts.HSTS,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
-		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
+		authenticator:    gatekeeper,
+		oAuth2Service:    ssoIf,
+		configController: configController,
 		stopCh:           make(chan struct{}),
-	}
+	}, nil
 }
 
 var backoff = wait.Backoff{
@@ -88,31 +120,14 @@ var backoff = wait.Backoff{
 	Jitter:   0.1,
 }
 
-func (ao ArgoServerOpts) ValidateOpts() error {
-	validate := false
-	for _, item := range []string{
-		auth.Server,
-		auth.Hybrid,
-		auth.Client,
-	} {
-		if ao.AuthMode == item {
-			validate = true
-			break
-		}
-	}
-	if !validate {
-		return errors.Errorf("", "Invalid Authentication Mode. %s", ao.AuthMode)
-	}
-	return nil
-}
-
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	log.WithField("version", argo.GetVersion()).Info("Starting Argo Server")
+	log.WithField("version", argo.GetVersion().Version).Info("Starting Argo Server")
 
 	configMap, err := as.configController.Get()
 	if err != nil {
 		log.Fatal(err)
 	}
+	instanceIDService := instanceid.NewService(configMap.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
 	persistence := configMap.Persistence
@@ -129,10 +144,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), configMap.InstanceID)
+		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
-	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive, configMap.Links)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -152,6 +167,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		return
 	}
 
+	if as.tlsConfig != nil {
+		conn = tls.NewListener(conn, as.tlsConfig)
+	}
+
 	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
 	tcpm := cmux.New(conn)
 	httpL := tcpm.Match(cmux.HTTP1Fast())
@@ -161,14 +180,17 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	log.Infof("Argo Server started successfully on address %s", address)
-
-	browserOpenFunc("http://localhost" + address)
+	url := "http://localhost" + address
+	if as.tlsConfig != nil {
+		url = "https://localhost" + address
+	}
+	log.Infof("Argo Server started successfully on %s", url)
+	browserOpenFunc(url)
 
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -195,11 +217,11 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceID, offloadNodeStatusRepo))
-	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
-	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceID))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
+	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
+	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
-	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer())
+	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService))
 	return grpcServer
 }
 
@@ -211,14 +233,18 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{
-		Addr:    endpoint,
-		Handler: mux,
+		Addr:      endpoint,
+		Handler:   mux,
+		TLSConfig: as.tlsConfig,
 	}
-	var dialOpts []grpc.DialOption
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)))
-	//dialOpts = append(dialOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
-
-	dialOpts = append(dialOpts, grpc.WithInsecure())
+	dialOpts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+	}
+	if as.tlsConfig != nil {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
@@ -238,7 +264,10 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
+	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
+	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
+	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
 	return &httpServer
 }
 

@@ -1,15 +1,17 @@
 package commands
 
 import (
+	"context"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -23,8 +25,10 @@ type cliSubmitOpts struct {
 	output   string // --output
 	wait     bool   // --wait
 	watch    bool   // --watch
+	log      bool   // --log
 	strict   bool   // --strict
 	priority *int32 // --priority
+	getArgs  getFlags
 }
 
 func NewSubmitCommand() *cobra.Command {
@@ -41,6 +45,18 @@ func NewSubmitCommand() *cobra.Command {
 
   argo submit my-wf.yaml
 
+# Submit and wait for completion:
+
+  argo submit --wait my-wf.yaml
+
+# Submit and watch until completion:
+
+  argo submit --watch my-wf.yaml
+
+# Submit and tail logs until completion:
+
+  argo submit --log my-wf.yaml
+
 # Submit a single workflow from an existing resource
 
   argo submit --from cronwf/my-cron-wf
@@ -49,15 +65,22 @@ func NewSubmitCommand() *cobra.Command {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
 			}
+
+			if !cliSubmitOpts.watch && len(cliSubmitOpts.getArgs.status) > 0 {
+				logrus.Warn("--status should only be used with --watch")
+			}
+
+			apiClient := CLIOpt.client
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 			if from != "" {
 				if len(args) != 0 {
 					cmd.HelpFunc()(cmd, args)
 					os.Exit(1)
 				}
-
-				submitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
+				submitWorkflowFromResource(CLIOpt.ctx, serviceClient, namespace, from, &submitOpts, &cliSubmitOpts)
 			} else {
-				submitWorkflowsFromFile(args, &submitOpts, &cliSubmitOpts)
+				submitWorkflowsFromFile(CLIOpt.ctx, serviceClient, namespace, args, &submitOpts, &cliSubmitOpts)
 			}
 		},
 	}
@@ -66,17 +89,19 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
 	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
 	command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
+	command.Flags().StringVar(&cliSubmitOpts.getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
+	command.Flags().StringVar(&cliSubmitOpts.getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -85,7 +110,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func submitWorkflowsFromFile(filePaths []string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowsFromFile(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, filePaths []string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
 
@@ -95,7 +120,7 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *wfv1.SubmitOpts, cl
 		workflows = append(workflows, wfs...)
 	}
 
-	submitWorkflows(workflows, submitOpts, cliOpts)
+	submitWorkflows(ctx, serviceClient, namespace, workflows, submitOpts, cliOpts)
 }
 
 func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
@@ -139,7 +164,7 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 	}
 }
 
-func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 
 	parts := strings.SplitN(resourceIdentifier, "/", 2)
 	if len(parts) != 2 {
@@ -147,13 +172,12 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 	}
 	kind := parts[0]
 	name := parts[1]
-	
-	namespace := client.Namespace()
+
 	tempwf := wfv1.Workflow{}
 
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
 
-	created, err := CLIOpt.client.NewWorkflowServiceClient().SubmitFrom(CLIOpt.ctx, &workflowpkg.WorkflowSubmitFromRequest{
+	created, err := serviceClient.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 		Namespace:     namespace,
 		ResourceKind:  kind,
 		ResourceName:  name,
@@ -162,16 +186,13 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 	if err != nil {
 		log.Fatalf("Failed to submit workflow: %v", err)
 	}
-	printWorkflow(created, cliOpts.output, DefaultStatus)
 
-	waitOrWatch([]string{created.Name}, *cliOpts)
+	printWorkflow(created, getFlags{output: cliOpts.output})
+
+	waitWatchOrLog(ctx, serviceClient, namespace, []string{created.Name}, *cliOpts)
 }
 
-func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
-
-	//ctx, apiClient := client.NewAPIClient()
-	serviceClient := CLIOpt.client.NewWorkflowServiceClient()
-	namespace := client.Namespace()
+func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 
 	validateOptions(workflows, submitOpts, cliOpts)
 
@@ -194,21 +215,21 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 		if submitOpts.DryRun {
 			options.DryRun = []string{"All"}
 		}
-		created, err := serviceClient.CreateWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowCreateRequest{
+		created, err := serviceClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
 			Namespace:     wf.Namespace,
 			Workflow:      &wf,
-			InstanceID:    submitOpts.InstanceID,
 			ServerDryRun:  submitOpts.ServerDryRun,
 			CreateOptions: options,
 		})
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
-		printWorkflow(created, cliOpts.output, DefaultStatus)
+
+		printWorkflow(created, getFlags{output: cliOpts.output, status: cliOpts.getArgs.status})
 		workflowNames = append(workflowNames, created.Name)
 	}
 
-	waitOrWatch(workflowNames, *cliOpts)
+	waitWatchOrLog(ctx, serviceClient, namespace, workflowNames, *cliOpts)
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
@@ -230,10 +251,20 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	return nil
 }
 
-func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
+func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts cliSubmitOpts) {
+	if cliSubmitOpts.log {
+		for _, workflow := range workflowNames {
+			logWorkflow(ctx, serviceClient, namespace, workflow, "", &corev1.PodLogOptions{
+				Container: "main",
+				Follow:    true,
+			})
+		}
+	}
 	if cliSubmitOpts.wait {
-		WaitWorkflows(workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
+		waitWorkflows(ctx, serviceClient, namespace, workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
 	} else if cliSubmitOpts.watch {
-		watchWorkflow(workflowNames[0])
+		for _, workflow := range workflowNames {
+			watchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.getArgs)
+		}
 	}
 }

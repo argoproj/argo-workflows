@@ -1,7 +1,12 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
+	"strconv"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/fields"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -10,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/retry"
 )
 
@@ -56,4 +62,48 @@ func WriteTeriminateMessage(message string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// Merge the two parameters Slice
+// Merge the slices based on arguments order (first is high priority).
+func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
+	var resultParams []wfv1.Parameter
+	passedParams := make(map[string]bool)
+	for _, param := range params {
+		for _, item := range param {
+			if _, ok := passedParams[item.Name]; ok {
+				continue
+			}
+			resultParams = append(resultParams, item)
+			passedParams[item.Name] = true
+		}
+	}
+	return resultParams
+}
+
+func RecoverIndexFromNodeName(name string) int {
+	startIndex := strings.Index(name, "(")
+	endIndex := strings.Index(name, ":")
+	if startIndex < 0 || endIndex < 0 {
+		return -1
+	}
+	out, err := strconv.Atoi(name[startIndex+1 : endIndex])
+	if err != nil {
+		return -1
+	}
+	return out
+}
+
+func GenerateFieldSelectorFromWorkflowName(wfName string) string {
+	result := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String()
+	if compare := RecoverWorkflowNameFromSelectorString(result); wfName != compare {
+		panic(fmt.Sprintf("Could not recover field selector from workflow name. Expected '%s' but got '%s'\n", wfName, compare))
+	}
+	return result
+}
+
+func RecoverWorkflowNameFromSelectorString(selector string) string {
+	nameIndex := strings.Index(selector, "=")
+	name := selector[nameIndex+1:]
+	return name
 }

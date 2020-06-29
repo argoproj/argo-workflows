@@ -2,6 +2,36 @@
 
 .workflows-list {
   padding: 1em;
+
+  &__row-container {
+      a {
+        color: $argo-color-gray-6;
+      }
+
+      a:hover {
+        color: $argo-color-teal-5;
+      }
+  }
+
+  &__status {
+    max-width: 80px;
+    display: flex; 
+    align-items: center; 
+
+    &--checkbox {
+      margin-right: 12px;
+    }
+  }
+
+  &__link-wrapper {
+    display: flex;
+    width: 100%;
+  }
+
+  &__labels-container {
+    height: 100%;
+  }
+
   &__title {
     font-weight: bolder;
     font-size: 15px;

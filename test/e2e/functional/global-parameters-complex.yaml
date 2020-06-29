@@ -44,6 +44,6 @@ spec:
       - name: message3
       - name: message4
     container:
-      image: cowsay:v1
+      image: argoproj/argosay:v1
       command: [cowsay]
       args: ["Global 1: {{workflow.parameters.message1}} Input 1: {{inputs.parameters.message1}} Input 2/Steps Input 1/Global 1: {{inputs.parameters.message2}} Input 3/Global 2: {{inputs.parameters.message3}} Input4/Steps Input 2 internal/Global 1: {{inputs.parameters.message4}}"]

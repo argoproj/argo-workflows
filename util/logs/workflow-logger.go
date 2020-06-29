@@ -94,12 +94,15 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					default:
 						line := scanner.Text()
 						parts := strings.SplitN(line, " ", 2)
+						content := parts[1]
 						timestamp, err := time.Parse(time.RFC3339, parts[0])
 						if err != nil {
-							logCtx.Error(err)
-							return
+							logCtx.Errorf("unable to decode or infer timestamp from log line: %s", err)
+							// The current timestamp is the next best substitute. This won't be shown, but will be used
+							// for sorting
+							timestamp = time.Now()
+							content = line
 						}
-						content := parts[1]
 						// You might ask - why don't we let the client do this? Well, it is because
 						// this is the same as how this works for `kubectl logs`
 						if req.GetLogOptions().Timestamps {
@@ -160,20 +163,21 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					return
 				case event, open := <-wfWatch.ResultChan():
 					if !open {
-						logCtx.Info("Re-establishing workflow watch")
+						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch, err = wfInterface.Watch(wfListOptions)
 						if err != nil {
 							logCtx.Error(err)
 							return
 						}
+						continue
 					}
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
 						logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
 						return
 					}
-					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
-					if event.Type == watch.Deleted || wf.Status.Completed() {
+					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
+					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
 						return
 					}
 				}
@@ -198,6 +202,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							logCtx.Error(err)
 							return
 						}
+						continue
 					}
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {

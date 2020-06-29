@@ -9,6 +9,5 @@ spec:
   templates:
     - name: sleep-3s
       container:
-        image: cowsay:v1
-        command: [sh, -c, "sleep 3"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: ["sleep", "3s"]

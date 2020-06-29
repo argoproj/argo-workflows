@@ -34,7 +34,7 @@ spec:
   # generate a folder structure with directories
   - name: generate
     script:
-      image: cowsay:v1
+      image: argoproj/argosay:v1
       command: [sh, -xe]
       source: |
         sleep 1
@@ -61,7 +61,7 @@ spec:
       - name: hello
         path: /hello.txt
     container:
-      image: cowsay:v1
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["
         sleep 1 &&

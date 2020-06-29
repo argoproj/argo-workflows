@@ -1,7 +1,9 @@
 import * as React from 'react';
 
+import {Subscription} from 'rxjs';
 import * as models from '../../../../models';
 import {services} from '../../../shared/services';
+import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
 require('./workflow-logs-viewer.scss');
 
@@ -18,35 +20,18 @@ interface WorkflowLogsViewerState {
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
-    private logCoda: HTMLElement;
-
+    private subscription: Subscription = null;
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
         this.state = {lines: []};
     }
 
     public componentDidMount(): void {
-        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
-            log => {
-                if (log) {
-                    this.setState(state => {
-                        log.split('\n').forEach(line => {
-                            state.lines.push(line);
-                        });
-                        return state;
-                    });
-                }
-            },
-            error => {
-                this.setState({error});
-            }
-        );
+        this.refreshStream();
     }
 
-    public componentDidUpdate() {
-        if (this.logCoda) {
-            this.logCoda.scrollIntoView({behavior: 'auto'});
-        }
+    public componentWillUnmount(): void {
+        this.ensureUnsubscribed();
     }
 
     public render() {
@@ -76,14 +61,15 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     {!this.state.error && this.state.lines.length === 0 && !this.isCurrentNodeRunningOrPending() && <p>Pod did not output any logs.</p>}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
-                            <i className='fa fa-chevron-down' />
-                            <br />
-                            {this.state.lines.join('\n\r')}
-                            <br />
-                            <i
-                                className='fa fa-chevron-up'
-                                ref={el => {
-                                    this.logCoda = el;
+                            <FullHeightLogsViewer
+                                source={{
+                                    key: `${this.props.workflow.metadata.name}-${this.props.container}`,
+                                    loadLogs: () => {
+                                        return services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(log => {
+                                            return log ? log + '\n' : '';
+                                        });
+                                    },
+                                    shouldRepeat: () => this.isCurrentNodeRunningOrPending()
                                 }}
                             />
                         </div>
@@ -99,6 +85,32 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     </p>
                 )}
             </div>
+        );
+    }
+
+    private ensureUnsubscribed() {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+        this.subscription = null;
+    }
+
+    private refreshStream(): void {
+        this.ensureUnsubscribed();
+        this.subscription = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
+            log => {
+                if (log) {
+                    this.setState(state => {
+                        log.split('\n').forEach(line => {
+                            state.lines.push(line);
+                        });
+                        return state;
+                    });
+                }
+            },
+            error => {
+                this.setState({error});
+            }
         );
     }
 

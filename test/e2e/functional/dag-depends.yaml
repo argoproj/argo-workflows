@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: diamond
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: A
+            template: pass
+          - name: B
+            depends: "A"
+            template: pass
+          - name: C
+            depends: "A"
+            template: fail
+          - name: should-execute-1
+            depends: "A && (C.Succeeded || C.Failed)"
+            template: pass
+          - name: should-execute-2
+            depends: "B || C"
+            template: pass
+          - name: should-not-execute
+            depends: "B && C"
+            template: pass
+          - name: should-execute-3
+            depends: "should-execute-2.Succeeded || should-not-execute"
+            template: pass
+
+    - name: pass
+      container:
+        image: argoproj/argosay:v2
+
+    - name: fail
+      container:
+        image: argoproj/argosay:v2
+        args: ["exit 1"]

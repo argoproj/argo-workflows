@@ -27,9 +27,11 @@ spec:
             - name: MYSQL_RANDOM_ROOT_PASSWORD
               value: "yes"
           ports:
-            - containerPort: 5432
+            - containerPort: 3306
           readinessProbe:
             exec:
               command: ["mysql", "-u", "mysql", "-ppassword", "argo", "-e", "SELECT 1"]
             initialDelaySeconds: 15
             timeoutSeconds: 2
+      nodeSelector:
+        kubernetes.io/os: linux

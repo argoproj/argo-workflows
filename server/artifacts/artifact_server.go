@@ -17,18 +17,20 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type ArtifactServer struct {
-	authN                 auth.Gatekeeper
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	wfArchive             sqldb.WorkflowArchive
+	gatekeeper        auth.Gatekeeper
+	hydrator          hydrator.Interface
+	wfArchive         sqldb.WorkflowArchive
+	instanceIDService instanceid.Service
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive}
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -48,12 +50,11 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 
 	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
-	wf, err := a.getWorkflow(ctx, namespace, workflowName)
+	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
-
 	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -62,6 +63,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
+
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
 
 	ctx, err := a.gateKeeping(r)
@@ -70,6 +72,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	uid := path[2]
@@ -92,6 +95,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
+
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
@@ -105,16 +109,14 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.authN.Context(ctx)
+	return a.gatekeeper.Context(ctx)
 }
 
 func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
 	w.WriteHeader(200)
 	_, err := w.Write(data)
 	if err != nil {
-		w.WriteHeader(500)
-		_, _ = w.Write([]byte(err.Error()))
-		return
+		a.serverInternalError(err, w)
 	}
 }
 
@@ -158,26 +160,19 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	return file, nil
 }
 
-func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
+func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	err = packer.DecompressWorkflow(wf)
+	err = a.instanceIDService.Validate(wf)
 	if err != nil {
 		return nil, err
 	}
-	if wf.Status.IsOffloadNodeStatus() {
-		if a.offloadNodeStatusRepo.IsEnabled() {
-			offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return nil, err
-			}
-			wf.Status.Nodes = offloadedNodes
-		} else {
-			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabled)
-		}
+	err = a.hydrator.Hydrate(wf)
+	if err != nil {
+		return nil, err
 	}
 	return wf, nil
 }

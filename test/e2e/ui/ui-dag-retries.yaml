@@ -11,8 +11,8 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
-      command: [echo, "{{inputs.parameters.message}}"]
+      image: argoproj/argosay:v2
+      args: [echo, "{{inputs.parameters.message}}"]
     retryStrategy:
       limit: 1
   - name: echo-thrice

@@ -107,7 +107,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     private fetchCronWorkflows(): void {
         services.info
-            .get()
+            .getInfo()
             .then(info => {
                 if (info.managedNamespace && info.managedNamespace !== this.namespace) {
                     this.namespace = info.managedNamespace;

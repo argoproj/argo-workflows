@@ -38,6 +38,9 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if action == "delete" {
 		return "", "", nil
 	}
+	if action == "get" && len(out) == 0 {
+		return "", "", nil
+	}
 	obj := unstructured.Unstructured{}
 	err = json.Unmarshal(out, &obj)
 	if err != nil {
@@ -307,6 +310,14 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		if param.ValueFrom == nil {
 			continue
 		}
+		if resourceNamespace == "" && resourceName == "" {
+			output := ""
+			if param.ValueFrom.Default != nil {
+				output = string([]byte(*param.ValueFrom.Default))
+			}
+			we.Template.Outputs.Parameters[i].Value = &output
+			continue
+		}
 		var cmd *exec.Cmd
 		if param.ValueFrom.JSONPath != "" {
 			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
@@ -319,7 +330,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			if resourceNamespace != "" {
 				resArgs = append(resArgs, "-n", resourceNamespace)
 			}
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -c '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
+			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -rc '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
 			cmd = exec.Command("sh", "-c", cmdStr)
 		} else {
 			continue
@@ -328,8 +339,8 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		out, err := cmd.Output()
 		if err != nil {
 			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != "" {
-				out = []byte(param.ValueFrom.Default)
+			if param.ValueFrom.Default != nil {
+				out = []byte(*param.ValueFrom.Default)
 			} else {
 				if exErr, ok := err.(*exec.ExitError); ok {
 					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))

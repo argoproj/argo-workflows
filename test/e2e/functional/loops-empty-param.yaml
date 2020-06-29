@@ -33,6 +33,6 @@ spec:
       parameters:
       - name: seconds
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]

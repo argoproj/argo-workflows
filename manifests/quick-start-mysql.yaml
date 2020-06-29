@@ -163,6 +163,7 @@ rules:
   - events
   verbs:
   - create
+  - patch
 - apiGroups:
   - policy
   resources:
@@ -270,6 +271,9 @@ rules:
   - clusterworkflowtemplates
   - clusterworkflowtemplates/finalizers
   verbs:
+  - create
+  - delete
+  - watch
   - get
   - list
   - watch
@@ -338,6 +342,23 @@ subjects:
 ---
 apiVersion: v1
 data:
+  minio: |
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+kind: ConfigMap
+metadata:
+  name: artifact-repositories
+---
+apiVersion: v1
+data:
   artifactRepository: |
     archiveLogs: true
     s3:
@@ -350,8 +371,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -360,6 +379,7 @@ data:
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
   metricsConfig: |
+    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090
@@ -367,8 +387,10 @@ data:
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
+      connMaxLifetime: 0s
     nodeStatusOffLoad: true
     archive: true
+    archiveTTL: 7d
     mysql:
       host: mysql
       port: 3306
@@ -398,6 +420,14 @@ type: Opaque
 apiVersion: v1
 kind: Secret
 metadata:
+  name: argo-server-sso
+stringData:
+  clientID: argo-server
+  clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
+---
+apiVersion: v1
+kind: Secret
+metadata:
   labels:
     app: minio
   name: my-minio-cred
@@ -412,7 +442,8 @@ metadata:
   name: argo-server
 spec:
   ports:
-  - port: 2746
+  - name: web
+    port: 2746
     targetPort: 2746
   selector:
     app: argo-server
@@ -451,7 +482,8 @@ metadata:
   name: workflow-controller-metrics
 spec:
   ports:
-  - port: 9090
+  - name: metrics
+    port: 9090
     protocol: TCP
     targetPort: 9090
   selector:
@@ -474,10 +506,15 @@ spec:
       - args:
         - server
         - --namespaced
+        - --auth-mode
+        - server
+        - --auth-mode
+        - client
         image: argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
+          name: web
         readinessProbe:
           httpGet:
             path: /
@@ -485,6 +522,8 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+      nodeSelector:
+        kubernetes.io/os: linux
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -516,7 +555,7 @@ spec:
         image: mysql:8
         name: main
         ports:
-        - containerPort: 5432
+        - containerPort: 3306
         readinessProbe:
           exec:
             command:
@@ -529,6 +568,8 @@ spec:
             - SELECT 1
           initialDelaySeconds: 15
           timeoutSeconds: 2
+      nodeSelector:
+        kubernetes.io/os: linux
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -554,6 +595,8 @@ spec:
         - workflow-controller
         image: argoproj/workflow-controller:latest
         name: workflow-controller
+      nodeSelector:
+        kubernetes.io/os: linux
       serviceAccountName: argo
 ---
 apiVersion: v1

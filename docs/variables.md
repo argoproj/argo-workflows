@@ -14,8 +14,9 @@ The following variables are made available to reference various metadata of a wo
 |----------|------------|
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
+| `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
-| `steps.<STEPNAME>.outputs.exitCode` | Exit code of any previous script step |
+| `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
@@ -24,8 +25,9 @@ The following variables are made available to reference various metadata of a wo
 |----------|------------|
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
+| `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
-| `tasks.<TASKNAME>.outputs.exitCode` | Exit code of any previous script task |
+| `tasks.<STEPNAME>.outputs.parameters` | When the previous task uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
@@ -33,6 +35,7 @@ The following variables are made available to reference various metadata of a wo
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
+| `retries` | The retry number of the container/script if retryStrategy is specified |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
@@ -54,6 +57,7 @@ step.
 | `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
 | `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
 | `outputs.result` | Output result of the metric-emitting template |
+| `resourcesDuration` | Resources duration as a string. Can also be indexed for a selected resource, if available (may be one of `resourcesDuration.cpu` or `resourcesDuration.memory`. For more info, see the [Resource Duration](resource-duration.md) doc.|
 
 ### Realtime Metrics
 
@@ -72,6 +76,7 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.name` | Workflow name |
 | `workflow.namespace` | Workflow namespace |
+| `workflow.serviceAccountName` | Workflow service account name |
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
 | `workflow.parameters` | All input parameters to the workflow as a JSON string |
@@ -88,4 +93,4 @@ For `Template`-level metrics:
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
-| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Includes `name`, `message`, `templateName`, `finishedAt`, and `phase`. |
+| `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |

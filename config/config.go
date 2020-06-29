@@ -2,14 +2,23 @@ package config
 
 import (
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth/sso"
 )
 
 var emptyConfig = Config{}
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
+	// SSO in settings for single-sign on
+	SSO sso.Config `json:"sso,omitempty"`
+
+	// NodeEvents configures how node events are omitted
+	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+
 	// ExecutorImage is the image name of the executor to use when running pods
 	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`
@@ -53,14 +62,13 @@ type Config struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	// MetricsConfig specifies configuration for metrics emission
-	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
+	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
+	// by default.
+	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
 
-	// FeatureFlags for general/experimental features
-	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
-
-	// TelemetryConfig specifies configuration for telemetry emission
-	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
+	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
+	// as metrics by default, but can be overridden using this config.
+	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -77,20 +85,17 @@ type Config struct {
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
-	// PodSpecLogStrategy enable the logging of podspec on controller log.
+	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+
+	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
+	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
 type PodSpecLogStrategy struct {
 	FailedPod bool `json:"failedPod,omitempty"`
 	AllPods   bool `json:"allPods,omitempty"`
-}
-
-// More general feature flags.
-type FeatureFlags struct {
-	// ResourcesDuration.
-	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
@@ -131,11 +136,22 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
-	Archive        bool              `json:"archive,omitempty"`
+	Archive bool `json:"archive,omitempty"`
+	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
+	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
+	// in days
+	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
+}
+
+func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
+	if c.ArchiveLabelSelector == nil {
+		return labels.Everything(), nil
+	}
+	return metav1.LabelSelectorAsSelector(c.ArchiveLabelSelector)
 }
 
 func (c PersistConfig) GetClusterName() string {
@@ -146,16 +162,18 @@ func (c PersistConfig) GetClusterName() string {
 }
 
 type ConnectionPool struct {
-	MaxIdleConns int `json:"maxIdleConns"`
-	MaxOpenConns int `json:"maxOpenConns"`
+	MaxIdleConns    int `json:"maxIdleConns,omitempty"`
+	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
+	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
+
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	TableName      string                  `json:"tableName,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 	SSL            bool                    `json:"ssl,omitempty"`
 	SSLMode        string                  `json:"sslMode,omitempty"`
 }
@@ -164,10 +182,10 @@ type MySQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName"`
-	Options        map[string]string       `json:"options"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	TableName      string                  `json:"tableName,omitempty"`
+	Options        map[string]string       `json:"options,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
@@ -216,10 +234,44 @@ type HDFSArtifactRepository struct {
 	Force bool `json:"force,omitempty"`
 }
 
-// PrometheusConfig defines a config for a metrics server
-type PrometheusConfig struct {
-	Enabled       bool   `json:"enabled,omitempty"`
-	DisableLegacy bool   `json:"disableLegacy"`
-	Path          string `json:"path,omitempty"`
-	Port          string `json:"port,omitempty"`
+// MetricsConfig defines a config for a metrics server
+type MetricsConfig struct {
+	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
+	Enabled *bool `json:"enabled,omitempty"`
+	// DisableLegacy turns off legacy metrics
+	// DEPRECATED: Legacy metrics are now removed, this field is ignored
+	DisableLegacy bool `json:"disableLegacy,omitempty"`
+	// MetricsTTL sets how often custom metrics are cleared from memory
+	MetricsTTL TTL `json:"metricsTTL,omitempty"`
+	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
+	Path string `json:"path,omitempty"`
+	// Port is the port where metrics are emitted. Default is "9090"
+	Port string `json:"port,omitempty"`
+	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
+	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
+}
+
+type WorkflowRestrictions struct {
+	TemplateReferencing TemplateReferencing `json:"templateReferencing"`
+}
+
+type TemplateReferencing string
+
+const (
+	TemplateReferencingStrict TemplateReferencing = "Strict"
+	TemplateReferencingSecure TemplateReferencing = "Secure"
+)
+
+func (req *WorkflowRestrictions) MustUseReference() bool {
+	if req == nil {
+		return false
+	}
+	return req.TemplateReferencing == TemplateReferencingStrict || req.TemplateReferencing == TemplateReferencingSecure
+}
+
+func (req *WorkflowRestrictions) MustNotChangeSpec() bool {
+	if req == nil {
+		return false
+	}
+	return req.TemplateReferencing == TemplateReferencingSecure
 }

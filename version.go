@@ -3,6 +3,8 @@ package argo
 import (
 	"fmt"
 	"runtime"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // Version information set by link flags during build. We fall back to these sane
@@ -15,24 +17,8 @@ var (
 	gitTreeState = ""                     // determined from `git status --porcelain`. either 'clean' or 'dirty'
 )
 
-// Version contains Argo version information
-type Version struct {
-	Version      string
-	BuildDate    string
-	GitCommit    string
-	GitTag       string
-	GitTreeState string
-	GoVersion    string
-	Compiler     string
-	Platform     string
-}
-
-func (v Version) String() string {
-	return v.Version
-}
-
 // GetVersion returns the version information
-func GetVersion() Version {
+func GetVersion() wfv1.Version {
 	var versionStr string
 	if gitCommit != "" && gitTag != "" && gitTreeState == "clean" {
 		// if we have a clean tree state and the current commit is tagged,
@@ -51,7 +37,7 @@ func GetVersion() Version {
 			versionStr += "+unknown"
 		}
 	}
-	return Version{
+	return wfv1.Version{
 		Version:      versionStr,
 		BuildDate:    buildDate,
 		GitCommit:    gitCommit,

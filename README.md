@@ -1,6 +1,5 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
-[![CircleCI](https://circleci.com/gh/argoproj/argo.svg?style=svg)](https://circleci.com/gh/argoproj/argo)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=argoproj_argo&metric=alert_status)](https://sonarcloud.io/dashboard?id=argoproj_argo)
+![CI](https://github.com/argoproj/argo/workflows/CI/badge.svg)
 
 ![Argo Image](docs/assets/argo.png)
 
@@ -8,9 +7,11 @@
 Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
 
 * Define workflows where each step in the workflow is a container.
-* Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a graph (DAG).
+* Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a directed acyclic graph (DAG).
 * Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.
 * Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.
+
+Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
 
 ## Why Argo Workflows?
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
@@ -33,8 +34,13 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
+* UI to visualize and manage Workflows
+* Artifact support (S3, Artifactory, Alibaba Cloud OSS, HTTP, Git, GCS, raw)
+* Workflow templating to store commonly used Workflows in the cluster
+* Archiving Workflows after executing for later access
+* Scheduled workflows
+* Server interface with REST API
 * DAG or Steps based declaration of workflows
-* Artifact support (S3, Artifactory, HTTP, Git, raw)
 * Step level input & outputs (artifacts/parameters)
 * Loops
 * Parameterization
@@ -53,6 +59,15 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * Daemoned steps
 * DinD (docker-in-docker)
 * Script steps
+* Event emission
+* Prometheus metrics
+* Multiple executors
+* Multiple pod and workflow garbage collection strategies
+* Automatically calculated resource usage per step
+* Pod Disruption Budget support
+
+## Community Meetings
+We host monthly community meetings where we and the community showcase demos and discuss the current and future state of the project. Feel free to join us! For Community Meeting information, minutes and recordings please [see here](https://bit.ly/argo-wf-cmty-mtng).
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
@@ -63,9 +78,8 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
-* [Community meeting minutes and recordings](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE)
 
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
-* Argo website: https://argoproj.github.io/
+* Argo Website: https://argoproj.github.io/
 * Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)

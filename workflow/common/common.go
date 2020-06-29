@@ -3,6 +3,8 @@ package common
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
@@ -55,6 +57,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
+	// LabelKeyPreviousWorkflowName is a label applied to resubmitted workflows
+	LabelKeyPreviousWorkflowName = workflow.WorkflowFullName + "/resubmitted-from-workflow"
 	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
@@ -114,6 +118,8 @@ const (
 	GlobalVarWorkflowName = "workflow.name"
 	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
 	GlobalVarWorkflowNamespace = "workflow.namespace"
+	// GlobalVarWorkflowServiceAccountName is a global workflow variable referencing the workflow's spec.serviceAccountName field
+	GlobalVarWorkflowServiceAccountName = "workflow.serviceAccountName"
 	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
@@ -130,6 +136,14 @@ const (
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
+	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
+	LocalVarRetries = "retries"
+	// LocalVarDuration is a step level variable (currently only available in metric emission) that tracks the duration of the step
+	LocalVarDuration = "duration"
+	// LocalVarStatus is a step level variable (currently only available in metric emission) that tracks the duration of the step
+	LocalVarStatus = "status"
+	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
+	LocalVarResourcesDuration = "resourcesDuration"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -149,4 +163,11 @@ type ExecutionControl struct {
 	Deadline *time.Time `json:"deadline,omitempty"`
 	// IncludeScriptOutput is containing flag to include script output
 	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
+}
+
+func UnstructuredHasCompletedLabel(obj interface{}) bool {
+	if wf, ok := obj.(*unstructured.Unstructured); ok {
+		return wf.GetLabels()[LabelKeyCompleted] == "true"
+	}
+	return false
 }

@@ -92,7 +92,7 @@ spec:
       annotation2: value2
   workflowSpec:
     entrypoint: whalesay
-    templates:
+    templateRef:
       - name: whalesay
         container:
           image: docker/whalesay:latest
@@ -127,7 +127,7 @@ spec:
         parameters:
           - name: message
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v1
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
         imagePullPolicy: IfNotPresent
@@ -139,8 +139,24 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
+	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
 	assert.NotNil(t, wf)
-	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
-	assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
+	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/workflow-template"])
+	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+	assert.False(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
+}
+
+func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
+	var wfTmpl v1alpha1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
+	if err != nil {
+		panic(err)
+	}
+	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, true)
+	assert.NotNil(t, wf)
+	assert.Equal(t, "workflow-template-whalesay-template", wf.Labels["workflows.argoproj.io/cluster-workflow-template"])
+	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+	assert.True(t, wf.Spec.WorkflowTemplateRef.ClusterScope)
 }

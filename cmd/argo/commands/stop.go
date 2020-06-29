@@ -25,6 +25,13 @@ func NewStopCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "stop WORKFLOW WORKFLOW2...",
 		Short: "stop zero or more workflows",
+		Example: `# Stop about a workflow:
+
+  argo stop my-wf
+
+# Stop the latest workflow:
+  argo stop @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 
 			apiClient := CLIOpt.client

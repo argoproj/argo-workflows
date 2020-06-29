@@ -36,3 +36,64 @@ func TestNewListCommand(t *testing.T) {
 	assert.Contains(t, output, "hello-world")
 	assert.Contains(t, output, "Succeeded")
 }
+
+func Test_listWorkflows(t *testing.T) {
+	t.Run("Nothing", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{}, listFlags{})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
+	t.Run("Status", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/phase in (Pending,Running)"}, listFlags{status: []string{"Running", "Pending"}})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
+	t.Run("Completed", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed=true"}, listFlags{completed: true})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
+	t.Run("Running", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "workflows.argoproj.io/completed!=true"}, listFlags{running: true})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
+	t.Run("Labels", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: "foo"}, listFlags{labels: "foo"})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
+	t.Run("Prefix", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{}, listFlags{prefix: "foo-"})
+		if assert.NoError(t, err) {
+			assert.Len(t, workflows, 1)
+		}
+	})
+	t.Run("Since", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{}, listFlags{createdSince: "1h"})
+		if assert.NoError(t, err) {
+			assert.Len(t, workflows, 1)
+		}
+	})
+	t.Run("Older", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{}, listFlags{finishedAfter: "1h"})
+		if assert.NoError(t, err) {
+			assert.Len(t, workflows, 1)
+		}
+	})
+}
+
+func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
+	c := &workflowmocks.WorkflowServiceClient{}
+	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
+		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
+	}}, nil)
+	workflows, err := listWorkflows(context.Background(), c, flags)
+	return workflows, err
+}

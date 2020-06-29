@@ -18,6 +18,14 @@ data:
     # (available since Argo v2.3)
     parallelism: 10
 
+    # Whether or not to emit events on node completion. These can take a up a lot of space in
+    # k8s (typically etcd) resulting in errors when trying to create new events:
+    # "Unable to create audit event: etcdserver: mvcc: database space exceeded"
+    # This config item allows you to disable this.
+    # (since v2.9)
+    nodeEvents:
+      enabled: true
+
     # uncomment flowing lines if workflow controller runs in a different k8s cluster with the 
     # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
     # kubeconfig secret
@@ -38,10 +46,6 @@ data:
       - name: Example Pod Link
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
-
-    featureFlags:
-      # Enable resource duration
-      resourcesDuration: false
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
@@ -121,14 +125,25 @@ data:
       - name: ARGO_TRACE
         value: "1"
 
-    # metricsConfig controls the path and port for prometheus metrics
+    # metricsConfig controls the path and port for prometheus metrics. Metrics are enabled and emitted on localhost:9090/metrics
+    # by default.
     metricsConfig:
-      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
+      # Enabled controls metric emission. Default is true, set "enabled: false" to turn off
       enabled: true
+      # Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
       path: /metrics
+      # Port is the port where metrics are emitted. Default is "9090"
       port: 8080
+      # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+      metricsTTL: "10m"
+      # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
+      ignoreErrors: false
 
-    # telemetryConfig controls the path and port for prometheus telemetry
+      # DEPRECATED: Legacy metrics are now removed, this field is ignored
+      disableLegacy: false
+
+    # telemetryConfig controls the path and port for prometheus telemetry. Telemetry is enabled and emitted in the same endpoint
+    # as metrics by default, but can be overridden using this config.
     telemetryConfig:
       enabled: true
       path: /telemetry
@@ -139,10 +154,20 @@ data:
       connectionPool:
         maxIdleConns: 100
         maxOpenConns: 0
+        connMaxLifetime: 0s # 0 means connections don't have a max lifetime
       #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
       nodeStatusOffLoad: false
       # save completed workloads to the workflow archive
       archive: false
+      # the number of days to keep archived workflows (the default is forever)
+      archiveTTL: 180d
+
+      # LabelSelector determines the workflow that matches with the matchlabels or matchrequirements, will be archived.
+      # https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+      archiveLabelSelector:
+        matchLabels:
+          workflows.argoproj.io/archive-strategy: "always"
+
       # Optional name of the cluster I'm running in. This must be unique for your cluster.
       clusterName: default
       postgresql:
@@ -183,3 +208,32 @@ data:
         ttlStrategy:
           secondsAfterSuccess: 5
         parallelism: 3
+
+    # SSO Configuration for the Argo server.
+    sso:
+      # This is the root URL of the OIDC provider (required).
+      issuer: https://issuer.root.url/
+      # This is name of the secret and the key in it that contain OIDC client
+      # ID issued to the application by the provider (required).
+      clientId:
+        name: client-id-secret
+        key: client-id-key
+      # This is name of the secret and the key in it that contain OIDC client
+      # secret issued to the application by the provider (required).
+      clientSecret:
+        name: client-secret-secret
+        key: client-secret-key
+      # This is the redirect URL supplied to the provider (required). It must
+      # be in the form <argo-server-root-url>/oauth2/callback. It must be
+      # browser-accessible.
+      redirectUrl: https://argo-server/oauth2/callback
+
+    # workflowRequirements restricts the Workflows that the controller will process.
+    # Current options:
+    #   referenceOnly: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller
+    #     to set a "library" of templates that may be run by its opeartor, limiting arbitrary Workflow execution.
+    #   strictReferenceOnly: Only Workflows using "workflowTemplateRef" will be processed and the controller will enforce
+    #     that the WorkflowTemplate that is referenced hasn't changed between operations. If you want to make sure the operator of the
+    #     Workflow cannot run an arbitrary Workflow, use this option.
+    workflowRequirements:
+      referenceOnly: true

@@ -6,6 +6,7 @@ spec:
   selector:
     app: workflow-controller
   ports:
-    - port: 9090
+    - name: metrics
+      port: 9090
       targetPort: 9090
       protocol: TCP

@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"hash/fnv"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,6 +40,7 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
+	NodeOmitted   NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
@@ -98,6 +101,31 @@ func (w Workflows) Less(i, j int) bool {
 	}
 	return jFinish.Before(&iFinish)
 }
+
+type WorkflowPredicate = func(wf Workflow) bool
+
+func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
+	var out Workflows
+	for _, wf := range w {
+		if predicate(wf) {
+			out = append(out, wf)
+		}
+	}
+	return out
+}
+
+var (
+	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return wf.ObjectMeta.CreationTimestamp.After(t)
+		}
+	}
+	WorkflowFinishedBefore = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(t)
+		}
+	}
+)
 
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -268,6 +296,9 @@ type WorkflowSpec struct {
 
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
+	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -276,6 +307,17 @@ const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
+
+func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
+	switch s {
+	case ShutdownStrategyTerminate:
+		return false
+	case ShutdownStrategyStop:
+		return isOnExitPod
+	default:
+		return true
+	}
+}
 
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
@@ -596,7 +638,7 @@ type ValueFrom struct {
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -685,9 +727,28 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) HasLocation() bool {
+	return a.S3.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.Artifactory.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (r ArtifactRepositoryRef) GetConfigMap() string {
+	if r.ConfigMap == "" {
+		return "artifact-repositories"
+	}
+	return r.ConfigMap
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -775,27 +836,6 @@ type Sequence struct {
 	Format string `json:"format,omitempty" protobuf:"bytes,4,opt,name=format"`
 }
 
-// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
-func (i *Item) DeepCopyInto(out *Item) {
-	inBytes, err := json.Marshal(i)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(inBytes, out)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// OpenAPISchemaType is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
-
-// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-func (i Item) OpenAPISchemaFormat() string { return "item" }
-
 // TemplateRef is a reference of template resource.
 type TemplateRef struct {
 	// Name is the resource name of the template.
@@ -805,8 +845,24 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
+}
+
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+type WorkflowTemplateRef struct {
+	// Name is the resource name of the workflow template.
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
+}
+
+func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+	return &TemplateRef{
+		Name:         ref.Name,
+		ClusterScope: ref.ClusterScope,
+		Template:     entrypoint,
+	}
 }
 
 type ArgumentsProvider interface {
@@ -899,10 +955,13 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 
 	// Conditions is a list of conditions the Workflow may have
-	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
+	Conditions Conditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -978,7 +1037,7 @@ func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
 func (in ResourcesDuration) String() string {
 	var parts []string
 	for n, d := range in {
-		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+		parts = append(parts, fmt.Sprintf("%v*(%s %s)", d, ResourceQuantityDenominator(n).String(), n))
 	}
 	return strings.Join(parts, ",")
 }
@@ -987,48 +1046,87 @@ func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
 }
 
-type WorkflowConditions []WorkflowCondition
+func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
+	q, ok := map[apiv1.ResourceName]resource.Quantity{
+		apiv1.ResourceMemory:           resource.MustParse("100Mi"),
+		apiv1.ResourceStorage:          resource.MustParse("10Gi"),
+		apiv1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
+	}[r]
+	if !ok {
+		q = resource.MustParse("1")
+	}
+	return &q
+}
 
-func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
-	for index, wfCondition := range *wc {
+type Conditions []Condition
+
+func (cs *Conditions) UpsertCondition(condition Condition) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == condition.Type {
-			(*wc)[index] = condition
+			(*cs)[index] = condition
 			return
 		}
 	}
-	*wc = append(*wc, condition)
+	*cs = append(*cs, condition)
 }
 
-func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition) {
-	for index, wfCondition := range *wc {
+func (cs *Conditions) UpsertConditionMessage(condition Condition) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == condition.Type {
-			(*wc)[index].Message += ", " + condition.Message
+			(*cs)[index].Message += ", " + condition.Message
 			return
 		}
 	}
-	*wc = append(*wc, condition)
+	*cs = append(*cs, condition)
 }
 
-func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+func (cs *Conditions) JoinConditions(conditions *Conditions) {
 	for _, condition := range *conditions {
-		wc.UpsertCondition(condition)
+		cs.UpsertCondition(condition)
 	}
 }
 
-type WorkflowConditionType string
+func (cs *Conditions) RemoveCondition(conditionType ConditionType) {
+	for index, wfCondition := range *cs {
+		if wfCondition.Type == conditionType {
+			*cs = append((*cs)[:index], (*cs)[index+1:]...)
+			return
+		}
+	}
+}
+
+func (cs *Conditions) DisplayString(fmtStr string, iconMap map[ConditionType]string) string {
+	if len(*cs) == 0 {
+		return fmt.Sprintf(fmtStr, "Conditions:", "None")
+	}
+	out := fmt.Sprintf(fmtStr, "Conditions:", "")
+	for _, condition := range *cs {
+		conditionMessage := condition.Message
+		if conditionMessage == "" {
+			conditionMessage = string(condition.Status)
+		}
+		conditionPrefix := fmt.Sprintf("%s %s", iconMap[condition.Type], string(condition.Type))
+		out += fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage)
+	}
+	return out
+}
+
+type ConditionType string
 
 const (
-	// WorkflowConditionCompleted is a signifies the workflow has completed
-	WorkflowConditionCompleted WorkflowConditionType = "Completed"
-	// WorkflowConditionSpecWarning is a warning on the current application spec
-	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
-	// WorkflowConditionMetricsError is an error during metric emission
-	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
+	// ConditionTypeCompleted is a signifies the workflow has completed
+	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypeSpecWarning is a warning on the current application spec
+	ConditionTypeSpecWarning ConditionType = "SpecWarning"
+	// ConditionTypeSpecWarning is an error on the current application spec
+	ConditionTypeSpecError ConditionType = "SpecError"
+	// ConditionTypeMetricsError is an error during metric emission
+	ConditionTypeMetricsError ConditionType = "MetricsError"
 )
 
-type WorkflowCondition struct {
+type Condition struct {
 	// Type is the type of condition
-	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
+	Type ConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=ConditionType"`
 
 	// Status is the status of the condition
 	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
@@ -1118,6 +1216,9 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+
+	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -1128,16 +1229,23 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
-func (phase NodePhase) Completed() bool {
-	return phase == NodeSucceeded ||
-		phase == NodeFailed ||
-		phase == NodeError ||
-		phase == NodeSkipped
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
+func (phase NodePhase) Fulfilled() bool {
+	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
 }
 
-// Completed returns whether or not the workflow has completed execution
-func (ws WorkflowStatus) Completed() bool {
-	return ws.Phase.Completed()
+// Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
+func (phase NodePhase) Completed() bool {
+	return phase.FailedOrError() || phase == NodeSucceeded
+}
+
+func (phase NodePhase) FailedOrError() bool {
+	return phase == NodeFailed || phase == NodeError
+}
+
+// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+func (ws WorkflowStatus) Fulfilled() bool {
+	return ws.Phase.Fulfilled()
 }
 
 // Successful return whether or not the workflow has succeeded
@@ -1158,9 +1266,14 @@ func (ws WorkflowStatus) FinishTime() *metav1.Time {
 	return &ws.FinishedAt
 }
 
-// Completed returns whether or not the node has completed execution
+// Fulfilled returns whether a node is fulfilled, i.e. it finished execution, was skipped, or was dameoned successfully
+func (n NodeStatus) Fulfilled() bool {
+	return n.Phase.Fulfilled() || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Completed returns whether a node completed. Notably, a skipped node is not considered as having completed
 func (n NodeStatus) Completed() bool {
-	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
+	return n.Phase.Completed()
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
@@ -1180,13 +1293,16 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
-// Successful returns whether or not this node completed successfully
-func (n NodeStatus) Successful() bool {
-	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
+func (n NodeStatus) Succeeded() bool {
+	return n.Phase == NodeSucceeded
 }
 
-func (n NodeStatus) Failed() bool {
-	return !n.Successful()
+func (n NodeStatus) FailedOrError() bool {
+	return n.Phase.FailedOrError()
+}
+
+func (n NodeStatus) Omitted() bool {
+	return n.Type == NodeTypeSkipped && n.Phase == NodeOmitted
 }
 
 func (n NodeStatus) StartTime() *metav1.Time {
@@ -1200,7 +1316,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Completed() && !n.Successful()
+	return n.FailedOrError()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
@@ -1268,7 +1384,7 @@ type S3Artifact struct {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Bucket != ""
+	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
 // GitArtifact is the location of an git artifact
@@ -1301,6 +1417,13 @@ type GitArtifact struct {
 
 func (g *GitArtifact) HasLocation() bool {
 	return g != nil && g.Repo != ""
+}
+
+func (g *GitArtifact) GetDepth() int {
+	if g == nil || g.Depth == nil {
+		return 0
+	}
+	return int(*g.Depth)
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -1423,7 +1546,7 @@ func (g *GCSArtifact) HasLocation() bool {
 	return g != nil && g.Bucket != "" && g.Key != ""
 }
 
-// OSSBucket contains the access information required for interfacing with an OSS bucket
+// OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
 	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
@@ -1438,7 +1561,7 @@ type OSSBucket struct {
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
-// OSSArtifact is the location of an OSS artifact
+// OSSArtifact is the location of an Alibaba Cloud OSS artifact
 type OSSArtifact struct {
 	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 
@@ -1594,6 +1717,9 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// Depends are name of other targets which this depends on
+	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
@@ -1660,6 +1786,9 @@ func (out *Outputs) HasOutputs() bool {
 }
 
 func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	if out == nil {
+		return nil
+	}
 	return out.Artifacts.GetArtifactByName(name)
 }
 
@@ -1678,16 +1807,11 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
-// HasLocation whether or not an artifact has a location defined
-func (a *Artifact) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
 }
 
 // GetTemplateByName retrieves a defined template by its name
@@ -1697,12 +1821,24 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 			return &t
 		}
 	}
+	if wf.Status.StoredWorkflowSpec != nil {
+		for _, t := range wf.Status.StoredWorkflowSpec.Templates {
+			if t.Name == name {
+				return &t
+			}
+		}
+	}
 	return nil
 }
 
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
+}
+
+// GetWorkflowSpec returns the Spec of a workflow.
+func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
+	return wf.Spec
 }
 
 // NodeID creates a deterministic node ID based on a node name
@@ -1879,17 +2015,29 @@ func (p *Prometheus) SetValueString(val string) {
 func (p *Prometheus) GetDesc() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
+	labels := p.GetMetricLabels()
 	desc := p.Name + "{"
-	for key, val := range p.GetMetricLabels() {
-		desc += key + "=" + val + ","
+	for _, key := range sortedMapStringStringKeys(labels) {
+		desc += key + "=" + labels[key] + ","
 	}
 	if p.Histogram != nil {
-		for _, bucket := range p.Histogram.Buckets {
+		sortedBuckets := p.Histogram.Buckets
+		sort.Float64s(sortedBuckets)
+		for _, bucket := range sortedBuckets {
 			desc += "bucket=" + fmt.Sprint(bucket) + ","
 		}
 	}
 	desc += "}"
 	return desc
+}
+
+func sortedMapStringStringKeys(in map[string]string) []string {
+	var stringList []string
+	for key := range in {
+		stringList = append(stringList, key)
+	}
+	sort.Strings(stringList)
+	return stringList
 }
 
 func (p *Prometheus) IsRealtime() bool {
