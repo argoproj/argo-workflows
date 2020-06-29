@@ -455,34 +455,7 @@ message Inputs {
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
 message Item {
-  optional int64 type = 1;
-
-  optional string numVal = 2;
-
-  optional bool boolVal = 3;
-
-  optional string strVal = 4;
-
-  map<string, ItemValue> mapVal = 5;
-
-  repeated ItemValue listVal = 6;
-}
-
-// +protobuf=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
-message ItemValue {
-  optional int64 type = 1;
-
-  optional string numVal = 2;
-
-  optional bool boolVal = 3;
-
-  optional string strVal = 4;
-
-  map<string, string> mapVal = 5;
-
-  repeated bytes listVal = 6;
+  optional bytes value = 1;
 }
 
 // A link to another app.

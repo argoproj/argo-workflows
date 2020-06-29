@@ -1718,10 +1718,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Amount": {
-      "description": "Amount represent a numeric amount.",
-      "type": "number"
-    },
     "io.argoproj.workflow.v1alpha1.ArchiveStrategy": {
       "description": "ArchiveStrategy describes how to archive files/directory when saving artifacts",
       "type": "object",
@@ -1932,7 +1928,6 @@
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "type": "object",
       "required": [
-        "metadata",
         "spec"
       ],
       "properties": {
@@ -2076,8 +2071,8 @@
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "type": "object",
       "required": [
-        "metadata",
-        "spec"
+        "spec",
+        "status"
       ],
       "properties": {
         "apiVersion": {
@@ -2465,7 +2460,8 @@
           "description": "Buckets is a list of bucket divisors for the histogram",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Amount"
+            "type": "number",
+            "format": "double"
           }
         },
         "value": {
@@ -2514,13 +2510,8 @@
     },
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
-      "type": [
-        "string",
-        "number",
-        "boolean",
-        "array",
-        "object"
-      ]
+      "type": "object",
+      "format": "item"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -2625,6 +2616,7 @@
       "required": [
         "id",
         "name",
+        "displayName",
         "type"
       ],
       "properties": {
@@ -2811,8 +2803,8 @@
       ],
       "properties": {
         "default": {
-          "description": "Default is the default value to use for an input parameter if a value was not supplied",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "description": "Default is the default value to use for an input parameter if a value was not supplied DEPRECATED: This field is not used",
+          "type": "string"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -2824,7 +2816,7 @@
         },
         "value": {
           "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "valueFrom": {
           "description": "ValueFrom is the source for the output parameter's value",
@@ -2847,7 +2839,12 @@
       "type": "object",
       "required": [
         "name",
-        "help"
+        "labels",
+        "help",
+        "when",
+        "gauge",
+        "histogram",
+        "counter"
       ],
       "properties": {
         "counter": {
@@ -2900,7 +2897,8 @@
       "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
       "type": "object",
       "required": [
-        "action"
+        "action",
+        "manifest"
       ],
       "properties": {
         "action": {
@@ -3008,6 +3006,7 @@
       "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
       "type": "object",
       "required": [
+        "name",
         "source"
       ],
       "properties": {
@@ -3613,7 +3612,7 @@
       "properties": {
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",
@@ -3677,7 +3676,8 @@
       "type": "object",
       "required": [
         "metadata",
-        "spec"
+        "spec",
+        "status"
       ],
       "properties": {
         "apiVersion": {
@@ -3812,6 +3812,9 @@
     "io.argoproj.workflow.v1alpha1.WorkflowSpec": {
       "description": "WorkflowSpec is the specification of a Workflow.",
       "type": "object",
+      "required": [
+        "templates"
+      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
@@ -4160,7 +4163,6 @@
       "description": "WorkflowTemplate is the definition of a workflow template resource",
       "type": "object",
       "required": [
-        "metadata",
         "spec"
       ],
       "properties": {
@@ -4255,6 +4257,9 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",
+      "required": [
+        "templates"
+      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
@@ -4768,6 +4773,9 @@
     "io.k8s.api.core.v1.Container": {
       "description": "A single application container that you want to run within a pod.",
       "type": "object",
+      "required": [
+        "name"
+      ],
       "properties": {
         "args": {
           "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
