@@ -401,6 +401,15 @@ wait:
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
+
+.PHONY: postgres-cli
+postgres-cli:
+	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
+
+.PHONY: mysql-cli
+mysql-cli:
+	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
+
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
