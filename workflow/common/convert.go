@@ -41,6 +41,11 @@ func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wf
 			},
 		},
 	}
+	if clusterScope {
+		wf.Labels[LabelKeyClusterWorkflowTemplate] = templateName
+	} else {
+		wf.Labels[LabelKeyWorkflowTemplate] = templateName
+	}
 	return wf
 }
 
