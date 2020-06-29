@@ -40,7 +40,6 @@ type message struct {
 }
 
 func (s message) Execute() {
-
 	s.resumeWorkflows()
 	s.createWorkflowsFromLabelledTemplates()
 }
@@ -48,10 +47,10 @@ func (s message) Execute() {
 func (s *eventServer) Run(stopCh <-chan struct{}) {
 	for {
 		select {
-		case <-stopCh:
-			return
 		case message := <-s.messages:
 			message.Execute()
+		case <-stopCh:
+			return
 		}
 	}
 }
@@ -65,6 +64,7 @@ func (s *message) resumeWorkflows() {
 	workflowList, err := s.wfClient.ArgoprojV1alpha1().Workflows(s.namespace).List(listOptions())
 	if err != nil {
 		log.WithError(err).Error("failed to list workflows")
+		return
 	}
 	for _, wf := range workflowList.Items {
 		err := s.resumeWorkflow(wf)
@@ -157,7 +157,6 @@ func (s *message) createWorkflowsFromLabelledTemplates() {
 }
 
 func (s *message) createWorkflowFromTemplate(tmpl wfv1.WorkflowTemplate) error {
-	logCtx := log.WithField("namespace", tmpl.Namespace).WithField("template", tmpl)
 	if tmpl.Spec.Event == nil {
 		return errors.New("malformed template: event spec is missing")
 	}
@@ -167,7 +166,7 @@ func (s *message) createWorkflowFromTemplate(tmpl wfv1.WorkflowTemplate) error {
 	}
 	result, err := expr.Eval(tmpl.Spec.Event.Expression, env)
 	if err != nil {
-		logCtx.WithError(err).Warn("failed to evaluate template expression")
+		return errors.New("failed to evaluate template expression")
 	}
 	matched, ok := result.(bool)
 	if !ok {
