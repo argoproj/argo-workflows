@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"sigs.k8s.io/yaml"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
