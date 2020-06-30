@@ -36,7 +36,7 @@
     
     
       
-        <title>Asynchronous Job Pattern - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Resume The Template - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -110,7 +110,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#asynchronous-job-pattern" tabindex="1" class="md-skip">
+      <a href="#resume-the-template" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -136,7 +136,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                Asynchronous Job Pattern
+                Resume The Template
               
             </span>
           
@@ -281,12 +281,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
     
     <label class="md-nav__link" for="nav-4">
       User Guide
@@ -530,12 +528,10 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-3" type="checkbox" id="nav-4-3" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-3" type="checkbox" id="nav-4-3">
     
     <label class="md-nav__link" for="nav-4-3">
       Expert
@@ -623,63 +619,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Asynchronous Job Pattern
-      </label>
-    
-    <a href="./" title="Asynchronous Job Pattern" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../async-pattern/" title="Asynchronous Job Pattern" class="md-nav__link">
       Asynchronous Job Pattern
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-pattern" class="md-nav__link">
-    The pattern
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retrying-failed-jobs" class="md-nav__link">
-    Retrying failed jobs
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -1766,36 +1710,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-pattern" class="md-nav__link">
-    The pattern
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retrying-failed-jobs" class="md-nav__link">
-    Retrying failed jobs
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1806,103 +1720,43 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/async-pattern.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo/edit/master/docs/resuming-workflow-via-automation.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="asynchronous-job-pattern">Asynchronous Job Pattern<a class="headerlink" href="#asynchronous-job-pattern" title="Permanent link">&para;</a></h1>
-<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
-<p>If triggering an external job (eg an Amazon EMR job) from Argo that does not run to completion in a container, there are two options:</p>
-<ul>
-<li>create a container that polls the external job completion status</li>
-<li>combine a trigger step that starts the job with a <code>Suspend</code> step that is unsuspended by an API call to Argo when the external job is complete.</li>
-</ul>
-<p>This document describes the second option in more detail.</p>
-<h2 id="the-pattern">The pattern<a class="headerlink" href="#the-pattern" title="Permanent link">&para;</a></h2>
-<p>The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a <code>Suspend</code> step that suspends workflow exection and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.</p>
-<p>When implemented as a <code>WorkflowTemplate</code> it can look something like this:</p>
-<div class="codehilite"><pre><span></span><span class="nv">apiVersion</span>: <span class="nv">argoproj</span>.<span class="nv">io</span><span class="o">/</span><span class="nv">v1alpha1</span>
-<span class="nv">kind</span>: <span class="nv">WorkflowTemplate</span>
-<span class="nv">metadata</span>:
-  <span class="nv">name</span>: <span class="nv">external</span><span class="o">-</span><span class="nv">job</span><span class="o">-</span><span class="nv">template</span>
-<span class="nv">spec</span>:
-  <span class="nv">templates</span>:
-  <span class="o">-</span> <span class="nv">name</span>: <span class="nv">run</span><span class="o">-</span><span class="nv">external</span><span class="o">-</span><span class="nv">job</span>
-    <span class="nv">inputs</span>:
-      <span class="nv">parameters</span>:
-        <span class="o">-</span> <span class="nv">name</span>: <span class="s2">&quot;</span><span class="s">job-cmd</span><span class="s2">&quot;</span>
-    <span class="nv">steps</span>:
-      <span class="o">-</span> <span class="o">-</span> <span class="nv">name</span>: <span class="nv">trigger</span><span class="o">-</span><span class="nv">job</span>
-          <span class="nv">template</span>: <span class="nv">trigger</span><span class="o">-</span><span class="nv">job</span>
-          <span class="nv">arguments</span>:
-            <span class="nv">parameters</span>:
-              <span class="o">-</span> <span class="nv">name</span>: <span class="s2">&quot;</span><span class="s">job-cmd</span><span class="s2">&quot;</span>
-                <span class="nv">value</span>: <span class="s2">&quot;</span><span class="s">{{inputs.parameters.job-cmd}}</span><span class="s2">&quot;</span>
-      <span class="o">-</span> <span class="o">-</span> <span class="nv">name</span>: <span class="k">wait</span><span class="o">-</span><span class="nv">completion</span>
-          <span class="nv">template</span>: <span class="k">wait</span><span class="o">-</span><span class="nv">completion</span>
-          <span class="nv">arguments</span>:
-            <span class="nv">parameters</span>:
-              <span class="o">-</span> <span class="nv">name</span>: <span class="nv">uuid</span>
-                <span class="nv">value</span>: <span class="s2">&quot;</span><span class="s">{{steps.trigger-job.outputs.result}}</span><span class="s2">&quot;</span>
-
-  <span class="o">-</span> <span class="nv">name</span>: <span class="nv">trigger</span><span class="o">-</span><span class="nv">job</span>
-    <span class="nv">inputs</span>:
-      <span class="nv">parameters</span>:
-        <span class="o">-</span> <span class="nv">name</span>: <span class="s2">&quot;</span><span class="s">job-cmd</span><span class="s2">&quot;</span>
-          <span class="nv">value</span>: <span class="s2">&quot;</span><span class="s">{{inputs.parameters.job-cmd}}</span><span class="s2">&quot;</span>
-      <span class="nv">image</span>: <span class="nv">appropriate</span><span class="o">/</span><span class="nv">curl</span>:<span class="nv">latest</span>
-      <span class="nv">command</span>: [<span class="s2">&quot;</span><span class="s">/bin/sh</span><span class="s2">&quot;</span>, <span class="s2">&quot;</span><span class="s">-c</span><span class="s2">&quot;</span>]
-      <span class="nv">args</span>: [<span class="s2">&quot;</span><span class="s">{{inputs.parameters.cmd}}</span><span class="s2">&quot;</span>]
-
-  <span class="o">-</span> <span class="nv">name</span>: <span class="k">wait</span><span class="o">-</span><span class="nv">completion</span>
-    <span class="nv">inputs</span>:
-      <span class="nv">parameters</span>:
-        <span class="o">-</span> <span class="nv">name</span>: <span class="nv">uuid</span>
-    <span class="nv">suspend</span>: {}
+                <h1 id="resume-the-template">Resume The Template<a class="headerlink" href="#resume-the-template" title="Permanent link">&para;</a></h1>
+<p>For automation, we want just the name of the workflow, we can use labels to get just this our suspended workflow:</p>
+<div class="codehilite"><pre><span></span><span class="nv">WF</span><span class="o">=</span><span class="k">$(</span>argo list -l workflows.argoproj.io/workflow-template<span class="o">=</span><span class="nb">wait</span> --running -o name<span class="k">)</span>
 </pre></div>
 
 
-<p>In this case the <code>job-cmd</code> parameter can be a command that makes an http call via curl to an endpoint that returns a job uuid. More sophisticated submission and parsing of submission output could be done with something like a Python script step.</p>
-<p>On job completion the external job would need to call either resume if successful:</p>
-<p>You may need  an <a href="../access-token/">access token</a>.</p>
-<div class="codehilite"><pre><span></span><span class="nv">curl</span> <span class="o">--</span><span class="nv">request</span> <span class="nv">PUT</span> \
-  <span class="o">--</span><span class="nv">url</span> <span class="nv">http</span>:<span class="o">//</span><span class="nv">localhost</span>:<span class="mi">2746</span><span class="o">/</span><span class="nv">api</span><span class="o">/</span><span class="nv">v1</span><span class="o">/</span><span class="nv">workflows</span><span class="o">/&lt;</span><span class="nv">NAMESPACE</span><span class="o">&gt;/&lt;</span><span class="nv">WORKFLOWNAME</span><span class="o">&gt;/</span><span class="nv">resume</span>
-  <span class="o">--</span><span class="nv">header</span> <span class="s1">&#39;</span><span class="s">content-type: application/json</span><span class="s1">&#39;</span> \
-  <span class="o">--</span><span class="nv">header</span> <span class="s2">&quot;</span><span class="s">Authorization: Bearer $ARGO_TOKEN</span><span class="s2">&quot;</span> \
-  <span class="o">--</span><span class="nv">data</span> <span class="s1">&#39;</span><span class="s">{</span>
-      <span class="s2">&quot;</span><span class="s">namespace</span><span class="s2">&quot;</span>: <span class="s2">&quot;</span><span class="s">&lt;NAMESPACE&gt;</span><span class="s2">&quot;</span>,
-      <span class="s2">&quot;</span><span class="s">name</span><span class="s2">&quot;</span>: <span class="s2">&quot;</span><span class="s">&lt;WORKFLOWNAME&gt;</span><span class="s2">&quot;</span>,
-      <span class="s2">&quot;</span><span class="s">nodeFieldSelector</span><span class="s2">&quot;</span>: <span class="s2">&quot;</span><span class="s">inputs.parameters.uuid.value=&lt;UUID&gt;</span><span class="s2">&quot;</span>
-    }<span class="s1">&#39;</span><span class="s">  </span>
-  ```
-
-<span class="nv">or</span> <span class="nv">stop</span> <span class="k">if</span> <span class="nv">unsuccessful</span>:
+<div class="codehilite"><pre><span></span><span class="nv">WF</span><span class="o">=</span><span class="k">$(</span>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo?listOptions.labelSelector<span class="o">=</span>workflows.argoproj.io/workflow-template<span class="o">=</span>wait,<span class="se">\!</span>workflows.argoproj.io/completed <span class="se">\</span>
+  -fs <span class="se">\</span>
+  -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="p">|</span>
+  jq -r <span class="s1">&#39;.items[0].metadata.name&#39;</span><span class="k">)</span>
 </pre></div>
 
 
-<p>curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
-  --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
-  --data '{
-      "namespace": "<NAMESPACE>",
-      "name": "<WORKFLOWNAME>",
-      "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
-      "message": "<FAILURE-MESSAGE>"
-    }'<br />
-  ```</p>
-<h2 id="retrying-failed-jobs">Retrying failed jobs<a class="headerlink" href="#retrying-failed-jobs" title="Permanent link">&para;</a></h2>
-<p>Using <code>argo retry</code> on failed jobs that follow this pattern will cause Argo to re-attempt the Suspend step without re-triggering the job.  </p>
-<p>Instead you need to use the <code>--restart-successful</code> option, eg if using the template from above:</p>
-<div class="codehilite"><pre><span></span><span class="n">argo</span> <span class="n">retry</span> <span class="o">&lt;</span><span class="n">WORKFLOWNAME</span><span class="o">&gt;</span> <span class="c1">--restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed</span>
+<p>You can resume the workflow via the CLI or API too. If you have more than one node waiting, you must target it using a <a href="../node-field-selector/">node field selector</a>.</p>
+<div class="codehilite"><pre><span></span>argo resume <span class="nv">$WF</span> --node-field-selector <span class="nv">displayName</span><span class="o">=</span>a
 </pre></div>
 
 
+<div class="codehilite"><pre><span></span>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo/<span class="nv">$WF</span>/resume <span class="se">\</span>
+  -fs <span class="se">\</span>
+  -X <span class="s1">&#39;PUT&#39;</span> <span class="se">\</span>
+  -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
+  -d <span class="s1">&#39;{&quot;nodeFieldSelector&quot;: &quot;displayName=a&quot;}&#39;</span> 
+</pre></div>
+
+
+<p>Now the workflow will have resumed and completed.</p>
 <p>See also:</p>
 <ul>
 <li><a href="../access-token/">access token</a></li>
-<li><a href="../resuming-workflow-via-automation/">resuming a workflow via automation</a></li>
+<li><a href="./">resuming a workflow via automation</a></li>
 <li><a href="../submit-workflow-via-automation/">submitting a workflow via automation</a></li>
 <li><a href="../workflow-submitting-workflow/">one workflow submitting another</a></li>
+<li><a href="../async-pattern/">async pattern</a></li>
 </ul>
                 
                   
@@ -1920,41 +1774,6 @@
       
         
 <footer class="md-footer">
-  
-    <div class="md-footer-nav">
-      <nav class="md-footer-nav__inner md-grid">
-        
-          <a href="../rest-api/" title="REST API" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-            </div>
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Previous
-                </span>
-                REST API
-              </span>
-            </div>
-          </a>
-        
-        
-          <a href="../security/" title="Security" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Next
-                </span>
-                Security
-              </span>
-            </div>
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-            </div>
-          </a>
-        
-      </nav>
-    </div>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

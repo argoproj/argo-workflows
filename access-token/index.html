@@ -1813,13 +1813,13 @@ argo list
 
 
 <p>Use that token in your API requests, e.g. to list workflows:</p>
-<div class="codehilite"><pre><span></span>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorisation: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<div class="codehilite"><pre><span></span>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 200 OK</span>
 </pre></div>
 
 
 <p>You should check you cannot do things you're not allowed!</p>
-<div class="codehilite"><pre><span></span>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorisation: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<div class="codehilite"><pre><span></span>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 403 error</span>
 </pre></div>
 
@@ -1831,6 +1831,13 @@ argo list
 
 
 <p>A new one will be created.</p>
+<p>See also:</p>
+<ul>
+<li><a href="../resuming-workflow-via-automation/">resuming a workflow via automation</a></li>
+<li><a href="../submit-workflow-via-automation/">submitting a workflow via automation</a></li>
+<li><a href="../workflow-submitting-workflow/">one workflow submitting another</a></li>
+<li><a href="../async-pattern/">async pattern</a></li>
+</ul>
                 
                   
                 
