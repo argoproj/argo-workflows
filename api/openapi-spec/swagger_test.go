@@ -78,7 +78,9 @@ func TestSwagger(t *testing.T) {
 	// yes - we actually delete this field
 	t.Run("io.k8s.api.core.v1.Container", func(t *testing.T) {
 		definition := definitions["io.k8s.api.core.v1.Container"].(obj)
-		assert.NotContains(t, definition, "required")
+		required := definition["required"]
+		assert.Contains(t, required, "image")
+		assert.NotContains(t, required, "name")
 	})
 	// this test makes sure we can deal with an instance where we are wrong vs Kuberenetes
 	t.Run("io.k8s.api.core.v1.SecretKeySelector", func(t *testing.T) {
