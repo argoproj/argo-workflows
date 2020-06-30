@@ -9,8 +9,7 @@ theme:
     text: Work Sans
   logo: assets/logo.png
 google_analytics:
-  # TODO - ask Alex to create this
-  - UA-105170809-3
+  - UA-105170809-7
   - auto
 markdown_extensions:
   - codehilite
