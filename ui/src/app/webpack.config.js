@@ -56,6 +56,8 @@ const config = {
             from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'assets/fonts'
         }, {
             from: 'src/app/assets', to: 'assets'
+        }, {
+            from: '../api/openapi-spec/swagger.json', to: 'openapi-spec'
         }]),
     ],
     devServer: {

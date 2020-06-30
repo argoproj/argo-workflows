@@ -6,9 +6,9 @@
     "application/json"
   ],
   "swagger": "2.0",
-  "host": "localhost:2746",
   "schemes": [
-    "http"
+    "http",
+    "https"
   ],
   "info": {
     "title": "Argo",
