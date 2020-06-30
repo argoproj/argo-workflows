@@ -1205,45 +1205,9 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 `
 
-var invalidWithItems = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: loops-
-spec:
-  entrypoint: loop-example
-  templates:
-  - name: loop-example
-    steps:
-    - - name: print-message
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item}}"
-        withItems:
-        - hello world
-        - goodbye world
-        - [a, b, c]
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
-
 func TestValidWithItems(t *testing.T) {
 	_, err := validate(validWithItems)
 	assert.NoError(t, err)
-
-	_, err = validate(invalidWithItems)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "withItems")
-	}
 }
 
 var podNameVariable = `
