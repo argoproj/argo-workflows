@@ -48,12 +48,12 @@ nav:
           - kubectl.md
           - access-token.md
           - rest-api.md
+          - rest-examples.md
           - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - security.md
-          - rest-examples.md
       - Examples: examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
