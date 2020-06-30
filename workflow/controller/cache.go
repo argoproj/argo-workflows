@@ -54,7 +54,7 @@ func validateCacheKey(key string) string {
 func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
 	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.configMapName, metav1.GetOptions{})
 	if err != nil {
-		log.Infof("Error loading ConfigMap cache %s: %s", c.namespace, err)
+		log.Infof("Error loading ConfigMap cache %s in namespace %s: %s", c.configMapName, c.namespace, err)
 		return nil, false
 	}
 	if cm == nil {
@@ -80,22 +80,17 @@ func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
 
 func (c *configMapCache) Save(key string, value *wfv1.Outputs) bool {
 	log.Infof("Saving to cache %s...", key)
-	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.configMapName, metav1.GetOptions{})
+	_, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.configMapName, metav1.GetOptions{})
 	if err != nil {
-		if cm == nil {
-			return false
-		}
-		if len(cm.Data) == 0 {
-			_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(&apiv1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: c.configMapName,
-				},
+		_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(&apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: c.configMapName,
 			},
-			)
-			if err != nil {
-				log.Infof("Error saving to cache: %s", err)
-				return false
-			}
+		},
+		)
+		if err != nil {
+			log.Infof("Error saving to cache: %s", err)
+			return false
 		}
 	}
 	sampleEntry.Outputs = *value
