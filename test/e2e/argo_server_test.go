@@ -143,7 +143,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		WaitForWorkflow(10 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
