@@ -39,14 +39,14 @@ argo list
 Use that token in your API requests, e.g. to list workflows:
 
 ```sh
-curl https://localhost:2746/api/v1/workflows/argo -H "Authorisation: Bearer $ARGO_TOKEN"
+curl https://localhost:2746/api/v1/workflows/argo -H "Authorization: Bearer $ARGO_TOKEN"
 # 200 OK
 ```
 
 You should check you cannot do things you're not allowed!
 
 ```sh
-curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Bearer $ARGO_TOKEN"
+curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorization: Bearer $ARGO_TOKEN"
 # 403 error
 ```
 
@@ -59,3 +59,10 @@ kubectl delete secret $SECRET
 ```
 
 A new one will be created.
+
+See also:
+
+* [resuming a workflow via automation](resuming-workflow-via-automation.md)
+* [submitting a workflow via automation](submit-workflow-via-automation.md)
+* [one workflow submitting another](workflow-submitting-workflow.md)
+* [async pattern](async-pattern.md)
