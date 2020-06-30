@@ -3163,6 +3163,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`expression`|`string`|_No description available_|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|

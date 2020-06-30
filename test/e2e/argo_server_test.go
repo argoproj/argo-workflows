@@ -165,20 +165,32 @@ metadata:
   name: event-consumer
   labels:
     argo-e2e: true
-    workflows.argoproj.io/event: "true"
 spec:
   event:
-    expression: event.type == "test" && metadata["x-argo-e2e"] == ["true"]
+    expression: event.message != "" && metadata["x-argo-e2e"] == ["true"]
   entrypoint: main
+  arguments:
+    parameters:
+      - name: message
+        valueFrom:
+          expression: event.message
   templates:
     - name: main
       steps:
       - - name: a
           template: argosay
+          arguments:
+            parameters:
+            - name: message
+              value: "{{workflow.parameters.message}}"
 
     - name: argosay
+      inputs:
+        parameters:
+          - name: message
       container:
          image: argoproj/argosay:v2
+         args: [echo, "{{inputs.parameters.message}}"]
 `).
 		When().
 		CreateWorkflowTemplates().
@@ -186,16 +198,14 @@ spec:
 			s.e().
 				POST("/api/v1/events/argo").
 				WithHeader("X-Argo-E2E", "true").
-				WithBytes([]byte(`{"type": "test"}`)).
+				WithBytes([]byte(`{"message": "hello events"}`)).
 				Expect().
 				Status(200)
 		}).
 		Wait(1*time.Second).
 		Then().
-		ExpectWorkflowList(metav1.ListOptions{}, func(t *testing.T, wfList *wfv1.WorkflowList) {
-			if assert.Len(t, wfList.Items, 1) {
-				assert.Equal(t, "event-consumer", wfList.Items[0].Labels["workflows.argoproj.io/workflow-template"])
-			}
+		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=event-consumer"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			assert.Len(t, wfList.Items, 1)
 		})
 }
 

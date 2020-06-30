@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 type operation struct {
@@ -83,11 +84,11 @@ func (s *operation) resumeWorkflow(namespace, name string) error {
 				} else if matches {
 					node.Outputs = &wfv1.Outputs{Parameters: make([]wfv1.Parameter, len(t.Outputs.Parameters))}
 					for i, p := range t.Outputs.Parameters {
-						if p.Value == nil {
-							node = markNodeStatus(wf, node, wfv1.NodeError, " malformed output parameter \""+p.Name+"\": value nil")
+						if p.ValueFrom == nil {
+							node = markNodeStatus(wf, node, wfv1.NodeError, " malformed output parameter \""+p.Name+"\": valueFrom nil")
 							break
 						}
-						value, err := expr.Eval(*p.Value, env)
+						value, err := expr.Eval(p.ValueFrom.Expression, env)
 						if err != nil {
 							node = markNodeStatus(wf, node, wfv1.NodeError, "output parameter \""+p.Name+"\" expression evaluation error: "+err.Error())
 							break
@@ -148,8 +149,28 @@ func (s *operation) submitWorkflowFromTemplate(namespace, name string) error {
 	if !ok {
 		return errors.New("malformed template expression: did not evaluate to boolean")
 	} else if matched {
+		parameters := make([]string, len(tmpl.Spec.Arguments.Parameters))
+		for i, p := range tmpl.Spec.Arguments.Parameters {
+			if p.ValueFrom == nil {
+				return fmt.Errorf("malformed workflow templates: parameter \"%s\" valueFrom is nil", p.Name)
+			}
+			result, err := expr.Eval(p.ValueFrom.Expression, env)
+			if err != nil {
+				return fmt.Errorf("workflow templates parameter \"%s\" expression failed to evaluate: %w", p.Name, err)
+			}
+			parameters[i] = fmt.Sprintf("%s=%v", p.Name, result)
+		}
+
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, false)
-		_, err := s.client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
+		var labels []string
+		for k, v := range tmpl.GetLabels() {
+			labels = append(labels, k+"="+v)
+		}
+		err := util.ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: parameters, Labels: strings.Join(labels, ",")})
+		if err != nil {
+			return fmt.Errorf("failed to apply submit options to workflow template: %w", err)
+		}
+		_, err = s.client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
 		if err != nil {
 			return fmt.Errorf("failed to create workflow from template: %w", err)
 		}

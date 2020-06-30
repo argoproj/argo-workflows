@@ -639,6 +639,8 @@ type ValueFrom struct {
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+
+	Expression string `json:"expression,omitempty" protobuf:"bytes,6,opt,name=expression"`
 }
 
 // Artifact indicates an artifact to place at a specified path

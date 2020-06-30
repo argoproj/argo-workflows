@@ -3667,6 +3667,9 @@
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
           "type": "string"
         },
+        "expression": {
+          "type": "string"
+        },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",
           "type": "string"

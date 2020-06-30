@@ -1030,6 +1030,8 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
+
+  optional string expression = 6;
 }
 
 message Version {
