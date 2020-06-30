@@ -178,7 +178,7 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	O111MODULE=off go get bou.ke/staticfiles
+	go get bou.ke/staticfiles
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
@@ -249,14 +249,19 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 $(GOPATH)/bin/mockery:
-	O111MODULE=off go get github.com/vektra/mockery/.../@v1.1.1
+	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
+	tar zxvf dist/mockery.tar.gz mockery
+	chmod +x mockery
+	mkdir -p $(GOPATH)/bin
+	mv mockery $(GOPATH)/bin/mockery
+	mockery -version
 
 .PHONY: mocks
 mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger manifests docs
+codegen: status proto swagger manifests mocks docs
 
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
@@ -333,7 +338,7 @@ test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
 $(GOPATH)/bin/go-junit-report:
-	O111MODULE=off go get github.com/jstemmer/go-junit-report
+	go get github.com/jstemmer/go-junit-report
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
