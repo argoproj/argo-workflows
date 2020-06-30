@@ -343,7 +343,9 @@ func (c *DocGeneratorContext) generate() string {
 }
 
 func generateDocs() {
-	err := doc.GenMarkdownTree(commands.NewCommand(), "docs/cli")
+	cmd := commands.NewCommand()
+	cmd.DisableAutoGenTag = true
+	err := doc.GenMarkdownTree(cmd, "docs/cli")
 	if err != nil {
 		panic(err)
 	}
