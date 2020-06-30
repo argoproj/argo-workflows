@@ -70,7 +70,7 @@ func NewRetryCommand() *cobra.Command {
 					return
 				}
 				printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
-				waitWatchOrLog(ctx, serviceClient, namespace, []string{name}, cliSubmitOpts)
+				waitWatchOrLog(CLIOpt.ctx, serviceClient, namespace, []string{name}, cliSubmitOpts)
 			}
 		},
 	}
