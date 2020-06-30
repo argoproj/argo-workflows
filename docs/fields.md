@@ -1664,7 +1664,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName to apply to workflow pods|
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
-|`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
+|`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
