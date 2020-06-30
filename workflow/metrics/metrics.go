@@ -92,8 +92,8 @@ func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
 	if m.workflows[key] {
 		return
 	}
+	m.workflows[key] = true
 	if _, ok := m.workflowsByPhase[phase]; ok {
-		m.workflows[key] = true
 		m.workflowsByPhase[phase].Inc()
 	}
 }
@@ -110,8 +110,8 @@ func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
 	if !m.workflows[key] {
 		return
 	}
+	delete(m.workflows, key)
 	if _, ok := m.workflowsByPhase[phase]; ok {
-		delete(m.workflows, key)
 		m.workflowsByPhase[phase].Dec()
 	}
 }
