@@ -13,7 +13,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -2736,7 +2735,7 @@ func TestEventInvalidSpec(t *testing.T) {
 }
 
 func getEvents(controller *WorkflowController, num int) []string {
-	c := controller.eventRecorder.(*record.FakeRecorder).Events
+	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
 		events[i] = <-c
