@@ -1,4 +1,4 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import {Page} from 'argo-ui';
 
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
@@ -9,12 +9,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {formatDuration, wfDuration} from '../../../shared/duration';
-import {exampleWorkflow} from '../../../shared/examples';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
@@ -37,10 +35,6 @@ interface State {
 const defaultPaginationLimit = 10;
 
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
-    private get wfInput() {
-        return Utils.tryJsonParse(this.queryParam('new'));
-    }
-
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
@@ -80,17 +74,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     <Page
                         title='Archived Workflows'
                         toolbar={{
-                            breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}],
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Submit New Workflow',
-                                        iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {new: '{}'})
-                                    }
-                                ]
-                            },
-                            tools: []
+                            breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}]
                         }}>
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
@@ -111,17 +95,6 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             </div>
                             <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                         </div>
-                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <ResourceSubmit<models.Workflow>
-                                resourceName={'Workflow'}
-                                defaultResource={exampleWorkflow(this.state.namespace)}
-                                onSubmit={wfValue => {
-                                    return services.workflows
-                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
-                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
-                                }}
-                            />
-                        </SlidingPanel>
                     </Page>
                 )}
             </Consumer>

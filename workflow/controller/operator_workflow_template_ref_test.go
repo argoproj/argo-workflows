@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
@@ -26,7 +27,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
-		value := "test"
+		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
@@ -46,7 +47,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		value := "test"
+		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
@@ -126,8 +127,8 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
-		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
+		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
+		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
 	})
 }
 

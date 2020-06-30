@@ -83,7 +83,7 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Pro
 
 func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	if metric == nil {
-		metric = newHistogram(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels(), metricSpec.Histogram.Buckets)
+		metric = newHistogram(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels(), metricSpec.Histogram.GetBuckets())
 	}
 
 	val, err := strconv.ParseFloat(metricSpec.Histogram.Value, 64)
