@@ -59,3 +59,10 @@ kubectl delete secret $SECRET
 ```
 
 A new one will be created.
+
+See also:
+
+* [resuming a workflow via automation](resuming-workflow-via-automation.md)
+* [submitting a workflow via automation](submit-workflow-via-automation.md)
+* [one workflow submitting another](workflow-submitting-workflow.md)
+* [async pattern](async-pattern.md)
