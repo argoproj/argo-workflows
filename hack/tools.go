@@ -14,7 +14,7 @@ import (
 	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger"
 	_ "github.com/jstemmer/go-junit-report"
 	_ "github.com/mattn/goreman"
-	_ "github.com/vektra/mockery"
+	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
 	_ "k8s.io/code-generator/cmd/client-gen"
 	_ "k8s.io/code-generator/cmd/deepcopy-gen"

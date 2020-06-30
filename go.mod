@@ -60,13 +60,12 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.3.5
 	github.com/valyala/fasttemplate v1.1.0
-	github.com/vektra/mockery v1.1.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 // indirect
+	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.28.0
