@@ -1064,7 +1064,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			if tmpl.Memoize != nil {
 				c := woc.controller.cache.(*configMapCache)
 				c.configMapName = tmpl.Memoize.Cache.ConfigMapName.Name
-				c.Save(tmpl.Memoize.Key, node.Outputs)
+				c.Save(tmpl.Memoize.Key, node.ID, node.Outputs)
 			}
 		}
 	}

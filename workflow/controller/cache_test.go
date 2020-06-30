@@ -27,7 +27,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	c := NewConfigMapCache("whalesay-cache", "default", controller.kubeclientset)
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
-	ok := c.Save("hi-there-world", &outputs)
+	ok := c.Save("hi-there-world", "", &outputs)
 	assert.True(t, ok)
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)

@@ -12,15 +12,9 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var sampleEntry = CacheEntry{
-	ExpiresAt: "2020-06-18T17:11:05Z",
-	NodeID:    "memoize-abx4124-123129321123",
-	Outputs:   wfv1.Outputs{},
-}
-
 type MemoizationCache interface {
 	Load(key string) (*wfv1.Outputs, bool)
-	Save(key string, value *wfv1.Outputs) bool
+	Save(key string, node_id string, value *wfv1.Outputs) bool
 }
 
 type CacheEntry struct {
@@ -80,7 +74,7 @@ func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
 	return &outputs, true
 }
 
-func (c *configMapCache) Save(key string, value *wfv1.Outputs) bool {
+func (c *configMapCache) Save(key string, node_id string, value *wfv1.Outputs) bool {
 	log.Infof("Saving to cache %s...", key)
 	_, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.configMapName, metav1.GetOptions{})
 	if err != nil {
@@ -95,8 +89,14 @@ func (c *configMapCache) Save(key string, value *wfv1.Outputs) bool {
 			return false
 		}
 	}
-	sampleEntry.Outputs = *value
-	entryJSON, _ := json.Marshal(sampleEntry)
+
+	var newEntry = CacheEntry{
+		ExpiresAt: "2020-06-18T17:11:05Z",
+		NodeID:    node_id,
+		Outputs:   *value,
+	}
+
+	entryJSON, _ := json.Marshal(newEntry)
 	key = validateCacheKey(key)
 	opts := apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
