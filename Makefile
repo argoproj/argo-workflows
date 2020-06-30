@@ -349,11 +349,14 @@ dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
 
 .PHONY: install
 install: dist/$(PROFILE).yaml
+	kubectl cluster-info
 ifeq ($(K3D),true)
 	k3d start
 endif
 	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
+	# creating namespace
 	kubectl apply -f dist/argo-ns.yaml
+	# applying manifests
 	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
 
 .PHONY: pull-build-images
