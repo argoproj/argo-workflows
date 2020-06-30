@@ -72,7 +72,7 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir dist
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true &
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
         env:
