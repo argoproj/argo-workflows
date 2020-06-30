@@ -1394,7 +1394,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if node.Fulfilled() {
 			if resolvedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
-				woc.log.Debugf("Node %s released Semaphore lock", node.ID)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1454,13 +1453,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			}
 			return node, nil
 		}
-
-		if node != nil {
-			node.Message = ""
-		}
+		
 		woc.updated = wfUpdate
-
-		woc.log.Infof("Node %s acquired Synchronization lock", nodeName)
+		if lockAcquired && wfUpdate {
+			if node != nil {
+				node.Message = ""
+			}
+			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
+		}
 	}
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
@@ -1533,8 +1533,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node = woc.markNodeError(node.Name, err)
 		if resolvedTmpl.Synchronization != nil {
 			woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
-			woc.log.Debugf("Node %s released Semaphore lock", node.ID)
-
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container

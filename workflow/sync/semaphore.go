@@ -96,7 +96,7 @@ func (s *Semaphore) release(key string) bool {
 			if len(items) == 3 {
 				workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
 			}
-			s.log.Debugf("Enqueue the Workflow %s ", workflowKey)
+			s.log.Debugf("Enqueue the workflow %s", workflowKey)
 			s.releaseNotifyFunc(workflowKey)
 		}
 	}

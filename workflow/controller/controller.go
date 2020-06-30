@@ -840,7 +840,7 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.Warnf("Invalid Workflow Object. %v", obj)
+		log.Warnf("Invalid workflow object: %v", obj)
 	}
 	wfc.syncManager.ReleaseAll(wf)
 }
