@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -135,7 +135,7 @@ func getMetricStringValue(metric prometheus.Metric) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return proto.CompactTextString(metricString), nil
+	return fmt.Sprintf("%v", metricString), nil
 }
 
 var testMetricEmissionSameOperationCreationAndFailure = `
