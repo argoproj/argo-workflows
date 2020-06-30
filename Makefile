@@ -501,7 +501,7 @@ docs: swagger
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: test lint codegen manifests start
+pre-commit: codegen lint test start
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)
