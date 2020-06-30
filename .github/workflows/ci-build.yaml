@@ -13,6 +13,7 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -100,6 +101,7 @@ jobs:
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -160,6 +162,7 @@ jobs:
   ui:
     name: UI
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
