@@ -35,8 +35,8 @@ func kubeifySwagger(in, out string) {
 	// "omitempty" does not work for non-nil structs, so we must change it here
 	definitions["io.argoproj.workflow.v1alpha1.CronWorkflow"].(obj)["required"] = array{"metadata", "spec"}
 	definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)["required"] = array{"metadata", "spec"}
-	definitions["io.argoproj.workflow.v1alpha1.ScriptTemplate"].(obj)["required"] = array{"source"}
-	delete(definitions["io.k8s.api.core.v1.Container"].(obj), "required")
+	definitions["io.argoproj.workflow.v1alpha1.ScriptTemplate"].(obj)["required"] = array{"image", "source"}
+	definitions["io.k8s.api.core.v1.Container"].(obj)["required"] = array{"image"}
 	data, err = json.MarshalIndent(swagger, "", "  ")
 	if err != nil {
 		panic(err)

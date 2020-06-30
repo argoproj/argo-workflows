@@ -385,6 +385,9 @@ test-images:
 stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
+$(GOPATH)/bin/goreman:
+	go get github.com/mattn/goreman
+
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)

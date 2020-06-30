@@ -73,6 +73,7 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir dist
+          mkdir -p /tmp/log/argo-e2e
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
@@ -85,13 +86,6 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
-      - name: Make lint
-        if: ${{ matrix.test == 'test' }}
-        env:
-          GOPATH: /home/runner/go
-        run: |
-          make lint
-          git diff --exit-code
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1
@@ -158,6 +152,11 @@ jobs:
           GOPATH: /home/runner/go
         run: |
           make manifests
+      - name: Make lint
+        env:
+          GOPATH: /home/runner/go
+        run: |
+          make lint
       - name: Ensure nothing changed
         run: git diff --exit-code
 
