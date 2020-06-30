@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

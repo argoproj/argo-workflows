@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
