@@ -72,13 +72,13 @@ nav:
           - argo cluster-template list: cli/argo_cluster-template_list.md
           - argo completion: cli/argo_completion.md
           - argo cron: cli/argo_cron.md
-          - argo cron_create: cli/argo_cron_create.md
-          - argo cron_delete: cli/argo_cron_delete.md
-          - argo cron_get: cli/argo_cron_get.md
-          - argo cron_lint: cli/argo_cron_lint.md
-          - argo cron_list: cli/argo_cron_list.md
-          - argo cron_resume: cli/argo_cron_resume.md
-          - argo cron_suspend: cli/argo_cron_suspend.md
+          - argo cron create: cli/argo_cron_create.md
+          - argo cron delete: cli/argo_cron_delete.md
+          - argo cron get: cli/argo_cron_get.md
+          - argo cron lint: cli/argo_cron_lint.md
+          - argo cron list: cli/argo_cron_list.md
+          - argo cron resume: cli/argo_cron_resume.md
+          - argo cron suspend: cli/argo_cron_suspend.md
           - argo delete: cli/argo_delete.md
           - argo get: cli/argo_get.md
           - argo lint: cli/argo_lint.md
