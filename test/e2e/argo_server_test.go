@@ -130,7 +130,8 @@ spec:
       outputs:
         parameters:
           - name: eventType
-            value: event.type
+            valueFrom: 
+              expression: event.type
 `).
 		When().
 		SubmitWorkflow().
