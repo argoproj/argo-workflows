@@ -16,11 +16,6 @@ var sampleEntry = CacheEntry{
 	Outputs: wfv1.Outputs{},
 }
 
-// TWO INTERFACES:
-// Top level of abstraction: MemoizationCache for operator to interact with cache
-// Lower level: Interface for interacting with K8S that can be substituted w mock for testing
-
-
 type MemoizationCache interface {
 	Load(key string) (*wfv1.Outputs, bool)
 	Save(key string, value *wfv1.Outputs) bool
@@ -53,7 +48,6 @@ func validateCacheKey(key string) string {
         log.Fatal(err)
     }
     s := reg.ReplaceAllString(key, "-")
-    log.Info(s)
     return s
 }
 
