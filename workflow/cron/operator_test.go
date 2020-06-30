@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -241,7 +241,7 @@ func TestSpecError(t *testing.T) {
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
 	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
-	assert.Contains(t, submissionErrorCond.Message, "cron schedule is malformed: End of range (12737123) above maximum (12): 12737123")
+	assert.Contains(t, submissionErrorCond.Message, "cron schedule is malformed: end of range (12737123) above maximum (12): 12737123")
 }
 
 func TestReapplyUpdate(t *testing.T) {
@@ -259,6 +259,7 @@ func TestReapplyUpdate(t *testing.T) {
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
 		origCronWf:  cronWf.DeepCopy(),
+		name:        cronWf.Name,
 		log:         logrus.WithFields(logrus.Fields{}),
 		metrics:     &testMetrics,
 	}

@@ -73,6 +73,8 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 STATIC_BUILD          ?= true
 CI                    ?= false
 PROFILE               ?= minimal
+# whether or not to start the Argo Service in TLS mode
+SECURE                := true
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
@@ -317,7 +319,7 @@ endif
 .PHONY: test
 test: server/static/files.go
 	@mkdir -p test-results
-	go test -v $(TEST_OPTS) `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
+	go test -v $(TEST_OPTS) ./... 2>&1 | tee test-results/test.out
 
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
@@ -387,7 +389,7 @@ endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
 
 .PHONY: wait
@@ -428,30 +430,19 @@ mysql-cli:
 test-e2e: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 15m -v -count 1 -p 1 --short ./test/e2e/... 2>&1 | tee test-results/test.out
+	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
 test-e2e-cron: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
 	@mkdir -p test-results
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
-
-.PHONY: test-api
-test-api:
-	# Run API tests
-	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
-
-.PHONY: test-cli
-test-cli: cli
-	# Run CLI tests
-	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
-	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 # clean
 
@@ -521,7 +512,7 @@ docs: swagger
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: test lint codegen manifests start smoke test-api test-cli
+pre-commit: test lint codegen start
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)

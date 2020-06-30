@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -845,11 +845,15 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 	if len(withItems) > 0 {
 		for i := range withItems {
 			val := withItems[i]
-			switch val.Type {
+			switch val.GetType() {
 			case wfv1.String, wfv1.Number, wfv1.Bool:
 				scope["item"] = true
+			case wfv1.List:
+				for i := range val.GetListVal() {
+					scope[fmt.Sprintf("item.[%v]", i)] = true
+				}
 			case wfv1.Map:
-				for itemKey := range val.MapVal {
+				for itemKey := range val.GetMapVal() {
 					scope[fmt.Sprintf("item.%s", itemKey)] = true
 				}
 			default:
