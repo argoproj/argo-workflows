@@ -508,8 +508,7 @@ const clusterworkflowtmpl = `
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
-    "name": "cluster-workflow-template-whalesay-template",
-    "namespace": "workflows"
+    "name": "cluster-workflow-template-whalesay-template"
   },
   "spec": {
     "entrypoint": "whalesay-template",
