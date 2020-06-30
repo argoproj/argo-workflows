@@ -1085,7 +1085,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 					if we.ExecutionControl.Deadline.IsZero() {
 						message = "terminated"
 					} else {
-						message = fmt.Sprintf("step exceeded workflow deadline %s", *we.ExecutionControl.Deadline)
+						message = fmt.Sprintf("Step exceeded its deadline")
 					}
 					log.Info(message)
 					_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, message)
