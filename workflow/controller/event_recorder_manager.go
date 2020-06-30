@@ -11,6 +11,10 @@ import (
 	"k8s.io/client-go/tools/record"
 )
 
+type EventRecorderManager interface {
+	Get(namespace string) record.EventRecorder
+}
+
 type eventRecorderManager struct {
 	kubernetes     kubernetes.Interface
 	lock           sync.Mutex
@@ -32,7 +36,7 @@ func (m *eventRecorderManager) Get(namespace string) record.EventRecorder {
 
 }
 
-func newEventRecorderManager(kubernetes kubernetes.Interface) *eventRecorderManager {
+func newEventRecorderManager(kubernetes kubernetes.Interface) EventRecorderManager {
 	return &eventRecorderManager{
 		kubernetes:     kubernetes,
 		lock:           sync.Mutex{},

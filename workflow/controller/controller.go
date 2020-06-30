@@ -81,7 +81,7 @@ type WorkflowController struct {
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	metrics               metrics.Metrics
-	eventRecorderManager  *eventRecorderManager
+	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
 }
 
