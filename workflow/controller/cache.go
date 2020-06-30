@@ -2,18 +2,20 @@ package controller
 
 import (
 	"encoding/json"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"regexp"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"regexp"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 var sampleEntry = CacheEntry{
 	ExpiresAt: "2020-06-18T17:11:05Z",
-	NodeID: "memoize-abx4124-123129321123",
-	Outputs: wfv1.Outputs{},
+	NodeID:    "memoize-abx4124-123129321123",
+	Outputs:   wfv1.Outputs{},
 }
 
 type MemoizationCache interface {
@@ -22,33 +24,33 @@ type MemoizationCache interface {
 }
 
 type CacheEntry struct {
-	ExpiresAt string `json"expiresAt"`
-	NodeID string `json"nodeID"`
-	Outputs wfv1.Outputs `json"outputs"`
+	ExpiresAt string       `json:"expiresAt"`
+	NodeID    string       `json:"nodeID"`
+	Outputs   wfv1.Outputs `json:"outputs"`
 }
 
 type configMapCache struct {
-	namespace string
+	namespace     string
 	configMapName string
-	kubeClient kubernetes.Interface
+	kubeClient    kubernetes.Interface
 }
 
 func NewConfigMapCache(cm string, ns string, ki kubernetes.Interface) MemoizationCache {
 	return &configMapCache{
 		configMapName: cm,
-		namespace: ns,
-		kubeClient: ki,
+		namespace:     ns,
+		kubeClient:    ki,
 	}
 }
 
 func validateCacheKey(key string) string {
 	log.Infof("Validating cache key %s", key)
 	reg, err := regexp.Compile("[^-._a-zA-Z0-9]+")
-    if err != nil {
-        log.Fatal(err)
-    }
-    s := reg.ReplaceAllString(key, "-")
-    return s
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := reg.ReplaceAllString(key, "-")
+	return s
 }
 
 func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
@@ -63,7 +65,7 @@ func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
 	}
 	log.Infof("ConfigMap cache %s loaded", c.configMapName)
 	key = validateCacheKey(key)
-	rawEntry, ok := cm.Data[key];
+	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		log.Infof("MemoizationCache miss: Entry for %s doesn't exist", key)
 		return nil, false
@@ -94,7 +96,7 @@ func (c *configMapCache) Save(key string, value *wfv1.Outputs) bool {
 		}
 	}
 	sampleEntry.Outputs = *value
-	entryJSON, err := json.Marshal(sampleEntry)
+	entryJSON, _ := json.Marshal(sampleEntry)
 	key = validateCacheKey(key)
 	opts := apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{

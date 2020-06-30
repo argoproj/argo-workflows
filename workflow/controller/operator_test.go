@@ -3851,7 +3851,7 @@ func TestWorkflowStatusMetric(t *testing.T) {
 var MockParamValue string = "Hello world"
 
 var MockParam = wfv1.Parameter{
-	Name: "hello",
+	Name:  "hello",
 	Value: &MockParamValue,
 }
 
@@ -3888,17 +3888,16 @@ spec:
           path: /tmp/hello_world.txt
 `
 
-
 var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 	Data: map[string]string{
 		"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{"parameters":[{"name":"hello","value":"\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   ","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-workflow-btfmf/memoized-workflow-btfmf/main.log"}}]}}`,
 	},
 	TypeMeta: metav1.TypeMeta{
-		Kind: "ConfigMap",
+		Kind:       "ConfigMap",
 		APIVersion: "v1",
 	},
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "whalesay-cache",
+		Name:            "whalesay-cache",
 		ResourceVersion: "1630732",
 	},
 }
@@ -3925,7 +3924,6 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
 	assert.Equal(t, sampleOutput, *outputs.Parameters[0].Value)
 }
-
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
 	// create a workflow that's at the moment before the pod finished

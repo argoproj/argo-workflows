@@ -1048,7 +1048,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 
 			localParams := make(map[string]string)
-			_, localArgs, err := woc.loadExecutionSpec()
+			_, localArgs, _ := woc.loadExecutionSpec()
 			woc.setGlobalParameters(localArgs)
 			// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 			// is determined
@@ -1441,7 +1441,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		c = woc.controller.cache.(*configMapCache)
 		c.configMapName = processedTmpl.Memoize.Cache.ConfigMapName.Name
 		storedOutput, ok := c.Load(processedTmpl.Memoize.Key)
-		if (storedOutput != nil && ok != false) {
+		if storedOutput != nil && ok {
 			node = woc.initializeCacheHitNode(nodeName, processedTmpl.GetNodeType(), templateScope, orgTmpl, opts.boundaryID, storedOutput)
 			return node, nil
 		}

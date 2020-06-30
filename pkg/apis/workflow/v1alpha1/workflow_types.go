@@ -2101,8 +2101,8 @@ type Counter struct {
 // Memoization
 type Memoize struct {
 	MaxAge string `json:"maxAge"`
-	Key string `json:"key"`
-	Cache *Cache `json:"cache"`
+	Key    string `json:"key"`
+	Cache  *Cache `json:"cache"`
 }
 
 type Cache struct {

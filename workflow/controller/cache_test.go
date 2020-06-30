@@ -1,10 +1,12 @@
 package controller
 
 import (
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func TestConfigMapCacheLoad(t *testing.T) {
@@ -31,4 +33,3 @@ func TestConfigMapCacheSave(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
 }
-
