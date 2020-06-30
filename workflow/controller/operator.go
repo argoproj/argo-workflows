@@ -132,7 +132,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
-		eventRecorder:          wfc.eventRecorder,
+		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 	}
 
@@ -615,7 +615,7 @@ func (woc *wfOperationCtx) requeue(afterDuration time.Duration) {
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
-func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, bool, error) {
+func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
 	if node.Fulfilled() {
 		return node, true, nil
 	}
@@ -692,6 +692,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
+
+		woc.log.WithField("node", node.Name).Infof("node has maxDuration set, setting executionDeadline to: %s", humanize.Timestamp(maxDurationDeadline))
+		opts.executionDeadline = maxDurationDeadline
+
 		node = woc.markNodePhase(node.Name, node.Phase, "")
 	}
 
@@ -866,7 +870,7 @@ func (woc *wfOperationCtx) failSuspendedNodesAfterDeadlineOrShutdown() error {
 				if woc.wfSpec.Shutdown != "" {
 					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
 				} else {
-					message = fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline)
+					message = fmt.Sprintf("Step exceeded its deadline")
 				}
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			}
@@ -1364,6 +1368,8 @@ type executeTemplateOpts struct {
 	// onExitTemplate signifies that executeTemplate was called as part of an onExit handler.
 	// Necessary for graceful shutdowns
 	onExitTemplate bool
+	// activeDeadlineSeconds is a deadline to set to any pods executed. This is necessary for pods to inherit backoff.maxDuration
+	executionDeadline time.Time
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -1446,7 +1452,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 		}
-		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
+		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy, opts)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		} else if !continueExecution {
@@ -1855,6 +1861,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	_, err = woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
+		executionDeadline:   opts.executionDeadline,
 	})
 
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
@@ -1994,6 +2001,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	_, err = woc.createWorkflowPod(nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
+		executionDeadline:   opts.executionDeadline,
 	})
 	return node, err
 }
@@ -2255,7 +2263,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate})
+	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	return node, err
 }
 

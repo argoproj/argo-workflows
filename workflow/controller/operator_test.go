@@ -203,13 +203,13 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -217,7 +217,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
-	_, _, err = woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
@@ -227,7 +227,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
@@ -275,13 +275,13 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -289,7 +289,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	_, _, err = woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
@@ -299,7 +299,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
@@ -348,13 +348,13 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -403,13 +403,13 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -418,7 +418,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Parent node should also be errored because retry on error is disabled
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	_, _, err = woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
@@ -568,7 +568,7 @@ func TestBackoffMessage(t *testing.T) {
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
-	newRetryNode, proceed, err := woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	newRetryNode, proceed, err := woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.False(t, proceed)
 	assert.Equal(t, "Backoff for 4 seconds", newRetryNode.Message)
@@ -581,7 +581,7 @@ func TestBackoffMessage(t *testing.T) {
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
-	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.False(t, proceed)
 	// Message should not change
@@ -595,7 +595,7 @@ func TestBackoffMessage(t *testing.T) {
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-5 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
-	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.True(t, proceed)
 	// New node is started, message should be clear
@@ -1240,7 +1240,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeSuspend {
 			assert.Equal(t, node.Phase, wfv1.NodeFailed)
-			assert.Contains(t, node.Message, "step exceeded workflow deadline")
+			assert.Contains(t, node.Message, "Step exceeded its deadline")
 			found = true
 		}
 	}
@@ -2734,7 +2734,7 @@ func TestEventInvalidSpec(t *testing.T) {
 }
 
 func getEvents(controller *WorkflowController, num int) []string {
-	c := controller.eventRecorder.(*record.FakeRecorder).Events
+	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
 		events[i] = <-c
@@ -3843,4 +3843,63 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	woc.operate()
 	// Must only be one (completed: true)
 	assert.Len(t, woc.wf.Status.Conditions, 1)
+}
+
+var propagate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-backoff
+spec:
+  entrypoint: retry-backoff
+  templates:
+  - name: retry-backoff
+    retryStrategy:
+      limit: 10
+      backoff:
+        duration: "1"
+        factor: 1
+        maxDuration: "20"
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["sleep $(( {{retries}} * 100 )); exit 1"]
+`
+
+func TestPropagateMaxDurationProcess(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(propagate)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	retryLimit := int32(2)
+	retries := wfv1.RetryStrategy{
+		Limit: &retryLimit,
+		Backoff: &wfv1.Backoff{
+			Duration:    "0",
+			Factor:      1,
+			MaxDuration: "20",
+		},
+	}
+	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
+
+	childNode := fmt.Sprintf("child-node-%d", 0)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.addChildNode(nodeName, childNode)
+
+	var opts executeTemplateOpts
+	n := woc.getNodeByName(nodeName)
+	_, _, err = woc.processNodeRetries(n, retries, &opts)
+	if assert.NoError(t, err) {
+		assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
+	}
 }

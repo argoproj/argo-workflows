@@ -601,6 +601,45 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 
 }
 
+func (s *FunctionalSuite) TestPropagateMaxDuration() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-backoff-2
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: retry-backoff
+  templates:
+  - name: retry-backoff
+    retryStrategy:
+      limit: 10
+      backoff:
+        duration: "1"
+        factor: 1
+        maxDuration: "10"
+    container:
+      image: python:alpine3.6
+      command: [sh, -c]
+      args: ["sleep $(( {{retries}} * 40 )); exit 1"]
+
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(45 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Len(t, status.Nodes, 3)
+			node := status.Nodes.FindByDisplayName("retry-backoff-2(1)")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, "Step exceeded its deadline", node.Message)
+			}
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
