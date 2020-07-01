@@ -18,7 +18,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -154,7 +153,7 @@ spec:
 				if assert.NotNil(t, node.Outputs) {
 					parameters := node.Outputs.Parameters
 					if assert.Len(t, parameters, 1) {
-						assert.Equal(t, pointer.StringPtr("test"), parameters[0].Value)
+						assert.Equal(t, "test", parameters[0].Value.String())
 					}
 				}
 			}
