@@ -73,6 +73,8 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 STATIC_BUILD          ?= true
 CI                    ?= false
 PROFILE               ?= minimal
+# whether or not to start the Argo Service in TLS mode
+SECURE                := true
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
@@ -128,15 +130,6 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
-define backup_go_mod
-	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
-	@mkdir -p dist
-	[ -e dist/go.mod ] || cp go.mod go.sum dist/
-endef
-define restore_go_mod
-	# Restore the back-ups.
-	mv dist/go.mod dist/go.sum .
-endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
@@ -185,9 +178,7 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	$(call backup_go_mod)
 	go get bou.ke/staticfiles
-	$(call restore_go_mod)
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
@@ -270,18 +261,42 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger mocks docs
+codegen: status proto swagger manifests mocks docs
+
+.PHONY: crds
+crds: $(GOPATH)/bin/controller-gen
+	./hack/crdgen.sh
+
+# you cannot install a specific version using `go install`, so we do this business
+.PHONY: tools
+tools:
+	go mod vendor
+	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	rm -Rf vendor
+
+$(GOPATH)/bin/controller-gen: tools
+$(GOPATH)/bin/go-to-protobuf: tools
+$(GOPATH)/bin/protoc-gen-gogo: tools
+$(GOPATH)/bin/protoc-gen-gogofast: tools
+$(GOPATH)/bin/protoc-gen-grpc-gateway: tools
+$(GOPATH)/bin/protoc-gen-swagger: tools
+$(GOPATH)/bin/openapi-gen: tools
+$(GOPATH)/bin/swagger: tools
+
+$(GOPATH)/bin/goimports:
+	go get golang.org/x/tools/cmd/goimports
 
 .PHONY: proto
-proto:
-	$(call backup_go_mod)
-	# We need the folder for compatibility
-	go mod vendor
-	# Generate proto
+proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 	./hack/generate-proto.sh
-	# Updated codegen
 	./hack/update-codegen.sh
-	$(call restore_go_mod)
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 $(MANIFESTS_VERSION_FILE):
@@ -289,7 +304,7 @@ $(MANIFESTS_VERSION_FILE):
 	touch $(MANIFESTS_VERSION_FILE)
 
 .PHONY: manifests
-manifests:
+manifests: crds
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -317,15 +332,13 @@ endif
 .PHONY: test
 test: server/static/files.go
 	@mkdir -p test-results
-	go test -v $(TEST_OPTS) `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
+	go test -v $(TEST_OPTS) ./... 2>&1 | tee test-results/test.out
 
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
 $(GOPATH)/bin/go-junit-report:
-	$(call backup_go_mod)
 	go get github.com/jstemmer/go-junit-report
-	$(call restore_go_mod)
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
@@ -387,8 +400,7 @@ endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
-
+	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
 .PHONY: wait
 wait:
@@ -397,24 +409,6 @@ wait:
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
-define print_env
-	export ARGO_SERVER=localhost:2746
-	export ARGO_SECURE=true
-	export ARGO_INSECURE_SKIP_VERIFY=true
-	export ARGO_TOKEN=$(shell ./dist/argo auth token)
-endef
-
-# this is a convenience to get the login token, you can use it as follows
-#   eval $(make env)
-#   argo token
-.PHONY: env
-env:
-	$(call print_env)
-
-.PHONY: logs
-logs:
-	# Tail logs
-	kubectl -n $(KUBE_NAMESPACE) logs -f -l app --max-log-requests 10 --tail 100
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -428,59 +422,41 @@ mysql-cli:
 test-e2e: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 15m -v -count 1 -p 1 --short ./test/e2e/... 2>&1 | tee test-results/test.out
+	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
 test-e2e-cron: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
 	@mkdir -p test-results
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
-
-.PHONY: test-api
-test-api:
-	# Run API tests
-	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
-
-.PHONY: test-cli
-test-cli: cli
-	# Run CLI tests
-	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
-	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 # clean
 
 .PHONY: clean
 clean:
 	# Delete build files
-	rm -Rf dist/* ui/dist
+	rm -Rf vendor dist/* ui/dist
 
 # swagger
-
-$(GOPATH)/bin/swagger:
-	$(call backup_go_mod)
-	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
-	$(call restore_go_mod)
 
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
-	$(call backup_go_mod)
-	go install k8s.io/kube-openapi/cmd/openapi-gen
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	$(call restore_go_mod)
 
 dist/kubernetes.swagger.json:
+	@mkdir -p dist
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
 pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: proto
@@ -521,7 +497,7 @@ docs: swagger
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: test lint codegen manifests start smoke test-api test-cli
+pre-commit: codegen lint test start
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)

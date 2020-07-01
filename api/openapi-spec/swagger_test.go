@@ -10,7 +10,7 @@ import (
 
 type obj = map[string]interface{}
 
-func Test(t *testing.T) {
+func TestSwagger(t *testing.T) {
 	swagger := obj{}
 	data, err := ioutil.ReadFile("swagger.json")
 	if err != nil {
@@ -34,17 +34,53 @@ func Test(t *testing.T) {
 	t.Run("io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest", func(t *testing.T) {
 		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest")
 	})
-	t.Run("io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest", func(t *testing.T) {
-		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest")
-	})
 	t.Run("io.argoproj.workflow.v1alpha1.InfoResponse", func(t *testing.T) {
 		assert.Contains(t, definitions, "io.argoproj.workflow.v1alpha1.InfoResponse")
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.ScriptTemplate", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.ScriptTemplate"].(obj)
+		assert.NotContains(t, definition["required"], "name")
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.CronWorkflow", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.CronWorkflow"].(obj)
+		assert.NotContains(t, definition["required"], "status")
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Workflow", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)
+		assert.NotContains(t, definition["required"], "status")
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Item", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Item"].(obj)
+		assert.ElementsMatch(t, []string{"string", "number", "boolean", "array", "object"}, definition["type"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Parameter", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Parameter"].(obj)
+		properties := definition["properties"].(obj)
+		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["default"].(obj)["$ref"])
+		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["value"].(obj)["$ref"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Histogram", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Histogram"].(obj)
+		buckets := definition["properties"].(obj)["buckets"].(obj)
+		assert.Equal(t, "array", buckets["type"])
+		assert.Equal(t, obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Amount"}, buckets["items"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.Amount", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Amount"].(obj)
+		assert.Equal(t, "number", definition["type"])
 	})
 	// this test makes sure we deal with `inline`
 	t.Run("io.argoproj.workflow.v1alpha1.UserContainer", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.UserContainer"].(obj)
 		properties := definition["properties"]
 		assert.Contains(t, properties, "image")
+	})
+	// yes - we actually delete this field
+	t.Run("io.k8s.api.core.v1.Container", func(t *testing.T) {
+		definition := definitions["io.k8s.api.core.v1.Container"].(obj)
+		required := definition["required"]
+		assert.Contains(t, required, "image")
+		assert.NotContains(t, required, "name")
 	})
 	// this test makes sure we can deal with an instance where we are wrong vs Kuberenetes
 	t.Run("io.k8s.api.core.v1.SecretKeySelector", func(t *testing.T) {

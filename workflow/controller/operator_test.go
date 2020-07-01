@@ -13,7 +13,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -202,13 +202,13 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -216,7 +216,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
-	_, _, err = woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
@@ -226,7 +226,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
@@ -274,13 +274,13 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -288,7 +288,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	_, _, err = woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
@@ -298,7 +298,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
@@ -347,13 +347,13 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -402,13 +402,13 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	n, _, err = woc.processNodeRetries(n, retries)
+	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
@@ -417,7 +417,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Parent node should also be errored because retry on error is disabled
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	_, _, err = woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
@@ -567,7 +567,7 @@ func TestBackoffMessage(t *testing.T) {
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
-	newRetryNode, proceed, err := woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	newRetryNode, proceed, err := woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.False(t, proceed)
 	assert.Equal(t, "Backoff for 4 seconds", newRetryNode.Message)
@@ -580,7 +580,7 @@ func TestBackoffMessage(t *testing.T) {
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
-	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.False(t, proceed)
 	// Message should not change
@@ -594,7 +594,7 @@ func TestBackoffMessage(t *testing.T) {
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-5 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
-	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.True(t, proceed)
 	// New node is started, message should be clear
@@ -1239,7 +1239,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeSuspend {
 			assert.Equal(t, node.Phase, wfv1.NodeFailed)
-			assert.Contains(t, node.Message, "step exceeded workflow deadline")
+			assert.Contains(t, node.Message, "Step exceeded its deadline")
 			found = true
 		}
 	}
@@ -1292,10 +1292,10 @@ func TestSequence(t *testing.T) {
 	found101 := false
 	for _, node := range updatedWf.Status.Nodes {
 		if node.DisplayName == "step1(0:100)" {
-			assert.Equal(t, "100", *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, "100", node.Inputs.Parameters[0].Value.String())
 			found100 = true
 		} else if node.DisplayName == "step1(1:101)" {
-			assert.Equal(t, "101", *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, "101", node.Inputs.Parameters[0].Value.String())
 			found101 = true
 		}
 	}
@@ -1354,7 +1354,7 @@ func TestInputParametersAsJson(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod {
 			expectedJson := `Workflow: [{"name":"parameter1","value":"value1"}]. Template: [{"name":"parameter1","value":"value1"},{"name":"parameter2","value":"template2"}]`
-			assert.Equal(t, expectedJson, *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, expectedJson, node.Inputs.Parameters[0].Value.String())
 			found = true
 		}
 	}
@@ -1456,7 +1456,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(newSteps))
-	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", *newSteps[0].Arguments.Parameters[0].Value)
+	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
 }
 
 var suspendTemplate = `
@@ -1768,7 +1768,7 @@ func TestWorkflowSpecParam(t *testing.T) {
 func TestAddGlobalParamToScope(t *testing.T) {
 	woc := newWoc()
 	woc.globalParams = make(map[string]string)
-	testVal := "test-value"
+	testVal := intstr.Parse("test-value")
 	param := wfv1.Parameter{
 		Name:  "test-param",
 		Value: &testVal,
@@ -1783,16 +1783,16 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, testVal, *woc.wf.Status.Outputs.Parameters[0].Value)
-	assert.Equal(t, testVal, woc.globalParams["workflow.outputs.parameters.global-param"])
+	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
-	newValue := "new-value"
+	newValue := intstr.Parse("new-value")
 	param.Value = &newValue
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[0].Value)
-	assert.Equal(t, newValue, woc.globalParams["workflow.outputs.parameters.global-param"])
+	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Add a new global parameter
 	param.GlobalName = "global-param2"
@@ -1800,7 +1800,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
 	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[1].Value)
-	assert.Equal(t, newValue, woc.globalParams["workflow.outputs.parameters.global-param2"])
+	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
 
 }
 
@@ -1879,8 +1879,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "0", items[0].StrVal)
-	assert.Equal(t, "9", items[9].StrVal)
+	assert.Equal(t, "0", items[0].GetStrVal())
+	assert.Equal(t, "9", items[9].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Start: "101",
@@ -1889,8 +1889,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "101", items[0].StrVal)
-	assert.Equal(t, "110", items[9].StrVal)
+	assert.Equal(t, "101", items[0].GetStrVal())
+	assert.Equal(t, "110", items[9].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Start: "50",
@@ -1899,8 +1899,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 11, len(items))
-	assert.Equal(t, "50", items[0].StrVal)
-	assert.Equal(t, "60", items[10].StrVal)
+	assert.Equal(t, "50", items[0].GetStrVal())
+	assert.Equal(t, "60", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Start: "60",
@@ -1909,8 +1909,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 11, len(items))
-	assert.Equal(t, "60", items[0].StrVal)
-	assert.Equal(t, "50", items[10].StrVal)
+	assert.Equal(t, "60", items[0].GetStrVal())
+	assert.Equal(t, "50", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Count: "0",
@@ -1926,7 +1926,7 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(items))
-	assert.Equal(t, "8", items[0].StrVal)
+	assert.Equal(t, "8", items[0].GetStrVal())
 
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
@@ -1936,8 +1936,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "testuser01", items[0].StrVal)
-	assert.Equal(t, "testuser0A", items[9].StrVal)
+	assert.Equal(t, "testuser01", items[0].GetStrVal())
+	assert.Equal(t, "testuser0A", items[9].GetStrVal())
 }
 
 var metadataTemplate = `
@@ -2089,8 +2089,7 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.NoError(t, err)
 	parameterValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
-	assert.NotEmpty(t, *parameterValue)
-	assert.Equal(t, "output-value-placeholders-wf", *parameterValue)
+	assert.Equal(t, "output-value-placeholders-wf", parameterValue.String())
 }
 
 var podNameInRetries = `
@@ -2127,10 +2126,8 @@ func TestResolvePodNameInRetries(t *testing.T) {
 	err = json.Unmarshal([]byte(templateString), &template)
 	assert.NoError(t, err)
 	parameterValue := template.Outputs.Parameters[0].Value
-	fmt.Println(parameterValue)
 	assert.NotNil(t, parameterValue)
-	assert.NotEmpty(t, *parameterValue)
-	assert.Equal(t, "output-value-placeholders-wf-3033990984", *parameterValue)
+	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
 }
 
 var outputStatuses = `
@@ -2736,7 +2733,7 @@ func TestEventInvalidSpec(t *testing.T) {
 }
 
 func getEvents(controller *WorkflowController, num int) []string {
-	c := controller.eventRecorder.(*record.FakeRecorder).Events
+	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
 	events := make([]string, num)
 	for i := 0; i < num; i++ {
 		events[i] = <-c
@@ -2845,7 +2842,7 @@ spec:
         arguments:
           parameters:
           - name: proceed
-            value: false
+            value: "false"
 
   - name: whalesay
     container:
@@ -3245,10 +3242,10 @@ func TestNestedStepGroupGlobalParams(t *testing.T) {
 	if assert.NotNil(t, node) {
 		assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
 		assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
-		assert.Equal(t, "hello world", *node.Outputs.Parameters[0].Value)
+		assert.Equal(t, "hello world", node.Outputs.Parameters[0].Value.String())
 	}
 
-	assert.Equal(t, "hello world", *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, "hello world", woc.wf.Status.Outputs.Parameters[0].Value.String())
 	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
 }
 
@@ -3289,12 +3286,10 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.NoError(t, err)
 	namespaceValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, namespaceValue)
-	assert.NotEmpty(t, *namespaceValue)
-	assert.Equal(t, "testNamespace", *namespaceValue)
+	assert.Equal(t, "testNamespace", namespaceValue.String())
 	serviceAccountNameValue := template.Outputs.Parameters[1].Value
 	assert.NotNil(t, serviceAccountNameValue)
-	assert.NotEmpty(t, *serviceAccountNameValue)
-	assert.Equal(t, "testServiceAccountName", *serviceAccountNameValue)
+	assert.Equal(t, "testServiceAccountName", serviceAccountNameValue.String())
 }
 
 var maxDurationOnErroredFirstNode = `
@@ -3645,14 +3640,13 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 
 func TestGenerateNodeName(t *testing.T) {
 	assert.Equal(t, "sleep(10:ten)", generateNodeName("sleep", 10, "ten"))
-	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
-		Type:   wfv1.Map,
-		MapVal: map[string]string{"foo": "bar"},
-	}}))
-	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
-		Type:   wfv1.Number,
-		NumVal: "10",
-	}}))
+	item, err := wfv1.ParseItem(`[{"foo": "bar"}]`)
+	assert.NoError(t, err)
+	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, item))
+	assert.NoError(t, err)
+	item, err = wfv1.ParseItem("[10]")
+	assert.NoError(t, err)
+	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, item))
 }
 
 // This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
@@ -3848,4 +3842,63 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	woc.operate()
 	// Must only be one (completed: true)
 	assert.Len(t, woc.wf.Status.Conditions, 1)
+}
+
+var propagate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-backoff
+spec:
+  entrypoint: retry-backoff
+  templates:
+  - name: retry-backoff
+    retryStrategy:
+      limit: 10
+      backoff:
+        duration: "1"
+        factor: 1
+        maxDuration: "20"
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["sleep $(( {{retries}} * 100 )); exit 1"]
+`
+
+func TestPropagateMaxDurationProcess(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(propagate)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	retryLimit := int32(2)
+	retries := wfv1.RetryStrategy{
+		Limit: &retryLimit,
+		Backoff: &wfv1.Backoff{
+			Duration:    "0",
+			Factor:      1,
+			MaxDuration: "20",
+		},
+	}
+	woc.wf.Status.Nodes[woc.wf.NodeID(nodeName)] = *node
+
+	childNode := fmt.Sprintf("child-node-%d", 0)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.addChildNode(nodeName, childNode)
+
+	var opts executeTemplateOpts
+	n := woc.getNodeByName(nodeName)
+	_, _, err = woc.processNodeRetries(n, retries, &opts)
+	if assert.NoError(t, err) {
+		assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
+	}
 }

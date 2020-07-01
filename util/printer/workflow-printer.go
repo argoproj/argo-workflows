@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util"
@@ -116,7 +116,7 @@ func parameterString(params []wfv1.Parameter) string {
 	pStrs := make([]string, 0)
 	for _, p := range params {
 		if p.Value != nil {
-			str := fmt.Sprintf("%s=%s", p.Name, truncateString(*p.Value, 50))
+			str := fmt.Sprintf("%s=%s", p.Name, truncateString(p.Value.String(), 50))
 			pStrs = append(pStrs, str)
 		}
 	}

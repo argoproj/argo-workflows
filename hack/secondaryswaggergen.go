@@ -6,8 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/jsonreference"
-	spec "github.com/go-openapi/spec"
-	log "github.com/sirupsen/logrus"
+	"github.com/go-openapi/spec"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -28,7 +27,7 @@ func secondarySwaggerGen() {
 		}
 	}) {
 		n = strings.ReplaceAll(n, "/", ".")
-		log.Println(n)
+		println(n)
 		definitions[n] = d.Schema
 	}
 	swagger := map[string]interface{}{

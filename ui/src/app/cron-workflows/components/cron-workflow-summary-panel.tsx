@@ -4,8 +4,8 @@ import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import {Link} from 'react-router-dom';
 import {CronWorkflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
+import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {services} from '../../shared/services';
 
@@ -65,8 +65,8 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
 
             <div className='white-box'>
                 <div className='white-box__details'>
-                    <YamlEditor
-                        editing={false}
+                    <ResourceEditor
+                        kind='CronWorkflow'
                         value={props.cronWorkflow}
                         onSubmit={(value: CronWorkflow) => {
                             // magic - we get the latest from the server and then apply the changes from the rendered version to this

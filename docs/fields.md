@@ -218,10 +218,6 @@ Workflow is the definition of a workflow resource
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
@@ -523,10 +519,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](../examples/testvolume.yaml)
@@ -588,7 +580,6 @@ WorkflowSpec is the specification of a Workflow.
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
-|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
@@ -617,7 +608,6 @@ WorkflowStatus contains overall status information about a workflow
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
-|`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
 
 ## CronWorkflowSpec
 
@@ -840,10 +830,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -1122,10 +1108,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](../examples/testvolume.yaml)
@@ -1187,7 +1169,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
-|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
@@ -1314,8 +1295,6 @@ Arguments to a template
 
 - [`steps.yaml`](../examples/steps.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
@@ -1392,24 +1371,6 @@ PodGC describes how to delete completed pods as they complete
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
-
-## Synchronization
-
-Synchronization holds synchronization lock configuration
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration|
 
 ## Template
 
@@ -1633,10 +1594,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
@@ -1694,9 +1651,8 @@ Template is a reusable and composable unit of execution in a workflow
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName to apply to workflow pods|
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
-|`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
+|`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
-|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
@@ -1844,24 +1800,6 @@ Outputs hold parameters, artifacts, and results from a step
 |`exitCode`|`string`|ExitCode holds the exit code of a script template|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters holds the list of output parameters produced by a step|
 |`result`|`string`|Result holds the result (stdout) of a script template|
-
-## SynchronizationStatus
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
 
 ## Artifact
 
@@ -2050,8 +1988,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`steps.yaml`](../examples/steps.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
@@ -2068,10 +2004,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
+|`default`|[`IntOrString`](#intorstring)|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|[`IntOrString`](#intorstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -2095,24 +2031,6 @@ Prometheus is a prometheus metric to be emitted
 |`labels`|`Array<`[`MetricLabel`](#metriclabel)`>`|Labels is a list of metric labels|
 |`name`|`string`|Name is the name of the metric|
 |`when`|`string`|When is a conditional statement that decides when to emit the metric|
-
-## SemaphoreRef
-
-SemaphoreRef is a reference of Semaphore
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for Semaphore configuration|
 
 ## ArtifactLocation
 
@@ -2581,10 +2499,6 @@ Pod metdata
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](../examples/testvolume.yaml)
@@ -2712,8 +2626,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
-- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
-
 - [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
 
 - [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
@@ -2733,8 +2645,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
@@ -2882,8 +2792,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
@@ -2969,25 +2877,6 @@ TemplateRef is a reference of template resource.
 |`name`|`string`|Name is the resource name of the template.|
 |`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
-
-## SemaphoreStatus
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
-|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
 
 ## ArchiveStrategy
 
@@ -3227,7 +3116,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3280,7 +3169,7 @@ Histogram is a Histogram prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`buckets`|`Array< number >`|Buckets is a list of bucket divisors for the histogram|
+|`buckets`|`Array<`[`Amount`](#amount)`>`|Buckets is a list of bucket divisors for the histogram|
 |`value`|`string`|Value is the value of the metric|
 
 ## MetricLabel
@@ -3294,8 +3183,6 @@ MetricLabel is a single label for a prometheus metric
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
-
-- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -3474,16 +3361,6 @@ Sequence expands a workflow step into numeric range
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|`string`|Number at which to start the sequence (default: 0)|
 
-## SemaphoreHolding
-
-_No description available_
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`holders`|`Array< string >`|Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.|
-|`semaphore`|`string`|Semaphore stores the semaphore name.|
-
 ## NoneStrategy
 
 NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.
@@ -3512,6 +3389,17 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## Amount
+
+Amount represent a numeric amount.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+</details>
 
 # External Fields
 
@@ -3738,10 +3626,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](../examples/testvolume.yaml)
@@ -3852,6 +3736,13 @@ LocalObjectReference contains enough information to let you locate the reference
 ## PodDisruptionBudgetSpec
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4196,10 +4087,6 @@ A single application container that you want to run within a pod.
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
-
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
@@ -4242,25 +4129,22 @@ A single application container that you want to run within a pod.
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
-## ConfigMapKeySelector
+## IntOrString
 
-Selects a key from a ConfigMap.
+IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
 </details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|The key to select.|
-|`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
-|`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
 
 ## EnvVar
 
@@ -4468,6 +4352,24 @@ SecretKeySelector selects a key of a Secret.
 |`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
 |`optional`|`boolean`|Specify whether the Secret or its key must be defined|
 
+## ConfigMapKeySelector
+
+Selects a key from a ConfigMap.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|The key to select.|
+|`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
+|`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
+
 ## Initializers
 
 Initializers tracks the progress of initialization.
@@ -4558,10 +4460,6 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 |:----------:|:----------:|---------------|
 |`name`|`string`|Required.|
 |`value`|`string`|_No description available_|
-
-## IntOrString
-
-IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
 
 ## LabelSelector
 
@@ -4833,10 +4731,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 
@@ -5809,10 +5703,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`synchronization-tmpl-level.yaml`](../examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](../examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
 

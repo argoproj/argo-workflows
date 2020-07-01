@@ -17,10 +17,6 @@ const (
 	List
 )
 
-type Typer interface {
-	GetType() Type
-}
-
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
@@ -28,44 +24,38 @@ type Typer interface {
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
 type Item struct {
-	Type    Type                 `protobuf:"bytes,1,opt,name=type,casttype=Type"`
-	NumVal  json.Number          `protobuf:"bytes,2,opt,name=numVal"`
-	BoolVal bool                 `protobuf:"bytes,3,opt,name=boolVal"`
-	StrVal  string               `protobuf:"bytes,4,opt,name=strVal"`
-	MapVal  map[string]ItemValue `protobuf:"bytes,5,opt,name=mapVal"`
-	ListVal []ItemValue          `protobuf:"bytes,6,opt,name=listVal"`
+	Value json.RawMessage `json:"value" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
 }
 
-// UnmarshalJSON implements the json.Unmarshaller interface.
-func (i *Item) UnmarshalJSON(value []byte) error {
-	strValue := string(value)
+func ParseItem(s string) (Item, error) {
+	item := Item{}
+	return item, json.Unmarshal([]byte(s), &item)
+}
+
+func (i *Item) GetType() Type {
+	strValue := string(i.Value)
 	if _, err := strconv.Atoi(strValue); err == nil {
-		i.Type = Number
-		return json.Unmarshal(value, &i.NumVal)
+		return Number
 	}
-
 	if _, err := strconv.ParseFloat(strValue, 64); err == nil {
-		i.Type = Number
-		return json.Unmarshal(value, &i.NumVal)
+		return Number
 	}
-
 	if _, err := strconv.ParseBool(strValue); err == nil {
-		i.Type = Bool
-		return json.Unmarshal(value, &i.BoolVal)
+		return Bool
 	}
-	if value[0] == '[' {
-		i.Type = List
-		err := json.Unmarshal(value, &i.ListVal)
-		fmt.Println(err)
-		return err
+	var list []interface{}
+	if err := json.Unmarshal(i.Value, &list); err == nil {
+		return List
 	}
-	if value[0] == '{' {
-		i.Type = Map
-		return json.Unmarshal(value, &i.MapVal)
+	var object map[string]interface{}
+	if err := json.Unmarshal(i.Value, &object); err == nil {
+		return Map
 	}
+	return String
+}
 
-	i.Type = String
-	return json.Unmarshal(value, &i.StrVal)
+func (i *Item) UnmarshalJSON(value []byte) error {
+	return i.Value.UnmarshalJSON(value)
 }
 
 func (i *Item) String() string {
@@ -73,118 +63,54 @@ func (i *Item) String() string {
 	if err != nil {
 		panic(err)
 	}
-	if i.Type == String {
-		// chop off the double quotes
+	if jsonBytes[0] == '"' {
 		return string(jsonBytes[1 : len(jsonBytes)-1])
 	}
 	return string(jsonBytes)
 }
 
-func (i Item) Format(s fmt.State, verb rune) {
-	fmt.Fprintf(s, i.String()) //nolint
+func (i Item) Format(s fmt.State, _ rune) {
+	_, _ = fmt.Fprintf(s, i.String()) // nolint
 }
 
-// MarshalJSON implements the json.Marshaller interface.
 func (i Item) MarshalJSON() ([]byte, error) {
-	switch i.Type {
-	case String:
-		return json.Marshal(i.StrVal)
-	case Bool:
-		return json.Marshal(i.BoolVal)
-	case Number:
-		return json.Marshal(i.NumVal)
-	case Map:
-		return json.Marshal(i.MapVal)
-	case List:
-		return json.Marshal(i.ListVal)
-	default:
-		return []byte{}, fmt.Errorf("impossible Item.Type")
-	}
+	return i.Value.MarshalJSON()
 }
 
-func (i *Item) GetType() Type {
-	return i.Type
-}
-
-// +protobuf=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
-type ItemValue struct {
-	Type    Type              `protobuf:"varint,1,opt,name=type,casttype=Type"`
-	NumVal  json.Number       `protobuf:"bytes,2,opt,name=numVal"`
-	BoolVal bool              `protobuf:"bytes,3,opt,name=boolVal"`
-	StrVal  string            `protobuf:"bytes,4,opt,name=strVal"`
-	MapVal  map[string]string `protobuf:"bytes,5,opt,name=mapVal"`
-	ListVal []json.RawMessage `protobuf:"bytes,6,opt,name=listVal"`
-}
-
-// UnmarshalJSON implements the json.Unmarshaller interface.
-func (iv *ItemValue) UnmarshalJSON(value []byte) error {
-	strValue := string(value)
-	if _, err := strconv.Atoi(strValue); err == nil {
-		iv.Type = Number
-		return json.Unmarshal(value, &iv.NumVal)
-	}
-
-	if _, err := strconv.ParseFloat(strValue, 64); err == nil {
-		iv.Type = Number
-		return json.Unmarshal(value, &iv.NumVal)
-	}
-
-	if _, err := strconv.ParseBool(strValue); err == nil {
-		iv.Type = Bool
-		return json.Unmarshal(value, &iv.BoolVal)
-	}
-	if value[0] == '[' {
-		iv.Type = List
-		err := json.Unmarshal(value, &iv.ListVal)
-		fmt.Println(err)
-		return err
-	}
-	if value[0] == '{' {
-		iv.Type = Map
-		return json.Unmarshal(value, &iv.MapVal)
-	}
-
-	iv.Type = String
-	return json.Unmarshal(value, &iv.StrVal)
-
-}
-
-func (iv *ItemValue) String() string {
-	jsonBytes, err := json.Marshal(iv)
+func (i *Item) DeepCopyInto(out *Item) {
+	inBytes, err := json.Marshal(i)
 	if err != nil {
 		panic(err)
 	}
-	if iv.Type == String {
-		// chop off the double quotes
-		return string(jsonBytes[1 : len(jsonBytes)-1])
+	err = json.Unmarshal(inBytes, out)
+	if err != nil {
+		panic(err)
 	}
-	return string(jsonBytes)
 }
 
-func (iv ItemValue) Format(s fmt.State, verb rune) {
-	fmt.Fprintf(s, iv.String()) //nolint
+func (i Item) OpenAPISchemaType() []string {
+	return []string{"string", "number", "boolean", "array", "object"}
 }
 
-func (i *ItemValue) GetType() Type {
-	return i.Type
+func (i Item) OpenAPISchemaFormat() string { return "" }
+
+// you MUST assert `GetType() == Map` before invocation as this does not return errors
+func (i *Item) GetMapVal() map[string]interface{} {
+	val := make(map[string]interface{})
+	_ = json.Unmarshal(i.Value, &val)
+	return val
 }
 
-// MarshalJSON implements the json.Marshaller interface.
-func (iv ItemValue) MarshalJSON() ([]byte, error) {
-	switch iv.Type {
-	case String:
-		return json.Marshal(iv.StrVal)
-	case Bool:
-		return json.Marshal(iv.BoolVal)
-	case Number:
-		return json.Marshal(iv.NumVal)
-	case Map:
-		return json.Marshal(iv.MapVal)
-	case List:
-		return json.Marshal(iv.ListVal)
-	default:
-		return []byte{}, fmt.Errorf("impossible ItemValue.Type %v", iv.Type)
-	}
+// you MUST assert `GetType() == List` before invocation as this does not return errors
+func (i *Item) GetListVal() []interface{} {
+	val := make([]interface{}, 0)
+	_ = json.Unmarshal(i.Value, &val)
+	return val
+}
+
+// you MUST assert `GetType() == String` before invocation as this does not return errors
+func (i *Item) GetStrVal() string {
+	val := ""
+	_ = json.Unmarshal(i.Value, &val)
+	return val
 }

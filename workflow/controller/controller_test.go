@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -16,7 +17,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
@@ -102,6 +102,16 @@ spec:
       args: ["hello world"]
 `
 
+type testEventRecorderManager struct {
+	eventRecorder *record.FakeRecorder
+}
+
+func (t testEventRecorderManager) Get(string) record.EventRecorder {
+	return t.eventRecorder
+}
+
+var _ EventRecorderManager = &testEventRecorderManager{}
+
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
@@ -133,7 +143,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		eventRecorder:        record.NewFakeRecorder(16),
+		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 	}
 	return cancel, controller

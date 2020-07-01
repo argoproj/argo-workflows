@@ -90,6 +90,7 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 type createWorkflowPodOpts struct {
 	includeScriptOutput bool
 	onExitPod           bool
+	executionDeadline   time.Time
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
@@ -196,7 +197,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, opts.includeScriptOutput)
+	woc.addMetadata(pod, tmpl, opts)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -317,7 +318,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
-		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
+		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	podParams[common.LocalVarPodName] = pod.Name
 	specBytes, err := json.Marshal(pod)
@@ -528,7 +529,7 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 }
 
 // addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, includeScriptOutput bool) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
@@ -537,14 +538,20 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, incl
 	}
 
 	execCtl := common.ExecutionControl{
-		IncludeScriptOutput: includeScriptOutput,
+		IncludeScriptOutput: opts.includeScriptOutput,
 	}
 
 	if woc.workflowDeadline != nil {
 		execCtl.Deadline = woc.workflowDeadline
 	}
 
-	if woc.workflowDeadline != nil || includeScriptOutput {
+	// If we're passed down an executionDeadline, only set it if there isn't one set already, or if it's before than
+	// the one already set.
+	if !opts.executionDeadline.IsZero() && (execCtl.Deadline == nil || opts.executionDeadline.Before(*execCtl.Deadline)) {
+		execCtl.Deadline = &opts.executionDeadline
+	}
+
+	if execCtl.Deadline != nil || opts.includeScriptOutput {
 		execCtlBytes, err := json.Marshal(execCtl)
 		if err != nil {
 			panic(err)
