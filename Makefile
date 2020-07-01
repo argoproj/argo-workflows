@@ -291,7 +291,7 @@ $(GOPATH)/bin/openapi-gen: tools
 $(GOPATH)/bin/swagger: tools
 
 $(GOPATH)/bin/goimports:
-	go get golang.org/x/tools/cmd/goimports
+	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
 .PHONY: proto
 proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
