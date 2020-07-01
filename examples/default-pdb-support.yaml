@@ -5,8 +5,8 @@ metadata:
 
 spec:
   entrypoint: pdbcreate
-  serviceaccountname: default
-  poddisruptionbudget:
+  serviceAccountName: default
+  podDisruptionBudget:
     minavailable: 100%
   templates:
   - name: pdbcreate

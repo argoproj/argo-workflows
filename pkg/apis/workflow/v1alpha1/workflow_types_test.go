@@ -164,7 +164,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			{Key: "hello", Value: "World"},
 		},
 		Histogram: &Histogram{
-			Buckets: []float64{10, 20, 30},
+			Buckets: []Amount{NewAmount("10"), NewAmount("20"), NewAmount("30")},
 		},
 	}
 	stableDesc := metric.GetDesc()

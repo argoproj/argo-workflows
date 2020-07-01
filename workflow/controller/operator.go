@@ -23,6 +23,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -435,7 +436,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
+		woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
@@ -445,7 +446,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
-			woc.globalParams["workflow.outputs.parameters."+param.Name] = *param.Value
+			woc.globalParams["workflow.outputs.parameters."+param.Name] = param.Value.String()
 		}
 	}
 }
@@ -1999,12 +2000,13 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					val = *param.ValueFrom.Default
+					val = param.ValueFrom.Default.String()
 				} else {
 					return nil, err
 				}
 			}
-			param.Value = &val
+			intOrString := intstr.Parse(val)
+			param.Value = &intOrString
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
 		}
@@ -2122,7 +2124,7 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 	for _, param := range outputs.Parameters {
 		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
 		if scope != nil {
-			scope.addParamToScope(key, *param.Value)
+			scope.addParamToScope(key, param.Value.String())
 		}
 	}
 	for _, art := range outputs.Artifacts {
@@ -2187,7 +2189,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 		if len(node.Outputs.Parameters) > 0 {
 			param := make(map[string]string)
 			for _, p := range node.Outputs.Parameters {
-				param[p.Name] = *p.Value
+				param[p.Name] = p.Value.String()
 			}
 			paramList = append(paramList, param)
 		}
@@ -2235,16 +2237,16 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 		woc.wf.Status.Outputs = &wfv1.Outputs{}
 	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
-	woc.globalParams[paramName] = *param.Value
+	woc.globalParams[paramName] = param.Value.String()
 	if index == -1 {
-		woc.log.Infof("setting %s: '%s'", paramName, *param.Value)
+		woc.log.Infof("setting %s: '%s'", paramName, param.Value)
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
 		woc.wf.Status.Outputs.Parameters = append(woc.wf.Status.Outputs.Parameters, gParam)
 		woc.updated = true
 	} else {
 		prevVal := *woc.wf.Status.Outputs.Parameters[index].Value
 		if prevVal != *param.Value {
-			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, *woc.wf.Status.Outputs.Parameters[index].Value, *param.Value)
+			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, woc.wf.Status.Outputs.Parameters[index].Value, param.Value)
 			woc.wf.Status.Outputs.Parameters[index].Value = param.Value
 			woc.updated = true
 		}

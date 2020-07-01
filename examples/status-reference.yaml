@@ -23,7 +23,7 @@ spec:
             when: "{{steps.flakey-container.status}} == Succeeded"
 
     - name: flakey-container
-      script:
+      container:
         image: alpine:3.6
         command: [sh, -c]
         args: ["exit 1"]

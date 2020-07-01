@@ -28,7 +28,8 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'")
+	// `data:` is need for Monaco editors wiggly red lines
+	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data:")
 	if s.hsts {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 	}
