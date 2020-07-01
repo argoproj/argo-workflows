@@ -1,11 +1,11 @@
-# https://github.com/organizations/argoproj/settings/installations/6454883
+# https://probot.github.io/apps/stale/
 # Number of days of inactivity before an issue becomes stale
 daysUntilStale: 60
 # Number of days of inactivity before a stale issue is closed
 daysUntilClose: 7
 # Issues with these labels will never be considered stale
 exemptLabels:
-  - enhancment
+  - enhancement
   - pinned
   - security
 # Label to use when marking an issue as stale
