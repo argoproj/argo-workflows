@@ -2004,10 +2004,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
+|`default`|[`IntOrString`](#intorstring)|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|[`IntOrString`](#intorstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -2626,8 +2626,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
-
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
@@ -2647,8 +2645,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
-
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 </details>
@@ -3120,7 +3116,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3173,7 +3169,7 @@ Histogram is a Histogram prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`buckets`|`Array< number >`|Buckets is a list of bucket divisors for the histogram|
+|`buckets`|`Array<`[`Amount`](#amount)`>`|Buckets is a list of bucket divisors for the histogram|
 |`value`|`string`|Value is the value of the metric|
 
 ## MetricLabel
@@ -3187,8 +3183,6 @@ MetricLabel is a single label for a prometheus metric
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
-
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
 
@@ -3395,6 +3389,17 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## Amount
+
+Amount represent a numeric amount.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+</details>
 
 # External Fields
 
@@ -3731,6 +3736,13 @@ LocalObjectReference contains enough information to let you locate the reference
 ## PodDisruptionBudgetSpec
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4117,6 +4129,23 @@ A single application container that you want to run within a pod.
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
+## IntOrString
+
+IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+</details>
+
 ## EnvVar
 
 EnvVar represents an environment variable present in a Container.
@@ -4431,10 +4460,6 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 |:----------:|:----------:|---------------|
 |`name`|`string`|Required.|
 |`value`|`string`|_No description available_|
-
-## IntOrString
-
-IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
 
 ## LabelSelector
 
