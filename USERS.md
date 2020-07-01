@@ -74,3 +74,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Wavefront](https://www.wavefront.com/)
+1. [Wellcome Trust](https://wellcome.ac.uk/)
