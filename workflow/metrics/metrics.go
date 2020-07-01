@@ -154,11 +154,10 @@ func (m *Metrics) CronWorkflowSubmissionError() {
 	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
 }
 
-var _ workqueue.MetricsProvider = Metrics{}
+// Act as a metrics provider for a workflow queue
+var _ workqueue.MetricsProvider = &Metrics{}
 
-
-
-func (m Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
+func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 	key := fmt.Sprintf("%s-depth", name)
 	if _, ok := m.workqueueMetrics[key]; !ok {
 		m.workqueueMetrics[key] = newGauge("queue_depth_count", "Depth of the queue", map[string]string{"queue_name": name})
@@ -166,7 +165,7 @@ func (m Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 	return m.workqueueMetrics[key].(prometheus.Gauge)
 }
 
-func (m Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
+func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 	key := fmt.Sprintf("%s-adds", name)
 	if _, ok := m.workqueueMetrics[key]; !ok {
 		m.workqueueMetrics[key] = newCounter("queue_adds_count", "Adds to the queue", map[string]string{"queue_name": name})
@@ -182,12 +181,12 @@ func (noopMetric) Dec()            {}
 func (noopMetric) Set(float64)     {}
 func (noopMetric) Observe(float64) {}
 
-func (m Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric      { return noopMetric{} }
-func (m Metrics) NewRetriesMetric(name string) workqueue.CounterMetric        { return noopMetric{} }
-func (m Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric { return noopMetric{} }
-func (m Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
+func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric      { return noopMetric{} }
+func (m *Metrics) NewRetriesMetric(name string) workqueue.CounterMetric        { return noopMetric{} }
+func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric { return noopMetric{} }
+func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	return noopMetric{}
 }
-func (m Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
+func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
 	return noopMetric{}
 }
