@@ -143,12 +143,7 @@ func (m Metrics) CronWorkflowSubmissionError() {
 
 var _ workqueue.MetricsProvider = Metrics{}
 
-type noopWorkqueueMetric struct{}
 
-func (noopWorkqueueMetric) Inc()            {}
-func (noopWorkqueueMetric) Dec()            {}
-func (noopWorkqueueMetric) Set(float64)     {}
-func (noopWorkqueueMetric) Observe(float64) {}
 
 func (m Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 	key := fmt.Sprintf("%s-depth", name)
@@ -166,22 +161,20 @@ func (m Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 	return m.workqueueMetrics[key].(prometheus.Counter)
 }
 
-func (m Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
-	return noopWorkqueueMetric{}
-}
+// These metrics are not relevant to be exposed
+type noopMetric struct{}
 
-func (m Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
-	return noopWorkqueueMetric{}
-}
+func (noopMetric) Inc()            {}
+func (noopMetric) Dec()            {}
+func (noopMetric) Set(float64)     {}
+func (noopMetric) Observe(float64) {}
 
+func (m Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric      { return noopMetric{} }
+func (m Metrics) NewRetriesMetric(name string) workqueue.CounterMetric        { return noopMetric{} }
+func (m Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric { return noopMetric{} }
 func (m Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
-	return noopWorkqueueMetric{}
+	return noopMetric{}
 }
-
 func (m Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
-	return noopWorkqueueMetric{}
-}
-
-func (m Metrics) NewRetriesMetric(name string) workqueue.CounterMetric {
-	return noopWorkqueueMetric{}
+	return noopMetric{}
 }
