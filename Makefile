@@ -489,8 +489,12 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+docs/swagger.md:
+	npm install -g swagger-markdown
+	swagger-markdown -i api/openapi-spec/swagger.json -o docs/swagger.md
+
 .PHONY: docs
-docs: api/openapi-spec/swagger.json
+docs: api/openapi-spec/swagger.json docs/swagger.md
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # pre-push

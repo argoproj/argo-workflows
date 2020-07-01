@@ -17,4 +17,5 @@ curl -H "Authorization: $ARGO_TOKEN" http://localhost:2746/api/v1/workflows/argo
 
 * Learn more on [how to generate an access token](access-token.md).
 
-You can view the API reference docs in the Argo Server UI: http://localhost:2746/apidocs or [open OpenAPI spec](https://github.com/argoproj/argo/blob/stable/api/openapi-spec/swagger.json) 
+You can view the API reference docs in the Argo Server UI: http://localhost:2746/apidocs or [open OpenAPI spec](https://github.com/argoproj/argo/blob/master/api/openapi-spec/swagger.json)
+

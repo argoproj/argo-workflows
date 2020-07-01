@@ -27,7 +27,7 @@ nav:
           - cli.md
           - variables.md
       # topics that don't require kubctl or re-configuration
-      - Advanced:
+      - Intermediate:
           - service-accounts.md
           - workflow-rbac.md
           - node-field-selector.md
@@ -41,7 +41,7 @@ nav:
           - resource-duration.md
           - workflow-creator.md
       # all other topics, including API access
-      - Expert:
+      - Advanced:
           - workflow-requirements.md
           - workflow-notifications.md
           - workflow-events.md
@@ -101,6 +101,7 @@ nav:
           - argo version: cli/argo_version.md
           - argo wait: cli/argo_wait.md
           - argo watch: cli/argo_watch.md
+      - API Reference: swagger.md
   - Operator Manual:
       - installation.md
       - Configuration:
