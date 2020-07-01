@@ -47,6 +47,32 @@ func TestWorkflowFinishedBefore(t *testing.T) {
 	assert.True(t, WorkflowFinishedBefore(t1)(Workflow{Status: WorkflowStatus{FinishedAt: metav1.Time{Time: t0}}}))
 }
 
+func TestWorkflowHappenedBetween(t *testing.T) {
+	t0 := time.Time{}
+	t1 := t0.Add(time.Second)
+	t2 := t1.Add(time.Second)
+	t3 := t2.Add(time.Second)
+	assert.False(t, WorkflowRanBetween(t0, t3)(Workflow{}))
+	assert.False(t, WorkflowRanBetween(t0, t1)(Workflow{
+		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+	assert.False(t, WorkflowRanBetween(t1, t2)(Workflow{
+		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+	assert.False(t, WorkflowRanBetween(t2, t3)(Workflow{
+		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}},
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+	assert.False(t, WorkflowRanBetween(t0, t1)(Workflow{
+		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
+	assert.False(t, WorkflowRanBetween(t2, t3)(Workflow{
+		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
+	assert.True(t, WorkflowRanBetween(t0, t3)(Workflow{
+		ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}},
+		Status:     WorkflowStatus{FinishedAt: metav1.Time{Time: t2}}}))
+}
+
 func TestArtifactLocation_HasLocation(t *testing.T) {
 	assert.False(t, (&ArtifactLocation{}).HasLocation())
 	assert.False(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).HasLocation())
