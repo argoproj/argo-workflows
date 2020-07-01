@@ -82,7 +82,7 @@ func (cm *SyncManager) Initialize(wfList *wfv1.WorkflowList) {
 				cm.syncLockMap[holding.Semaphore] = semaphore
 			}
 			for _, ele := range holding.Holders {
-				resourceKey := getResourceKey(*wf.Namespace, *wf.Name, ele)
+				resourceKey := getResourceKey(wf.Namespace, wf.Name, ele)
 				if semaphore != nil && semaphore.acquire(resourceKey) {
 					log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
 				}
@@ -142,7 +142,7 @@ func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority i
 	var syncLockName *LockName
 
 	if syncLockRef.Semaphore != nil {
-		syncLockName = getSemaphoreLockName(*wf.Namespace, syncLockRef.Semaphore)
+		syncLockName = getSemaphoreLockName(wf.Namespace, syncLockRef.Semaphore)
 		semaphoreLockKey := syncLockName.getLockKey()
 
 		semaphoreLock, found := cm.syncLockMap[semaphoreLockKey]
@@ -218,7 +218,7 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 			for _, holderName := range ele.Holders {
-				resourceKey := getResourceKey(*wf.Namespace, *wf.Name, holderName)
+				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderName)
 				syncLockHolder.release(resourceKey)
 				cm.updateConcurrencyStatus(holderName, ele.Semaphore, LockTypeSemaphore, LockActionReleased, wf)
 				log.Infof("%s released a lock from %s", resourceKey, ele.Semaphore)
