@@ -1326,5 +1326,8 @@ message WorkflowTemplateRef {
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 message WorkflowTemplateSpec {
   optional WorkflowSpec workflowSpec = 1;
+
+  // WorkflowMetadata contains some metadata of the workflow to be refer
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
 }
 

@@ -434,6 +434,14 @@ const workflowtmpl = `
     "namespace": "workflows"
   },
   "spec": {
+	"workflowMetadata": {
+	 "Labels": {
+		"labelTest": "test"
+	 },
+	 "annotations": {
+		"annotationTest": "test"
+	 }
+	},
     "entrypoint": "whalesay-template",
     "arguments": {
       "parameters": [
@@ -511,6 +519,14 @@ const clusterworkflowtmpl = `
     "name": "cluster-workflow-template-whalesay-template"
   },
   "spec": {
+	"workflowMetadata": {
+	 "Labels": {
+		"labelTest": "test"
+	 },
+	 "annotations": {
+		"annotationTest": "test"
+	 }
+	},
     "entrypoint": "whalesay-template",
     "arguments": {
       "parameters": [
@@ -870,6 +886,8 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, "labelTest")
+			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
@@ -892,6 +910,8 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, "labelTest")
+			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 }
