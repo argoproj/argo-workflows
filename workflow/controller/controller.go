@@ -85,7 +85,7 @@ type WorkflowController struct {
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	syncManager           *sync.SyncManager
-	metrics               metrics.Metrics
+	metrics               *metrics.Metrics
 	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
 }
@@ -132,7 +132,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, &wfc.metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
 	cronController.Run(ctx)
 }
 
@@ -664,13 +664,22 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			wfc.metrics.WorkflowAdded(getWfPhase(obj))
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				wfc.metrics.WorkflowAdded(key, getWfPhase(obj))
+			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			wfc.metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
+			key, err := cache.MetaNamespaceKeyFunc(new)
+			if err == nil {
+				wfc.metrics.WorkflowUpdated(key, getWfPhase(old), getWfPhase(new))
+			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			wfc.metrics.WorkflowDeleted(getWfPhase(obj))
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				wfc.metrics.WorkflowDeleted(key, getWfPhase(obj))
+			}
 		},
 	})
 }
