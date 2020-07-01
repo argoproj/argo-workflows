@@ -1460,7 +1460,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			}
 			return node, nil
 		}
-		
+
 		woc.updated = wfUpdate
 		if lockAcquired && wfUpdate {
 			if node != nil {
