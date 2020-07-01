@@ -50,7 +50,9 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     }
 
     private performActionOnSelectedWorkflows(ctx: any, title: string, action: (name: string, namespace: string) => Promise<any>): Promise<any> {
-        this.confirmAction(title);
+        if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
+            return;
+        }
         const promises = [];
         for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
             const wf = this.props.selectedWorkflows[wfUID];
@@ -65,13 +67,6 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
             );
         }
         return Promise.all(promises);
-    }
-
-    private confirmAction(title: string): void {
-        if (!confirm(`Are you sure you want to ${title.toLowerCase()} all selected workflows?`)) {
-            return;
-        }
-        return;
     }
 
     private renderActions(ctx: any): JSX.Element[] {
