@@ -13,9 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -93,7 +93,8 @@ func (s *operation) resumeWorkflow(namespace, name string) error {
 							node = markNodeStatus(wf, node, wfv1.NodeError, "output parameter \""+p.Name+"\" expression evaluation error: "+err.Error())
 							break
 						}
-						node.Outputs.Parameters[i] = wfv1.Parameter{Name: p.Name, Value: pointer.StringPtr(fmt.Sprintf("%v", value))}
+						intOrString := intstr.FromString(fmt.Sprintf("%v", value))
+						node.Outputs.Parameters[i] = wfv1.Parameter{Name: p.Name, Value: &intOrString}
 					}
 					if !node.Phase.Fulfilled() {
 						node = markNodeStatus(wf, node, wfv1.NodeSucceeded, "expression evaluated to true")

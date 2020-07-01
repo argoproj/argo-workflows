@@ -1,0 +1,41 @@
+# This example demonstrates the use of a suspend template. Suspend templates allow a workflow to
+# enter a suspended state at a predetermined point in time in the workflow. Some use cases for this
+# might include: human approval during release process, performing asynchronous/long soak tests,
+# manual judgment of a staging environment before deploying to production. To run this example,
+# submit the workflow and wait until the workflow reaches the second, "approve" step, at which point
+# the workflow will be suspended. To resume the workflow, run:
+# argo resume <workflowname>
+# A suspended template can also be specified with `duration` which will automatically resume the
+# suspended template after the specified amount of time in seconds. In this example it is used to delay
+# a release after an approval.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: suspend-template-
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: build
+        template: whalesay
+    - - name: approve
+        template: approve
+    - - name: delay
+        template: delay
+    - - name: release
+        template: whalesay
+
+  - name: approve
+    suspend: {}
+
+  - name: delay
+    suspend:
+      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]

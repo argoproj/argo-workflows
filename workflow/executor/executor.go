@@ -24,6 +24,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -463,39 +464,44 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output string
+		var output *intstr.IntOrString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
-			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
+			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
+			} else {
+				intOrString := intstr.Parse(fileContents)
+				output = &intOrString
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
-			out, err := ioutil.ReadFile(mountedPath)
+			data, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
+			} else {
+				intOrString := intstr.Parse(string(data))
+				output = &intOrString
 			}
-			output = string(out)
 		}
 
-		outputLen := len(output)
 		// Trims off a single newline for user convenience
-		if outputLen > 0 && output[outputLen-1] == '\n' {
-			output = output[0 : outputLen-1]
+		if output.Type == intstr.String {
+			trimmed := intstr.Parse(strings.TrimSuffix(output.String(), "\n"))
+			output = &trimmed
 		}
-		we.Template.Outputs.Parameters[i].Value = &output
+		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
@@ -1085,7 +1091,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 					if we.ExecutionControl.Deadline.IsZero() {
 						message = "terminated"
 					} else {
-						message = fmt.Sprintf("step exceeded workflow deadline %s", *we.ExecutionControl.Deadline)
+						message = fmt.Sprintf("Step exceeded its deadline")
 					}
 					log.Info(message)
 					_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, message)

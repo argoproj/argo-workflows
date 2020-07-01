@@ -1,0 +1,26 @@
+# This example demonstrates the ability for a workflow to use an
+# emptyDir volume.
+#
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: volumes-emptydir-
+spec:
+  entrypoint: volumes-emptydir-example
+  volumes:
+  - name: workdir
+    emptyDir: {}
+
+  templates:
+  - name: volumes-emptydir-example
+    container:
+      image: debian:latest
+      command: ["/bin/bash", "-c"]
+      args: ["
+        vol_found=`mount | grep /mnt/vol` && \
+        if [[ -n $vol_found ]]; then echo \"Volume mounted and found\"; else echo \"Not found\"; fi
+      "]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+

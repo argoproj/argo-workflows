@@ -1,0 +1,13 @@
+# This PVC manifest is to be used in conjunction with the
+# volumes-existing.yaml example. Create this PVC using
+# `kubectl create -f testvolume.yaml`, then submit this
+# volumes-existing.yaml example.
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: my-existing-volume
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 1Gi
