@@ -40,6 +40,7 @@ type Metrics struct {
 
 	workflowsProcessed prometheus.Counter
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
+	workflows          map[string]bool
 	operationDurations prometheus.Histogram
 	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
@@ -49,14 +50,15 @@ type Metrics struct {
 	defaultMetricDescs map[string]bool
 }
 
-var _ prometheus.Collector = Metrics{}
+var _ prometheus.Collector = &Metrics{}
 
-func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
-	metrics := Metrics{
+func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
+	metrics := &Metrics{
 		metricsConfig:      metricsConfig,
 		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
+		workflows:          make(map[string]bool),
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
@@ -71,7 +73,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 	return metrics
 }
 
-func (m Metrics) allMetrics() []prometheus.Metric {
+func (m *Metrics) allMetrics() []prometheus.Metric {
 	allMetrics := []prometheus.Metric{
 		m.workflowsProcessed,
 		m.operationDurations,
@@ -92,33 +94,44 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 	return allMetrics
 }
 
-func (m Metrics) WorkflowAdded(phase v1alpha1.NodePhase) {
+func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
+	if m.workflows[key] {
+		return
+	}
+	m.workflows[key] = true
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Inc()
 	}
 }
 
-func (m Metrics) WorkflowUpdated(fromPhase, toPhase v1alpha1.NodePhase) {
-	m.WorkflowDeleted(fromPhase)
-	m.WorkflowAdded(toPhase)
+func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePhase) {
+	if fromPhase == toPhase || !m.workflows[key] {
+		return
+	}
+	m.WorkflowDeleted(key, fromPhase)
+	m.WorkflowAdded(key, toPhase)
 }
 
-func (m Metrics) WorkflowDeleted(phase v1alpha1.NodePhase) {
+func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
+	if !m.workflows[key] {
+		return
+	}
+	delete(m.workflows, key)
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Dec()
 	}
 }
 
-func (m Metrics) OperationCompleted(durationSeconds float64) {
+func (m *Metrics) OperationCompleted(durationSeconds float64) {
 	m.operationDurations.Observe(durationSeconds)
 }
 
-func (m Metrics) GetCustomMetric(key string) prometheus.Metric {
+func (m *Metrics) GetCustomMetric(key string) prometheus.Metric {
 	// It's okay to return nil metrics in this function
 	return m.customMetrics[key].metric
 }
 
-func (m Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) error {
+func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) error {
 	if _, inUse := m.defaultMetricDescs[newMetric.Desc().String()]; inUse {
 		return fmt.Errorf("metric '%s' is already in use by the system, please use a different name", newMetric.Desc())
 	}
@@ -133,11 +146,11 @@ const (
 	ErrorCauseCronWorkflowSubmissionError ErrorCause = "CronWorkflowSubmissionError"
 )
 
-func (m Metrics) OperationPanic() {
+func (m *Metrics) OperationPanic() {
 	m.errors[ErrorCauseOperationPanic].Inc()
 }
 
-func (m Metrics) CronWorkflowSubmissionError() {
+func (m *Metrics) CronWorkflowSubmissionError() {
 	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
 }
 
