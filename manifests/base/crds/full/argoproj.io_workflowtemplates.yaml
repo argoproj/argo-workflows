@@ -857,6 +857,23 @@ spec:
               type: string
             suspend:
               type: boolean
+            synchronization:
+              properties:
+                semaphore:
+                  properties:
+                    configMapKeyRef:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - key
+                      type: object
+                  type: object
+              type: object
             templates:
               items:
                 properties:
@@ -5502,6 +5519,23 @@ spec:
                     properties:
                       duration:
                         type: string
+                    type: object
+                  synchronization:
+                    properties:
+                      semaphore:
+                        properties:
+                          configMapKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        type: object
                     type: object
                   template:
                     type: string

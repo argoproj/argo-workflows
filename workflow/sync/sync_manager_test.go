@@ -460,7 +460,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		// Increase the TypeSemaphore Size
+		// Increase the semaphore Size
 		cm, err := kube.CoreV1().ConfigMaps("default").Get("my-config", metav1.GetOptions{})
 		assert.NoError(t, err)
 		cm.Data["workflow"] = "3"

@@ -44,15 +44,15 @@ type Synchronization interface {
 type LockAction string
 
 const (
-	acquired LockAction = "acquired"
-	released LockAction = "released"
-	waiting  LockAction = "waiting"
+	LockActionAcquired LockAction = "acquired"
+	LockActionReleased LockAction = "released"
+	LockActionWaiting  LockAction = "waiting"
 )
 
 type LockType string
 
 const (
-	TypeSemaphore LockType = "semaphore"
+	LockTypeSemaphore LockType = "semaphore"
 )
 
 func NewLockManager(getSyncLimitConfigFunc func(string) (int, error), callbackFunc func(string)) *SyncManager {
@@ -71,7 +71,6 @@ func (cm *SyncManager) Initialize(wfList *wfv1.WorkflowList) {
 			continue
 		}
 		for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
-
 			semaphore := cm.syncLockMap[holding.Semaphore]
 			if semaphore == nil {
 				semaphore, err := cm.initializeSemaphore(holding.Semaphore)
@@ -83,8 +82,7 @@ func (cm *SyncManager) Initialize(wfList *wfv1.WorkflowList) {
 				cm.syncLockMap[holding.Semaphore] = semaphore
 			}
 			for _, ele := range holding.Holders {
-
-				resourceKey := getResourceKey(wf.Namespace, wf.Name, ele)
+				resourceKey := getResourceKey(*wf.Namespace, *wf.Name, ele)
 				if semaphore != nil && semaphore.acquire(resourceKey) {
 					log.Infof("Lock acquired by %s from %s", resourceKey, holding.Semaphore)
 				}
@@ -114,11 +112,10 @@ func (cm *SyncManager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, 
 	if err != nil {
 		return false, semaphore.getLimit(), err
 	}
-	return !(semaphore.getLimit() == limit), limit, nil
+	return semaphore.getLimit() != limit, limit, nil
 }
 
 func (cm *SyncManager) checkAndUpdateSemaphoreSize(semaphore Synchronization) error {
-
 	changed, newLimit, err := cm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
 		return err
@@ -130,7 +127,7 @@ func (cm *SyncManager) checkAndUpdateSemaphoreSize(semaphore Synchronization) er
 }
 
 // TryAcquire tries to acquire the lock from semaphore.
-// It returns status of acquiring a lock , status of Workflow status updated,  waiting message if lock is not available and any error encountered
+// It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
 func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
@@ -145,7 +142,7 @@ func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority i
 	var syncLockName *LockName
 
 	if syncLockRef.Semaphore != nil {
-		syncLockName = getSemaphoreLockName(wf.Namespace, syncLockRef.Semaphore)
+		syncLockName = getSemaphoreLockName(*wf.Namespace, syncLockRef.Semaphore)
 		semaphoreLockKey := syncLockName.getLockKey()
 
 		semaphoreLock, found := cm.syncLockMap[semaphoreLockKey]
@@ -162,7 +159,7 @@ func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority i
 		if err != nil {
 			return false, false, "", err
 		}
-		lockType = TypeSemaphore
+		lockType = LockTypeSemaphore
 	}
 
 	if syncLockName == nil {
@@ -180,11 +177,11 @@ func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority i
 
 	status, msg := syncLock.tryAcquire(holderKey)
 	if status {
-		updated := cm.updateConcurrencyStatus(holderKey, syncLockKey, lockType, acquired, wf)
+		updated := cm.updateConcurrencyStatus(holderKey, syncLockKey, lockType, LockActionAcquired, wf)
 		return true, updated, "", nil
 	}
 
-	updated := cm.updateConcurrencyStatus(holderKey, syncLockKey, lockType, waiting, wf)
+	updated := cm.updateConcurrencyStatus(holderKey, syncLockKey, lockType, LockActionWaiting, wf)
 	return false, updated, msg, nil
 }
 
@@ -202,7 +199,7 @@ func (cm *SyncManager) Release(wf *wfv1.Workflow, nodeName, namespace string, sy
 		if syncLockHolder, ok := cm.syncLockMap[lockName.getLockKey()]; ok {
 			syncLockHolder.release(holderKey)
 			log.Debugf("%s sync lock is released by %s", lockName.getLockKey(), holderKey)
-			cm.updateConcurrencyStatus(holderKey, lockName.getLockKey(), TypeSemaphore, released, wf)
+			cm.updateConcurrencyStatus(holderKey, lockName.getLockKey(), LockTypeSemaphore, LockActionReleased, wf)
 		}
 	}
 }
@@ -221,9 +218,9 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 				continue
 			}
 			for _, holderName := range ele.Holders {
-				resourceKey := getResourceKey(wf.Namespace, wf.Name, holderName)
+				resourceKey := getResourceKey(*wf.Namespace, *wf.Name, holderName)
 				syncLockHolder.release(resourceKey)
-				cm.updateConcurrencyStatus(holderName, ele.Semaphore, TypeSemaphore, released, wf)
+				cm.updateConcurrencyStatus(holderName, ele.Semaphore, LockTypeSemaphore, LockActionReleased, wf)
 				log.Infof("%s released a lock from %s", resourceKey, ele.Semaphore)
 			}
 		}
@@ -241,8 +238,8 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 	if wf.Status.Synchronization == nil {
 		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
 	}
-	if lockType == TypeSemaphore {
-		if lockAction == waiting {
+	if lockType == LockTypeSemaphore {
+		if lockAction == LockActionWaiting {
 			index, semaphoreWaiting := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Waiting, lockKey)
 			currentHolder := cm.getCurrentLockHolders(lockKey)
 			if index == -1 {
@@ -254,7 +251,7 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 			return true
 		}
 
-		if lockAction == acquired {
+		if lockAction == LockActionAcquired {
 			index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
 			items := strings.Split(holderKey, "/")
 			holdingName := items[len(items)-1]
@@ -270,7 +267,7 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 			}
 			return false
 		}
-		if lockAction == released {
+		if lockAction == LockActionReleased {
 			items := strings.Split(holderKey, "/")
 			holdingName := items[len(items)-1]
 			index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
@@ -314,6 +311,7 @@ func DecodeLockName(lockName string) (*LockName, error) {
 	}
 	return lock, nil
 }
+
 func NewLockName(namespace, kind, resourceName, lockKey string) *LockName {
 	return &LockName{
 		Namespace:    namespace,
@@ -343,7 +341,7 @@ func getSemaphoreLockName(namespace string, semaphoreRef *wfv1.SemaphoreRef) *Lo
 
 func getResourceKey(namespace, wfName, resourceName string) string {
 	resourceKey := fmt.Sprintf("%s/%s", namespace, wfName)
-	// Template level TypeSemaphore
+	// Template level semaphore
 	if resourceName != wfName {
 		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
 	}

@@ -79,7 +79,7 @@ func (s *Semaphore) release(key string) bool {
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[key]; ok {
 		delete(s.lockHolder, key)
-		// When TypeSemaphore resized downward
+		// When semaphore resized downward
 		// Remove the excess holders from map once the done.
 		if len(s.lockHolder) >= s.limit {
 			return true
@@ -135,7 +135,7 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 	var nextKey string
 
-	waitingMsg := fmt.Sprintf("waiting for %s lock. Lock status: %d/%d ", s.name, s.limit-len(s.lockHolder), s.limit)
+	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d ", s.name, s.limit-len(s.lockHolder), s.limit)
 
 	// Check whether requested holdkey is in front of priority queue.
 	// If it is in front position, it will allow to acquire lock.
@@ -153,6 +153,6 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 		s.log.Infof("%s acquired by %s ", s.name, nextKey)
 		return true, ""
 	}
-	s.log.Debugf("Current TypeSemaphore Holders. %v", s.lockHolder)
+	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
 	return false, waitingMsg
 }

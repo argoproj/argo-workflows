@@ -224,7 +224,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	wfc.syncManager.Initialize(wfList)
-	return err
+	return nil
 }
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
@@ -837,7 +837,7 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	}
 	wfc.syncManager.ReleaseAll(wf)
 }
+
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
-
 }
