@@ -93,9 +93,12 @@ COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
 
-# order is important, building can make the build dirty
+# controller image
 RUN make dist/workflow-controller-linux-${IMAGE_ARCH}
+RUN ./dist/workflow-controller-linux-${IMAGE_ARCH} version 
 RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean"]
+
+# executor image
 RUN make dist/argoexec-linux-${IMAGE_ARCH}
 RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean"]
 
