@@ -491,7 +491,7 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 
 .PHONY: docs
 docs: api/openapi-spec/swagger.json
-	go run ./hack docgen
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # pre-push
 
