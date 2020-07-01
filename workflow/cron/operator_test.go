@@ -176,7 +176,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
-		metrics:     &testMetrics,
+		metrics:     testMetrics,
 	}
 	woc.Run()
 
@@ -232,7 +232,7 @@ func TestSpecError(t *testing.T) {
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
-		metrics:     &testMetrics,
+		metrics:     testMetrics,
 	}
 
 	err = woc.validateCronWorkflow()
@@ -260,7 +260,7 @@ func TestReapplyUpdate(t *testing.T) {
 		cronWf:      &cronWf,
 		origCronWf:  cronWf.DeepCopy(),
 		log:         logrus.WithFields(logrus.Fields{}),
-		metrics:     &testMetrics,
+		metrics:     testMetrics,
 	}
 
 	cronWf.Spec.Schedule = "1 * * * *"
