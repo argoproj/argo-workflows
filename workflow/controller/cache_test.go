@@ -1,8 +1,9 @@
 package controller
 
 import (
-	apiv1 "k8s.io/api/core/v1"
 	"testing"
+
+	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
