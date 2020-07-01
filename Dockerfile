@@ -73,10 +73,11 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 FROM node:14.0.0 as argo-ui
 
-ADD ["ui", "."]
+ADD ["ui", "ui"]
+ADD ["api", "api"]
 
-RUN yarn install
-RUN yarn build
+RUN yarn --cwd ui install
+RUN yarn --cwd ui build
 
 ####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
@@ -92,7 +93,7 @@ COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
 RUN mkdir -p ui/dist
-COPY --from=argo-ui dist/app ui/dist/app
+COPY --from=argo-ui ui/dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
