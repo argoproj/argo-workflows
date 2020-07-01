@@ -16,7 +16,7 @@ import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import * as Operations from '../../../shared/workflow-operations';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
-import {WorkflowYamlPanel} from './workflow-yaml-panel';
+import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 require('./workflow-details.scss');
 
@@ -292,7 +292,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                     )}
                     <h6>Artifacts</h6>
                     <WorkflowArtifacts workflow={this.state.workflow} archived={false} />
-                    <WorkflowYamlPanel workflow={this.state.workflow} />
+                    <WorkflowResourcePanel workflow={this.state.workflow} />
                 </div>
             </div>
         );

@@ -508,8 +508,7 @@ const clusterworkflowtmpl = `
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
-    "name": "cluster-workflow-template-whalesay-template",
-    "namespace": "workflows"
+    "name": "cluster-workflow-template-whalesay-template"
   },
   "spec": {
     "entrypoint": "whalesay-template",
@@ -622,7 +621,7 @@ func TestWatchWorkflows(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
-		assert.EqualError(t, err, "context canceled")
+		assert.NoError(t, err)
 	}()
 	cancel()
 }
@@ -640,7 +639,7 @@ func TestWatchLatestWorkflow(t *testing.T) {
 				FieldSelector: util.GenerateFieldSelectorFromWorkflowName("@latest"),
 			},
 		}, &testWatchWorkflowServer{testServerStream{ctx}})
-		assert.EqualError(t, err, "context canceled")
+		assert.NoError(t, err)
 	}()
 	cancel()
 }

@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: dag-diamond-
-  labels:
-    argo-e2e: true
 spec:
   entrypoint: diamond
   templates:
@@ -13,30 +11,34 @@ spec:
           - name: A
             template: pass
           - name: B
-            depends: "A"
+            depends: A
             template: pass
           - name: C
-            depends: "A"
+            depends: A
             template: fail
           - name: should-execute-1
             depends: "A && (C.Succeeded || C.Failed)"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
             template: pass
           - name: should-execute-2
-            depends: "B || C"
+            depends: B || C
             template: pass
           - name: should-not-execute
-            depends: "B && C"
+            depends: B && C
             template: pass
           - name: should-execute-3
-            depends: "should-execute-2.Succeeded || should-not-execute"
+            depends: should-execute-2.Succeeded || should-not-execute
             template: pass
-
     - name: pass
       container:
         image: alpine:3.7
-        command: [sh, -c, "exit 0"]
-
+        command:
+          - sh
+          - -c
+          - exit 0
     - name: fail
       container:
         image: alpine:3.7
-        command: [sh, -c, "exit 1"]
+        command:
+          - sh
+          - -c
+          - exit 1
