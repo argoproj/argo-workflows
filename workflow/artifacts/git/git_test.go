@@ -22,10 +22,10 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
 				Git: &wfv1.GitArtifact{
-					Repo:   "https://github.com/argoproj/argoproj.git",
-					Branch: "master",
+					Repo:         "https://github.com/argoproj/argoproj.git",
+					Branch:       "master",
 					SingleBranch: true,
-					Depth:  &d,
+					Depth:        &d,
 				},
 			},
 		}, path)
