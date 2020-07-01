@@ -173,6 +173,14 @@ func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 	return m.workqueueMetrics[key].(prometheus.Counter)
 }
 
+func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
+	key := fmt.Sprintf("%s-latency", name)
+	if _, ok := m.workqueueMetrics[key]; !ok {
+		m.workqueueMetrics[key] = newHistogram("queue_latency", "Time objects spend waiting in the queue", map[string]string{"queue_name": name}, []float64{1.0, 5.0, 20.0, 60.0, 180.0})
+	}
+	return m.workqueueMetrics[key].(prometheus.Histogram)
+}
+
 // These metrics are not relevant to be exposed
 type noopMetric struct{}
 
@@ -181,7 +189,6 @@ func (noopMetric) Dec()            {}
 func (noopMetric) Set(float64)     {}
 func (noopMetric) Observe(float64) {}
 
-func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric      { return noopMetric{} }
 func (m *Metrics) NewRetriesMetric(name string) workqueue.CounterMetric        { return noopMetric{} }
 func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric { return noopMetric{} }
 func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
