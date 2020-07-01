@@ -2356,6 +2356,10 @@
         "repo"
       ],
       "properties": {
+        "branch": {
+          "description": "Branch is the git branch to checkout. This is faster than `revision`. Use with `depth` and `singleBranch`.",
+          "type": "string"
+        },
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer",
@@ -2381,8 +2385,12 @@
           "type": "string"
         },
         "revision": {
-          "description": "Revision is the git commit, tag, branch to checkout",
+          "description": "Revision is the git commit, tag, branch to checkout. This is slower that `branch`.",
           "type": "string"
+        },
+        "singleBranch": {
+          "description": "SingleBranch checks out in single-branch mode. Use with `branch`.",
+          "type": "boolean"
         },
         "sshPrivateKeySecret": {
           "description": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",

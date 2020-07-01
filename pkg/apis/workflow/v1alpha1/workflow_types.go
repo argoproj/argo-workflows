@@ -1368,7 +1368,13 @@ type GitArtifact struct {
 	// Repo is the git repository
 	Repo string `json:"repo" protobuf:"bytes,1,opt,name=repo"`
 
-	// Revision is the git commit, tag, branch to checkout
+	// Branch is the git branch to checkout. This is faster than `revision`. Use with `depth` and `singleBranch`.
+	Branch string `json:"branch,omitempty" protobuf:"bytes,9,opt,name=branch"`
+
+	// SingleBranch checks out in single-branch mode. Use with `branch`.
+	SingleBranch bool `json:"singleBranch,omitempty" protobuf:"varint,10,opt,name=singleBranch"`
+
+	// Revision is the git commit, tag, branch to checkout. This is slower that `branch`.
 	Revision string `json:"revision,omitempty" protobuf:"bytes,2,opt,name=revision"`
 
 	// Depth specifies clones/fetches should be shallow and include the given

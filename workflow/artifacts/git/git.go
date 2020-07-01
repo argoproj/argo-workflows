@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/config"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
@@ -101,12 +102,17 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		return err
 	}
 	defer closer()
-	repo, err := git.PlainClone(path, false, &git.CloneOptions{
+	cloneOptions := &git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 		Auth:              auth,
 		Depth:             inputArtifact.Git.GetDepth(),
-	})
+		SingleBranch:      inputArtifact.Git.SingleBranch,
+	}
+	if inputArtifact.Git.Branch != "" {
+		cloneOptions.ReferenceName = plumbing.NewBranchReferenceName(inputArtifact.Git.Branch)
+	}
+	repo, err := git.PlainClone(path, false, cloneOptions)
 	if err != nil {
 		return err
 	}

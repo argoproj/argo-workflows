@@ -1152,9 +1152,23 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"branch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Branch is the git branch to checkout. This is faster than `revision`. Use with `depth` and `singleBranch`.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"singleBranch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SingleBranch checks out in single-branch mode. Use with `branch`.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"revision": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Revision is the git commit, tag, branch to checkout",
+							Description: "Revision is the git commit, tag, branch to checkout. This is slower that `branch`.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

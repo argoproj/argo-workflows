@@ -16,22 +16,41 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 	_ = os.Remove("git-ask-pass.sh")
 	driver := &GitArtifactDriver{}
 	path := "/tmp/git-found"
-	assert.NoError(t, os.RemoveAll(path))
-	assert.NoError(t, os.MkdirAll(path, 0777))
-	err := driver.Load(&wfv1.Artifact{
-		ArtifactLocation: wfv1.ArtifactLocation{
-			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argoproj.git",
-				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
-				Revision: "HEAD",
-				Depth:    &d,
+	t.Run("Branch", func(t *testing.T) {
+		assert.NoError(t, os.RemoveAll(path))
+		assert.NoError(t, os.MkdirAll(path, 0777))
+		err := driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Git: &wfv1.GitArtifact{
+					Repo:   "https://github.com/argoproj/argoproj.git",
+					Branch: "master",
+					SingleBranch: true,
+					Depth:  &d,
+				},
 			},
-		},
-	}, path)
-	if assert.NoError(t, err) {
-		_, err := os.Stat(path)
-		assert.NoError(t, err)
-	}
+		}, path)
+		if assert.NoError(t, err) {
+			_, err := os.Stat(path)
+			assert.NoError(t, err)
+		}
+	})
+	t.Run("Revision", func(t *testing.T) {
+		assert.NoError(t, os.RemoveAll(path))
+		assert.NoError(t, os.MkdirAll(path, 0777))
+		err := driver.Load(&wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				Git: &wfv1.GitArtifact{
+					Repo:     "https://github.com/argoproj/argoproj.git",
+					Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
+					Revision: "HEAD",
+				},
+			},
+		}, path)
+		if assert.NoError(t, err) {
+			_, err := os.Stat(path)
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func TestGitArtifactDriver_Save(t *testing.T) {

@@ -347,7 +347,13 @@ message GitArtifact {
   // Repo is the git repository
   optional string repo = 1;
 
-  // Revision is the git commit, tag, branch to checkout
+  // Branch is the git branch to checkout. This is faster than `revision`. Use with `depth` and `singleBranch`.
+  optional string branch = 9;
+
+  // SingleBranch checks out in single-branch mode. Use with `branch`.
+  optional bool singleBranch = 10;
+
+  // Revision is the git commit, tag, branch to checkout. This is slower that `branch`.
   optional string revision = 2;
 
   // Depth specifies clones/fetches should be shallow and include the given

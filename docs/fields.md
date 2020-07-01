@@ -2955,12 +2955,14 @@ GitArtifact is the location of an git artifact
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`branch`|`string`|Branch is the git branch to checkout. This is faster than `revision`. Use with `depth` and `singleBranch`.|
 |`depth`|`int64`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
 |`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
 |`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`repo`|`string`|Repo is the git repository|
-|`revision`|`string`|Revision is the git commit, tag, branch to checkout|
+|`revision`|`string`|Revision is the git commit, tag, branch to checkout. This is slower that `branch`.|
+|`singleBranch`|`boolean`|SingleBranch checks out in single-branch mode. Use with `branch`.|
 |`sshPrivateKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SSHPrivateKeySecret is the secret selector to the repository ssh private key|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
 
