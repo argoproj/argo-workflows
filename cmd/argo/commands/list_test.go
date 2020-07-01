@@ -2,9 +2,10 @@ package commands
 
 import (
 	"context"
-	"github.com/argoproj/argo/workflow/common"
 	"testing"
 	"time"
+
+	"github.com/argoproj/argo/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
