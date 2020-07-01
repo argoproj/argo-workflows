@@ -47,14 +47,21 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	m.WorkflowAdded(v1alpha1.NodeRunning)
+	m.WorkflowAdded("wf", v1alpha1.NodeRunning)
 	var metric dto.Metric
 	err := m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, float64(1), *metric.Gauge.Value)
 	}
 
-	m.WorkflowUpdated(v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
+	// Test that we don't double add
+	m.WorkflowAdded("wf", v1alpha1.NodeRunning)
+	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(1), *metric.Gauge.Value)
+	}
+
+	m.WorkflowUpdated("wf", v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
 	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, float64(0), *metric.Gauge.Value)
@@ -64,8 +71,26 @@ func TestMetrics(t *testing.T) {
 		assert.Equal(t, float64(1), *metric.Gauge.Value)
 	}
 
-	m.WorkflowDeleted(v1alpha1.NodeSucceeded)
+	m.WorkflowDeleted("wf", v1alpha1.NodeSucceeded)
 	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
+
+	// Test that we don't double delete
+	m.WorkflowDeleted("wf", v1alpha1.NodeSucceeded)
+	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
+
+	// Test that we don't update workflows that we're not tracking
+	m.WorkflowUpdated("does-not-exist", v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
+	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
+	err = m.workflowsByPhase[v1alpha1.NodeSucceeded].Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, float64(0), *metric.Gauge.Value)
 	}
