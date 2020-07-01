@@ -637,7 +637,7 @@ func TestWatchWorkflows(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
-		assert.EqualError(t, err, "context canceled")
+		assert.NoError(t, err)
 	}()
 	cancel()
 }
@@ -655,7 +655,7 @@ func TestWatchLatestWorkflow(t *testing.T) {
 				FieldSelector: util.GenerateFieldSelectorFromWorkflowName("@latest"),
 			},
 		}, &testWatchWorkflowServer{testServerStream{ctx}})
-		assert.EqualError(t, err, "context canceled")
+		assert.NoError(t, err)
 	}()
 	cancel()
 }

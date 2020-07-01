@@ -6,7 +6,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
@@ -84,14 +84,17 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                         </div>
                         {this.state.template && (
                             <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                                <ResourceSubmit<models.Workflow>
-                                    resourceName={'Workflow'}
-                                    defaultResource={this.getWorkflow(this.state.template)}
+                                <ResourceEditor
+                                    title='Submit New Workflow'
+                                    kind='Workflow'
+                                    value={this.getWorkflow(this.state.template)}
                                     onSubmit={wfValue => {
-                                        return services.workflows
+                                        services.workflows
                                             .create(wfValue, wfValue.metadata.namespace)
-                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)));
+                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+                                            .catch(error => this.setState({error}));
                                     }}
+                                    editing={true}
                                 />
                             </SlidingPanel>
                         )}

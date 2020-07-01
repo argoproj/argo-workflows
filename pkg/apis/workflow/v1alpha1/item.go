@@ -88,9 +88,11 @@ func (i *Item) DeepCopyInto(out *Item) {
 	}
 }
 
-func (i Item) OpenAPISchemaType() []string { return []string{"object"} }
+func (i Item) OpenAPISchemaType() []string {
+	return []string{"string", "number", "boolean", "array", "object"}
+}
 
-func (i Item) OpenAPISchemaFormat() string { return "item" }
+func (i Item) OpenAPISchemaFormat() string { return "" }
 
 // you MUST assert `GetType() == Map` before invocation as this does not return errors
 func (i *Item) GetMapVal() map[string]interface{} {

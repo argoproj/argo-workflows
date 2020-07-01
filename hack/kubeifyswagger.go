@@ -4,11 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
-
-	log "github.com/sirupsen/logrus"
 )
-
-type obj = map[string]interface{}
 
 func kubeifySwagger(in, out string) {
 	data, err := ioutil.ReadFile(in)
@@ -32,10 +28,15 @@ func kubeifySwagger(in, out string) {
 	for n, d := range definitions {
 		kd, ok := kubernetesDefinitions[n]
 		if ok && !reflect.DeepEqual(d, kd) {
-			log.Infof("replacing bad definition %s", n)
+			println("replacing bad definition " + n)
 			definitions[n] = kd
 		}
 	}
+	// "omitempty" does not work for non-nil structs, so we must change it here
+	definitions["io.argoproj.workflow.v1alpha1.CronWorkflow"].(obj)["required"] = array{"metadata", "spec"}
+	definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)["required"] = array{"metadata", "spec"}
+	definitions["io.argoproj.workflow.v1alpha1.ScriptTemplate"].(obj)["required"] = array{"image", "source"}
+	definitions["io.k8s.api.core.v1.Container"].(obj)["required"] = array{"image"}
 	data, err = json.MarshalIndent(swagger, "", "  ")
 	if err != nil {
 		panic(err)
