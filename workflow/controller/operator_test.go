@@ -3914,11 +3914,11 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 }
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
-	var MockParamValue string = "Hello world"
+	MockParamValue := "Hello world"
 
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: &MockParamValue,
+		Value: &intstr.IntOrString{StrVal: MockParamValue},
 	}
 
 	outputs := wfv1.Outputs{}

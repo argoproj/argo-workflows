@@ -1040,11 +1040,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 			if err != nil {
 				log.Errorf("Failed to create template context for node %s", node.ID)
+				log.WithError(err)
 				return nil
 			}
 			_, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(node)
 			if err != nil {
 				log.Errorf("Failed to resolve template for node %s: %s", node.ID, err)
+				log.WithError(err)
 				return nil
 			}
 
@@ -1065,7 +1067,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			if tmpl.Memoize != nil {
 				c := woc.controller.cache.(*configMapCache)
 				c.configMapName = tmpl.Memoize.Cache.ConfigMapName.Name
-				c.Save(tmpl.Memoize.Key, node.ID, node.Outputs)
+				err := c.Save(tmpl.Memoize.Key, node.ID, node.Outputs)
+				if err != nil {
+					log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
+				}
 			}
 		}
 	}
@@ -1441,8 +1446,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if resolvedTmpl.Memoize != nil && node == nil {
 		c = woc.controller.cache.(*configMapCache)
 		c.configMapName = processedTmpl.Memoize.Cache.ConfigMapName.Name
-		storedOutput, ok := c.Load(processedTmpl.Memoize.Key)
-		if storedOutput != nil && ok {
+		storedOutput, err := c.Load(processedTmpl.Memoize.Key)
+		if err != nil {
+			return nil, err
+		}
+		if storedOutput != nil {
 			node = woc.initializeCacheHitNode(nodeName, processedTmpl.GetNodeType(), templateScope, orgTmpl, opts.boundaryID, storedOutput)
 			return node, nil
 		}

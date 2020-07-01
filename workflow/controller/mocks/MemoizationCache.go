@@ -13,7 +13,7 @@ type MemoizationCache struct {
 }
 
 // Load provides a mock function with given fields: key
-func (_m *MemoizationCache) Load(key string) (*v1alpha1.Outputs, bool) {
+func (_m *MemoizationCache) Load(key string) (*v1alpha1.Outputs, error) {
 	ret := _m.Called(key)
 
 	var r0 *v1alpha1.Outputs
@@ -25,25 +25,25 @@ func (_m *MemoizationCache) Load(key string) (*v1alpha1.Outputs, bool) {
 		}
 	}
 
-	var r1 bool
-	if rf, ok := ret.Get(1).(func(string) bool); ok {
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(key)
 	} else {
-		r1 = ret.Get(1).(bool)
+		r1 = ret.Error(1)
 	}
 
 	return r0, r1
 }
 
-// Save provides a mock function with given fields: key, node_id, value
-func (_m *MemoizationCache) Save(key string, node_id string, value *v1alpha1.Outputs) bool {
-	ret := _m.Called(key, node_id, value)
+// Save provides a mock function with given fields: key, nodeId, value
+func (_m *MemoizationCache) Save(key string, nodeId string, value *v1alpha1.Outputs) error {
+	ret := _m.Called(key, nodeId, value)
 
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(string, string, *v1alpha1.Outputs) bool); ok {
-		r0 = rf(key, node_id, value)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, *v1alpha1.Outputs) error); ok {
+		r0 = rf(key, nodeId, value)
 	} else {
-		r0 = ret.Get(0).(bool)
+		r0 = ret.Error(0)
 	}
 
 	return r0

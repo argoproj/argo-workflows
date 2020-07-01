@@ -3532,6 +3532,33 @@ spec:
                           type: object
                         type: array
                     type: object
+                  memoize:
+                    properties:
+                      cache:
+                        properties:
+                          configMapName:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        required:
+                        - configMapName
+                        type: object
+                      key:
+                        type: string
+                      maxAge:
+                        type: string
+                    required:
+                    - cache
+                    - key
+                    - maxAge
+                    type: object
                   metadata:
                     properties:
                       annotations:
@@ -7254,6 +7281,8 @@ spec:
                           type: object
                         type: array
                     type: object
+                  memoized:
+                    type: boolean
                   message:
                     type: string
                   name:
@@ -11227,6 +11256,33 @@ spec:
                           - name
                           type: object
                         type: array
+                    type: object
+                  memoize:
+                    properties:
+                      cache:
+                        properties:
+                          configMapName:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        required:
+                        - configMapName
+                        type: object
+                      key:
+                        type: string
+                      maxAge:
+                        type: string
+                    required:
+                    - cache
+                    - key
+                    - maxAge
                     type: object
                   metadata:
                     properties:
@@ -17334,6 +17390,33 @@ spec:
                               - name
                               type: object
                             type: array
+                        type: object
+                      memoize:
+                        properties:
+                          cache:
+                            properties:
+                              configMapName:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                            required:
+                            - configMapName
+                            type: object
+                          key:
+                            type: string
+                          maxAge:
+                            type: string
+                        required:
+                        - cache
+                        - key
+                        - maxAge
                         type: object
                       metadata:
                         properties:

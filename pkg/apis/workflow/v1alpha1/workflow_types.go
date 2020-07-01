@@ -1199,6 +1199,7 @@ type NodeStatus struct {
 	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
 	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 
+	// Memoized indicates if this node was part of a template that had memoization on
 	Memoized bool `json:"memoized,omitempty"`
 }
 
