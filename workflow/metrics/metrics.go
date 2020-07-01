@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -45,6 +46,16 @@ type Metrics struct {
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
+	logMetric          *prometheus.CounterVec
+}
+
+func (m Metrics) Levels() []log.Level {
+	return []log.Level{log.InfoLevel, log.WarnLevel, log.ErrorLevel}
+}
+
+func (m Metrics) Fire(entry *log.Entry) error {
+	m.logMetric.WithLabelValues(entry.Level.String()).Inc()
+	return nil
 }
 
 var _ prometheus.Collector = Metrics{}
@@ -59,11 +70,21 @@ func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		defaultMetricDescs: make(map[string]bool),
+		logMetric: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "log_messages",
+			Help: "Total number of log messages.",
+		}, []string{"level"}),
 	}
 
 	for _, metric := range metrics.allMetrics() {
 		metrics.defaultMetricDescs[metric.Desc().String()] = true
 	}
+
+	for _, level := range metrics.Levels() {
+		metrics.logMetric.WithLabelValues(level.String())
+	}
+
+	log.AddHook(metrics)
 
 	return metrics
 }
@@ -82,7 +103,6 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.customMetrics {
 		allMetrics = append(allMetrics, metric.metric)
 	}
-
 	return allMetrics
 }
 
