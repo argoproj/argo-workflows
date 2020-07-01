@@ -37,7 +37,7 @@ func NewConfigMapCache(cm string, ns string, ki kubernetes.Interface) Memoizatio
 	}
 }
 
-func validateCacheKey(key string) string {
+func generateCacheKey(key string) string {
 	log.Infof("Validating cache key %s", key)
 	reg, err := regexp.Compile("[^-._a-zA-Z0-9]+")
 	if err != nil {
@@ -58,7 +58,7 @@ func (c *configMapCache) Load(key string) (*wfv1.Outputs, bool) {
 		return nil, false
 	}
 	log.Infof("ConfigMap cache %s loaded", c.configMapName)
-	key = validateCacheKey(key)
+	key = generateCacheKey(key)
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		log.Infof("MemoizationCache miss: Entry for %s doesn't exist", key)
@@ -97,7 +97,7 @@ func (c *configMapCache) Save(key string, node_id string, value *wfv1.Outputs) b
 	}
 
 	entryJSON, _ := json.Marshal(newEntry)
-	key = validateCacheKey(key)
+	key = generateCacheKey(key)
 	opts := apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.configMapName,

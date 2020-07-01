@@ -158,7 +158,7 @@ func (woc *wfOperationCtx) operate() {
 	}()
 	defer func() {
 		if r := recover(); r != nil {
-			woc.log.WithFields(log.Fields{"stack": debug.Stack(), "r": r}).Errorf("Recovered from panic")
+			woc.log.WithFields(log.Fields{"stack": string(debug.Stack()), "r": r}).Errorf("Recovered from panic")
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(rerr, true)
 			} else {
@@ -1043,7 +1043,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 			_, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(node)
 			if err != nil {
-				log.Errorf("Failed to resolve template for node %s", node.ID)
+				log.Errorf("Failed to resolve template for node %s: %s", node.ID, err)
 				return nil
 			}
 

@@ -3848,13 +3848,6 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	assert.Len(t, woc.wf.Status.Conditions, 1)
 }
 
-var MockParamValue string = "Hello world"
-
-var MockParam = wfv1.Parameter{
-	Name:  "hello",
-	Value: &MockParamValue,
-}
-
 var workflowCached = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3888,7 +3881,11 @@ spec:
           path: /tmp/hello_world.txt
 `
 
-var sampleConfigMapCacheEntry = apiv1.ConfigMap{
+
+func TestConfigMapCacheLoadOperate(t *testing.T) {
+	var sampleOutput string = "\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   "
+
+	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 	Data: map[string]string{
 		"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{"parameters":[{"name":"hello","value":"\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   ","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-workflow-btfmf/memoized-workflow-btfmf/main.log"}}]}}`,
 	},
@@ -3901,10 +3898,6 @@ var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 		ResourceVersion: "1630732",
 	},
 }
-
-var sampleOutput string = "\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   "
-
-func TestConfigMapCacheLoadOperate(t *testing.T) {
 	wf := unmarshalWF(workflowCached)
 	cancel, controller := newController()
 	defer cancel()
@@ -3926,15 +3919,36 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 }
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
-	// create a workflow that's at the moment before the pod finished
-	// simulate the pod finishing so the controller reads the outputs and saves to cache
-	// assert that info was actually saved
+	var MockParamValue string = "Hello world"
+
+	var MockParam = wfv1.Parameter{
+		Name:  "hello",
+		Value: &MockParamValue,
+	}
+
+	outputs := wfv1.Outputs{}
+	outputs.Parameters = append(outputs.Parameters, MockParam)
 
 	wf := unmarshalWF(workflowCached)
 	cancel, controller := newController()
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
+
+	outputString, err := json.Marshal(&outputs)
+	fakePod := apiv1.Pod{
+		Status: apiv1.PodStatus{
+			Phase: apiv1.PodSucceeded,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				common.AnnotationKeyOutputs: string(outputString),
+			},
+		},
+	}
+
 	woc.operate()
+	node := woc.wf.Status.Nodes[""]
+	_ = woc.assessNodeStatus(&fakePod, &node)
 
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
