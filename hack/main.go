@@ -10,8 +10,6 @@ func main() {
 		removeCRDValidation(os.Args[2])
 	case "docgen":
 		generateDocs()
-	case "genschemas":
-		genSchemas()
 	case "kubeifyswagger":
 		kubeifySwagger(os.Args[2], os.Args[3])
 	case "secondaryswaggergen":
