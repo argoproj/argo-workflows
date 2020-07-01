@@ -177,14 +177,10 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         );
     }
 
-    private confirmAction(title: string): void {
+    private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
         if (!confirm(`Are you sure you want to ${title.toLowerCase()} this workflow?`)) {
             return;
         }
-    }
-
-    private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
-        this.confirmAction(title);
         action(this.props.match.params.name, this.props.match.params.namespace)
             .then(() => ctx.navigation.goto(uiUrl(redirect)))
             .catch(() => {
