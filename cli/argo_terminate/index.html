@@ -368,11 +368,11 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-2" type="checkbox" id="nav-4-2">
     
     <label class="md-nav__link" for="nav-4-2">
-      Advanced
+      Intermediate
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
       <label class="md-nav__title" for="nav-4-2">
-        Advanced
+        Intermediate
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
         
@@ -536,11 +536,11 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-3" type="checkbox" id="nav-4-3">
     
     <label class="md-nav__link" for="nav-4-3">
-      Expert
+      Advanced
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
       <label class="md-nav__title" for="nav-4-3">
-        Expert
+        Advanced
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
         
@@ -1347,6 +1347,18 @@
   </li>
 
         
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../swagger/" title="API Reference" class="md-nav__link">
+      API Reference
+    </a>
+  </li>
+
+        
       </ul>
     </nav>
   </li>
@@ -1928,14 +1940,14 @@
       <span class="o">--</span><span class="nv">cluster</span> <span class="nv">string</span>                 <span class="nv">The</span> <span class="nv">name</span> <span class="nv">of</span> <span class="nv">the</span> <span class="nv">kubeconfig</span> <span class="nv">cluster</span> <span class="nv">to</span> <span class="nv">use</span>
       <span class="o">--</span><span class="nv">context</span> <span class="nv">string</span>                 <span class="nv">The</span> <span class="nv">name</span> <span class="nv">of</span> <span class="nv">the</span> <span class="nv">kubeconfig</span> <span class="nv">context</span> <span class="nv">to</span> <span class="nv">use</span>
       <span class="o">--</span><span class="nv">insecure</span><span class="o">-</span><span class="nv">skip</span><span class="o">-</span><span class="nv">tls</span><span class="o">-</span><span class="nv">verify</span>       <span class="k">If</span> <span class="nv">true</span>, <span class="nv">the</span> <span class="nv">server</span><span class="s1">&#39;</span><span class="s">s certificate will not be checked for validity. This will make your HTTPS connections insecure</span>
-  <span class="o">-</span><span class="nv">k</span>, <span class="o">--</span><span class="nv">insecure</span><span class="o">-</span><span class="nv">skip</span><span class="o">-</span><span class="nv">verify</span>           <span class="k">If</span> <span class="nv">true</span>, <span class="nv">the</span> <span class="nv">Argo</span> <span class="nv">Server</span><span class="s1">&#39;</span><span class="s">s certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable. (default true)</span>
+  <span class="o">-</span><span class="nv">k</span>, <span class="o">--</span><span class="nv">insecure</span><span class="o">-</span><span class="nv">skip</span><span class="o">-</span><span class="nv">verify</span>           <span class="k">If</span> <span class="nv">true</span>, <span class="nv">the</span> <span class="nv">Argo</span> <span class="nv">Server</span><span class="s1">&#39;</span><span class="s">s certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.</span>
       <span class="o">--</span><span class="nv">instanceid</span> <span class="nv">string</span>              <span class="nv">submit</span> <span class="nv">with</span> <span class="nv">a</span> <span class="nv">specific</span> <span class="nv">controller</span><span class="s1">&#39;</span><span class="s">s instance id label. Default to the ARGO_INSTANCEID environment variable.</span>
       <span class="o">--</span><span class="nv">kubeconfig</span> <span class="nv">string</span>              <span class="nv">Path</span> <span class="nv">to</span> <span class="nv">a</span> <span class="nv">kube</span> <span class="nv">config</span>. <span class="nv">Only</span> <span class="nv">required</span> <span class="k">if</span> <span class="nv">out</span><span class="o">-</span><span class="nv">of</span><span class="o">-</span><span class="nv">cluster</span>
       <span class="o">--</span><span class="nv">loglevel</span> <span class="nv">string</span>                <span class="nv">Set</span> <span class="nv">the</span> <span class="nv">logging</span> <span class="nv">level</span>. <span class="nv">One</span> <span class="nv">of</span>: <span class="nv">debug</span><span class="o">|</span><span class="nv">info</span><span class="o">|</span><span class="nv">warn</span><span class="o">|</span><span class="nv">error</span> <span class="ss">(</span><span class="nv">default</span> <span class="s2">&quot;</span><span class="s">info</span><span class="s2">&quot;</span><span class="ss">)</span>
   <span class="o">-</span><span class="nv">n</span>, <span class="o">--</span><span class="nv">namespace</span> <span class="nv">string</span>               <span class="k">If</span> <span class="nv">present</span>, <span class="nv">the</span> <span class="nv">namespace</span> <span class="nv">scope</span> <span class="k">for</span> <span class="nv">this</span> <span class="nv">CLI</span> <span class="nv">request</span>
       <span class="o">--</span><span class="nv">password</span> <span class="nv">string</span>                <span class="nv">Password</span> <span class="k">for</span> <span class="nv">basic</span> <span class="nv">authentication</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">API</span> <span class="nv">server</span>
       <span class="o">--</span><span class="nv">request</span><span class="o">-</span><span class="nb">timeout</span> <span class="nv">string</span>         <span class="nv">The</span> <span class="nv">length</span> <span class="nv">of</span> <span class="nv">time</span> <span class="nv">to</span> <span class="k">wait</span> <span class="nv">before</span> <span class="nv">giving</span> <span class="nv">up</span> <span class="nv">on</span> <span class="nv">a</span> <span class="nv">single</span> <span class="nv">server</span> <span class="nv">request</span>. <span class="nv">Non</span><span class="o">-</span><span class="nv">zero</span> <span class="nv">values</span> <span class="nv">should</span> <span class="nv">contain</span> <span class="nv">a</span> <span class="nv">corresponding</span> <span class="nv">time</span> <span class="nv">unit</span> <span class="ss">(</span><span class="nv">e</span>.<span class="nv">g</span>. <span class="mi">1</span><span class="nv">s</span>, <span class="mi">2</span><span class="nv">m</span>, <span class="mi">3</span><span class="nv">h</span><span class="ss">)</span>. <span class="nv">A</span> <span class="nv">value</span> <span class="nv">of</span> <span class="nv">zero</span> <span class="nv">means</span> <span class="nv">don</span><span class="s1">&#39;</span><span class="s">t timeout requests. (default &quot;0&quot;)</span>
-  <span class="o">-</span><span class="nv">e</span>, <span class="o">--</span><span class="nv">secure</span>                         <span class="nv">Whether</span> <span class="nv">or</span> <span class="nv">not</span> <span class="nv">the</span> <span class="nv">server</span> <span class="nv">is</span> <span class="nv">using</span> <span class="nv">TLS</span> <span class="nv">with</span> <span class="nv">the</span> <span class="nv">Argo</span> <span class="nv">Server</span>. <span class="nv">Defaults</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">ARGO_SECURE</span> <span class="nv">environment</span> <span class="nv">variable</span>. <span class="ss">(</span><span class="nv">default</span> <span class="nv">true</span><span class="ss">)</span>
+  <span class="o">-</span><span class="nv">e</span>, <span class="o">--</span><span class="nv">secure</span>                         <span class="nv">Whether</span> <span class="nv">or</span> <span class="nv">not</span> <span class="nv">the</span> <span class="nv">server</span> <span class="nv">is</span> <span class="nv">using</span> <span class="nv">TLS</span> <span class="nv">with</span> <span class="nv">the</span> <span class="nv">Argo</span> <span class="nv">Server</span>. <span class="nv">Defaults</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">ARGO_SECURE</span> <span class="nv">environment</span> <span class="nv">variable</span>.
       <span class="o">--</span><span class="nv">server</span> <span class="nv">string</span>                  <span class="nv">The</span> <span class="nv">address</span> <span class="nv">and</span> <span class="nv">port</span> <span class="nv">of</span> <span class="nv">the</span> <span class="nv">Kubernetes</span> <span class="nv">API</span> <span class="nv">server</span>
       <span class="o">--</span><span class="nv">token</span> <span class="nv">string</span>                   <span class="nv">Bearer</span> <span class="nv">token</span> <span class="k">for</span> <span class="nv">authentication</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">API</span> <span class="nv">server</span>
       <span class="o">--</span><span class="nv">user</span> <span class="nv">string</span>                    <span class="nv">The</span> <span class="nv">name</span> <span class="nv">of</span> <span class="nv">the</span> <span class="nv">kubeconfig</span> <span class="nv">user</span> <span class="nv">to</span> <span class="nv">use</span>

@@ -368,11 +368,11 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-2" type="checkbox" id="nav-4-2">
     
     <label class="md-nav__link" for="nav-4-2">
-      Advanced
+      Intermediate
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
       <label class="md-nav__title" for="nav-4-2">
-        Advanced
+        Intermediate
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
         
@@ -536,11 +536,11 @@
       <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-3" type="checkbox" id="nav-4-3">
     
     <label class="md-nav__link" for="nav-4-3">
-      Expert
+      Advanced
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
       <label class="md-nav__title" for="nav-4-3">
-        Expert
+        Advanced
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
         
@@ -1792,6 +1792,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#amount" class="md-nav__link">
+    Amount
+  </a>
+  
+</li>
+      
       
       
       
@@ -2352,6 +2359,18 @@
         
       </ul>
     </nav>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../swagger/" title="API Reference" class="md-nav__link">
+      API Reference
+    </a>
   </li>
 
         
@@ -3887,6 +3906,13 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#amount" class="md-nav__link">
+    Amount
+  </a>
   
 </li>
       
@@ -6836,9 +6862,9 @@
 </thead>
 <tbody>
 <tr>
-<td align="center">~<code>default</code>~</td>
-<td align="center">~<code>string</code>~</td>
-<td>~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used</td>
+<td align="center"><code>default</code></td>
+<td align="center"><a href="#intorstring"><code>IntOrString</code></a></td>
+<td>Default is the default value to use for an input parameter if a value was not supplied</td>
 </tr>
 <tr>
 <td align="center"><code>globalName</code></td>
@@ -6852,7 +6878,7 @@
 </tr>
 <tr>
 <td align="center"><code>value</code></td>
-<td align="center"><code>string</code></td>
+<td align="center"><a href="#intorstring"><code>IntOrString</code></a></td>
 <td>Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values</td>
 </tr>
 <tr>
@@ -7748,8 +7774,6 @@
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
-
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
@@ -7769,8 +7793,6 @@
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
-
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 </details>
@@ -8649,7 +8671,7 @@
 <tbody>
 <tr>
 <td align="center"><code>default</code></td>
-<td align="center"><code>string</code></td>
+<td align="center"><a href="#intorstring"><code>IntOrString</code></a></td>
 <td>Default specifies a value to be used if retrieving the value from the specified source fails</td>
 </tr>
 <tr>
@@ -8752,7 +8774,7 @@
 <tbody>
 <tr>
 <td align="center"><code>buckets</code></td>
-<td align="center"><code>Array&lt; number &gt;</code></td>
+<td align="center"><code>Array&lt;</code><a href="#amount"><code>Amount</code></a><code>&gt;</code></td>
 <td>Buckets is a list of bucket divisors for the histogram</td>
 </tr>
 <tr>
@@ -8771,8 +8793,6 @@
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
 
 - [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
-
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
 
@@ -9110,6 +9130,15 @@
 </tr>
 </tbody>
 </table>
+<h2 id="amount">Amount<a class="headerlink" href="#amount" title="Permanent link">&para;</a></h2>
+<p>Amount represent a numeric amount.</p>
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+</details>
+
 <h1 id="external-fields">External Fields<a class="headerlink" href="#external-fields" title="Permanent link">&para;</a></h1>
 <h2 id="objectmeta">ObjectMeta<a class="headerlink" href="#objectmeta" title="Permanent link">&para;</a></h2>
 <p>ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create.</p>
@@ -9576,6 +9605,13 @@
 </table>
 <h2 id="poddisruptionbudgetspec">PodDisruptionBudgetSpec<a class="headerlink" href="#poddisruptionbudgetspec" title="Permanent link">&para;</a></h2>
 <p>PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.</p>
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+</details>
+
 <h3 id="fields_57">Fields<a class="headerlink" href="#fields_57" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -10315,6 +10351,21 @@
 </tr>
 </tbody>
 </table>
+<h2 id="intorstring">IntOrString<a class="headerlink" href="#intorstring" title="Permanent link">&para;</a></h2>
+<p>IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.</p>
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+</details>
+
 <h2 id="envvar">EnvVar<a class="headerlink" href="#envvar" title="Permanent link">&para;</a></h2>
 <p>EnvVar represents an environment variable present in a Container.</p>
 <details>
@@ -11010,8 +11061,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="intorstring">IntOrString<a class="headerlink" href="#intorstring" title="Permanent link">&para;</a></h2>
-<p>IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.</p>
 <h2 id="labelselector">LabelSelector<a class="headerlink" href="#labelselector" title="Permanent link">&para;</a></h2>
 <p>A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.</p>
 <details>
