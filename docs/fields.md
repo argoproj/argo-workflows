@@ -140,6 +140,8 @@ Workflow is the definition of a workflow resource
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -440,6 +442,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -753,6 +757,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -1030,6 +1036,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -1254,6 +1262,8 @@ Arguments to a template
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -1516,6 +1526,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -1776,6 +1788,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
@@ -1947,6 +1961,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -2232,6 +2248,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -2420,6 +2438,8 @@ Pod metdata
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -3104,6 +3124,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -3542,6 +3564,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -4008,6 +4032,8 @@ A single application container that you want to run within a pod.
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -4629,6 +4655,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -5150,6 +5178,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](../examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -5600,6 +5630,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`memoize.yaml`](../examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
