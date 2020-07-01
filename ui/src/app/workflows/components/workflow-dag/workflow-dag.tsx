@@ -259,6 +259,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             .map(node => node.id);
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
+            .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .map(node =>
                 (node.children || [])
                     // we can get outbound nodes, but no node
