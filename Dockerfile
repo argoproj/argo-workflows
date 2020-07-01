@@ -99,19 +99,13 @@ RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
 # fail the build if we are "dirty" prior to build
 RUN git diff --exit-code
-# order is important, must build the CLI first, as building can make the build dirty
-RUN make \
-    argo-server.crt \
-    argo-server.key \
-    dist/argo-linux-${IMAGE_ARCH} \
-    dist/workflow-controller-linux-${IMAGE_ARCH} \
-    dist/argoexec-linux-${IMAGE_ARCH}
-# double check "dirty"
-RUN git diff --exit-code
-# triple check "dirty"
+# order is important, building can make the build dirty
+RUN make dist/workflow-controller-linux-${IMAGE_ARCH}
 RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean"]
-# we can't check the argo cli, it must have a Kubernetes cluster to work
+RUN make dist/argoexec-linux-${IMAGE_ARCH}
 RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean"]
+RUN make argo-server.crt argo-server.keydist/argo-linux-${IMAGE_ARCH}
+RUN ["sh", "-c", "./dist/argo-linux-${IMAGE_ARCH} version | grep clean"]
 
 ####################################################################################################
 # argoexec
