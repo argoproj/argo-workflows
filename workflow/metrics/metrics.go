@@ -2,10 +2,10 @@ package metrics
 
 import (
 	"fmt"
-	"k8s.io/client-go/util/workqueue"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
