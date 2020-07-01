@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"github.com/argoproj/argo/workflow/common"
 	"testing"
 	"time"
 
@@ -54,13 +55,19 @@ func Test_listWorkflows(t *testing.T) {
 	t.Run("Since", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{createdSince: "1h"})
 		if assert.NoError(t, err) {
-			assert.Len(t, workflows, 1)
+			assert.Len(t, workflows, 2)
 		}
 	})
 	t.Run("Older", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{finishedAfter: "1h"})
 		if assert.NoError(t, err) {
 			assert.Len(t, workflows, 1)
+		}
+	})
+	t.Run("Resubmitted", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: common.LabelKeyPreviousWorkflowName}, listFlags{resubmitted: true})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
 		}
 	})
 }
@@ -70,6 +77,11 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
+		{ObjectMeta: metav1.ObjectMeta{
+			Name:              "baz-",
+			CreationTimestamp: metav1.Time{Time: time.Now()},
+			Labels:            map[string]string{common.LabelKeyPreviousWorkflowName: "foo-"},
+		}},
 	}}, nil)
 	workflows, err := listWorkflows(context.Background(), c, flags)
 	return workflows, err
