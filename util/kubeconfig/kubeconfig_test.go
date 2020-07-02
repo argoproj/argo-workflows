@@ -10,8 +10,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const bearerToken = "bearertoken"
-
 const config = `
 apiVersion: v1
 clusters:
