@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -324,4 +325,63 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+}
+
+func TestApplySubmitOpts(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		assert.NoError(t, ApplySubmitOpts(&wfv1.Workflow{}, nil))
+	})
+	t.Run("InvalidLabels", func(t *testing.T) {
+		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Labels: "a"}))
+	})
+	t.Run("Labels", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1,b=1"})
+		assert.NoError(t, err)
+		assert.Len(t, wf.GetLabels(), 2)
+	})
+	t.Run("MergeLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"a": "0", "b": "0"}}}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1"})
+		assert.NoError(t, err)
+		if assert.Len(t, wf.GetLabels(), 2) {
+			assert.Equal(t, "1", wf.GetLabels()["a"])
+			assert.Equal(t, "0", wf.GetLabels()["b"])
+		}
+	})
+	t.Run("InvalidParameters", func(t *testing.T) {
+		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
+	})
+	t.Run("Parameters", func(t *testing.T) {
+		intOrString := intstr.Parse("0")
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{{Name: "a", Value: &intOrString}},
+				},
+			},
+		}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=1"}})
+		assert.NoError(t, err)
+		parameters := wf.Spec.Arguments.Parameters
+		if assert.Len(t, parameters, 1) {
+			assert.Equal(t, "a", parameters[0].Name)
+			assert.Equal(t, "1", parameters[0].Value.String())
+		}
+	})
+	t.Run("ParameterFile", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		file, err := ioutil.TempFile("", "")
+		assert.NoError(t, err)
+		defer func() { _ = os.Remove(file.Name()) }()
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 1`), 0644)
+		assert.NoError(t, err)
+		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
+		assert.NoError(t, err)
+		parameters := wf.Spec.Arguments.Parameters
+		if assert.Len(t, parameters, 1) {
+			assert.Equal(t, "a", parameters[0].Name)
+			assert.Equal(t, "1", parameters[0].Value.String())
+		}
+	})
 }
