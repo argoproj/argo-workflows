@@ -28,7 +28,8 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 	_ = os.Setenv("ARGO_SECURE", "true")
 	_ = os.Setenv("ARGO_INSECURE_SKIP_VERIFY", "true")
-	_ = os.Setenv("ARGO_TOKEN", token)
+	_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+	// we should not need this to run any tests
 	s.kubeConfig = os.Getenv("KUBECONFIG")
 
 }
