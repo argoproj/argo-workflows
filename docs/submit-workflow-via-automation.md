@@ -42,7 +42,7 @@ Or submit via API:
 ```sh
 curl $ARGO_SERVER/api/v1/workflows/argo/submit \
   -fs \
-  -H "Authorization: Bearer $ARGO_TOKEN" \
+  -H "Authorization: $ARGO_TOKEN" \
   -d '{"resourceKind": "WorkflowTemplate", "resourceName": "hello-argo", "submitOptions": {"labels": "workflows.argoproj.io/workflow-template=hello-argo"}}' 
 ```
 

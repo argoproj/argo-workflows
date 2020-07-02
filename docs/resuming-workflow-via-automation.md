@@ -9,7 +9,7 @@ WF=$(argo list -l workflows.argoproj.io/workflow-template=wait --running -o name
 ```sh
 WF=$(curl $ARGO_SERVER/api/v1/workflows/argo?listOptions.labelSelector=workflows.argoproj.io/workflow-template=wait,\!workflows.argoproj.io/completed \
   -fs \
-  -H "Authorization: Bearer $ARGO_TOKEN" |
+  -H "Authorization: $ARGO_TOKEN" |
   jq -r '.items[0].metadata.name')
 ```
 
@@ -23,7 +23,7 @@ argo resume $WF --node-field-selector displayName=a
 curl $ARGO_SERVER/api/v1/workflows/argo/$WF/resume \
   -fs \
   -X 'PUT' \
-  -H "Authorization: Bearer $ARGO_TOKEN" \
+  -H "Authorization: $ARGO_TOKEN" \
   -d '{"nodeFieldSelector": "displayName=a"}' 
 ```
 
