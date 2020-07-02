@@ -5,6 +5,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
@@ -17,17 +18,13 @@ import (
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
-type id struct {
-	namespace, name string
-}
-
 type Controller struct {
 	workflowInformer  cache.SharedIndexInformer
 	templateInformer  cache.SharedIndexInformer
 	hydrator          hydrator.Interface
 	instanceIDService instanceid.Service
-	workflows         map[id]bool
-	templates         map[id]bool
+	workflows         map[corev1.ObjectReference]bool
+	templates         map[corev1.ObjectReference]bool
 	pipeline          chan operation
 }
 
@@ -61,12 +58,12 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 			AddFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
 				log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name}).Debug("adding workflow for event consideration")
-				s.workflows[id{wf.Namespace, wf.Name}] = true
+				s.workflows[corev1.ObjectReference{Namespace: wf.Namespace, Name: wf.Name}] = true
 			},
 			DeleteFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
 				log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name}).Debug("deleting workflow from event consideration")
-				delete(s.workflows, id{wf.Namespace, wf.Name})
+				delete(s.workflows, corev1.ObjectReference{Namespace: wf.Namespace, Name: wf.Name})
 			},
 		},
 	})
@@ -86,12 +83,12 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 			AddFunc: func(obj interface{}) {
 				tmpl := obj.(*wfv1.WorkflowTemplate)
 				log.WithFields(log.Fields{"namespace": tmpl.Namespace, "template": tmpl.Name}).Debug("adding workflow template to event consideration")
-				s.templates[id{tmpl.Namespace, tmpl.Name}] = true
+				s.templates[corev1.ObjectReference{Namespace: tmpl.Namespace, Name: tmpl.Name}] = true
 			},
 			DeleteFunc: func(obj interface{}) {
 				tmpl := obj.(*wfv1.WorkflowTemplate)
 				log.WithFields(log.Fields{"namespace": tmpl.Namespace, "template": tmpl.Name}).Debug("deleting workflow template from event consideration")
-				delete(s.templates, id{tmpl.Namespace, tmpl.Name})
+				delete(s.templates, corev1.ObjectReference{Namespace: tmpl.Namespace, Name: tmpl.Name})
 			},
 		},
 	})
@@ -128,8 +125,8 @@ func NewController(client *versioned.Clientset, namespace string, instanceServic
 	return &Controller{
 		workflowInformer:  v1alpha1.NewWorkflowInformer(client, namespace, 20*time.Second, cache.Indexers{}),
 		templateInformer:  v1alpha1.NewWorkflowTemplateInformer(client, namespace, 20*time.Second, cache.Indexers{}),
-		workflows:         make(map[id]bool),
-		templates:         make(map[id]bool),
+		workflows:         make(map[corev1.ObjectReference]bool),
+		templates:         make(map[corev1.ObjectReference]bool),
 		instanceIDService: instanceService,
 		hydrator:          hydrator,
 		pipeline:          make(chan operation, 64),

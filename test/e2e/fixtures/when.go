@@ -165,10 +165,9 @@ func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *
 }
 
 func (w *When) Wait(timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"cronWorkflow": w.cronWorkflowName})
-	logCtx.Infof("Waiting for %s", humanize.Duration(timeout))
+	log.Infof("Waiting for %s", humanize.Duration(timeout))
 	time.Sleep(timeout)
-	logCtx.Infof("Done waiting")
+	log.Infof("Done waiting")
 	return w
 }
 

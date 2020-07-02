@@ -12,6 +12,7 @@ import (
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,8 +29,8 @@ type operation struct {
 	// system context
 	client    versioned.Interface
 	hydrator  hydrator.Interface
-	workflows map[id]bool
-	templates map[id]bool
+	workflows map[corev1.ObjectReference]bool
+	templates map[corev1.ObjectReference]bool
 	// about the event
 	namespace string
 	event     *wfv1.Item
@@ -44,11 +45,11 @@ func (s *operation) Execute() {
 func (s *operation) resumeWorkflows() {
 	for wf := range s.workflows {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			err := s.resumeWorkflow(wf.namespace, wf.name)
+			err := s.resumeWorkflow(wf.Namespace, wf.Name)
 			return err == nil, err
 		})
 		if err != nil {
-			log.WithFields(log.Fields{"namespace": wf.namespace, "workflow": wf.name}).WithError(err).Error("failed to resume workflow")
+			log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name}).WithError(err).Error("failed to resume workflow")
 		}
 	}
 }
@@ -123,10 +124,10 @@ func (s *operation) resumeWorkflow(namespace, name string) error {
 func (s *operation) submitWorkflows() {
 	for tmpl := range s.templates {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			err := s.submitWorkflowFromTemplate(tmpl.namespace, tmpl.name)
+			err := s.submitWorkflowFromTemplate(tmpl.Namespace, tmpl.Name)
 			return err == nil, err
 		})
-		log.WithError(err).WithFields(log.Fields{"namespace": tmpl.namespace, "template": tmpl.name}).Error("failed to submit workflow from template")
+		log.WithError(err).WithFields(log.Fields{"namespace": tmpl.Namespace, "template": tmpl.Name}).Error("failed to submit workflow from template")
 	}
 }
 
