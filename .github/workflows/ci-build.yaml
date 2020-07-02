@@ -158,10 +158,11 @@ jobs:
           GOPATH: /home/runner/go
         run: |
           make manifests
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v1
-        with:
-          version: v1.23
+      - name: Make lint
+        env:
+          GOPATH: /home/runner/go
+        run: |
+          make lint
       - name: Ensure nothing changed
         run: git diff --exit-code
 
