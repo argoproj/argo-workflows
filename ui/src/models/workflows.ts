@@ -23,21 +23,9 @@ export interface Arguments {
  */
 export interface Artifact {
     /**
-     * Artifactory contains artifactory artifact location details
-     */
-    artifactory?: ArtifactoryArtifact;
-    /**
      * From allows an artifact to reference an artifact from a previous step
      */
     from?: string;
-    /**
-     * Git contains git artifact location details
-     */
-    git?: GitArtifact;
-    /**
-     * HTTP contains HTTP artifact location details
-     */
-    http?: HTTPArtifact;
     /**
      * mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.
      */
@@ -50,115 +38,6 @@ export interface Artifact {
      * Path is the container path to the artifact
      */
     path?: string;
-    /**
-     * Raw contains raw artifact location details
-     */
-    raw?: RawArtifact;
-    /**
-     * S3 contains S3 artifact location details
-     */
-    s3?: S3Artifact;
-    /**
-     * OSS contains Alibaba Cloud OSS artifact location details
-     */
-    oss?: OSSArtifact;
-}
-
-/**
- * ArtifactLocation describes a location for a single or multiple artifacts.
- * It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
- * It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step,
- * which the executor will use as a default location to store its files.
- */
-export interface ArtifactLocation {
-    /**
-     * Artifactory contains artifactory artifact location details
-     */
-    artifactory?: ArtifactoryArtifact;
-    /**
-     * Git contains git artifact location details
-     */
-    git?: GitArtifact;
-    /**
-     * HTTP contains HTTP artifact location details
-     */
-    http?: HTTPArtifact;
-    /**
-     * Raw contains raw artifact location details
-     */
-    raw?: RawArtifact;
-    /**
-     * S3 contains S3 artifact location details
-     */
-    s3?: S3Artifact;
-    /**
-     * OSS contains Alibaba Cloud OSS artifact location details
-     */
-    oss?: OSSArtifact;
-}
-
-/**
- * ArtifactoryArtifact is the location of an artifactory artifact
- */
-export interface ArtifactoryArtifact {
-    /**
-     * PasswordSecret is the secret selector to the repository password
-     */
-    passwordSecret?: kubernetes.SecretKeySelector;
-    /**
-     * URL of the artifact
-     */
-    url: string;
-    /**
-     * UsernameSecret is the secret selector to the repository username
-     */
-    usernameSecret?: kubernetes.SecretKeySelector;
-}
-
-/**
- * ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
- */
-export interface ArtifactoryAuth {
-    /**
-     * PasswordSecret is the secret selector to the repository password
-     */
-    passwordSecret?: kubernetes.SecretKeySelector;
-    /**
-     * UsernameSecret is the secret selector to the repository username
-     */
-    usernameSecret?: kubernetes.SecretKeySelector;
-}
-
-/**
- * GitArtifact is the location of an git artifact
- */
-export interface GitArtifact {
-    /**
-     * PasswordSecret is the secret selector to the repository password
-     */
-    passwordSecret?: kubernetes.SecretKeySelector;
-    /**
-     * Repo is the git repository
-     */
-    repo: string;
-    /**
-     * Revision is the git commit, tag, branch to checkout
-     */
-    revision?: string;
-    /**
-     * UsernameSecret is the secret selector to the repository username
-     */
-    usernameSecret?: kubernetes.SecretKeySelector;
-}
-
-/**
- * HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
- */
-export interface HTTPArtifact {
-    /**
-     * URL of the artifact
-     */
-    url: string;
 }
 
 /**
@@ -220,16 +99,6 @@ export interface Parameter {
 }
 
 /**
- * RawArtifact allows raw string content to be placed as an artifact in a container
- */
-export interface RawArtifact {
-    /**
-     * Data is the string contents of the artifact
-     */
-    data: string;
-}
-
-/**
  * ResourceTemplate is a template subtype to manipulate kubernetes resources
  */
 export interface ResourceTemplate {
@@ -259,118 +128,6 @@ export interface RetryStrategy {
      * Limit is the maximum number of attempts when retrying a container
      */
     limit?: number;
-}
-
-/**
- * S3Artifact is the location of an S3 artifact
- */
-export interface S3Artifact {
-    /**
-     * AccessKeySecret is the secret selector to the bucket's access key
-     */
-    accessKeySecret: kubernetes.SecretKeySelector;
-    /**
-     * Bucket is the name of the bucket
-     */
-    bucket: string;
-    /**
-     * Endpoint is the hostname of the bucket endpoint
-     */
-    endpoint: string;
-    /**
-     * Insecure will connect to the service with TLS
-     */
-    insecure?: boolean;
-    /**
-     * Key is the key in the bucket where the artifact resides
-     */
-    key: string;
-    /**
-     * Region contains the optional bucket region
-     */
-    region?: string;
-    /**
-     * SecretKeySecret is the secret selector to the bucket's secret key
-     */
-    secretKeySecret: kubernetes.SecretKeySelector;
-}
-
-/**
- * S3Bucket contains the access information required for interfacing with an S3 bucket
- */
-export interface S3Bucket {
-    /**
-     * AccessKeySecret is the secret selector to the bucket's access key
-     */
-    accessKeySecret: kubernetes.SecretKeySelector;
-    /**
-     * Bucket is the name of the bucket
-     */
-    bucket: string;
-    /**
-     * Endpoint is the hostname of the bucket endpoint
-     */
-    endpoint: string;
-    /**
-     * Insecure will connect to the service with TLS
-     */
-    insecure?: boolean;
-    /**
-     * Region contains the optional bucket region
-     */
-    region?: string;
-    /**
-     * SecretKeySecret is the secret selector to the bucket's secret key
-     */
-    secretKeySecret: kubernetes.SecretKeySelector;
-}
-
-/**
- * OSSArtifact is the location of an Alibaba Cloud OSS artifact
- */
-export interface OSSArtifact {
-    /**
-     * AccessKeySecret is the secret selector to the bucket's access key
-     */
-    accessKeySecret: kubernetes.SecretKeySelector;
-    /**
-     * Bucket is the name of the bucket
-     */
-    bucket: string;
-    /**
-     * Endpoint is the hostname of the bucket endpoint
-     */
-    endpoint: string;
-    /**
-     * Key is the key in the bucket where the artifact resides
-     */
-    key: string;
-    /**
-     * SecretKeySecret is the secret selector to the bucket's secret key
-     */
-    secretKeySecret: kubernetes.SecretKeySelector;
-}
-
-/**
- * OSSBucket contains the access information required for interfacing with an OSS bucket
- */
-export interface OSSBucket {
-    /**
-     * AccessKeySecret is the secret selector to the bucket's access key
-     */
-    accessKeySecret: kubernetes.SecretKeySelector;
-    /**
-     * Bucket is the name of the bucket
-     */
-    bucket: string;
-    /**
-     * Endpoint is the hostname of the bucket endpoint
-     */
-    endpoint: string;
-    /**
-     * SecretKeySecret is the secret selector to the bucket's secret key
-     */
-    secretKeySecret: kubernetes.SecretKeySelector;
 }
 
 /**
@@ -541,12 +298,6 @@ export interface Template {
      * Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)
      */
     affinity?: kubernetes.Affinity;
-    /**
-     * Location in which all files related to the step will be stored (logs, artifacts, etc...).
-     * Can be overridden by individual items in Outputs.
-     * If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.
-     */
-    archiveLocation?: ArtifactLocation;
     /**
      * Container is the main container image to run in the pod
      */
