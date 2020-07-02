@@ -73,10 +73,11 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 FROM node:14.0.0 as argo-ui
 
-ADD ["ui", "."]
+ADD ["ui", "ui"]
+ADD ["api", "api"]
 
-RUN yarn install
-RUN yarn build
+RUN yarn --cwd ui install
+RUN yarn --cwd ui build
 
 ####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
@@ -91,26 +92,23 @@ WORKDIR /go/src/github.com/argoproj/argo
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
+
+# controller image
+RUN make dist/workflow-controller-linux-${IMAGE_ARCH}
+RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean"]
+
+# executor image
+RUN make dist/argoexec-linux-${IMAGE_ARCH}
+RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean"]
+
+# cli image
 RUN mkdir -p ui/dist
-COPY --from=argo-ui dist/app ui/dist/app
+COPY --from=argo-ui ui/dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
-# fail the build if we are "dirty" prior to build
-RUN git diff --exit-code
-# order is important, must build the CLI first, as building can make the build dirty
-RUN make \
-    argo-server.crt \
-    argo-server.key \
-    dist/argo-linux-${IMAGE_ARCH} \
-    dist/workflow-controller-linux-${IMAGE_ARCH} \
-    dist/argoexec-linux-${IMAGE_ARCH}
-# double check "dirty"
-RUN git diff --exit-code
-# triple check "dirty"
-RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean"]
-# we can't check the argo cli, it must have a Kubernetes cluster to work
-RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean"]
+RUN make argo-server.crt argo-server.key dist/argo-linux-${IMAGE_ARCH}
+RUN ["sh", "-c", "./dist/argo-linux-${IMAGE_ARCH} version | grep clean"]
 
 ####################################################################################################
 # argoexec
