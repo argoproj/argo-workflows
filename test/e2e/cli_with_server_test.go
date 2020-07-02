@@ -18,6 +18,7 @@ import (
 
 type CLIWithServerSuite struct {
 	CLISuite
+	kubeConfig string
 }
 
 func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
@@ -28,14 +29,17 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	_ = os.Setenv("ARGO_SECURE", "true")
 	_ = os.Setenv("ARGO_INSECURE_SKIP_VERIFY", "true")
 	_ = os.Setenv("ARGO_TOKEN", token)
+	s.kubeConfig = os.Getenv("KUBECONFIG")
+
 }
 
 func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
-	s.CLISuite.AfterTest(suiteName, testName)
+	_ = os.Setenv("KUBECONFIG", s.kubeConfig)
 	_ = os.Unsetenv("ARGO_SERVER")
 	_ = os.Unsetenv("ARGO_SECURE")
 	_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 	_ = os.Unsetenv("ARGO_TOKEN")
+	s.CLISuite.AfterTest(suiteName, testName)
 }
 
 func (s *CLISuite) TestAuthToken() {

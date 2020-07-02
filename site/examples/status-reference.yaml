@@ -1,0 +1,41 @@
+# The status reference example combines the use of a status result,
+# along with conditionals, to take a dynamic path in the
+# workflow. In this example, depending on the status of 'flakey-container'
+# the template will either run the 'succeeded' step or the 'failed' step.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: status-reference-
+spec:
+  entrypoint: status-reference
+  templates:
+    - name: status-reference
+      steps:
+        - - name: flakey-container
+            template: flakey-container
+            continueOn:
+              failed: true
+        - - name: failed
+            template: failed
+            when: "{{steps.flakey-container.status}} == Failed"
+          - name: succeeded
+            template: succeeded
+            when: "{{steps.flakey-container.status}} == Succeeded"
+
+    - name: flakey-container
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["exit 1"]
+
+    - name: failed
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo \"the flakey container failed\""]
+
+    - name: succeeded
+      container:
+        image: alpine:3.6
+        command: [sh, -c]
+        args: ["echo \"the flakey container passed\""]

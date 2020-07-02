@@ -1,0 +1,30 @@
+# This example creates a Kubernetes resource that will be deleted
+# when the workflow is deleted via Kubernetes GC.
+#
+# A configmap is used for this example, but the same approach would apply
+# to other more interesting resource types.
+#
+# https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-owner-reference-
+spec:
+  entrypoint: k8s-owner-reference
+  templates:
+  - name: k8s-owner-reference
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          generateName: owned-eg-
+          ownerReferences:
+          - apiVersion: argoproj.io/v1alpha1
+            blockOwnerDeletion: true
+            kind: Workflow
+            name: "{{workflow.name}}"
+            uid: "{{workflow.uid}}"
+        data:
+          some: value

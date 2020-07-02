@@ -1,0 +1,87 @@
+# This example iterates on the k8s-jobs.yaml example and demonstrates
+# advanced techniques of processing output parameters from kubernetes
+# resources.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-orchestrate-
+spec:
+  entrypoint: k8s-orchestrate
+  templates:
+  - name: k8s-orchestrate
+    steps:
+    # 1. Create a parallelized kubernetes job which calculates 10 random numbers and
+    # waits for it to complete. Returns the job name and job uid as output parameters.
+    - - name: random-number-job
+        template: random-number-job
+    # 2. Using the uid of the job, query all its associated pods and prints the
+    # generated random numbers to stdout.
+    - - name: print-generated-numbers
+        template: print-generated-numbers
+        arguments:
+          parameters:
+          - name: job-uid
+            value: '{{steps.random-number-job.outputs.parameters.job-uid}}'
+    # 3. Delete the job using the job name
+    - - name: delete-job
+        template: delete-job
+        arguments:
+          parameters:
+          - name: job-name
+            value: '{{steps.random-number-job.outputs.parameters.job-name}}'
+
+  - name: random-number-job
+    resource:
+      action: create
+      successCondition: status.succeeded > 9
+      failureCondition: status.failed > 0
+      manifest: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          generateName: rand-num-
+        spec:
+          completions: 10
+          parallelism: 10
+          template:
+            metadata:
+              name: rand
+            spec:
+              containers:
+              - name: rand
+                image: python:alpine3.6
+                command: ["python", "-c", "import random; import time; print(random.randint(1, 1000)); time.sleep(10)"]
+              restartPolicy: Never
+    outputs:
+      parameters:
+      - name: job-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+      - name: job-uid
+        valueFrom:
+          jsonPath: '{.metadata.uid}'
+
+  - name: print-generated-numbers
+    inputs:
+      parameters:
+      - name: job-uid
+    container:
+      image: argoproj/argoexec:latest
+      command: [sh, -c]
+      args: ["
+        for i in `kubectl get pods -l controller-uid={{inputs.parameters.job-uid}} -o name`; do 
+          kubectl logs $i;
+        done
+      "]
+
+  - name: delete-job
+    inputs:
+      parameters:
+      - name: job-name
+    resource:
+      action: delete
+      manifest: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: {{inputs.parameters.job-name}}

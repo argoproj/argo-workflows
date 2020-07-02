@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: default-pdb-support-
+
+spec:
+  entrypoint: pdbcreate
+  serviceAccountName: default
+  podDisruptionBudget:
+    minavailable: 100%
+  templates:
+  - name: pdbcreate
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 10"]

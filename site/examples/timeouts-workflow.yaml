@@ -1,0 +1,37 @@
+# Workflow level timeouts can be specified with the field, spec.activeDeadlineSeconds.
+# This value represents the duration in seconds relative to the workflow start time which a workflow
+# is allowed to run before the controller terminates the workflow.
+
+# Note that currently, workflows are marked Running and updated with a start time as soon as they
+# are seen by the controller. What this means in practice, is that a workflow level timeout is
+# typically relative to the submission time. In the future, workflows may support the notion of a
+# priority queue so workflows can remain in a Pending state. When this is implemented, the
+# activeDeadlineSeconds will be relative to the admittance of the workflow into the system, (when
+# the workflow transitions from Pending to Running).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: timeouts-workflow-
+spec:
+  activeDeadlineSeconds: 30
+  entrypoint: bunch-of-sleeps
+  templates:
+  - name: bunch-of-sleeps
+    steps:
+    - - name: sleep-one-day
+        template: sleep
+        withItems: [1, 2, 3]
+      - name: unschedulable
+        template: unschedulable
+        withItems: [1, 2, 3]
+
+  - name: sleep
+    container:
+      image: debian:9.5-slim
+      command: [sleep, 1d]
+
+  - name: unschedulable
+    nodeSelector:
+      beta.kubernetes.io/arch: no-such-arch
+    container:
+      image: alpine:latest

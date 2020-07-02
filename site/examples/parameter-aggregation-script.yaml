@@ -1,0 +1,54 @@
+# Example workflow to demonstrate parameter aggregation.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parameter-aggregation-script-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+  - name: parameter-aggregation
+    steps:
+    - - name: odd-or-even
+        template: odd-or-even
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item}}"
+        withItems: [1, 2, 3, 4]
+    - - name: divide-by-2
+        template: divide-by-2
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item.num}}"
+        withParam: "{{steps.odd-or-even.outputs.result}}"
+        when: "{{item.evenness}} == even"
+
+  # odd-or-even accepts a number and returns whether or not that number is odd or even
+  - name: odd-or-even
+    inputs:
+      parameters:
+      - name: num
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        i = {{inputs.parameters.num}}
+        res = {
+          "num": i,
+          "evenness": "even" if i % 2 == 0 else "odd"
+        }
+        print(json.dumps(res))
+
+  # divide-by-2 divides a number in half
+  - name: divide-by-2
+    inputs:
+      parameters:
+      - name: num
+    script:
+      image: alpine:latest
+      command: [sh, -x]
+      source: |
+        echo $(({{inputs.parameters.num}}/2))
+
