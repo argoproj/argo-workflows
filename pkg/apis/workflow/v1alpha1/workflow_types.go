@@ -1632,22 +1632,21 @@ func (tmpl *Template) GetType() TemplateType {
 // GetNodeType returns the type of this template as a Node Type
 //
 func (tmpl *Template) GetNodeType() NodeType {
-	if tmpl.Container != nil {
+	t := tmpl.GetType()
+	switch t {
+	case TemplateTypeContainer:
 		return NodeTypePod
-	}
-	if tmpl.Steps != nil {
+	case TemplateTypeSteps:
 		return NodeTypeSteps
-	}
-	if tmpl.DAG != nil {
+	case TemplateTypeDAG:
 		return NodeTypeDAG
-	}
-	if tmpl.Script != nil {
+	case TemplateTypeScript:
 		return NodeTypePod
-	}
-	if tmpl.Suspend != nil {
+	case TemplateTypeSuspend:
 		return NodeTypeSuspend
+	default:
+		panic("Could not convert template to NodeType")
 	}
-	return NodeTypePod
 }
 
 // IsPodType returns whether or not the template is a pod type

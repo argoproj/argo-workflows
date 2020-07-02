@@ -109,7 +109,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		cache:                      NewConfigMapCache("", namespace, kubeclientset),
+		cache:                      NewConfigMapCache(namespace, kubeclientset),
 		eventRecorderManager:       newEventRecorderManager(kubeclientset),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)

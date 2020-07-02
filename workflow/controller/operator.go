@@ -1065,9 +1065,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			}
 
 			if tmpl.Memoize != nil {
-				c := woc.controller.cache.(*configMapCache)
-				c.configMapName = tmpl.Memoize.Cache.ConfigMapName.Name
-				err := c.Save(tmpl.Memoize.Key, node.ID, node.Outputs)
+				c := woc.controller.cache
+				err := c.Save(tmpl.Memoize.Key, node.ID, node.Outputs, tmpl.Memoize.Cache.ConfigMapName.Name)
 				if err != nil {
 					log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
 				}
@@ -1440,13 +1439,10 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
-	var c *configMapCache
-
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
-		c = woc.controller.cache.(*configMapCache)
-		c.configMapName = processedTmpl.Memoize.Cache.ConfigMapName.Name
-		storedOutput, err := c.Load(processedTmpl.Memoize.Key)
+		c := woc.controller.cache
+		storedOutput, err := c.Load(processedTmpl.Memoize.Key, processedTmpl.Memoize.Cache.ConfigMapName.Name)
 		if err != nil {
 			return nil, err
 		}

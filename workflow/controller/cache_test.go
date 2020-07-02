@@ -34,11 +34,11 @@ func TestConfigMapCacheLoad(t *testing.T) {
 	defer cancel()
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
 	assert.NoError(t, err)
-	c := NewConfigMapCache("whalesay-cache", "default", controller.kubeclientset)
-	entry, err := c.Load("hi-there-world")
+	c := NewConfigMapCache("default", controller.kubeclientset)
+	entry, err := c.Load("hi-there-world", "whalesay-cache")
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", entry.Parameters[0].Name)
-	assert.Equal(t, sampleOutput, *entry.Parameters[0].Value)
+	assert.Equal(t, sampleOutput, entry.Parameters[0].Value.StrVal)
 }
 
 func TestConfigMapCacheSave(t *testing.T) {
@@ -50,10 +50,10 @@ func TestConfigMapCacheSave(t *testing.T) {
 	}
 	cancel, controller := newController()
 	defer cancel()
-	c := NewConfigMapCache("whalesay-cache", "default", controller.kubeclientset)
+	c := NewConfigMapCache("default", controller.kubeclientset)
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
-	err := c.Save("hi-there-world", "", &outputs)
+	err := c.Save("hi-there-world", "", &outputs, "whalesay-cache")
 	assert.NoError(t, err)
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
