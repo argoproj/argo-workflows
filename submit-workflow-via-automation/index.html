@@ -1821,7 +1821,7 @@
 <p>Or submit via API:</p>
 <div class="codehilite"><pre><span></span>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo/submit <span class="se">\</span>
   -fs <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
+  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;resourceKind&quot;: &quot;WorkflowTemplate&quot;, &quot;resourceName&quot;: &quot;hello-argo&quot;, &quot;submitOptions&quot;: {&quot;labels&quot;: &quot;workflows.argoproj.io/workflow-template=hello-argo&quot;}}&#39;</span> 
 </pre></div>
 

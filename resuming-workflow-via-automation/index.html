@@ -1792,7 +1792,7 @@
 
 <div class="codehilite"><pre><span></span><span class="nv">WF</span><span class="o">=</span><span class="k">$(</span>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo?listOptions.labelSelector<span class="o">=</span>workflows.argoproj.io/workflow-template<span class="o">=</span>wait,<span class="se">\!</span>workflows.argoproj.io/completed <span class="se">\</span>
   -fs <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="p">|</span>
+  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="p">|</span>
   jq -r <span class="s1">&#39;.items[0].metadata.name&#39;</span><span class="k">)</span>
 </pre></div>
 
@@ -1805,7 +1805,7 @@
 <div class="codehilite"><pre><span></span>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo/<span class="nv">$WF</span>/resume <span class="se">\</span>
   -fs <span class="se">\</span>
   -X <span class="s1">&#39;PUT&#39;</span> <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: Bearer </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
+  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;nodeFieldSelector&quot;: &quot;displayName=a&quot;}&#39;</span> 
 </pre></div>
 
