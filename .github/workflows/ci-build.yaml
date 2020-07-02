@@ -86,12 +86,6 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
-      - name: SonarCloud Scan
-        if: ${{ matrix.test == 'test' }}
-        uses: sonarsource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1
