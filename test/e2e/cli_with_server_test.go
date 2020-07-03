@@ -46,16 +46,7 @@ func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 func (s *CLISuite) TestAuthToken() {
 	s.Given().RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		var authString, token string
-		token = s.GetBasicAuthToken()
-		if token == "" {
-			token, err = s.GetServiceAccountToken()
-			assert.NoError(t, err)
-			authString = "Bearer " + token
-		} else {
-			authString = "Basic " + token
-		}
-		assert.Equal(t, authString, strings.TrimSpace(output))
+		assert.NotEmpty(t, output)
 	})
 }
 
