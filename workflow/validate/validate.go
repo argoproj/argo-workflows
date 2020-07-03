@@ -457,6 +457,11 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 			}
 		}
 	}
+	if newTmpl.Memoize != nil {
+		if !cacheKeyRegex.MatchString(newTmpl.Memoize.Key) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s cache key must comply with DNS naming convention. %s does not comply", newTmpl.Name, newTmpl.Memoize.Key)
+		}
+ 	}
 	return nil
 }
 
@@ -1323,6 +1328,7 @@ var (
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+[-a-zA-Z0-9_]*$`)
 	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
+	cacheKeyRegex            = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 )
 
 func isParameter(p string) bool {
