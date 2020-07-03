@@ -3854,7 +3854,7 @@ spec:
   arguments:
     parameters:
     - name: message
-      value: hi there world
+      value: hi-there-world
   templates:
   - name: whalesay
     inputs:
@@ -3910,7 +3910,7 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 
 	assert.NotNil(t, outputs)
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
-	assert.Equal(t, sampleOutput, *outputs.Parameters[0].Value)
+	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
 }
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {

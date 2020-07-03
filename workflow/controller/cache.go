@@ -25,9 +25,8 @@ type MemoizationCache interface {
 }
 
 type CacheEntry struct {
-	ExpiresAt string       `json:"expiresAt"`
-	NodeID    string       `json:"nodeID"`
-	Outputs   wfv1.Outputs `json:"outputs"`
+	NodeID  string       `json:"nodeID"`
+	Outputs wfv1.Outputs `json:"outputs"`
 }
 
 type configMapCache struct {
@@ -98,9 +97,8 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, co
 	}
 
 	newEntry := CacheEntry{
-		ExpiresAt: "2020-06-18T17:11:05Z",
-		NodeID:    nodeId,
-		Outputs:   *value,
+		NodeID:  nodeId,
+		Outputs: *value,
 	}
 
 	entryJSON, err := json.Marshal(newEntry)
