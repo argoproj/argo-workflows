@@ -23,7 +23,7 @@ import (
 )
 
 type Controller struct {
-	// use of shared informers allows us to avoid dealing with errors in `RecieveEvent`
+	// use of shared informers allows us to avoid dealing with errors in `ReceiveEvent`
 	workflowInformer         cache.SharedIndexInformer
 	workflowTemplateInformer cache.SharedIndexInformer
 	hydrator                 hydrator.Interface
@@ -40,7 +40,7 @@ var _ eventpkg.EventServiceServer = &Controller{}
 
 func NewController(client *versioned.Clientset, namespace string, instanceService instanceid.Service, hydrator hydrator.Interface) *Controller {
 	return &Controller{
-		workflowInformer: v1alpha1.NewList(client, namespace, 20*time.Second, cache.Indexers{}, func(options *metav1.ListOptions) {
+		workflowInformer: v1alpha1.NewFilteredWorkflowInformer(client, namespace, 20*time.Second, cache.Indexers{}, func(options *metav1.ListOptions) {
 			incomplete, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
 			options.LabelSelector = labels.NewSelector().
 				Add(*incomplete).
