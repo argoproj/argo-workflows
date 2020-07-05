@@ -67,7 +67,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		FilterFunc: func(obj interface{}) bool {
 			wf, ok := obj.(*wfv1.Workflow)
 			// don't expect ok to be false here, but better to check rather than panic
-			if !ok {
+			if !ok || wf.GetLabels()[common.LabelKeyCompleted] == "true" || s.instanceIDService.Validate(wf) != nil {
 				return false
 			}
 			err := s.hydrator.Hydrate(wf)
@@ -75,15 +75,10 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 				log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name}).WithError(err).Error("failed to hydrate workflow")
 				return false
 			}
-			for _, node := range wf.Status.Nodes {
-				if node.Type == wfv1.NodeTypeSuspend {
-					// don't expect the template to be nil here, but better to check than panic
-					if t := wf.GetTemplateByName(node.TemplateName); t != nil && t.Suspend != nil && t.Suspend.Event != nil {
-						return true
-					}
-				}
-			}
-			return false
+			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				t := wf.GetTemplateByName(node.TemplateName)
+				return node.Type == wfv1.NodeTypeSuspend && t != nil && t.Suspend != nil && t.Suspend.Event != nil
+			})
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
