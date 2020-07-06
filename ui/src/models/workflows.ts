@@ -275,17 +275,6 @@ export interface Sidecar {
 }
 
 /**
- * SidecarOptions provide a way to customize the behavior of a sidecar and how it affects the main container.
- */
-export interface SidecarOptions {
-    /**
-     * MirrorVolumeMounts will mount the same volumes specified in the main container to the sidecar (including artifacts), at the same mountPaths.
-     * This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding
-     */
-    mirrorVolumeMounts?: boolean;
-}
-
-/**
  * Template is a reusable and composable unit of execution in a workflow
  */
 export interface Template {
