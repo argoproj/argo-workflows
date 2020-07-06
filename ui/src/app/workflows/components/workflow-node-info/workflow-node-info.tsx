@@ -234,7 +234,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
             )}
             {artifacts.length > 0 && props.archived && (
                 <p>
-                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows maybe be overwritten by a more recent workflow with the same name.
+                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows may be overwritten by a more recent workflow with the same name.
                 </p>
             )}
             {artifacts.map(artifact => (
