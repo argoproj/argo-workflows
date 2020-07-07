@@ -51,7 +51,7 @@ func (s *CLISuite) TestAuthToken() {
 }
 
 func (s *CLIWithServerSuite) TestTokenArg() {
-	// we mark this test as skipped because ti does not make any sense when only using server
+	// we mark this test as skipped because it does not make any sense when only using server
 	s.T().SkipNow()
 }
 
