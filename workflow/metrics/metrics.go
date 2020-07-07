@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -35,6 +36,8 @@ type metric struct {
 }
 
 type Metrics struct {
+	// Ensures mutual exclusion in workflows map
+	workflowsMutex  sync.Mutex
 	metricsConfig   ServerConfig
 	telemetryConfig ServerConfig
 
@@ -95,6 +98,9 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 }
 
 func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
+	m.workflowsMutex.Lock()
+	defer m.workflowsMutex.Unlock()
+
 	if m.workflows[key] {
 		return
 	}
@@ -105,7 +111,10 @@ func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
 }
 
 func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePhase) {
-	if fromPhase == toPhase || !m.workflows[key] {
+	m.workflowsMutex.Lock()
+	hasKey := m.workflows[key]
+	m.workflowsMutex.Unlock()
+	if fromPhase == toPhase || !hasKey {
 		return
 	}
 	m.WorkflowDeleted(key, fromPhase)
@@ -113,6 +122,9 @@ func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePh
 }
 
 func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
+	m.workflowsMutex.Lock()
+	defer m.workflowsMutex.Unlock()
+
 	if !m.workflows[key] {
 		return
 	}
