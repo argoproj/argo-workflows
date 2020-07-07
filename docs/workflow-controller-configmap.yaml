@@ -86,6 +86,9 @@ data:
         secretKeySecret:
           name: my-s3-credentials
           key: secretKey
+        # If this is set to true, argo workflows will use AWS SDK default credentials provider chain. This will allow things like
+        # IRSA and any of the authentication methods that the golang SDK uses in it's default chain.
+        useSDKCreds: false
 
     # Specifies the container runtime interface to use (default: docker)
     # must be one of: docker, kubelet, k8sapi, pns
