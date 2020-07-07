@@ -173,7 +173,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 		var metric dto.Metric
 		err := m.workqueueMetrics["workflow_queue-adds"].Write(&metric)
 		if assert.NoError(t, err) {
-			assert.Equal(t, 1.0,  *metric.Counter.Value)
+			assert.Equal(t, 1.0, *metric.Counter.Value)
 		}
 
 	}
