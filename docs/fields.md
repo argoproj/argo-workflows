@@ -32,6 +32,10 @@ Workflow is the definition of a workflow resource
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
@@ -334,6 +338,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -653,6 +661,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
@@ -933,6 +945,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -1225,6 +1241,8 @@ Arguments to a template
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
@@ -1728,6 +1746,10 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
@@ -1959,6 +1981,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
@@ -2392,6 +2416,10 @@ Pod metdata
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -3555,6 +3583,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
@@ -4671,6 +4703,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
@@ -5646,6 +5682,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 

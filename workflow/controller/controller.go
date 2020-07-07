@@ -108,17 +108,22 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		eventRecorderManager:       newEventRecorderManager(kubeclientset),
 	}
-	wfc.throttler = sync.NewThrottler(0, wfc.wfQueue)
+
 	wfc.UpdateConfig()
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
+
+	workqueue.SetProvider(wfc.metrics)
+	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	wfc.throttler = sync.NewThrottler(0, wfc.wfQueue)
+	wfc.throttler.SetParallelism(wfc.getParallelism())
+	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
+
 	return &wfc
 }
 
@@ -796,6 +801,10 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
+}
+
+func (wfc *WorkflowController) getParallelism() int {
+	return wfc.Config.Parallelism
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

@@ -781,7 +781,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					woc.onNodeComplete(&node)
 				}
 			}
-			if !node.FailedOrError() {
+			if node.Succeeded() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}

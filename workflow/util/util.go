@@ -211,7 +211,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts.Labels != "" {
 		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
 		if err != nil {
-			return fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+			return fmt.Errorf("expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
 		for k, v := range passedLabels {
 			wfLabels[k] = v
@@ -223,14 +223,11 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		passedParams := make(map[string]bool)
 		for _, paramStr := range opts.Parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+			if len(parts) != 2 {
+				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			intOrString := intstr.Parse(parts[2])
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &intOrString,
-			}
+			intOrString := intstr.Parse(parts[1])
+			param := wfv1.Parameter{Name: parts[0], Value: &intOrString}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -265,10 +262,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					value = string(v)
 				}
 				intOrString := intstr.Parse(value)
-				param := wfv1.Parameter{
-					Name:  k,
-					Value: &intOrString,
-				}
+				param := wfv1.Parameter{Name: k, Value: &intOrString}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
