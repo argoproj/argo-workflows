@@ -6941,6 +6941,10 @@ spec:
                 properties:
                   boundaryID:
                     type: string
+                  cacheKey:
+                    type: string
+                  cacheName:
+                    type: string
                   children:
                     items:
                       type: string

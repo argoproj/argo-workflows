@@ -1206,6 +1206,12 @@ type NodeStatus struct {
 
 	// Memoized indicates if this node was part of a template that had memoization on
 	Memoized bool `json:"memoized,omitempty"`
+
+	// Cache key stores the key for accessing this node's output from the memoization cache
+	CacheKey string `json:"cacheKey,omitempty"`
+
+	// Cache name stores the name of the cache for accessing a ConfigMap cache
+	CacheName string `json:"cacheName,omitempty"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
