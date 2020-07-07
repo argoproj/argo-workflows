@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -46,6 +47,7 @@ type Metrics struct {
 	operationDurations prometheus.Histogram
 	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
+	workqueueMetrics   map[string]prometheus.Metric
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
@@ -63,6 +65,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
+		workqueueMetrics:   make(map[string]prometheus.Metric),
 		defaultMetricDescs: make(map[string]bool),
 	}
 
@@ -82,6 +85,9 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.errors {
+		allMetrics = append(allMetrics, metric)
+	}
+	for _, metric := range m.workqueueMetrics {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.customMetrics {
@@ -158,4 +164,48 @@ func (m *Metrics) OperationPanic() {
 
 func (m *Metrics) CronWorkflowSubmissionError() {
 	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
+}
+
+// Act as a metrics provider for a workflow queue
+var _ workqueue.MetricsProvider = &Metrics{}
+
+func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
+	key := fmt.Sprintf("%s-depth", name)
+	if _, ok := m.workqueueMetrics[key]; !ok {
+		m.workqueueMetrics[key] = newGauge("queue_depth_count", "Depth of the queue", map[string]string{"queue_name": name})
+	}
+	return m.workqueueMetrics[key].(prometheus.Gauge)
+}
+
+func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
+	key := fmt.Sprintf("%s-adds", name)
+	if _, ok := m.workqueueMetrics[key]; !ok {
+		m.workqueueMetrics[key] = newCounter("queue_adds_count", "Adds to the queue", map[string]string{"queue_name": name})
+	}
+	return m.workqueueMetrics[key].(prometheus.Counter)
+}
+
+func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
+	key := fmt.Sprintf("%s-latency", name)
+	if _, ok := m.workqueueMetrics[key]; !ok {
+		m.workqueueMetrics[key] = newHistogram("queue_latency", "Time objects spend waiting in the queue", map[string]string{"queue_name": name}, []float64{1.0, 5.0, 20.0, 60.0, 180.0})
+	}
+	return m.workqueueMetrics[key].(prometheus.Histogram)
+}
+
+// These metrics are not relevant to be exposed
+type noopMetric struct{}
+
+func (noopMetric) Inc()            {}
+func (noopMetric) Dec()            {}
+func (noopMetric) Set(float64)     {}
+func (noopMetric) Observe(float64) {}
+
+func (m *Metrics) NewRetriesMetric(name string) workqueue.CounterMetric        { return noopMetric{} }
+func (m *Metrics) NewWorkDurationMetric(name string) workqueue.HistogramMetric { return noopMetric{} }
+func (m *Metrics) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
+	return noopMetric{}
+}
+func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
+	return noopMetric{}
 }
