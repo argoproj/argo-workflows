@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"k8s.io/client-go/util/workqueue"
 	"testing"
 	"time"
 
@@ -150,4 +151,30 @@ func TestMetricGC(t *testing.T) {
 	time.Sleep(1*time.Second + time.Millisecond)
 
 	assert.Len(t, m.customMetrics, 0)
+}
+
+func TestWorkflowQueueMetrics(t *testing.T) {
+	config := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+		TTL:     1 * time.Second,
+	}
+	m := New(config, config)
+	workqueue.SetProvider(m)
+	wfQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	assert.NotNil(t, m.workqueueMetrics["workflow_queue-depth"])
+	assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"])
+	assert.NotNil(t, m.workqueueMetrics["workflow_queue-latency"])
+
+	wfQueue.Add("hello")
+
+	if assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"]) {
+		var metric dto.Metric
+		err := m.workqueueMetrics["workflow_queue-adds"].Write(&metric)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1.0,  *metric.Counter.Value)
+		}
+
+	}
 }
