@@ -119,4 +119,4 @@ executorResources:
     memory: 512Mi
 ```
 
-The correct values depend on the size of artifacts your workflows download. For artifacts > 10GB, memory usage maybe large - [#1322](https://github.com/argoproj/argo/issues/1322).
+The correct values depend on the size of artifacts your workflows download. For artifacts > 10GB, memory usage may be large - [#1322](https://github.com/argoproj/argo/issues/1322).
