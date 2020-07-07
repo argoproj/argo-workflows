@@ -68,8 +68,8 @@ func NewCronController(
 		restConfig:         restConfig,
 		nameEntryIDMap:     make(map[string]cron.EntryID),
 		nameEntryIDMapLock: &sync.Mutex{},
-		wfQueue:            workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfQueue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
+		cronWfQueue:        workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:            metrics,
 	}
 }
