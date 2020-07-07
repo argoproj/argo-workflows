@@ -1730,7 +1730,7 @@ func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, nodeType wfv1
 	nodeID := woc.wf.NodeID(nodeName)
 	_, ok := woc.wf.Status.Nodes[nodeID]
 	if ok {
-		panic(fmt.Sprintf("node %s already initialized", nodeName))
+		panic(fmt.Sprintf("node %s already initialized (Node ID %s)", nodeName, nodeID))
 	}
 	now := metav1.Time{Time: time.Now().UTC()}
 	node := wfv1.NodeStatus{

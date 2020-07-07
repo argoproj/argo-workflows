@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/argoproj/argo/workflow/validate"
 	"regexp"
 	"sync"
 
@@ -17,6 +16,8 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
+
+var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 
 type MemoizationCache interface {
 	Load(key string, configMapName string) (*wfv1.Outputs, error)
@@ -43,7 +44,7 @@ func NewConfigMapCache(ns string, ki kubernetes.Interface) MemoizationCache {
 }
 
 func (c *configMapCache) Load(key string, configMapName string) (*wfv1.Outputs, error) {
-	if !validate.cacheKeyRegex.MatchString(key) {
+	if !cacheKeyRegex.MatchString(key) {
 		log.Errorf("Invalid cache key %s", key)
 		return nil, errors.InternalError("Invalid cache key")
 	}
@@ -75,7 +76,7 @@ func (c *configMapCache) Load(key string, configMapName string) (*wfv1.Outputs, 
 }
 
 func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, configMapName string) error {
-	if !keyRegex.MatchString(key) {
+	if !cacheKeyRegex.MatchString(key) {
 		log.Errorf("Invalid cache key %s", key)
 		return errors.InternalError("Invalid cache key")
 	}
