@@ -48,15 +48,8 @@ func NewController(client *versioned.Clientset, namespace string, instanceIDServ
 
 	workflowController, workflowKeyLister := eventcache.NewFilterUsingKeyController(restClient, namespace, requirement, "workflows", &wfv1.Workflow{}, func(d cache.Delta) bool {
 		wf := d.Object.(*wfv1.Workflow)
-		err := hydrator.Hydrate(wf)
-		if err != nil {
-			log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name}).WithError(err).Error("failed to hydrate workflow")
-			return false
-		}
-		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-			t := wf.GetTemplateByName(node.TemplateName)
-			log.Debug(node, t)
-			return node.Type == wfv1.NodeTypeSuspend && t != nil && t.Suspend != nil && t.Suspend.Event != nil
+		return wf.GetTemplates().Any(func(t wfv1.Template) bool {
+			return t.Suspend != nil && t.Suspend.Event != nil
 		})
 	})
 

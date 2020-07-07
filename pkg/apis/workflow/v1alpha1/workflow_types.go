@@ -156,12 +156,23 @@ type TTLStrategy struct {
 	SecondsAfterFailure *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
 }
 
+type Templates []Template
+
+func (ts Templates) Any(f func(t Template) bool) bool {
+	for _, t := range ts {
+		if f(t) {
+			return true
+		}
+	}
+	return false
+}
+
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
 	// Templates is a list of workflow templates used in a workflow
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Templates []Template `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
+	Templates Templates `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
 	// Entrypoint is a template reference to the starting point of the workflow.
 	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
@@ -1805,6 +1816,15 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
+}
+
+// GetTemplates retrieves templates
+func (wf *Workflow) GetTemplates() Templates {
+	templates := wf.Spec.Templates
+	if wf.Status.StoredWorkflowSpec != nil {
+		templates = append(templates, wf.Status.StoredWorkflowSpec.Templates...)
+	}
+	return templates
 }
 
 // GetTemplateByName retrieves a defined template by its name
