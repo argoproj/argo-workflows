@@ -3855,7 +3855,6 @@ spec:
   entrypoint: retry-backoff
   templates:
   - name: retry-backoff
-	resubmitPendingPods: true
     retryStrategy:
       limit: 10
       backoff:
