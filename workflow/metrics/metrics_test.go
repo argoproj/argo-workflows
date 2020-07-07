@@ -2,12 +2,12 @@ package metrics
 
 import (
 	"context"
-	"k8s.io/client-go/util/workqueue"
 	"testing"
 	"time"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
