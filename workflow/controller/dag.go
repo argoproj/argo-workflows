@@ -366,11 +366,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			connectDependencies(nodeName)
 			return
 		}
+		// Recurse into all of this node's dependencies
+		for _, dep := range taskDependencies {
+			woc.executeDAGTask(dagCtx, dep)
+		}
 		if !proceed {
-			// This node's dependencies are not completed yet, recurse into them, then return
-			for _, dep := range taskDependencies {
-				woc.executeDAGTask(dagCtx, dep)
-			}
+			// This node's dependencies are not completed yet, return
 			return
 		}
 		if !execute {

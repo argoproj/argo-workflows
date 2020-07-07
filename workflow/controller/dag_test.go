@@ -1643,3 +1643,130 @@ func TestOnExitDAGPhase(t *testing.T) {
 
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
+
+var testOnExitNonLeaf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-bug-example
+spec:
+  arguments: {}
+  entrypoint: dag
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: step-2
+        onExit: on-exit
+        template: step-template
+      - arguments: {}
+        dependencies:
+        - step-2
+        name: step-3
+        onExit: on-exit
+        template: step-template
+    inputs: {}
+    metadata: {}
+    name: dag
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - echo exit-handler-step-{{pod.name}}
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: on-exit
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - echo step {{pod.name}}
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: step-template
+    outputs: {}
+status:
+  nodes:
+    exit-handler-bug-example:
+      children:
+      - exit-handler-bug-example-3054913383
+      displayName: exit-handler-bug-example
+      finishedAt: "2020-07-07T16:15:54Z"
+      id: exit-handler-bug-example
+      name: exit-handler-bug-example
+      outboundNodes:
+      - exit-handler-bug-example-3038135764
+      phase: Running
+      startedAt: "2020-07-07T16:15:33Z"
+      templateName: dag
+      templateScope: local/exit-handler-bug-example
+      type: DAG
+    exit-handler-bug-example-3054913383:
+      boundaryID: exit-handler-bug-example
+      displayName: step-2
+      finishedAt: "2020-07-07T16:15:37Z"
+      hostNodeName: minikube
+      id: exit-handler-bug-example-3054913383
+      name: exit-handler-bug-example.step-2
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: exit-handler-bug-example/exit-handler-bug-example-3054913383/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 4
+        memory: 2
+      startedAt: "2020-07-07T16:15:33Z"
+      templateName: step-template
+      templateScope: local/exit-handler-bug-example
+      type: Pod
+  phase: Running
+  startedAt: "2020-07-07T16:15:33Z"
+`
+
+func TestOnExitNonLeaf(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(testOnExitNonLeaf)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	retryNode := woc.getNodeByName("step-2.onExit")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
+	retryNode = woc.getNodeByName("exit-handler-bug-example.step-3")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
