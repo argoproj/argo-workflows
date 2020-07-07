@@ -2,9 +2,11 @@ package event
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -30,11 +32,12 @@ type Controller struct {
 	hydrator                   hydrator.Interface
 	// a channel for operations to be executed async on
 	operationPipeline chan dispatch.Operation
+	workerCount       int
 }
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(client *versioned.Clientset, namespace string, instanceIDService instanceid.Service, hydrator hydrator.Interface) *Controller {
+func NewController(client *versioned.Clientset, namespace string, instanceIDService instanceid.Service, hydrator hydrator.Interface, pipelineSize, workerCount int) *Controller {
 	restClient := client.ArgoprojV1alpha1().RESTClient()
 
 	incomplete, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
@@ -67,12 +70,14 @@ func NewController(client *versioned.Clientset, namespace string, instanceIDServ
 		workflowKeyLister:          workflowKeyLister,
 		workflowTemplateKeyLister:  workflowTemplateKeyLister,
 		hydrator:                   hydrator,
-		// 64 length - so we can have 64 operations outstanding before we start putting back pressure on the senders
-		operationPipeline: make(chan dispatch.Operation, 64),
+		//  so we can have N operations outstanding before we start putting back pressure on the senders
+		operationPipeline: make(chan dispatch.Operation, pipelineSize),
+		workerCount:       workerCount,
 	}
 }
 
 func (s *Controller) Run(stopCh <-chan struct{}) {
+
 	go s.workflowController.Run(stopCh)
 	go s.workflowTemplateController.Run(stopCh)
 
@@ -83,22 +88,30 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		}
 	}
 
-	for {
-		select {
-		case <-stopCh:
-			// process all outstanding operations, so we don't lose any operations
-			for len(s.operationPipeline) > 0 {
-				operation := <-s.operationPipeline
+	wg := sync.WaitGroup{}
+
+	for w := 0; w <= s.workerCount; w++ {
+		go func() {
+			defer wg.Done()
+			for operation := range s.operationPipeline {
 				operation.Execute()
 			}
-			return
-		case operation := <-s.operationPipeline:
-			operation.Execute()
-		}
+		}()
+		wg.Add(1)
 	}
+
+	<-stopCh
+
+	close(s.operationPipeline)
+
+	wg.Wait()
 }
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
-	s.operationPipeline <- dispatch.NewOperation(ctx, s.hydrator, s.workflowKeyLister, s.workflowTemplateKeyLister, req.Event)
-	return &eventpkg.EventResponse{}, nil
+	select {
+	case s.operationPipeline <- dispatch.NewOperation(ctx, s.hydrator, s.workflowKeyLister, s.workflowTemplateKeyLister, req.Event):
+		return &eventpkg.EventResponse{}, nil
+	default:
+		return nil, errors.NewServiceUnavailable("operation pipeline full")
+	}
 }

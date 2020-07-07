@@ -56,16 +56,18 @@ const (
 type argoServer struct {
 	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
-	tlsConfig        *tls.Config
-	hsts             bool
-	namespace        string
-	managedNamespace string
-	kubeClientset    *kubernetes.Clientset
-	wfClientSet      *versioned.Clientset
-	authenticator    auth.Gatekeeper
-	oAuth2Service    sso.Interface
-	configController config.Controller
-	stopCh           chan struct{}
+	tlsConfig         *tls.Config
+	hsts              bool
+	namespace         string
+	managedNamespace  string
+	kubeClientset     *kubernetes.Clientset
+	wfClientSet       *versioned.Clientset
+	authenticator     auth.Gatekeeper
+	oAuth2Service     sso.Interface
+	configController  config.Controller
+	stopCh            chan struct{}
+	eventPipelineSize int
+	eventWorkerCount  int
 }
 
 type ArgoServerOpts struct {
@@ -77,9 +79,11 @@ type ArgoServerOpts struct {
 	RestConfig    *rest.Config
 	AuthModes     auth.Modes
 	// config map name
-	ConfigName       string
-	ManagedNamespace string
-	HSTS             bool
+	ConfigName        string
+	ManagedNamespace  string
+	HSTS              bool
+	EventPipelineSize int
+	EventWorkerCount  int
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
@@ -103,17 +107,19 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		return nil, err
 	}
 	return &argoServer{
-		baseHRef:         opts.BaseHRef,
-		tlsConfig:        opts.TLSConfig,
-		hsts:             opts.HSTS,
-		namespace:        opts.Namespace,
-		managedNamespace: opts.ManagedNamespace,
-		wfClientSet:      opts.WfClientSet,
-		kubeClientset:    opts.KubeClientset,
-		authenticator:    gatekeeper,
-		oAuth2Service:    ssoIf,
-		configController: configController,
-		stopCh:           make(chan struct{}),
+		baseHRef:          opts.BaseHRef,
+		tlsConfig:         opts.TLSConfig,
+		hsts:              opts.HSTS,
+		namespace:         opts.Namespace,
+		managedNamespace:  opts.ManagedNamespace,
+		wfClientSet:       opts.WfClientSet,
+		kubeClientset:     opts.KubeClientset,
+		authenticator:     gatekeeper,
+		oAuth2Service:     ssoIf,
+		configController:  configController,
+		stopCh:            make(chan struct{}),
+		eventPipelineSize: opts.EventPipelineSize,
+		eventWorkerCount:  opts.EventWorkerCount,
 	}, nil
 }
 
@@ -151,7 +157,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
-	eventServer := event.NewController(as.wfClientSet, as.managedNamespace, instanceIDService, hydrator.New(offloadRepo))
+	eventServer := event.NewController(as.wfClientSet, as.managedNamespace, instanceIDService, hydrator.New(offloadRepo), as.eventPipelineSize, as.eventWorkerCount)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
