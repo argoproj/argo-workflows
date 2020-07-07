@@ -36,12 +36,12 @@ type Operation struct {
 	metadata map[string][]string
 }
 
-func NewOperation(ctx context.Context, hydrator hydrator.Interface, workflowKeys cache.KeyLister, templateKeys cache.KeyLister, event *wfv1.Item) Operation {
+func NewOperation(ctx context.Context, hydrator hydrator.Interface, workflowKeyLister cache.KeyLister, workflowTemplateKeyLister cache.KeyLister, event *wfv1.Item) Operation {
 	return Operation{
 		client:                    auth.GetWfClient(ctx),
 		hydrator:                  hydrator,
-		workflowKeyLister:         workflowKeys,
-		workflowTemplateKeyLister: templateKeys,
+		workflowKeyLister:         workflowKeyLister,
+		workflowTemplateKeyLister: workflowTemplateKeyLister,
 		event:                     event,
 		metadata:                  metaData(ctx),
 	}
@@ -59,7 +59,9 @@ func (s *Operation) submitWorkflowsFromWorkflowTemplates() {
 			err := s.submitWorkflowFromWorkflowTemplate(namespace, name)
 			return err == nil, err
 		})
-		log.WithError(err).WithFields(log.Fields{"namespace": namespace, "template": name}).Error("failed to submit workflow from template")
+		if err != nil {
+			log.WithError(err).WithFields(log.Fields{"namespace": namespace, "template": name}).Error("failed to submit workflow from template")
+		}
 	}
 }
 
@@ -72,7 +74,7 @@ func (s *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) e
 		// we should have filtered this out
 		return errors.New("event spec is missing (should be impossible)")
 	}
-	env, err := expressionEnvironment(map[string]interface{}{"event": s.event, "template": tmpl, "metadata": s.metadata})
+	env, err := expressionEnvironment(map[string]interface{}{"event": s.event, "metadata": s.metadata})
 	if err != nil {
 		return fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
 	}

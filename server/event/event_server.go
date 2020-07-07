@@ -26,8 +26,8 @@ import (
 type Controller struct {
 	// use of shared informers allows us to avoid dealing with errors in `ReceiveEvent`
 	workflowController         cache.Controller
-	workflowTemplateController cache.Controller
 	workflowKeyLister          cache.KeyLister
+	workflowTemplateController cache.Controller
 	workflowTemplateKeyLister  cache.KeyLister
 	hydrator                   hydrator.Interface
 	// a channel for operations to be executed async on
@@ -66,8 +66,8 @@ func NewController(client *versioned.Clientset, namespace string, instanceIDServ
 
 	return &Controller{
 		workflowController:         workflowController,
-		workflowTemplateController: workflowTemplateController,
 		workflowKeyLister:          workflowKeyLister,
+		workflowTemplateController: workflowTemplateController,
 		workflowTemplateKeyLister:  workflowTemplateKeyLister,
 		hydrator:                   hydrator,
 		//  so we can have N operations outstanding before we start putting back pressure on the senders
@@ -88,6 +88,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		}
 	}
 
+	// this block of code waits for all events to be processed
 	wg := sync.WaitGroup{}
 
 	for w := 0; w <= s.workerCount; w++ {
@@ -102,8 +103,10 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 
 	<-stopCh
 
+	// stop accepting new events
 	close(s.operationPipeline)
 
+	// no more new events, process the existing events
 	wg.Wait()
 }
 
