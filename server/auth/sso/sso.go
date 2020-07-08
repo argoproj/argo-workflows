@@ -10,6 +10,8 @@ import (
 	"github.com/argoproj/pkg/jwt/zjwt"
 	"github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc"
+	"golang.org/x/oauth2/jwt"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
@@ -23,7 +25,7 @@ type claims struct {
 }
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) error
+	Authorize(ctx context.Context, authorization string) (*jwt.Config, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -195,18 +197,18 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorisation string) error {
+func (s *sso) Authorize(ctx context.Context, authorisation string) (*jwt.Config, error) {
 	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
 	if err != nil {
-		return fmt.Errorf("failed to decompress token %v", err)
+		return nil, fmt.Errorf("failed to decompress token %v", err)
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return fmt.Errorf("failed to verify id_token %v", err)
+		return nil, fmt.Errorf("failed to verify id_token %v", err)
 	}
-	c := &claims{}
+	c := &jwt.Config{}
 	if err := idToken.Claims(c); err != nil {
-		return fmt.Errorf("failed to parse claims: %v", err)
+		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
-	return nil
+	return c, nil
 }

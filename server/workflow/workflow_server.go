@@ -53,6 +53,14 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	s.instanceIDService.Label(req.Workflow)
 
+	claims := auth.GetClaims(ctx)
+	if claims != nil {
+		if req.Workflow.GetLabels() == nil {
+			req.Workflow.SetLabels(make(map[string]string))
+		}
+		req.Workflow.GetLabels()[common.LabelKeyCreator] = claims.Subject
+	}
+
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 

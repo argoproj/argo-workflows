@@ -6,6 +6,8 @@ import (
 	context "context"
 	http "net/http"
 
+	jwt "golang.org/x/oauth2/jwt"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -15,17 +17,26 @@ type Interface struct {
 }
 
 // Authorize provides a mock function with given fields: ctx, authorization
-func (_m *Interface) Authorize(ctx context.Context, authorization string) error {
+func (_m *Interface) Authorize(ctx context.Context, authorization string) (*jwt.Config, error) {
 	ret := _m.Called(ctx, authorization)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+	var r0 *jwt.Config
+	if rf, ok := ret.Get(0).(func(context.Context, string) *jwt.Config); ok {
 		r0 = rf(ctx, authorization)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*jwt.Config)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, authorization)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // HandleCallback provides a mock function with given fields: writer, request
