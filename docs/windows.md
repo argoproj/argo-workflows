@@ -2,12 +2,12 @@
 
 The Argo server and the workflow controller currently only run on Linux. The workflow executor however also runs on Windows nodes, meaning you can use Windows containers inside your workflows! Here are the steps to get started.
 
-## 0. Requirements
+##  Requirements
 * Kubernetes 1.14 or later, supporting Windows nodes
 * Hybrid cluster containing Linux and Windows nodes like described in the [Kubernetes docs](https://kubernetes.io/docs/setup/production-environment/windows/user-guide-windows-containers/)
-* Argo configured and running like described [here](getting-started.md) 
+* Argo configured and running like described [here](quick-start.md) 
 
-## 1. Setting up the workflow executor
+## Setting up the workflow executor
 
 Currently the worflow controller configuration doesn't support different configurations for the `dockerSockPath` based on the host OS. This means that the workflow executor, running in a Windows container can't use Docker for now.
 
@@ -17,7 +17,7 @@ containerRuntimeExecutor: kubelet
 kubeletInsecure: true  # you can disable TLS verification of the kubelet executor for testing
 ```
 
-## 2. Schedule workflows with Windows containers
+## Schedule workflows with Windows containers
 
 If you're running workflows in your hybrid Kubernetes cluster, always make sure to include a `nodeSelector` to run the steps on the correct host OS:
 
