@@ -3909,15 +3909,8 @@ var resubmitPendingWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  creationTimestamp: "2020-07-07T19:54:18Z"
-  generation: 2
-  labels:
-    workflows.argoproj.io/phase: Running
   name: resubmit-pending-wf
   namespace: argo
-  resourceVersion: "267165"
-  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/resubmit-pending-wf
-  uid: 19bc715f-de50-41e6-9ae7-a54e8e0a9fb6
 spec:
   arguments: {}
   entrypoint: resubmit-pending
@@ -3959,24 +3952,21 @@ status:
 func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	assert.NotNil(t, controller)
 	wf := unmarshalWF(resubmitPendingWf)
-	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
-	assert.NotNil(t, woc)
 
 	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
 	nonForbiddenErr := apierr.NewBadRequest("badrequest")
 	t.Run("ForbiddenError", func(t *testing.T) {
 		node, err := woc.checkForbiddenErrorAndResbmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
 		assert.NotNil(t, node)
+		assert.NoError(t, err)
 		assert.Equal(t, wfv1.NodePending, node.Phase)
-		assert.Nil(t, err)
 	})
 	t.Run("NonForbiddenError", func(t *testing.T) {
 		node, err := woc.checkForbiddenErrorAndResbmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		assert.Error(t, err)
 		assert.Nil(t, node)
-		assert.NotNil(t, err)
 	})
 
 }
