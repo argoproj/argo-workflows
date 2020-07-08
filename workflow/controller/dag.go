@@ -114,55 +114,6 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
-type phaseNode struct {
-	nodeId string
-	phase  wfv1.NodePhase
-}
-
-func generatePhaseNodes(children []string, branchPhase wfv1.NodePhase) []phaseNode {
-	var out []phaseNode
-	for _, child := range children {
-		out = append(out, phaseNode{nodeId: child, phase: branchPhase})
-	}
-	return out
-}
-
-type uniqueQueue struct {
-	current map[string]bool
-	queue   []phaseNode
-}
-
-func newUniqueQueue() *uniqueQueue {
-	return &uniqueQueue{
-		current: make(map[string]bool),
-		queue:   []phaseNode{},
-	}
-}
-
-func (uq *uniqueQueue) add(nodes ...phaseNode) {
-	for _, node := range nodes {
-		if _, ok := uq.current[node.nodeId]; !ok {
-			uq.current[node.nodeId] = true
-			uq.queue = append(uq.queue, node)
-		}
-	}
-}
-
-func (uq *uniqueQueue) pop() phaseNode {
-	var toPop phaseNode
-	toPop, uq.queue = uq.queue[0], uq.queue[1:]
-	//delete(uq.current, toPop.nodeId)
-	return toPop
-}
-
-func (uq *uniqueQueue) empty() bool {
-	return len(uq.queue) == 0
-}
-
-func (uq *uniqueQueue) len() int {
-	return len(uq.queue)
-}
-
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
 
@@ -178,10 +129,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 	}
 
 	// BFS over the children of the DAG
-	queue := newUniqueQueue()
-	queue.add(generatePhaseNodes(nodes[d.boundaryID].Children, wfv1.NodeSucceeded)...)
-	for !queue.empty() {
-		curr := queue.pop()
+	uniqueQueue := newUniquePhaseNodeQueue(generatePhaseNodes(nodes[d.boundaryID].Children, wfv1.NodeSucceeded)...)
+	for !uniqueQueue.empty() {
+		curr := uniqueQueue.pop()
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
 		node, branchPhase := nodes[curr.nodeId], curr.phase
 
@@ -205,7 +155,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			}
 		}
 
-		// TODO: Might have to consider OutboundNodes for DAG and Steps NodeTypes
 		if node.Type == wfv1.NodeTypeRetry || node.Type == wfv1.NodeTypeTaskGroup {
 			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 			// To resume the traversal, we look at the children of the last child node.
@@ -213,10 +162,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			// expanded tasks have succeeded), so each individual expanded task doesn't interest us. To resume the traversal, we look at the
 			// children of its last child node (note that this is arbitrary, since all expanded tasks will have the same children).
 			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
-				queue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
+				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
 			}
 		} else {
-			queue.add(generatePhaseNodes(node.Children, branchPhase)...)
+			uniqueQueue.add(generatePhaseNodes(node.Children, branchPhase)...)
 		}
 	}
 
