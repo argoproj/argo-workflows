@@ -29,7 +29,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 [Official Argo Workflows user list](USERS.md)
 
 ## Documentation
-* [Get started here](docs/getting-started.md)
+* [Get started here](docs/quick-start.md)
 * [How to write Argo Workflow specs](examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
