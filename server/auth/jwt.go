@@ -18,6 +18,7 @@ func getJWT(restConfig *rest.Config) (*jwt.Config, error) {
 	} else {
 		bearerToken := restConfig.BearerToken
 		if bearerToken == "" {
+			// should only ever be used for service accounts
 			data, err := ioutil.ReadFile(restConfig.BearerTokenFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read bearer token file: %w", err)
@@ -26,18 +27,18 @@ func getJWT(restConfig *rest.Config) (*jwt.Config, error) {
 		}
 		parts := strings.SplitN(bearerToken, ".", 3)
 		if len(parts) != 3 {
-			return nil, fmt.Errorf("expected 3 parts: %w", parts)
+			return nil, fmt.Errorf("expected bearer token to be a JWT and have 3 dot-delimited parts")
 		}
 		payload := parts[1]
-		data, err := base64.StdEncoding.DecodeString(payload)
+		data, err := base64.RawStdEncoding.DecodeString(payload)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get decode bearer token: %w", err)
+			return nil, fmt.Errorf("failed to get decode bearer token's JWT payload: %w", err)
 		}
-		claims := &jwt.Config{}
-		err = json.Unmarshal(data, claims)
+		claims := make(map[string]string)
+		err = json.Unmarshal(data, &claims)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get unmarshal JWT payload: %w", err)
+			return nil, fmt.Errorf("failed to get unmarshal bearer token's JWT payload: %w", err)
 		}
-		return claims, nil
+		return &jwt.Config{Subject: claims["sub"]}, nil
 	}
 }

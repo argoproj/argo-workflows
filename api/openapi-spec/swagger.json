@@ -708,6 +708,22 @@
         }
       }
     },
+    "/api/v1/user": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "WhoAmI",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WhoAmIResponse"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/version": {
       "get": {
         "tags": [
@@ -3725,6 +3741,14 @@
           "type": "string"
         },
         "version": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WhoAmIResponse": {
+      "type": "object",
+      "properties": {
+        "subject": {
           "type": "string"
         }
       }

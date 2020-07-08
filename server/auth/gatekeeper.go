@@ -133,7 +133,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		claims, err := getJWT(s.restConfig)
+		claims, err := getJWT(restConfig)
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
 		}
