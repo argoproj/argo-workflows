@@ -6,7 +6,8 @@
     "application/json"
   ],
   "schemes": [
-    "http"
+    "http",
+    "https"
   ],
   "swagger": "2.0",
   "info": {
@@ -14,7 +15,6 @@
     "title": "Argo",
     "version": "latest"
   },
-  "host": "localhost:2746",
   "paths": {
     "/api/v1/archived-workflows": {
       "get": {
