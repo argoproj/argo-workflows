@@ -3384,10 +3384,10 @@ Sequence expands a workflow step into numeric range
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`count`|`string`|Count is number of elements in the sequence (default: 0). Not to be used with end|
-|`end`|`string`|Number at which to end the sequence (default: 0). Not to be used with Count|
+|`count`|[`IntOrString`](#intorstring)|Count is number of elements in the sequence (default: 0). Not to be used with end|
+|`end`|[`IntOrString`](#intorstring)|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
-|`start`|`string`|Number at which to start the sequence (default: 0)|
+|`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
 
 ## NoneStrategy
 

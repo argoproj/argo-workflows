@@ -805,13 +805,13 @@ func (step *WorkflowStep) ShouldExpand() bool {
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
 	// Count is number of elements in the sequence (default: 0). Not to be used with end
-	Count string `json:"count,omitempty" protobuf:"bytes,1,opt,name=count"`
+	Count *intstr.IntOrString `json:"count,omitempty" protobuf:"bytes,1,opt,name=count"`
 
 	// Number at which to start the sequence (default: 0)
-	Start string `json:"start,omitempty" protobuf:"bytes,2,opt,name=start"`
+	Start *intstr.IntOrString `json:"start,omitempty" protobuf:"bytes,2,opt,name=start"`
 
 	// Number at which to end the sequence (default: 0). Not to be used with Count
-	End string `json:"end,omitempty" protobuf:"bytes,3,opt,name=end"`
+	End *intstr.IntOrString `json:"end,omitempty" protobuf:"bytes,3,opt,name=end"`
 
 	// Format is a printf format string to format the value in the sequence
 	Format string `json:"format,omitempty" protobuf:"bytes,4,opt,name=format"`

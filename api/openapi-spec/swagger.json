@@ -3146,11 +3146,11 @@
       "properties": {
         "count": {
           "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "end": {
           "description": "Number at which to end the sequence (default: 0). Not to be used with Count",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "format": {
           "description": "Format is a printf format string to format the value in the sequence",
@@ -3158,7 +3158,7 @@
         },
         "start": {
           "description": "Number at which to start the sequence (default: 0)",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
     },
