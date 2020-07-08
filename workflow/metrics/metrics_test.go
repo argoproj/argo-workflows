@@ -7,6 +7,7 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -47,14 +48,21 @@ func TestMetrics(t *testing.T) {
 	}
 	m := New(config, config)
 
-	m.WorkflowAdded(v1alpha1.NodeRunning)
+	m.WorkflowAdded("wf", v1alpha1.NodeRunning)
 	var metric dto.Metric
 	err := m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, float64(1), *metric.Gauge.Value)
 	}
 
-	m.WorkflowUpdated(v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
+	// Test that we don't double add
+	m.WorkflowAdded("wf", v1alpha1.NodeRunning)
+	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(1), *metric.Gauge.Value)
+	}
+
+	m.WorkflowUpdated("wf", v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
 	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, float64(0), *metric.Gauge.Value)
@@ -64,8 +72,26 @@ func TestMetrics(t *testing.T) {
 		assert.Equal(t, float64(1), *metric.Gauge.Value)
 	}
 
-	m.WorkflowDeleted(v1alpha1.NodeSucceeded)
+	m.WorkflowDeleted("wf", v1alpha1.NodeSucceeded)
 	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
+
+	// Test that we don't double delete
+	m.WorkflowDeleted("wf", v1alpha1.NodeSucceeded)
+	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
+
+	// Test that we don't update workflows that we're not tracking
+	m.WorkflowUpdated("does-not-exist", v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
+	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
+	err = m.workflowsByPhase[v1alpha1.NodeSucceeded].Write(&metric)
 	if assert.NoError(t, err) {
 		assert.Equal(t, float64(0), *metric.Gauge.Value)
 	}
@@ -125,4 +151,30 @@ func TestMetricGC(t *testing.T) {
 	time.Sleep(1*time.Second + time.Millisecond)
 
 	assert.Len(t, m.customMetrics, 0)
+}
+
+func TestWorkflowQueueMetrics(t *testing.T) {
+	config := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+		TTL:     1 * time.Second,
+	}
+	m := New(config, config)
+	workqueue.SetProvider(m)
+	wfQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	assert.NotNil(t, m.workqueueMetrics["workflow_queue-depth"])
+	assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"])
+	assert.NotNil(t, m.workqueueMetrics["workflow_queue-latency"])
+
+	wfQueue.Add("hello")
+
+	if assert.NotNil(t, m.workqueueMetrics["workflow_queue-adds"]) {
+		var metric dto.Metric
+		err := m.workqueueMetrics["workflow_queue-adds"].Write(&metric)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1.0, *metric.Counter.Value)
+		}
+
+	}
 }

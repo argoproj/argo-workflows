@@ -32,6 +32,10 @@ Workflow is the definition of a workflow resource
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
@@ -330,6 +334,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -643,6 +651,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
@@ -919,6 +931,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -1206,6 +1222,8 @@ Arguments to a template
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
@@ -1651,7 +1669,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName to apply to workflow pods|
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
-|`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
+|`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
@@ -1683,6 +1701,10 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
@@ -1898,6 +1920,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
@@ -2004,10 +2028,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
+|`default`|[`IntOrString`](#intorstring)|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|[`IntOrString`](#intorstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -2310,6 +2334,10 @@ Pod metdata
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -2626,8 +2654,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
-- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
-
 - [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
 
 - [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
@@ -2647,8 +2673,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
@@ -3120,7 +3144,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3173,7 +3197,7 @@ Histogram is a Histogram prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`buckets`|`Array< number >`|Buckets is a list of bucket divisors for the histogram|
+|`buckets`|`Array<`[`Amount`](#amount)`>`|Buckets is a list of bucket divisors for the histogram|
 |`value`|`string`|Value is the value of the metric|
 
 ## MetricLabel
@@ -3187,8 +3211,6 @@ MetricLabel is a single label for a prometheus metric
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
-
-- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -3396,6 +3418,17 @@ TarStrategy will tar and gzip the file or directory when saving
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
 
+## Amount
+
+Amount represent a numeric amount.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+</details>
+
 # External Fields
 
 
@@ -3432,6 +3465,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -3731,6 +3768,13 @@ LocalObjectReference contains enough information to let you locate the reference
 ## PodDisruptionBudgetSpec
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4117,6 +4161,23 @@ A single application container that you want to run within a pod.
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
+## IntOrString
+
+IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+</details>
+
 ## EnvVar
 
 EnvVar represents an environment variable present in a Container.
@@ -4432,10 +4493,6 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 |`name`|`string`|Required.|
 |`value`|`string`|_No description available_|
 
-## IntOrString
-
-IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
-
 ## LabelSelector
 
 A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.
@@ -4518,6 +4575,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
@@ -5490,6 +5551,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 

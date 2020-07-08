@@ -114,15 +114,23 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		Filter(func(wf wfv1.Workflow) bool {
 			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
 		})
-	if flags.createdSince != "" {
-		t, err := argotime.ParseSince(flags.createdSince)
+	if flags.createdSince != "" && flags.finishedAfter != "" {
+		startTime, err := argotime.ParseSince(flags.createdSince)
 		errors.CheckError(err)
-		workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
-	}
-	if flags.finishedAfter != "" {
-		t, err := argotime.ParseSince(flags.finishedAfter)
+		endTime, err := argotime.ParseSince(flags.finishedAfter)
 		errors.CheckError(err)
-		workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
+		workflows = workflows.Filter(wfv1.WorkflowRanBetween(*startTime, *endTime))
+	} else {
+		if flags.createdSince != "" {
+			t, err := argotime.ParseSince(flags.createdSince)
+			errors.CheckError(err)
+			workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
+		}
+		if flags.finishedAfter != "" {
+			t, err := argotime.ParseSince(flags.finishedAfter)
+			errors.CheckError(err)
+			workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
+		}
 	}
 	sort.Sort(workflows)
 	return workflows, nil

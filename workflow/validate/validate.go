@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -102,8 +103,8 @@ var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	s := placeholderGenerator.NextPlaceholder()
-	return &wfv1.Parameter{Name: name, Value: &s}
+	intOrString := intstr.Parse(placeholderGenerator.NextPlaceholder())
+	return &wfv1.Parameter{Name: name, Value: &intOrString}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -171,7 +172,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
+				ctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 			} else {
 				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
@@ -845,11 +846,15 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 	if len(withItems) > 0 {
 		for i := range withItems {
 			val := withItems[i]
-			switch val.Type {
+			switch val.GetType() {
 			case wfv1.String, wfv1.Number, wfv1.Bool:
 				scope["item"] = true
+			case wfv1.List:
+				for i := range val.GetListVal() {
+					scope[fmt.Sprintf("item.[%v]", i)] = true
+				}
 			case wfv1.Map:
-				for itemKey := range val.MapVal {
+				for itemKey := range val.GetMapVal() {
 					scope[fmt.Sprintf("item.%s", itemKey)] = true
 				}
 			default:

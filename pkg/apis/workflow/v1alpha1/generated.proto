@@ -10,9 +10,15 @@ import "k8s.io/api/policy/v1beta1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
+import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 
 // Package-wide variables from generator "generated".
 option go_package = "v1alpha1";
+
+// Amount represent a numeric amount.
+message Amount {
+  optional bytes value = 1;
+}
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
 message ArchiveStrategy {
@@ -135,6 +141,7 @@ message Backoff {
 // +genclient
 // +genclient:noStatus
 // +genclient:nonNamespaced
+// +kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message ClusterWorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -180,6 +187,7 @@ message Counter {
 // CronWorkflow is the definition of a scheduled workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=cwf;cronwf
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message CronWorkflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -424,7 +432,7 @@ message Histogram {
   optional string value = 3;
 
   // Buckets is a list of bucket divisors for the histogram
-  repeated double buckets = 4;
+  repeated Amount buckets = 4;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -447,34 +455,7 @@ message Inputs {
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
 message Item {
-  optional int64 type = 1;
-
-  optional string numVal = 2;
-
-  optional bool boolVal = 3;
-
-  optional string strVal = 4;
-
-  map<string, ItemValue> mapVal = 5;
-
-  repeated ItemValue listVal = 6;
-}
-
-// +protobuf=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
-message ItemValue {
-  optional int64 type = 1;
-
-  optional string numVal = 2;
-
-  optional bool boolVal = 3;
-
-  optional string strVal = 4;
-
-  map<string, string> mapVal = 5;
-
-  repeated bytes listVal = 6;
+  optional bytes value = 1;
 }
 
 // A link to another app.
@@ -655,12 +636,11 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
-  // DEPRECATED: This field is not used
-  optional string default = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 2;
 
   // Value is the literal value to use for the parameter.
   // If specified in the context of an input parameter, the value takes precedence over any passed values
-  optional string value = 3;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString value = 3;
 
   // ValueFrom is the source for the output parameter's value
   optional ValueFrom valueFrom = 4;
@@ -1047,7 +1027,7 @@ message ValueFrom {
   optional string parameter = 4;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
-  optional string default = 5;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
 }
 
 message Version {
@@ -1071,6 +1051,9 @@ message Version {
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=wf
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
+// +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message Workflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1326,6 +1309,7 @@ message WorkflowStep {
 // WorkflowTemplate is the definition of a workflow template resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=wftmpl
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
