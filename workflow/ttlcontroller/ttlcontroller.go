@@ -37,7 +37,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	controller := &Controller{
 		wfclientset:  wfClientset,
 		wfInformer:   wfInformer,
-		workqueue:    workqueue.NewNamedDelayingQueue("workflow-ttl"),
+		workqueue:    workqueue.NewDelayingQueue(),
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock.RealClock{},
 	}
