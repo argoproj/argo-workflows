@@ -2520,14 +2520,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
-      "type": [
-        "string",
-        "number",
-        "boolean",
-        "array",
-        "object"
-      ]
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",

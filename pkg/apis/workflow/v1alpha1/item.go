@@ -89,7 +89,7 @@ func (i *Item) DeepCopyInto(out *Item) {
 }
 
 func (i Item) OpenAPISchemaType() []string {
-	return []string{"string", "number", "boolean", "array", "object"}
+	return []string{}
 }
 
 func (i Item) OpenAPISchemaFormat() string { return "" }

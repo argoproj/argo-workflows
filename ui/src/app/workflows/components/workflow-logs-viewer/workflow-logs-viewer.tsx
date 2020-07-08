@@ -40,7 +40,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 <h3>Logs</h3>
                 {this.props.archived && (
                     <p>
-                        <i className='fa fa-exclamation-triangle' /> Logs for archived workflows maybe overwritten by a more recent workflow with the same name.
+                        <i className='fa fa-exclamation-triangle' /> Logs for archived workflows may be overwritten by a more recent workflow with the same name.
                     </p>
                 )}
                 <p>

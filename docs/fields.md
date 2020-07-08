@@ -32,7 +32,15 @@ Workflow is the definition of a workflow resource
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -331,7 +339,15 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -643,7 +659,15 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -920,7 +944,15 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -1207,7 +1239,13 @@ Arguments to a template
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`conditionals.yaml`](../examples/conditionals.yaml)
+>>>>>>> master
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
 
@@ -1684,7 +1722,15 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+<<<<<<< HEAD
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+>>>>>>> master
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -1898,7 +1944,13 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`conditionals.yaml`](../examples/conditionals.yaml)
+>>>>>>> master
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
 
@@ -2311,7 +2363,15 @@ Pod metdata
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -3438,7 +3498,15 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -4544,7 +4612,15 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
@@ -5516,7 +5592,15 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+<<<<<<< HEAD
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+=======
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/cluster-workflow-template/workflow-template-ref.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+>>>>>>> master
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
 
