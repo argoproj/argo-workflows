@@ -1863,11 +1863,10 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 		executionDeadline:   opts.executionDeadline,
 	})
 
-	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
-		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
-		woc.requeue(0)
-		return woc.markNodePending(node.Name, err), nil
+	if err != nil {
+		return woc.checkForbiddenErrorAndResbmitAllowed(err, node.Name, tmpl)
 	}
+
 	return node, err
 }
 
@@ -2001,7 +2000,19 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 		onExitPod:           opts.onExitTemplate,
 		executionDeadline:   opts.executionDeadline,
 	})
+	if err != nil {
+		return woc.checkForbiddenErrorAndResbmitAllowed(err, node.Name, tmpl)
+	}
 	return node, err
+}
+
+func (woc *wfOperationCtx) checkForbiddenErrorAndResbmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
+	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
+		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
+		woc.requeue(0)
+		return woc.markNodePending(nodeName, err), nil
+	}
+	return nil, err
 }
 
 // buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
@@ -2263,6 +2274,10 @@ func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
 	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
+	if err != nil {
+		return woc.checkForbiddenErrorAndResbmitAllowed(err, node.Name, tmpl)
+	}
+
 	return node, err
 }
 
