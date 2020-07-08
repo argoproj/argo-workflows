@@ -62,11 +62,11 @@ func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.V
 }
 
 func getDockerSockReadOnly(tmpl *wfv1.Template) bool {
-	return !hasWindowsOsNodeSelector(tmpl.NodeSelector)
+	return !hasWindowsOSNodeSelector(tmpl.NodeSelector)
 }
 
 func getDockerSockPath(tmpl *wfv1.Template) string {
-	if hasWindowsOsNodeSelector(tmpl.NodeSelector) {
+	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
 		return "\\\\.\\pipe\\docker_engine"
 	}
 
@@ -74,14 +74,14 @@ func getDockerSockPath(tmpl *wfv1.Template) string {
 }
 
 func getVolumeHostPathType(tmpl *wfv1.Template) *apiv1.HostPathType {
-	if hasWindowsOsNodeSelector(tmpl.NodeSelector) {
+	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
 		return nil
 	}
 
 	return &hostPathSocket
 }
 
-func hasWindowsOsNodeSelector(nodeSelector map[string]string) bool {
+func hasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
 	if nodeSelector == nil {
 		return false
 	}
