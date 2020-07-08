@@ -91,8 +91,12 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 			log.Debug("Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
 			errors.CheckError(err)
+			continue
 		}
 		errors.CheckError(err)
+		if event == nil {
+			continue
+		}
 		wf := event.Object
 		if !wf.Status.FinishedAt.IsZero() {
 			if !quiet {
