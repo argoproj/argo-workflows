@@ -1037,7 +1037,7 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.argoproj.workflow.v1alpha1.Item | string,number,boolean,array,object | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
+| io.argoproj.workflow.v1alpha1.Item |  | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
 
 #### io.argoproj.workflow.v1alpha1.Link
 
