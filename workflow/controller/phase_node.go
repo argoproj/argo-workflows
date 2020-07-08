@@ -30,7 +30,10 @@ type uniquePhaseNodeQueue struct {
 // phaseNode is added while another had already been added before, the add will not succeed. Even if a phaseNode
 // is added, popped, and re-added, the re-add will not succeed. Failed adds fail silently. Note that two phaseNodes
 // with the same nodeId but different phases may be added, but only once per nodeId-phase combination. This is to ensure
-// that branches with different branchPhases can still be processed
+// that branches with different branchPhases can still be processed: if an Omitted node is reached first from a step
+// that succeeded, we consider the omitted node succeeded. However, it may be subsequently reached from another step
+// that did not succeed. In that case we want to update the deduced status of the omitted node, and we may only do so by
+// adding it to the queue again.
 func newUniquePhaseNodeQueue(nodes ...phaseNode) *uniquePhaseNodeQueue {
 	uq := &uniquePhaseNodeQueue{
 		seen:  make(map[string]bool),
@@ -52,9 +55,9 @@ func (uq *uniquePhaseNodeQueue) add(nodes ...phaseNode) {
 }
 
 func (uq *uniquePhaseNodeQueue) pop() phaseNode {
-	var toPop phaseNode
-	toPop, uq.queue = uq.queue[0], uq.queue[1:]
-	return toPop
+	var head phaseNode
+	head, uq.queue = uq.queue[0], uq.queue[1:]
+	return head
 }
 
 func (uq *uniquePhaseNodeQueue) empty() bool {
