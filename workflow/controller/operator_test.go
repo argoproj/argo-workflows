@@ -11,8 +11,10 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
@@ -3901,4 +3903,70 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
 	}
+}
+
+var resubmitPendingWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resubmit-pending-wf
+  namespace: argo
+spec:
+  arguments: {}
+  entrypoint: resubmit-pending
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: resubmit-pending
+    outputs: {}
+    resubmitPendingPods: true
+    script:
+      command:
+      - bash
+      image: busybox
+      name: ""
+      resources:
+        limits:
+          cpu: "10"
+      source: |
+        sleep 5
+status:
+  finishedAt: null
+  nodes:
+    resubmit-pending-wf:
+      displayName: resubmit-pending-wf
+      finishedAt: null
+      id: resubmit-pending-wf
+      message: Pending 156.62ms
+      name: resubmit-pending-wf
+      phase: Pending
+      startedAt: "2020-07-07T19:54:18Z"
+      templateName: resubmit-pending
+      templateScope: local/resubmit-pending-wf
+      type: Pod
+  phase: Running
+  startedAt: "2020-07-07T19:54:18Z"
+`
+
+func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wf := unmarshalWF(resubmitPendingWf)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
+	nonForbiddenErr := apierr.NewBadRequest("badrequest")
+	t.Run("ForbiddenError", func(t *testing.T) {
+		node, err := woc.checkForbiddenErrorAndResbmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		assert.NotNil(t, node)
+		assert.NoError(t, err)
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	})
+	t.Run("NonForbiddenError", func(t *testing.T) {
+		node, err := woc.checkForbiddenErrorAndResbmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		assert.Error(t, err)
+		assert.Nil(t, node)
+	})
+
 }
