@@ -72,8 +72,12 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 				log.Debug("Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
 				errors.CheckError(err)
+				continue
 			}
 			errors.CheckError(err)
+			if event == nil {
+				continue
+			}
 			wfChan <- event.Object
 		}
 	}()
