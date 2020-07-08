@@ -33,7 +33,7 @@ type Operation struct {
 	workflowTemplateKeyLister cache.KeyLister
 	// about the event
 	event    *wfv1.Item
-	metadata map[string][]string
+	metadata map[string]interface{}
 }
 
 func NewOperation(ctx context.Context, hydrator hydrator.Interface, workflowKeyLister cache.KeyLister, workflowTemplateKeyLister cache.KeyLister, event *wfv1.Item) Operation {
@@ -213,12 +213,13 @@ func markNodeStatus(wf *wfv1.Workflow, node wfv1.NodeStatus, phase wfv1.NodePhas
 	return node
 }
 
-func metaData(ctx context.Context) map[string][]string {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil
+func metaData(ctx context.Context) map[string]interface{} {
+	meta := map[string]interface{}{
+		"user": map[string]string{
+			"subject": auth.GetClaims(ctx).Subject,
+		},
 	}
-	meta := make(map[string][]string)
+	md, _ := metadata.FromIncomingContext(ctx)
 	for k, v := range md {
 		// only allow headers `X-`  headers, e.g. `X-Github-Action`
 		// otherwise, deny, e.g. deny `authorization` as this would leak security credentials

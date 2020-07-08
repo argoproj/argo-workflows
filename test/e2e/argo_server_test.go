@@ -127,7 +127,7 @@ spec:
           - name: type
       suspend:
         event:
-          expression: event.type == inputs.parameters[0].value
+          expression: metadata.user.subject == "system:serviceaccount:argo:argo-server" && event.type == inputs.parameters[0].value
       outputs:
         parameters:
           - name: eventType

@@ -18,7 +18,7 @@ In each use case, the resource must match the event based on an expression.
 
 ## Authentication and Security
 
-Clients wanting to send events to the endpoint need an [access token](access-token.md). The token may be namespace-scoped or cluster-scoped. If it is namespsace scoped, the namespace must be sent in the URL, but if it is cluster-scoped, then the namespace can be the empty string.  
+Clients wanting to send events to the endpoint need an [access token](access-token.md).  The token may be namespace-scoped or cluster-scoped. If it is namespace scoped, the namespace must be sent in the URL, but if it is cluster-scoped, then the namespace can be the empty string.  
 
 It is only possible to submit/resume resources your access token has access to. 
 
@@ -51,19 +51,19 @@ The event environment typically contains:
 
 * `event` the event payload.
 * `inputs` any inputs to the node (in the case of resuming a suspended workflow).
-* `metadata` event metadata, including HTTP headers.
+* `metadata` event metadata, including the user and  HTTP headers.
 
 HTTP header names are lowercase and only include those that have `x-` as their prefix.
+
+Meta-data will contain the `user/subject` which should always to be used to ensure you only accept events from the correct user. 
 
 Examples:
 
 ```
-metadata[`x-github-event`] == "pull_request" && event.repository == "http://gihub.com/argoproj/argo"
+metadata.user.subject == "github" && metadata[`x-github-event`] == "pull_request" && event.repository == "http://gihub.com/argoproj/argo"
 ```
 
 TODO - we should include several examples
-
-TODO - we need a clear and secure way to identify clients.
 
 Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check:
 
