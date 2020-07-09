@@ -1029,8 +1029,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		} else {
 			node.Outputs = &outputs
 			if node.Memoized {
-				c := woc.controller.cache
-				err := c.Save(node.CacheKey, node.ID, node.Outputs, node.CacheName)
+				err := woc.controller.cache.Save(node.CacheKey, node.ID, node.Outputs, node.CacheName)
 				if err != nil {
 					log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
 				}
