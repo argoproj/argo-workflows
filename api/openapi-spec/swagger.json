@@ -1937,6 +1937,9 @@
     },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "type": "object",
+      "required": [
+        "configMapName"
+      ],
       "properties": {
         "configMapName": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
@@ -2577,6 +2580,26 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Memoize": {
+      "description": "Memoization",
+      "type": "object",
+      "required": [
+        "maxAge",
+        "key",
+        "cache"
+      ],
+      "properties": {
+        "cache": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
+        },
+        "key": {
+          "type": "string"
+        },
+        "maxAge": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
       "type": "object",
@@ -2640,6 +2663,14 @@
           "description": "BoundaryID indicates the node ID of the associated template root node in which this node belongs to",
           "type": "string"
         },
+        "cacheKey": {
+          "description": "Cache key stores the key for accessing this node's output from the memoization cache",
+          "type": "string"
+        },
+        "cacheName": {
+          "description": "Cache name stores the name of the cache for accessing a ConfigMap cache",
+          "type": "string"
+        },
         "children": {
           "description": "Children is a list of child node IDs",
           "type": "array",
@@ -2670,6 +2701,10 @@
         "inputs": {
           "description": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoized": {
+          "description": "Memoized indicates if this node was part of a template that had memoization on",
+          "type": "boolean"
         },
         "message": {
           "description": "A human readable message indicating details about why the node is in this condition.",
@@ -3326,6 +3361,10 @@
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoize": {
+          "description": "Memoize allows templates to use outputs generated from already executed templates",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize"
         },
         "metadata": {
           "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
