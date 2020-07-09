@@ -53,16 +53,48 @@ var (
 	hostPathSocket = apiv1.HostPathSocket
 )
 
-func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
+func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.VolumeMount {
 	return apiv1.VolumeMount{
 		Name:      common.DockerSockVolumeName,
-		MountPath: "/var/run/docker.sock",
-		ReadOnly:  true,
+		MountPath: getDockerSockPath(tmpl),
+		ReadOnly:  getDockerSockReadOnly(tmpl),
 	}
 }
 
-func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
-	dockerSockPath := "/var/run/docker.sock"
+func getDockerSockReadOnly(tmpl *wfv1.Template) bool {
+	return !hasWindowsOSNodeSelector(tmpl.NodeSelector)
+}
+
+func getDockerSockPath(tmpl *wfv1.Template) string {
+	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
+		return "\\\\.\\pipe\\docker_engine"
+	}
+
+	return "/var/run/docker.sock"
+}
+
+func getVolumeHostPathType(tmpl *wfv1.Template) *apiv1.HostPathType {
+	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
+		return nil
+	}
+
+	return &hostPathSocket
+}
+
+func hasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
+	if nodeSelector == nil {
+		return false
+	}
+
+	if os, keyExists := nodeSelector["kubernetes.io/os"]; keyExists && os == "windows" {
+		return true
+	}
+
+	return false
+}
+
+func (woc *wfOperationCtx) getVolumeDockerSock(tmpl *wfv1.Template) apiv1.Volume {
+	dockerSockPath := getDockerSockPath(tmpl)
 
 	if woc.controller.Config.DockerSockPath != "" {
 		dockerSockPath = woc.controller.Config.DockerSockPath
@@ -77,7 +109,7 @@ func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 		VolumeSource: apiv1.VolumeSource{
 			HostPath: &apiv1.HostPathVolumeSource{
 				Path: dockerSockPath,
-				Type: &hostPathSocket,
+				Type: getVolumeHostPathType(tmpl),
 			},
 		},
 	}
@@ -133,7 +165,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
-			Volumes:               woc.createVolumes(),
+			Volumes:               woc.createVolumes(tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wfSpec.ImagePullSecrets,
 		},
@@ -363,7 +395,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
 	case "", common.ContainerRuntimeExecutorDocker:
-		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock())
+		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
 	return ctr, nil
 }
@@ -444,7 +476,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	return execEnvVars
 }
 
-func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
+func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	volumes := []apiv1.Volume{
 		volumePodMetadata,
 	}
@@ -466,7 +498,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:
-		return append(volumes, woc.getVolumeDockerSock())
+		return append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
 }
 
