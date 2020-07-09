@@ -103,7 +103,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, co
 
 	entryJSON, err := json.Marshal(newEntry)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to marshal cache entry: %s", err)
 	}
 	if cache.Data != nil {
 		cache.Data[key] = string(entryJSON)
@@ -113,7 +113,6 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, co
 		}
 	}
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(cache)
-
 	if err != nil {
 		log.Infof("Error creating new cache entry for %s: %s", key, err)
 		return err
