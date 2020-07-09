@@ -21,7 +21,7 @@ spec:
         args: ["echo", "Hello from Windows Container!"]
     - name: hello-linux
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       container:
         image: alpine
         command: [echo]
