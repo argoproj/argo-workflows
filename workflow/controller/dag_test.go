@@ -110,6 +110,8 @@ func TestSingleDependency(t *testing.T) {
 		// Mark the status of the pod according to the test
 		if _, ok := statusMap[status]; ok {
 			makePodsPhase(t, statusMap[status], controller.kubeclientset, wf.ObjectMeta.Namespace)
+		} else {
+			makePodsPhase(t, v1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
 		}
 
 		woc.operate()
@@ -121,9 +123,9 @@ func TestSingleDependency(t *testing.T) {
 			}
 		}
 		assert.True(t, found)
-	}
-	if closer != nil {
-		closer()
+		if closer != nil {
+			closer()
+		}
 	}
 }
 
@@ -1463,12 +1465,6 @@ func TestRetryStrategyNodes(t *testing.T) {
 	woc.operate()
 	retryNode := woc.getNodeByName("wf-retry-pol")
 	if assert.NotNil(t, retryNode) {
-		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
-	}
-
-	woc.operate()
-	retryNode = woc.getNodeByName("wf-retry-pol")
-	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 	}
 
@@ -1764,6 +1760,10 @@ func TestOnExitNonLeaf(t *testing.T) {
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
+
+	retryNode.Phase = wfv1.NodeSucceeded
+	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
+	woc.operate()
 	retryNode = woc.getNodeByName("exit-handler-bug-example.step-3")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
