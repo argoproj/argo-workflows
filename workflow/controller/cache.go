@@ -32,14 +32,14 @@ type CacheEntry struct {
 type configMapCache struct {
 	namespace  string
 	kubeClient kubernetes.Interface
-	locked     *sync.Mutex
+	locked     *sync.RWMutex
 }
 
 func NewConfigMapCache(ns string, ki kubernetes.Interface) MemoizationCache {
 	return &configMapCache{
 		namespace:  ns,
 		kubeClient: ki,
-		locked:     &sync.Mutex{},
+		locked:     &sync.RWMutex{},
 	}
 }
 
