@@ -1,4 +1,4 @@
-package auth
+package jwt
 
 import (
 	"encoding/base64"
@@ -7,14 +7,15 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"golang.org/x/oauth2/jwt"
 	"k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo/server/auth/jws"
 )
 
-func jwtConfig(restConfig *rest.Config) (*jwt.Config, error) {
+func ClaimSetFor(restConfig *rest.Config) (*jws.ClaimSet, error) {
 	username := restConfig.Username
 	if username != "" {
-		return &jwt.Config{Subject: username}, nil
+		return &jws.ClaimSet{Sub: username}, nil
 	} else if restConfig.BearerToken != "" || restConfig.BearerTokenFile != "" {
 		bearerToken := restConfig.BearerToken
 		if bearerToken == "" {
@@ -34,12 +35,12 @@ func jwtConfig(restConfig *rest.Config) (*jwt.Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode bearer token's JWT payload: %w", err)
 		}
-		claims := make(map[string]string)
+		claims := &jws.ClaimSet{}
 		err = json.Unmarshal(data, &claims)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get unmarshal bearer token's JWT payload: %w", err)
 		}
-		return &jwt.Config{Subject: claims["sub"]}, nil
+		return claims, nil
 	} else {
 		return nil, nil
 	}

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"golang.org/x/oauth2/jwt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -15,6 +14,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/jwt"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
@@ -87,8 +88,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetJWTConfig(ctx context.Context) *jwt.Config {
-	config, _ := ctx.Value(JWTConfigKey).(*jwt.Config)
+func GetJWTConfig(ctx context.Context) *jws.ClaimSet {
+	config, _ := ctx.Value(JWTConfigKey).(*jws.ClaimSet)
 	return config
 }
 
@@ -98,7 +99,7 @@ func getAuthHeader(md metadata.MD) string {
 		return t
 	}
 	// check the HTTP cookie
-	for _, t := range md.Get("cookie") {
+	for _, t := range md.Get("grpcgateway-cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}
@@ -110,7 +111,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jwt.Config, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
@@ -134,10 +135,10 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		claims, _ := jwtConfig(restConfig)
+		claims, _ := jwt.ClaimSetFor(restConfig)
 		return wfClient, kubeClient, claims, nil
 	case Server:
-		claims, err := jwtConfig(s.restConfig)
+		claims, err := jwt.ClaimSetFor(s.restConfig)
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
 		}

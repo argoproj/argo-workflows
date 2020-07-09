@@ -10,22 +10,19 @@ import (
 	"github.com/argoproj/pkg/jwt/zjwt"
 	"github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc"
-	"golang.org/x/oauth2/jwt"
-
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/argoproj/argo/server/auth/jws"
 )
 
 const Prefix = "Bearer id_token:"
 
-type claims struct {
-}
-
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (*jwt.Config, error)
+	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -171,7 +168,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
 		return
 	}
-	c := &claims{}
+	c := &jws.ClaimSet{}
 	if err := idToken.Claims(c); err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
@@ -197,8 +194,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorisation string) (*jwt.Config, error) {
-	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
+func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
+	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decompress token %v", err)
 	}
@@ -206,7 +203,7 @@ func (s *sso) Authorize(ctx context.Context, authorisation string) (*jwt.Config,
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify id_token %v", err)
 	}
-	c := &jwt.Config{}
+	c := &jws.ClaimSet{}
 	if err := idToken.Claims(c); err != nil {
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
