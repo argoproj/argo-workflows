@@ -129,17 +129,11 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
-        return {
-            metadata: {
-                generateName: template.metadata.name + '-',
-                namespace: template.metadata.namespace
-            },
-            spec: {
-                entrypoint: !!template.spec.templates ? template.spec.templates[0].name : '',
-                workflowTemplateRef: {
-                    name: template.metadata.name
-                }
-            }
-        };
+        const wf = template;
+        wf.metadata.generateName = template.metadata.name + '-';
+        wf.spec.entrypoint = !!template.spec.templates ? template.spec.templates[0].name : '';
+        wf.spec.workflowTemplateRef = {name: template.metadata.name};
+        delete wf.spec.templates;
+        return wf;
     }
 }
