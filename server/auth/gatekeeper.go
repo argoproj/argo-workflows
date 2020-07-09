@@ -15,6 +15,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/jwt"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
@@ -24,7 +26,7 @@ type ContextKey string
 const (
 	WfKey     ContextKey = "versioned.Interface"
 	KubeKey   ContextKey = "kubernetes.Interface"
-	ClaimsKey ContextKey = "jwt.Claims"
+	JWTConfigKey ContextKey = "jwt.Config"
 )
 
 type Gatekeeper interface {
@@ -76,7 +78,7 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), ClaimsKey, claims), nil
+	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), JWTConfigKey, claims), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -87,8 +89,9 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaims(ctx context.Context) *jwt.Config {
-	return ctx.Value(ClaimsKey).(*jwt.Config)
+func GetJWTConfig(ctx context.Context) *jws.ClaimSet {
+	config, _ := ctx.Value(JWTConfigKey).(*jws.ClaimSet)
+	return config
 }
 
 func getAuthHeader(md metadata.MD) string {
@@ -109,7 +112,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jwt.Config, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
@@ -133,13 +136,10 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		claims, err := getJWT(restConfig)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
-		}
+		claims, _ := jwt.ClaimSetFor(restConfig)
 		return wfClient, kubeClient, claims, nil
 	case Server:
-		claims, err := getJWT(s.restConfig)
+		claims, err := jwt.ClaimSetFor(s.restConfig)
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
 		}

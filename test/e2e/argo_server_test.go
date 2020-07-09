@@ -565,7 +565,10 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 		JSON().
 		Path("$.metadata").
 		Object().
-		NotContainsKey("uid")
+		NotContainsKey("uid").
+		Path("$.labels").
+		Object().
+		ContainsKey("workflows.argoproj.io/creator")
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
@@ -597,7 +600,14 @@ func (s *ArgoServerSuite) TestWorkflowService() {
   }
 }`)).
 			Expect().
-			Status(200)
+			Status(200).
+			JSON().
+			Path("$.metadata").
+			Object().
+			ContainsKey("uid").
+			Path("$.labels").
+			Object().
+			ContainsKey("workflows.argoproj.io/creator")
 	})
 
 	s.Run("List", func() {
@@ -1318,7 +1328,11 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
   }
 }`)).
 			Expect().
-			Status(200)
+			Status(200).
+			JSON().
+			Path("$.metadata.labels").
+			Object().
+			ContainsKey("workflows.argoproj.io/creator")
 	})
 	s.Run("SubmitWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
@@ -1330,7 +1344,11 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
               }
 			}`)).
 			Expect().
-			Status(200)
+			Status(200).
+			JSON().
+			Path("$.metadata.labels").
+			Object().
+			ContainsKey("workflows.argoproj.io/creator")
 	})
 
 	s.Run("CreateCWFT", func() {
@@ -1357,7 +1375,13 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       "entrypoint": "run-workflow"
     }
   }
-}`)).Expect().Status(200)
+}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.labels").
+			Object().
+			ContainsKey("workflows.argoproj.io/creator")
 	})
 
 	s.Run("SubmitCWFT", func() {
@@ -1370,7 +1394,11 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
               }
 			}`)).
 			Expect().
-			Status(200)
+			Status(200).
+			JSON().
+			Path("$.metadata.labels").
+			Object().
+			ContainsKey("workflows.argoproj.io/creator")
 	})
 
 }
