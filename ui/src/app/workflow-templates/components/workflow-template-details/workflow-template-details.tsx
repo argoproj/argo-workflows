@@ -10,6 +10,7 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
+import { cloneDeep } from 'lodash-es';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -129,8 +130,11 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
-        const wf = template;
-        wf.metadata.generateName = template.metadata.name + '-';
+        let wf = cloneDeep(template);
+        wf.metadata = {
+            generateName: template.metadata.name + '-',
+            namespace: template.metadata.namespace
+        }
         wf.spec.entrypoint = !!template.spec.templates ? template.spec.templates[0].name : '';
         wf.spec.workflowTemplateRef = {name: template.metadata.name};
         delete wf.spec.templates;
