@@ -133,7 +133,7 @@ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/clus
 > 2.7 and after
 >
 The submit a `ClusterWorkflowTemplate` as a `Workflow`:
-```shell script
+```sh
 argo submit --from clusterworkflowtemplate/workflow-template-submittable
 ```
 

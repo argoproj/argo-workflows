@@ -26,3 +26,4 @@ git-ask-pass.sh
 /pkg/apiclient/workflow/workflow.swagger.json
 /pkg/apiclient/workflowarchive/workflow-archive.swagger.json
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+/site/

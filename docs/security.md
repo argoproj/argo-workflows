@@ -12,4 +12,4 @@ Finally, you should configure the `argo-server` role and role binding with the c
 
 ### Read-Only
 
-You can achieve this by configuring the `argo-server` role ([example](../manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs). 
+You can achieve this by configuring the `argo-server` role ([example](https://github.com/argoproj/argo/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml) with only read access (i.e. only `get`/`list`/`watch` verbs). 

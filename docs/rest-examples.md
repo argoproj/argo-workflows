@@ -1,6 +1,8 @@
-# Document contains couple of examples of workflow JSON's to submit via argo-server REST API. 
+# API Examples
 
-> >v2.5
+Document contains couple of examples of workflow JSON's to submit via argo-server REST API. 
+
+> v2.5 and after
 
 Assuming
 

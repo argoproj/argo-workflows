@@ -20,7 +20,6 @@ import (
 const Prefix = "Bearer id_token:"
 
 type claims struct {
-	Groups []string `json:"groups"`
 }
 
 type Interface interface {
@@ -115,7 +114,7 @@ func newSso(
 		ClientSecret: string(clientSecret),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "groups"},
+		Scopes:       []string{oidc.ScopeOpenID},
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
 	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")

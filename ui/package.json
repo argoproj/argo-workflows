@@ -31,7 +31,8 @@
         "react-router-dom": "^4.2.2",
         "rxjs": "^5.5.6",
         "superagent": "^3.8.2",
-        "superagent-promise": "^1.1.0"
+        "superagent-promise": "^1.1.0",
+        "swagger-ui-react": "^3.28.0"
     },
     "devDependencies": {
         "@types/classnames": "^2.2.3",
@@ -44,6 +45,7 @@
         "@types/react-dom": "^16.8.2",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^3.5.7",
+        "@types/swagger-ui-react": "^3.23.2",
         "@types/ws": "^4.0.0",
         "copy-webpack-plugin": "^4.3.1",
         "copyfiles": "^1.2.0",
