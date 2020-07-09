@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sync"
 
@@ -105,13 +106,12 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, co
 	if err != nil {
 		return fmt.Errorf("unable to marshal cache entry: %s", err)
 	}
-	if cache.Data != nil {
-		cache.Data[key] = string(entryJSON)
-	} else {
-		cache.Data = map[string]string{
-			key: string(entryJSON),
-		}
+
+	if cache.Data == nil {
+		cache.Data = make(map[string]string)
 	}
+	cache.Data[key] = string(entryJSON)
+
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(cache)
 	if err != nil {
 		log.Infof("Error creating new cache entry for %s: %s", key, err)

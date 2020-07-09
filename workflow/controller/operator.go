@@ -1419,7 +1419,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return nil, err
 		}
 		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, storedOutput)
-		return node, nil
+		if storedOutput == nil {
+			log.Warnf("Node %s has empty cache entry", nodeName)
+		} else {
+			return node, nil
+		}
 	}
 
 	if node != nil {
@@ -1701,11 +1705,9 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	}
 	woc.log.Debugf("Initializing cached node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	nodeID := woc.wf.NodeID(nodeName)
-	_, ok := woc.wf.Status.Nodes[nodeID]
-	if ok {
+	if woc.getNodeByName(nodeName) != nil {
 		panic(fmt.Sprintf("node %s already initialized (Node ID %s)", nodeName, nodeID))
 	}
-
 	node := wfv1.NodeStatus{
 		ID:            nodeID,
 		Name:          nodeName,
