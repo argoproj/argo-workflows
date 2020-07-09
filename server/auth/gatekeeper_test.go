@@ -44,7 +44,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(ctx))
 			assert.Equal(t, kubeClient, GetKubeClient(ctx))
-			assert.NotNil(t, GetJWTConfig(ctx))
+			assert.NotNil(t, GetClaims(ctx))
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestServer_GetWFClient(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, wfClient, GetWfClient(ctx))
 				assert.Equal(t, kubeClient, GetKubeClient(ctx))
-				assert.NotNil(t, GetJWTConfig(ctx))
+				assert.NotNil(t, GetClaims(ctx))
 			}
 		}
 	})
@@ -68,5 +68,5 @@ func x(authorization string) context.Context {
 
 func TestGetJWTConfig(t *testing.T) {
 	// we should be able to get nil
-	assert.Nil(t, GetJWTConfig(context.Background()))
+	assert.Nil(t, GetClaims(context.Background()))
 }

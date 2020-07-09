@@ -89,7 +89,7 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetJWTConfig(ctx context.Context) *jws.ClaimSet {
+func GetClaims(ctx context.Context) *jws.ClaimSet {
 	config, _ := ctx.Value(JWTConfigKey).(*jws.ClaimSet)
 	return config
 }
