@@ -65,7 +65,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	var wg sync.WaitGroup
 	// A non-blocking channel for log entries to go down.
 	unsortedEntries := make(chan logEntry, 128)
-	logOptions := req.GetLogOptions().DeepCopy()
+	logOptions := req.GetLogOptions()
+	if logOptions == nil {
+		logOptions = &corev1.PodLogOptions{}
+	}
 	logOptions.Timestamps = true
 
 	// this func start a stream if one is not already running

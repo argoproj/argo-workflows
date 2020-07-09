@@ -17,7 +17,7 @@ Use this mode if:
 * You want a drop-in replacement for the Argo UI.
 * If you need to prevent users from directly accessing the database.
 
-Hosted mode is provided as part of the standard [manifests](../manifests), [specifically in argo-server-deployment.yaml](../manifests/base/argo-server/argo-server-deployment.yaml) .
+Hosted mode is provided as part of the standard [manifests](https://github.com/argoproj/argo/blob/master/manifests), [specifically in argo-server-deployment.yaml](https://github.com/argoproj/argo/blob/master/manifests/base/argo-server/argo-server-deployment.yaml) .
 
 ## Local Mode
 
@@ -32,7 +32,7 @@ To run locally:
 argo server
 ```
 
-This will start a server on port 2746 which you can view at [http://localhost:2746](http://localhost:2746]).
+This will start a server on port 2746 which you can view at [http://localhost:2746](http://localhost:2746).
 
 ## Options
 
@@ -57,3 +57,56 @@ See [TLS](tls.md).
 ### SSO 
 
 See [SSO](argo-server-sso.md).
+
+
+## Access the Argo Workflows UI
+
+```sh
+kubectl -n argo port-forward deployment/argo-server 2746:2746
+```
+
+Then visit: http://127.0.0.1:2746
+
+By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
+following:
+
+### Method 1: kubectl port-forward
+
+```
+kubectl -n argo port-forward deployment/argo-server 2746:2746
+```
+
+Then visit: http://127.0.0.1:8001
+
+### Method 2: kubectl proxy
+
+```
+kubectl proxy
+```
+
+Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-ui/proxy/
+
+NOTE: artifact download and webconsole is not supported using this method
+
+### Method 3: Expose a LoadBalancer
+
+Update the argo-ui service to be of type `LoadBalancer`.
+
+```
+kubectl patch svc argo-ui -n argo -p '{"spec": {"type": "LoadBalancer"}}'
+```
+
+Then wait for the external IP to be made available:
+
+```
+kubectl get svc argo-ui -n argo
+NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
+argo-ui   LoadBalancer   10.19.255.205   35.197.49.167   80:30999/TCP   1m
+```
+
+NOTE: On Minikube, you won't get an external IP after updating the service -- it will always show
+`pending`. Run the following command to determine the Argo UI URL:
+
+```
+minikube service -n argo --url argo-ui
+```

@@ -60,10 +60,13 @@ In this case the ```job-cmd``` parameter can be a command that makes an http cal
 
 On job completion the external job would need to call either resume if successful:
 
+You may need  an [access token](access-token.md).
+
 ```
 curl --request PUT \
   --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/resume
   --header 'content-type: application/json' \
+  --header "Authorization: Bearer $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
@@ -77,6 +80,7 @@ or stop if unsuccessful:
 curl --request PUT \
   --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
   --header 'content-type: application/json' \
+  --header "Authorization: Bearer $ARGO_TOKEN" \
   --data '{
       "namespace": "<NAMESPACE>",
       "name": "<WORKFLOWNAME>",
@@ -94,3 +98,10 @@ Instead you need to use the `--restart-successful` option, eg if using the templ
 ```
 argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
 ```
+
+See also:
+
+* [access token](access-token.md)
+* [resuming a workflow via automation](resuming-workflow-via-automation.md)
+* [submitting a workflow via automation](submit-workflow-via-automation.md)
+* [one workflow submitting another](workflow-submitting-workflow.md)

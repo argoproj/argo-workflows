@@ -5,7 +5,7 @@ The Argo server and the workflow controller currently only run on Linux. The wor
 ## Requirements
 * Kubernetes 1.14 or later, supporting Windows nodes
 * Hybrid cluster containing Linux and Windows nodes like described in the [Kubernetes docs](https://kubernetes.io/docs/setup/production-environment/windows/user-guide-windows-containers/)
-* Argo configured and running like described [here](getting-started.md) 
+* Argo configured and running like described [here](quick-start.md) 
 
 ## Schedule workflows with Windows containers
 

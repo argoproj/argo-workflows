@@ -4,49 +4,52 @@ If you want to automate tasks with the Argo Server API or CLI, you will need an 
 
 Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:
 
-```shell script
+```sh
 kubectl create role jenkins --verb=list,update --resource=workflows.argoproj.io 
 ```
 
 Create a service account for your service:
 
-```shell script
+```sh
 kubectl create sa jenkins
 ```
 
 Bind the service account to the role (in this case in the `argo` namespace):
 
-```shell script
+```sh
 kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 ```
 
 You now need to get a token:
 
-```shell script
+```sh
 SECRET=$(kubectl -n argo get sa jenkins -o=jsonpath='{.secrets[0].name}')
-ARGO_TOKEN=$(kubectl -n argo get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)
+ARGO_TOKEN="Bearer $(kubectl -n argo get secret $SECRET -o=jsonpath='{.data.token}' | base64 --decode)"
 echo $ARGO_TOKEN
-ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
+Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
+
+!!!NOTE
+    The `ARGO_TOKEN` should always start with "Bearer ".
 
 Use that token with the CLI (you need to set `ARGO_SERVER` too):
 
-```shell script
+```sh
 ARGO_SERVER=http://localhost:2746 
 argo list
 ```
 
 Use that token in your API requests, e.g. to list workflows:
 
-```shell script
-curl https://localhost:2746/api/v1/workflows/argo -H "Authorisation: Bearer $ARGO_TOKEN"
+```sh
+curl https://localhost:2746/api/v1/workflows/argo -H "Authorisation: $ARGO_TOKEN"
 # 200 OK
 ```
 
 You should check you cannot do things you're not allowed!
 
-```shell script
-curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Bearer $ARGO_TOKEN"
+```sh
+curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: $ARGO_TOKEN"
 # 403 error
 ```
 
@@ -54,7 +57,7 @@ curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: Be
 
 Token compromised?
 
-```shell script
+```sh
 kubectl delete secret $SECRET
 ```
 

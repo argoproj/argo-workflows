@@ -466,7 +466,7 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
@@ -489,10 +489,13 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+docs/swagger.md:
+	npm install -g swagger-markdown
+	swagger-markdown -i api/openapi-spec/swagger.json -o docs/swagger.md
+
 .PHONY: docs
-docs: swagger
-	go run ./hack docgen
-	go run ./hack readmegen
+docs: api/openapi-spec/swagger.json docs/swagger.md
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # pre-push
 
