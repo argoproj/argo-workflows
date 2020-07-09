@@ -521,7 +521,7 @@ type Template struct {
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
 	// Memoize allows templates to use outputs generated from already executed templates
-	Memoize *Memoize `json:"memoize,omitempty"`
+	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,36,opt,name=memoize"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -1205,13 +1205,13 @@ type NodeStatus struct {
 	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 
 	// Memoized indicates if this node was part of a template that had memoization on
-	Memoized bool `json:"memoized,omitempty"`
+	Memoized bool `json:"memoized,omitempty" protobuf:"varint,23,opt,name=memoized"`
 
 	// Cache key stores the key for accessing this node's output from the memoization cache
-	CacheKey string `json:"cacheKey,omitempty"`
+	CacheKey string `json:"cacheKey,omitempty" protobuf:"bytes,24,opt,name=cacheKey"`
 
 	// Cache name stores the name of the cache for accessing a ConfigMap cache
-	CacheName string `json:"cacheName,omitempty"`
+	CacheName string `json:"cacheName,omitempty" protobuf:"bytes,25,opt,name=cacheName"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -2094,11 +2094,11 @@ type Counter struct {
 
 // Memoization
 type Memoize struct {
-	MaxAge string `json:"maxAge"`
-	Key    string `json:"key"`
-	Cache  *Cache `json:"cache"`
+	MaxAge string `json:"maxAge" protobuf:"bytes,1,opt,name=maxAge"`
+	Key    string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	Cache  *Cache `json:"cache" protobuf:"bytes,3,opt,name=cache"`
 }
 
 type Cache struct {
-	ConfigMapName *apiv1.ConfigMapKeySelector `json:"configMapName"`
+	ConfigMapName *apiv1.ConfigMapKeySelector `json:"configMapName" protobuf:"bytes,1,opt,name=configMapName"`
 }

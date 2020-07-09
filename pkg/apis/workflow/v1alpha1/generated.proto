@@ -137,6 +137,10 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+message Cache {
+  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapName = 1;
+}
+
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
 // +genclient
 // +genclient:noStatus
@@ -472,6 +476,15 @@ message Link {
   optional string url = 3;
 }
 
+// Memoization
+message Memoize {
+  optional string maxAge = 1;
+
+  optional string key = 2;
+
+  optional Cache cache = 3;
+}
+
 // Pod metdata
 message Metadata {
   map<string, string> annotations = 1;
@@ -576,6 +589,15 @@ message NodeStatus {
 
   // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
   optional string hostNodeName = 22;
+
+  // Memoized indicates if this node was part of a template that had memoization on
+  optional bool memoized = 23;
+
+  // Cache key stores the key for accessing this node's output from the memoization cache
+  optional string cacheKey = 24;
+
+  // Cache name stores the name of the cache for accessing a ConfigMap cache
+  optional string cacheName = 25;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -982,6 +1004,9 @@ message Template {
 
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
+
+  // Memoize allows templates to use outputs generated from already executed templates
+  optional Memoize memoize = 36;
 }
 
 // TemplateRef is a reference of template resource.
