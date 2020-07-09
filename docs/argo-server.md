@@ -84,7 +84,7 @@ Then visit: http://127.0.0.1:8001
 kubectl proxy
 ```
 
-Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-ui/proxy/
+Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-server:web/proxy/
 
 NOTE: artifact download and webconsole is not supported using this method
 
