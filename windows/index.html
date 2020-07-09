@@ -1613,13 +1613,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#setting-up-the-workflow-executor" title="Setting up the workflow executor" class="md-nav__link">
-    Setting up the workflow executor
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#schedule-workflows-with-windows-containers" title="Schedule workflows with Windows containers" class="md-nav__link">
     Schedule workflows with Windows containers
   </a>
@@ -1627,8 +1620,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bonus-hybrid-workflows" title="Bonus: Hybrid workflows" class="md-nav__link">
-    Bonus: Hybrid workflows
+  <a href="#schedule-hybrid-workflows" title="Schedule hybrid workflows" class="md-nav__link">
+    Schedule hybrid workflows
   </a>
   
 </li>
@@ -1852,13 +1845,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#setting-up-the-workflow-executor" title="Setting up the workflow executor" class="md-nav__link">
-    Setting up the workflow executor
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#schedule-workflows-with-windows-containers" title="Schedule workflows with Windows containers" class="md-nav__link">
     Schedule workflows with Windows containers
   </a>
@@ -1866,8 +1852,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bonus-hybrid-workflows" title="Bonus: Hybrid workflows" class="md-nav__link">
-    Bonus: Hybrid workflows
+  <a href="#schedule-hybrid-workflows" title="Schedule hybrid workflows" class="md-nav__link">
+    Schedule hybrid workflows
   </a>
   
 </li>
@@ -1906,14 +1892,6 @@
 <li>Hybrid cluster containing Linux and Windows nodes like described in the <a href="https://kubernetes.io/docs/setup/production-environment/windows/user-guide-windows-containers/">Kubernetes docs</a></li>
 <li>Argo configured and running like described <a href="../quick-start/">here</a> </li>
 </ul>
-<h2 id="setting-up-the-workflow-executor">Setting up the workflow executor<a class="headerlink" href="#setting-up-the-workflow-executor" title="Permanent link">&para;</a></h2>
-<p>Currently the worflow controller configuration doesn't support different configurations for the <code>dockerSockPath</code> based on the host OS. This means that the workflow executor, running in a Windows container can't use Docker for now.</p>
-<p>You therefore need to use <code>kubelet</code> or <code>k8sapi</code> instead in your workflow controller configmap:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">containerRuntimeExecutor</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">kubelet</span>
-<span class="nt">kubeletInsecure</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>  <span class="c1"># you can disable TLS verification of the kubelet executor for testing</span>
-</code></pre></div>
-
-
 <h2 id="schedule-workflows-with-windows-containers">Schedule workflows with Windows containers<a class="headerlink" href="#schedule-workflows-with-windows-containers" title="Permanent link">&para;</a></h2>
 <p>If you're running workflows in your hybrid Kubernetes cluster, always make sure to include a <code>nodeSelector</code> to run the steps on the correct host OS:</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
@@ -1940,7 +1918,7 @@ hello-windows-s9kk5: <span class="s2">&quot;Hello from Windows Container!&quot;<
 </code></pre></div>
 
 
-<h2 id="bonus-hybrid-workflows">Bonus: Hybrid workflows<a class="headerlink" href="#bonus-hybrid-workflows" title="Permanent link">&para;</a></h2>
+<h2 id="schedule-hybrid-workflows">Schedule hybrid workflows<a class="headerlink" href="#schedule-hybrid-workflows" title="Permanent link">&para;</a></h2>
 <p>You can also run different steps on different host OSs. This can for example be very helpful when you need to compile your application on Windows and Linux.</p>
 <p>An example workflow can look like the following:</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
@@ -1966,7 +1944,7 @@ hello-windows-s9kk5: <span class="s2">&quot;Hello from Windows Container!&quot;<
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-linux</span>
       <span class="nt">nodeSelector</span><span class="p">:</span>
-        <span class="nt">beta.kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">linux</span>
+        <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">linux</span>
       <span class="nt">container</span><span class="p">:</span>
         <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine</span>
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">echo</span><span class="p p-Indicator">]</span>
