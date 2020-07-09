@@ -694,3 +694,7 @@ func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.Clus
 	}
 	return manifests, nil
 }
+
+func GenerateOnExitNodeName(parentDisplayName string) string {
+	return fmt.Sprintf("%s.onExit", parentDisplayName)
+}
