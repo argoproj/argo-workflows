@@ -1414,8 +1414,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
-		c := woc.controller.cache
-		storedOutput, err := c.Load(processedTmpl.Memoize.Key, processedTmpl.Memoize.Cache.ConfigMapName.Name)
+		storedOutput, err := woc.controller.cache.Load(processedTmpl.Memoize.Key, processedTmpl.Memoize.Cache.ConfigMapName.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -1700,7 +1699,6 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	if resolvedTmpl.Memoize == nil {
 		panic(fmt.Sprintf("cannot initialize a cached node from a non-memoized template"))
 	}
-	nodeType := resolvedTmpl.GetNodeType()
 	woc.log.Debugf("Initializing cached node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	nodeID := woc.wf.NodeID(nodeName)
 	_, ok := woc.wf.Status.Nodes[nodeID]
@@ -1708,18 +1706,17 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 		panic(fmt.Sprintf("node %s already initialized (Node ID %s)", nodeName, nodeID))
 	}
 
-	now := metav1.Time{Time: time.Now().UTC()}
 	node := wfv1.NodeStatus{
 		ID:            nodeID,
 		Name:          nodeName,
 		TemplateName:  orgTmpl.GetTemplateName(),
 		TemplateRef:   orgTmpl.GetTemplateRef(),
 		TemplateScope: templateScope,
-		Type:          nodeType,
+		Type:          resolvedTmpl.GetNodeType(),
 		BoundaryID:    boundaryID,
 		Phase:         wfv1.NodeSucceeded, // For now we only store succeeded nodes in the cache
-		StartedAt:     now,
-		FinishedAt:    now,
+		StartedAt:     metav1.Time{Time: time.Now().UTC()},
+		FinishedAt:    metav1.Time{Time: time.Now().UTC()},
 		Memoized:      true,
 		DisplayName:   nodeName,
 		Outputs:       outputs,

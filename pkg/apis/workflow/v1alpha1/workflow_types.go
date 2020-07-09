@@ -1638,8 +1638,7 @@ func (tmpl *Template) GetType() TemplateType {
 // GetNodeType returns the type of this template as a Node Type
 //
 func (tmpl *Template) GetNodeType() NodeType {
-	t := tmpl.GetType()
-	switch t {
+	switch tmpl.GetType() {
 	case TemplateTypeContainer:
 		return NodeTypePod
 	case TemplateTypeSteps:
