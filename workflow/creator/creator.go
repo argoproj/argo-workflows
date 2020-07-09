@@ -12,7 +12,7 @@ import (
 )
 
 func Label(ctx context.Context, obj metav1.Object) {
-	claims := auth.GetJWTConfig(ctx)
+	claims := auth.GetClaims(ctx)
 	if claims != nil {
 		labels.Label(obj, common.LabelKeyCreator, regexp.MustCompile("[^-_.a-z0-9A-Z]").ReplaceAllString(claims.Sub, "-"))
 	}

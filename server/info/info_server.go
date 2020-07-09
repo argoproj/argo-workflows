@@ -15,7 +15,7 @@ type infoServer struct {
 }
 
 func (i *infoServer) WhoAmI(ctx context.Context, _ *infopkg.WhoAmIRequest) (*infopkg.WhoAmIResponse, error) {
-	claims := auth.GetJWTConfig(ctx)
+	claims := auth.GetClaims(ctx)
 	if claims != nil {
 		return &infopkg.WhoAmIResponse{Subject: claims.Sub}, nil
 	}
