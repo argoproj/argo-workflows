@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"golang.org/x/oauth2/jwt"
 )
 
 var NullSSO Interface = nullService{}
 
-type nullService struct {
-}
+type nullService struct{}
 
-func (n nullService) Authorize(context.Context, string) error {
-	return fmt.Errorf("not implemented")
+func (n nullService) Authorize(context.Context, string) (*jwt.Config, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (n nullService) HandleRedirect(w http.ResponseWriter, _ *http.Request) {

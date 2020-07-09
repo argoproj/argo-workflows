@@ -12,3 +12,7 @@ export interface Info {
 export interface Version {
     version: string;
 }
+
+export interface WhoAmIResponse {
+    subject: string;
+}

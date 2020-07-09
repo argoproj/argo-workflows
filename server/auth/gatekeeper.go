@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -21,8 +22,9 @@ import (
 type ContextKey string
 
 const (
-	WfKey   ContextKey = "versioned.Interface"
-	KubeKey ContextKey = "kubernetes.Interface"
+	WfKey        ContextKey = "versioned.Interface"
+	KubeKey      ContextKey = "kubernetes.Interface"
+	JWTConfigKey ContextKey = "jwt.Config"
 )
 
 type Gatekeeper interface {
@@ -70,11 +72,11 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 }
 
 func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	wfClient, kubeClient, err := s.getClients(ctx)
+	wfClient, kubeClient, claims, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), nil
+	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), JWTConfigKey, claims), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -85,13 +87,18 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
+func GetJWTConfig(ctx context.Context) *jwt.Config {
+	config, _ := ctx.Value(JWTConfigKey).(*jwt.Config)
+	return config
+}
+
 func getAuthHeader(md metadata.MD) string {
 	// looks for the HTTP header `Authorization: Bearer ...`
 	for _, t := range md.Get("authorization") {
 		return t
 	}
 	// check the HTTP cookie
-	for _, t := range md.Get("grpcgateway-cookie") {
+	for _, t := range md.Get("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}
@@ -103,39 +110,44 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jwt.Config, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !s.Modes[mode] {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
 	}
 	switch mode {
 	case Client:
 		restConfig, err := kubeconfig.GetRestConfig(authorization)
 		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 		}
 		wfClient, err := versioned.NewForConfig(restConfig)
 		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
 		}
 		kubeClient, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		return wfClient, kubeClient, nil
+		claims, _ := jwtConfig(restConfig)
+		return wfClient, kubeClient, claims, nil
 	case Server:
-		return s.wfClient, s.kubeClient, nil
-	case SSO:
-		err := s.ssoIf.Authorize(ctx, authorization)
+		claims, err := jwtConfig(s.restConfig)
 		if err != nil {
-			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
 		}
-		return s.wfClient, s.kubeClient, nil
+		return s.wfClient, s.kubeClient, claims, nil
+	case SSO:
+		claims, err := s.ssoIf.Authorize(ctx, authorization)
+		if err != nil {
+			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+		return s.wfClient, s.kubeClient, claims, nil
 	default:
 		panic("this should never happen")
 	}

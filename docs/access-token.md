@@ -14,6 +14,9 @@ Create a service account for your service:
 kubectl create sa jenkins
 ```
 
+!! TIP
+    Create a unique service account for each client: (a) you'll be able to correctly secure your workflows and (b) [revoke the token](#token-revocation) without impacting other clients. 
+
 Bind the service account to the role (in this case in the `argo` namespace):
 
 ```sh

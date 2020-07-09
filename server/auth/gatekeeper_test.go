@@ -6,8 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth/sso/mocks"
@@ -36,23 +38,25 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	// not possible to unit test client auth today
 	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
+		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, &rest.Config{Username: "my-username"}, nil)
 		assert.NoError(t, err)
 		ctx, err := g.Context(x(""))
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(ctx))
 			assert.Equal(t, kubeClient, GetKubeClient(ctx))
+			assert.NotNil(t, GetJWTConfig(ctx))
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil)
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&jwt.Config{}, nil)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {
 				assert.Equal(t, wfClient, GetWfClient(ctx))
 				assert.Equal(t, kubeClient, GetKubeClient(ctx))
+				assert.NotNil(t, GetJWTConfig(ctx))
 			}
 		}
 	})
@@ -60,4 +64,9 @@ func TestServer_GetWFClient(t *testing.T) {
 
 func x(authorization string) context.Context {
 	return metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": authorization}))
+}
+
+func TestGetJWTConfig(t *testing.T) {
+	// we should be able to get nil
+	assert.Nil(t, GetJWTConfig(context.Background()))
 }
