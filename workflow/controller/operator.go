@@ -338,7 +338,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
 		woc.log.Infof("Running OnExit handler: %s", woc.wfSpec.OnExit)
-		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
+		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wfSpec.OnExit}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
@@ -452,12 +452,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 }
 
 func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
-	nodeID := woc.wf.NodeID(nodeName)
-	node, ok := woc.wf.Status.Nodes[nodeID]
-	if !ok {
-		return nil
-	}
-	return &node
+	return woc.wf.GetNodeByName(nodeName)
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
@@ -2497,7 +2492,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 func (woc *wfOperationCtx) runOnExitNode(templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
-		onExitNodeName := parentDisplayName + ".onExit"
+		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
 		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,

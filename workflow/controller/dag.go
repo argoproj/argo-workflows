@@ -345,15 +345,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	if dagCtx.GetTaskDependsLogic(taskName) != "" {
+		// Recurse into all of this node's dependencies
+		for _, dep := range taskDependencies {
+			woc.executeDAGTask(dagCtx, dep)
+		}
 		execute, proceed, err := dagCtx.evaluateDependsLogic(taskName)
 		if err != nil {
 			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 			connectDependencies(nodeName)
 			return
-		}
-		// Recurse into all of this node's dependencies
-		for _, dep := range taskDependencies {
-			woc.executeDAGTask(dagCtx, dep)
 		}
 		if !proceed {
 			// This node's dependencies are not completed yet, return
@@ -622,6 +622,13 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 		depNode := d.getTaskNode(taskName)
 		if depNode == nil || !depNode.Fulfilled() {
 			return false, false, nil
+		}
+
+		// If a task happens to have an onExit node, don't proceed until the onExit node is fulfilled
+		if onExitNode := d.wf.GetNodeByName(common.GenerateOnExitNodeName(taskName)); onExitNode != nil {
+			if !onExitNode.Fulfilled() {
+				return false, false, nil
+			}
 		}
 
 		evalTaskName := strings.Replace(taskName, "-", "_", -1)
