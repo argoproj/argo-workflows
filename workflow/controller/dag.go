@@ -193,7 +193,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 }
 
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.getNodeByName(nodeName)
+	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
@@ -261,7 +261,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		return node, err
 	}
 	if outputs != nil {
-		node = woc.getNodeByName(nodeName)
+		node = woc.wf.GetNodeByName(nodeName)
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
@@ -283,7 +283,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 		outbound = append(outbound, outboundNodeIDs...)
 	}
-	node := woc.getNodeByName(nodeName)
+	node := woc.wf.GetNodeByName(nodeName)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
@@ -317,7 +317,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	nodeName := dagCtx.taskNodeName(taskName)
 	taskDependencies := dagCtx.GetTaskDependencies(taskName)
 
-	taskGroupNode := woc.getNodeByName(nodeName)
+	taskGroupNode := woc.wf.GetNodeByName(nodeName)
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
 		taskGroupNode = nil
 	}
@@ -345,15 +345,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	if dagCtx.GetTaskDependsLogic(taskName) != "" {
+		// Recurse into all of this node's dependencies
+		for _, dep := range taskDependencies {
+			woc.executeDAGTask(dagCtx, dep)
+		}
 		execute, proceed, err := dagCtx.evaluateDependsLogic(taskName)
 		if err != nil {
 			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 			connectDependencies(nodeName)
 			return
-		}
-		// Recurse into all of this node's dependencies
-		for _, dep := range taskDependencies {
-			woc.executeDAGTask(dagCtx, dep)
 		}
 		if !proceed {
 			// This node's dependencies are not completed yet, return
@@ -622,6 +622,13 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 		depNode := d.getTaskNode(taskName)
 		if depNode == nil || !depNode.Fulfilled() {
 			return false, false, nil
+		}
+
+		// If a task happens to have an onExit node, don't proceed until the onExit node is fulfilled
+		if onExitNode := d.wf.GetNodeByName(common.GenerateOnExitNodeName(taskName)); onExitNode != nil {
+			if !onExitNode.Fulfilled() {
+				return false, false, nil
+			}
 		}
 
 		evalTaskName := strings.Replace(taskName, "-", "_", -1)
