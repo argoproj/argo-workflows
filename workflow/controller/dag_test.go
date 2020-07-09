@@ -1760,7 +1760,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
-	
+
 	assert.Nil(t, woc.getNodeByName("exit-handler-bug-example.step-3"))
 
 	retryNode.Phase = wfv1.NodeSucceeded
