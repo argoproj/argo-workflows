@@ -193,7 +193,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 }
 
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-	node := woc.getNodeByName(nodeName)
+	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
@@ -261,7 +261,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		return node, err
 	}
 	if outputs != nil {
-		node = woc.getNodeByName(nodeName)
+		node = woc.wf.GetNodeByName(nodeName)
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
@@ -283,7 +283,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 		outbound = append(outbound, outboundNodeIDs...)
 	}
-	node := woc.getNodeByName(nodeName)
+	node := woc.wf.GetNodeByName(nodeName)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
@@ -317,7 +317,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	nodeName := dagCtx.taskNodeName(taskName)
 	taskDependencies := dagCtx.GetTaskDependencies(taskName)
 
-	taskGroupNode := woc.getNodeByName(nodeName)
+	taskGroupNode := woc.wf.GetNodeByName(nodeName)
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
 		taskGroupNode = nil
 	}

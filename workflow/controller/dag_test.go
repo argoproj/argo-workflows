@@ -1277,7 +1277,7 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 
 	woc.operate()
 
-	retryNode := woc.getNodeByName("dag-diamond-dj7q5.A")
+	retryNode := woc.wf.GetNodeByName("dag-diamond-dj7q5.A")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
@@ -1463,12 +1463,12 @@ func TestRetryStrategyNodes(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
-	retryNode := woc.getNodeByName("wf-retry-pol")
+	retryNode := woc.wf.GetNodeByName("wf-retry-pol")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 	}
 
-	onExitNode := woc.getNodeByName("wf-retry-pol.onExit")
+	onExitNode := woc.wf.GetNodeByName("wf-retry-pol.onExit")
 	if assert.NotNil(t, onExitNode) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
@@ -1627,12 +1627,12 @@ func TestOnExitDAGPhase(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
-	retryNode := woc.getNodeByName("dag-diamond-88trp")
+	retryNode := woc.wf.GetNodeByName("dag-diamond-88trp")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
 	}
 
-	retryNode = woc.getNodeByName("B.onExit")
+	retryNode = woc.wf.GetNodeByName("B.onExit")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
@@ -1756,17 +1756,17 @@ func TestOnExitNonLeaf(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
-	retryNode := woc.getNodeByName("step-2.onExit")
+	retryNode := woc.wf.GetNodeByName("step-2.onExit")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
 
-	assert.Nil(t, woc.getNodeByName("exit-handler-bug-example.step-3"))
+	assert.Nil(t, woc.wf.GetNodeByName("exit-handler-bug-example.step-3"))
 
 	retryNode.Phase = wfv1.NodeSucceeded
 	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
 	woc.operate()
-	retryNode = woc.getNodeByName("exit-handler-bug-example.step-3")
+	retryNode = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
 	if assert.NotNil(t, retryNode) {
 		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
 	}
