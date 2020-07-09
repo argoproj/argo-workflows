@@ -1695,9 +1695,6 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	}
 	woc.log.Debugf("Initializing cached node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	nodeID := woc.wf.NodeID(nodeName)
-	if woc.getNodeByName(nodeName) != nil {
-		panic(fmt.Sprintf("node %s already initialized (Node ID %s)", nodeName, nodeID))
-	}
 	node := wfv1.NodeStatus{
 		ID:            nodeID,
 		Name:          nodeName,
