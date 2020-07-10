@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -584,6 +585,22 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 		})
 }
 
+func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates()
+	s.Given().
+		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestWorkflowLevelSemaphore() {
 	semaphoreData := map[string]string{
 		"workflow": "1",
@@ -601,22 +618,6 @@ func (s *FunctionalSuite) TestWorkflowLevelSemaphore() {
 		})
 }
 
-func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
-	s.Given().
-		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
-		When().
-		CreateWorkflowTemplates()
-	s.Given().
-		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *FunctionalSuite) TestTemplateLevelSemaphore() {
 	semaphoreData := map[string]string{
 		"template": "1",
@@ -628,7 +629,8 @@ func (s *FunctionalSuite) TestTemplateLevelSemaphore() {
 		SubmitWorkflow().
 		Wait(10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for Lock")
+			fmt.Println(output)
+			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(20 * time.Second).
 		DeleteConfigMap()

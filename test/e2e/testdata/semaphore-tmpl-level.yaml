@@ -26,16 +26,17 @@ spec:
       source: |
         import json
         import sys
-        json.dump([i for i in range(1, 5)], sys.stdout)
+        json.dump([i for i in range(1, 3)], sys.stdout)
 
   - name: sleep-n-sec
     inputs:
       parameters:
       - name: seconds
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: template
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          name: my-config
+          key: template
     container:
       image: argoproj/argosay:v2
       args: ["sleep", "1s"]
