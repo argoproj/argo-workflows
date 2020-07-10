@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -913,6 +914,55 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 		})
 	})
 }
+
+func (s *CLISuite) TestWorkflowLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"workflow": "1",
+	}
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-wf-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "semaphore-wf-level-1")
+			}
+		}).
+		SubmitWorkflow().
+		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
+			fmt.Println(output)
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(30 * time.Second).
+		DeleteConfigMap().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *CLISuite) TestTemplateLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"template": "1",
+	}
+
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-tmpl-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		SubmitWorkflow().
+		Wait(12*time.Second).
+
+		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
+			fmt.Println(output)
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		DeleteConfigMap()
+}
+
 
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))

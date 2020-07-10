@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -601,40 +600,6 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		})
 }
 
-func (s *FunctionalSuite) TestWorkflowLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"workflow": "1",
-	}
-	s.Given().
-		Workflow("@testdata/semaphore-wf-level.yaml").
-		When().
-		CreateConfigMap("my-config", semaphoreData).
-		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *FunctionalSuite) TestTemplateLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"template": "1",
-	}
-	s.Given().
-		Workflow("@testdata/semaphore-tmpl-level.yaml").
-		When().
-		CreateConfigMap("my-config", semaphoreData).
-		SubmitWorkflow().
-		Wait(10*time.Second).
-		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			fmt.Println(output)
-			assert.Contains(t, output, "Waiting for")
-		}).
-		WaitForWorkflow(20 * time.Second).
-		DeleteConfigMap()
-}
 
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
 	s.Given().
