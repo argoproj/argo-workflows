@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
@@ -70,12 +69,14 @@ func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	for _, metric := range m.allMetrics() {
 		ch <- metric.Desc()
 	}
+	m.logMetric.Describe(ch)
 }
 
 func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range m.allMetrics() {
 		ch <- metric
 	}
+	m.logMetric.Collect(ch)
 }
 
 func (m *Metrics) garbageCollector(ctx context.Context) {
