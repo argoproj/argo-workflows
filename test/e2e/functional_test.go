@@ -600,7 +600,6 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		})
 }
 
-
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
 	s.Given().
 		Workflow(`
