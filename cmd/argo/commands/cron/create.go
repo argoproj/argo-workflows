@@ -62,7 +62,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	if len(cronWorkflows) == 0 {
-		log.Println("No CronWorkflows found in given files")
+		log.Error("No CronWorkflows found in given files")
 		os.Exit(1)
 	}
 

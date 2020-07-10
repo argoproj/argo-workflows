@@ -197,7 +197,7 @@ func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServ
 	validateOptions(workflows, submitOpts, cliOpts)
 
 	if len(workflows) == 0 {
-		log.Println("No Workflow found in given files")
+		log.Error("No Workflow found in given files")
 		os.Exit(1)
 	}
 

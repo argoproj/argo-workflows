@@ -62,7 +62,7 @@ func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) 
 	}
 
 	if len(clusterWorkflowTemplates) == 0 {
-		log.Println("No cluster workflow template found in given files")
+		log.Error("No cluster workflow template found in given files")
 		os.Exit(1)
 	}
 

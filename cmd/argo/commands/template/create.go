@@ -60,7 +60,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	if len(workflowTemplates) == 0 {
-		log.Println("No workflow template found in given files")
+		log.Error("No workflow template found in given files")
 		os.Exit(1)
 	}
 
