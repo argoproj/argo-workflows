@@ -6904,6 +6904,8 @@ spec:
                 - name
                 type: object
               type: array
+            workflowMetadata:
+              type: object
             workflowTemplateRef:
               properties:
                 clusterScope:
