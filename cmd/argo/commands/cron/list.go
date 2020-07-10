@@ -2,13 +2,13 @@ package cron
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

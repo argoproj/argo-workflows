@@ -3,9 +3,9 @@ package template
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 

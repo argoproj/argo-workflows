@@ -1,10 +1,10 @@
 package template
 
 import (
-	"log"
 	"os"
 
 	"github.com/argoproj/pkg/json"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"

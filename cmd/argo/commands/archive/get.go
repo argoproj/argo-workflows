@@ -3,11 +3,11 @@ package archive
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
