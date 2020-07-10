@@ -963,7 +963,6 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		DeleteConfigMap()
 }
 
-
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
