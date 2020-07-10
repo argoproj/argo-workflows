@@ -55,11 +55,11 @@ type Metrics struct {
 	logMetric          *prometheus.CounterVec
 }
 
-func (m Metrics) Levels() []log.Level {
+func (m *Metrics) Levels() []log.Level {
 	return []log.Level{log.InfoLevel, log.WarnLevel, log.ErrorLevel}
 }
 
-func (m Metrics) Fire(entry *log.Entry) error {
+func (m *Metrics) Fire(entry *log.Entry) error {
 	m.logMetric.WithLabelValues(entry.Level.String()).Inc()
 	return nil
 }
