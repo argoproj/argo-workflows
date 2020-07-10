@@ -14,6 +14,7 @@ import (
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
@@ -313,9 +314,10 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		if resourceNamespace == "" && resourceName == "" {
 			output := ""
 			if param.ValueFrom.Default != nil {
-				output = string([]byte(*param.ValueFrom.Default))
+				output = param.ValueFrom.Default.String()
 			}
-			we.Template.Outputs.Parameters[i].Value = &output
+			intOrString := intstr.Parse(output)
+			we.Template.Outputs.Parameters[i].Value = &intOrString
 			continue
 		}
 		var cmd *exec.Cmd
@@ -340,7 +342,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		if err != nil {
 			// We have a default value to use instead of returning an error
 			if param.ValueFrom.Default != nil {
-				out = []byte(*param.ValueFrom.Default)
+				out = []byte(param.ValueFrom.Default.String())
 			} else {
 				if exErr, ok := err.(*exec.ExitError); ok {
 					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
@@ -349,7 +351,8 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			}
 		}
 		output := string(out)
-		we.Template.Outputs.Parameters[i].Value = &output
+		intOrString := intstr.Parse(output)
+		we.Template.Outputs.Parameters[i].Value = &intOrString
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)

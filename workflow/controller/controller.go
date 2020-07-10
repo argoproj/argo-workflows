@@ -22,11 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -83,8 +80,8 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	metrics               metrics.Metrics
-	eventRecorder         record.EventRecorder
+	metrics               *metrics.Metrics
+	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
 }
 
@@ -97,10 +94,6 @@ const (
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace string, managedNamespace string, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) *WorkflowController {
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Debugf)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events(namespace)})
-	eventRecorder := eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: "workflow-controller"})
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
@@ -110,17 +103,22 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		eventRecorder:              eventRecorder,
+		eventRecorderManager:       newEventRecorderManager(kubeclientset),
 	}
-	wfc.throttler = NewThrottler(0, wfc.wfQueue)
+
 	wfc.UpdateConfig()
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
+
+	workqueue.SetProvider(wfc.metrics)
+	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
+	wfc.throttler = NewThrottler(0, wfc.wfQueue)
+	wfc.throttler.SetParallelism(wfc.getParallelism())
+	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
+
 	return &wfc
 }
 
@@ -134,7 +132,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, &wfc.metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
 	cronController.Run(ctx)
 }
 
@@ -594,13 +592,22 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			wfc.metrics.WorkflowAdded(getWfPhase(obj))
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				wfc.metrics.WorkflowAdded(key, getWfPhase(obj))
+			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			wfc.metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
+			key, err := cache.MetaNamespaceKeyFunc(new)
+			if err == nil {
+				wfc.metrics.WorkflowUpdated(key, getWfPhase(old), getWfPhase(new))
+			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			wfc.metrics.WorkflowDeleted(getWfPhase(obj))
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				wfc.metrics.WorkflowDeleted(key, getWfPhase(obj))
+			}
 		},
 	})
 }
@@ -717,6 +724,10 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
+}
+
+func (wfc *WorkflowController) getParallelism() int {
+	return wfc.Config.Parallelism
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

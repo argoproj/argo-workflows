@@ -164,7 +164,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		case event, open := <-watch.ResultChan():
 			if !open {
 				log.Debug("Re-establishing workflow watch")

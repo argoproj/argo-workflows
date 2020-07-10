@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -86,24 +87,7 @@ func NewLogsCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			// logs
-			stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
-				Name:       workflow,
-				Namespace:  namespace,
-				PodName:    podName,
-				LogOptions: logOptions,
-			})
-			errors.CheckError(err)
-
-			// loop on log lines
-			for {
-				event, err := stream.Recv()
-				if err == io.EOF {
-					return
-				}
-				errors.CheckError(err)
-				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
-			}
+			logWorkflow(ctx, serviceClient, namespace, workflow, podName, logOptions)
 		},
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")
@@ -114,4 +98,25 @@ func NewLogsCommand() *cobra.Command {
 	command.Flags().BoolVar(&logOptions.Timestamps, "timestamps", false, "Include timestamps on each line in the log output")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	return command
+}
+
+func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName string, logOptions *corev1.PodLogOptions) {
+	// logs
+	stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
+		Name:       workflow,
+		Namespace:  namespace,
+		PodName:    podName,
+		LogOptions: logOptions,
+	})
+	errors.CheckError(err)
+
+	// loop on log lines
+	for {
+		event, err := stream.Recv()
+		if err == io.EOF {
+			return
+		}
+		errors.CheckError(err)
+		fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
+	}
 }

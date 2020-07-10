@@ -14,7 +14,7 @@ import (
 )
 
 func TestHydrator(t *testing.T) {
-	defer packer.SetMaxWorkflowSize(300)()
+	defer packer.SetMaxWorkflowSize(260)()
 
 	t.Run("Dehydrate", func(t *testing.T) {
 		t.Run("Packed", func(t *testing.T) {

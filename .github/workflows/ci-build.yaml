@@ -13,6 +13,7 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -72,7 +73,8 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir dist
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true &
+          mkdir -p /tmp/log/argo-e2e
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
         env:
@@ -90,10 +92,17 @@ jobs:
         with:
           name: ${{ matrix.test }}
           path: test-results
+      - name: Upload diagnostics
+        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}-diagnostics
+          path: /tmp/log/argo-e2e
 
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -154,6 +163,7 @@ jobs:
   ui:
     name: UI
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

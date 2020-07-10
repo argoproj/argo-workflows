@@ -323,7 +323,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
-		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
+		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
@@ -693,4 +693,8 @@ func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.Clus
 		manifests = append(manifests, cwftmpl)
 	}
 	return manifests, nil
+}
+
+func GenerateOnExitNodeName(parentDisplayName string) string {
+	return fmt.Sprintf("%s.onExit", parentDisplayName)
 }

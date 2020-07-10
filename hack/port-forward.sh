@@ -36,3 +36,11 @@ mysql=$(kubectl -n argo get pod -l app=mysql -o name)
 if [[ "$mysql" != "" ]]; then
   pf MySQL "$mysql" 3306
 fi
+
+if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
+  pf "Argo Server" deploy/argo-server 2746
+fi
+
+if [[ "$(kubectl -n argo get pod -l app=workflow-controller -o name)" != "" ]]; then
+  pf "Workflow Controller" deploy/workflow-controller 9090
+fi

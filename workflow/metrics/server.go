@@ -13,7 +13,7 @@ import (
 )
 
 // RunServer starts a metrics server
-func (m Metrics) RunServer(ctx context.Context) {
+func (m *Metrics) RunServer(ctx context.Context) {
 	if !m.metricsConfig.Enabled {
 		// If metrics aren't enabled, return
 		return
@@ -66,19 +66,19 @@ func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.C
 	}
 }
 
-func (m Metrics) Describe(ch chan<- *prometheus.Desc) {
+func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	for _, metric := range m.allMetrics() {
 		ch <- metric.Desc()
 	}
 }
 
-func (m Metrics) Collect(ch chan<- prometheus.Metric) {
+func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range m.allMetrics() {
 		ch <- metric
 	}
 }
 
-func (m Metrics) garbageCollector(ctx context.Context) {
+func (m *Metrics) garbageCollector(ctx context.Context) {
 	if m.metricsConfig.TTL == 0 {
 		return
 	}
