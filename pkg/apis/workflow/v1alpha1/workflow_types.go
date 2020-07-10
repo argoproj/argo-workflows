@@ -1864,6 +1864,15 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
+func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
+	nodeID := wf.NodeID(nodeName)
+	node, ok := wf.Status.Nodes[nodeID]
+	if !ok {
+		return nil
+	}
+	return &node
+}
+
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal

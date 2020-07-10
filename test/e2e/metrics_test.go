@@ -39,7 +39,11 @@ func (s *MetricsSuite) TestMetricsEndpoint() {
 	s.Run("Metrics", func() {
 		s.e(s.T()).GET("").
 			Expect().
-			Status(200)
+			Status(200).
+			Body().
+			Contains(`log_messages{level="info"}`).
+			Contains(`log_messages{level="warning"}`).
+			Contains(`log_messages{level="error"}`)
 	})
 }
 
