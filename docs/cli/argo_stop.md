@@ -13,7 +13,7 @@ argo stop WORKFLOW WORKFLOW2... [flags]
 ### Examples
 
 ```
-# Stop about a workflow:
+# Stop a workflow:
 
   argo stop my-wf
 
