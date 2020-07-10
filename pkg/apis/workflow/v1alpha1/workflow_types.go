@@ -129,6 +129,11 @@ var (
 			return !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(t)
 		}
 	}
+	WorkflowRanBetween = func(startTime time.Time, endTime time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return wf.ObjectMeta.CreationTimestamp.After(startTime) && !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(endTime)
+		}
+	}
 )
 
 // WorkflowList is list of Workflow resources
@@ -1805,6 +1810,15 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 		}
 	}
 	return nil
+}
+
+func (wf *Workflow) GetNodeByName(nodeName string) *NodeStatus {
+	nodeID := wf.NodeID(nodeName)
+	node, ok := wf.Status.Nodes[nodeID]
+	if !ok {
+		return nil
+	}
+	return &node
 }
 
 // GetResourceScope returns the template scope of workflow.

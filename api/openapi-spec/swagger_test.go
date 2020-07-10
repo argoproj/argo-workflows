@@ -49,10 +49,6 @@ func TestSwagger(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)
 		assert.NotContains(t, definition["required"], "status")
 	})
-	t.Run("io.argoproj.workflow.v1alpha1.Item", func(t *testing.T) {
-		definition := definitions["io.argoproj.workflow.v1alpha1.Item"].(obj)
-		assert.ElementsMatch(t, []string{"string", "number", "boolean", "array", "object"}, definition["type"])
-	})
 	t.Run("io.argoproj.workflow.v1alpha1.Parameter", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Parameter"].(obj)
 		properties := definition["properties"].(obj)

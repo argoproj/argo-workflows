@@ -348,7 +348,7 @@ func newTTLController() *Controller {
 		wfInformer:   wfInformer,
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
-		workqueue:    workqueue.NewNamedDelayingQueue("workflow-ttl"),
+		workqueue:    workqueue.NewDelayingQueue(),
 	}
 }
 
