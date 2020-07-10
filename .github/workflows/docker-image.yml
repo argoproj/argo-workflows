@@ -24,9 +24,9 @@ jobs:
           password: ${{ secrets.DOCKERIO_PASSWORD }}
       - name: Build & Push Linux Docker Images
         env:
-          DOCKERIO_USERNAME: ${{ secrets.DOCKERIO_USERNAME }}
+          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
-          docker_org=$DOCKERIO_USERNAME
+          docker_org=$DOCKERIO_ORG
 
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
@@ -52,9 +52,9 @@ jobs:
           password: ${{ secrets.DOCKERIO_PASSWORD }}
       - name: Build & Push Windows Docker Images
         env:
-          DOCKERIO_USERNAME: ${{ secrets.DOCKERIO_USERNAME }}
+          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
-          docker_org=$DOCKERIO_USERNAME
+          docker_org=$DOCKERIO_ORG
 
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
@@ -81,11 +81,11 @@ jobs:
           password: ${{ secrets.DOCKERIO_PASSWORD }}
       - name: Push Multiarch Image
         env:
-          DOCKERIO_USERNAME: ${{ secrets.DOCKERIO_USERNAME }}
+          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
           echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
 
-          docker_org=$DOCKERIO_USERNAME
+          docker_org=$DOCKERIO_ORG
 
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
