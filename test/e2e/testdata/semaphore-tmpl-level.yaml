@@ -26,7 +26,7 @@ spec:
       source: |
         import json
         import sys
-        json.dump([i for i in range(1, 3)], sys.stdout)
+        json.dump([i for i in range(1, 5)], sys.stdout)
 
   - name: sleep-n-sec
     inputs:
@@ -39,4 +39,4 @@ spec:
           key: template
     container:
       image: argoproj/argosay:v2
-      args: ["sleep", "1s"]
+      args: ["sleep", "3s"]
