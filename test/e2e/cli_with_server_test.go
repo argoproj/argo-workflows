@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -164,7 +163,6 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				fmt.Println(output)
 				assert.Contains(t, output, "semaphore-wf-level-1")
 			}
 		}).
