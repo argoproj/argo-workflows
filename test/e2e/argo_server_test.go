@@ -592,6 +592,16 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Equal("Stopped with strategy 'Terminate'")
 	})
 
+	s.Run("Resubmit", func() {
+		s.e().PUT("/api/v1/workflows/argo/test/resubmit").
+			WithBytes([]byte(`{"memoized": true}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
+	})
+
 	s.Run("Delete", func() {
 		s.e().DELETE("/api/v1/workflows/argo/test").
 			Expect().
