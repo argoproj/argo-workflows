@@ -955,7 +955,6 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		Wait(12*time.Second).
 
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			fmt.Println(output)
 			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(20 * time.Second).
