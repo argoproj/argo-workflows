@@ -931,7 +931,6 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		}).
 		SubmitWorkflow().
 		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
-			fmt.Println(output)
 			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(30 * time.Second).
