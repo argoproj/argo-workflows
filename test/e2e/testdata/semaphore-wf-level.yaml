@@ -15,4 +15,4 @@ spec:
   - name: whalesay
     container:
       image: argoproj/argosay:v2
-      args: ["sleep", "3s"]
+      args: ["sleep", "1s"]

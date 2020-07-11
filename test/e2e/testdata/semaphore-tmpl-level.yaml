@@ -9,24 +9,16 @@ spec:
   templates:
   - name: semaphore-tmpl-level-example
     steps:
-    - - name: generate
-        template: gen-number-list
     - - name: sleep
         template: sleep-n-sec
         arguments:
           parameters:
           - name: seconds
             value: "{{item}}"
-        withParam: "{{steps.generate.outputs.result}}"
-
-  - name: gen-number-list
-    script:
-      image: python:alpine3.6
-      command: [python]
-      source: |
-        import json
-        import sys
-        json.dump([i for i in range(1, 5)], sys.stdout)
+        withItems:
+        - hello
+        - goodbye
+        - bye
 
   - name: sleep-n-sec
     inputs:
@@ -39,4 +31,4 @@ spec:
           key: template
     container:
       image: argoproj/argosay:v2
-      args: ["sleep", "3s"]
+      args: ["sleep", "1s"]
