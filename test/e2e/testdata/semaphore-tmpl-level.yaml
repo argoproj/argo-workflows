@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: semaphore-tmpl-level
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: semaphore-tmpl-level-example
+  templates:
+  - name: semaphore-tmpl-level-example
+    steps:
+    - - name: sleep
+        template: sleep-n-sec
+        arguments:
+          parameters:
+          - name: seconds
+            value: "{{item}}"
+        withItems:
+        - hello
+        - goodbye
+        - bye
+
+  - name: sleep-n-sec
+    inputs:
+      parameters:
+      - name: seconds
+    synchronization:
+      semaphore:
+        configMapKeyRef:
+          name: my-config
+          key: template
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "1s"]
