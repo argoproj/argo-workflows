@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: semaphore-wf-level
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: whalesay
+  synchronization:
+    semaphore:
+      configMapKeyRef:
+        name: my-config
+        key: workflow
+  templates:
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+      args: ["sleep", "1s"]
