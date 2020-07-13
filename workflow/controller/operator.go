@@ -1405,6 +1405,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			}
 			return node, nil
 		}
+		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
+		// Memoized nodes don't have StartedAt.
+		if node.StartedAt.IsZero() {
+			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			woc.wf.Status.Nodes[node.ID] = *node
+			woc.updated = true
+		}
 	}
 
 	// Check if we took too long operating on this workflow and immediately return if we did
@@ -1503,8 +1510,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 	}
 
-	woc.log.Debugf("Executing node %s", nodeName)
-
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, opts)
@@ -1537,12 +1542,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return node, err
 		}
 	}
-	// memoized pod type node will have zero date, and that must now be set
-	if node.StartedAt.IsZero() {
-		node.StartedAt = metav1.Now()
-		woc.wf.Status.Nodes[node.ID] = *node
-		woc.updated = true
-	}
+
 	if resolvedTmpl.Metrics != nil {
 		// Check if the node was just created, if it was emit realtime metrics.
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
@@ -1573,7 +1573,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		retryNode := woc.wf.GetNodeByName(retryNodeName)
 		if !retryNode.Fulfilled() && node.Fulfilled() { //if the retry child has completed we need to update outself
 			node, err = woc.executeTemplate(retryNodeName, orgTmpl, tmplCtx, args, opts)
-			if err != nil && node != nil {
+			if err != nil {
 				return woc.markNodeError(node.Name, err), err
 			}
 		}
@@ -1872,7 +1872,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if !node.StartedAt.IsZero() && (!isResubmitAllowed(tmpl) && !node.Pending()) {
+	} else if !isResubmitAllowed(tmpl) && !node.Pending() {
 		// This is not our first time executing this node.
 		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
 		// false, return.
