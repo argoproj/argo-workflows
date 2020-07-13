@@ -3983,7 +3983,6 @@ func TestResubmitMemoization(t *testing.T) {
 kind: Workflow
 metadata:
   name: my-wf
-  namespace: argo
 spec:
   entrypoint: main
   templates:
@@ -3993,7 +3992,8 @@ spec:
 status:
   phase: Failed
   nodes:
-    my-wf-lzarl: 
+    my-wf:
+      name: my-wf
       phase: Failed
 `)
 	wf, err := util.FormulateResubmitWorkflow(wf, true)
@@ -4012,6 +4012,10 @@ status:
 			default:
 				assert.Fail(t, "invalid template")
 			}
+		}
+		list, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+		if assert.NoError(t, err) {
+			assert.Len(t, list.Items, 1)
 		}
 	}
 }
