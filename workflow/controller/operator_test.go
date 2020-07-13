@@ -3977,3 +3977,41 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	})
 
 }
+
+func TestResubmitMemoization(t *testing.T) {
+	wf := unmarshalWF(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf-lzarl: 
+      phase: Failed
+`)
+	wf, err := util.FormulateResubmitWorkflow(wf, true)
+	if assert.NoError(t, err) {
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
+		for _, node := range woc.wf.Status.Nodes {
+			switch node.TemplateName {
+			case "main":
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+				assert.False(t, node.StartTime().IsZero())
+			case "":
+			default:
+				assert.Fail(t, "invalid template")
+			}
+		}
+	}
+}
