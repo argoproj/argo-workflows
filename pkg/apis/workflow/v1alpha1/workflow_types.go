@@ -35,15 +35,22 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
-	NodePending   NodePhase = "Pending" // WF/Node is waiting to run
-	NodeRunning   NodePhase = "Running" // WF/Node is currently running
-	NodeSucceeded NodePhase = "Succeeded" // WF/Node has finished with no errors
-	NodeSkipped   NodePhase = "Skipped" // Node was skipped in Workflow DAG / Steps
-	NodeFailed    NodePhase = "Failed" // a WF with a failed Node will be marked with NodeFailed as well
+	// Node is waiting to run
+	NodePending   NodePhase = "Pending"
+	// Node is currently running
+	NodeRunning   NodePhase = "Running"
+	// Node has finished with no errors
+	NodeSucceeded NodePhase = "Succeeded"
+	// Node was skipped in Workflow DAG / Steps
+	NodeSkipped   NodePhase = "Skipped"
 	// There was an error within the container. E.g. the container exits with a non 0 code
-	NodeError     NodePhase = "Error" // a WF with an errored Node will be marked with NodeError as well
+	// a WF with a failed Node will be marked with NodeFailed as well
+	NodeFailed    NodePhase = "Failed"
 	// There was an error around a container, E.g. The pod was deleted, couldn’t be scheduled, or there were problems getting logs
-	NodeOmitted   NodePhase = "Omitted" // a depends condition for this node in a DAG was not met
+	// a WF with an errored Node will be marked with NodeError as well
+	NodeError     NodePhase = "Error"
+	// a depends condition for this node in a DAG was not met
+	NodeOmitted   NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
