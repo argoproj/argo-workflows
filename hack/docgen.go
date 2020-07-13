@@ -9,6 +9,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/spf13/cobra/doc"
+
+	commands "github.com/argoproj/argo/cmd/argo/commands"
 )
 
 const sectionHeader = `
@@ -107,7 +111,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "../"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo/blob/master/examples/"+example))
 	}
 	out += dropdownCloser
 	return out
@@ -320,7 +324,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 func (c *DocGeneratorContext) generate() string {
 	c.loadFiles()
 
-	out := fmt.Sprintf("# Argo Fields")
+	out := fmt.Sprintf("# Field Reference")
 	for len(c.queue) > 0 {
 		var temp string
 		temp, c.queue = c.queue[0], c.queue[1:]
@@ -339,8 +343,14 @@ func (c *DocGeneratorContext) generate() string {
 }
 
 func generateDocs() {
+	cmd := commands.NewCommand()
+	cmd.DisableAutoGenTag = true
+	err := doc.GenMarkdownTree(cmd, "docs/cli")
+	if err != nil {
+		panic(err)
+	}
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
+	err = ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
 	if err != nil {
 		panic(err)
 	}

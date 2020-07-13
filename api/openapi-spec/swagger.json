@@ -6,7 +6,8 @@
     "application/json"
   ],
   "schemes": [
-    "http"
+    "http",
+    "https"
   ],
   "swagger": "2.0",
   "info": {
@@ -14,7 +15,6 @@
     "title": "Argo",
     "version": "latest"
   },
-  "host": "localhost:2746",
   "paths": {
     "/api/v1/archived-workflows": {
       "get": {
@@ -2481,6 +2481,19 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.HolderNames": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name stores the name of the resource holding lock",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": "atomic"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
@@ -3140,6 +3153,52 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SemaphoreHolding": {
+      "type": "object",
+      "properties": {
+        "holders": {
+          "description": "Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": "atomic"
+        },
+        "semaphore": {
+          "description": "Semaphore stores the semaphore name.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SemaphoreRef": {
+      "description": "SemaphoreRef is a reference of Semaphore",
+      "type": "object",
+      "properties": {
+        "configMapKeyRef": {
+          "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SemaphoreStatus": {
+      "type": "object",
+      "properties": {
+        "holding": {
+          "description": "Holding stores the list of resource acquired synchronization lock for workflows.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
+          }
+        },
+        "waiting": {
+          "description": "Waiting indicates the list of current synchronization lock holders",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Sequence": {
       "description": "Sequence expands a workflow step into numeric range",
       "type": "object",
@@ -3218,6 +3277,25 @@
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Synchronization": {
+      "description": "Synchronization holds synchronization lock configuration",
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "Semaphore holds the Semaphore configuration",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SynchronizationStatus": {
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreStatus"
         }
       }
     },
@@ -3407,6 +3485,10 @@
         "suspend": {
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
+        },
+        "synchronization": {
+          "description": "Synchronization holds synchronization lock configuration for this template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "template": {
           "description": "Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used.",
@@ -3938,6 +4020,10 @@
           "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
           "type": "boolean"
         },
+        "synchronization": {
+          "description": "Synchronization holds synchronization lock configuration for this Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
+        },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
           "type": "array",
@@ -4060,6 +4146,10 @@
         "storedWorkflowTemplateSpec": {
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "synchronization": {
+          "description": "Synchronization stores the status of synchronization locks",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus"
         }
       }
     },
@@ -4381,6 +4471,10 @@
           "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
           "type": "boolean"
         },
+        "synchronization": {
+          "description": "Synchronization holds synchronization lock configuration for this Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
+        },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
           "type": "array",
@@ -4425,6 +4519,10 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "workflowMetadata": {
+          "description": "WorkflowMetadata contains some metadata of the workflow to be refer",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "workflowTemplateRef": {
           "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution",

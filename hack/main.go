@@ -14,8 +14,6 @@ func main() {
 		kubeifySwagger(os.Args[2], os.Args[3])
 	case "secondaryswaggergen":
 		secondarySwaggerGen()
-	case "readmegen":
-		readmeGen()
 	default:
 		panic(os.Args[1])
 	}

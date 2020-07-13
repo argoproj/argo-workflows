@@ -43,6 +43,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":               schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact":                schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram":                   schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HolderNames":                 schema_pkg_apis_workflow_v1alpha1_HolderNames(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":                      schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                        schema_pkg_apis_workflow_v1alpha1_Item(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Link":                        schema_pkg_apis_workflow_v1alpha1_Link(ref),
@@ -64,9 +65,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":                  schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":                    schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate":              schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding":            schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef":                schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreStatus":             schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":                    schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitOpts":                  schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":             schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization":             schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus":       schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy":                 schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy":                 schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template":                    schema_pkg_apis_workflow_v1alpha1_Template(ref),
@@ -74,6 +80,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer":               schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":                   schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Version":                     schema_pkg_apis_workflow_v1alpha1_Version(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WaitingStatus":               schema_pkg_apis_workflow_v1alpha1_WaitingStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":                    schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":                schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":                schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
@@ -1491,6 +1498,37 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_HolderNames(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Name stores the name of the resource holding lock",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2713,6 +2751,105 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Semaphore stores the semaphore name.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"holders": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Holders stores the list of current holder names in the workflow.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SemaphoreRef is a reference of Semaphore",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"configMapKeyRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"holding": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Holding stores the list of resource acquired synchronization lock for workflows.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
+									},
+								},
+							},
+						},
+					},
+					"waiting": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Waiting indicates the list of current synchronization lock holders",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreHolding"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2862,6 +2999,47 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Synchronization holds synchronization lock configuration",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Semaphore holds the Semaphore configuration",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SemaphoreHolders stores this workflow's Semaphore holder details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreStatus"},
 	}
 }
 
@@ -3229,12 +3407,18 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics"),
 						},
 					},
+					"synchronization": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Synchronization holds synchronization lock configuration for this template",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -3630,6 +3814,26 @@ func schema_pkg_apis_workflow_v1alpha1_Version(ref common.ReferenceCallback) com
 				Required: []string{"version", "buildDate", "gitCommit", "gitTag", "gitTreeState", "goVersion", "compiler", "platform"},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WaitingStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"holders": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Holders stores the list of current holder names",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HolderNames"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HolderNames"},
 	}
 }
 
@@ -4038,11 +4242,17 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
+					"synchronization": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Synchronization holds synchronization lock configuration for this Workflow",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -4174,11 +4384,17 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
+					"synchronization": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Synchronization stores the status of synchronization locks",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -4696,10 +4912,22 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
+					"synchronization": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Synchronization holds synchronization lock configuration for this Workflow",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
+						},
+					},
+					"workflowMetadata": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkflowMetadata contains some metadata of the workflow to be refer",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }

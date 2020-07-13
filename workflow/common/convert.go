@@ -17,8 +17,8 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 
 		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
 			wf.Annotations = make(map[string]string)
-			for key, label := range cronWf.Spec.WorkflowMetadata.Annotations {
-				wf.Annotations[key] = label
+			for key, annotation := range cronWf.Spec.WorkflowMetadata.Annotations {
+				wf.Annotations[key] = annotation
 			}
 		}
 	}
@@ -26,7 +26,7 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return wf
 }
 
-func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wfv1.Workflow {
+func NewWorkflowFromWorkflowTemplate(templateName string, workflowMetadata *metav1.ObjectMeta, clusterScope bool) *wfv1.Workflow {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
@@ -41,6 +41,16 @@ func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wf
 			},
 		},
 	}
+
+	if workflowMetadata != nil {
+		for key, label := range workflowMetadata.Labels {
+			wf.Labels[key] = label
+		}
+		for key, annotation := range workflowMetadata.Annotations {
+			wf.Annotations[key] = annotation
+		}
+	}
+
 	if clusterScope {
 		wf.Labels[LabelKeyClusterWorkflowTemplate] = templateName
 	} else {
