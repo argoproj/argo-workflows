@@ -2860,22 +2860,19 @@ func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) co
 					"count": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Count is number of elements in the sequence (default: 0). Not to be used with end",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 					"start": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Number at which to start the sequence (default: 0)",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 					"end": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Number at which to end the sequence (default: 0). Not to be used with Count",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
 					"format": {
@@ -2888,6 +2885,8 @@ func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) co
 				},
 			},
 		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
