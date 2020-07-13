@@ -35,10 +35,10 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
-	NodePending   NodePhase = "Pending"
-	NodeRunning   NodePhase = "Running"
-	NodeSucceeded NodePhase = "Succeeded"
-	NodeSkipped   NodePhase = "Skipped"
+	NodePending   NodePhase = "Pending" // WF/Node is waiting to run
+	NodeRunning   NodePhase = "Running" // WF/Node is currently running
+	NodeSucceeded NodePhase = "Succeeded" // WF/Node has finished with no errors
+	NodeSkipped   NodePhase = "Skipped" // WF/Node
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
 	NodeOmitted   NodePhase = "Omitted"
