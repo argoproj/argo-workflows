@@ -2435,19 +2435,19 @@ func generateNodeName(name string, index int, desc interface{}) string {
 func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	var start, end int
 	var err error
-	if seq.Start != "" {
-		start, err = strconv.Atoi(seq.Start)
+	if seq.Start != nil {
+		start, err = strconv.Atoi(seq.Start.String())
 		if err != nil {
 			return nil, err
 		}
 	}
-	if seq.End != "" {
-		end, err = strconv.Atoi(seq.End)
+	if seq.End != nil {
+		end, err = strconv.Atoi(seq.End.String())
 		if err != nil {
 			return nil, err
 		}
-	} else if seq.Count != "" {
-		count, err := strconv.Atoi(seq.Count)
+	} else if seq.Count != nil {
+		count, err := strconv.Atoi(seq.Count.String())
 		if err != nil {
 			return nil, err
 		}

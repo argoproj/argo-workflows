@@ -2654,13 +2654,22 @@ spec:
                             withSequence:
                               properties:
                                 count:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 end:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 format:
                                   type: string
                                 start:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                               type: object
                           required:
                           - name
@@ -5514,13 +5523,22 @@ spec:
                               withSequence:
                                 properties:
                                   count:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   end:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   format:
                                     type: string
                                   start:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                 type: object
                             type: object
                           type: array
@@ -10367,13 +10385,22 @@ spec:
                             withSequence:
                               properties:
                                 count:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 end:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 format:
                                   type: string
                                 start:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                               type: object
                           required:
                           - name
@@ -13227,13 +13254,22 @@ spec:
                               withSequence:
                                 properties:
                                   count:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   end:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   format:
                                     type: string
                                   start:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                 type: object
                             type: object
                           type: array
@@ -16508,13 +16544,22 @@ spec:
                                 withSequence:
                                   properties:
                                     count:
-                                      type: string
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      x-kubernetes-int-or-string: true
                                     end:
-                                      type: string
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      x-kubernetes-int-or-string: true
                                     format:
                                       type: string
                                     start:
-                                      type: string
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      x-kubernetes-int-or-string: true
                                   type: object
                               required:
                               - name
@@ -19368,13 +19413,22 @@ spec:
                                   withSequence:
                                     properties:
                                       count:
-                                        type: string
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        x-kubernetes-int-or-string: true
                                       end:
-                                        type: string
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        x-kubernetes-int-or-string: true
                                       format:
                                         type: string
                                       start:
-                                        type: string
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        x-kubernetes-int-or-string: true
                                     type: object
                                 type: object
                               type: array
