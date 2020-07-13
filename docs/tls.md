@@ -40,7 +40,7 @@ export ARGO_INSECURE_SKIP_VERIFY=true
 argo --secure --insecure-skip-verify list
 ```
 
-Tip: Don't forget to update your readiness probe to use HTTPS, [example](../test/e2e/manifests/mixins/argo-server-deployment.yaml).
+Tip: Don't forget to update your readiness probe to use HTTPS, [example](https://github.com/argoproj/argo/blob/master/test/e2e/manifests/mixins/argo-server-deployment.yaml).
 
 ### Encrypted and Verified
 

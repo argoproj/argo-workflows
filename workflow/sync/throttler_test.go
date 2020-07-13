@@ -1,4 +1,4 @@
-package controller
+package sync
 
 import (
 	"testing"

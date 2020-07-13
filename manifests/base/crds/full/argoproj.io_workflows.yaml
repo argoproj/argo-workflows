@@ -868,6 +868,23 @@ spec:
               type: string
             suspend:
               type: boolean
+            synchronization:
+              properties:
+                semaphore:
+                  properties:
+                    configMapKeyRef:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - key
+                      type: object
+                  type: object
+              type: object
             templates:
               items:
                 properties:
@@ -5531,6 +5548,23 @@ spec:
                     properties:
                       duration:
                         type: string
+                    type: object
+                  synchronization:
+                    properties:
+                      semaphore:
+                        properties:
+                          configMapKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        type: object
                     type: object
                   template:
                     type: string
@@ -13246,6 +13280,23 @@ spec:
                       duration:
                         type: string
                     type: object
+                  synchronization:
+                    properties:
+                      semaphore:
+                        properties:
+                          configMapKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        type: object
+                    type: object
                   template:
                     type: string
                   templateRef:
@@ -14707,6 +14758,23 @@ spec:
                   type: string
                 suspend:
                   type: boolean
+                synchronization:
+                  properties:
+                    semaphore:
+                      properties:
+                        configMapKeyRef:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            optional:
+                              type: boolean
+                          required:
+                          - key
+                          type: object
+                      type: object
+                  type: object
                 templates:
                   items:
                     properties:
@@ -19371,6 +19439,23 @@ spec:
                           duration:
                             type: string
                         type: object
+                      synchronization:
+                        properties:
+                          semaphore:
+                            properties:
+                              configMapKeyRef:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                            type: object
+                        type: object
                       template:
                         type: string
                       templateRef:
@@ -20744,6 +20829,36 @@ spec:
                       type: boolean
                     name:
                       type: string
+                  type: object
+              type: object
+            synchronization:
+              properties:
+                semaphore:
+                  properties:
+                    holding:
+                      items:
+                        properties:
+                          holders:
+                            items:
+                              type: string
+                            type: array
+                            x-kubernetes-list-type: atomic
+                          semaphore:
+                            type: string
+                        type: object
+                      type: array
+                    waiting:
+                      items:
+                        properties:
+                          holders:
+                            items:
+                              type: string
+                            type: array
+                            x-kubernetes-list-type: atomic
+                          semaphore:
+                            type: string
+                        type: object
+                      type: array
                   type: object
               type: object
           type: object

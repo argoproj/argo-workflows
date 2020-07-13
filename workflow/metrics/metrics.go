@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -37,7 +38,7 @@ type metric struct {
 
 type Metrics struct {
 	// Ensures mutual exclusion in workflows map
-	workflowsMutex  sync.Mutex
+	mutex           sync.RWMutex
 	metricsConfig   ServerConfig
 	telemetryConfig ServerConfig
 
@@ -51,6 +52,16 @@ type Metrics struct {
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
+	logMetric          *prometheus.CounterVec
+}
+
+func (m *Metrics) Levels() []log.Level {
+	return []log.Level{log.InfoLevel, log.WarnLevel, log.ErrorLevel}
+}
+
+func (m *Metrics) Fire(entry *log.Entry) error {
+	m.logMetric.WithLabelValues(entry.Level.String()).Inc()
+	return nil
 }
 
 var _ prometheus.Collector = &Metrics{}
@@ -67,16 +78,29 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
 		defaultMetricDescs: make(map[string]bool),
+		logMetric: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "log_messages",
+			Help: "Total number of log messages.",
+		}, []string{"level"}),
 	}
 
 	for _, metric := range metrics.allMetrics() {
 		metrics.defaultMetricDescs[metric.Desc().String()] = true
 	}
 
+	for _, level := range metrics.Levels() {
+		metrics.logMetric.WithLabelValues(level.String())
+	}
+
+	log.AddHook(metrics)
+
 	return metrics
 }
 
 func (m *Metrics) allMetrics() []prometheus.Metric {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
 	allMetrics := []prometheus.Metric{
 		m.workflowsProcessed,
 		m.operationDurations,
@@ -93,13 +117,12 @@ func (m *Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.customMetrics {
 		allMetrics = append(allMetrics, metric.metric)
 	}
-
 	return allMetrics
 }
 
 func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
-	m.workflowsMutex.Lock()
-	defer m.workflowsMutex.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	if m.workflows[key] {
 		return
@@ -111,19 +134,23 @@ func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
 }
 
 func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePhase) {
-	m.workflowsMutex.Lock()
-	hasKey := m.workflows[key]
-	m.workflowsMutex.Unlock()
-	if fromPhase == toPhase || !hasKey {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if fromPhase == toPhase || !m.workflows[key] {
 		return
 	}
-	m.WorkflowDeleted(key, fromPhase)
-	m.WorkflowAdded(key, toPhase)
+	if _, ok := m.workflowsByPhase[fromPhase]; ok {
+		m.workflowsByPhase[fromPhase].Dec()
+	}
+	if _, ok := m.workflowsByPhase[toPhase]; ok {
+		m.workflowsByPhase[toPhase].Inc()
+	}
 }
 
 func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
-	m.workflowsMutex.Lock()
-	defer m.workflowsMutex.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	if !m.workflows[key] {
 		return
@@ -139,11 +166,17 @@ func (m *Metrics) OperationCompleted(durationSeconds float64) {
 }
 
 func (m *Metrics) GetCustomMetric(key string) prometheus.Metric {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
 	// It's okay to return nil metrics in this function
 	return m.customMetrics[key].metric
 }
 
 func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	if _, inUse := m.defaultMetricDescs[newMetric.Desc().String()]; inUse {
 		return fmt.Errorf("metric '%s' is already in use by the system, please use a different name", newMetric.Desc())
 	}
@@ -159,10 +192,16 @@ const (
 )
 
 func (m *Metrics) OperationPanic() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	m.errors[ErrorCauseOperationPanic].Inc()
 }
 
 func (m *Metrics) CronWorkflowSubmissionError() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
 }
 
@@ -170,6 +209,9 @@ func (m *Metrics) CronWorkflowSubmissionError() {
 var _ workqueue.MetricsProvider = &Metrics{}
 
 func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	key := fmt.Sprintf("%s-depth", name)
 	if _, ok := m.workqueueMetrics[key]; !ok {
 		m.workqueueMetrics[key] = newGauge("queue_depth_count", "Depth of the queue", map[string]string{"queue_name": name})
@@ -178,6 +220,9 @@ func (m *Metrics) NewDepthMetric(name string) workqueue.GaugeMetric {
 }
 
 func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	key := fmt.Sprintf("%s-adds", name)
 	if _, ok := m.workqueueMetrics[key]; !ok {
 		m.workqueueMetrics[key] = newCounter("queue_adds_count", "Adds to the queue", map[string]string{"queue_name": name})
@@ -186,6 +231,9 @@ func (m *Metrics) NewAddsMetric(name string) workqueue.CounterMetric {
 }
 
 func (m *Metrics) NewLatencyMetric(name string) workqueue.HistogramMetric {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	key := fmt.Sprintf("%s-latency", name)
 	if _, ok := m.workqueueMetrics[key]; !ok {
 		m.workqueueMetrics[key] = newHistogram("queue_latency", "Time objects spend waiting in the queue", map[string]string{"queue_name": name}, []float64{1.0, 5.0, 20.0, 60.0, 180.0})

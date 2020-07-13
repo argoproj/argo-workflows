@@ -11,8 +11,10 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
@@ -196,7 +198,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.getNodeByName(nodeName)
+	n := woc.wf.GetNodeByName(nodeName)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
@@ -218,14 +220,14 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.getNodeByName(nodeName)
+	n = woc.wf.GetNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
-	n = woc.getNodeByName(nodeName)
+	n = woc.wf.GetNodeByName(nodeName)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
@@ -268,7 +270,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.getNodeByName(nodeName)
+	n := woc.wf.GetNodeByName(nodeName)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
@@ -290,14 +292,14 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.getNodeByName(nodeName)
+	n = woc.wf.GetNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Add a third node that has errored.
 	childNode := "child-node-3"
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
-	n = woc.getNodeByName(nodeName)
+	n = woc.wf.GetNodeByName(nodeName)
 	n, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.Nil(t, err)
 	assert.Equal(t, n.Phase, wfv1.NodeError)
@@ -341,7 +343,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, "child-node-1")
 
-	n := woc.getNodeByName(nodeName)
+	n := woc.wf.GetNodeByName(nodeName)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
@@ -396,7 +398,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.getNodeByName(nodeName)
+	n := woc.wf.GetNodeByName(nodeName)
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
@@ -419,7 +421,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
 	_, _, err = woc.processNodeRetries(n, retries, &executeTemplateOpts{})
 	assert.NoError(t, err)
-	n = woc.getNodeByName(nodeName)
+	n = woc.wf.GetNodeByName(nodeName)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
@@ -555,7 +557,7 @@ func TestBackoffMessage(t *testing.T) {
 	assert.NotNil(t, woc)
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	retryNode := woc.getNodeByName("retry-backoff-s69z6")
+	retryNode := woc.wf.GetNodeByName("retry-backoff-s69z6")
 
 	// Simulate backoff of 4 secods
 	firstNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, 0)
@@ -3038,7 +3040,7 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	retryNode := woc.getNodeByName("daemon-step-dvbnn[0].influx")
+	retryNode := woc.wf.GetNodeByName("daemon-step-dvbnn[0].influx")
 	assert.NotNil(t, retryNode)
 	fmt.Println(retryNode)
 	scope := &wfScope{
@@ -3642,7 +3644,7 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 
 	woc := newWoc(*wf)
 	woc.operate()
-	assert.Nil(t, woc.getNodeByName("B.onExit"))
+	assert.Nil(t, woc.wf.GetNodeByName("B.onExit"))
 }
 
 func TestGenerateNodeName(t *testing.T) {
@@ -3903,9 +3905,75 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	woc.addChildNode(nodeName, childNode)
 
 	var opts executeTemplateOpts
-	n := woc.getNodeByName(nodeName)
+	n := woc.wf.GetNodeByName(nodeName)
 	_, _, err = woc.processNodeRetries(n, retries, &opts)
 	if assert.NoError(t, err) {
 		assert.Equal(t, n.StartedAt.Add(20*time.Second).Round(time.Second).String(), opts.executionDeadline.Round(time.Second).String())
 	}
+}
+
+var resubmitPendingWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resubmit-pending-wf
+  namespace: argo
+spec:
+  arguments: {}
+  entrypoint: resubmit-pending
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: resubmit-pending
+    outputs: {}
+    resubmitPendingPods: true
+    script:
+      command:
+      - bash
+      image: busybox
+      name: ""
+      resources:
+        limits:
+          cpu: "10"
+      source: |
+        sleep 5
+status:
+  finishedAt: null
+  nodes:
+    resubmit-pending-wf:
+      displayName: resubmit-pending-wf
+      finishedAt: null
+      id: resubmit-pending-wf
+      message: Pending 156.62ms
+      name: resubmit-pending-wf
+      phase: Pending
+      startedAt: "2020-07-07T19:54:18Z"
+      templateName: resubmit-pending
+      templateScope: local/resubmit-pending-wf
+      type: Pod
+  phase: Running
+  startedAt: "2020-07-07T19:54:18Z"
+`
+
+func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wf := unmarshalWF(resubmitPendingWf)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
+	nonForbiddenErr := apierr.NewBadRequest("badrequest")
+	t.Run("ForbiddenError", func(t *testing.T) {
+		node, err := woc.checkForbiddenErrorAndResbmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		assert.NotNil(t, node)
+		assert.NoError(t, err)
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	})
+	t.Run("NonForbiddenError", func(t *testing.T) {
+		node, err := woc.checkForbiddenErrorAndResbmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		assert.Error(t, err)
+		assert.Nil(t, node)
+	})
+
 }
