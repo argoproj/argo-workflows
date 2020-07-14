@@ -1485,13 +1485,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() {
-			// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
-			// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
-			// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
-			// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
-			if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
-				localScope, realTimeScope := woc.prepareMetricScope(node)
-				woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			if resolvedTmpl.Metrics != nil {
+				// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
+				// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
+				// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
+				// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
+				if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
+					localScope, realTimeScope := woc.prepareMetricScope(node)
+					woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+				}
 			}
 			return retryParentNode, nil
 		}
