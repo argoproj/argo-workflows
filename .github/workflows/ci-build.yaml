@@ -139,6 +139,7 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: |
+          git fetch --tags
           make codegen
       - name: Make manifests
         env:
