@@ -1485,6 +1485,16 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
 		if retryParentNode.Fulfilled() {
+			if resolvedTmpl.Metrics != nil {
+				// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
+				// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
+				// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
+				// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
+				if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
+					localScope, realTimeScope := woc.prepareMetricScope(node)
+					woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+				}
+			}
 			return retryParentNode, nil
 		}
 		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
@@ -1561,9 +1571,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		//
 		// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
 		// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
-		// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
-		// "ok -> prevNodeStatus.Completed()" (https://en.wikipedia.org/wiki/Material_conditional)
-		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || prevNodeStatus.Fulfilled()) && node.Fulfilled() {
+		// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
+		// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
+		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
@@ -1897,7 +1907,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	})
 
 	if err != nil {
-		return woc.checkForbiddenErrorAndResbmitAllowed(err, node.Name, tmpl)
+		return woc.checkForbiddenErrorAndResubmitAllowed(err, node.Name, tmpl)
 	}
 
 	return node, err
@@ -2036,12 +2046,12 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 		executionDeadline:   opts.executionDeadline,
 	})
 	if err != nil {
-		return woc.checkForbiddenErrorAndResbmitAllowed(err, node.Name, tmpl)
+		return woc.checkForbiddenErrorAndResubmitAllowed(err, node.Name, tmpl)
 	}
 	return node, err
 }
 
-func (woc *wfOperationCtx) checkForbiddenErrorAndResbmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) checkForbiddenErrorAndResubmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
 		woc.requeue(0)
@@ -2312,7 +2322,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
 	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
-		return woc.checkForbiddenErrorAndResbmitAllowed(err, node.Name, tmpl)
+		return woc.checkForbiddenErrorAndResubmitAllowed(err, node.Name, tmpl)
 	}
 
 	return node, err
