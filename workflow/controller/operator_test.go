@@ -4008,6 +4008,7 @@ status:
 			case "main":
 				assert.Equal(t, wfv1.NodePending, node.Phase)
 				assert.False(t, node.StartTime().IsZero())
+				assert.Equal(t, woc.wf.Labels[common.LabelKeyPreviousWorkflowName], "my-wf")
 			case "":
 			default:
 				assert.Fail(t, "invalid template")
