@@ -21,9 +21,10 @@ best way to define metrics in Argo to avoid problems such as [cardinality explos
 
 ## Metrics and metrics in Argo
 
-There are two kinds of metrics emitted by Argo: controller metrics and custom metrics. Controller metrics are metrics that inform
-on the state of the controller; i.e., they answer the question "What is the state of the controller right now?". Custom metrics
-are metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
+There are two kinds of metrics emitted by Argo: **controller metrics** and **custom metrics**.
+
+* Controller metrics are metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?".
+* Custom metrics are metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
 
 Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
 for emitting metrics correctly.
@@ -58,12 +59,12 @@ a way to view and analyze historical data, consider the [workflow archive](workf
 There are several controller-level metrics. These include:
 
 * `workflows_processed_count`: a count of all Workflow updates processed by the controller
-* `count`: a count of all Workflows currently accessible by the controller by status
+* `count`: a count of all workflows currently accessible by the controller by status
 * `operation_duration_seconds`: a histogram of durations of operations
 * `error_count`: a count of certain errors incurred by the controller
-* `queue_depth_count`: the depth of the queue of Workflows or CronWorkflows to be processed by the controller
-* `queue_adds_count`: the number of adds to the queue of Workflows or CronWorkflows
-* `queue_latency`: the time Workflows or CronWorkflows spend in the queue waiting to be processed
+* `queue_depth_count`: the depth of the queue of workflows or cron workflows to be processed by the controller
+* `queue_adds_count`: the number of adds to the queue of workflows or cron workflows
+* `queue_latency`: the time workflows or cron workflows spend in the queue waiting to be processed
 
 ### Metric types
 
