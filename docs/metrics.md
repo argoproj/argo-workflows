@@ -6,6 +6,9 @@
 
 ## Introduction
 
+Argo emits a certain number of controller metrics that inform on the state of the controller at any given time. Furthermore,
+users can also define their own custom metrics to inform on the state of their Workflows.
+
 Custom prometheus metrics can be defined to be emitted on a `Workflow`- and `Template`-level basis. These can be useful
 for many cases; some examples:
 
@@ -18,7 +21,12 @@ best way to define metrics in Argo to avoid problems such as [cardinality explos
 
 ## Metrics and metrics in Argo
 
-Emitting metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
+There are two kinds of metrics emitted by Argo: **controller metrics** and **custom metrics**.
+
+* Controller metrics are metrics that inform on the state of the controller; i.e., they answer the question "What is the state of the controller right now?".
+* Custom metrics are metrics that inform on the state of a Workflow, or a series of Workflows. These custom metrics are defined by the user in the Workflow spec.
+
+Emitting custom metrics is the responsibility of the emitter owner. Since the user defines Workflows in Argo, the user is responsible
 for emitting metrics correctly.
 
 ### What is and isn't a Prometheus metric
@@ -46,6 +54,17 @@ at the current time, they should not be used to report historical data such as:
 Metrics are also ephemeral, meaning there is no guarantee that they will be persisted for any amount of time. If you need
 a way to view and analyze historical data, consider the [workflow archive](workflow-archive.md) or reporting to logs.
 
+### Default Controller Metrics
+
+There are several controller-level metrics. These include:
+
+* `workflows_processed_count`: a count of all Workflow updates processed by the controller
+* `count`: a count of all workflows currently accessible by the controller by status
+* `operation_duration_seconds`: a histogram of durations of operations
+* `error_count`: a count of certain errors incurred by the controller
+* `queue_depth_count`: the depth of the queue of workflows or cron workflows to be processed by the controller
+* `queue_adds_count`: the number of adds to the queue of workflows or cron workflows
+* `queue_latency`: the time workflows or cron workflows spend in the queue waiting to be processed
 
 ### Metric types
 
