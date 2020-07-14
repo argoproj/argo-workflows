@@ -44,7 +44,7 @@ MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
-VERSION               := $(shell git tag --no-merge|grep ^v|sort -d|tail -n1)
+VERSION               := $(shell git tag|grep ^v|sort -d|tail -n1)
 MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
