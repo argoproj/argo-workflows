@@ -20,11 +20,12 @@ message InfoResponse {
 message GetVersionRequest {
 }
 
-message WhoAmIRequest {
+message GetUserInfoRequest {
 }
 
-message WhoAmIResponse {
-    string subject = 1;
+message GetUserInfoResponse {
+    string issuer = 1;
+    string subject = 2;
 }
 
 service InfoService {
@@ -34,7 +35,7 @@ service InfoService {
     rpc GetVersion (GetVersionRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Version) {
         option (google.api.http).get = "/api/v1/version";
     }
-    rpc WhoAmI (WhoAmIRequest) returns (WhoAmIResponse) {
-        option (google.api.http).get = "/api/v1/user";
+    rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse) {
+        option (google.api.http).get = "/api/v1/userinfo";
     }
 }

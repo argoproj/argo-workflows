@@ -102,6 +102,16 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
+func (s *ArgoServerSuite) TestGetUserInfo() {
+	s.e().GET("/api/v1/userinfo").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.issuer").
+		Path("$.subject").
+		NotNull()
+}
+
 // we can only really tests these endpoint respond, not worthwhile checking more
 func (s *ArgoServerSuite) TestOauth() {
 	s.Run("Redirect", func() {

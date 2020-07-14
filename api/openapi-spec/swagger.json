@@ -674,17 +674,17 @@
         }
       }
     },
-    "/api/v1/user": {
+    "/api/v1/userinfo": {
       "get": {
         "tags": [
           "InfoService"
         ],
-        "operationId": "WhoAmI",
+        "operationId": "GetUserInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WhoAmIResponse"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetUserInfoResponse"
             }
           }
         }
@@ -2365,6 +2365,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "type": "object",
@@ -3767,14 +3778,6 @@
           "type": "string"
         },
         "version": {
-          "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.WhoAmIResponse": {
-      "type": "object",
-      "properties": {
-        "subject": {
           "type": "string"
         }
       }

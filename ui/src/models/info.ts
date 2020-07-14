@@ -13,6 +13,7 @@ export interface Version {
     version: string;
 }
 
-export interface WhoAmIResponse {
-    subject: string;
+export interface GetUserInfoResponse {
+    subject?: string;
+    issuer?: string;
 }
