@@ -3965,13 +3965,13 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
 	nonForbiddenErr := apierr.NewBadRequest("badrequest")
 	t.Run("ForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResbmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.checkForbiddenErrorAndResubmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
 		assert.NotNil(t, node)
 		assert.NoError(t, err)
 		assert.Equal(t, wfv1.NodePending, node.Phase)
 	})
 	t.Run("NonForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResbmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.checkForbiddenErrorAndResubmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
 		assert.Error(t, err)
 		assert.Nil(t, node)
 	})
