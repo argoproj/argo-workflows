@@ -74,7 +74,7 @@ jobs:
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true 2>&1 | tee /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
         env:
