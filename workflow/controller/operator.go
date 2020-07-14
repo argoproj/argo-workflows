@@ -1488,7 +1488,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			if resolvedTmpl.Metrics != nil {
 				// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
 				// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
-				// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
+				// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
 				// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
 				if prevNodeStatus, ok := woc.preExecutionNodePhases[retryParentNode.ID]; (!ok || !prevNodeStatus.Fulfilled()) && retryParentNode.Fulfilled() {
 					localScope, realTimeScope := woc.prepareMetricScope(node)
@@ -1571,7 +1571,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		//
 		// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
 		// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
-		// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
+		// The statement "(!ok || !prevNodeStatus.Fulfilled())" checks for this behavior and represents the material conditional
 		// "ok -> !prevNodeStatus.Fulfilled()" (https://en.wikipedia.org/wiki/Material_conditional)
 		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || !prevNodeStatus.Fulfilled()) && node.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
