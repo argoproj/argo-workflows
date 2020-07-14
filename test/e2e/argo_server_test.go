@@ -107,7 +107,6 @@ func (s *ArgoServerSuite) TestGetUserInfo() {
 		Expect().
 		Status(200).
 		JSON().
-		Path("$.issuer").
 		Path("$.subject").
 		NotNull()
 }
