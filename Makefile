@@ -47,7 +47,7 @@ ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
 # no tag? use latest
 ifeq ($(VERSION),)
-VERSION := $(shell git tag --no-merged|grep ^v|tail -n1)
+VERSION := $(GIT_BRANCH)
 endif
 MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
