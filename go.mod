@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.2
 	github.com/argoproj/pkg v0.0.0-20200424003221-9b858eff18a1
-	github.com/aws/aws-sdk-go v1.27.1 // indirect
+	github.com/aws/aws-sdk-go v1.33.0 // indirect
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
@@ -23,7 +23,7 @@ require (
 	github.com/go-ini/ini v1.51.1 // indirect
 	github.com/go-openapi/jsonreference v0.19.3
 	github.com/go-openapi/spec v0.19.8
-	github.com/go-sql-driver/mysql v1.4.1
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/go-swagger/go-swagger v0.23.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
@@ -63,6 +63,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/tools v0.0.0-20200630154851-b2d8b0336632
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013

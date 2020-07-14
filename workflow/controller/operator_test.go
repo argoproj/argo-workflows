@@ -1875,8 +1875,9 @@ func TestExpandWithSequence(t *testing.T) {
 	var items []wfv1.Item
 	var err error
 
+	ten := intstr.Parse("10")
 	seq = wfv1.Sequence{
-		Count: "10",
+		Count: &ten,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1884,9 +1885,10 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "0", items[0].GetStrVal())
 	assert.Equal(t, "9", items[9].GetStrVal())
 
+	oneOhOne := intstr.Parse("101")
 	seq = wfv1.Sequence{
-		Start: "101",
-		Count: "10",
+		Start: &oneOhOne,
+		Count: &ten,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1894,9 +1896,11 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "101", items[0].GetStrVal())
 	assert.Equal(t, "110", items[9].GetStrVal())
 
+	fifty := intstr.Parse("50")
+	sixty := intstr.Parse("60")
 	seq = wfv1.Sequence{
-		Start: "50",
-		End:   "60",
+		Start: &fifty,
+		End:   &sixty,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1905,8 +1909,8 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Start: "60",
-		End:   "50",
+		Start: &sixty,
+		End:   &fifty,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1914,26 +1918,29 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[0].GetStrVal())
 	assert.Equal(t, "50", items[10].GetStrVal())
 
+	zero := intstr.Parse("0")
 	seq = wfv1.Sequence{
-		Count: "0",
+		Count: &zero,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(items))
 
+	eight := intstr.Parse("8")
 	seq = wfv1.Sequence{
-		Start: "8",
-		End:   "8",
+		Start: &eight,
+		End:   &eight,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(items))
 	assert.Equal(t, "8", items[0].GetStrVal())
 
+	one := intstr.Parse("1")
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
-		Count:  "10",
-		Start:  "1",
+		Count:  &ten,
+		Start:  &one,
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -3958,15 +3965,58 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
 	nonForbiddenErr := apierr.NewBadRequest("badrequest")
 	t.Run("ForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResbmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.checkForbiddenErrorAndResubmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
 		assert.NotNil(t, node)
 		assert.NoError(t, err)
 		assert.Equal(t, wfv1.NodePending, node.Phase)
 	})
 	t.Run("NonForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResbmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.checkForbiddenErrorAndResubmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
 		assert.Error(t, err)
 		assert.Nil(t, node)
 	})
 
+}
+
+func TestResubmitMemoization(t *testing.T) {
+	wf := unmarshalWF(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    my-wf:
+      name: my-wf
+      phase: Failed
+`)
+	wf, err := util.FormulateResubmitWorkflow(wf, true)
+	if assert.NoError(t, err) {
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
+		for _, node := range woc.wf.Status.Nodes {
+			switch node.TemplateName {
+			case "main":
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+				assert.False(t, node.StartTime().IsZero())
+				assert.Equal(t, woc.wf.Labels[common.LabelKeyPreviousWorkflowName], "my-wf")
+			case "":
+			default:
+				assert.Fail(t, "invalid template")
+			}
+		}
+		list, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+		if assert.NoError(t, err) {
+			assert.Len(t, list.Items, 1)
+		}
+	}
 }

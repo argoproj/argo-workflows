@@ -890,3 +890,20 @@ func ValidateJsonStr(jsonStr string, schema interface{}) bool {
 	err := json.Unmarshal([]byte(jsonStr), &schema)
 	return err == nil
 }
+
+func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
+	if tmpl.RetryStrategy != nil {
+		return wfv1.NodeTypeRetry
+	}
+	switch tmpl.GetType() {
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
+		return wfv1.NodeTypePod
+	case wfv1.TemplateTypeDAG:
+		return wfv1.NodeTypeDAG
+	case wfv1.TemplateTypeSteps:
+		return wfv1.NodeTypeSteps
+	case wfv1.TemplateTypeSuspend:
+		return wfv1.NodeTypeSuspend
+	}
+	return ""
+}

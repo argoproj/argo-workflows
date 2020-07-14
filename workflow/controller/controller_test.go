@@ -316,7 +316,8 @@ func TestNamespacedController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -332,7 +333,8 @@ func TestClusterController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -368,6 +370,8 @@ metadata:
   name: workflow-template-whalesay-template
   namespace: default
 spec:
+  serviceAccountName: my-sa
+  priority: 77
   templates:
   - name: whalesay-template
     inputs:
@@ -377,12 +381,16 @@ spec:
       image: docker/whalesay
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
+  volumes:
+  - name: data
+    empty: {}
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
-	_, controller := newController(wf, wftmpl)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
@@ -391,7 +399,8 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 }
 
 func TestIsArchivable(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	var lblSelector metav1.LabelSelector
 	lblSelector.MatchLabels = make(map[string]string)
 	lblSelector.MatchLabels["workflows.argoproj.io/archive-strategy"] = "true"

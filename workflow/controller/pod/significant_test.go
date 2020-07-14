@@ -5,10 +5,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Test_SgnificantPodChange(t *testing.T) {
 	assert.False(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{}), "No change")
+
+	t.Run("DeletionTimestamp", func(t *testing.T) {
+		now := metav1.Now()
+		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}}), "deletion timestamp change")
+	})
 	t.Run("Spec", func(t *testing.T) {
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{Spec: corev1.PodSpec{NodeName: "from"}}), "Node name change")
 
