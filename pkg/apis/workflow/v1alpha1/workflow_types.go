@@ -46,7 +46,7 @@ const (
 	// There was an error within the container. E.g. the container exits with a non 0 code
 	// a WF with a failed Node will be marked with NodeFailed as well
 	NodeFailed NodePhase = "Failed"
-	// There was an error around a container, E.g. The pod was deleted, couldn’t be scheduled, or there were problems getting logs
+	// Node had an error other than a non 0 exit code. E.g. The pod was deleted, couldn’t be scheduled, or there were problems getting logs
 	// a WF with an errored Node will be marked with NodeError as well
 	NodeError NodePhase = "Error"
 	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)
