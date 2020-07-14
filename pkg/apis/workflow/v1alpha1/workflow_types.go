@@ -41,7 +41,7 @@ const (
 	NodeRunning NodePhase = "Running"
 	// Node has finished with no errors
 	NodeSucceeded NodePhase = "Succeeded"
-	// Node was skipped in Workflow DAG / Steps
+	// Node was skipped
 	NodeSkipped NodePhase = "Skipped"
 	// There was an error within the container. E.g. the container exits with a non 0 code
 	// a WF with a failed Node will be marked with NodeFailed as well
