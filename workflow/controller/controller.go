@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	cache2 "github.com/argoproj/argo/workflow/controller/cache"
 	"os"
 	"strings"
 	"time"
@@ -83,7 +84,7 @@ type WorkflowController struct {
 	metrics               *metrics.Metrics
 	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
-	cache                 MemoizationCache
+	cache                 cache2.MemoizationCache
 }
 
 const (
@@ -107,7 +108,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		cache:                      NewConfigMapCache(namespace, kubeclientset),
+		cache:                      cache2.NewConfigMapCache(namespace, kubeclientset),
 		eventRecorderManager:       newEventRecorderManager(kubeclientset),
 	}
 

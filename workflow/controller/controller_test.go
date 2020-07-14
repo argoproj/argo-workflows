@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	cache2 "github.com/argoproj/argo/workflow/controller/cache"
 	"testing"
 	"time"
 
@@ -145,7 +146,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
-		cache:                NewConfigMapCache("default", kube),
+		cache:                cache2.NewConfigMapCache("default", kube),
 	}
 	return cancel, controller
 }

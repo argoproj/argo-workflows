@@ -1,4 +1,4 @@
-package controller
+package cache
 
 import (
 	"encoding/json"
@@ -21,13 +21,14 @@ import (
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 
 type MemoizationCache interface {
-	Load(key string, configMapName string) (*wfv1.Outputs, error)
+	Load(key string, configMapName string) (*CacheEntry, error)
 	Save(key string, nodeId string, value *wfv1.Outputs, configMapName string) error
 }
 
 type CacheEntry struct {
 	NodeID  string       `json:"nodeID"`
 	Outputs wfv1.Outputs `json:"outputs"`
+	// TODO: Add creation timestamp
 }
 
 type configMapCache struct {
@@ -44,7 +45,7 @@ func NewConfigMapCache(ns string, ki kubernetes.Interface) MemoizationCache {
 	}
 }
 
-func (c *configMapCache) Load(key string, configMapName string) (*wfv1.Outputs, error) {
+func (c *configMapCache) Load(key string, configMapName string) (*CacheEntry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		log.Errorf("Invalid cache key %s", key)
 		return nil, errors.InternalError("Invalid cache key")
@@ -73,7 +74,9 @@ func (c *configMapCache) Load(key string, configMapName string) (*wfv1.Outputs, 
 	}
 	outputs := entry.Outputs
 	log.Infof("ConfigMap cache %s hit for %s", configMapName, key)
-	return &outputs, nil
+	return &CacheEntry{
+		Outputs: outputs,
+	}, nil
 }
 
 func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, configMapName string) error {

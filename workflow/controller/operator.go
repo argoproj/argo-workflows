@@ -754,6 +754,13 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
+				if node.Memoized {
+					err := woc.controller.cache.Save(node.CacheKey, node.ID, node.Outputs, node.CacheName)
+					if err != nil {
+						log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
+						node.Phase = wfv1.NodeError
+					}
+				}
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
@@ -1028,12 +1035,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			node.Phase = wfv1.NodeError
 		} else {
 			node.Outputs = &outputs
-			if node.Memoized {
-				err := woc.controller.cache.Save(node.CacheKey, node.ID, node.Outputs, node.CacheName)
-				if err != nil {
-					log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
-				}
-			}
 		}
 	}
 	if node.Phase != newPhase {
@@ -1404,14 +1405,19 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
-		storedOutput, err := woc.controller.cache.Load(processedTmpl.Memoize.Key, processedTmpl.Memoize.Cache.ConfigMapName.Name)
+		// return cacheEntry struct instead of wfv1.Outputs
+		entry, err := woc.controller.cache.Load(processedTmpl.Memoize.Key, processedTmpl.Memoize.Cache.ConfigMapName.Name)
 		if err != nil {
 			return nil, err
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, storedOutput)
-		if storedOutput == nil {
-			log.Warnf("Node %s has empty cache entry", nodeName)
+		hit := false
+		if entry != nil {
+			hit = true
 		} else {
+			log.Warnf("Node %s has empty cache entry", nodeName)
+		}
+		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, &entry.Outputs, hit)
+		if entry != nil {
 			return node, nil
 		}
 	}
@@ -1689,39 +1695,20 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 }
 
 // Creates a node status that's completely initialized and marked as finished
-func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, hit bool, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
 		panic(fmt.Sprintf("cannot initialize a cached node from a non-memoized template"))
 	}
-	woc.log.Debugf("Initializing cached node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
-	nodeID := woc.wf.NodeID(nodeName)
-	node := wfv1.NodeStatus{
-		ID:            nodeID,
-		Name:          nodeName,
-		TemplateName:  orgTmpl.GetTemplateName(),
-		TemplateRef:   orgTmpl.GetTemplateRef(),
-		TemplateScope: templateScope,
-		Type:          resolvedTmpl.GetNodeType(),
-		BoundaryID:    boundaryID,
-		Phase:         wfv1.NodeSucceeded, // For now we only store succeeded nodes in the cache
-		StartedAt:     metav1.Time{Time: time.Now().UTC()},
-		FinishedAt:    metav1.Time{Time: time.Now().UTC()},
-		Memoized:      true,
-		DisplayName:   nodeName,
-		Outputs:       outputs,
-		CacheKey:      resolvedTmpl.Memoize.Key,
-		CacheName:     resolvedTmpl.Memoize.Cache.ConfigMapName.Name,
+	woc.log.Debugf("Initializing cached node", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
+	nodePhase := wfv1.NodeSucceeded
+	if !hit {
+		nodePhase = wfv1.NodePending
 	}
-
-	var message string
-	if len(messages) > 0 {
-		message = fmt.Sprintf(" (message: %s)", messages[0])
-		node.Message = messages[0]
+	node := woc.initializeNode(nodeName, resolvedTmpl.GetNodeType(), templateScope, orgTmpl, boundaryID, nodePhase, messages...)
+	if hit {
+		node.Outputs = outputs
 	}
-	woc.wf.Status.Nodes[nodeID] = node
-	woc.log.Infof("%s cached node %v completed %s%s", node.Type, node.ID, node.Phase, message)
-	woc.updated = true
-	return &node
+	return node
 }
 
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {

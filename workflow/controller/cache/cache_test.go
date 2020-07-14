@@ -1,4 +1,4 @@
-package controller
+package cache
 
 import (
 	"testing"
@@ -30,7 +30,7 @@ var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 }
 
 func TestConfigMapCacheLoad(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := controller2.newController()
 	defer cancel()
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 		Name:  "hello",
 		Value: &intstr.IntOrString{StrVal: MockParamValue},
 	}
-	cancel, controller := newController()
+	cancel, controller := controller2.newController()
 	defer cancel()
 	c := NewConfigMapCache("default", controller.kubeclientset)
 	outputs := wfv1.Outputs{}
