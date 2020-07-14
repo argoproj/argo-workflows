@@ -49,7 +49,7 @@ const (
 	// There was an error around a container, E.g. The pod was deleted, couldn’t be scheduled, or there were problems getting logs
 	// a WF with an errored Node will be marked with NodeError as well
 	NodeError NodePhase = "Error"
-	// a depends condition for this node in a DAG was not met
+	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)
 	NodeOmitted NodePhase = "Omitted"
 )
 
