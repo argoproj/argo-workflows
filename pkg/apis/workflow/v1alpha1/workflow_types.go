@@ -37,7 +37,7 @@ type NodePhase string
 const (
 	// Node is waiting to run
 	NodePending NodePhase = "Pending"
-	// Node is currently running
+	// Node is running
 	NodeRunning NodePhase = "Running"
 	// Node finished with no errors
 	NodeSucceeded NodePhase = "Succeeded"
