@@ -1382,7 +1382,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
-	list := woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace)
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(orgTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
@@ -1392,7 +1391,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		woc.updated = true
 	}
 
-	fmt.Println(list)
 	if node != nil {
 		if node.Fulfilled() {
 			if resolvedTmpl.Synchronization != nil {
