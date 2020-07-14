@@ -907,3 +907,28 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 	}
 	return ""
 }
+// MergeWorkflows will do strategic merge the workflows
+func MergeWorkflows(originalWf, patchWf wfv1.Workflow) (*wfv1.Workflow, error) {
+	workflowBytes, err := json.Marshal(wfv1.Workflow{Spec: patchWf.Spec})
+	if err != nil {
+		return nil, err
+	}
+
+	storedWFByte, err := json.Marshal(wfv1.Workflow{Spec: originalWf.Spec})
+	if err != nil {
+		return nil, err
+	}
+
+	mergedWFByte, err := strategicpatch.StrategicMergePatch(storedWFByte, workflowBytes, wfv1.Workflow{})
+	if err != nil {
+		return nil, err
+	}
+
+	var mergedWf wfv1.Workflow
+	err = json.Unmarshal(mergedWFByte, &mergedWf)
+	if err != nil {
+		return nil, err
+	}
+	return &mergedWf, nil
+
+}

@@ -396,3 +396,46 @@ func TestApplySubmitOpts(t *testing.T) {
 		}
 	})
 }
+
+var origWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: original
+  entrypoint: start
+  onExit: end
+  serviceAccountName: argo
+  workflowTemplateRef:
+    name: workflow-template-submittable
+`
+var patchWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: patch
+  serviceAccountName: argo1
+  podGC:
+    strategy: OnPodSuccess
+`
+
+func TestMergeWorkflows(t *testing.T) {
+	origWf := unmarshalWF(origWF)
+	patchWf := unmarshalWF(patchWF)
+
+	mergedWf, err := MergeWorkflows(*origWf, *patchWf)
+	assert.NoError(t, err)
+	assert.Equal(t, origWf.Spec.Entrypoint, mergedWf.Spec.Entrypoint)
+	assert.Equal(t, patchWf.Spec.ServiceAccountName, mergedWf.Spec.ServiceAccountName)
+	assert.Equal(t, patchWf.Spec.Arguments.Parameters[0].Name, mergedWf.Spec.Arguments.Parameters[0].Name)
+	assert.Equal(t, patchWf.Spec.Arguments.Parameters[0].Value, mergedWf.Spec.Arguments.Parameters[0].Value)
+}
