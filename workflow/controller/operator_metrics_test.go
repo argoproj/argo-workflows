@@ -3,6 +3,8 @@ package controller
 import (
 	"testing"
 
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -214,4 +216,98 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+}
+
+var testRetryStrategyMetric = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-template-whalesay-9pk8f
+spec:
+  arguments: {}
+  entrypoint: whalesay
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: number of times the outer workflow was invoked
+        name: workflow_counter
+    name: whalesay
+    outputs: {}
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello world
+        name: call-whalesay-template
+        template: whalesay-template
+  - arguments: {}
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: number of times the template was executed
+        name: template_counter
+    name: whalesay-template
+    outputs: {}
+    retryStrategy:
+      limit: 2
+status:
+  phase: Running
+  startedAt: "2020-07-14T16:26:21Z"
+`
+
+func TestRetryStrategyMetric(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(testRetryStrategyMetric)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	// Ensure no metrics have been emitted yet
+	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
+	assert.Nil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
+	assert.Nil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+
+	// Simulate pod succeeded
+	podNode := woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"]
+	podNode.Phase = v1alpha1.NodeSucceeded
+	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
+	woc.operate()
+
+	metricErrorDesc = wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+
+	metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	metricErrorCounter = controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+	metricErrorCounterString, err = getMetricStringValue(metricErrorCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+
 }
