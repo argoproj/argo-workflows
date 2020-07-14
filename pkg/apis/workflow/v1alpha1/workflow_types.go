@@ -43,11 +43,9 @@ const (
 	NodeSucceeded NodePhase = "Succeeded"
 	// Node was skipped
 	NodeSkipped NodePhase = "Skipped"
-	// There was an error within the container. E.g. the container exits with a non 0 code
-	// a WF with a failed Node will be marked with NodeFailed as well
+	// Node or child of node exited with non-0 code
 	NodeFailed NodePhase = "Failed"
-	// Node had an error other than a non 0 exit code. E.g. The pod was deleted, couldn’t be scheduled, or there were problems getting logs
-	// a WF with an errored Node will be marked with NodeError as well
+	// Node had an error other than a non 0 exit code
 	NodeError NodePhase = "Error"
 	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)
 	NodeOmitted NodePhase = "Omitted"
