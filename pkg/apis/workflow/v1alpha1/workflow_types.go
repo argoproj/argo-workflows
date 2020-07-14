@@ -39,7 +39,7 @@ const (
 	NodePending NodePhase = "Pending"
 	// Node is currently running
 	NodeRunning NodePhase = "Running"
-	// Node has finished with no errors
+	// Node finished with no errors
 	NodeSucceeded NodePhase = "Succeeded"
 	// Node was skipped
 	NodeSkipped NodePhase = "Skipped"
