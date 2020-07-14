@@ -36,10 +36,6 @@ ifeq ($(GIT_BRANCH),master)
 VERSION := latest
 endif
 
-ifneq ($(findstring release,$(GIT_BRANCH)),)
-VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
-endif
-
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(GIT_BRANCH),HEAD)
@@ -48,6 +44,11 @@ MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
+VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
+# no tag? use latest
+ifeq ($(VERSION),)
+VERSION := $(shell git tag --no-merged|grep ^v|tail -n1)
+endif
 MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
