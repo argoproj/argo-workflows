@@ -234,8 +234,8 @@ spec:
       prometheus:
       - counter:
           value: "1"
-        help: SIMON number of times the outer workflow was invoked
-        name: simon_workflow_counter
+        help: number of times the outer workflow was invoked
+        name: workflow_counter
     name: whalesay
     outputs: {}
     steps:
@@ -262,8 +262,8 @@ spec:
       prometheus:
       - counter:
           value: "1"
-        help: SIMON number of times the template was executed
-        name: simon_template_counter
+        help: number of times the template was executed
+        name: template_counter
     name: whalesay-template
     outputs: {}
     retryStrategy:
