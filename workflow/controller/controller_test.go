@@ -165,6 +165,8 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 	myBool := true
 	var ten int32 = 10
 	var seven int32 = 10
+	entrypoint := "good_entrypoint"
+	serviceAccount := "my_service_account"
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
@@ -176,8 +178,8 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 		},
 		Spec: wfv1.WorkflowSpec{
 			HostNetwork:        &myBool,
-			Entrypoint:         "good_entrypoint",
-			ServiceAccountName: "my_service_account",
+			Entrypoint:         &entrypoint,
+			ServiceAccountName: &serviceAccount,
 			TTLStrategy: &wfv1.TTLStrategy{
 				SecondsAfterCompletion: &ten,
 				SecondsAfterSuccess:    &ten,
@@ -273,14 +275,14 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	defer cancel()
 	workflow := unmarshalWF(testDefaultWf)
 	var ten int32 = 10
-	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, *workflow.Spec.Entrypoint, "whalesay")
 	assert.Nil(t, workflow.Spec.TTLStrategy)
 	assert.Contains(t, workflow.Labels, "foo")
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
-	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
-	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, *workflow.Spec.ServiceAccountName, "whalesay")
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
 	assert.Contains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
@@ -297,8 +299,8 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWfTTL))
-	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
-	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, *workflow.Spec.ServiceAccountName, "whalesay")
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
 	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
@@ -387,7 +389,8 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+	assert.Equal(t, wf.Spec.Entrypoint, woc.wfSpec.Entrypoint)
+	assert.Equal(t, wftmpl.Spec.Templates, woc.wfSpec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {

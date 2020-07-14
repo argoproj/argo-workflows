@@ -1983,7 +1983,17 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Entrypoint != nil {
+		in, out := &in.Entrypoint, &out.Entrypoint
+		*out = new(string)
+		**out = **in
+	}
 	in.Arguments.DeepCopyInto(&out.Arguments)
+	if in.ServiceAccountName != nil {
+		in, out := &in.ServiceAccountName, &out.ServiceAccountName
+		*out = new(string)
+		**out = **in
+	}
 	if in.AutomountServiceAccountToken != nil {
 		in, out := &in.AutomountServiceAccountToken, &out.AutomountServiceAccountToken
 		*out = new(bool)
@@ -2062,6 +2072,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(v1.PodDNSConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.OnExit != nil {
+		in, out := &in.OnExit, &out.OnExit
+		*out = new(string)
+		**out = **in
+	}
 	if in.TTLSecondsAfterFinished != nil {
 		in, out := &in.TTLSecondsAfterFinished, &out.TTLSecondsAfterFinished
 		*out = new(int32)
@@ -2103,6 +2118,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.SecurityContext, &out.SecurityContext
 		*out = new(v1.PodSecurityContext)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.PodSpecPatch != nil {
+		in, out := &in.PodSpecPatch, &out.PodSpecPatch
+		*out = new(string)
+		**out = **in
 	}
 	if in.PodDisruptionBudget != nil {
 		in, out := &in.PodDisruptionBudget, &out.PodDisruptionBudget

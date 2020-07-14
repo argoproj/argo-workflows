@@ -98,6 +98,13 @@ var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
 	"Arguments":             true,
 	"WorkflowTemplateRef":   true,
 	"TTLStrategy":           true,
+	"Parallelism":           true,
+	"Volumes":               true,
+	"VolumeClaimTemplates":  true,
+	"NodeSelector":          true,
+	"OnExit":                true,
+	"PodGC":                 true,
+	"ServiceAccountName":    true,
 }
 
 type FakeArguments struct{}
@@ -140,10 +147,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		if err != nil {
 			return nil, err
 		}
-		if entrypoint == "" {
+		if entrypoint == nil {
 			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
 		}
-		wfTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
+		wfTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(*entrypoint)
 	}
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 
@@ -190,7 +197,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
-	if !opts.IgnoreEntrypoint && entrypoint == "" {
+	if !opts.IgnoreEntrypoint && entrypoint == nil {
 		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
@@ -228,7 +235,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		if opts.WorkflowTemplateValidation {
 			args = &FakeArguments{}
 		}
-		tmpl := &wfv1.WorkflowStep{Template: entrypoint}
+		tmpl := &wfv1.WorkflowStep{Template: *entrypoint}
 		if hasWorkflowTemplateRef {
 			tmpl = &wfv1.WorkflowStep{TemplateRef: wfTmplRef}
 		}
@@ -237,11 +244,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			return nil, err
 		}
 	}
-	if wf.Spec.OnExit != "" {
+	if wf.Spec.OnExit != nil {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: *wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return nil, err
 		}
@@ -285,7 +292,7 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 	wf := &wfv1.Workflow{
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == nil, WorkflowTemplateValidation: true})
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
@@ -293,7 +300,7 @@ func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTem
 	wf := &wfv1.Workflow{
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == nil, WorkflowTemplateValidation: true})
 }
 
 // ValidateCronWorkflow validates a CronWorkflow

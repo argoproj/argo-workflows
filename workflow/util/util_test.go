@@ -183,7 +183,8 @@ containers:
 
 func TestPodSpecPatchMerge(t *testing.T) {
 	tmpl := wfv1.Template{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"cpu\": \"1000m\"}}}]}"}
-	wf := wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
+	podSpecPatch := "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"
+	wf := wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: &podSpecPatch}}
 	merged, err := PodSpecPatchMerge(&wf, &tmpl)
 	assert.NoError(t, err)
 	var spec v1.PodSpec
@@ -193,7 +194,8 @@ func TestPodSpecPatchMerge(t *testing.T) {
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 
 	tmpl = wfv1.Template{PodSpecPatch: yamlStr}
-	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
+	podSpecPatch = "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"
+	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: &podSpecPatch}}
 	merged, err = PodSpecPatchMerge(&wf, &tmpl)
 	assert.NoError(t, err)
 	err = json.Unmarshal([]byte(merged), &spec)

@@ -57,9 +57,10 @@ func TestHydrator(t *testing.T) {
 			offloadNodeStatusRepo := &sqldbmocks.OffloadNodeStatusRepo{}
 			offloadNodeStatusRepo.On("Save", "my-uid", "my-ns", mock.Anything).Return("my-offload-version", nil)
 			hydrator := New(offloadNodeStatusRepo)
+			entrypoint := "main"
 			wf := &wfv1.Workflow{
 				ObjectMeta: metav1.ObjectMeta{UID: "my-uid", Namespace: "my-ns"},
-				Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
+				Spec:       wfv1.WorkflowSpec{Entrypoint: &entrypoint},
 				Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}}},
 			}
 			err := hydrator.Dehydrate(wf)

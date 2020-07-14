@@ -199,10 +199,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		opts = &wfv1.SubmitOpts{}
 	}
 	if opts.Entrypoint != "" {
-		wf.Spec.Entrypoint = opts.Entrypoint
+		wf.Spec.Entrypoint = &opts.Entrypoint
 	}
 	if opts.ServiceAccount != "" {
-		wf.Spec.ServiceAccountName = opts.ServiceAccount
+		wf.Spec.ServiceAccountName = &opts.ServiceAccount
 	}
 	wfLabels := wf.GetLabels()
 	if wfLabels == nil {
@@ -860,7 +860,7 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 	var err error
 
 	if wf.Spec.HasPodSpecPatch() {
-		wfPatch, err = ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
+		wfPatch, err = ConvertYAMLToJSON(*wf.Spec.PodSpecPatch)
 		if err != nil {
 			return "", err
 		}

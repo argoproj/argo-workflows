@@ -18,7 +18,8 @@ func TestWorkflowTemplateRef(t *testing.T) {
 		_, controller := newController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+		assert.Equal(t, wf.Spec.Entrypoint, woc.wfSpec.Entrypoint)
+		assert.Equal(t, wftmpl.Spec.Templates, woc.wfSpec.Templates)
 	})
 }
 

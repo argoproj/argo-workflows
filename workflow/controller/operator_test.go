@@ -3725,9 +3725,9 @@ func TestValidReferenceMode(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-
+	diffEntrypoint := "different"
 	// Change stored Workflow Spec
-	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc.wf.Status.StoredWorkflowSpec.Entrypoint = &diffEntrypoint
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
@@ -3738,7 +3738,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
 	// Change stored Workflow Spec
-	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc.wf.Status.StoredWorkflowSpec.Entrypoint = &diffEntrypoint
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }

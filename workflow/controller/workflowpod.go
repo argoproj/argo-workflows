@@ -984,8 +984,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
-	} else if woc.wfSpec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.wfSpec.ServiceAccountName
+	} else if woc.wfSpec.ServiceAccountName != nil {
+		pod.Spec.ServiceAccountName = *woc.wfSpec.ServiceAccountName
 	}
 
 	var automountServiceAccountToken *bool

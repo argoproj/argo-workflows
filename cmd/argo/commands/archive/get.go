@@ -51,8 +51,9 @@ func NewGetCommand() *cobra.Command {
 				fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 				fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 				serviceAccount := wf.Spec.ServiceAccountName
-				if serviceAccount == "" {
-					serviceAccount = "default"
+				defaultServiceAccount := "default"
+				if serviceAccount == nil {
+					serviceAccount = &defaultServiceAccount
 				}
 				fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
 				fmt.Printf(fmtStr, "Status:", wf.Status.Phase)

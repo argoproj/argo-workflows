@@ -164,7 +164,7 @@ type WorkflowSpec struct {
 	Templates []Template `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
 	// Entrypoint is a template reference to the starting point of the workflow.
-	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
+	Entrypoint *string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
@@ -172,7 +172,7 @@ type WorkflowSpec struct {
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
-	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,4,opt,name=serviceAccountName"`
+	ServiceAccountName *string `json:"serviceAccountName,omitempty" protobuf:"bytes,4,opt,name=serviceAccountName"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
 	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
@@ -242,7 +242,7 @@ type WorkflowSpec struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
-	OnExit string `json:"onExit,omitempty" protobuf:"bytes,17,opt,name=onExit"`
+	OnExit *string `json:"onExit,omitempty" protobuf:"bytes,17,opt,name=onExit"`
 
 	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
 	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
@@ -292,7 +292,7 @@ type WorkflowSpec struct {
 
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+	PodSpecPatch *string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
 	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
 	//Controller will automatically add the selector with workflow name, if selector is empty.
@@ -383,7 +383,7 @@ func (b ParallelSteps) OpenAPISchemaType() []string {
 func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
-	return wfs.PodSpecPatch != ""
+	return wfs.PodSpecPatch != nil
 }
 
 // Template is a reusable and composable unit of execution in a workflow

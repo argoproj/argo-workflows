@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -308,7 +309,7 @@ func (woc *wfOperationCtx) operate() {
 
 	workflowStatus := node.Phase
 	var onExitNode *wfv1.NodeStatus
-	if woc.wfSpec.OnExit != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
+	if woc.wfSpec.OnExit != nil && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		if workflowStatus == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
@@ -338,9 +339,9 @@ func (woc *wfOperationCtx) operate() {
 		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
 		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
-		woc.log.Infof("Running OnExit handler: %s", woc.wfSpec.OnExit)
+		woc.log.Infof("Running OnExit handler: %s", *woc.wfSpec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wfSpec.OnExit}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{onExitTemplate: true})
+		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: *woc.wfSpec.OnExit}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.WithError(err).Error("error in exit template execution")
@@ -422,7 +423,11 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
-	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.wf.Spec.ServiceAccountName
+	if woc.wf.Spec.ServiceAccountName == nil {
+		woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = "default"
+	} else {
+		woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = *woc.wf.Spec.ServiceAccountName
+	}
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.Format(time.RFC3339)
 	if woc.wf.Spec.Priority != nil {
@@ -2787,21 +2792,18 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 
 func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {
 
-	executionParameters := woc.wf.Spec.Arguments
-
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
-			return nil, executionParameters, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
+			return nil, wfv1.Arguments{}, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		}
-
-		tmplRef := &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}
-		return tmplRef, executionParameters, nil
+		tmplRef := &wfv1.WorkflowStep{Template: *woc.wf.Spec.Entrypoint}
+		return tmplRef, woc.wfSpec.Arguments, nil
 	}
 
 	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
-			return nil, executionParameters, err
+			return nil, wfv1.Arguments{}, err
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec
 		woc.updated = true
@@ -2809,24 +2811,36 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		// If the controller is in reference mode, ensure that the stored spec is identical to the reference spec at every operation
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
-			return nil, executionParameters, err
+			return nil, wfv1.Arguments{}, err
 		}
 		if woc.wf.Status.StoredWorkflowSpec.String() != wftSpec.String() {
-			return nil, executionParameters, fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
+			return nil, wfv1.Arguments{}, fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
 		}
 	}
 
-	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec
-
-	entrypoint := woc.wf.Spec.Entrypoint
-	if entrypoint == "" {
-		entrypoint = woc.wfSpec.Entrypoint
-	}
-	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)}
-
-	if len(woc.wfSpec.Arguments.Parameters) > 0 {
-		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.wfSpec.Arguments.Parameters)
+	workflowBytes, err := json.Marshal(wfv1.Workflow{Spec: woc.wf.Spec})
+	if err != nil {
+		return nil, wfv1.Arguments{}, err
 	}
 
-	return tmplRef, executionParameters, nil
+	storedWFByte, err := json.Marshal(wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec})
+	if err != nil {
+		return nil, wfv1.Arguments{}, err
+	}
+
+	mergedWFByte, err := strategicpatch.StrategicMergePatch(storedWFByte, workflowBytes, wfv1.Workflow{})
+	if err != nil {
+		return nil, wfv1.Arguments{}, err
+	}
+
+	var mergedWf wfv1.Workflow
+	err = json.Unmarshal(mergedWFByte, &mergedWf)
+	if err != nil {
+		return nil, wfv1.Arguments{}, err
+	}
+	woc.wfSpec = &mergedWf.Spec
+
+	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(*woc.wfSpec.Entrypoint)}
+
+	return tmplRef, woc.wfSpec.Arguments, nil
 }

@@ -52,10 +52,11 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	maxStartAt, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 	repo.On("ListWorkflows", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
 	repo.On("GetWorkflow", "").Return(nil, nil)
+	entrypoint := "my-entrypoint"
 	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
-			Entrypoint: "my-entrypoint",
+			Entrypoint: &entrypoint,
 			Templates: []wfv1.Template{
 				{Name: "my-entrypoint", Container: &apiv1.Container{}},
 			},

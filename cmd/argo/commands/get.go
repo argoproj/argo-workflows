@@ -120,8 +120,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	out += fmt.Sprintf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	serviceAccount := wf.Spec.ServiceAccountName
-	if serviceAccount == "" {
-		serviceAccount = "default"
+	defaultServiceAccount := "default"
+	if serviceAccount == nil {
+		serviceAccount = &defaultServiceAccount
 	}
 	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
 	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))

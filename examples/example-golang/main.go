@@ -17,12 +17,13 @@ import (
 )
 
 var (
+	entrypoint = "whalesay"
 	helloWorldWorkflow = wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "hello-world-",
 		},
 		Spec: wfv1.WorkflowSpec{
-			Entrypoint: "whalesay",
+			Entrypoint: &entrypoint,
 			Templates: []wfv1.Template{
 				{
 					Name: "whalesay",
