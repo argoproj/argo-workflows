@@ -267,7 +267,7 @@ spec:
 		}).
 		WaitForWorkflow(15 * time.Second).
 		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
 			if assert.NotNil(t, nodeStatus) {
