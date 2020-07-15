@@ -8,249 +8,249 @@ Workflow is the definition of a workflow resource
 <summary>Examples (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -270,9 +270,9 @@ CronWorkflow is the definition of a scheduled workflow resource
 <summary>Examples (click to open)</summary>
 <br>
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 </details>
 
 ### Fields
@@ -292,9 +292,9 @@ WorkflowTemplate is the definition of a workflow template resource
 <summary>Examples (click to open)</summary>
 <br>
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -313,257 +313,257 @@ WorkflowSpec is the specification of a Workflow.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -635,257 +635,257 @@ CronWorkflowSpec is the specification of a CronWorkflow
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -920,257 +920,257 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -1221,131 +1221,131 @@ Arguments to a template
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -1362,7 +1362,7 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 </details>
 
 ### Fields
@@ -1388,7 +1388,7 @@ Metrics are a list of metrics emitted from a Workflow/Template
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -1404,7 +1404,7 @@ PodGC describes how to delete completed pods as they complete
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 </details>
 
 ### Fields
@@ -1420,9 +1420,9 @@ Synchronization holds synchronization lock configuration
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -1438,247 +1438,247 @@ Template is a reusable and composable unit of execution in a workflow
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -1729,7 +1729,7 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 </details>
 
 ### Fields
@@ -1747,15 +1747,15 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -1813,51 +1813,51 @@ Outputs hold parameters, artifacts, and results from a step
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1876,9 +1876,9 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -1894,51 +1894,51 @@ Artifact indicates an artifact to place at a specified path
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1969,125 +1969,125 @@ Parameter indicate a passed string parameter to a service template with an optio
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -2107,7 +2107,7 @@ Prometheus is a prometheus metric to be emitted
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -2129,9 +2129,9 @@ SemaphoreRef is a reference of Semaphore
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -2147,7 +2147,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 </details>
 
 ### Fields
@@ -2171,43 +2171,43 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2225,7 +2225,7 @@ UserContainer is a container specified by a user.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 </details>
 
 ### Fields
@@ -2263,119 +2263,119 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2392,257 +2392,257 @@ Pod metdata
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -2659,23 +2659,23 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 </details>
 
 ### Fields
@@ -2697,23 +2697,23 @@ RetryStrategy provides controls on how to retry a workflow step
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2731,37 +2731,37 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -2799,133 +2799,133 @@ WorkflowStep is a reference to a template to execute in a series of step
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2950,9 +2950,9 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -2968,23 +2968,23 @@ TemplateRef is a reference of template resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -3003,9 +3003,9 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -3022,9 +3022,9 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
 
 ### Fields
@@ -3041,7 +3041,7 @@ ArtifactoryArtifact is the location of an artifactory artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 </details>
 
 ### Fields
@@ -3059,9 +3059,9 @@ GCSArtifact is the location of a GCS artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 </details>
 
 ### Fields
@@ -3079,13 +3079,13 @@ GitArtifact is the location of an git artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 </details>
 
 ### Fields
@@ -3108,7 +3108,7 @@ HDFSArtifact is the location of an HDFS artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 </details>
 
 ### Fields
@@ -3133,25 +3133,25 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 </details>
 
 ### Fields
@@ -3167,7 +3167,7 @@ OSSArtifact is the location of an Alibaba Cloud OSS artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 </details>
 
 ### Fields
@@ -3187,9 +3187,9 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 </details>
 
 ### Fields
@@ -3222,31 +3222,31 @@ ValueFrom describes a location in which to obtain the value to a parameter
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
 
 ### Fields
@@ -3266,7 +3266,7 @@ Counter is a Counter prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -3282,7 +3282,7 @@ Gauge is a Gauge prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -3299,7 +3299,7 @@ Histogram is a Histogram prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
 ### Fields
@@ -3316,15 +3316,15 @@ MetricLabel is a single label for a prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 </details>
 
 ### Fields
@@ -3341,43 +3341,43 @@ DAGTask represents a node in the graph during DAG execution
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -3404,7 +3404,7 @@ Backoff is a backoff strategy to use within retryStrategy
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 </details>
 
 ### Fields
@@ -3422,15 +3422,15 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 </details>
 
 ### Fields
@@ -3447,29 +3447,29 @@ Item expands a single workflow step into multiple parallel steps The value of It
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 </details>
 
 ## Sequence
@@ -3480,13 +3480,13 @@ Sequence expands a workflow step into numeric range
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3515,9 +3515,9 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
 
 ## TarStrategy
@@ -3528,7 +3528,7 @@ TarStrategy will tar and gzip the file or directory when saving
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 </details>
 
 ### Fields
@@ -3544,7 +3544,7 @@ Amount represent a numeric amount.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
 # External Fields
@@ -3558,257 +3558,257 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -3851,7 +3851,7 @@ PodDNSConfig defines the DNS parameters of a pod in addition to those generated 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 </details>
 
 ### Fields
@@ -3879,7 +3879,7 @@ LocalObjectReference contains enough information to let you locate the reference
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 </details>
 
 ### Fields
@@ -3895,7 +3895,7 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 </details>
 
 ### Fields
@@ -3913,7 +3913,7 @@ PodSecurityContext holds pod-level security attributes and common container sett
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 </details>
 
 ### Fields
@@ -3949,22 +3949,22 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 <summary>Examples (click to open)</summary>
 <br>
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 </details>
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3984,13 +3984,13 @@ Volume represents a named volume in a pod that may be accessed by any container 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 </details>
 
 ### Fields
@@ -4053,213 +4053,213 @@ A single application container that you want to run within a pod.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -4295,13 +4295,13 @@ IntOrString is a type that can hold an int32 or a string.  When used in JSON or 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 </details>
 
 ## ConfigMapKeySelector
@@ -4312,9 +4312,9 @@ Selects a key from a ConfigMap.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 </details>
 
 ### Fields
@@ -4332,11 +4332,11 @@ EnvVar represents an environment variable present in a Container.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 </details>
 
 ### Fields
@@ -4391,7 +4391,7 @@ ContainerPort represents a network port in a single container.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 </details>
 
 ### Fields
@@ -4411,25 +4411,25 @@ ResourceRequirements describes the compute resource requirements.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4446,7 +4446,7 @@ SecurityContext holds security configuration that will be applied to a container
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 </details>
 
 ### Fields
@@ -4481,23 +4481,23 @@ VolumeMount describes a mounting of a Volume within a container.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4518,9 +4518,9 @@ SecretKeySelector selects a key of a Secret.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 </details>
 
 ### Fields
@@ -4561,7 +4561,7 @@ OwnerReference contains enough information to let you identify an owning object.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 </details>
 
 ### Fields
@@ -4612,7 +4612,7 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 </details>
 
 ### Fields
@@ -4629,7 +4629,7 @@ A label selector is a label query over a set of resources. The result of matchLa
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 </details>
 
 ### Fields
@@ -4678,257 +4678,257 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -5060,9 +5060,9 @@ Represents an empty directory for a pod. Empty directory volumes support ownersh
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 </details>
 
 ### Fields
@@ -5189,7 +5189,7 @@ PersistentVolumeClaimVolumeSource references the user's PVC in the same namespac
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 </details>
 
 ### Fields
@@ -5285,7 +5285,7 @@ Adapts a Secret into a volume.The contents of the target Secret's Data field wil
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
 
 ### Fields
@@ -5329,31 +5329,31 @@ EnvVarSource represents a source for the value of an EnvVar.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
 
 ### Fields
@@ -5412,13 +5412,13 @@ HTTPGetAction describes an action based on HTTP Get requests.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 </details>
 
 ### Fields
@@ -5448,11 +5448,11 @@ Quantity is a fixed-point representation of a number. It provides convenient mar
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 </details>
 
 ## Capabilities
@@ -5658,257 +5658,257 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/archive-location.yaml)
+- [`archive-location.yaml`](https://github.com/argoproj/argo/blob/master/examples/archive-location.yaml)
 
-- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-artifacts.yaml)
+- [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/arguments-parameters.yaml)
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
-- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-disable-archive.yaml)
+- [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
-- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-passing.yaml)
+- [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-path-placeholders.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifact-repository-ref.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
-- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/artifactory-artifact.yaml)
+- [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci-output-artifact.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/ci.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/clustertemplates.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cluster-workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip-recursive.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
-- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/coinflip.yaml)
+- [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
-- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/colored-logs.yaml)
+- [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/conditionals.yaml)
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
 
-- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/continue-on-fail.yaml)
+- [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-backfill.yaml)
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
+- [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-nginx.yaml)
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
 
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemon-step.yaml)
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
 
-- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/daemoned-stateful-set-with-service.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemoned-stateful-set-with-service.yaml)
 
-- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-coinflip.yaml)
+- [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
-- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-continue-on-fail.yaml)
+- [`dag-continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-continue-on-fail.yaml)
 
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-daemon-task.yaml)
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
 
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond.yaml)
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
 
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-disable-failFast.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-enhanced-depends.yaml)
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-multiroot.yaml)
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
-- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
+- [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
-- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+- [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
-- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
+- [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
-- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/forever.yaml)
+- [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
 
-- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
+- [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
 
-- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/gc-ttl.yaml)
+- [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-parameters.yaml)
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
 
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/handle-large-output-results.yaml)
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
 
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
+- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/hdfs-artifact.yaml)
 
-- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-hybrid.yaml)
+- [`hello-hybrid.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-hybrid.yaml)
 
-- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-windows.yaml)
+- [`hello-windows.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-windows.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/hello-world.yaml)
 
-- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/image-pull-secrets.yaml)
+- [`image-pull-secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/image-pull-secrets.yaml)
 
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/influxdb-ci.yaml)
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
 
-- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/init-container.yaml)
+- [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
-- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-gcs.yaml)
+- [`input-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-gcs.yaml)
 
-- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-git.yaml)
+- [`input-artifact-git.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-git.yaml)
 
-- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-http.yaml)
+- [`input-artifact-http.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-http.yaml)
 
-- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-oss.yaml)
+- [`input-artifact-oss.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-oss.yaml)
 
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-raw.yaml)
+- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/input-artifact-s3.yaml)
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-jobs.yaml)
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
 
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-orchestration.yaml)
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-owner-reference.yaml)
+- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
 
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-set-owner-reference.yaml)
+- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
 
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/k8s-wait-wf.yaml)
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-dag.yaml)
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-maps.yaml)
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
 
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-argument.yaml)
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
 
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-param-result.yaml)
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops-sequence.yaml)
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/loops.yaml)
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/nested-workflow.yaml)
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/node-selector.yaml)
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
 
-- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-gcs.yaml)
+- [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
 
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-artifact-s3.yaml)
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
 
-- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-limit.yaml)
+- [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-dag.yaml)
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested-workflow.yaml)
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
 
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-nested.yaml)
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
 
-- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parallelism-template-limit.yaml)
+- [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
 
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-dag.yaml)
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation-script.yaml)
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
 
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/parameter-aggregation.yaml)
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
-- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-gc-strategy.yaml)
+- [`pod-gc-strategy.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-gc-strategy.yaml)
 
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-metadata.yaml)
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch-wf-tmpl.yaml)
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
 
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-patch.yaml)
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-yaml-patch.yaml)
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/recursive-for-loop.yaml)
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-delete-with-flags.yaml)
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
-- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resource-flags.yaml)
+- [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
-- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/resubmit.yaml)
+- [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-backoff.yaml)
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
 
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container-to-completion.yaml)
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
 
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-container.yaml)
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
 
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-on-error.yaml)
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
 
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-script.yaml)
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-bash.yaml)
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
 
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-javascript.yaml)
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
-- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-dind.yaml)
+- [`sidecar-dind.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-dind.yaml)
 
-- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar-nginx.yaml)
+- [`sidecar-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar-nginx.yaml)
 
-- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/sidecar.yaml)
+- [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
-- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/status-reference.yaml)
+- [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
-- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+- [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
-- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+- [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
+- [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
-- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-emptydir.yaml)
+- [`volumes-emptydir.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-emptydir.yaml)
 
-- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
+- [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-existing.yaml)
 
-- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-pvc.yaml)
+- [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/hello-world.yaml)
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/retry-with-steps.yaml)
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
 
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/steps.yaml)
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/templates.yaml)
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/workflow-template-ref.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -5957,7 +5957,7 @@ Adapts a secret into a projected volume.The contents of the target Secret's Data
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+- [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
 
 ### Fields
