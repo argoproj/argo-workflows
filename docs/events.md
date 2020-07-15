@@ -55,12 +55,12 @@ The event environment typically contains:
 
 HTTP header names are lowercase and only include those that have `x-` as their prefix.
 
-Meta-data will contain the `user/subject` which should always to be used to ensure you only accept events from the correct user. 
+Meta-data will contain the `claimSet/sub` which should always to be used to ensure you only accept events from the correct user. 
 
 Examples:
 
 ```
-metadata.user.subject == "github" && metadata[`x-github-event`] == "pull_request" && event.repository == "http://gihub.com/argoproj/argo"
+metadata.claimSet.sub == "github" && metadata[`x-github-event`] == "pull_request" && event.repository == "http://gihub.com/argoproj/argo"
 ```
 
 TODO - we should include several examples
