@@ -105,10 +105,7 @@ func (s *ArgoServerSuite) TestVersion() {
 func (s *ArgoServerSuite) TestGetUserInfo() {
 	s.e().GET("/api/v1/userinfo").
 		Expect().
-		Status(200).
-		JSON().
-		Path("$.subject").
-		NotNull()
+		Status(200)
 }
 
 // we can only really tests these endpoint respond, not worthwhile checking more
@@ -465,10 +462,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 		JSON().
 		Path("$.metadata").
 		Object().
-		NotContainsKey("uid").
-		Path("$.labels").
-		Object().
-		ContainsKey("workflows.argoproj.io/creator")
+		NotContainsKey("uid")
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
@@ -500,14 +494,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
   }
 }`)).
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata").
-			Object().
-			ContainsKey("uid").
-			Path("$.labels").
-			Object().
-			ContainsKey("workflows.argoproj.io/creator")
+			Status(200)
 	})
 
 	s.Run("List", func() {
@@ -1238,11 +1225,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
   }
 }`)).
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.labels").
-			Object().
-			ContainsKey("workflows.argoproj.io/creator")
+			Status(200)
 	})
 	s.Run("SubmitWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
@@ -1254,11 +1237,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
               }
 			}`)).
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.labels").
-			Object().
-			ContainsKey("workflows.argoproj.io/creator")
+			Status(200)
 	})
 
 	s.Run("CreateCWFT", func() {
@@ -1285,13 +1264,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       "entrypoint": "run-workflow"
     }
   }
-}`)).
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.labels").
-			Object().
-			ContainsKey("workflows.argoproj.io/creator")
+}`)).Expect().Status(200)
 	})
 
 	s.Run("SubmitCWFT", func() {
@@ -1304,11 +1277,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
               }
 			}`)).
 			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.labels").
-			Object().
-			ContainsKey("workflows.argoproj.io/creator")
+			Status(200)
 	})
 
 }

@@ -73,11 +73,11 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 }
 
 func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	wfClient, kubeClient, claims, err := s.getClients(ctx)
+	wfClient, kubeClient, claimSet, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), ClaimSetKey, claims), nil
+	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), ClaimSetKey, claimSet), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -135,20 +135,20 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		claims, _ := jwt.ClaimSetFor(restConfig)
-		return wfClient, kubeClient, claims, nil
+		claimSet, _ := jwt.ClaimSetFor(restConfig)
+		return wfClient, kubeClient, claimSet, nil
 	case Server:
-		claims, err := jwt.ClaimSetFor(s.restConfig)
+		claimSet, err := jwt.ClaimSetFor(s.restConfig)
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
 		}
-		return s.wfClient, s.kubeClient, claims, nil
+		return s.wfClient, s.kubeClient, claimSet, nil
 	case SSO:
-		claims, err := s.ssoIf.Authorize(ctx, authorization)
+		claimSet, err := s.ssoIf.Authorize(ctx, authorization)
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, claims, nil
+		return s.wfClient, s.kubeClient, claimSet, nil
 	default:
 		panic("this should never happen")
 	}

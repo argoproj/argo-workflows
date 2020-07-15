@@ -28,7 +28,7 @@ func ClaimSetFor(restConfig *rest.Config) (*jws.ClaimSet, error) {
 		}
 		parts := strings.SplitN(bearerToken, ".", 3)
 		if len(parts) != 3 {
-			return nil, fmt.Errorf("expected bearer token to be a JWT and have 3 dot-delimited parts")
+			return nil, fmt.Errorf("expected bearer token to be a JWT and therefore have 3 dot-delimited parts")
 		}
 		payload := parts[1]
 		data, err := base64.RawStdEncoding.DecodeString(payload)
