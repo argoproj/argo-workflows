@@ -23,9 +23,9 @@ import (
 type ContextKey string
 
 const (
-	WfKey        ContextKey = "versioned.Interface"
-	KubeKey      ContextKey = "kubernetes.Interface"
-	JWTConfigKey ContextKey = "jwt.Config"
+	WfKey       ContextKey = "versioned.Interface"
+	KubeKey     ContextKey = "kubernetes.Interface"
+	ClaimSetKey ContextKey = "jws.ClaimSet"
 )
 
 type Gatekeeper interface {
@@ -77,7 +77,7 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), JWTConfigKey, claims), nil
+	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), ClaimSetKey, claims), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -88,8 +88,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaims(ctx context.Context) *jws.ClaimSet {
-	config, _ := ctx.Value(JWTConfigKey).(*jws.ClaimSet)
+func GetClaimSet(ctx context.Context) *jws.ClaimSet {
+	config, _ := ctx.Value(ClaimSetKey).(*jws.ClaimSet)
 	return config
 }
 

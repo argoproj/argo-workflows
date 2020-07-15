@@ -38,7 +38,7 @@ func ClaimSetFor(restConfig *rest.Config) (*jws.ClaimSet, error) {
 		claims := &jws.ClaimSet{}
 		err = json.Unmarshal(data, &claims)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get unmarshal bearer token's JWT payload: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal bearer token's JWT payload: %w", err)
 		}
 		return claims, nil
 	} else {

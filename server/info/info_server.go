@@ -15,7 +15,7 @@ type infoServer struct {
 }
 
 func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequest) (*infopkg.GetUserInfoResponse, error) {
-	claims := auth.GetClaims(ctx)
+	claims := auth.GetClaimSet(ctx)
 	if claims != nil {
 		return &infopkg.GetUserInfoResponse{Subject: claims.Sub, Issuer: claims.Iss}, nil
 	}
