@@ -235,7 +235,7 @@ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/work
 ```
 > 2.7 and after
 The submit a `WorkflowTemplate` as a `Workflow`:
-```shell script
+```sh
 argo submit --from workflowtemplate/workflow-template-submittable
 
 ```

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
@@ -656,7 +658,7 @@ func TestVolumesPodSubstitution(t *testing.T) {
 			MountPath: "/test",
 		},
 	}
-	tmpStr := "test-name"
+	tmpStr := intstr.Parse("test-name")
 	inputParameters := []wfv1.Parameter{
 		{
 			Name:  "volume-name",
@@ -1108,4 +1110,88 @@ func TestPodSpecPatch(t *testing.T) {
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
 
+}
+
+var helloWindowsWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-hybrid-win
+spec:
+  entrypoint: hello-win
+  templates:
+    - name: hello-win
+      nodeSelector:
+        kubernetes.io/os: windows
+      container:
+        image: mcr.microsoft.com/windows/nanoserver:1809
+        command: ["cmd", "/c"]
+        args: ["echo", "Hello from Windows Container!"]
+`
+
+var helloLinuxWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-hybrid-lin
+spec:
+  entrypoint: hello-linux
+  templates:
+    - name: hello-linux
+      nodeSelector:
+        kubernetes.io/os: linux
+      container:
+        image: alpine
+        command: [echo]
+        args: ["Hello from Linux Container!"]
+`
+
+func TestHybridWfVolumesWindows(t *testing.T) {
+	wf := unmarshalWF(helloWindowsWf)
+	woc := newWoc(*wf)
+
+	mainCtr := woc.wfSpec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "\\\\.\\pipe\\docker_engine", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equal(t, false, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
+	assert.Equal(t, (*apiv1.HostPathType)(nil), pod.Spec.Volumes[1].HostPath.Type)
+}
+
+func TestHybridWfVolumesLinux(t *testing.T) {
+	wf := unmarshalWF(helloLinuxWf)
+	woc := newWoc(*wf)
+
+	mainCtr := woc.wfSpec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	assert.Equal(t, "/var/run/docker.sock", pod.Spec.Containers[0].VolumeMounts[1].MountPath)
+	assert.Equal(t, true, pod.Spec.Containers[0].VolumeMounts[1].ReadOnly)
+	assert.Equal(t, &hostPathSocket, pod.Spec.Volumes[1].HostPath.Type)
+}
+
+var propagateMaxDuration = `
+name: retry-backoff
+retryStrategy:
+  limit: 10
+  backoff:
+    duration: "1"
+    factor: 1
+    maxDuration: "20"
+container:
+  image: alpine
+  command: [sh, -c]
+  args: ["sleep $(( {{retries}} * 100 )); exit 1"]
+
+`
+
+func TestPropagateMaxDuration(t *testing.T) {
+	// Ensure that volume mount is added when artifact is provided
+	tmpl := unmarshalTemplate(propagateMaxDuration)
+	woc := newWoc()
+	deadline := time.Now()
+	pod, err := woc.createWorkflowPod(tmpl.Name, *tmpl.Container, tmpl, &createWorkflowPodOpts{executionDeadline: deadline})
+	assert.NoError(t, err)
+	out, err := json.Marshal(map[string]time.Time{"deadline": deadline})
+	if assert.NoError(t, err) {
+		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
+	}
 }

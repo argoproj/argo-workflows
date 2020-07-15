@@ -1,4 +1,5 @@
 # Service Accounts
+
 ## Configure the service account to run Workflows
 
 ### Roles, RoleBindings, and ServiceAccounts
@@ -22,5 +23,9 @@ For more information about granting Argo the necessary permissions for your use 
 For the purposes of this demo, we will grant the `default` `ServiceAccount` admin privileges (i.e., we will bind the `admin` `Role` to the `default` `ServiceAccount` of the current namespace):
 
 ```sh
-kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default -n argo
 ```
+
+**Note that this will grant admin privileges to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
+run Workflows in the namespace where the `RoleBinding` was made.**
+

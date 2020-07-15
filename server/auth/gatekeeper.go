@@ -14,6 +14,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/jwt"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
@@ -21,8 +23,9 @@ import (
 type ContextKey string
 
 const (
-	WfKey   ContextKey = "versioned.Interface"
-	KubeKey ContextKey = "kubernetes.Interface"
+	WfKey       ContextKey = "versioned.Interface"
+	KubeKey     ContextKey = "kubernetes.Interface"
+	ClaimSetKey ContextKey = "jws.ClaimSet"
 )
 
 type Gatekeeper interface {
@@ -70,11 +73,11 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 }
 
 func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	wfClient, kubeClient, err := s.getClients(ctx)
+	wfClient, kubeClient, claimSet, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), nil
+	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), ClaimSetKey, claimSet), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -83,6 +86,11 @@ func GetWfClient(ctx context.Context) versioned.Interface {
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
+}
+
+func GetClaimSet(ctx context.Context) *jws.ClaimSet {
+	config, _ := ctx.Value(ClaimSetKey).(*jws.ClaimSet)
+	return config
 }
 
 func getAuthHeader(md metadata.MD) string {
@@ -103,39 +111,44 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !s.Modes[mode] {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
 	}
 	switch mode {
 	case Client:
 		restConfig, err := kubeconfig.GetRestConfig(authorization)
 		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 		}
 		wfClient, err := versioned.NewForConfig(restConfig)
 		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
 		}
 		kubeClient, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		return wfClient, kubeClient, nil
+		claimSet, _ := jwt.ClaimSetFor(restConfig)
+		return wfClient, kubeClient, claimSet, nil
 	case Server:
-		return s.wfClient, s.kubeClient, nil
-	case SSO:
-		err := s.ssoIf.Authorize(ctx, authorization)
+		claimSet, err := jwt.ClaimSetFor(s.restConfig)
 		if err != nil {
-			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
 		}
-		return s.wfClient, s.kubeClient, nil
+		return s.wfClient, s.kubeClient, claimSet, nil
+	case SSO:
+		claimSet, err := s.ssoIf.Authorize(ctx, authorization)
+		if err != nil {
+			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+		return s.wfClient, s.kubeClient, claimSet, nil
 	default:
 		panic("this should never happen")
 	}

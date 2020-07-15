@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -210,7 +211,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts.Labels != "" {
 		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
 		if err != nil {
-			return fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+			return fmt.Errorf("expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
 		for k, v := range passedLabels {
 			wfLabels[k] = v
@@ -222,13 +223,11 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 		passedParams := make(map[string]bool)
 		for _, paramStr := range opts.Parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+			if len(parts) != 2 {
+				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
+			intOrString := intstr.Parse(parts[1])
+			param := wfv1.Parameter{Name: parts[0], Value: &intOrString}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -262,10 +261,8 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				param := wfv1.Parameter{
-					Name:  k,
-					Value: &value,
-				}
+				intOrString := intstr.Parse(value)
+				param := wfv1.Parameter{Name: k, Value: &intOrString}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
@@ -351,7 +348,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 						for i, param := range node.Outputs.Parameters {
 							if param.ValueFrom != nil && param.ValueFrom.Raw != nil {
 								if param.ValueFrom.Default != nil {
-									node.Outputs.Parameters[i].Value = pointer.StringPtr(*param.ValueFrom.Default)
+									node.Outputs.Parameters[i].Value = param.ValueFrom.Default
 									node.Outputs.Parameters[i].ValueFrom = nil
 								} else {
 									return false, fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
@@ -398,7 +395,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	}
 	if node.Inputs != nil {
 		for _, inParam := range node.Inputs.Parameters {
-			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
+			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = inParam.Value.String()
 		}
 	}
 
@@ -459,7 +456,8 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 									if param.ValueFrom.Raw == nil {
 										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw", param.Name)
 									}
-									node.Outputs.Parameters[i].Value = pointer.StringPtr(val)
+									intStr := intstr.FromString(val)
+									node.Outputs.Parameters[i].Value = &intStr
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true
@@ -955,4 +953,21 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 func ValidateJsonStr(jsonStr string, schema interface{}) bool {
 	err := json.Unmarshal([]byte(jsonStr), &schema)
 	return err == nil
+}
+
+func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
+	if tmpl.RetryStrategy != nil {
+		return wfv1.NodeTypeRetry
+	}
+	switch tmpl.GetType() {
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
+		return wfv1.NodeTypePod
+	case wfv1.TemplateTypeDAG:
+		return wfv1.NodeTypeDAG
+	case wfv1.TemplateTypeSteps:
+		return wfv1.NodeTypeSteps
+	case wfv1.TemplateTypeSuspend:
+		return wfv1.NodeTypeSuspend
+	}
+	return ""
 }

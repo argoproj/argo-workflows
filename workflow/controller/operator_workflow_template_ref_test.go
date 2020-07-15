@@ -4,21 +4,23 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
-	wf := unmarshalWF(wfWithTmplRef)
-	wftmpl := unmarshalWFTmpl(wfTmpl)
-
-	t.Run("ExecuteWorkflowWithTmplRef", func(t *testing.T) {
-		_, controller := newController(wf, wftmpl)
-		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
-	})
+	cancel, controller := newController(unmarshalWF(wfWithTmplRef), unmarshalWFTmpl(wfTmpl))
+	defer cancel()
+	woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
+	woc.operate()
+	assert.Equal(t, &unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec, woc.wfSpec)
+	// verify we copy these values
+	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
+	// and these
+	assert.Equal(t, "my-sa", woc.globalParams["workflow.serviceAccountName"])
+	assert.Equal(t, "77", woc.globalParams["workflow.priority"])
 }
 
 func TestWorkflowTemplateRefWithArgs(t *testing.T) {
@@ -26,7 +28,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
-		value := "test"
+		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
@@ -34,7 +36,8 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
-		_, controller := newController(wf, wftmpl)
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
@@ -46,7 +49,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		value := "test"
+		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
@@ -54,7 +57,8 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
-		_, controller := newController(wf, wftmpl)
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
@@ -121,13 +125,14 @@ status:
 func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 	wf := unmarshalWF(wfWithStatus)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
-		_, controller := newController(wf)
+		cancel, controller := newController(wf)
+		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
-		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
+		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
+		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
 	})
 }
 
@@ -146,7 +151,8 @@ spec:
 func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 	wf := unmarshalWF(invalidWF)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
-		_, controller := newController(wf)
+		cancel, controller := newController(wf)
+		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		_, _, err := woc.loadExecutionSpec()
 		assert.Error(t, err)

@@ -26,6 +26,7 @@ type listFlags struct {
 	status        []string
 	completed     bool
 	running       bool
+	resubmitted   bool
 	prefix        string
 	output        string
 	createdSince  string
@@ -66,6 +67,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
+	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show only resubmitted workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.createdSince, "since", "", "Show only workflows created after than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
@@ -95,6 +97,10 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
 		labelSelector = labelSelector.Add(*req)
 	}
+	if flags.resubmitted {
+		req, _ := labels.NewRequirement(common.LabelKeyPreviousWorkflowName, selection.Exists, []string{})
+		labelSelector = labelSelector.Add(*req)
+	}
 	listOpts.LabelSelector = labelSelector.String()
 	listOpts.FieldSelector = flags.fields
 	var workflows wfv1.Workflows
@@ -114,15 +120,23 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		Filter(func(wf wfv1.Workflow) bool {
 			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
 		})
-	if flags.createdSince != "" {
-		t, err := argotime.ParseSince(flags.createdSince)
+	if flags.createdSince != "" && flags.finishedAfter != "" {
+		startTime, err := argotime.ParseSince(flags.createdSince)
 		errors.CheckError(err)
-		workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
-	}
-	if flags.finishedAfter != "" {
-		t, err := argotime.ParseSince(flags.finishedAfter)
+		endTime, err := argotime.ParseSince(flags.finishedAfter)
 		errors.CheckError(err)
-		workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
+		workflows = workflows.Filter(wfv1.WorkflowRanBetween(*startTime, *endTime))
+	} else {
+		if flags.createdSince != "" {
+			t, err := argotime.ParseSince(flags.createdSince)
+			errors.CheckError(err)
+			workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
+		}
+		if flags.finishedAfter != "" {
+			t, err := argotime.ParseSince(flags.finishedAfter)
+			errors.CheckError(err)
+			workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
+		}
 	}
 	sort.Sort(workflows)
 	return workflows, nil

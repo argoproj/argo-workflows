@@ -20,7 +20,7 @@ func Test_nodeStatusVersion(t *testing.T) {
 		marshalled, version, err := nodeStatusVersion(wfv1.Nodes{"my-node": wfv1.NodeStatus{}})
 		if assert.NoError(t, err) {
 			assert.NotEmpty(t, marshalled)
-			assert.Equal(t, "fnv:3097886412", version)
+			assert.Equal(t, "fnv:2308444803", version)
 		}
 	})
 }

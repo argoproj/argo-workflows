@@ -16,7 +16,7 @@ import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import * as Operations from '../../../shared/workflow-operations';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
-import {WorkflowYamlPanel} from './workflow-yaml-panel';
+import {WorkflowResourcePanel} from './workflow-resource-panel';
 
 require('./workflow-details.scss');
 
@@ -177,14 +177,10 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         );
     }
 
-    private confirmAction(title: string): void {
+    private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
         if (!confirm(`Are you sure you want to ${title.toLowerCase()} this workflow?`)) {
             return;
         }
-    }
-
-    private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
-        this.confirmAction(title);
         action(this.props.match.params.name, this.props.match.params.namespace)
             .then(() => ctx.navigation.goto(uiUrl(redirect)))
             .catch(() => {
@@ -292,7 +288,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                     )}
                     <h6>Artifacts</h6>
                     <WorkflowArtifacts workflow={this.state.workflow} archived={false} />
-                    <WorkflowYamlPanel workflow={this.state.workflow} />
+                    <WorkflowResourcePanel workflow={this.state.workflow} />
                 </div>
             </div>
         );

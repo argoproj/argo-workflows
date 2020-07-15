@@ -259,6 +259,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             .map(node => node.id);
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
+            .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .map(node =>
                 (node.children || [])
                     // we can get outbound nodes, but no node
@@ -320,21 +321,23 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
         const h = this.state.horizontal ? this.nodeSize / 2 : 0;
         const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
-        this.graph.edges = edges.map(e => ({
-            v: e.v,
-            w: e.w,
-            points: [
-                {
-                    // for hidden nodes, we want to size them zero
-                    x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
-                    y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
-                },
-                {
-                    x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
-                    y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
-                }
-            ]
-        }));
+        this.graph.edges = edges
+            .filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w))
+            .map(e => ({
+                v: e.v,
+                w: e.w,
+                points: [
+                    {
+                        // for hidden nodes, we want to size them zero
+                        x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
+                        y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
+                    },
+                    {
+                        x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
+                        y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
+                    }
+                ]
+            }));
     }
 
     private selectNode(nodeId: string) {
