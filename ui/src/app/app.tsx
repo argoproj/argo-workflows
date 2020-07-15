@@ -16,6 +16,7 @@ import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
+import userinfo from './userinfo';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
@@ -27,6 +28,7 @@ const cronWorkflowUrl = uiUrl('cron-workflows');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
+const userInfoUrl = uiUrl('userinfo');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
 const routes: {
@@ -39,6 +41,7 @@ const routes: {
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
     [apiDocsUrl]: {component: apidocs.component},
+    [userInfoUrl]: {component: userinfo.component},
     [loginUrl]: {component: login.component}
 };
 
@@ -71,9 +74,9 @@ const navItems = [
         iconClassName: 'fa fa-archive'
     },
     {
-        title: 'Login',
-        path: loginUrl,
-        iconClassName: 'fa fa-shield-alt'
+        title: 'User',
+        path: userInfoUrl,
+        iconClassName: 'fa fa-user-alt'
     },
     {
         title: 'API Docs',

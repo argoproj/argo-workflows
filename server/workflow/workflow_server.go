@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/workflow/creator"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -52,6 +53,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	}
 
 	s.instanceIDService.Label(req.Workflow)
+	creator.Label(ctx, req.Workflow)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -359,6 +361,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	s.instanceIDService.Label(req.Workflow)
+	creator.Label(ctx, req.Workflow)
 
 	_, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{Lint: true})
 
@@ -449,6 +452,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	}
 
 	s.instanceIDService.Label(wf)
+	creator.Label(ctx, wf)
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, err
