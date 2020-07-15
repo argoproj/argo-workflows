@@ -908,28 +908,30 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 	return ""
 }
 
-// MergeWorkflows will do strategic merge the workflows
-func MergeWorkflows(originalWf, patchWf wfv1.Workflow) (*wfv1.Workflow, error) {
-	workflowBytes, err := json.Marshal(wfv1.Workflow{Spec: patchWf.Spec})
-	if err != nil {
-		return nil, err
+// MergeTo will do strategic merge the workflows
+// patch workflow will be merged into target workflow.
+func MergeTo(patch, target *wfv1.Workflow) error {
+	if target == nil || patch == nil {
+		return nil
 	}
 
-	storedWFByte, err := json.Marshal(wfv1.Workflow{Spec: originalWf.Spec})
+	patchWfBytes, err := json.Marshal(patch)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	mergedWFByte, err := strategicpatch.StrategicMergePatch(storedWFByte, workflowBytes, wfv1.Workflow{})
+	targetWfByte, err := json.Marshal(target)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var mergedWf wfv1.Workflow
-	err = json.Unmarshal(mergedWFByte, &mergedWf)
+	mergedWFByte, err := strategicpatch.StrategicMergePatch(targetWfByte, patchWfBytes, wfv1.Workflow{})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &mergedWf, nil
-
+	err = json.Unmarshal(mergedWFByte, &target)
+	if err != nil {
+		return err
+	}
+	return nil
 }

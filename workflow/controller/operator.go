@@ -2829,13 +2829,14 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 	}
 
-	// Set the workflow properties to execution spec.
-	mergedWf, err := wfutil.MergeWorkflows(wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, wfv1.Workflow{Spec: woc.wf.Spec})
+	// Merge the workflow spec and storedWorkflowspec.
+	targetWf := wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}
+	err := wfutil.MergeTo(woc.wf, &targetWf)
 	if err != nil {
 		return nil, executionParameters, err
 	}
+	woc.wfSpec = &targetWf.Spec
 
-	woc.wfSpec = &mergedWf.Spec
 	woc.volumes = woc.wfSpec.DeepCopy().Volumes
 	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(woc.wfSpec.Entrypoint)}
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {

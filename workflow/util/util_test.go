@@ -429,13 +429,13 @@ spec:
 `
 
 func TestMergeWorkflows(t *testing.T) {
-	origWf := unmarshalWF(origWF)
+	targetWf := unmarshalWF(origWF)
 	patchWf := unmarshalWF(patchWF)
 
-	mergedWf, err := MergeWorkflows(*origWf, *patchWf)
+	err := MergeTo(patchWf, targetWf)
 	assert.NoError(t, err)
-	assert.Equal(t, origWf.Spec.Entrypoint, mergedWf.Spec.Entrypoint)
-	assert.Equal(t, patchWf.Spec.ServiceAccountName, mergedWf.Spec.ServiceAccountName)
-	assert.Equal(t, patchWf.Spec.Arguments.Parameters[0].Name, mergedWf.Spec.Arguments.Parameters[0].Name)
-	assert.Equal(t, patchWf.Spec.Arguments.Parameters[0].Value, mergedWf.Spec.Arguments.Parameters[0].Value)
+	assert.Equal(t, "start", targetWf.Spec.Entrypoint)
+	assert.Equal(t, "argo1", targetWf.Spec.ServiceAccountName)
+	assert.Equal(t, "message", targetWf.Spec.Arguments.Parameters[0].Name)
+	assert.Equal(t, "patch", targetWf.Spec.Arguments.Parameters[0].Value)
 }
