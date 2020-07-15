@@ -35,13 +35,20 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
-	NodePending   NodePhase = "Pending"
-	NodeRunning   NodePhase = "Running"
+	// Node is waiting to run
+	NodePending NodePhase = "Pending"
+	// Node is running
+	NodeRunning NodePhase = "Running"
+	// Node finished with no errors
 	NodeSucceeded NodePhase = "Succeeded"
-	NodeSkipped   NodePhase = "Skipped"
-	NodeFailed    NodePhase = "Failed"
-	NodeError     NodePhase = "Error"
-	NodeOmitted   NodePhase = "Omitted"
+	// Node was skipped
+	NodeSkipped NodePhase = "Skipped"
+	// Node or child of node exited with non-0 code
+	NodeFailed NodePhase = "Failed"
+	// Node had an error other than a non 0 exit code
+	NodeError NodePhase = "Error"
+	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)
+	NodeOmitted NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
