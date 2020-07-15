@@ -46,7 +46,7 @@ type WorkflowTemplateSpec struct {
 	WorkflowSpec `json:",inline" protobuf:"bytes,1,opt,name=workflowSpec"`
 	// WorkflowMetadata contains some metadata of the workflow to be refer
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,2,opt,name=workflowMeta"`
-	Event        *Event `json:"event,omitempty" protobuf:"bytes,3,opt,name=event"`
+	Event            *Event             `json:"event,omitempty" protobuf:"bytes,3,opt,name=event"`
 }
 
 // GetTemplateByName retrieves a defined template by its name

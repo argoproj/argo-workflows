@@ -80,6 +80,8 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -388,6 +390,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -711,6 +715,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -996,6 +1002,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -1184,6 +1192,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
 |`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
+|`event`|[`Event`](#event)|_No description available_|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1264,6 +1273,8 @@ Arguments to a template
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -1509,6 +1520,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -1827,6 +1840,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
@@ -1885,6 +1900,22 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
+
+## Event
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == "test"`|
 
 ## Artifact
 
@@ -2006,6 +2037,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -2301,6 +2334,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
@@ -2467,6 +2502,8 @@ Pod metdata
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -2835,6 +2872,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -2952,6 +2991,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 </details>
 
@@ -2959,6 +3000,7 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
+|`event`|[`Event`](#event)|An event to resume this node on.|
 
 ## TemplateRef
 
@@ -3253,6 +3295,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`expression`|`string`|_No description available_|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3633,6 +3676,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -4754,6 +4799,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -5733,6 +5780,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
+
+- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 

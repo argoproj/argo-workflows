@@ -310,6 +310,12 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
+message Event {
+  // An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
+  // +kubebuilder:validation:MinLength=4
+  optional string expression = 1;
+}
+
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -854,6 +860,9 @@ message SubmitOpts {
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
+
+  // An event to resume this node on.
+  optional Event event = 2;
 }
 
 // Synchronization holds synchronization lock configuration
@@ -1071,6 +1080,8 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
+
+  optional string expression = 6;
 }
 
 message Version {
@@ -1394,5 +1405,7 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
+
+  optional Event event = 3;
 }
 

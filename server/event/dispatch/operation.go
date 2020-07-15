@@ -98,7 +98,7 @@ func (s *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) e
 			parameters[i] = fmt.Sprintf("%s=%v", p.Name, result)
 		}
 
-		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, false)
+		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
 		var labels []string
 		for k, v := range tmpl.GetLabels() {
 			labels = append(labels, k+"="+v)
@@ -215,9 +215,7 @@ func markNodeStatus(wf *wfv1.Workflow, node wfv1.NodeStatus, phase wfv1.NodePhas
 
 func metaData(ctx context.Context) map[string]interface{} {
 	meta := map[string]interface{}{
-		"user": map[string]string{
-			"subject": auth.GetClaims(ctx).Subject,
-		},
+		"claimSet": auth.GetClaimSet(ctx),
 	}
 	md, _ := metadata.FromIncomingContext(ctx)
 	for k, v := range md {
