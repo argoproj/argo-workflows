@@ -1,4 +1,4 @@
-# Resume The Template
+# Resume A Workflow
 
 For automation, we want just the name of the workflow, we can use labels to get just this our suspended workflow:
 
