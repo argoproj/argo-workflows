@@ -674,6 +674,22 @@
         }
       }
     },
+    "/api/v1/userinfo": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "GetUserInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetUserInfoResponse"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/version": {
       "get": {
         "tags": [
@@ -2345,6 +2361,17 @@
         },
         "value": {
           "description": "Value is the value of the metric",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "string"
+        },
+        "subject": {
           "type": "string"
         }
       }
