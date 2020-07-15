@@ -250,7 +250,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, err
 	}
 
-	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, newWF, &v1alpha1.SubmitOpts{})
+	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -451,7 +451,6 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
 	}
 
-	// we must carefully reflect any changes here in operation.go
 	s.instanceIDService.Label(wf)
 	creator.Label(ctx, wf)
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)

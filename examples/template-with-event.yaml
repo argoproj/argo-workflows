@@ -8,6 +8,7 @@ spec:
     expression: metadata.claimSet.sub == "admin" && event.message != ""
   entrypoint: main
   arguments:
+    # You may set the arguments from an expression, and this will set the parameter value.
     parameters:
       - name: message
         valueFrom:

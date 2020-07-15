@@ -78,7 +78,7 @@ func (woc *cronWfOperationCtx) Run() {
 
 	wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
 
-	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, wf, &v1alpha1.SubmitOpts{})
+	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
 		return

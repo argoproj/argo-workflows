@@ -91,12 +91,9 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 			}
 			parameters[i] = fmt.Sprintf("%s=%v", p.Name, result)
 		}
-
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
-		// we must carefully reflect any changes in workflow_server.go
 		o.instanceIDService.Label(wf)
 		creator.Label(o.ctx, wf)
-		util.SubmitWorkflow(o.ctx, o.instanceIDService)
 		err := util.ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: parameters})
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply submit options to workflow: %w", err)

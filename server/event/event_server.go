@@ -21,6 +21,7 @@ import (
 )
 
 type Controller struct {
+	instanceIDService instanceid.Service
 	// use of shared informers allows us to avoid dealing with errors in `ReceiveEvent`
 	workflowTemplateController cache.Controller
 	workflowTemplateKeyLister  cache.KeyLister
@@ -31,7 +32,7 @@ type Controller struct {
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(client *versioned.Clientset, namespace string, instanceIDService instanceid.Service, pipelineSize, workerCount int) *Controller {
+func NewController(client versioned.Interface, namespace string, instanceIDService instanceid.Service, pipelineSize, workerCount int) *Controller {
 	restClient := client.ArgoprojV1alpha1().RESTClient()
 	idRequirement := util.InstanceIDRequirement(instanceIDService.InstanceID())
 
@@ -40,6 +41,7 @@ func NewController(client *versioned.Clientset, namespace string, instanceIDServ
 	})
 
 	return &Controller{
+		instanceIDService:          instanceIDService,
 		workflowTemplateController: workflowTemplateController,
 		workflowTemplateKeyLister:  workflowTemplateKeyLister,
 		//  so we can have N operations outstanding before we start putting back pressure on the senders
@@ -59,10 +61,14 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 		}
 	}
 
+	s.processEvents(stopCh)
+}
+
+func (s *Controller) processEvents(stopCh <-chan struct{}) {
 	// this block of code waits for all events to be processed
 	wg := sync.WaitGroup{}
 
-	for w := 0; w <= s.workerCount; w++ {
+	for w := 0; w < s.workerCount; w++ {
 		go func() {
 			defer wg.Done()
 			for operation := range s.operationPipeline {
@@ -83,7 +89,7 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
 	select {
-	case s.operationPipeline <- dispatch.NewOperation(ctx, s.workflowTemplateKeyLister, req.Event):
+	case s.operationPipeline <- dispatch.NewOperation(ctx, s.instanceIDService, s.workflowTemplateKeyLister, req.Event):
 		return &eventpkg.EventResponse{}, nil
 	default:
 		return nil, errors.NewServiceUnavailable("operation pipeline full")

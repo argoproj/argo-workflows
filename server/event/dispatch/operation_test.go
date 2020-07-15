@@ -69,16 +69,31 @@ func TestOperation(t *testing.T) {
 	t.Run("MatchedExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
-			// note the non-trival expression
-			Spec: wfv1.WorkflowTemplateSpec{Event: &wfv1.Event{Expression: "event.type == \"test\""}},
+			Spec: wfv1.WorkflowTemplateSpec{
+				// note the non-trival expression
+				Event: &wfv1.Event{Expression: "event.type == \"test\""},
+				WorkflowSpec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:      "my-param",
+							ValueFrom: &wfv1.ValueFrom{Expression: "event.type"},
+						},
+					},
+				}},
+			},
 		})
 		assert.NoError(t, err)
 		wf, err := operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
 		if assert.NoError(t, err) && assert.NotNil(t, wf, "workflow created") {
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID, "instance ID labels is applied")
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator, "creator label is applied")
+			parameters := wf.Spec.Arguments.Parameters
+			if assert.Len(t, parameters, 1) {
+				assert.Equal(t, "test", parameters[0].Value.String())
+			}
 		}
 	})
+
 }
 
 func Test_metaData(t *testing.T) {
