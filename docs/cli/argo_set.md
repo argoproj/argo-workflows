@@ -7,7 +7,7 @@ set values to zero or more workflows
 set values to zero or more workflows
 
 ```
-argo set FIELD WORKFLOW SET_TO [flags]
+argo set WORKFLOW FIELD SET_TO [flags]
 ```
 
 ### Examples
@@ -15,11 +15,11 @@ argo set FIELD WORKFLOW SET_TO [flags]
 ```
 # Set outputs to a node within a workflow:
 
-  argo set outputs my-wf '{"parameter-name": "Hello, world!"}' --node-field-selector displayName=approve
+  argo set my-wf outputs parameters parameter-name="Hello, world!" --node-field-selector displayName=approve
 
 # Set the message of a node within a workflow:
 
-  argo set message my-wf 'We did it!' --node-field-selector displayName=approve
+  argo set my-wf message 'We did it!' --node-field-selector displayName=approve
 
 ```
 
