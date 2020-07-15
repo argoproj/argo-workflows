@@ -19,39 +19,38 @@ func newStore() *store {
 	return &store{sync.RWMutex{}, make(map[string]bool)}
 }
 
-func (k *store) GetByKey(key string) (interface{}, bool, error) {
-	k.lock.RLock()
-	defer k.lock.RUnlock()
-	_, exists := k.keys[key]
-	return cache.ExplicitKey(key), exists, nil
-}
-
-func (k *store) Add(obj interface{}) {
-	k.lock.Lock()
-	defer k.lock.Unlock()
+func (s *store) Add(obj interface{}) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		return // error should never happen
 	}
-	k.keys[key] = true
+	s.keys[key] = true
+}
+func (s *store) GetByKey(key string) (interface{}, bool, error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	_, exists := s.keys[key]
+	return cache.ExplicitKey(key), exists, nil
 }
 
-func (k *store) Delete(obj interface{}) {
-	k.lock.Lock()
-	defer k.lock.Unlock()
+func (s *store) ListKeys() []string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	var keys []string
+	for key := range s.keys {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func (s *store) Delete(obj interface{}) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		return // error should never happen
 	}
-	delete(k.keys, key)
-}
-
-func (k *store) ListKeys() []string {
-	k.lock.RLock()
-	defer k.lock.RUnlock()
-	var keys []string
-	for key := range k.keys {
-		keys = append(keys, key)
-	}
-	return keys
+	delete(s.keys, key)
 }
