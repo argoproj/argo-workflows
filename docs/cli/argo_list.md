@@ -22,6 +22,7 @@ argo list [flags]
       --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
   -o, --output string           Output format. One of: wide|name
       --prefix string           Filter workflows by prefix
+      --resubmitted             Show only resubmitted workflows
       --running                 Show only running workflows
   -l, --selector string         Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
       --since string            Show only workflows created after than a relative duration
