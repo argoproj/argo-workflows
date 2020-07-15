@@ -1856,6 +1856,8 @@
 </code></pre></div>
 
 
+<p>!! TIP
+    Create a unique service account for each client: (a) you'll be able to correctly secure your workflows and (b) <a href="#token-revocation">revoke the token</a> without impacting other clients. </p>
 <p>Bind the service account to the role (in this case in the <code>argo</code> namespace):</p>
 <div class="codehilite"><pre><span></span><code>kubectl create rolebinding jenkins --role<span class="o">=</span>jenkins --serviceaccount<span class="o">=</span>argo:jenkins
 </code></pre></div>

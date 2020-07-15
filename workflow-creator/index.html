@@ -1800,10 +1800,24 @@
                 
                 
                 <h1 id="workflow-creator">Workflow Creator<a class="headerlink" href="#workflow-creator" title="Permanent link">&para;</a></h1>
-<p>Today, is not possible for Argo Workflows to determine who created a workflow. </p>
-<p>The recommended approach is to add a label to your workflow, e.g.</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo submit -l creator=alex</span>
+<p><img alt="alpha" src="../assets/alpha.svg" /></p>
+<blockquote>
+<p>v2.9 and after</p>
+</blockquote>
+<p>If you create your workflow via the CLI or UI, an attempt will be made to label it with the user who created it </p>
+<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-wf</span>
+  <span class="nt">labels</span><span class="p">:</span>
+    <span class="nt">workflows.argoproj.io/creator</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">admin</span>
 </code></pre></div>
+
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Labels only contain <code>[-_.0-9a-zA-Z]</code>, so any other characters will be turned into <code>-</code>.</p>
+</div>
                 
                   
                 
