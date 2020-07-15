@@ -1168,8 +1168,6 @@ const (
 	ConditionTypeSpecError ConditionType = "SpecError"
 	// ConditionTypeMetricsError is an error during metric emission
 	ConditionTypeMetricsError ConditionType = "MetricsError"
-	// EventExpressionError is an error evaluating an event expression
-	ConditionTypeEventExpressionError ConditionType = "EventExpressionError"
 )
 
 type Condition struct {

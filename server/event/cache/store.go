@@ -30,18 +30,20 @@ func (k *store) Add(obj interface{}) {
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err == nil { // error should never happen
-		k.keys[key] = true
+	if err != nil {
+		return // error should never happen
 	}
+	k.keys[key] = true
 }
 
 func (k *store) Delete(obj interface{}) {
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err == nil { // error should never happen
-		delete(k.keys, key)
+	if err != nil {
+		return // error should never happen
 	}
+	delete(k.keys, key)
 }
 
 func (k *store) ListKeys() []string {

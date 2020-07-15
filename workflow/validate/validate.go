@@ -283,6 +283,12 @@ func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) er
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
+	if wftmpl.Spec.Event != nil {
+		_, err := expr.Compile(wftmpl.Spec.Event.Expression)
+		if err != nil {
+			return nil, fmt.Errorf("malformed event expression: %w", err)
+		}
+	}
 	wf := &wfv1.Workflow{
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
@@ -427,8 +433,6 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		err = ctx.validateSteps(scope, tmplCtx, newTmpl)
 	case wfv1.TemplateTypeDAG:
 		err = ctx.validateDAG(scope, tmplCtx, newTmpl)
-	case wfv1.TemplateTypeSuspend:
-		err = ctx.validateSuspend(scope, newTmpl)
 	default:
 		err = ctx.validateLeaf(scope, newTmpl)
 	}
@@ -732,17 +736,6 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executor.serviceAccountName must not be empty if automountServiceAccountToken is false", tmpl.Name)
 	}
 	return nil
-}
-
-func (ctx *templateValidationCtx) validateSuspend(scope map[string]interface{}, tmpl *wfv1.Template) error {
-	if tmpl.Suspend.Event != nil {
-		expression := tmpl.Suspend.Event.Expression
-		_, err := expr.Compile(expression)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.suspend.event.expression \"%s\": %v", tmpl.Name, expression, err)
-		}
-	}
-	return ctx.validateLeaf(scope, tmpl)
 }
 
 func validateArguments(prefix string, arguments wfv1.Arguments) error {

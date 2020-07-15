@@ -157,7 +157,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
-	eventServer := event.NewController(as.wfClientSet, as.managedNamespace, instanceIDService, hydrator.New(offloadRepo), as.eventPipelineSize, as.eventWorkerCount)
+	eventServer := event.NewController(as.wfClientSet, as.managedNamespace, instanceIDService, as.eventPipelineSize, as.eventWorkerCount)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 

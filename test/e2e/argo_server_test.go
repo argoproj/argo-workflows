@@ -102,64 +102,6 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestSuspendEvent() {
-	s.Given().
-		Workflow(`
-metadata:
-  name: event-consumer
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-      - - name: a
-          template: consume-event
-          arguments:
-            parameters:
-            - name: type
-              value: test
-
-    - name: consume-event
-      inputs:
-        parameters:
-          - name: type
-      suspend:
-        event:
-          expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.type == inputs.parameters[0].value
-      outputs:
-        parameters:
-          - name: eventType
-            valueFrom: 
-              expression: event.type
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflowToStart(10 * time.Second).
-		And(func() {
-			s.e().
-				POST("/api/v1/events/argo").
-				WithBytes([]byte(`{"type": "test"}`)).
-				Expect().
-				Status(200)
-		}).
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			node := status.Nodes.FindByDisplayName("a")
-			if assert.NotNil(t, node) {
-				if assert.NotNil(t, node.Outputs) {
-					parameters := node.Outputs.Parameters
-					if assert.Len(t, parameters, 1) {
-						assert.Equal(t, "test", parameters[0].Value.String())
-					}
-				}
-			}
-		})
-}
-
 func (s *ArgoServerSuite) TestEventTemplate() {
 	s.Given().
 		WorkflowTemplate(`
@@ -169,7 +111,7 @@ metadata:
     argo-e2e: true
 spec:
   event:
-    expression: event.message != "" && metadata["x-argo-e2e"] == ["true"]
+    expression: metadata.claimSet.sub == "admin" && event.message != "" && metadata["x-argo-e2e"] == ["true"]
   entrypoint: main
   arguments:
     parameters:
