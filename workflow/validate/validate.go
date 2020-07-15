@@ -102,7 +102,6 @@ var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
 	"Volumes":               true,
 	"VolumeClaimTemplates":  true,
 	"NodeSelector":          true,
-	"OnExit":                true,
 	"PodGC":                 true,
 	"ServiceAccountName":    true,
 }
