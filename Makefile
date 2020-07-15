@@ -23,38 +23,14 @@ IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
-# The rules for what version are, in order of precedence
-# 1. If anything passed at the command line (e.g. make release VERSION=...)
-# 2. If on master, it must be "latest".
-# 3. If on tag, must be tag.
-# 4. If on a release branch, the most recent tag that contain the major minor on that branch,
-# 5. Otherwise, the branch.
-#
-VERSION := $(subst /,-,$(GIT_BRANCH))
+VERSION               := latest
+DEV_IMAGE             := true
 
-ifeq ($(GIT_BRANCH),master)
-VERSION := latest
-endif
-
-ifeq ($(VERSION),)
-VERSION := unknown
-endif
-
-# MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
+# VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
 # we assume HEAD means you are on a tag
-ifeq ($(GIT_BRANCH),HEAD)
-VERSION               := $(GIT_TAG)
-MANIFESTS_VERSION     := $(VERSION)
-DEV_IMAGE             := false
-else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 VERSION               := $(shell git tag|grep ^v|sort -d|tail -n1)
-MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
-else
-MANIFESTS_VERSION     := latest
-DEV_IMAGE             := true
-endif
 endif
 
 # If we are building dev images, then we want to use the Docker cache for speed.
@@ -64,11 +40,9 @@ DOCKERFILE            := Dockerfile.dev
 endif
 
 # version change, so does the file location
-MANIFESTS_VERSION_FILE := dist/$(MANIFESTS_VERSION).manifests-version
-VERSION_FILE           := dist/$(VERSION).version
-CLI_IMAGE_FILE         := dist/cli-image.$(VERSION)
-EXECUTOR_IMAGE_FILE    := dist/executor-image.$(VERSION)
-CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
+CLI_IMAGE_FILE         := dist/cli-image.marker
+EXECUTOR_IMAGE_FILE    := dist/executor-image.marker
+CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -153,7 +127,7 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), MANIFESTS_VERSION=$(MANIFESTS_VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
 
 # cli
 
@@ -299,14 +273,9 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
-# we use a different file to ./VERSION to force updating manifests after a `make clean`
-$(MANIFESTS_VERSION_FILE):
-	@mkdir -p dist
-	touch $(MANIFESTS_VERSION_FILE)
-
 .PHONY: manifests
 manifests: crds
-	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
+	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
@@ -345,12 +314,8 @@ $(GOPATH)/bin/go-junit-report:
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
-$(VERSION_FILE):
-	@mkdir -p dist
-	touch $(VERSION_FILE)
-
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
+dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
+	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
 .PHONY: install
 install: dist/$(PROFILE).yaml
@@ -478,8 +443,8 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
 	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
 
-dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	cat dist/mixed.swagger.json | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
+dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
+	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
 	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
