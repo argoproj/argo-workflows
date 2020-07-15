@@ -12,7 +12,7 @@ import (
 func TestLabel(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		obj := &wfv1.Workflow{}
-		Label(obj, "foo", "")
+		Label(obj, "foo")
 		assert.Empty(t, obj.Labels)
 	})
 	t.Run("One", func(t *testing.T) {
@@ -21,27 +21,33 @@ func TestLabel(t *testing.T) {
 		assert.Len(t, obj.Labels, 1)
 		assert.Equal(t, "bar", obj.Labels["foo"])
 	})
+	t.Run("Two", func(t *testing.T) {
+		obj := &wfv1.Workflow{}
+		Label(obj, "foo", "bar", "baz")
+		assert.Len(t, obj.Labels, 1)
+		assert.Equal(t, "bar", obj.Labels["foo"])
+	})
 }
 
 func TestUnLabel(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		obj := &wfv1.Workflow{}
-		Label(obj, "foo", "")
+		UnLabel(obj, "foo")
 		assert.Empty(t, obj.Labels)
 	})
 	t.Run("Empty", func(t *testing.T) {
 		obj := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}}
-		Label(obj, "foo", "")
+		UnLabel(obj, "foo")
 		assert.Empty(t, obj.Labels)
 	})
 	t.Run("One", func(t *testing.T) {
 		obj := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"foo": ""}}}
-		Label(obj, "foo", "")
+		UnLabel(obj, "foo")
 		assert.Empty(t, obj.Labels)
 	})
 	t.Run("Two", func(t *testing.T) {
 		obj := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"bar": ""}}}
-		Label(obj, "foo", "")
+		UnLabel(obj, "foo")
 		assert.Len(t, obj.Labels, 1)
 		assert.Contains(t, obj.Labels, "bar")
 	})
