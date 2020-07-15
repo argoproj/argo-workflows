@@ -36,6 +36,10 @@ ifeq ($(GIT_BRANCH),master)
 VERSION := latest
 endif
 
+ifeq ($(VERSION),)
+VERSION := unknown
+endif
+
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(GIT_BRANCH),HEAD)
