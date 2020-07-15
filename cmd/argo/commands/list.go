@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"os"
 	"sort"
 	"strings"
@@ -21,106 +22,122 @@ import (
 )
 
 type listFlags struct {
-	allNamespaces bool     // --all-namespaces
-	status        []string // --status
-	completed     bool     // --completed
-	running       bool     // --running
-	prefix        string   // --prefix
-	output        string   // --output
-	since         string   // --since
-	chunkSize     int64    // --chunk-size
-	noHeaders     bool     // --no-headers
+	namespace     string
+	status        []string
+	completed     bool
+	running       bool
+	resubmitted   bool
+	prefix        string
+	output        string
+	createdSince  string
+	finishedAfter string
+	chunkSize     int64
+	noHeaders     bool
+	labels        string
+	fields        string
 }
 
 func NewListCommand() *cobra.Command {
 	var (
-		listArgs listFlags
+		listArgs      listFlags
+		allNamespaces bool
 	)
 	var command = &cobra.Command{
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			listOpts := &metav1.ListOptions{
-				Limit: listArgs.chunkSize,
-			}
-			labelSelector := labels.NewSelector()
-			if len(listArgs.status) != 0 {
-				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
-				if req != nil {
-					labelSelector = labelSelector.Add(*req)
-				}
-			}
-			if listArgs.completed {
-				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
-				labelSelector = labelSelector.Add(*req)
-			}
-			if listArgs.running {
-				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
-				labelSelector = labelSelector.Add(*req)
-			}
-			listOpts.LabelSelector = labelSelector.String()
-
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
-			if listArgs.allNamespaces {
-				namespace = ""
+			if !allNamespaces {
+				listArgs.namespace = client.Namespace()
 			}
-
-			var tmpWorkFlows []wfv1.Workflow
-			for {
-				log.WithField("listOpts", listOpts).Debug()
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace, ListOptions: listOpts})
-				errors.CheckError(err)
-				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
-				if wfList.Continue == "" {
-					break
-				}
-				listOpts.Continue = wfList.Continue
-			}
-
-			var tmpWorkFlowsSelected []wfv1.Workflow
-			if listArgs.prefix == "" {
-				tmpWorkFlowsSelected = tmpWorkFlows
-			} else {
-				tmpWorkFlowsSelected = make([]wfv1.Workflow, 0)
-				for _, wf := range tmpWorkFlows {
-					if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.prefix) {
-						tmpWorkFlowsSelected = append(tmpWorkFlowsSelected, wf)
-					}
-				}
-			}
-
-			var workflows wfv1.Workflows
-			if listArgs.since == "" {
-				workflows = tmpWorkFlowsSelected
-			} else {
-				workflows = make(wfv1.Workflows, 0)
-				minTime, err := argotime.ParseSince(listArgs.since)
-				errors.CheckError(err)
-				for _, wf := range tmpWorkFlowsSelected {
-					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
-						workflows = append(workflows, wf)
-					}
-				}
-			}
-			sort.Sort(workflows)
-			err := printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
+			workflows, err := listWorkflows(ctx, serviceClient, listArgs)
+			errors.CheckError(err)
+			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
 				NoHeaders: listArgs.noHeaders,
-				Namespace: listArgs.allNamespaces,
+				Namespace: allNamespaces,
 				Output:    listArgs.output,
 			})
 			errors.CheckError(err)
 		},
 	}
-	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	command.Flags().BoolVar(&allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
+	command.Flags().StringVar(&listArgs.finishedAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
+	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show only resubmitted workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
-	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
+	command.Flags().StringVar(&listArgs.createdSince, "since", "", "Show only workflows created after than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
+	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	command.Flags().StringVar(&listArgs.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	return command
+}
+
+func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, flags listFlags) (wfv1.Workflows, error) {
+	listOpts := &metav1.ListOptions{
+		Limit: flags.chunkSize,
+	}
+	labelSelector, err := labels.Parse(flags.labels)
+	errors.CheckError(err)
+	if len(flags.status) != 0 {
+		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, flags.status)
+		if req != nil {
+			labelSelector = labelSelector.Add(*req)
+		}
+	}
+	if flags.completed {
+		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
+		labelSelector = labelSelector.Add(*req)
+	}
+	if flags.running {
+		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
+		labelSelector = labelSelector.Add(*req)
+	}
+	if flags.resubmitted {
+		req, _ := labels.NewRequirement(common.LabelKeyPreviousWorkflowName, selection.Exists, []string{})
+		labelSelector = labelSelector.Add(*req)
+	}
+	listOpts.LabelSelector = labelSelector.String()
+	listOpts.FieldSelector = flags.fields
+	var workflows wfv1.Workflows
+	for {
+		log.WithField("listOpts", listOpts).Debug()
+		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: flags.namespace, ListOptions: listOpts})
+		if err != nil {
+			return nil, err
+		}
+		workflows = append(workflows, wfList.Items...)
+		if wfList.Continue == "" {
+			break
+		}
+		listOpts.Continue = wfList.Continue
+	}
+	workflows = workflows.
+		Filter(func(wf wfv1.Workflow) bool {
+			return strings.HasPrefix(wf.ObjectMeta.Name, flags.prefix)
+		})
+	if flags.createdSince != "" && flags.finishedAfter != "" {
+		startTime, err := argotime.ParseSince(flags.createdSince)
+		errors.CheckError(err)
+		endTime, err := argotime.ParseSince(flags.finishedAfter)
+		errors.CheckError(err)
+		workflows = workflows.Filter(wfv1.WorkflowRanBetween(*startTime, *endTime))
+	} else {
+		if flags.createdSince != "" {
+			t, err := argotime.ParseSince(flags.createdSince)
+			errors.CheckError(err)
+			workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
+		}
+		if flags.finishedAfter != "" {
+			t, err := argotime.ParseSince(flags.finishedAfter)
+			errors.CheckError(err)
+			workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
+		}
+	}
+	sort.Sort(workflows)
+	return workflows, nil
 }

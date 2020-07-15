@@ -6,6 +6,7 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: whalesay-template
+  onExit: on-exit
   arguments:
     parameters:
       - name: message
@@ -18,4 +19,9 @@ spec:
       container:
         image: argoproj/argosay:v2
         args: ["echo", "{{inputs.parameters.message}}"]
+        imagePullPolicy: IfNotPresent
+    - name: on-exit
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "Exit Handler"]
         imagePullPolicy: IfNotPresent

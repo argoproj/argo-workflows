@@ -4,15 +4,15 @@ import (
 	"testing"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -110,14 +110,245 @@ status:
   startedAt: 2018-08-27T20:41:38Z
 `
 
+var wftRefWithTTLinWFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-16T00:57:45Z"
+  generateName: workflow-template-hello-world-
+  generation: 6
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: workflow-template-hello-world-k4d26
+  namespace: default
+  resourceVersion: "564446"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/workflow-template-hello-world-k4d26
+  uid: e25cce2d-c71d-4f4e-b016-a0a2e10bf4d1
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+  entrypoint: start
+  templates: null
+  workflowTemplateRef:
+    name: workflow-template-submittable-2.9
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-06-16T00:57:51Z"
+  nodes:
+    workflow-template-hello-world-k4d26:
+      displayName: workflow-template-hello-world-k4d26
+      finishedAt: "2020-06-16T00:57:49Z"
+      hostNodeName: docker-desktop
+      id: workflow-template-hello-world-k4d26
+      inputs:
+        parameters:
+        - name: message
+          value: hello world
+      name: workflow-template-hello-world-k4d26
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: workflow-template-hello-world-k4d26/workflow-template-hello-world-k4d26/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-06-16T00:57:45Z"
+      templateRef:
+        name: workflow-template-submittable-2.9
+        template: start
+      templateScope: local/workflow-template-hello-world-k4d26
+      type: Pod
+  phase: Succeeded
+  resourcesDuration:
+    cpu: 3
+    memory: 1
+  startedAt: "2020-06-16T00:57:45Z"
+  storedTemplates:
+    namespaced/workflow-template-submittable-2.9/start:
+      arguments: {}
+      container:
+        args:
+        - '{{inputs.parameters.message}}'
+        command:
+        - echo
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: message
+      metadata: {}
+      name: start
+      outputs: {}
+  storedWorkflowTemplateSpec:
+    arguments:
+      parameters:
+      - name: message
+        value: hello world
+    entrypoint: start
+    templates:
+    - arguments: {}
+      container:
+        args:
+        - '{{inputs.parameters.message}}'
+        command:
+        - echo
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: message
+      metadata: {}
+      name: start
+      outputs: {}
+    ttlStrategy:
+      secondsAfterCompletion: 10
+`
+var wftRefWithTTLinWF = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-16T01:00:14Z"
+  generateName: workflow-template-hello-world-
+  generation: 6
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: workflow-template-hello-world-jdkdw
+  namespace: default
+  resourceVersion: "564728"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/workflow-template-hello-world-jdkdw
+  uid: 57dac176-2e10-4f1d-b77c-db321d187d83
+spec:
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+  entrypoint: start
+  templates: null
+  ttlStrategy:
+    secondsAfterCompletion: 10
+  workflowTemplateRef:
+    name: workflow-template-submittable-2.9
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-06-16T01:00:19Z"
+  nodes:
+    workflow-template-hello-world-jdkdw:
+      displayName: workflow-template-hello-world-jdkdw
+      finishedAt: "2020-06-16T01:00:17Z"
+      hostNodeName: docker-desktop
+      id: workflow-template-hello-world-jdkdw
+      inputs:
+        parameters:
+        - name: message
+          value: hello world
+      name: workflow-template-hello-world-jdkdw
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: workflow-template-hello-world-jdkdw/workflow-template-hello-world-jdkdw/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-06-16T01:00:14Z"
+      templateRef:
+        name: workflow-template-submittable-2.9
+        template: start
+      templateScope: local/workflow-template-hello-world-jdkdw
+      type: Pod
+  phase: Succeeded
+  resourcesDuration:
+    cpu: 2
+    memory: 1
+  startedAt: "2020-06-16T01:00:14Z"
+  storedTemplates:
+    namespaced/workflow-template-submittable-2.9/start:
+      arguments: {}
+      container:
+        args:
+        - '{{inputs.parameters.message}}'
+        command:
+        - echo
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: message
+      metadata: {}
+      name: start
+      outputs: {}
+  storedWorkflowTemplateSpec:
+    arguments:
+      parameters:
+      - name: message
+        value: hello world
+    entrypoint: start
+    templates:
+    - arguments: {}
+      container:
+        args:
+        - '{{inputs.parameters.message}}'
+        command:
+        - echo
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs:
+        parameters:
+        - name: message
+      metadata: {}
+      name: start
+      outputs: {}
+    ttlStrategy:
+      secondsAfterCompletion: 60
+`
+
 func newTTLController() *Controller {
 	clock := clock.NewFakeClock(time.Now())
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	return &Controller{
-		wfclientset: fakewfclientset.NewSimpleClientset(),
-		//wfInformer:   informer,
+		wfclientset:  wfclientset,
+		wfInformer:   wfInformer,
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
-		workqueue:    workqueue.NewNamedDelayingQueue("workflow-ttl"),
+		workqueue:    workqueue.NewDelayingQueue(),
 	}
 }
 
@@ -174,6 +405,26 @@ func TestTTLStrategySucceded(t *testing.T) {
 	un, err = util.ToUnstructured(wf1)
 	assert.NoError(t, err)
 	controller.enqueueWF(un)
+	assert.Equal(t, 1, controller.workqueue.Len())
+
+	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
+	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	un, err = util.ToUnstructured(wf2)
+	assert.NoError(t, err)
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf2)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	controller.processNextWorkItem()
+	assert.Equal(t, 1, controller.workqueue.Len())
+
+	wf3 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
+	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	un, err = util.ToUnstructured(wf3)
+	assert.NoError(t, err)
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows("default").Create(wf3)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	controller.processNextWorkItem()
 	assert.Equal(t, 1, controller.workqueue.Len())
 
 }
@@ -344,4 +595,33 @@ func TestTTLlExpired(t *testing.T) {
 	wf6.Spec.TTLStrategy = &wfv1.TTLStrategy{SecondsAfterSuccess: &ten}
 	wf6.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	assert.Equal(t, true, controller.ttlExpired(wf6))
+}
+
+func TestGetTTLStrategy(t *testing.T) {
+	var ten int32 = 10
+	wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
+		SecondsAfterCompletion: &ten,
+	}
+
+	ttl := getTTLStrategy(wf)
+	assert.NotNil(t, ttl)
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
+	ttl = getTTLStrategy(wf1)
+	assert.NotNil(t, ttl)
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	wf1.Spec.TTLStrategy = nil
+	wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
+	ttl = getTTLStrategy(wf1)
+	assert.Nil(t, ttl)
+
+	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
+	ttl = getTTLStrategy(wf2)
+	assert.NotNil(t, ttl)
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
+	ttl = getTTLStrategy(wf2)
+	assert.Nil(t, ttl)
 }

@@ -1,14 +1,13 @@
 import {Duration, Tabs, Ticker} from 'argo-ui';
-import * as classNames from 'classnames';
 import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
-import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
 
@@ -46,11 +45,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         {title: 'TYPE', value: props.node.type},
         {
             title: 'PHASE',
-            value: (
-                <span>
-                    <i className={classNames('fa', Utils.statusIconClasses(props.node.phase))} aria-hidden='true' /> {props.node.phase}
-                </span>
-            )
+            value: <Phase value={props.node.phase} />
         },
         ...(props.node.message
             ? [
@@ -127,7 +122,7 @@ export const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
                 ]}
                 {artifacts.length > 0 && [
                     <div className='row white-box__details-row' key='title'>
-                        <p>Artifacts</p>
+                        <p>Input Artifacts</p>
                     </div>,
                     <AttributeRows key='attrs' attributes={artifacts} />
                 ]}
@@ -146,18 +141,19 @@ export const WorkflowNodeContainer = (props: {
     onShowContainerLogs: (nodeId: string, container: string) => any;
 }) => {
     const container = {name: 'main', args: Array<string>(), source: '', ...props.container};
+    const maybeQuote = (v: string) => (v.includes(' ') ? `'${v}'` : v);
     const attributes = [
         {title: 'NAME', value: container.name || 'main'},
         {title: 'IMAGE', value: container.image},
         {
             title: 'COMMAND',
-            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</pre>
+            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).map(maybeQuote).join(' ')}</pre>
         },
         container.source
             ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
                   title: 'ARGS',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</pre>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).map(maybeQuote).join(' ')}</pre>
               },
         hasEnv(container)
             ? {
@@ -238,7 +234,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
             )}
             {artifacts.length > 0 && props.archived && (
                 <p>
-                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows maybe be overwritten by a more recent workflow with the same name.
+                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows may be overwritten by a more recent workflow with the same name.
                 </p>
             )}
             {artifacts.map(artifact => (
@@ -291,7 +287,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: <WorkflowNodeContainers {...props} />
                 },
                 {
-                    title: 'ARTIFACTS',
+                    title: 'OUTPUT ARTIFACTS',
                     key: 'artifacts',
                     content: <WorkflowNodeArtifacts {...props} />
                 }

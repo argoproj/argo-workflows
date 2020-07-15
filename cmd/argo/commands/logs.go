@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -46,6 +47,8 @@ func NewLogsCommand() *cobra.Command {
 
   argo logs --since=1h my-pod
 
+# Print the logs of the latest workflow:
+  argo logs @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 
@@ -84,32 +87,37 @@ func NewLogsCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			// logs
-			stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
-				Name:       workflow,
-				Namespace:  namespace,
-				PodName:    podName,
-				LogOptions: logOptions,
-			})
-			errors.CheckError(err)
-
-			// loop on log lines
-			for {
-				event, err := stream.Recv()
-				if err == io.EOF {
-					return
-				}
-				errors.CheckError(err)
-				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
-			}
+			logWorkflow(ctx, serviceClient, namespace, workflow, podName, logOptions)
 		},
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")
 	command.Flags().BoolVarP(&logOptions.Follow, "follow", "f", false, "Specify if the logs should be streamed.")
+	command.Flags().BoolVarP(&logOptions.Previous, "previous", "p", false, "Specify if the previously terminated container logs should be returned.")
 	command.Flags().DurationVar(&since, "since", 0, "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().StringVar(&sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().Int64Var(&tailLines, "tail", -1, "If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime")
 	command.Flags().BoolVar(&logOptions.Timestamps, "timestamps", false, "Include timestamps on each line in the log output")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	return command
+}
+
+func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName string, logOptions *corev1.PodLogOptions) {
+	// logs
+	stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
+		Name:       workflow,
+		Namespace:  namespace,
+		PodName:    podName,
+		LogOptions: logOptions,
+	})
+	errors.CheckError(err)
+
+	// loop on log lines
+	for {
+		event, err := stream.Recv()
+		if err == io.EOF {
+			return
+		}
+		errors.CheckError(err)
+		fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
+	}
 }

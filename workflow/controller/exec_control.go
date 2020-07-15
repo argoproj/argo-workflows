@@ -26,9 +26,10 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
-		if woc.wf.Spec.Shutdown != "" {
+		if woc.wfSpec.Shutdown != "" {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
+
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
@@ -36,7 +37,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
 					node := woc.wf.Status.Nodes[pod.Name]
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.wf.Spec.Shutdown))
+					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.wfSpec.Shutdown))
 					return nil
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
@@ -55,7 +56,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
 					node := woc.wf.Status.Nodes[pod.Name]
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline))
+					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("Step exceeded its deadline"))
 					return nil
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
@@ -72,30 +73,23 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		}
 	}
 
-	var newDeadline *time.Time
 	if woc.wf.Spec.Shutdown != "" {
-		_, onExitPod := pod.Labels[common.LabelKeyOnExit]
-		if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
-			newDeadline = &time.Time{}
+		if _, onExitPod := pod.Labels[common.LabelKeyOnExit]; !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
+			podExecCtl.Deadline = &time.Time{}
+			woc.log.Infof("Applying shutdown deadline for pod %s", pod.Name)
+			return woc.updateExecutionControl(pod.Name, podExecCtl)
 		}
-	} else {
-		if podExecCtl.Deadline == nil && woc.workflowDeadline == nil {
-			return nil
-		} else if podExecCtl.Deadline != nil && woc.workflowDeadline != nil && podExecCtl.Deadline.Equal(*woc.workflowDeadline) {
-			return nil
-		} else if podExecCtl.Deadline != nil && podExecCtl.Deadline.IsZero() {
-			// If the pod has already been explicitly signaled to terminate, then do nothing.
-			// This can happen when daemon steps are terminated.
-			woc.log.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
-			return nil
-		}
-		newDeadline = woc.workflowDeadline
 	}
-	// Assign new deadline value to PodExeCtl
-	podExecCtl.Deadline = newDeadline
 
-	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, woc.workflowDeadline, podExecCtl.Deadline)
-	return woc.updateExecutionControl(pod.Name, podExecCtl)
+	if woc.workflowDeadline != nil {
+		if podExecCtl.Deadline == nil || woc.workflowDeadline.Before(*podExecCtl.Deadline) {
+			podExecCtl.Deadline = woc.workflowDeadline
+			woc.log.Infof("Applying sooner Workflow Deadline for pod %s at: %v", pod.Name, woc.workflowDeadline)
+			return woc.updateExecutionControl(pod.Name, podExecCtl)
+		}
+	}
+
+	return nil
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,19 +13,43 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	argoutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/printer"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 const onExitSuffix = "onExit"
 
 type getFlags struct {
-	output string
+	output                  string
+	nodeFieldSelectorString string
+
+	// Only used for backwards compatibility
 	status string
+}
+
+func (g getFlags) shouldPrint(node wfv1.NodeStatus) bool {
+	if g.status != "" {
+		// Adapt --status to a node field selector for compatibility
+		if g.nodeFieldSelectorString != "" {
+			log.Fatalf("cannot use both --status and --node-field-selector")
+		}
+		g.nodeFieldSelectorString = statusToNodeFieldSelector(g.status)
+	}
+	if g.nodeFieldSelectorString != "" {
+		selector, err := fields.ParseSelector(g.nodeFieldSelectorString)
+		if err != nil {
+			log.Fatalf("selector is invalid: %s", err)
+		}
+		return util.SelectorMatchesNode(selector, node)
+	}
+	return true
 }
 
 func NewGetCommand() *cobra.Command {
@@ -35,6 +60,13 @@ func NewGetCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
+		Example: `# Get information about a workflow:
+
+  argo get my-wf
+
+# Get the latest workflow:
+  argo get @latest
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -49,7 +81,7 @@ func NewGetCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				errors.CheckError(err)
-				outputWorkflow(wf, getArgs)
+				printWorkflow(wf, getArgs)
 			}
 		},
 	}
@@ -57,18 +89,15 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
 }
 
-func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
-	printWorkflow(wf, getArgs.output, getArgs.status)
+func statusToNodeFieldSelector(status string) string {
+	return fmt.Sprintf("phase=%s", status)
 }
 
-func printWorkflow(wf *wfv1.Workflow, output, status string) {
-	getArgs := getFlags{
-		output: output,
-		status: status,
-	}
+func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
 	switch getArgs.output {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -79,74 +108,66 @@ func printWorkflow(wf *wfv1.Workflow, output, status string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printWorkflowHelper(wf, getArgs)
+		fmt.Print(printWorkflowHelper(wf, getArgs))
 	default:
 		log.Fatalf("Unknown output format: %s", getArgs.output)
 	}
 }
 
-func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
+func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	const fmtStr = "%-20s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
+	out := ""
+	out += fmt.Sprintf(fmtStr, "Name:", wf.ObjectMeta.Name)
+	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	serviceAccount := wf.Spec.ServiceAccountName
 	if serviceAccount == "" {
 		serviceAccount = "default"
 	}
-	fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
-	fmt.Printf(fmtStr, "Status:", printer.WorkflowStatus(wf))
+	out += fmt.Sprintf(fmtStr, "ServiceAccount:", serviceAccount)
+	out += fmt.Sprintf(fmtStr, "Status:", printer.WorkflowStatus(wf))
 	if wf.Status.Message != "" {
-		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
+		out += fmt.Sprintf(fmtStr, "Message:", wf.Status.Message)
 	}
 	if len(wf.Status.Conditions) > 0 {
-		fmt.Printf(fmtStr, "Conditions:", "")
-		for _, condition := range wf.Status.Conditions {
-			conditionMessage := condition.Message
-			if conditionMessage == "" {
-				conditionMessage = string(condition.Status)
-			}
-			conditionPrefix := fmt.Sprintf("%s %s", workflowConditionIconMap[condition.Type], string(condition.Type))
-			fmt.Printf(fmtStr, conditionPrefix, conditionMessage)
-		}
+		out += wf.Status.Conditions.DisplayString(fmtStr, workflowConditionIconMap)
 	}
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
-		fmt.Printf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
+		out += fmt.Sprintf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
 	}
 	if !wf.Status.FinishedAt.IsZero() {
-		fmt.Printf(fmtStr, "Finished:", humanize.Timestamp(wf.Status.FinishedAt.Time))
+		out += fmt.Sprintf(fmtStr, "Finished:", humanize.Timestamp(wf.Status.FinishedAt.Time))
 	}
 	if !wf.Status.StartedAt.IsZero() {
-		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
+		out += fmt.Sprintf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
 	if !wf.Status.ResourcesDuration.IsZero() {
-		fmt.Printf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
+		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
 
 	if len(wf.Spec.Arguments.Parameters) > 0 {
-		fmt.Printf(fmtStr, "Parameters:", "")
+		out += fmt.Sprintf(fmtStr, "Parameters:", "")
 		for _, param := range wf.Spec.Arguments.Parameters {
 			if param.Value == nil {
 				continue
 			}
-			fmt.Printf(fmtStr, "  "+param.Name+":", *param.Value)
+			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", *param.Value)
 		}
 	}
 	if wf.Status.Outputs != nil {
-		//fmt.Printf(fmtStr, "Outputs:", "")
 		if len(wf.Status.Outputs.Parameters) > 0 {
-			fmt.Printf(fmtStr, "Output Parameters:", "")
+			out += fmt.Sprintf(fmtStr, "Output Parameters:", "")
 			for _, param := range wf.Status.Outputs.Parameters {
-				fmt.Printf(fmtStr, "  "+param.Name+":", *param.Value)
+				out += fmt.Sprintf(fmtStr, "  "+param.Name+":", *param.Value)
 			}
 		}
 		if len(wf.Status.Outputs.Artifacts) > 0 {
-			fmt.Printf(fmtStr, "Output Artifacts:", "")
+			out += fmt.Sprintf(fmtStr, "Output Artifacts:", "")
 			for _, art := range wf.Status.Outputs.Artifacts {
 				if art.S3 != nil {
-					fmt.Printf(fmtStr, "  "+art.Name+":", art.S3.String())
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.S3.String())
 				} else if art.Artifactory != nil {
-					fmt.Printf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
+					out += fmt.Sprintf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
 				}
 			}
 		}
@@ -158,8 +179,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		printTree = false
 	}
 	if printTree {
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Println()
+		writerBuffer := new(bytes.Buffer)
+		w := tabwriter.NewWriter(writerBuffer, 0, 0, 2, ' ', 0)
+		out += "\n"
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
@@ -183,7 +205,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 			onExitRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 		}
 		_ = w.Flush()
+		out += writerBuffer.String()
 	}
+	return out
 }
 
 type nodeInfoInterface interface {
@@ -257,8 +281,19 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 			// get some consistent printing
 			insertName := item.getNodeStatus(wf).DisplayName
 			equalName := existingItem.getNodeStatus(wf).DisplayName
-			if insertName < equalName {
-				break
+
+			// If they are both elements of a list (e.g. withParams, withSequence, etc.) order by index number instead of
+			// alphabetical order
+			insertIndex := argoutil.RecoverIndexFromNodeName(insertName)
+			equalIndex := argoutil.RecoverIndexFromNodeName(equalName)
+			if insertIndex >= 0 && equalIndex >= 0 {
+				if insertIndex < equalIndex {
+					break
+				}
+			} else {
+				if insertName < equalName {
+					break
+				}
 			}
 		}
 	}
@@ -387,11 +422,15 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 // two things. First argument tells if the node is filtered and second argument
 // tells whether the children need special indentation due to filtering
 // Return Values: (is node filtered, do children need special indent)
-func filterNode(node wfv1.NodeStatus) (bool, bool) {
+func filterNode(node wfv1.NodeStatus, getArgs getFlags) (bool, bool) {
 	if node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1 {
 		return true, false
 	} else if node.Type == wfv1.NodeTypeStepGroup {
 		return true, true
+	} else if node.Type == wfv1.NodeTypeSkipped && node.Phase == wfv1.NodeOmitted {
+		return true, false
+	} else if !getArgs.shouldPrint(node) {
+		return true, false
 	}
 	return false, false
 }
@@ -443,9 +482,6 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if getArgs.status != "" && string(node.Phase) != getArgs.status {
-		return
-	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
 		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
@@ -480,7 +516,7 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 // renderNodes for each renderNode Type
 // boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
-	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
@@ -493,7 +529,7 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 
 // nonBoundaryParentNode
 func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
-	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
@@ -506,7 +542,7 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 
 // executionNode
 func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, _ int, nodePrefix string, _ string, getArgs getFlags) {
-	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}

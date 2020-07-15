@@ -10,9 +10,15 @@ import "k8s.io/api/policy/v1beta1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
+import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 
 // Package-wide variables from generator "generated".
 option go_package = "v1alpha1";
+
+// Amount represent a numeric amount.
+message Amount {
+  optional bytes value = 1;
+}
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
 message ArchiveStrategy {
@@ -135,6 +141,7 @@ message Backoff {
 // +genclient
 // +genclient:noStatus
 // +genclient:nonNamespaced
+// +kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message ClusterWorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -148,6 +155,17 @@ message ClusterWorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated ClusterWorkflowTemplate items = 2;
+}
+
+message Condition {
+  // Type is the type of condition
+  optional string type = 1;
+
+  // Status is the status of the condition
+  optional string status = 2;
+
+  // Message is the condition message
+  optional string message = 3;
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
@@ -169,6 +187,7 @@ message Counter {
 // CronWorkflow is the definition of a scheduled workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=cwf;cronwf
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message CronWorkflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -224,6 +243,9 @@ message CronWorkflowStatus {
 
   // LastScheduleTime is the last time the CronWorkflow was scheduled
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
+
+  // Conditions is a list of conditions the CronWorkflow may have
+  repeated Condition conditions = 3;
 }
 
 // DAGTask represents a node in the graph during DAG execution
@@ -264,6 +286,9 @@ message DAGTask {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+
+  // Depends are name of other targets which this depends on
+  optional string depends = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -407,7 +432,13 @@ message Histogram {
   optional string value = 3;
 
   // Buckets is a list of bucket divisors for the histogram
-  repeated double buckets = 4;
+  repeated Amount buckets = 4;
+}
+
+message HolderNames {
+  // Name stores the name of the resource holding lock
+  // +listType=atomic
+  repeated string name = 1;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -430,34 +461,7 @@ message Inputs {
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
 message Item {
-  optional int64 type = 1;
-
-  optional string numVal = 2;
-
-  optional bool boolVal = 3;
-
-  optional string strVal = 4;
-
-  map<string, ItemValue> mapVal = 5;
-
-  repeated ItemValue listVal = 6;
-}
-
-// +protobuf=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
-message ItemValue {
-  optional int64 type = 1;
-
-  optional string numVal = 2;
-
-  optional bool boolVal = 3;
-
-  optional string strVal = 4;
-
-  map<string, string> mapVal = 5;
-
-  repeated bytes listVal = 6;
+  optional bytes value = 1;
 }
 
 // A link to another app.
@@ -586,7 +590,7 @@ message NodeStatus {
 message NoneStrategy {
 }
 
-// OSSArtifact is the location of an OSS artifact
+// OSSArtifact is the location of an Alibaba Cloud OSS artifact
 message OSSArtifact {
   optional OSSBucket oSSBucket = 1;
 
@@ -594,7 +598,7 @@ message OSSArtifact {
   optional string key = 2;
 }
 
-// OSSBucket contains the access information required for interfacing with an OSS bucket
+// OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 message OSSBucket {
   // Endpoint is the hostname of the bucket endpoint
   optional string endpoint = 1;
@@ -638,12 +642,11 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
-  // DEPRECATED: This field is not used
-  optional string default = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 2;
 
   // Value is the literal value to use for the parameter.
   // If specified in the context of an input parameter, the value takes precedence over any passed values
-  optional string value = 3;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString value = 3;
 
   // ValueFrom is the source for the output parameter's value
   optional ValueFrom valueFrom = 4;
@@ -776,16 +779,39 @@ message ScriptTemplate {
   optional string source = 2;
 }
 
+message SemaphoreHolding {
+  // Semaphore stores the semaphore name.
+  optional string semaphore = 1;
+
+  // Holders stores the list of current holder names in the workflow.
+  // +listType=atomic
+  repeated string holders = 2;
+}
+
+// SemaphoreRef is a reference of Semaphore
+message SemaphoreRef {
+  // ConfigMapKeyRef is configmap selector for Semaphore configuration
+  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+}
+
+message SemaphoreStatus {
+  // Holding stores the list of resource acquired synchronization lock for workflows.
+  repeated SemaphoreHolding holding = 1;
+
+  // Waiting indicates the list of current synchronization lock holders
+  repeated SemaphoreHolding waiting = 2;
+}
+
 // Sequence expands a workflow step into numeric range
 message Sequence {
   // Count is number of elements in the sequence (default: 0). Not to be used with end
-  optional string count = 1;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString count = 1;
 
   // Number at which to start the sequence (default: 0)
-  optional string start = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString start = 2;
 
   // Number at which to end the sequence (default: 0). Not to be used with Count
-  optional string end = 3;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString end = 3;
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
@@ -828,6 +854,17 @@ message SubmitOpts {
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
+}
+
+// Synchronization holds synchronization lock configuration
+message Synchronization {
+  // Semaphore holds the Semaphore configuration
+  optional SemaphoreRef semaphore = 1;
+}
+
+message SynchronizationStatus {
+  // SemaphoreHolders stores this workflow's Semaphore holder details
+  optional SemaphoreStatus semaphore = 1;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
@@ -985,6 +1022,9 @@ message Template {
 
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
+
+  // Synchronization holds synchronization lock configuration for this template
+  optional Synchronization synchronization = 36;
 }
 
 // TemplateRef is a reference of template resource.
@@ -999,7 +1039,7 @@ message TemplateRef {
   // By enabling this option, you can create the referred workflow template before the actual runtime.
   optional bool runtimeResolution = 3;
 
-  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 4;
 }
 
@@ -1030,7 +1070,7 @@ message ValueFrom {
   optional string parameter = 4;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
-  optional string default = 5;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
 }
 
 message Version {
@@ -1051,9 +1091,17 @@ message Version {
   optional string platform = 8;
 }
 
+message WaitingStatus {
+  // Holders stores the list of current holder names
+  optional HolderNames holders = 1;
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=wf
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
+// +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message Workflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1061,17 +1109,6 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
-}
-
-message WorkflowCondition {
-  // Type is the type of condition
-  optional string type = 1;
-
-  // Status is the status of the condition
-  optional string status = 2;
-
-  // Message is the condition message
-  optional string message = 3;
 }
 
 // WorkflowList is list of Workflow resources
@@ -1231,6 +1268,12 @@ message WorkflowSpec {
 
   // Shutdown will shutdown the workflow according to its ShutdownStrategy
   optional string shutdown = 33;
+
+  // WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
+  optional WorkflowTemplateRef workflowTemplateRef = 34;
+
+  // Synchronization holds synchronization lock configuration for this Workflow
+  optional Synchronization synchronization = 35;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1268,10 +1311,16 @@ message WorkflowStatus {
   optional Outputs outputs = 8;
 
   // Conditions is a list of conditions the Workflow may have
-  repeated WorkflowCondition conditions = 13;
+  repeated Condition conditions = 13;
 
   // ResourcesDuration is the total for the workflow
   map<string, int64> resourcesDuration = 12;
+
+  // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+  optional WorkflowSpec storedWorkflowTemplateSpec = 14;
+
+  // Synchronization stores the status of synchronization locks
+  optional SynchronizationStatus synchronization = 15;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -1314,6 +1363,7 @@ message WorkflowStep {
 // WorkflowTemplate is the definition of a workflow template resource
 // +genclient
 // +genclient:noStatus
+// +kubebuilder:resource:shortName=wftmpl
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
@@ -1329,8 +1379,20 @@ message WorkflowTemplateList {
   repeated WorkflowTemplate items = 2;
 }
 
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+message WorkflowTemplateRef {
+  // Name is the resource name of the workflow template.
+  optional string name = 1;
+
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+  optional bool clusterScope = 2;
+}
+
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 message WorkflowTemplateSpec {
   optional WorkflowSpec workflowSpec = 1;
+
+  // WorkflowMetadata contains some metadata of the workflow to be refer
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
 }
 

@@ -13,7 +13,7 @@ func TestDefault(t *testing.T) {
 }
 
 func TestDecompressWorkflow(t *testing.T) {
-	defer SetMaxWorkflowSize(300)()
+	defer SetMaxWorkflowSize(260)()
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -55,9 +55,7 @@ func TestDecompressWorkflow(t *testing.T) {
 	})
 	t.Run("TooLargeToCompressWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
-			Spec: wfv1.WorkflowSpec{
-				Entrypoint: "main",
-			},
+			Spec: wfv1.WorkflowSpec{Entrypoint: "main"},
 			Status: wfv1.WorkflowStatus{
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}},
 			},
@@ -67,6 +65,8 @@ func TestDecompressWorkflow(t *testing.T) {
 			assert.True(t, IsTooLargeError(err))
 			// if too large, we want the original back please
 			assert.NotNil(t, wf)
+			assert.NotEmpty(t, wf.Status.Nodes)
+			assert.Empty(t, wf.Status.CompressedNodes)
 		}
 	})
 }

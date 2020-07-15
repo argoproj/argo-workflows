@@ -2,28 +2,28 @@ package fixtures
 
 import (
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type Then struct {
-	t                     *testing.T
-	workflowName          string
-	wfTemplateNames       []string
-	cronWorkflowName      string
-	client                v1alpha1.WorkflowInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	kubeClient            kubernetes.Interface
+	t                *testing.T
+	workflowName     string
+	wfTemplateNames  []string
+	cronWorkflowName string
+	client           v1alpha1.WorkflowInterface
+	cronClient       v1alpha1.CronWorkflowInterface
+	hydrator         hydrator.Interface
+	kubeClient       kubernetes.Interface
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
@@ -43,12 +43,9 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := t.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			t.t.Fatal(err)
-		}
-		wf.Status.Nodes = offloadedNodes
+	err = t.hydrator.Hydrate(wf)
+	if err != nil {
+		t.t.Fatal(err)
 	}
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	if t.t.Failed() {
@@ -88,34 +85,32 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
-func (t *Then) expectAuditEvents(block func(*testing.T, []apiv1.Event)) *Then {
-	eventList, err := t.kubeClient.CoreV1().Events(Namespace).List(metav1.ListOptions{})
+func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then {
+	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	var events []apiv1.Event
-	for _, e := range eventList.Items {
-		if e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
-			events = append(events, e)
-		}
-	}
-	log.WithFields(log.Fields{"event": events}).Debug("Events")
-	block(t.t, events)
-	if t.t.Failed() {
-		t.t.FailNow()
-	}
-	return t
-}
-
-func (t *Then) ExpectAuditEvent(f func(apiv1.Event) bool) *Then {
-	return t.expectAuditEvents(func(t *testing.T, events []apiv1.Event) {
-		for _, item := range events {
-			if f(item) {
-				return
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for len(blocks) > 0 {
+		select {
+		case <-ticker.C:
+			t.t.Fatal("timeout waiting for events")
+		case event := <-eventList.ResultChan():
+			e, ok := event.Object.(*apiv1.Event)
+			if !ok {
+				t.t.Fatal("event is not an event")
+			}
+			if e.InvolvedObject.Name == t.workflowName && e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
+				blocks[0](t.t, *e)
+				blocks = blocks[1:]
+				if t.t.Failed() {
+					t.t.FailNow()
+				}
 			}
 		}
-		assert.Fail(t, "did not see expected event")
-	})
+	}
+	return t
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
@@ -129,13 +124,13 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (t *Then) When() *When {
 	return &When{
-		t:                     t.t,
-		client:                t.client,
-		cronClient:            t.cronClient,
-		offloadNodeStatusRepo: t.offloadNodeStatusRepo,
-		workflowName:          t.workflowName,
-		wfTemplateNames:       t.wfTemplateNames,
-		cronWorkflowName:      t.cronWorkflowName,
-		kubeClient:            t.kubeClient,
+		t:                t.t,
+		client:           t.client,
+		cronClient:       t.cronClient,
+		hydrator:         t.hydrator,
+		workflowName:     t.workflowName,
+		wfTemplateNames:  t.wfTemplateNames,
+		cronWorkflowName: t.cronWorkflowName,
+		kubeClient:       t.kubeClient,
 	}
 }

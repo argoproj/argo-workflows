@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import {Subscription} from 'rxjs';
 import * as models from '../../../../models';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
@@ -19,27 +20,18 @@ interface WorkflowLogsViewerState {
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
+    private subscription: Subscription = null;
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
         this.state = {lines: []};
     }
 
     public componentDidMount(): void {
-        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
-            log => {
-                if (log) {
-                    this.setState(state => {
-                        log.split('\n').forEach(line => {
-                            state.lines.push(line);
-                        });
-                        return state;
-                    });
-                }
-            },
-            error => {
-                this.setState({error});
-            }
-        );
+        this.refreshStream();
+    }
+
+    public componentWillUnmount(): void {
+        this.ensureUnsubscribed();
     }
 
     public render() {
@@ -48,7 +40,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 <h3>Logs</h3>
                 {this.props.archived && (
                     <p>
-                        <i className='fa fa-exclamation-triangle' /> Logs for archived workflows maybe overwritten by a more recent workflow with the same name.
+                        <i className='fa fa-exclamation-triangle' /> Logs for archived workflows may be overwritten by a more recent workflow with the same name.
                     </p>
                 )}
                 <p>
@@ -93,6 +85,32 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     </p>
                 )}
             </div>
+        );
+    }
+
+    private ensureUnsubscribed() {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+        this.subscription = null;
+    }
+
+    private refreshStream(): void {
+        this.ensureUnsubscribed();
+        this.subscription = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
+            log => {
+                if (log) {
+                    this.setState(state => {
+                        log.split('\n').forEach(line => {
+                            state.lines.push(line);
+                        });
+                        return state;
+                    });
+                }
+            },
+            error => {
+                this.setState({error});
+            }
         );
     }
 

@@ -50,6 +50,8 @@ const (
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"
+	// Who created this workflow.
+	LabelKeyCreator = workflow.WorkflowFullName + "/creator"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
@@ -57,6 +59,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
+	// LabelKeyPreviousWorkflowName is a label applied to resubmitted workflows
+	LabelKeyPreviousWorkflowName = workflow.WorkflowFullName + "/resubmitted-from-workflow"
 	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
@@ -136,6 +140,12 @@ const (
 	LocalVarPodName = "pod.name"
 	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
 	LocalVarRetries = "retries"
+	// LocalVarDuration is a step level variable (currently only available in metric emission) that tracks the duration of the step
+	LocalVarDuration = "duration"
+	// LocalVarStatus is a step level variable (currently only available in metric emission) that tracks the duration of the step
+	LocalVarStatus = "status"
+	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
+	LocalVarResourcesDuration = "resourcesDuration"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -161,5 +171,5 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
-	panic("obj passed is not an Unstructured")
+	return false
 }

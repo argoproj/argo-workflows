@@ -1,3 +1,5 @@
+// +build e2e
+
 package e2e
 
 import (
@@ -150,61 +152,50 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
-	if !s.Persistence.IsEnabled() {
-		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_test.go
-		s.T().SkipNow()
+func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"workflow": "1",
 	}
+	s.testNeedsOffloading()
 	s.Given().
-		Workflow("@testdata/exit-1.yaml").
+		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
-		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
-		Given().
-		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
+		CreateConfigMap("my-config", semaphoreData).
+		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-			}
-		})
-}
-
-func (s *CLIWithServerSuite) TestWorkflowSuspendResumePersistence() {
-	if !s.Persistence.IsEnabled() {
-		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_test.go
-		s.T().SkipNow()
-	}
-	s.Given().
-		Workflow("@testdata/sleep-3s.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflowToStart(10*time.Second).
-		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow sleep-3s suspended")
+				assert.Contains(t, output, "semaphore-wf-level-1")
 			}
 		}).
-		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow sleep-3s resumed")
-			}
+		SubmitWorkflow().
+		Wait(1*time.Second).
+		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Pending")
 		}).
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow(30 * time.Second).
+		DeleteConfigMap().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 
-func (s *CLIWithServerSuite) TestNodeSuspendResumePersistence() {
-	if !s.Persistence.IsEnabled() {
-		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_test.go
-		s.T().SkipNow()
+func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"template": "1",
 	}
-	NodeSuspendResumeCommon(s.E2ESuite)
+
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-tmpl-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		SubmitWorkflow().
+		Wait(1*time.Second).
+		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		DeleteConfigMap()
 }
 
 func TestCLIWithServerSuite(t *testing.T) {

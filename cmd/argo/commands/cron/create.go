@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -16,8 +17,9 @@ import (
 )
 
 type cliCreateOpts struct {
-	output string // --output
-	strict bool   // --strict
+	output   string // --output
+	schedule string // --schedule
+	strict   bool   // --strict
 }
 
 func NewCreateCommand() *cobra.Command {
@@ -38,6 +40,7 @@ func NewCreateCommand() *cobra.Command {
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().StringVar(&cliCreateOpts.schedule, "schedule", "", "override cron workflow schedule")
 	return command
 }
 
@@ -63,6 +66,12 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 		os.Exit(1)
 	}
 
+	if cliOpts.schedule != "" {
+		for i := range cronWorkflows {
+			cronWorkflows[i].Spec.Schedule = cliOpts.schedule
+		}
+	}
+
 	for _, cronWf := range cronWorkflows {
 		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    namespace,
@@ -71,7 +80,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 		if err != nil {
 			log.Fatalf("Failed to create workflow template: %v", err)
 		}
-		printCronWorkflowTemplate(created)
+		fmt.Print(getCronWorkflowGet(created))
 	}
 }
 

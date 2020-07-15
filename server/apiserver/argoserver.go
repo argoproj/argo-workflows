@@ -21,7 +21,6 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -33,6 +32,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/info"
@@ -43,6 +43,7 @@ import (
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 const (
@@ -59,6 +60,7 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	authenticator    auth.Gatekeeper
+	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
 }
@@ -70,14 +72,33 @@ type ArgoServerOpts struct {
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
-	AuthMode      string
+	AuthModes     auth.Modes
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
 	HSTS             bool
 }
 
-func NewArgoServer(opts ArgoServerOpts) *argoServer {
+func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
+	ssoIf := sso.NullSSO
+	if opts.AuthModes[auth.SSO] {
+		c, err := configController.Get()
+		if err != nil {
+			return nil, err
+		}
+		ssoIf, err = sso.New(c.SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		if err != nil {
+			return nil, err
+		}
+		log.Info("SSO enabled")
+	} else {
+		log.Info("SSO disabled")
+	}
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf)
+	if err != nil {
+		return nil, err
+	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
 		tlsConfig:        opts.TLSConfig,
@@ -85,10 +106,11 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
-		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
+		authenticator:    gatekeeper,
+		oAuth2Service:    ssoIf,
+		configController: configController,
 		stopCh:           make(chan struct{}),
-	}
+	}, nil
 }
 
 var backoff = wait.Backoff{
@@ -96,24 +118,6 @@ var backoff = wait.Backoff{
 	Duration: 500 * time.Millisecond,
 	Factor:   1.0,
 	Jitter:   0.1,
-}
-
-func (ao ArgoServerOpts) ValidateOpts() error {
-	validate := false
-	for _, item := range []string{
-		auth.Server,
-		auth.Hybrid,
-		auth.Client,
-	} {
-		if ao.AuthMode == item {
-			validate = true
-			break
-		}
-	}
-	if !validate {
-		return errors.Errorf("", "Invalid Authentication Mode. %s", ao.AuthMode)
-	}
-	return nil
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
@@ -142,7 +146,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive, instanceIDService)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -260,6 +264,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
+	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
+	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
 	return &httpServer

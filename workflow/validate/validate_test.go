@@ -30,7 +30,7 @@ func createWorkflowTemplate(yamlStr string) error {
 
 // validate is a test helper to accept Workflow YAML as a string and return
 // its validation result.
-func validate(yamlStr string) (*wfv1.WorkflowConditions, error) {
+func validate(yamlStr string) (*wfv1.Conditions, error) {
 	wf := unmarshalWf(yamlStr)
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 }
@@ -1205,45 +1205,9 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 `
 
-var invalidWithItems = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: loops-
-spec:
-  entrypoint: loop-example
-  templates:
-  - name: loop-example
-    steps:
-    - - name: print-message
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item}}"
-        withItems:
-        - hello world
-        - goodbye world
-        - [a, b, c]
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
-
 func TestValidWithItems(t *testing.T) {
 	_, err := validate(validWithItems)
 	assert.NoError(t, err)
-
-	_, err = validate(invalidWithItems)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "withItems")
-	}
 }
 
 var podNameVariable = `
@@ -1675,7 +1639,7 @@ func TestTemplateRef(t *testing.T) {
 	// Ensure that a deprecated SpecWarning was issued
 	foundSpecWarning := false
 	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.WorkflowConditionSpecWarning {
+		if condition.Type == wfv1.ConditionTypeSpecWarning {
 			foundSpecWarning = true
 			break
 		}
@@ -1763,7 +1727,7 @@ func TestDeprecatedNestedTemplateRef(t *testing.T) {
 	// Ensure that a deprecated SpecWarning was issued
 	foundSpecWarning := false
 	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.WorkflowConditionSpecWarning {
+		if condition.Type == wfv1.ConditionTypeSpecWarning {
 			foundSpecWarning = true
 			break
 		}
@@ -1810,7 +1774,7 @@ func TestNestedLocalTemplateRef(t *testing.T) {
 	// Ensure that a deprecated SpecWarning was issued
 	foundSpecWarning := false
 	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.WorkflowConditionSpecWarning {
+		if condition.Type == wfv1.ConditionTypeSpecWarning {
 			foundSpecWarning = true
 			break
 		}
@@ -2406,5 +2370,166 @@ spec:
 
 func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
 	err := validateWorkflowTemplate(wfTemplateWithEntrypoint)
+	assert.NoError(t, err)
+}
+
+var wfWithWFTRefNoEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-with-entrypoint
+`
+
+var templateWithEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-entrypoint
+  namespace: default
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T) {
+	err := createWorkflowTemplate(templateWithEntrypoint)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefNoEntrypoint)
+	assert.NoError(t, err)
+}
+
+const wfWithWFTRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
+  workflowTemplateRef:
+    name: template-ref-target
+`
+
+func TestWorkflowWithWFTRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRef)
+	assert.NoError(t, err)
+}
+
+const invalidWFWithWFTRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
+  workflowTemplateRef:
+    name: template-ref-target
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+func TestValidateFieldsWithWFTRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.NoError(t, err)
+	_, err = validate(invalidWFWithWFTRef)
+	assert.Error(t, err)
+}
+
+var invalidWfNoImage = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestInvalidWfNoImageField(t *testing.T) {
+	_, err := validate(invalidWfNoImage)
+	assert.EqualError(t, err, "templates.whalesay.container.image may not be empty")
+}
+
+var invalidWfNoImageScript = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    script:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestInvalidWfNoImageFieldScript(t *testing.T) {
+	_, err := validate(invalidWfNoImageScript)
+	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}
+
+var templateRefWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-param
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: some-param
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+var wfWithWFTRefOverrideParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: some-param
+      value: a-value
+  workflowTemplateRef:
+    name: template-ref-with-param
+`
+
+func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithParam)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefOverrideParam)
 	assert.NoError(t, err)
 }

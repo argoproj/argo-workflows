@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-bases:
-  - ../../../../manifests/quick-start/no-db
-patchesStrategicMerge:
-  - ../mixins/argo-server-deployment.yaml
-  - ../mixins/workflow-controller-configmap.yaml
-  - ../mixins/workflow-controller-deployment.yaml
-  - ../mixins/cluster-workflow-template-rbac.yaml

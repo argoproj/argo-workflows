@@ -7,18 +7,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/workflow/packer"
+	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -279,74 +276,6 @@ status:
   startedAt: "2020-04-10T15:21:23Z"
 `
 
-func TestResumeWorkflowCompressed(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
-
-	clearFunc := packer.SetMaxWorkflowSize(1156)
-	defer clearFunc()
-	err := packer.CompressWorkflowIfNeeded(origWf)
-	assert.NoError(t, err)
-
-	_, err = wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	err = ResumeWorkflow(wfIf, sqldb.ExplosiveOffloadNodeStatusRepo, "suspend", "")
-	assert.NoError(t, err)
-
-	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, wf.Status.CompressedNodes)
-}
-
-func TestResumeWorkflowOffloaded(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
-
-	//set threshold so this workflow is too big for compression to be valid
-	clearFunc := packer.SetMaxWorkflowSize(10)
-	defer clearFunc()
-
-	origNodes := origWf.Status.Nodes
-
-	origWf.Status.Nodes = nil
-	origWf.Status.OffloadNodeStatusVersion = "123"
-
-	_, err := wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
-	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("Get", "4f08d325-dc5a-43a3-9986-259e259e6ea3", "123").Return(origNodes, nil)
-	offloadNodeStatusRepo.On("Save", "4f08d325-dc5a-43a3-9986-259e259e6ea3", mock.Anything, mock.Anything).Return("1234", nil)
-
-	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
-	assert.NoError(t, err)
-
-	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, "1234", wf.Status.OffloadNodeStatusVersion)
-}
-
-//workflow is too big but offload is disabled
-func TestResumeWorkflowOffloadDisabled(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
-
-	//set threshold so this workflow is too big for compression to be valid
-	clearFunc := packer.SetMaxWorkflowSize(10)
-	defer clearFunc()
-
-	_, err := wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
-	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(false)
-
-	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
-	assert.Error(t, err)
-}
-
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
@@ -355,7 +284,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = ResumeWorkflow(wfIf, nil, "suspend", "displayName=nonexistant")
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -363,13 +292,14 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(wfIf, nil, "suspend", "displayName=approve")
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	if assert.NoError(t, err) {
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	}
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
@@ -380,7 +310,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = StopWorkflow(wfIf, nil, "suspend", "displayName=nonexistant", "error occurred")
+	err = StopWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -388,7 +318,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = StopWorkflow(wfIf, nil, "suspend", "displayName=approve", "error occurred")
+	err = StopWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
@@ -397,171 +327,72 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
 
-var failedWf = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  creationTimestamp: "2020-04-10T15:35:59Z"
-  generation: 5
-  labels:
-    workflows.argoproj.io/completed: "true"
-    workflows.argoproj.io/phase: Failed
-  name: fail-template
-  resourceVersion: "240144"
-  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/fail-template
-  uid: 7e74dbb9-d681-4c22-9bed-a581ec28383f
-spec:
-  arguments: {}
-  entrypoint: fail
-  templates:
-  - arguments: {}
-    inputs: {}
-    metadata: {}
-    name: fail
-    outputs: {}
-    steps:
-    - - arguments: {}
-        name: approve
-        template: approve
-  - arguments: {}
-    container:
-      args:
-      - exit 1
-      command:
-      - sh
-      - -c
-      image: alpine:latest
-      name: ""
-      resources: {}
-    inputs: {}
-    metadata: {}
-    name: approve
-    outputs: {}
-status:
-  conditions:
-  - status: "True"
-    type: Completed
-  finishedAt: "2020-04-10T15:36:03Z"
-  message: child 'fail-template-2878444447' failed
-  nodes:
-    fail-template:
-      children:
-      - fail-template-2384955452
-      displayName: fail-template
-      finishedAt: "2020-04-10T15:36:03Z"
-      id: fail-template
-      message: child 'fail-template-2878444447' failed
-      name: fail-template
-      outboundNodes:
-      - fail-template-2878444447
-      phase: Failed
-      startedAt: "2020-04-10T15:35:59Z"
-      templateName: fail
-      templateScope: local/fail-template
-      type: Steps
-    fail-template-2384955452:
-      boundaryID: fail-template
-      children:
-      - fail-template-2878444447
-      displayName: '[0]'
-      finishedAt: "2020-04-10T15:36:03Z"
-      id: fail-template-2384955452
-      message: child 'fail-template-2878444447' failed
-      name: fail-template[0]
-      phase: Failed
-      startedAt: "2020-04-10T15:35:59Z"
-      templateName: fail
-      templateScope: local/fail-template
-      type: StepGroup
-    fail-template-2878444447:
-      boundaryID: fail-template
-      displayName: approve
-      finishedAt: "2020-04-10T15:36:02Z"
-      id: fail-template-2878444447
-      message: failed with exit code 1
-      name: fail-template[0].approve
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: fail-template/fail-template-2878444447/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Failed
-      resourcesDuration:
-        cpu: 2
-        memory: 0
-      startedAt: "2020-04-10T15:35:59Z"
-      templateName: approve
-      templateScope: local/fail-template
-      type: Pod
-  phase: Failed
-  resourcesDuration:
-    cpu: 2
-    memory: 0
-  startedAt: "2020-04-10T15:35:59Z"
-
-`
-
-func TestRetryWorkflowCompressed(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(failedWf)
-	kubeCs := fake.NewSimpleClientset()
-
-	_, err := kubeCs.CoreV1().Pods("").Create(&v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "fail-template-2878444447"}})
-	assert.NoError(t, err)
-
-	clearFunc := packer.SetMaxWorkflowSize(1684)
-	defer clearFunc()
-	err = packer.CompressWorkflowIfNeeded(origWf)
-	assert.NoError(t, err)
-
-	_, err = wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	clearFunc = packer.SetMaxWorkflowSize(1557)
-	defer clearFunc()
-	wf, err := RetryWorkflow(kubeCs, sqldb.ExplosiveOffloadNodeStatusRepo, wfIf, origWf, false, "")
-	assert.NoError(t, err)
-	assert.NotEmpty(t, wf.Status.CompressedNodes)
+func TestGetNodeType(t *testing.T) {
+	t.Run("getNodeType", func(t *testing.T) {
+		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
+		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Container: &v1.Container{}}))
+		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Resource: &wfv1.ResourceTemplate{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{DAG: &wfv1.DAGTemplate{}}))
+		assert.NotEqual(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Suspend: &wfv1.SuspendTemplate{}}))
+	})
 }
 
-func TestRetryWorkflowOffloaded(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(failedWf)
-	kubeCs := fake.NewSimpleClientset()
-	_, err := kubeCs.CoreV1().Pods("").Create(&v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "fail-template-2878444447"}})
-	assert.NoError(t, err)
-
-	origNodes := origWf.Status.Nodes
-
-	origWf.Status.Nodes = nil
-	origWf.Status.OffloadNodeStatusVersion = "123"
-
-	//set threshold so this workflow is too big for compression to be valid
-	clearFunc := packer.SetMaxWorkflowSize(10)
-	defer clearFunc()
-
-	_, err = wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
-	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("Get", "7e74dbb9-d681-4c22-9bed-a581ec28383f", "123").Return(origNodes, nil)
-	offloadNodeStatusRepo.On("Save", "7e74dbb9-d681-4c22-9bed-a581ec28383f", mock.Anything, mock.Anything).Return("1234", nil)
-
-	_, err = RetryWorkflow(kubeCs, offloadNodeStatusRepo, wfIf, origWf, false, "")
-	assert.NoError(t, err)
-
-	wf, err := wfIf.Get("fail-template", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, "1234", wf.Status.OffloadNodeStatusVersion)
+func TestApplySubmitOpts(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		assert.NoError(t, ApplySubmitOpts(&wfv1.Workflow{}, nil))
+	})
+	t.Run("InvalidLabels", func(t *testing.T) {
+		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Labels: "a"}))
+	})
+	t.Run("Labels", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1,b=1"})
+		assert.NoError(t, err)
+		assert.Len(t, wf.GetLabels(), 2)
+	})
+	t.Run("MergeLabels", func(t *testing.T) {
+		wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"a": "0", "b": "0"}}}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Labels: "a=1"})
+		assert.NoError(t, err)
+		if assert.Len(t, wf.GetLabels(), 2) {
+			assert.Equal(t, "1", wf.GetLabels()["a"])
+			assert.Equal(t, "0", wf.GetLabels()["b"])
+		}
+	})
+	t.Run("InvalidParameters", func(t *testing.T) {
+		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
+	})
+	t.Run("Parameters", func(t *testing.T) {
+		intOrString := intstr.Parse("0")
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{{Name: "a", Value: &intOrString}},
+				},
+			},
+		}
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=1"}})
+		assert.NoError(t, err)
+		parameters := wf.Spec.Arguments.Parameters
+		if assert.Len(t, parameters, 1) {
+			assert.Equal(t, "a", parameters[0].Name)
+			assert.Equal(t, "1", parameters[0].Value.String())
+		}
+	})
+	t.Run("ParameterFile", func(t *testing.T) {
+		wf := &wfv1.Workflow{}
+		file, err := ioutil.TempFile("", "")
+		assert.NoError(t, err)
+		defer func() { _ = os.Remove(file.Name()) }()
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 1`), 0644)
+		assert.NoError(t, err)
+		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
+		assert.NoError(t, err)
+		parameters := wf.Spec.Arguments.Parameters
+		if assert.Len(t, parameters, 1) {
+			assert.Equal(t, "a", parameters[0].Name)
+			assert.Equal(t, "1", parameters[0].Value.String())
+		}
+	})
 }

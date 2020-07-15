@@ -1,7 +1,7 @@
 import * as classNames from 'classnames';
 import * as React from 'react';
 
-import {NodePhase, NodeStatus} from '../../../../models';
+import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
@@ -24,6 +24,8 @@ export interface WorkflowDagProps {
 require('./workflow-dag.scss');
 
 type DagPhase = NodePhase | 'Suspended';
+
+const LOCAL_STORAGE_KEY = 'DagOptions';
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
     private get scale() {
@@ -77,6 +79,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         fill='currentColor'
                         // tslint:disable-next-line
             d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
+                    />
+                );
+            case 'Omitted':
+                return (
+                    <path
+                        fill='currentColor'
+                        // tslint:disable-next-line
+                        d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
                     />
                 );
             case 'Succeeded':
@@ -144,24 +154,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
-        this.state = {
-            horizontal: false,
-            scale: 1,
-            nodesToDisplay: [
-                'phase:Pending',
-                'phase:Running',
-                'phase:Succeeded',
-                'phase:Skipped',
-                'phase:Failed',
-                'phase:Error',
-                'type:Pod',
-                'type:Steps',
-                'type:DAG',
-                'type:Retry',
-                'type:Skipped',
-                'type:Suspend'
-            ]
-        };
+        this.state = this.getOptions();
     }
 
     public render() {
@@ -173,7 +166,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
         return (
             <>
-                <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.setState(workflowDagRenderOptions)} />
+                <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />
                 <div className='workflow-dag'>
                     <svg
                         style={{
@@ -230,16 +223,48 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         );
     }
 
+    private saveOptions(newChanges: WorkflowDagRenderOptions) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
+        this.setState(newChanges);
+    }
+
+    private getOptions(): WorkflowDagRenderOptions {
+        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
+            return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as WorkflowDagRenderOptions;
+        }
+        return {
+            horizontal: false,
+            scale: 1,
+            nodesToDisplay: [
+                'phase:Pending',
+                'phase:Running',
+                'phase:Succeeded',
+                'phase:Skipped',
+                'phase:Failed',
+                'phase:Error',
+                'type:Pod',
+                'type:Steps',
+                'type:DAG',
+                'type:Retry',
+                'type:Skipped',
+                'type:Suspend'
+            ]
+        } as WorkflowDagRenderOptions;
+    }
+
     private prepareGraph() {
         const nodes = Object.values(this.props.nodes)
             .filter(node => !!node)
+            .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .map(node => node.id);
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
+            .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .map(node =>
                 (node.children || [])
                     // we can get outbound nodes, but no node
                     .filter(childId => this.props.nodes[childId])
+                    .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
                     .map(childId => ({v: node.id, w: childId}))
             )
             .reduce((a, b) => a.concat(b));
@@ -296,21 +321,23 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
         const h = this.state.horizontal ? this.nodeSize / 2 : 0;
         const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
-        this.graph.edges = edges.map(e => ({
-            v: e.v,
-            w: e.w,
-            points: [
-                {
-                    // for hidden nodes, we want to size them zero
-                    x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
-                    y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
-                },
-                {
-                    x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
-                    y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
-                }
-            ]
-        }));
+        this.graph.edges = edges
+            .filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w))
+            .map(e => ({
+                v: e.v,
+                w: e.w,
+                points: [
+                    {
+                        // for hidden nodes, we want to size them zero
+                        x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
+                        y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
+                    },
+                    {
+                        x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
+                        y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
+                    }
+                ]
+            }));
     }
 
     private selectNode(nodeId: string) {

@@ -83,7 +83,7 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Pro
 
 func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	if metric == nil {
-		metric = newHistogram(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels(), metricSpec.Histogram.Buckets)
+		metric = newHistogram(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels(), metricSpec.Histogram.GetBuckets())
 	}
 
 	val, err := strconv.ParseFloat(metricSpec.Histogram.Value, 64)
@@ -147,6 +147,22 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
 		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
 		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
+	}
+}
+
+func getErrorCounters() map[ErrorCause]prometheus.Counter {
+	getOptsByPahse := func(phase ErrorCause) prometheus.CounterOpts {
+		return prometheus.CounterOpts{
+			Namespace:   argoNamespace,
+			Subsystem:   workflowsSubsystem,
+			Name:        "error_count",
+			Help:        "Number of errors encountered by the controller by cause",
+			ConstLabels: map[string]string{"cause": string(phase)},
+		}
+	}
+	return map[ErrorCause]prometheus.Counter{
+		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
+		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
 	}
 }
 
