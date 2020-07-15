@@ -1037,7 +1037,8 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "This defines an event.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"expression": {
 						SchemaProps: spec.SchemaProps{
@@ -3778,8 +3779,9 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Expression defines an expression for evaluation",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -4960,7 +4962,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					},
 					"event": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"),
+							Description: "Event describes the event that can trigger the template.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"),
 						},
 					},
 				},

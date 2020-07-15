@@ -31,10 +31,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type EventRequest struct {
-	// this can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in
+	// The namespace for the event. This can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in
 	// all namespaces, or if set - only to workflows in the specified namespace
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	// the event itself can be any data
+	// The event itself can be any data.
 	Event                *v1alpha1.Item `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`

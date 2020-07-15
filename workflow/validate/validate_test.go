@@ -2512,6 +2512,37 @@ spec:
       command: [echo, hello]
 `
 
+func TestWorkflowTemplateWithExpression(t *testing.T) {
+	t.Run("InvalidEventExpression", func(t *testing.T) {
+
+		err := validateWorkflowTemplate(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  event:
+    expression: ""
+`)
+		assert.EqualError(t, err, "malformed event expression: unexpected token EOF (1:1)")
+	})
+	t.Run("ValidEventExpression", func(t *testing.T) {
+
+		err := validateWorkflowTemplate(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  event:
+    expression: "true"
+`)
+		assert.NoError(t, err, "valid event expression")
+	})
+}
+
 var wfWithWFTRefOverrideParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

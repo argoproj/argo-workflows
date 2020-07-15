@@ -80,8 +80,6 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -391,8 +389,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -540,6 +536,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 
@@ -715,8 +713,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -864,6 +860,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 
@@ -1002,8 +1000,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -1152,6 +1148,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
+
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
@@ -1192,7 +1190,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
 |`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
-|`event`|[`Event`](#event)|_No description available_|
+|`event`|[`Event`](#event)|Event describes the event that can trigger the template.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1274,8 +1272,6 @@ Arguments to a template
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
@@ -1345,6 +1341,8 @@ Arguments to a template
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 
@@ -1521,8 +1519,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -1670,6 +1666,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
 
@@ -1840,8 +1838,6 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/custom-metrics.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/fun-with-gifs.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
@@ -1903,13 +1899,13 @@ _No description available_
 
 ## Event
 
-_No description available_
+This defines an io.argoproj.workflow.v1alpha1.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 </details>
 
 ### Fields
@@ -2038,8 +2034,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
@@ -2109,6 +2103,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 
@@ -2334,8 +2330,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-targets.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/global-outputs.yaml)
@@ -2407,6 +2401,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/scripts-python.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 
@@ -2502,8 +2498,6 @@ Pod metdata
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
-
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
@@ -2652,6 +2646,8 @@ Pod metdata
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 
@@ -2872,8 +2868,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dag-diamond-steps.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -2950,6 +2944,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
+
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/volumes-existing.yaml)
@@ -2990,8 +2986,6 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 <br>
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/cron-workflow.yaml)
-
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 </details>
@@ -3289,13 +3283,15 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
-|`expression`|`string`|_No description available_|
+|`expression`|`string`|Expression defines an expression for evaluation|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3677,8 +3673,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -3826,6 +3820,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 
@@ -4291,6 +4287,8 @@ A single application container that you want to run within a pod.
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
 
@@ -4799,8 +4797,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -4948,6 +4944,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 
@@ -5401,6 +5399,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/secrets.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 </details>
 
 ### Fields
@@ -5781,8 +5781,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/dns-config.yaml)
 
-- [`event-consumer.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/event-consumer.yaml)
-
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/exit-handlers.yaml)
@@ -5930,6 +5928,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-with-event.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
 

@@ -667,13 +667,13 @@
         "parameters": [
           {
             "type": "string",
-            "description": "this can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in\nall namespaces, or if set - only to workflows in the specified namespace",
+            "description": "The namespace for the io.argoproj.workflow.v1alpha1. This can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in\nall namespaces, or if set - only to workflows in the specified namespace",
             "name": "namespace",
             "in": "path",
             "required": true
           },
           {
-            "description": "the event itself can be any data",
+            "description": "The event itself can be any data.",
             "name": "body",
             "in": "body",
             "required": true,
@@ -2350,6 +2350,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Event": {
+      "description": "This defines an io.argoproj.workflow.v1alpha1.",
       "type": "object",
       "required": [
         "expression"
@@ -3779,6 +3780,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "expression": {
+          "description": "Expression defines an expression for evaluation",
           "type": "string"
         },
         "jqFilter": {
@@ -4464,6 +4466,7 @@
           "type": "string"
         },
         "event": {
+          "description": "Event describes the event that can trigger the template.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
         },
         "executor": {

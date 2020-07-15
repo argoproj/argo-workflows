@@ -156,23 +156,12 @@ type TTLStrategy struct {
 	SecondsAfterFailure *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
 }
 
-type Templates []Template
-
-func (ts Templates) Any(f func(t Template) bool) bool {
-	for _, t := range ts {
-		if f(t) {
-			return true
-		}
-	}
-	return false
-}
-
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
 	// Templates is a list of workflow templates used in a workflow
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Templates Templates `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
+	Templates []Template `json:"templates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
 	// Entrypoint is a template reference to the starting point of the workflow.
 	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
@@ -638,6 +627,7 @@ type ValueFrom struct {
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 
+	// Expression defines an expression for evaluation
 	Expression string `json:"expression,omitempty" protobuf:"bytes,6,opt,name=expression"`
 }
 
@@ -1665,6 +1655,7 @@ type ResourceTemplate struct {
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
+// This defines an event.
 type Event struct {
 	// An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
 	// +kubebuilder:validation:MinLength=4
@@ -1866,15 +1857,6 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
-}
-
-// GetTemplates retrieves templates
-func (wf *Workflow) GetTemplates() Templates {
-	templates := wf.Spec.Templates
-	if wf.Status.StoredWorkflowSpec != nil {
-		templates = append(templates, wf.Status.StoredWorkflowSpec.Templates...)
-	}
-	return templates
 }
 
 // GetTemplateByName retrieves a defined template by its name

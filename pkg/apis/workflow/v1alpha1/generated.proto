@@ -310,6 +310,7 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
+// This defines an event.
 message Event {
   // An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
   // +kubebuilder:validation:MinLength=4
@@ -1081,6 +1082,7 @@ message ValueFrom {
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
 
+  // Expression defines an expression for evaluation
   optional string expression = 6;
 }
 
@@ -1406,6 +1408,7 @@ message WorkflowTemplateSpec {
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
 
+  // Event describes the event that can trigger the template.
   optional Event event = 3;
 }
 

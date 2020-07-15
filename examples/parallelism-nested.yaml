@@ -30,6 +30,7 @@ spec:
         arguments:
           parameters:
           - name: seq-list
+            value: "{{inputs.parameters.seq-list}}"
           - name: parallel-id
             value: "{{item}}"
         withParam: "{{inputs.parameters.parallel-list}}"
