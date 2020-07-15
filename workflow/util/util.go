@@ -453,8 +453,8 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 							hit := false
 							for i, param := range node.Outputs.Parameters {
 								if param.Name == name {
-									if param.ValueFrom.Raw == nil {
-										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw", param.Name)
+									if param.ValueFrom == nil || param.ValueFrom.Raw == nil {
+										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
 									}
 									intStr := intstr.FromString(val)
 									node.Outputs.Parameters[i].Value = &intStr

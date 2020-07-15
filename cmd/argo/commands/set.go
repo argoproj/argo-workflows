@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
@@ -26,25 +27,42 @@ func NewSetCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "set FIELD WORKFLOW SET_TO",
+		Use:   "set WORKFLOW FIELD SET_TO",
 		Short: "set values to zero or more workflows",
 		Example: `# Set outputs to a node within a workflow:
 
-  argo set outputs my-wf '{"parameter-name": "Hello, world!"}' --node-field-selector displayName=approve
+  argo set my-wf outputs parameters parameter-name="Hello, world!" --node-field-selector displayName=approve
 
 # Set the message of a node within a workflow:
 
-  argo set message my-wf 'We did it!' --node-field-selector displayName=approve
+  argo set my-wf message 'We did it!' --node-field-selector displayName=approve
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 
-			if len(args) != 3 {
+			if len(args) < 3 {
 				cmd.HelpFunc()(cmd, args)
 			}
 
-			switch args[0] {
+			switch args[1] {
 			case "outputs", "output":
-				setArgs.outputParameters = args[2]
+				switch args[2] {
+				case "parameters", "parameter":
+					outputParams := make(map[string]string)
+					for _, param := range args[3:] {
+						parts := strings.SplitN(param, "=", 2)
+						if len(parts) != 2 {
+							log.Fatalf("expected parameter of the form: NAME=VALUE. Received: %s", param)
+						}
+						outputParams[parts[0]] = parts[1]
+					}
+					res, err := json.Marshal(outputParams)
+					if err != nil {
+						log.Fatalf("unable to parse output parameter set request: %s", err)
+					}
+					setArgs.outputParameters = string(res)
+				default:
+					log.Fatalf("must specify which outputs to set: 'argo set outputs parameters ...'")
+				}
 			case "message":
 				setArgs.message = args[2]
 			default:
@@ -60,16 +78,8 @@ func NewSetCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", setArgs.nodeFieldSelector, err)
 			}
 
-			outputParams := make(map[string]string)
-			if setArgs.outputParameters != "" {
-				err = json.Unmarshal([]byte(setArgs.outputParameters), &outputParams)
-				if err != nil {
-					log.Fatalf("unable to parse output parameter set request: %s", err)
-				}
-			}
-
 			_, err = serviceClient.SetWorkflow(ctx, &workflowpkg.WorkflowSetRequest{
-				Name:              args[1],
+				Name:              args[0],
 				Namespace:         namespace,
 				NodeFieldSelector: selector.String(),
 				Message:           setArgs.message,

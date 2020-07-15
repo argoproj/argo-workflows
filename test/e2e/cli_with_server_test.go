@@ -4,16 +4,13 @@ package e2e
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type CLIWithServerSuite struct {
@@ -198,7 +195,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 		DeleteConfigMap()
 }
 
-func (s *FunctionalSuite) TestArgoSetOutputs() {
+func (s *CLIWithServerSuite) TestArgoSetOutputs() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -249,15 +246,15 @@ spec:
 			assert.Error(t, err)
 			assert.Contains(t, output, "has not been set and does not have a default value")
 		}).
-		RunCli([]string{"set", "outputs", "suspend-template", "{\"message\": \"Hello, World!\"}", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"set", "suspend-template", "outputs", "parameters", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow values set")
 		}).
-		RunCli([]string{"set", "outputs", "suspend-template", "{\"message\": \"Hello, World!\"}", "--node-field-selector", "displayName=approve-no-vars"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"set", "suspend-template", "outputs", "parameters", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve-no-vars"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "cannot set output parameters because node is not expecting any raw parameters")
 		}).
-		RunCli([]string{"set", "message", "suspend-template", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"set", "suspend-template", "message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow values set")
 		}).
