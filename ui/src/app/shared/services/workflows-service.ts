@@ -132,7 +132,10 @@ export class WorkflowsService {
                 `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` + `?logOptions.container=${container}&logOptions.follow=true`
             )
             .pipe(
-                map(line => JSON.parse(line).result.content),
+                map(line => {
+                    console.log(JSON.parse(line))
+                    return JSON.parse(line).result.content;
+                }),
                 catchError(() => logsFromArtifacts)
             );
     }
