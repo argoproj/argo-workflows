@@ -164,24 +164,24 @@ func (m *GetVersionRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetVersionRequest proto.InternalMessageInfo
 
-type WhoAmIRequest struct {
+type GetUserInfoRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WhoAmIRequest) Reset()         { *m = WhoAmIRequest{} }
-func (m *WhoAmIRequest) String() string { return proto.CompactTextString(m) }
-func (*WhoAmIRequest) ProtoMessage()    {}
-func (*WhoAmIRequest) Descriptor() ([]byte, []int) {
+func (m *GetUserInfoRequest) Reset()         { *m = GetUserInfoRequest{} }
+func (m *GetUserInfoRequest) String() string { return proto.CompactTextString(m) }
+func (*GetUserInfoRequest) ProtoMessage()    {}
+func (*GetUserInfoRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96940c93018255fa, []int{3}
 }
-func (m *WhoAmIRequest) XXX_Unmarshal(b []byte) error {
+func (m *GetUserInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WhoAmIRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GetUserInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WhoAmIRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GetUserInfoRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -191,37 +191,38 @@ func (m *WhoAmIRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (m *WhoAmIRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WhoAmIRequest.Merge(m, src)
+func (m *GetUserInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetUserInfoRequest.Merge(m, src)
 }
-func (m *WhoAmIRequest) XXX_Size() int {
+func (m *GetUserInfoRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *WhoAmIRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_WhoAmIRequest.DiscardUnknown(m)
+func (m *GetUserInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetUserInfoRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WhoAmIRequest proto.InternalMessageInfo
+var xxx_messageInfo_GetUserInfoRequest proto.InternalMessageInfo
 
-type WhoAmIResponse struct {
-	Subject              string   `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+type GetUserInfoResponse struct {
+	Issuer               string   `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	Subject              string   `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *WhoAmIResponse) Reset()         { *m = WhoAmIResponse{} }
-func (m *WhoAmIResponse) String() string { return proto.CompactTextString(m) }
-func (*WhoAmIResponse) ProtoMessage()    {}
-func (*WhoAmIResponse) Descriptor() ([]byte, []int) {
+func (m *GetUserInfoResponse) Reset()         { *m = GetUserInfoResponse{} }
+func (m *GetUserInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*GetUserInfoResponse) ProtoMessage()    {}
+func (*GetUserInfoResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96940c93018255fa, []int{4}
 }
-func (m *WhoAmIResponse) XXX_Unmarshal(b []byte) error {
+func (m *GetUserInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WhoAmIResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GetUserInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WhoAmIResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GetUserInfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -231,19 +232,26 @@ func (m *WhoAmIResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *WhoAmIResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WhoAmIResponse.Merge(m, src)
+func (m *GetUserInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetUserInfoResponse.Merge(m, src)
 }
-func (m *WhoAmIResponse) XXX_Size() int {
+func (m *GetUserInfoResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *WhoAmIResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_WhoAmIResponse.DiscardUnknown(m)
+func (m *GetUserInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetUserInfoResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WhoAmIResponse proto.InternalMessageInfo
+var xxx_messageInfo_GetUserInfoResponse proto.InternalMessageInfo
 
-func (m *WhoAmIResponse) GetSubject() string {
+func (m *GetUserInfoResponse) GetIssuer() string {
+	if m != nil {
+		return m.Issuer
+	}
+	return ""
+}
+
+func (m *GetUserInfoResponse) GetSubject() string {
 	if m != nil {
 		return m.Subject
 	}
@@ -254,43 +262,44 @@ func init() {
 	proto.RegisterType((*GetInfoRequest)(nil), "info.GetInfoRequest")
 	proto.RegisterType((*InfoResponse)(nil), "info.InfoResponse")
 	proto.RegisterType((*GetVersionRequest)(nil), "info.GetVersionRequest")
-	proto.RegisterType((*WhoAmIRequest)(nil), "info.WhoAmIRequest")
-	proto.RegisterType((*WhoAmIResponse)(nil), "info.WhoAmIResponse")
+	proto.RegisterType((*GetUserInfoRequest)(nil), "info.GetUserInfoRequest")
+	proto.RegisterType((*GetUserInfoResponse)(nil), "info.GetUserInfoResponse")
 }
 
 func init() { proto.RegisterFile("pkg/apiclient/info/info.proto", fileDescriptor_96940c93018255fa) }
 
 var fileDescriptor_96940c93018255fa = []byte{
-	// 459 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0x6b, 0xd4, 0x40,
-	0x14, 0x27, 0xab, 0xb6, 0x38, 0xad, 0xdb, 0x76, 0xba, 0xd0, 0x25, 0xe8, 0x52, 0x72, 0x2a, 0x15,
-	0x67, 0xd8, 0xea, 0xc1, 0x82, 0x17, 0xf5, 0x50, 0x16, 0x44, 0x61, 0x05, 0x05, 0x6f, 0xb3, 0xe9,
-	0xdb, 0xd9, 0x69, 0x92, 0x79, 0x71, 0x66, 0x92, 0x22, 0x78, 0xf2, 0xea, 0xd1, 0x4f, 0xe0, 0xb7,
-	0xf1, 0x28, 0xf8, 0x05, 0x64, 0xf1, 0x83, 0x48, 0x26, 0x89, 0xbb, 0xa1, 0x8a, 0xd0, 0x4b, 0x78,
-	0xef, 0x0d, 0xef, 0xf7, 0x8f, 0x17, 0x72, 0x2f, 0x4f, 0x24, 0x17, 0xb9, 0x8a, 0x53, 0x05, 0xda,
-	0x71, 0xa5, 0xe7, 0xe8, 0x3f, 0x2c, 0x37, 0xe8, 0x90, 0xde, 0xac, 0xea, 0xf0, 0x81, 0x54, 0x6e,
-	0x51, 0xcc, 0x58, 0x8c, 0x19, 0x97, 0x28, 0x91, 0xfb, 0xc7, 0x59, 0x31, 0xf7, 0x9d, 0x6f, 0x7c,
-	0x55, 0x2f, 0x85, 0x77, 0x25, 0xa2, 0x4c, 0xa1, 0x82, 0xe5, 0x42, 0x6b, 0x74, 0xc2, 0x29, 0xd4,
-	0xb6, 0x79, 0x7d, 0x94, 0x3c, 0xb6, 0x4c, 0x61, 0xf5, 0x9a, 0x89, 0x78, 0xa1, 0x34, 0x98, 0x0f,
-	0xbc, 0x51, 0x61, 0x79, 0x06, 0x4e, 0xf0, 0x72, 0xcc, 0x25, 0x68, 0x30, 0xc2, 0xc1, 0x79, 0xb3,
-	0xf5, 0x7c, 0x4d, 0x82, 0x30, 0x9e, 0xf4, 0xc2, 0x17, 0xab, 0xd5, 0x4b, 0x34, 0xc9, 0x3c, 0xc5,
-	0x4b, 0x5e, 0x8e, 0x45, 0x9a, 0x2f, 0xc4, 0x55, 0x90, 0x68, 0x45, 0xcd, 0x63, 0x34, 0xf0, 0x17,
-	0xa2, 0x68, 0x97, 0xf4, 0xcf, 0xc0, 0x4d, 0xf4, 0x1c, 0xa7, 0xf0, 0xbe, 0x00, 0xeb, 0xa2, 0xcf,
-	0x01, 0xd9, 0xae, 0x7b, 0x9b, 0xa3, 0xb6, 0x40, 0x8f, 0xc9, 0x6e, 0x26, 0xb4, 0x90, 0x70, 0xfe,
-	0x52, 0x64, 0x60, 0x73, 0x11, 0xc3, 0x30, 0x38, 0x0c, 0x8e, 0x6e, 0x4f, 0xaf, 0xcc, 0xe9, 0x2b,
-	0x72, 0x2b, 0x55, 0x3a, 0xb1, 0xc3, 0xde, 0xe1, 0x8d, 0xa3, 0xad, 0x93, 0x53, 0xb6, 0xf2, 0xc1,
-	0x5a, 0x1f, 0xbe, 0x60, 0x79, 0x22, 0x59, 0xe5, 0x83, 0xb5, 0x3e, 0x58, 0xeb, 0x83, 0xbd, 0x50,
-	0x3a, 0x99, 0xd6, 0x38, 0xd1, 0x3e, 0xd9, 0x3b, 0x03, 0xf7, 0x06, 0x8c, 0x55, 0xa8, 0x5b, 0x89,
-	0x3b, 0xe4, 0xce, 0xdb, 0x05, 0x3e, 0xcd, 0x26, 0xed, 0xe0, 0x98, 0xf4, 0xdb, 0x41, 0x23, 0x7a,
-	0x48, 0x36, 0x6d, 0x31, 0xbb, 0x80, 0xd8, 0x35, 0x5a, 0xdb, 0xf6, 0xe4, 0x6b, 0x8f, 0x6c, 0x55,
-	0xfe, 0x5e, 0x83, 0x29, 0x55, 0x0c, 0x74, 0x42, 0x36, 0x9b, 0x04, 0xe8, 0x80, 0xf9, 0x5b, 0xe8,
-	0x06, 0x12, 0xd2, 0x7a, 0xba, 0x9e, 0x49, 0x34, 0xf8, 0xf4, 0xe3, 0xd7, 0x97, 0x5e, 0x9f, 0x6e,
-	0xfb, 0x70, 0xcb, 0xb1, 0x3f, 0x22, 0xfa, 0x91, 0x90, 0x95, 0x58, 0x7a, 0xf0, 0x07, 0xad, 0x2b,
-	0x3f, 0x7c, 0x72, 0xad, 0x54, 0x1a, 0x90, 0xe8, 0xc0, 0x53, 0xef, 0xd1, 0x9d, 0x96, 0xba, 0x6c,
-	0xf8, 0x26, 0x64, 0xa3, 0x0e, 0x81, 0xee, 0xd7, 0xcc, 0x9d, 0x8c, 0xc2, 0x41, 0x77, 0xf8, 0x2f,
-	0x23, 0x85, 0x05, 0xf3, 0xec, 0xf4, 0xdb, 0x72, 0x14, 0x7c, 0x5f, 0x8e, 0x82, 0x9f, 0xcb, 0x51,
-	0xf0, 0xee, 0xfe, 0xff, 0x8e, 0x71, 0xed, 0x6f, 0x9a, 0x6d, 0xf8, 0xbb, 0x7a, 0xf8, 0x3b, 0x00,
-	0x00, 0xff, 0xff, 0xb9, 0xf6, 0x77, 0x12, 0x6a, 0x03, 0x00, 0x00,
+	// 480 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0x6b, 0x13, 0x41,
+	0x14, 0x67, 0xa3, 0xb6, 0x38, 0x29, 0x35, 0x9d, 0x06, 0xbb, 0x2e, 0x1a, 0xca, 0x9e, 0x8a, 0xe2,
+	0x0c, 0xa9, 0x1e, 0x2c, 0x78, 0xd2, 0x43, 0x28, 0x88, 0x42, 0x44, 0x0f, 0xe2, 0x65, 0xb2, 0x7d,
+	0x99, 0x4c, 0x77, 0x77, 0x66, 0x9d, 0x99, 0xdd, 0x22, 0x78, 0xf2, 0xea, 0xd1, 0xaf, 0xe2, 0x87,
+	0xf0, 0x28, 0xf8, 0x05, 0x24, 0xf8, 0x41, 0x64, 0x27, 0xb3, 0xdd, 0x8d, 0x0d, 0x08, 0x5e, 0xc2,
+	0x7b, 0xf3, 0xf2, 0x7e, 0xff, 0x78, 0x8b, 0xee, 0x15, 0x29, 0xa7, 0xac, 0x10, 0x49, 0x26, 0x40,
+	0x5a, 0x2a, 0xe4, 0x5c, 0xb9, 0x1f, 0x52, 0x68, 0x65, 0x15, 0xbe, 0x5e, 0xd7, 0xd1, 0x43, 0x2e,
+	0xec, 0xa2, 0x9c, 0x91, 0x44, 0xe5, 0x94, 0x2b, 0xae, 0xa8, 0x1b, 0xce, 0xca, 0xb9, 0xeb, 0x5c,
+	0xe3, 0xaa, 0xd5, 0x52, 0x74, 0x97, 0x2b, 0xc5, 0x33, 0xa8, 0x61, 0x29, 0x93, 0x52, 0x59, 0x66,
+	0x85, 0x92, 0xc6, 0x4f, 0x1f, 0xa7, 0x4f, 0x0c, 0x11, 0xaa, 0x9e, 0xe6, 0x2c, 0x59, 0x08, 0x09,
+	0xfa, 0x23, 0xf5, 0x2a, 0x0c, 0xcd, 0xc1, 0x32, 0x5a, 0x8d, 0x29, 0x07, 0x09, 0x9a, 0x59, 0x38,
+	0xf3, 0x5b, 0xcf, 0x3b, 0x12, 0x98, 0x76, 0xa4, 0xe7, 0xae, 0x68, 0x57, 0x2f, 0x94, 0x4e, 0xe7,
+	0x99, 0xba, 0xa0, 0xd5, 0x98, 0x65, 0xc5, 0x82, 0x5d, 0x05, 0x89, 0x5b, 0x6a, 0x9a, 0x28, 0x0d,
+	0x1b, 0x88, 0xe2, 0x01, 0xda, 0x9d, 0x80, 0x3d, 0x95, 0x73, 0x35, 0x85, 0x0f, 0x25, 0x18, 0x1b,
+	0x7f, 0x09, 0xd0, 0xce, 0xaa, 0x37, 0x85, 0x92, 0x06, 0xf0, 0x7d, 0x34, 0xc8, 0x99, 0x64, 0x1c,
+	0xce, 0x5e, 0xb2, 0x1c, 0x4c, 0xc1, 0x12, 0x08, 0x83, 0xc3, 0xe0, 0xe8, 0xe6, 0xf4, 0xca, 0x3b,
+	0x7e, 0x85, 0x6e, 0x64, 0x42, 0xa6, 0x26, 0xec, 0x1d, 0x5e, 0x3b, 0xea, 0x1f, 0x9f, 0x90, 0xd6,
+	0x07, 0x69, 0x7c, 0xb8, 0x82, 0x14, 0x29, 0x27, 0xb5, 0x0f, 0xd2, 0xf8, 0x20, 0x8d, 0x0f, 0xf2,
+	0x42, 0xc8, 0x74, 0xba, 0xc2, 0x89, 0xf7, 0xd1, 0xde, 0x04, 0xec, 0x5b, 0xd0, 0x46, 0x28, 0xd9,
+	0x48, 0x1c, 0x22, 0x3c, 0x01, 0xfb, 0xc6, 0x80, 0xee, 0x0a, 0x9f, 0xa0, 0xfd, 0xb5, 0x57, 0x2f,
+	0xff, 0x36, 0xda, 0x12, 0xc6, 0x94, 0xa0, 0xbd, 0x68, 0xdf, 0xe1, 0x10, 0x6d, 0x9b, 0x72, 0x76,
+	0x0e, 0x89, 0x0d, 0x7b, 0x6e, 0xd0, 0xb4, 0xc7, 0xdf, 0x7a, 0xa8, 0x5f, 0x43, 0xbc, 0x06, 0x5d,
+	0x89, 0x04, 0xf0, 0x29, 0xda, 0xf6, 0x19, 0xe1, 0x21, 0x71, 0xd7, 0xb2, 0x1e, 0x59, 0x84, 0x57,
+	0xaf, 0x5d, 0xda, 0x78, 0xf8, 0xf9, 0xe7, 0xef, 0xaf, 0xbd, 0x5d, 0xbc, 0xe3, 0xe2, 0xaf, 0xc6,
+	0xee, 0xcc, 0xf0, 0x27, 0x84, 0x5a, 0x3b, 0xf8, 0xe0, 0x12, 0x6d, 0xdd, 0x60, 0xf4, 0xf4, 0xbf,
+	0x72, 0xf3, 0x20, 0xf1, 0x81, 0xa3, 0xde, 0xc3, 0xb7, 0x1a, 0xea, 0xca, 0xf3, 0xbd, 0x47, 0xfd,
+	0x4e, 0x42, 0x38, 0xbc, 0xa4, 0xff, 0x2b, 0xca, 0xe8, 0xce, 0x86, 0x89, 0xf7, 0x15, 0x3a, 0x70,
+	0x8c, 0x07, 0x0d, 0x78, 0x69, 0x40, 0xd7, 0xff, 0x7e, 0x76, 0xf2, 0x7d, 0x39, 0x0a, 0x7e, 0x2c,
+	0x47, 0xc1, 0xaf, 0xe5, 0x28, 0x78, 0xf7, 0xe0, 0x5f, 0x17, 0xdc, 0xf9, 0x04, 0x67, 0x5b, 0xee,
+	0x18, 0x1f, 0xfd, 0x09, 0x00, 0x00, 0xff, 0xff, 0x23, 0x33, 0x1a, 0x8d, 0x9f, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -307,7 +316,7 @@ const _ = grpc.SupportPackageIsVersion4
 type InfoServiceClient interface {
 	GetInfo(ctx context.Context, in *GetInfoRequest, opts ...grpc.CallOption) (*InfoResponse, error)
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*v1alpha1.Version, error)
-	WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error)
+	GetUserInfo(ctx context.Context, in *GetUserInfoRequest, opts ...grpc.CallOption) (*GetUserInfoResponse, error)
 }
 
 type infoServiceClient struct {
@@ -336,9 +345,9 @@ func (c *infoServiceClient) GetVersion(ctx context.Context, in *GetVersionReques
 	return out, nil
 }
 
-func (c *infoServiceClient) WhoAmI(ctx context.Context, in *WhoAmIRequest, opts ...grpc.CallOption) (*WhoAmIResponse, error) {
-	out := new(WhoAmIResponse)
-	err := c.cc.Invoke(ctx, "/info.InfoService/WhoAmI", in, out, opts...)
+func (c *infoServiceClient) GetUserInfo(ctx context.Context, in *GetUserInfoRequest, opts ...grpc.CallOption) (*GetUserInfoResponse, error) {
+	out := new(GetUserInfoResponse)
+	err := c.cc.Invoke(ctx, "/info.InfoService/GetUserInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +358,7 @@ func (c *infoServiceClient) WhoAmI(ctx context.Context, in *WhoAmIRequest, opts 
 type InfoServiceServer interface {
 	GetInfo(context.Context, *GetInfoRequest) (*InfoResponse, error)
 	GetVersion(context.Context, *GetVersionRequest) (*v1alpha1.Version, error)
-	WhoAmI(context.Context, *WhoAmIRequest) (*WhoAmIResponse, error)
+	GetUserInfo(context.Context, *GetUserInfoRequest) (*GetUserInfoResponse, error)
 }
 
 // UnimplementedInfoServiceServer can be embedded to have forward compatible implementations.
@@ -362,8 +371,8 @@ func (*UnimplementedInfoServiceServer) GetInfo(ctx context.Context, req *GetInfo
 func (*UnimplementedInfoServiceServer) GetVersion(ctx context.Context, req *GetVersionRequest) (*v1alpha1.Version, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
 }
-func (*UnimplementedInfoServiceServer) WhoAmI(ctx context.Context, req *WhoAmIRequest) (*WhoAmIResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method WhoAmI not implemented")
+func (*UnimplementedInfoServiceServer) GetUserInfo(ctx context.Context, req *GetUserInfoRequest) (*GetUserInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserInfo not implemented")
 }
 
 func RegisterInfoServiceServer(s *grpc.Server, srv InfoServiceServer) {
@@ -406,20 +415,20 @@ func _InfoService_GetVersion_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _InfoService_WhoAmI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WhoAmIRequest)
+func _InfoService_GetUserInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(InfoServiceServer).WhoAmI(ctx, in)
+		return srv.(InfoServiceServer).GetUserInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/info.InfoService/WhoAmI",
+		FullMethod: "/info.InfoService/GetUserInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InfoServiceServer).WhoAmI(ctx, req.(*WhoAmIRequest))
+		return srv.(InfoServiceServer).GetUserInfo(ctx, req.(*GetUserInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -437,8 +446,8 @@ var _InfoService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _InfoService_GetVersion_Handler,
 		},
 		{
-			MethodName: "WhoAmI",
-			Handler:    _InfoService_WhoAmI_Handler,
+			MethodName: "GetUserInfo",
+			Handler:    _InfoService_GetUserInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -547,7 +556,7 @@ func (m *GetVersionRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *WhoAmIRequest) Marshal() (dAtA []byte, err error) {
+func (m *GetUserInfoRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -557,12 +566,12 @@ func (m *WhoAmIRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WhoAmIRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetUserInfoRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *WhoAmIRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GetUserInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -574,7 +583,7 @@ func (m *WhoAmIRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *WhoAmIResponse) Marshal() (dAtA []byte, err error) {
+func (m *GetUserInfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -584,12 +593,12 @@ func (m *WhoAmIResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *WhoAmIResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetUserInfoResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *WhoAmIResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GetUserInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -602,6 +611,13 @@ func (m *WhoAmIResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.Subject)
 		copy(dAtA[i:], m.Subject)
 		i = encodeVarintInfo(dAtA, i, uint64(len(m.Subject)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Issuer) > 0 {
+		i -= len(m.Issuer)
+		copy(dAtA[i:], m.Issuer)
+		i = encodeVarintInfo(dAtA, i, uint64(len(m.Issuer)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -665,7 +681,7 @@ func (m *GetVersionRequest) Size() (n int) {
 	return n
 }
 
-func (m *WhoAmIRequest) Size() (n int) {
+func (m *GetUserInfoRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -677,12 +693,16 @@ func (m *WhoAmIRequest) Size() (n int) {
 	return n
 }
 
-func (m *WhoAmIResponse) Size() (n int) {
+func (m *GetUserInfoResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	l = len(m.Issuer)
+	if l > 0 {
+		n += 1 + l + sovInfo(uint64(l))
+	}
 	l = len(m.Subject)
 	if l > 0 {
 		n += 1 + l + sovInfo(uint64(l))
@@ -927,7 +947,7 @@ func (m *GetVersionRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *WhoAmIRequest) Unmarshal(dAtA []byte) error {
+func (m *GetUserInfoRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -950,10 +970,10 @@ func (m *WhoAmIRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WhoAmIRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: GetUserInfoRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WhoAmIRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GetUserInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -981,7 +1001,7 @@ func (m *WhoAmIRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *WhoAmIResponse) Unmarshal(dAtA []byte) error {
+func (m *GetUserInfoResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1004,13 +1024,45 @@ func (m *WhoAmIResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WhoAmIResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: GetUserInfoResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WhoAmIResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GetUserInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Issuer", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInfo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInfo
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthInfo
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Issuer = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Subject", wireType)
 			}

@@ -10,6 +10,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/jws"
 	testutil "github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
@@ -51,7 +52,7 @@ metadata:
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"))
-	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
@@ -61,6 +62,7 @@ metadata:
 		if assert.NoError(t, err) {
 			assert.NotNil(t, created)
 			assert.Contains(t, created.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, created.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("LintWorkflow", func(t *testing.T) {
@@ -71,6 +73,7 @@ metadata:
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {

@@ -55,14 +55,6 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	s.instanceIDService.Label(req.Workflow)
 	creator.Label(ctx, req.Workflow)
 
-	claims := auth.GetClaims(ctx)
-	if claims != nil {
-		if req.Workflow.GetLabels() == nil {
-			req.Workflow.SetLabels(make(map[string]string))
-		}
-		req.Workflow.GetLabels()[common.LabelKeyCreator] = claims.Subject
-	}
-
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
@@ -444,9 +436,17 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		}
 		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
-		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, false)
+		wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, wfTmpl.Spec.WorkflowMetadata, false)
 	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
-		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, true)
+		cwfTmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, cwfTmpl.Spec.WorkflowMetadata, true)
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
 	}

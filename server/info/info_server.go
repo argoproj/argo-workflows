@@ -14,12 +14,12 @@ type infoServer struct {
 	links            []*wfv1.Link
 }
 
-func (i *infoServer) WhoAmI(ctx context.Context, _ *infopkg.WhoAmIRequest) (*infopkg.WhoAmIResponse, error) {
-	claims := auth.GetClaims(ctx)
+func (i *infoServer) GetUserInfo(ctx context.Context, _ *infopkg.GetUserInfoRequest) (*infopkg.GetUserInfoResponse, error) {
+	claims := auth.GetClaimSet(ctx)
 	if claims != nil {
-		return &infopkg.WhoAmIResponse{Subject: claims.Sub}, nil
+		return &infopkg.GetUserInfoResponse{Subject: claims.Sub, Issuer: claims.Iss}, nil
 	}
-	return &infopkg.WhoAmIResponse{}, nil
+	return &infopkg.GetUserInfoResponse{}, nil
 }
 
 func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg.InfoResponse, error) {

@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"k8s.io/client-go/kubernetes"
-
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -35,6 +35,7 @@ type When struct {
 	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
 	resourceQuota     *corev1.ResourceQuota
+	configMap         *corev1.ConfigMap
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -194,6 +195,33 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 	if w.t.Failed() {
 		w.t.FailNow()
 	}
+	return w
+}
+
+func (w *When) CreateConfigMap(name string, data map[string]string) *When {
+	//Clean if same map is already exist
+	err := w.kubeClient.CoreV1().ConfigMaps("argo").Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		if !apierr.IsNotFound(err) {
+			panic(err)
+		}
+	}
+	obj, err := util.CreateConfigMap(w.kubeClient, "argo", name, data)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.configMap = obj
+	return w
+}
+
+func (w *When) DeleteConfigMap() *When {
+	err := util.DeleteConfigMap(w.kubeClient, w.configMap)
+	if err != nil {
+		if !apierr.IsNotFound(err) {
+			w.t.Fatal(err)
+		}
+	}
+	w.configMap = nil
 	return w
 }
 

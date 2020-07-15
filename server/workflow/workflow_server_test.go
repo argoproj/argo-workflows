@@ -6,15 +6,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/argoproj/argo/util"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
@@ -24,9 +19,12 @@ import (
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/jws"
 	testutil "github.com/argoproj/argo/test/util"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -434,6 +432,14 @@ const workflowtmpl = `
     "namespace": "workflows"
   },
   "spec": {
+	"workflowMetadata": {
+	 "Labels": {
+		"labelTest": "test"
+	 },
+	 "annotations": {
+		"annotationTest": "test"
+	 }
+	},
     "entrypoint": "whalesay-template",
     "arguments": {
       "parameters": [
@@ -511,6 +517,14 @@ const clusterworkflowtmpl = `
     "name": "cluster-workflow-template-whalesay-template"
   },
   "spec": {
+	"workflowMetadata": {
+	 "Labels": {
+		"labelTest": "test"
+	 },
+	 "annotations": {
+		"annotationTest": "test"
+	 }
+	},
     "entrypoint": "whalesay-template",
     "arguments": {
       "parameters": [
@@ -571,7 +585,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
 	return server, ctx
 }
 
@@ -601,6 +615,7 @@ func TestCreateWorkflow(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 	}
 }
 
@@ -834,6 +849,7 @@ func TestLintWorkflow(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, linted)
 		assert.Contains(t, linted.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, linted.Labels, common.LabelKeyCreator)
 	}
 }
 
@@ -870,6 +886,8 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, "labelTest")
+			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
@@ -892,6 +910,8 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, "labelTest")
+			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
 	})
 }

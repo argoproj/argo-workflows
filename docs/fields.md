@@ -222,6 +222,10 @@ Workflow is the definition of a workflow resource
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
@@ -527,6 +531,10 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
@@ -588,6 +596,7 @@ WorkflowSpec is the specification of a Workflow.
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
+|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
@@ -616,6 +625,7 @@ WorkflowStatus contains overall status information about a workflow
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
+|`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
 
 ## CronWorkflowSpec
 
@@ -842,6 +852,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
@@ -1124,6 +1138,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
@@ -1185,12 +1203,14 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
+|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
+|`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be refer|
 |`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## Arguments
@@ -1313,6 +1333,8 @@ Arguments to a template
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
@@ -1389,6 +1411,24 @@ PodGC describes how to delete completed pods as they complete
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
+
+## Synchronization
+
+Synchronization holds synchronization lock configuration
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration|
 
 ## Template
 
@@ -1612,6 +1652,10 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
@@ -1671,6 +1715,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
 |`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
+|`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
@@ -1822,6 +1867,24 @@ Outputs hold parameters, artifacts, and results from a step
 |`exitCode`|`string`|ExitCode holds the exit code of a script template|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters holds the list of output parameters produced by a step|
 |`result`|`string`|Result holds the result (stdout) of a script template|
+
+## SynchronizationStatus
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
 
 ## Artifact
 
@@ -2012,6 +2075,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/workflow-template/dag.yaml)
@@ -2055,6 +2120,24 @@ Prometheus is a prometheus metric to be emitted
 |`labels`|`Array<`[`MetricLabel`](#metriclabel)`>`|Labels is a list of metric labels|
 |`name`|`string`|Name is the name of the metric|
 |`when`|`string`|When is a conditional statement that decides when to emit the metric|
+
+## SemaphoreRef
+
+SemaphoreRef is a reference of Semaphore
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for Semaphore configuration|
 
 ## ArtifactLocation
 
@@ -2527,6 +2610,10 @@ Pod metdata
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/testvolume.yaml)
@@ -2820,6 +2907,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-workflow.yaml)
@@ -2905,6 +2994,25 @@ TemplateRef is a reference of template resource.
 |`name`|`string`|Name is the resource name of the template.|
 |`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
+
+## SemaphoreStatus
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
+|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
 
 ## ArchiveStrategy
 
@@ -3384,10 +3492,20 @@ Sequence expands a workflow step into numeric range
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`count`|`string`|Count is number of elements in the sequence (default: 0). Not to be used with end|
-|`end`|`string`|Number at which to end the sequence (default: 0). Not to be used with Count|
+|`count`|[`IntOrString`](#intorstring)|Count is number of elements in the sequence (default: 0). Not to be used with end|
+|`end`|[`IntOrString`](#intorstring)|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
-|`start`|`string`|Number at which to start the sequence (default: 0)|
+|`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
+
+## SemaphoreHolding
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holders`|`Array< string >`|Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.|
+|`semaphore`|`string`|Semaphore stores the semaphore name.|
 
 ## NoneStrategy
 
@@ -3657,6 +3775,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
@@ -4119,6 +4241,10 @@ A single application container that you want to run within a pod.
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
 
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/timeouts-step.yaml)
@@ -4177,6 +4303,26 @@ IntOrString is a type that can hold an int32 or a string.  When used in JSON or 
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/output-parameter.yaml)
 </details>
+
+## ConfigMapKeySelector
+
+Selects a key from a ConfigMap.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|The key to select.|
+|`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
+|`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
 
 ## EnvVar
 
@@ -4383,24 +4529,6 @@ SecretKeySelector selects a key of a Secret.
 |`key`|`string`|The key of the secret to select from.  Must be a valid secret key.|
 |`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
 |`optional`|`boolean`|Specify whether the Secret or its key must be defined|
-
-## ConfigMapKeySelector
-
-Selects a key from a ConfigMap.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`hdfs-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/hdfs-artifact.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|The key to select.|
-|`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
-|`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
 
 ## Initializers
 
@@ -4767,6 +4895,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 
@@ -5743,6 +5875,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/steps.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/suspend-template.yaml)
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-tmpl-level.yaml)
+
+- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/examples/template-on-exit.yaml)
 

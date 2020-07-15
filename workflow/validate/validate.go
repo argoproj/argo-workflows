@@ -881,7 +881,7 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 		// when considering if all variables are resolveable.
 		scope[anyItemMagicValue] = true
 	} else if withSequence != nil {
-		if withSequence.Count != "" && withSequence.End != "" {
+		if withSequence.Count != nil && withSequence.End != nil {
 			return errors.New(errors.CodeBadRequest, "only one of count or end can be defined in withSequence")
 		}
 		scope["item"] = true

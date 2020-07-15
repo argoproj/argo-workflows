@@ -1,4 +1,4 @@
-package controller
+package sync
 
 import (
 	"container/heap"
@@ -99,6 +99,10 @@ type priorityQueue struct {
 
 func (pq *priorityQueue) pop() *item {
 	return heap.Pop(pq).(*item)
+}
+
+func (pq *priorityQueue) peek() *item {
+	return pq.items[0]
 }
 
 func (pq *priorityQueue) add(key interface{}, priority int32, creationTime time.Time) {
