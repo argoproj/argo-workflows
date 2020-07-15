@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/creator"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -29,6 +30,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 		return nil, fmt.Errorf("cluster workflow template was not found in the request body")
 	}
 	cwts.instanceIDService.Label(req.Template)
+	creator.Label(ctx, req.Template)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	_, err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template)
 	if err != nil {
@@ -91,6 +93,7 @@ func (cwts *ClusterWorkflowTemplateServer) DeleteClusterWorkflowTemplate(ctx con
 
 func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateLintRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	cwts.instanceIDService.Label(req.Template)
+	creator.Label(ctx, req.Template)
 	wfClient := auth.GetWfClient(ctx)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 

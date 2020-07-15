@@ -10,7 +10,7 @@ import (
 )
 
 func Test_nullSSO_Authorize(t *testing.T) {
-	err := NullSSO.Authorize(context.Background(), "")
+	_, err := NullSSO.Authorize(context.Background(), "")
 	assert.Error(t, err)
 }
 
