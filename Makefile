@@ -6,7 +6,7 @@ OUTPUT_IMAGE_ARCH ?= amd64
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
-GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
+GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///' | sed 's/pull\///')
 GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -36,10 +36,6 @@ ifeq ($(GIT_BRANCH),master)
 VERSION := latest
 endif
 
-ifneq ($(findstring release,$(GIT_BRANCH)),)
-VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
-endif
-
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(GIT_BRANCH),HEAD)
@@ -48,6 +44,7 @@ MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
+VERSION               := $(shell git tag|grep ^v|sort -d|tail -n1)
 MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else

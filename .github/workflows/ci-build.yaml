@@ -21,10 +21,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Specify branch
-        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
@@ -72,9 +68,10 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          mkdir dist
+          mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true > /tmp/log/argo-e2e/argo.log &
+          git fetch --tags
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
         env:
@@ -102,14 +99,10 @@ jobs:
   codegen:
     name: Codegen
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Specify branch
-        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
@@ -146,6 +139,7 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: |
+          git fetch --tags
           make codegen
       - name: Make manifests
         env:
@@ -167,10 +161,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Specify branch
-        run: git checkout -b pull/$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
