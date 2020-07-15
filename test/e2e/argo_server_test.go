@@ -111,8 +111,11 @@ metadata:
     argo-e2e: true
 spec:
   event:
-    expression: metadata.claimSet.sub == "admin" && event.message != "" && metadata["x-argo-e2e"] == ["true"]
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.message != "" && metadata["x-argo-e2e"] == ["true"]
   entrypoint: main
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
   arguments:
     parameters:
       - name: message
@@ -146,7 +149,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		Wait(1*time.Second).
+		Wait(2*time.Second).
 		Then().
 		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=event-consumer"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			assert.Len(t, wfList.Items, 1)
