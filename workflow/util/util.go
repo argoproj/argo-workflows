@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -41,9 +42,11 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/creator"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -152,14 +155,16 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(ctx context.Context, client wfclientset.Interface, namespace, instanceId string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 
+	instanceid.Label(wf, instanceId)
+	creator.Label(ctx, wf)
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
 		return nil, err
 	}
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(client.ArgoprojV1alpha1().WorkflowTemplates(namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(client.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
 	if err != nil {
@@ -168,13 +173,13 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.DryRun {
 		return wf, nil
 	} else if opts.ServerDryRun {
-		wf, err := CreateServerDryRun(wf, wfClientset)
+		wf, err := CreateServerDryRun(wf, client)
 		if err != nil {
 			return nil, err
 		}
 		return wf, err
 	} else {
-		return wfIf.Create(wf)
+		return client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
 	}
 }
 

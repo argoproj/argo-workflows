@@ -29,11 +29,7 @@ func (s *service) InstanceID() string {
 }
 
 func (s *service) Label(obj metav1.Object) {
-	if s.instanceID != "" {
-		labels.Label(obj, common.LabelKeyControllerInstanceID, s.instanceID)
-	} else {
-		labels.UnLabel(obj, common.LabelKeyControllerInstanceID)
-	}
+	labels.Label(obj, common.LabelKeyControllerInstanceID, s.instanceID)
 }
 
 func (s *service) With(opts *metav1.ListOptions) {

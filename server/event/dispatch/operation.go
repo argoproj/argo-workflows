@@ -16,39 +16,40 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/creator"
 	"github.com/argoproj/argo/workflow/util"
 )
 
 type Operation struct {
 	// system context
-	client                    versioned.Interface
+	ctx                       context.Context
+	instanceIDService         instanceid.Service
 	workflowTemplateKeyLister cache.KeyLister
 	// about the event
-	event    *wfv1.Item
-	metadata map[string]interface{}
+	event *wfv1.Item
 }
 
-func NewOperation(ctx context.Context, workflowTemplateKeyLister cache.KeyLister, event *wfv1.Item) Operation {
+func NewOperation(ctx context.Context, instanceIDService instanceid.Service, workflowTemplateKeyLister cache.KeyLister, event *wfv1.Item) Operation {
 	return Operation{
-		client:                    auth.GetWfClient(ctx),
+		ctx:                       ctx,
+		instanceIDService:         instanceIDService,
 		workflowTemplateKeyLister: workflowTemplateKeyLister,
 		event:                     event,
-		metadata:                  metaData(ctx),
 	}
 }
 
-func (s *Operation) Execute() {
-	s.submitWorkflowsFromWorkflowTemplates()
+func (o *Operation) Execute() {
+	o.submitWorkflowsFromWorkflowTemplates()
 }
 
-func (s *Operation) submitWorkflowsFromWorkflowTemplates() {
-	for _, key := range s.workflowTemplateKeyLister.ListKeys() {
+func (o *Operation) submitWorkflowsFromWorkflowTemplates() {
+	for _, key := range o.workflowTemplateKeyLister.ListKeys() {
 		namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			err := s.submitWorkflowFromWorkflowTemplate(namespace, name)
+			_, err := o.submitWorkflowFromWorkflowTemplate(namespace, name)
 			return err == nil, err
 		})
 		if err != nil {
@@ -57,54 +58,56 @@ func (s *Operation) submitWorkflowsFromWorkflowTemplates() {
 	}
 }
 
-func (s *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) error {
-	tmpl, err := s.client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(name, metav1.GetOptions{})
+func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (*wfv1.Workflow, error) {
+	client := auth.GetWfClient(o.ctx)
+	tmpl, err := client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get workflow template: %w", err)
+		return nil, fmt.Errorf("failed to get workflow template: %w", err)
 	}
 	if tmpl.Spec.Event == nil {
 		// we should have filtered this out
-		return errors.New("event spec is missing (should be impossible)")
+		return nil, errors.New("event spec is missing (should be impossible)")
 	}
-	env, err := expressionEnvironment(map[string]interface{}{"event": s.event, "metadata": s.metadata})
+	env, err := expressionEnvironment(map[string]interface{}{"event": o.event, "metadata": metaData(o.ctx)})
 	if err != nil {
-		return fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
+		return nil, fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
 	}
 	result, err := expr.Eval(tmpl.Spec.Event.Expression, env)
 	if err != nil {
-		return fmt.Errorf("failed to evaluate workflow template expression: %w", err)
+		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
 	matched, ok := result.(bool)
 	if !ok {
-		return errors.New("malformed workflow template expression: did not evaluate to boolean")
+		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
 	} else if matched {
 		parameters := make([]string, len(tmpl.Spec.Arguments.Parameters))
 		for i, p := range tmpl.Spec.Arguments.Parameters {
 			if p.ValueFrom == nil {
-				return fmt.Errorf("malformed workflow template: parameter \"%s\" valueFrom is nil", p.Name)
+				return nil, fmt.Errorf("malformed workflow template: parameter \"%s\" valueFrom is nil", p.Name)
 			}
 			result, err := expr.Eval(p.ValueFrom.Expression, env)
 			if err != nil {
-				return fmt.Errorf("workflow templates parameter \"%s\" expression failed to evaluate: %w", p.Name, err)
+				return nil, fmt.Errorf("workflow templates parameter \"%s\" expression failed to evaluate: %w", p.Name, err)
 			}
 			parameters[i] = fmt.Sprintf("%s=%v", p.Name, result)
 		}
 
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
-		var labels []string
-		for k, v := range tmpl.GetLabels() {
-			labels = append(labels, k+"="+v)
-		}
-		err := util.ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: parameters, Labels: strings.Join(labels, ",")})
+		// we must carefully reflect any changes in workflow_server.go
+		o.instanceIDService.Label(wf)
+		creator.Label(o.ctx, wf)
+		util.SubmitWorkflow(o.ctx, o.instanceIDService)
+		err := util.ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: parameters})
 		if err != nil {
-			return fmt.Errorf("failed to apply submit options to workflow: %w", err)
+			return nil, fmt.Errorf("failed to apply submit options to workflow: %w", err)
 		}
-		_, err = s.client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
+		wf, err = client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
 		if err != nil {
-			return fmt.Errorf("failed to create workflow: %w", err)
+			return nil, fmt.Errorf("failed to create workflow: %w", err)
 		}
+		return wf, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func expressionEnvironment(src map[string]interface{}) (map[string]interface{}, error) {
