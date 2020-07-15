@@ -910,7 +910,8 @@ func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
 
 // MergeTo will do strategic merge the workflows
 // patch workflow will be merged into target workflow.
-func MergeTo(patch, target *wfv1.Workflow) error {
+// Overwrite flag indicates whether merge needs to overwrite the target value from patch
+func MergeTo(patch, target *wfv1.Workflow, overwrite bool) error {
 	if target == nil || patch == nil {
 		return nil
 	}
@@ -924,12 +925,16 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-
-	mergedWFByte, err := strategicpatch.StrategicMergePatch(targetWfByte, patchWfBytes, wfv1.Workflow{})
+	var mergedWfByte []byte
+	if overwrite {
+		mergedWfByte, err = strategicpatch.StrategicMergePatch(targetWfByte, patchWfBytes, wfv1.Workflow{})
+	} else {
+		mergedWfByte, err = strategicpatch.StrategicMergePatch(patchWfBytes, targetWfByte, wfv1.Workflow{})
+	}
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(mergedWFByte, &target)
+	err = json.Unmarshal(mergedWfByte, target)
 	if err != nil {
 		return err
 	}
