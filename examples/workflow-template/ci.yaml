@@ -1,4 +1,3 @@
-# TODO - this does not work today
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -21,20 +20,38 @@ rules:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: jenkins
+  name: public-github
+automountServiceAccountToken: false
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: jenkins
+  name: github
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: submit-workflow-template
 subjects:
   - kind: ServiceAccount
-    name: jenkins
+    name: public-github
     namespace: argo
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: public-github
+  annotations:
+    kubernetes.io/service-account.name: public-github
+type: kubernetes.io/service-account-token
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: webhooks
+stringData:
+  public-github: |
+    type: github
+    secret: "123456"
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -42,11 +59,11 @@ metadata:
   name: ci-job
 spec:
   event:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:jenkins" 
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:public-github" && metadata["x-github-event"] == ["push"]
     parameters:
-      - expression: event.revision
+      - expression: event.after
         name: revision
-      - expression: event.repo
+      - expression: event.repository.clone_url
         name: repo
   arguments:
     parameters:
@@ -61,5 +78,5 @@ spec:
         command:
           - sh
         source: |
-          git clone --depth 1 "{{workflow.parameters.repo}}" .
+          git clone "{{workflow.parameters.repo}}" .
           git checkout "{{workflow.parameters.revision}}"

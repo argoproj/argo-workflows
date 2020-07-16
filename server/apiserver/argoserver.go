@@ -34,6 +34,7 @@ import (
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/auth/sso"
+	"github.com/argoproj/argo/server/auth/webhook"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/event"
@@ -204,6 +205,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
+	webhookUnaryInterceptor, err := webhook.UnaryServerInterceptor(as.kubeClientset.CoreV1().Secrets(as.namespace))
+	if err != nil {
+		log.Fatal(err)
+	}
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -215,6 +220,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
+			webhookUnaryInterceptor,
 			as.authenticator.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
