@@ -1233,20 +1233,17 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 }
 
 func (woc *wfOperationCtx) createPVCs() error {
-
 	if !(woc.wf.Status.Phase == wfv1.NodePending || woc.wf.Status.Phase == wfv1.NodeRunning) {
 		// Only attempt to create PVCs if workflow is in Pending or Running state
 		// (e.g. passed validation, or didn't already complete)
 		return nil
 	}
-
 	existPVC := make(map[string]bool)
 	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
 		if pvc.Name != "" {
 			existPVC[pvc.PersistentVolumeClaim.ClaimName] = true
 		}
 	}
-
 	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
 		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wfSpec.VolumeClaimTemplates))
 	}
