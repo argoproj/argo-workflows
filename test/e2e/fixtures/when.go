@@ -227,6 +227,15 @@ func (w *When) MemoryQuota(quota string) *When {
 	return w
 }
 
+func (w *When) StorageQuota(quota string) *When {
+	obj, err := util.CreateHardStorageQuota(w.kubeClient, "argo", "storage-quota", quota)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.resourceQuota = obj
+	return w
+}
+
 func (w *When) DeleteQuota() *When {
 	err := util.DeleteQuota(w.kubeClient, w.resourceQuota)
 	if err != nil {
