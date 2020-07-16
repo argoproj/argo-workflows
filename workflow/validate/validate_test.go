@@ -2413,6 +2413,15 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: A
+  serviceAccountName: argo
+  parallelism: 1
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  podGC:
+    strategy: OnPodSuccess
+  nodeSelector:
+    beta.kubernetes.io/arch: "{{inputs.parameters.arch}}"
   arguments:
     parameters:
     - name: lines-count
