@@ -22,7 +22,7 @@ export const Login = () => (
                 </h3>
                 <p>It may not be necessary to be logged in to use Argo Workflows, it depends on how it is configured.</p>
                 <p>
-                    <a href='https://github.com/argoproj/argo/blob/master/docs/argo-server-auth.md'>Learn more</a>.
+                    <a href='https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md'>Learn more</a>.
                 </p>
             </div>
 
