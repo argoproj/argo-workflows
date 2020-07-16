@@ -102,7 +102,7 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestEventTemplate() {
+func (s *ArgoServerSuite) TestTemplateWithEvent() {
 	s.Given().
 		WorkflowTemplate(`
 metadata:
@@ -112,6 +112,9 @@ metadata:
 spec:
   event:
     expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.honorific != "" && metadata["x-argo-e2e"] == ["true"]
+    parameters:
+      - name: honorific
+        expression: event.honorific
   entrypoint: main
   workflowMetadata:
     labels:
@@ -121,8 +124,6 @@ spec:
       - name: salutation
         value: "hello"
       - name: honorific
-        valueFrom:
-          expression: event.honorific
   templates:
     - name: main
       steps:
