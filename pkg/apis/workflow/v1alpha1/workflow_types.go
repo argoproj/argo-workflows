@@ -599,6 +599,8 @@ type Metadata struct {
 // Parameter indicate a passed string parameter to a service template with an optional default value
 type Parameter struct {
 	// Name is the parameter name
+	// +patchStrategy=merge
+	// +patchMergeKey=name
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied

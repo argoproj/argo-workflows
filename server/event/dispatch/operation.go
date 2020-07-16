@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/retry"
@@ -20,7 +21,6 @@ import (
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/creator"
-	"github.com/argoproj/argo/workflow/util"
 )
 
 type Operation struct {
@@ -80,23 +80,19 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 	if !ok {
 		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
 	} else if matched {
-		parameters := make([]string, len(tmpl.Spec.Arguments.Parameters))
-		for i, p := range tmpl.Spec.Arguments.Parameters {
-			if p.ValueFrom == nil {
-				return nil, fmt.Errorf("malformed workflow template: parameter \"%s\" valueFrom is nil", p.Name)
+		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
+		o.instanceIDService.Label(wf)
+		creator.Label(o.ctx, wf)
+		for _, p := range tmpl.Spec.Arguments.Parameters {
+			if p.ValueFrom == nil || p.ValueFrom.Expression == "" {
+				continue
 			}
 			result, err := expr.Eval(p.ValueFrom.Expression, env)
 			if err != nil {
 				return nil, fmt.Errorf("workflow templates parameter \"%s\" expression failed to evaluate: %w", p.Name, err)
 			}
-			parameters[i] = fmt.Sprintf("%s=%v", p.Name, result)
-		}
-		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
-		o.instanceIDService.Label(wf)
-		creator.Label(o.ctx, wf)
-		err := util.ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: parameters})
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply submit options to workflow: %w", err)
+			intOrString := intstr.Parse(fmt.Sprintf("%v", result))
+			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: name, Value: &intOrString})
 		}
 		wf, err = client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
 		if err != nil {
