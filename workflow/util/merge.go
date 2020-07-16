@@ -8,9 +8,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-// MergeTo will do strategic merge the workflows
-// patch workflow will be merged into target workflow.
-// Target value will not be overwrite if it is already present
+// MergeTo will merge one workflow (the "patch" workflow) into another (the "target" workflow.
+// If the target workflow defines a field, this take precedence over the patch.
 func MergeTo(patch, target *wfv1.Workflow) error {
 	if target == nil || patch == nil {
 		return nil
