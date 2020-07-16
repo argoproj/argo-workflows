@@ -20,7 +20,7 @@ See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
 ### Options
 
 ```
-      --auth-mode stringArray      API server authentication mode. One of: client|server|sso (default [server])
+      --auth-mode stringArray      API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [server])
       --basehref string            Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF. (default "/")
   -b, --browser                    enable automatic launching of the browser [local mode]
       --configmap string           Name of K8s configmap to retrieve workflow controller configuration (default "workflow-controller-configmap")
