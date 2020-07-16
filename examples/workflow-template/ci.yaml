@@ -1,0 +1,65 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: submit-workflow-template
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - create
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: trigger-workflow-template
+subjects:
+  - kind: ServiceAccount
+    name: github
+    namespace: argo
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: ci-job
+spec:
+  event:
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:github" && metadata["x-github-event"] == ["push"]
+    parameters:
+      - expression: event.after
+        name: revision
+      - expression: event.repository.clone_url
+        name: repo
+  arguments:
+    parameters:
+      - name: repo
+        value: https://github.com/argoproj/argo.git
+      - name: revision
+        value: master
+  entrypoint: main
+  templates:
+    - name: name
+      script:
+        image: docker/whalesay:latest
+        command:
+          - sh
+        source: |
+          git clone --force --depth 1 {{workflow.parameters.repo}} .
+          git checkout {{workflow.parameters.revision}}

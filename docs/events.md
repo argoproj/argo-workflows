@@ -18,6 +18,27 @@ In each use case, the resource must match the event based on an expression.
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).  The token may be namespace-scoped or cluster-scoped. If it is namespace scoped, the namespace must be sent in the URL, but if it is cluster-scoped, then the namespace can be the empty string.  
 
+```yaml
+# Use this role to enable jenkins to submit a workflow template via webhook.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jenkins
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - create
+```
+
 It is only possible to submit/resume resources your access token has access to. 
 
 Example:
