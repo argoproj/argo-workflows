@@ -60,7 +60,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC":                       schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Prometheus":                  schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":                 schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawValueFrom":                schema_pkg_apis_workflow_v1alpha1_RawValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate":            schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy":               schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":                  schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
@@ -71,6 +70,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreStatus":             schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":                    schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitOpts":                  schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":           schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":             schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization":             schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus":       schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
@@ -2256,17 +2256,6 @@ func schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref common.ReferenceCallback)
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_RawValueFrom(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
-				Type:        []string{"object"},
-			},
-		},
-	}
-}
-
 func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2990,6 +2979,17 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/apis/meta/v1.OwnerReference"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
+				Type:        []string{"object"},
+			},
+		},
 	}
 }
 
@@ -3753,10 +3753,10 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
-					"raw": {
+					"supplied": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Raw value to be filled in directly, either through the CLI, API, etc.",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawValueFrom"),
+							Description: "Supplied value to be filled in directly, either through the CLI, API, etc.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom"),
 						},
 					},
 					"default": {
@@ -3769,7 +3769,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawValueFrom", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 

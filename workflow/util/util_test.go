@@ -359,7 +359,7 @@ spec:
       parameters:
       - name: message
         valueFrom:
-          raw: {}
+          supplied: {}
     suspend: {}
   - arguments: {}
     container:
@@ -414,7 +414,7 @@ status:
         parameters:
         - name: message
           valueFrom:
-            raw: {}
+            supplied: {}
       phase: Running
       startedAt: "2020-06-25T18:01:56Z"
       templateName: approve

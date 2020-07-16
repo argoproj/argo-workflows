@@ -228,7 +228,7 @@ spec:
       parameters:
         - name: message
           valueFrom:
-            raw: {}
+            supplied: {}
 
   - name: approve-no-vars
     suspend: {}

@@ -346,7 +346,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 				if node.IsActiveSuspendNode() {
 					if node.Outputs != nil {
 						for i, param := range node.Outputs.Parameters {
-							if param.ValueFrom != nil && param.ValueFrom.Raw != nil {
+							if param.ValueFrom != nil && param.ValueFrom.Supplied != nil {
 								if param.ValueFrom.Default != nil {
 									node.Outputs.Parameters[i].Value = param.ValueFrom.Default
 									node.Outputs.Parameters[i].ValueFrom = nil
@@ -453,7 +453,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 							hit := false
 							for i, param := range node.Outputs.Parameters {
 								if param.Name == name {
-									if param.ValueFrom == nil || param.ValueFrom.Raw == nil {
+									if param.ValueFrom == nil || param.ValueFrom.Supplied == nil {
 										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
 									}
 									intStr := intstr.FromString(val)

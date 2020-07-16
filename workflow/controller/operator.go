@@ -2381,7 +2381,7 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 		panic("addRawOutputFields should only be used for nodes and templates of type suspend")
 	}
 	for _, param := range tmpl.Outputs.Parameters {
-		if param.ValueFrom.Raw != nil {
+		if param.ValueFrom.Supplied != nil {
 			if node.Outputs == nil {
 				node.Outputs = &wfv1.Outputs{Parameters: []wfv1.Parameter{}}
 			}

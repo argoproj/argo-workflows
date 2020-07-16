@@ -31,7 +31,7 @@ spec:
       parameters:
         - name: message
           valueFrom:
-            raw: {}
+            supplied: {}
 
   - name: whalesay
     inputs:

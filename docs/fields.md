@@ -3214,8 +3214,6 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
-
-- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 </details>
 
 ### Fields
@@ -3285,7 +3283,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
-|`raw`|[`RawValueFrom`](#rawvaluefrom)|Raw value to be filled in directly, either through the CLI, API, etc.|
+|`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
 
 ## Counter
 
@@ -3565,17 +3563,13 @@ TarStrategy will tar and gzip the file or directory when saving
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
 
-## RawValueFrom
+## SuppliedValueFrom
 
-RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
-
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
-
-- [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 </details>

@@ -608,7 +608,7 @@ spec:
                             type: string
                           path:
                             type: string
-                          raw:
+                          supplied:
                             type: object
                         type: object
                     required:
@@ -1720,7 +1720,7 @@ spec:
                                   type: string
                                 path:
                                   type: string
-                                raw:
+                                supplied:
                                   type: object
                               type: object
                           required:
@@ -2594,7 +2594,7 @@ spec:
                                             type: string
                                           path:
                                             type: string
-                                          raw:
+                                          supplied:
                                             type: object
                                         type: object
                                     required:
@@ -3547,7 +3547,7 @@ spec:
                                   type: string
                                 path:
                                   type: string
-                                raw:
+                                supplied:
                                   type: object
                               type: object
                           required:
@@ -3959,7 +3959,7 @@ spec:
                                   type: string
                                 path:
                                   type: string
-                                raw:
+                                supplied:
                                   type: object
                               type: object
                           required:
@@ -5475,7 +5475,7 @@ spec:
                                               type: string
                                             path:
                                               type: string
-                                            raw:
+                                            supplied:
                                               type: object
                                           type: object
                                       required:

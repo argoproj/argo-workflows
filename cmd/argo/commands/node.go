@@ -16,10 +16,10 @@ import (
 )
 
 type setOps struct {
-	message           string // --message
-	phase             string // --phase
+	message           string   // --message
+	phase             string   // --phase
 	outputParameters  []string // --output-parameters
-	nodeFieldSelector string // --node-field-selector
+	nodeFieldSelector string   // --node-field-selector
 }
 
 func NewNodeCommand() *cobra.Command {

@@ -692,10 +692,6 @@ message RawArtifact {
   optional string data = 1;
 }
 
-// RawValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
-message RawValueFrom {
-}
-
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
 message ResourceTemplate {
   // Action is the action to perform to the resource.
@@ -852,6 +848,10 @@ message SubmitOpts {
 
   // OwnerReference creates a metadata.ownerReference
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+}
+
+// SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+message SuppliedValueFrom {
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1073,8 +1073,8 @@ message ValueFrom {
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
 
-  // Raw value to be filled in directly, either through the CLI, API, etc.
-  optional RawValueFrom raw = 6;
+  // Supplied value to be filled in directly, either through the CLI, API, etc.
+  optional SuppliedValueFrom supplied = 6;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;

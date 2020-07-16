@@ -1061,7 +1061,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 			paramTypes++
 		}
 	}
-	if param.ValueFrom.Raw != nil {
+	if param.ValueFrom.Supplied != nil {
 		paramTypes++
 	}
 	switch paramTypes {
