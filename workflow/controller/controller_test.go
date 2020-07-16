@@ -395,7 +395,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {
