@@ -599,8 +599,6 @@ type Metadata struct {
 // Parameter indicate a passed string parameter to a service template with an optional default value
 type Parameter struct {
 	// Name is the parameter name
-	// +patchStrategy=merge
-	// +patchMergeKey=name
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
@@ -635,9 +633,6 @@ type ValueFrom struct {
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
-
-	// Expression defines an expression for evaluation
-	Expression string `json:"expression,omitempty" protobuf:"bytes,6,opt,name=expression"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -1664,13 +1659,6 @@ type ResourceTemplate struct {
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
-// This defines an event.
-type Event struct {
-	// An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
-	// +kubebuilder:validation:MinLength=4
-	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
-}
-
 // GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
@@ -1792,8 +1780,6 @@ func (t *DAGTask) ShouldExpand() bool {
 type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template
 	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
-	// An event to resume this node on.
-	Event *Event `json:"event,omitempty" protobuf:"bytes,2,opt,name=event"`
 }
 
 // GetArtifactByName returns an input artifact by its name

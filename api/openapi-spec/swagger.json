@@ -2350,17 +2350,44 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Event": {
-      "description": "This defines an io.argoproj.workflow.v1alpha1.",
+      "description": "Event can trigger this workflow template.",
       "type": "object",
       "required": [
         "expression"
       ],
       "properties": {
         "expression": {
-          "description": "An expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == \"test\"`",
+          "description": "Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == \"test\"`",
           "type": "string"
+        },
+        "parameters": {
+          "description": "Parameters to set as arguments to workflows created.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventParameter"
+          }
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.EventParameter": {
+      "description": "EventParameter is a parameter extracted from the io.argoproj.workflow.v1alpha1.",
+      "type": "object",
+      "required": [
+        "name",
+        "expression"
+      ],
+      "properties": {
+        "expression": {
+          "description": "Expression (https://github.com/antonmedv/expr) that is evaluted against the io.argoproj.workflow.v1alpha1. E.g. `event.type`",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of the parameters",
+          "type": "string"
+        }
+      },
+      "x-kubernetes-patch-merge-key": "name",
+      "x-kubernetes-patch-strategy": "merge"
     },
     "io.argoproj.workflow.v1alpha1.EventResponse": {
       "type": "object"
@@ -3354,10 +3381,6 @@
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template",
           "type": "string"
-        },
-        "event": {
-          "description": "An event to resume this node on.",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
         }
       }
     },
@@ -3778,10 +3801,6 @@
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
-        },
-        "expression": {
-          "description": "Expression defines an expression for evaluation",
-          "type": "string"
         },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",

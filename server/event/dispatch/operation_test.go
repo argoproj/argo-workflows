@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -67,22 +66,33 @@ func TestOperation(t *testing.T) {
 		}
 	})
 
+	t.Run("MalformedParamaterExpression", func(t *testing.T) {
+		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowTemplateSpec{
+				Event: &wfv1.Event{
+					Expression: "true",
+					Parameters: []wfv1.EventParameter{
+						{Name: "my-param", Expression: ""},
+					},
+				},
+			},
+		})
+		assert.NoError(t, err)
+		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		assert.EqualError(t, err, "failed to evalute workflow template parameter \"my-param\" expression: unexpected token EOF (1:1)")
+	})
+
 	t.Run("MatchedExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowTemplateSpec{
 				// note the non-trival expression
-				Event: &wfv1.Event{Expression: "event.type == \"test\""},
-				WorkflowSpec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{
-						{
-							Name:      "my-param",
-							ValueFrom: &wfv1.ValueFrom{Expression: "event.type"},
-						}, {
-							Name:  "other-param",
-							Value: &intstr.IntOrString{StrVal: "bar"},
-						},
-					}},
+				Event: &wfv1.Event{
+					Expression: "event.type == \"test\"",
+					Parameters: []wfv1.EventParameter{
+						{Name: "my-param", Expression: "event.type"},
+					},
 				},
 			},
 		})

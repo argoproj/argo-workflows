@@ -83,13 +83,10 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
 		o.instanceIDService.Label(wf)
 		creator.Label(o.ctx, wf)
-		for _, p := range tmpl.Spec.Arguments.Parameters {
-			if p.ValueFrom == nil || p.ValueFrom.Expression == "" {
-				continue
-			}
-			result, err := expr.Eval(p.ValueFrom.Expression, env)
+		for _, p := range tmpl.Spec.Event.Parameters {
+			result, err := expr.Eval(p.Expression, env)
 			if err != nil {
-				return nil, fmt.Errorf("workflow templates parameter \"%s\" expression failed to evaluate: %w", p.Name, err)
+				return nil, fmt.Errorf("failed to evalute workflow template parameter \"%s\" expression: %w", p.Name, err)
 			}
 			intOrString := intstr.Parse(fmt.Sprintf("%v", result))
 			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})

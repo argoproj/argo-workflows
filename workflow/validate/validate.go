@@ -288,6 +288,12 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 		if err != nil {
 			return nil, fmt.Errorf("malformed event expression: %w", err)
 		}
+		for _, p := range wftmpl.Spec.Event.Parameters {
+			_, err := expr.Compile(p.Expression)
+			if err != nil {
+				return nil, fmt.Errorf("malformed event parameter \"%s\" expression: %w", p.Name, err)
+			}
+		}
 	}
 	wf := &wfv1.Workflow{
 		Spec: wftmpl.Spec.WorkflowSpec,
@@ -1063,7 +1069,7 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s does not have valueFrom or value specified", paramRef)
 	}
 	paramTypes := 0
-	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter, param.ValueFrom.Expression} {
+	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter} {
 		if value != "" {
 			paramTypes++
 		}

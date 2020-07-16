@@ -1899,7 +1899,7 @@ _No description available_
 
 ## Event
 
-This defines an io.argoproj.workflow.v1alpha1.
+Event can trigger this workflow template.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -1911,7 +1911,8 @@ This defines an io.argoproj.workflow.v1alpha1.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`expression`|`string`|An expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == "test"`|
+|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == "test"`|
+|`parameters`|`Array<`[`EventParameter`](#eventparameter)`>`|Parameters to set as arguments to workflows created.|
 
 ## Artifact
 
@@ -2994,7 +2995,6 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
-|`event`|[`Event`](#event)|An event to resume this node on.|
 
 ## TemplateRef
 
@@ -3049,6 +3049,143 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
 |`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
+
+## EventParameter
+
+EventParameter is a parameter extracted from the io.argoproj.workflow.v1alpha1.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
+
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
+
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
+
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
+
+- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
+
+- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
+
+- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
+
+- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
+
+- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
+
+- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
+
+- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
+
+- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
+
+- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
+
+- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
+
+- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
+
+- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
+
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
+
+- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
+
+- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
+
+- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
+
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that is evaluted against the io.argoproj.workflow.v1alpha1. E.g. `event.type`|
+|`name`|`string`|Name of the parameters|
 
 ## ArchiveStrategy
 
@@ -3291,7 +3428,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
-|`expression`|`string`|Expression defines an expression for evaluation|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|

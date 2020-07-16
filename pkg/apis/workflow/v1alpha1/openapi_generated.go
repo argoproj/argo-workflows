@@ -34,6 +34,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":                     schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":                 schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event":                       schema_pkg_apis_workflow_v1alpha1_Event(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EventParameter":              schema_pkg_apis_workflow_v1alpha1_EventParameter(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig":              schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GCSArtifact":                 schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GCSBucket":                   schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref),
@@ -1037,18 +1038,67 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "This defines an event.",
+				Description: "Event can trigger this workflow template.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == \"test\"`",
+							Description: "Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == \"test\"`",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"parameters": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parameters to set as arguments to workflows created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EventParameter"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"expression"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EventParameter"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_EventParameter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "EventParameter is a parameter extracted from the event.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the parameters",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"expression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Expression (https://github.com/antonmedv/expr) that is evaluted against the event. E.g. `event.type`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"expression"},
+				Required: []string{"name", "expression"},
+			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-kubernetes-patch-merge-key": "name",
+					"x-kubernetes-patch-strategy":  "merge",
+				},
 			},
 		},
 	}
@@ -3017,17 +3067,9 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 							Format:      "",
 						},
 					},
-					"event": {
-						SchemaProps: spec.SchemaProps{
-							Description: "An event to resume this node on.",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"),
-						},
-					},
 				},
 			},
 		},
-		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"},
 	}
 }
 
@@ -3775,13 +3817,6 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
-						},
-					},
-					"expression": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Expression defines an expression for evaluation",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 				},

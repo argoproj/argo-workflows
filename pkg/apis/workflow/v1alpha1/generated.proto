@@ -310,11 +310,25 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
-// This defines an event.
+// Event can trigger this workflow template.
 message Event {
-  // An expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
+  // Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
   // +kubebuilder:validation:MinLength=4
   optional string expression = 1;
+
+  // Parameters to set as arguments to workflows created.
+  repeated EventParameter parameters = 2;
+}
+
+// EventParameter is a parameter extracted from the event.
+// +patchStrategy=merge
+// +patchMergeKey=name
+message EventParameter {
+  // Name of the parameters
+  optional string name = 1;
+
+  // Expression (https://github.com/antonmedv/expr) that is evaluted against the event. E.g. `event.type`
+  optional string expression = 2;
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -861,9 +875,6 @@ message SubmitOpts {
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
-
-  // An event to resume this node on.
-  optional Event event = 2;
 }
 
 // Synchronization holds synchronization lock configuration
@@ -1081,9 +1092,6 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
-
-  // Expression defines an expression for evaluation
-  optional string expression = 6;
 }
 
 message Version {

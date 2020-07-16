@@ -601,8 +601,6 @@ spec:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
-                          expression:
-                            type: string
                           jqFilter:
                             type: string
                           jsonPath:
@@ -655,6 +653,18 @@ spec:
                 expression:
                   minLength: 4
                   type: string
+                parameters:
+                  items:
+                    properties:
+                      expression:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - expression
+                    - name
+                    type: object
+                  type: array
               required:
               - expression
               type: object
@@ -1721,8 +1731,6 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
-                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -2595,8 +2603,6 @@ spec:
                                             - type: integer
                                             - type: string
                                             x-kubernetes-int-or-string: true
-                                          expression:
-                                            type: string
                                           jqFilter:
                                             type: string
                                           jsonPath:
@@ -3548,8 +3554,6 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
-                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -3960,8 +3964,6 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
-                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -5476,8 +5478,6 @@ spec:
                                               - type: integer
                                               - type: string
                                               x-kubernetes-int-or-string: true
-                                            expression:
-                                              type: string
                                             jqFilter:
                                               type: string
                                             jsonPath:
@@ -5558,14 +5558,6 @@ spec:
                     properties:
                       duration:
                         type: string
-                      event:
-                        properties:
-                          expression:
-                            minLength: 4
-                            type: string
-                        required:
-                        - expression
-                        type: object
                     type: object
                   synchronization:
                     properties:
