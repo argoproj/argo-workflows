@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
@@ -44,6 +45,9 @@ func NewDeleteCommand() *cobra.Command {
 				workflows = append(workflows, wfv1.Workflow{
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
+			}
+			if all && (flags.completed || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "") {
+				log.Fatal("--all cannot be used together with any of the following flags: --completed, --prefix, --selector, and --older")
 			}
 			if all || flags.completed || flags.prefix != "" || flags.labels != "" {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
