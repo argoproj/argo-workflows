@@ -5,7 +5,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
@@ -66,20 +66,17 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                         }}>
                         {this.renderTemplates()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <ResourceSubmit<models.WorkflowTemplate>
-                                resourceName={'Cluster Workflow Template'}
-                                defaultResource={exampleClusterWorkflowTemplate()}
-                                validate={wfValue => {
-                                    if (!wfValue || !wfValue.metadata) {
-                                        return {valid: false, message: 'Invalid ClusterWorkflowTemplate: metadata cannot be blank'};
-                                    }
-                                    if (wfValue.metadata.namespace) {
-                                        return {valid: false, message: 'Invalid ClusterWorkflowTemplate: metadata.namespace cannot be set'};
-                                    }
-                                    return {valid: true};
-                                }}
+                            <ResourceEditor
+                                upload={true}
+                                editing={true}
+                                title={'New Cluster Workflow Template'}
+                                kind='ClusterWorkflowTemplate'
+                                value={exampleClusterWorkflowTemplate()}
                                 onSubmit={wfTmpl => {
-                                    return services.clusterWorkflowTemplate.create(wfTmpl).then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)));
+                                    services.clusterWorkflowTemplate
+                                        .create(wfTmpl)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)))
+                                        .catch(error => this.setState({error}));
                                 }}
                             />
                         </SlidingPanel>

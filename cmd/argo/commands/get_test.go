@@ -2,21 +2,17 @@ package commands
 
 import (
 	"bytes"
-	"context"
 	"fmt"
-
-	"sigs.k8s.io/yaml"
 	"testing"
 	"time"
 
-	"github.com/ghodss/yaml"
-	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 	"text/tabwriter"
 
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/stretchr/testify/mock"
 )
 
 var wfWithStatus = `

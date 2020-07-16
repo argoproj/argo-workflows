@@ -257,6 +257,7 @@ func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 			logWorkflow(ctx, serviceClient, namespace, workflow, "", &corev1.PodLogOptions{
 				Container: "main",
 				Follow:    true,
+				Previous:  false,
 			})
 		}
 	}

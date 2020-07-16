@@ -6,7 +6,7 @@ import {Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
 import {
     WorkflowArtifacts,
@@ -18,7 +18,7 @@ import {
     WorkflowTimeline,
     WorkflowYamlViewer
 } from '../../../workflows/components';
-import {WorkflowYamlPanel} from '../../../workflows/components/workflow-details/workflow-yaml-panel';
+import {WorkflowResourcePanel} from '../../../workflows/components/workflow-details/workflow-resource-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -152,7 +152,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             )}
                             <h6>Artifacts</h6>
                             <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
-                            <WorkflowYamlPanel workflow={this.state.workflow} />
+                            <WorkflowResourcePanel workflow={this.state.workflow} />
                         </div>
                     </div>
                 ) : (
@@ -201,9 +201,10 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
                     {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
                     {this.sidePanel === 'resubmit' && (
-                        <YamlEditor
+                        <ResourceEditor<Workflow>
                             editing={true}
                             title='Resubmit Archived Workflow'
+                            kind='Workflow'
                             value={{
                                 metadata: {
                                     namespace: this.state.workflow.metadata.namespace,

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo/workflow/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/yaml"
@@ -62,6 +64,12 @@ func Test_listWorkflows(t *testing.T) {
 			assert.NotNil(t, workflows)
 		}
 	})
+	t.Run("Resubmitted", func(t *testing.T) {
+		workflows, err := list(&metav1.ListOptions{LabelSelector: common.LabelKeyPreviousWorkflowName}, listFlags{resubmitted: true})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, workflows)
+		}
+	})
 	t.Run("Labels", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{LabelSelector: "foo"}, listFlags{labels: "foo"})
 		if assert.NoError(t, err) {
@@ -93,6 +101,11 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
+		{ObjectMeta: metav1.ObjectMeta{
+			Name:              "baz-",
+			CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)},
+			Labels:            map[string]string{common.LabelKeyPreviousWorkflowName: "foo-"},
+		}},
 	}}, nil)
 	workflows, err := listWorkflows(context.Background(), c, flags)
 	return workflows, err

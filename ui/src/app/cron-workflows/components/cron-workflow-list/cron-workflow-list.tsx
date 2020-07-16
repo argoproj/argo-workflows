@@ -6,7 +6,7 @@ import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
@@ -80,23 +80,18 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-12'>{this.renderCronWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <ResourceSubmit<models.CronWorkflow>
-                                resourceName={'Cron Workflow'}
-                                defaultResource={exampleCronWorkflow(this.namespace)}
-                                validate={wfValue => {
-                                    if (!wfValue || !wfValue.metadata) {
-                                        return {valid: false, message: 'Invalid CronWorkflow: metadata cannot be blank'};
-                                    }
-                                    if (!wfValue.metadata.namespace) {
-                                        return {valid: false, message: 'Invalid CronWorkflow: metadata.namespace cannot be blank'};
-                                    }
-                                    return {valid: true};
-                                }}
+                            <ResourceEditor
+                                title={'New Cron Workflow'}
+                                value={exampleCronWorkflow(this.namespace)}
                                 onSubmit={cronWf => {
-                                    return services.cronWorkflows
+                                    services.cronWorkflows
                                         .create(cronWf, cronWf.metadata.namespace)
-                                        .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)));
+                                        .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
+                                        .catch(error => this.setState({error}));
                                 }}
+                                upload={true}
+                                editing={true}
+                                kind='CronWorkflow'
                             />
                         </SlidingPanel>
                     </Page>

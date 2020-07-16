@@ -92,6 +92,7 @@ func NewLogsCommand() *cobra.Command {
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")
 	command.Flags().BoolVarP(&logOptions.Follow, "follow", "f", false, "Specify if the logs should be streamed.")
+	command.Flags().BoolVarP(&logOptions.Previous, "previous", "p", false, "Specify if the previously terminated container logs should be returned.")
 	command.Flags().DurationVar(&since, "since", 0, "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().StringVar(&sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().Int64Var(&tailLines, "tail", -1, "If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime")

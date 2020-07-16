@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -16,7 +17,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
@@ -102,6 +102,16 @@ spec:
       args: ["hello world"]
 `
 
+type testEventRecorderManager struct {
+	eventRecorder *record.FakeRecorder
+}
+
+func (t testEventRecorderManager) Get(string) record.EventRecorder {
+	return t.eventRecorder
+}
+
+var _ EventRecorderManager = &testEventRecorderManager{}
+
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
@@ -133,7 +143,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		eventRecorder:        record.NewFakeRecorder(16),
+		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 	}
 	return cancel, controller
@@ -306,7 +316,8 @@ func TestNamespacedController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -322,7 +333,8 @@ func TestClusterController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -358,6 +370,8 @@ metadata:
   name: workflow-template-whalesay-template
   namespace: default
 spec:
+  serviceAccountName: my-sa
+  priority: 77
   templates:
   - name: whalesay-template
     inputs:
@@ -367,21 +381,26 @@ spec:
       image: docker/whalesay
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
+  volumes:
+  - name: data
+    empty: {}
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
-	_, controller := newController(wf, wftmpl)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	var lblSelector metav1.LabelSelector
 	lblSelector.MatchLabels = make(map[string]string)
 	lblSelector.MatchLabels["workflows.argoproj.io/archive-strategy"] = "true"

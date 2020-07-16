@@ -1,5 +1,5 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
-![CI](https://github.com/argoproj/argo/workflows/CI/badge.svg)
+[![CI](https://github.com/argoproj/argo/workflows/CI/badge.svg)](https://github.com/argoproj/argo/actions?query=event%3Apush+branch%3Amaster)
 
 ![Argo Image](docs/assets/argo.png)
 
@@ -29,7 +29,7 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 [Official Argo Workflows user list](USERS.md)
 
 ## Documentation
-* [Get started here](docs/getting-started.md)
+* [Get started here](docs/quick-start.md)
 * [How to write Argo Workflow specs](examples/README.md)
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 

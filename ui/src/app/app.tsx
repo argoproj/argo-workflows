@@ -8,6 +8,7 @@ import {uiUrl} from './shared/base';
 import {ContextApis, Provider} from './shared/context';
 
 import {Version} from '../models';
+import apidocs from './apidocs';
 import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
@@ -15,6 +16,7 @@ import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
+import userinfo from './userinfo';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
@@ -25,6 +27,8 @@ const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowUrl = uiUrl('cron-workflows');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
+const apiDocsUrl = uiUrl('apidocs');
+const userInfoUrl = uiUrl('userinfo');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
 const routes: {
@@ -36,6 +40,8 @@ const routes: {
     [cronWorkflowUrl]: {component: cronWorkflows.component},
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
+    [apiDocsUrl]: {component: apidocs.component},
+    [userInfoUrl]: {component: userinfo.component},
     [loginUrl]: {component: login.component}
 };
 
@@ -68,9 +74,14 @@ const navItems = [
         iconClassName: 'fa fa-archive'
     },
     {
-        title: 'Login',
-        path: loginUrl,
-        iconClassName: 'fa fa-shield-alt'
+        title: 'User',
+        path: userInfoUrl,
+        iconClassName: 'fa fa-user-alt'
+    },
+    {
+        title: 'API Docs',
+        path: apiDocsUrl,
+        iconClassName: 'fa fa-code'
     },
     {
         title: 'Help',
