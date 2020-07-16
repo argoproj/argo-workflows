@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -18,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -683,19 +681,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 // The defaults for the workflow controller are set in the workflow-controller config map
 func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 	if wfc.Config.WorkflowDefaults != nil {
-		defaultsSpec, err := json.Marshal(*wfc.Config.WorkflowDefaults)
-		if err != nil {
-			return err
-		}
-		workflowBytes, err := json.Marshal(wf)
-		if err != nil {
-			return err
-		}
-		mergedWf, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowBytes, wfv1.Workflow{})
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(mergedWf, &wf)
+		err := util.MergeTo(wfc.Config.WorkflowDefaults, wf)
 		if err != nil {
 			return err
 		}
