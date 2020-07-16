@@ -34,11 +34,13 @@ var _ eventpkg.EventServiceServer = &Controller{}
 
 func NewController(client versioned.Interface, namespace string, instanceIDService instanceid.Service, pipelineSize, workerCount int) *Controller {
 	restClient := client.ArgoprojV1alpha1().RESTClient()
-	idRequirement := util.InstanceIDRequirement(instanceIDService.InstanceID())
+	instanceIDRequirement := util.InstanceIDRequirement(instanceIDService.InstanceID())
 
-	workflowTemplateController, workflowTemplateKeyLister := eventcache.NewFilterUsingKeyController(restClient, namespace, labels.NewSelector().Add(idRequirement), "workflowtemplates", &wfv1.WorkflowTemplate{}, func(d cache.Delta) bool {
+	workflowTemplateController, workflowTemplateKeyLister := eventcache.NewFilterUsingKeyController(restClient, namespace, labels.NewSelector().Add(instanceIDRequirement), "workflowtemplates", &wfv1.WorkflowTemplate{}, func(d cache.Delta) bool {
 		return d.Object.(*wfv1.WorkflowTemplate).Spec.Event != nil
 	})
+
+	log.WithFields(log.Fields{"workerCount": workerCount, "pipelineSize": pipelineSize}).Info("Creating event controller")
 
 	return &Controller{
 		instanceIDService:          instanceIDService,
@@ -55,11 +57,13 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 	go s.workflowTemplateController.Run(stopCh)
 
 	for _, c := range []cache.Controller{s.workflowTemplateController} {
-		err := wait.PollUntil(1*time.Second, func() (done bool, err error) { return c.HasSynced(), nil }, stopCh)
+		err := wait.PollUntil(3*time.Second, func() (done bool, err error) { return c.HasSynced(), nil }, stopCh)
 		if err != nil {
-			log.WithError(err).Error("failed to sync controller")
+			log.WithError(err).Error("Failed to sync controller")
 		}
 	}
+
+	log.WithFields(log.Fields{"workflowTemplateCount": len(s.workflowTemplateKeyLister.ListKeys())}).Info("Running event controller")
 
 	s.processEvents(stopCh)
 }
@@ -82,6 +86,8 @@ func (s *Controller) processEvents(stopCh <-chan struct{}) {
 
 	// stop accepting new events
 	close(s.operationPipeline)
+
+	log.WithFields(log.Fields{"operations": len(s.operationPipeline)}).Info("Waiting until all remaining events are processed")
 
 	// no more new events, process the existing events
 	wg.Wait()

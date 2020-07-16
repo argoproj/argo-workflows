@@ -68,16 +68,28 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 		// we should have filtered this out
 		return nil, errors.New("event spec is missing (should be impossible)")
 	}
-	env, err := expressionEnvironment(map[string]interface{}{"event": o.event, "metadata": metaData(o.ctx)})
+	env, err := expressionEnvironment(o.ctx, o.event)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
 	}
-	result, err := expr.Eval(tmpl.Spec.Event.Expression, env)
+	expression := tmpl.Spec.Event.Expression
+	result, err := expr.Eval(expression, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
-	matched, ok := result.(bool)
-	if !ok {
+	matched, boolExpr := result.(bool)
+	log.WithFields(log.Fields{
+		"namespace":  namespace,
+		"name":       name,
+		"expression": expression,
+		"matched":    matched,
+		"boolExpr":   boolExpr,
+	}).Debug("Expression evaluation")
+
+	data, _ := json.MarshalIndent(env, "", "  ")
+	log.Debugln(string(data))
+
+	if !boolExpr {
 		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
 	} else if matched {
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
@@ -100,12 +112,12 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 	return nil, nil
 }
 
-func expressionEnvironment(src map[string]interface{}) (map[string]interface{}, error) {
+func expressionEnvironment(ctx context.Context, event *wfv1.Item) (map[string]interface{}, error) {
+	src := map[string]interface{}{"event": event, "metadata": metaData(ctx)}
 	data, err := json.Marshal(src)
 	if err != nil {
 		return nil, err
 	}
-	log.WithField("data", string(data)).Debug("Expression environment")
 	env := make(map[string]interface{})
 	return env, json.Unmarshal(data, &env)
 }

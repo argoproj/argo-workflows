@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,12 +37,12 @@ func NewFilterUsingKeyController(restClient rest.Interface, namespace string, re
 					Watch()
 			},
 		},
-		ObjectType: objectType,
-		// note - we never re-sync
+		ObjectType:       objectType,
+		FullResyncPeriod: 30 * time.Minute,
 		Process: func(obj interface{}) error {
 			for _, d := range obj.(cache.Deltas) {
 				switch d.Type {
-				case cache.Added, cache.Updated:
+				case cache.Sync, cache.Added, cache.Updated:
 					if filterFunc(d) {
 						knownObjects.Add(d.Object)
 					} else {

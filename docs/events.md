@@ -133,7 +133,7 @@ Meta-data will contain the `claimSet/sub` which should always to be used to ensu
 Examples:
 
 ```
-metadata.claimSet.sub == "system:serviceaccount:argo:github" && metadata[`x-github-event`] == "pull_request" && event.repository == "http://gihub.com/argoproj/argo"
+metadata.claimSet.sub == "system:serviceaccount:argo:jenkins" && metadata["x-argo"] == ["yes"] && event.repository == "http://gihub.com/argoproj/argo"
 ```
 
 Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check:

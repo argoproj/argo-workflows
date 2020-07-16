@@ -131,12 +131,11 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	log.WithField("version", argo.GetVersion().Version).Info("Starting Argo Server")
-
 	configMap, err := as.configController.Get()
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": configMap.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(configMap.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
