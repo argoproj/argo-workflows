@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
@@ -53,7 +54,11 @@ func NewSetCommand() *cobra.Command {
 						if len(parts) != 2 {
 							log.Fatalf("expected parameter of the form: NAME=VALUE. Received: %s", param)
 						}
-						outputParams[parts[0]] = parts[1]
+						unquoted, err := strconv.Unquote(parts[1])
+						if err != nil {
+							log.Fatalf("error unqoting value: %s", err)
+						}
+						outputParams[parts[0]] = unquoted
 					}
 					res, err := json.Marshal(outputParams)
 					if err != nil {
