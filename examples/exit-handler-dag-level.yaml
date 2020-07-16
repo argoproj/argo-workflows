@@ -1,4 +1,4 @@
-# This example demonstrates a steps level exit handler that executes at the end of the task
+# This example demonstrates a DAG level exit handler that executes at the end of the task
 ## irrespective of the success, failure, or error of the task.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
