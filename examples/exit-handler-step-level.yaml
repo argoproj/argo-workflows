@@ -5,9 +5,9 @@ kind: Workflow
 metadata:
   generateName: exit-handler-step-level-
 spec:
-  entrypoint: hello-hello-hello
+  entrypoint: main
   templates:
-    - name: hello-hello-hello
+    - name: main
       steps:
         - - name: hello1
             onExit: exit

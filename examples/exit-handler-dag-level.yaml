@@ -5,9 +5,9 @@ kind: Workflow
 metadata:
   generateName: exit-hanlder-dag-level-
 spec:
-  entrypoint: diamond
+  entrypoint: main
   templates:
-    - name: diamond
+    - name: main
       dag:
         tasks:
           - name: A
@@ -39,8 +39,9 @@ spec:
         parameters:
           - name: message
       container:
-        image: alpine:3.7
-        command: [echo, "{{inputs.parameters.message}}"]
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
 
     - name: exit
       container:
