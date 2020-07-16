@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -77,9 +78,12 @@ func TestOperation(t *testing.T) {
 						{
 							Name:      "my-param",
 							ValueFrom: &wfv1.ValueFrom{Expression: "event.type"},
+						}, {
+							Name:  "my-param",
+							Value: &intstr.IntOrString{StrVal: "bar"},
 						},
-					},
-				}},
+					}},
+				},
 			},
 		})
 		assert.NoError(t, err)
@@ -93,7 +97,6 @@ func TestOperation(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 func Test_metaData(t *testing.T) {
