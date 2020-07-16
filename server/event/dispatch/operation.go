@@ -92,7 +92,7 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 				return nil, fmt.Errorf("workflow templates parameter \"%s\" expression failed to evaluate: %w", p.Name, err)
 			}
 			intOrString := intstr.Parse(fmt.Sprintf("%v", result))
-			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: name, Value: &intOrString})
+			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})
 		}
 		wf, err = client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
 		if err != nil {

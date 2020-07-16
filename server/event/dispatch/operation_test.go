@@ -79,7 +79,7 @@ func TestOperation(t *testing.T) {
 							Name:      "my-param",
 							ValueFrom: &wfv1.ValueFrom{Expression: "event.type"},
 						}, {
-							Name:  "my-param",
+							Name:  "other-param",
 							Value: &intstr.IntOrString{StrVal: "bar"},
 						},
 					}},
@@ -93,6 +93,7 @@ func TestOperation(t *testing.T) {
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator, "creator label is applied")
 			parameters := wf.Spec.Arguments.Parameters
 			if assert.Len(t, parameters, 1) {
+				assert.Equal(t, "my-param", parameters[0].Name)
 				assert.Equal(t, "test", parameters[0].Value.String())
 			}
 		}

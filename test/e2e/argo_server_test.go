@@ -111,16 +111,18 @@ metadata:
     argo-e2e: true
 spec:
   event:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.message != "" && metadata["x-argo-e2e"] == ["true"]
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.honorific != "" && metadata["x-argo-e2e"] == ["true"]
   entrypoint: main
   workflowMetadata:
     labels:
       argo-e2e: "true"
   arguments:
     parameters:
-      - name: message
+      - name: salutation
+        value: "hello"
+      - name: honorific
         valueFrom:
-          expression: event.message
+          expression: event.honorific
   templates:
     - name: main
       steps:
@@ -128,16 +130,19 @@ spec:
           template: argosay
           arguments:
             parameters:
-            - name: message
-              value: "{{workflow.parameters.message}}"
+            - name: salutation
+              value: "{{workflow.parameters.salutation}}"
+            - name: honorific
+              value: "{{workflow.parameters.honorific}}"
 
     - name: argosay
       inputs:
         parameters:
-          - name: message
+          - name: salutation
+          - name: honorific
       container:
          image: argoproj/argosay:v2
-         args: [echo, "{{inputs.parameters.message}}"]
+         args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.honorific}}"]
 `).
 		When().
 		CreateWorkflowTemplates().
@@ -145,14 +150,16 @@ spec:
 			s.e().
 				POST("/api/v1/events/argo").
 				WithHeader("X-Argo-E2E", "true").
-				WithBytes([]byte(`{"message": "hello events"}`)).
+				WithBytes([]byte(`{"honorific": "Mr Chips"}`)).
 				Expect().
 				Status(200)
 		}).
 		Wait(2*time.Second).
 		Then().
 		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=event-consumer"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
-			assert.Len(t, wfList.Items, 1)
+			if assert.Len(t, wfList.Items, 1) {
+				assert.Equal(t, wfv1.NodeRunning, wfList.Items[0].Status.Phase)
+			}
 		})
 }
 
