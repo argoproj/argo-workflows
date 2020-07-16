@@ -2,9 +2,10 @@ package controller
 
 import (
 	"context"
-	cache2 "github.com/argoproj/argo/workflow/controller/cache"
 	"testing"
 	"time"
+
+	cache2 "github.com/argoproj/argo/workflow/controller/cache"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"

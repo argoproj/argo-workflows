@@ -1,7 +1,9 @@
-package cache
+package controller
 
 import (
 	"testing"
+
+	"github.com/argoproj/argo/workflow/controller/cache"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -30,15 +32,16 @@ var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 }
 
 func TestConfigMapCacheLoad(t *testing.T) {
-	cancel, controller := controller2.newController()
+	cancel, controller := newController()
 	defer cancel()
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
 	assert.NoError(t, err)
-	c := NewConfigMapCache("default", controller.kubeclientset)
+	c := cache.NewConfigMapCache("default", controller.kubeclientset)
 	entry, err := c.Load("hi-there-world", "whalesay-cache")
+	outputs := entry.Outputs
 	assert.NoError(t, err)
-	assert.Equal(t, "hello", entry.Parameters[0].Name)
-	assert.Equal(t, sampleOutput, entry.Parameters[0].Value.StrVal)
+	assert.Equal(t, "hello", outputs.Parameters[0].Name)
+	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
 }
 
 func TestConfigMapCacheSave(t *testing.T) {
@@ -48,9 +51,9 @@ func TestConfigMapCacheSave(t *testing.T) {
 		Name:  "hello",
 		Value: &intstr.IntOrString{StrVal: MockParamValue},
 	}
-	cancel, controller := controller2.newController()
+	cancel, controller := newController()
 	defer cancel()
-	c := NewConfigMapCache("default", controller.kubeclientset)
+	c := cache.NewConfigMapCache("default", controller.kubeclientset)
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
 	err := c.Save("hi-there-world", "", &outputs, "whalesay-cache")
