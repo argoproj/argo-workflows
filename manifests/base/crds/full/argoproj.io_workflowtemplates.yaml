@@ -857,6 +857,23 @@ spec:
               type: string
             suspend:
               type: boolean
+            synchronization:
+              properties:
+                semaphore:
+                  properties:
+                    configMapKeyRef:
+                      properties:
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - key
+                      type: object
+                  type: object
+              type: object
             templates:
               items:
                 properties:
@@ -2626,13 +2643,22 @@ spec:
                             withSequence:
                               properties:
                                 count:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 end:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 format:
                                   type: string
                                 start:
-                                  type: string
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                               type: object
                           required:
                           - name
@@ -5513,13 +5539,22 @@ spec:
                               withSequence:
                                 properties:
                                   count:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   end:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   format:
                                     type: string
                                   start:
-                                    type: string
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                 type: object
                             type: object
                           type: array
@@ -5529,6 +5564,23 @@ spec:
                     properties:
                       duration:
                         type: string
+                    type: object
+                  synchronization:
+                    properties:
+                      semaphore:
+                        properties:
+                          configMapKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        type: object
                     type: object
                   template:
                     type: string
@@ -6897,6 +6949,8 @@ spec:
                 - name
                 type: object
               type: array
+            workflowMetadata:
+              type: object
             workflowTemplateRef:
               properties:
                 clusterScope:

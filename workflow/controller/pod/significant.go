@@ -9,6 +9,7 @@ func SignificantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 		from.Status.Phase != to.Status.Phase ||
 		from.Status.Message != to.Status.Message ||
 		from.Status.PodIP != to.Status.PodIP ||
+		from.GetDeletionTimestamp() != to.GetDeletionTimestamp() ||
 		significantContainerStatusesChange(from.Status.ContainerStatuses, to.Status.ContainerStatuses) ||
 		significantContainerStatusesChange(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses)
 }

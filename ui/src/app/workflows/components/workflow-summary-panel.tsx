@@ -20,6 +20,10 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Finished ', value: <Timestamp date={props.workflow.status.finishedAt} />},
                 {title: 'Duration', value: formatDuration(wfDuration(props.workflow.status))}
             ];
+            const creator = props.workflow.metadata.labels['workflows.argoproj.io/creator'];
+            if (creator) {
+                attributes.push({title: 'Creator', value: creator});
+            }
             if (props.workflow.status.resourcesDuration) {
                 attributes.push({
                     title: 'Resources Duration',

@@ -102,6 +102,12 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
+func (s *ArgoServerSuite) TestGetUserInfo() {
+	s.e().GET("/api/v1/userinfo").
+		Expect().
+		Status(200)
+}
+
 // we can only really tests these endpoint respond, not worthwhile checking more
 func (s *ArgoServerSuite) TestOauth() {
 	s.Run("Redirect", func() {
@@ -590,6 +596,16 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			JSON().
 			Path("$.status.message").
 			Equal("Stopped with strategy 'Terminate'")
+	})
+
+	s.Run("Resubmit", func() {
+		s.e().PUT("/api/v1/workflows/argo/test/resubmit").
+			WithBytes([]byte(`{"memoized": true}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull()
 	})
 
 	s.Run("Delete", func() {
