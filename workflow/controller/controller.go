@@ -763,7 +763,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 // The defaults for the workflow controller are set in the workflow-controller config map
 func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 	if wfc.Config.WorkflowDefaults != nil {
-		err := util.MergeTo(wfc.Config.WorkflowDefaults, wf, false)
+		err := util.MergeTo(wfc.Config.WorkflowDefaults, wf)
 		if err != nil {
 			return err
 		}
