@@ -85,4 +85,4 @@ replace sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
 
 replace github.com/argoproj/pkg => ../pkg
 
-require github.com/Azure/go-autorest/autorest v0.9.0
+exclude github.com/Azure/go-autorest v11.1.2+incompatible
