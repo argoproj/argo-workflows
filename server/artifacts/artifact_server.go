@@ -3,9 +3,8 @@ package artifacts
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -112,9 +111,9 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	return a.gatekeeper.Context(ctx)
 }
 
-func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
+func (a *ArtifactServer) ok(w http.ResponseWriter, data io.Reader) {
 	w.WriteHeader(200)
-	_, err := w.Write(data)
+	_, err := io.Copy(w, data)
 	if err != nil {
 		a.serverInternalError(err, w)
 	}
@@ -125,7 +124,7 @@ func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	_, _ = w.Write([]byte(err.Error()))
 }
 
-func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) ([]byte, error) {
+func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) (io.Reader, error) {
 	kubeClient := auth.GetKubeClient(ctx)
 
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
@@ -138,26 +137,8 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 		return nil, err
 	}
 
-	tmp, err := ioutil.TempFile(".", "artifact")
-	if err != nil {
-		return nil, err
-	}
-	path := tmp.Name()
-	defer func() { _ = os.Remove(path) }()
+	return artifact.NewStreamingDriver(driver).Get(art)
 
-	err = driver.Load(art, path)
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
-
-	return file, nil
 }
 
 func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {

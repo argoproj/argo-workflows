@@ -159,11 +159,9 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
 		}
 
-		// The artifact is downloaded to a temporary location, after which we determine if
-		// the file is a tarball or not. If it is, it is first extracted then renamed to
-		// the desired location. If not, it is simply renamed to the location.
-		tempArtPath := artPath + ".tmp"
-		err = artDriver.Load(&art, tempArtPath)
+		streamingDriver := artifact.NewStreamingDriver(artDriver)
+
+		reader, err := streamingDriver.Get(&art)
 		if err != nil {
 			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
@@ -181,20 +179,27 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			isTar = true
 		} else {
 			// auto-detect
-			isTar, err = isTarball(tempArtPath)
+			isTar, err = isTarball(reader)
 			if err != nil {
 				return err
 			}
 		}
 
 		if isTar {
-			err = untar(tempArtPath, artPath)
-			_ = os.Remove(tempArtPath)
+			err = untar(reader, artPath)
+			if err != nil {
+				return err
+			}
 		} else {
-			err = os.Rename(tempArtPath, artPath)
-		}
-		if err != nil {
-			return err
+			open, err := os.Open(artPath)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(open, reader)
+			if err != nil {
+				return err
+			}
+
 		}
 
 		log.Infof("Successfully download file: %s", artPath)
@@ -389,7 +394,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	// localArtPath now points to a .tgz file, and the archive strategy is *not* tar. We need to untar it
 	log.Infof("Untaring %s archive before upload", localArtPath)
 	unarchivedArtPath := path.Join(filepath.Dir(localArtPath), art.Name)
-	err = untar(localArtPath, unarchivedArtPath)
+	err = untarFromPath(localArtPath, unarchivedArtPath)
 	if err != nil {
 		return "", "", err
 	}
@@ -523,8 +528,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		return nil, errors.InternalWrapError(err)
 	}
 	fileName := "main.log"
-	mainLog := path.Join(tempLogsDir, fileName)
-	err = we.saveLogToFile(mainCtrID, mainLog)
+	reader, err := we.RuntimeExecutor.GetOutputStream(mainCtrID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -564,11 +568,11 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = artDriver.Save(mainLog, &art)
+	streamingDriver := artifact.NewStreamingDriver(artDriver)
+	err = streamingDriver.Put(reader, -1, &art)
 	if err != nil {
 		return nil, err
 	}
-
 	return &art, nil
 }
 
@@ -579,25 +583,6 @@ func (we *WorkflowExecutor) GetSecret(accessKeyName string, accessKey string) (s
 		return "", err
 	}
 	return string(file), nil
-}
-
-// saveLogToFile saves the entire log output of a container to a local file
-func (we *WorkflowExecutor) saveLogToFile(mainCtrID, path string) error {
-	outFile, err := os.Create(path)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	defer func() { _ = outFile.Close() }()
-	reader, err := we.RuntimeExecutor.GetOutputStream(mainCtrID, true)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = reader.Close() }()
-	_, err = io.Copy(outFile, reader)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return nil
 }
 
 // InitDriver initializes an instance of an artifact driver
@@ -827,33 +812,24 @@ func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(filePath string) (bool, error) {
-	log.Infof("Detecting if %s is a tarball", filePath)
-	f, err := os.Open(filePath)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-	gzr, err := gzip.NewReader(f)
+func isTarball(reader io.Reader) (bool, error) {
+	log.Infof("Detecting if is a tarball")
+	gzipReader, err := gzip.NewReader(reader)
 	if err != nil {
 		return false, nil
 	}
-	defer gzr.Close()
-	tarr := tar.NewReader(gzr)
-	_, err = tarr.Next()
+	defer func() { _ = gzipReader.Close() }()
+	tarReader := tar.NewReader(gzipReader)
+	_, err = tarReader.Next()
 	return err == nil, nil
 }
 
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
-func untar(tarPath string, destPath string) error {
+func untar(reader io.Reader, destPath string) error {
 	// first extract the tar into a temporary dir
 	tmpDir := destPath + ".tmpdir"
-	err := os.MkdirAll(tmpDir, os.ModePerm)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	err = common.RunCommand("tar", "-xf", tarPath, "-C", tmpDir)
+	err := untarFromReader(reader, tmpDir)
 	if err != nil {
 		return err
 	}
@@ -881,6 +857,57 @@ func untar(tarPath string, destPath string) error {
 		err = os.Rename(tmpDir, destPath)
 		if err != nil {
 			return errors.InternalWrapError(err)
+		}
+	}
+	return nil
+}
+
+func untarFromPath(path string, dir string) error {
+	open, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	return untarFromReader(open, dir)
+}
+
+func untarFromReader(reader io.Reader, dir string) error {
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	gzipReader, err := gzip.NewReader(reader)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = gzipReader.Close() }()
+	tarReader := tar.NewReader(gzipReader)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.Mkdir(header.Name, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			outFile, err := os.Create(header.Name)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return err
+			}
+			err = outFile.Close()
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("failed to extract tar: uknown type: %v in %s", header.Typeflag, header.Name)
 		}
 	}
 	return nil

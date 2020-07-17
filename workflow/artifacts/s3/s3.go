@@ -1,9 +1,12 @@
 package s3
 
 import (
+	"io"
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/s3"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -41,9 +44,37 @@ func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
 	return argos3.NewS3Client(opts)
 }
 
+var backoff = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
+
+func (s3Driver *S3ArtifactDriver) Get(art *wfv1.Artifact) (io.Reader, error) {
+	client, err := s3Driver.newS3Client()
+	if err != nil {
+		return nil, err
+	}
+	object, err := client.GetObject(art.S3.Bucket, art.S3.Key)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchBucket, s3.ErrCodeNoSuchKey:
+				return nil, errors.New(errors.CodeNotFound, err.Error())
+			}
+		}
+		return nil, err
+	}
+	return object, nil
+}
+
+func (s3Driver *S3ArtifactDriver) Put(reader io.Reader, objectSize int64, art *wfv1.Artifact) error {
+	client, err := s3Driver.newS3Client()
+	if err != nil {
+		return err
+	}
+	return client.PutObject(art.S3.Bucket, art.S3.Key, reader, objectSize)
+}
+
 // Load downloads artifacts from S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := wait.ExponentialBackoff(backoff,
 		func() (bool, error) {
 			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client()
@@ -82,7 +113,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 
 // Save saves an artifact to S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+	err := wait.ExponentialBackoff(backoff,
 		func() (bool, error) {
 			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client()
