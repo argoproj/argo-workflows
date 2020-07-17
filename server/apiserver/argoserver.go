@@ -204,11 +204,6 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, eventServer *event.Controller, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
-
-	webhookUnaryInterceptor, err := webhook.UnaryServerInterceptor(as.kubeClientset.CoreV1().Secrets(as.namespace))
-	if err != nil {
-		log.Fatal(err)
-	}
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -220,7 +215,6 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			webhookUnaryInterceptor,
 			as.authenticator.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
@@ -264,6 +258,11 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 
+	annotator, err := webhook.Annotator(as.kubeClientset.CoreV1().Secrets(as.namespace))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
 	// NOTE: if a marshaller option is not supplied, grpc-gateway will default to the jsonpb from
@@ -271,7 +270,11 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
-	gwmux := runtime.NewServeMux(gwMuxOpts, runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }))
+	gwmux := runtime.NewServeMux(gwMuxOpts,
+		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) { return key, true }),
+		runtime.WithMetadata(annotator),
+		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
+	)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(eventpkg.RegisterEventServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
