@@ -1919,15 +1919,15 @@
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
 <div class="codehilite"><pre><span></span><code><span class="err">      --all-namespaces          Show workflows from all namespaces</span>
 <span class="err">      --chunk-size int          Return large lists in chunks rather than all at once. Pass 0 to disable.</span>
-<span class="err">      --completed               Show only completed workflows</span>
+<span class="err">      --completed               Show completed workflows. Mutually exclusive with --running.</span>
 <span class="err">      --field-selector string   Selector (field query) to filter on, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.</span>
 <span class="err">  -h, --help                    help for list</span>
 <span class="err">      --no-headers              Don&#39;t print headers (default print headers).</span>
 <span class="err">      --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)</span>
 <span class="err">  -o, --output string           Output format. One of: wide|name</span>
 <span class="err">      --prefix string           Filter workflows by prefix</span>
-<span class="err">      --resubmitted             Show only resubmitted workflows</span>
-<span class="err">      --running                 Show only running workflows</span>
+<span class="err">      --resubmitted             Show resubmitted workflows</span>
+<span class="err">      --running                 Show running workflows. Mutually exclusive with --completed.</span>
 <span class="err">  -l, --selector string         Selector (label query) to filter on, supports &#39;=&#39;, &#39;==&#39;, and &#39;!=&#39;.(e.g. -l key1=value1,key2=value2)</span>
 <span class="err">      --since string            Show only workflows created after than a relative duration</span>
 <span class="err">      --status strings          Filter by status (comma separated)</span>
