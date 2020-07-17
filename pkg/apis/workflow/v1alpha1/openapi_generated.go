@@ -4107,7 +4107,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"templates"},
 			},
 		},
 		Dependencies: []string{
@@ -4766,7 +4765,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 						},
 					},
 				},
-				Required: []string{"templates"},
 			},
 		},
 		Dependencies: []string{
