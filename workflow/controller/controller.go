@@ -838,12 +838,16 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		log.Warnf("Key '%s' in index is not an unstructured", obj)
+		return
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Invalid workflow object: %v", obj)
+		return
 	}
-	wfc.syncManager.ReleaseAll(wf)
+	if wf.Status.Synchronization != nil {
+		wfc.syncManager.ReleaseAll(wf)
+	}
 }
 
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
