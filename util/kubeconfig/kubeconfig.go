@@ -85,6 +85,7 @@ func GetBearerRestConfig(token string) (*restclient.Config, error) {
 
 //Return the AuthString include Auth type(Basic or Bearer)
 func GetAuthString(in *restclient.Config, explicitKubeConfigPath string) (string, error) {
+
 	//Checking Basic Auth
 	if in.Username != "" {
 		token, err := GetBasicAuthToken(in)
@@ -109,10 +110,6 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 
 	if len(in.BearerToken) > 0 {
 		return in.BearerToken, nil
-	}
-
-	if token := getEnvToken(); token != "" {
-		return token, nil
 	}
 
 	if in == nil {
@@ -155,11 +152,6 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 		}
 	}
 	return "", errors.Errorf("could not find a token")
-}
-
-// Get the Auth token from environment variable
-func getEnvToken() string {
-	return os.Getenv("ARGO_TOKEN")
 }
 
 func encodeBasicAuthToken(username, password string) string {
