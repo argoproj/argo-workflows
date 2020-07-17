@@ -536,6 +536,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		}
 		resolvedArt, err := scope.resolveArtifact(art.From)
 		if err != nil {
+			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
+				log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)
+				continue
+			}
 			return nil, err
 		}
 		resolvedArt.Name = art.Name
