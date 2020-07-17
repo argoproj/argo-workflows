@@ -82,6 +82,10 @@ Workflow is the definition of a workflow resource
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
+
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
@@ -390,6 +394,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -715,6 +723,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
+
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
@@ -1002,6 +1014,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
+
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
 - [`forever.yaml`](https://github.com/argoproj/argo/blob/master/examples/forever.yaml)
@@ -1274,6 +1290,10 @@ Arguments to a template
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
+
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
@@ -1520,6 +1540,10 @@ Template is a reusable and composable unit of execution in a workflow
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -2037,6 +2061,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
+
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
@@ -2225,6 +2253,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
@@ -2332,6 +2362,10 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
@@ -2501,6 +2535,10 @@ Pod metdata
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -2870,6 +2908,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -3540,6 +3580,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
@@ -3810,6 +3852,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -4295,6 +4341,10 @@ A single application container that you want to run within a pod.
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -4934,6 +4984,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
@@ -5918,6 +5972,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
+
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
 
 - [`exit-handlers.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handlers.yaml)
 
