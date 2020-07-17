@@ -37,7 +37,6 @@ const Label = "argo-e2e"
 const LabelCron = Label + "-cron"
 
 var imageTag string
-var k3d bool
 
 func init() {
 	gitBranch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
@@ -57,12 +56,7 @@ func init() {
 		imageTag = parts[len(parts)-2]
 	}
 	imageTag = strings.ReplaceAll(imageTag, "/", "-")
-	context, err := runCli("kubectl", "config", "current-context")
-	if err != nil {
-		panic(err)
-	}
-	k3d = strings.TrimSpace(context) == "k3s-default"
-	log.WithFields(log.Fields{"imageTag": imageTag, "k3d": k3d}).Info()
+	log.WithFields(log.Fields{"imageTag": imageTag}).Info()
 }
 
 type E2ESuite struct {
