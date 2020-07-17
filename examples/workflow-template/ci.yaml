@@ -47,7 +47,7 @@ type: kubernetes.io/service-account-token
 kind: Secret
 apiVersion: v1
 metadata:
-  name: webhooks
+  name: webhook-accounts
 stringData:
   public-github: |
     type: github
