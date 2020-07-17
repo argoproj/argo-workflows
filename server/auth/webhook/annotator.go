@@ -16,7 +16,9 @@ import (
 )
 
 var (
-	NotMatched         = errors.New("not matched")
+	// sentinal error indicating that the request did not match, and can be safely ignored
+	NotMatched         = errors.New("request not matched")
+	// sentinal error indicating that the request, while not necessarily bogus, is not allow to use this service account
 	VerificationFailed = status.Error(codes.Unauthenticated, "signature verification failed")
 )
 
@@ -24,13 +26,15 @@ type account struct {
 	webhookType, secret string
 }
 
+type parser = func(secret string, r *http.Request) error
+
+// parser for each types, these should be fast, i.e. no database or API interactions
+var webhookParsers = map[string]parser{
+	"github": githubParse,
+}
+
 // Annotator creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
 func Annotator(client typedcorev1.SecretInterface) (func(ctx context.Context, r *http.Request) metadata.MD, error) {
-
-	// matchers for each types, these should be fast, i.e. no database or API interactions
-	webhookTypes := map[string]func(secret string, r *http.Request) error{
-		"github": github,
-	}
 
 	// we must store our config in a specific secret as we do not have `list secrets` RBAC, only `get secrets`
 	list, err := client.Get("webhook-accounts", metav1.GetOptions{})
@@ -56,7 +60,7 @@ func Annotator(client typedcorev1.SecretInterface) (func(ctx context.Context, r 
 
 	return func(ctx context.Context, r *http.Request) metadata.MD {
 		for serviceAccountName, account := range accounts {
-			err := webhookTypes[account.webhookType](account.secret, r)
+			err := webhookParsers[account.webhookType](account.secret, r)
 			switch err {
 			case NotMatched:
 				// no nothing
