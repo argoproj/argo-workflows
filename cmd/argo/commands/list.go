@@ -65,9 +65,9 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
 	command.Flags().StringVar(&listArgs.finishedAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
-	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
-	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
-	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show only resubmitted workflows")
+	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show completed workflows. Mutually exclusive with --running.")
+	command.Flags().BoolVar(&listArgs.running, "running", false, "Show running workflows. Mutually exclusive with --completed.")
+	command.Flags().BoolVar(&listArgs.resubmitted, "resubmitted", false, "Show resubmitted workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.createdSince, "since", "", "Show only workflows created after than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
@@ -88,6 +88,9 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		if req != nil {
 			labelSelector = labelSelector.Add(*req)
 		}
+	}
+	if flags.completed && flags.running {
+		log.Fatal("--completed and --running cannot be used together")
 	}
 	if flags.completed {
 		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
