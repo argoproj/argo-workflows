@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
 
@@ -422,5 +423,21 @@ func TestIsArchivable(t *testing.T) {
 		workflow.Labels = make(map[string]string)
 		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
 		assert.True(t, controller.isArchivable(workflow))
+	})
+}
+
+func TestReleaseAllWorkflowLocks(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	t.Run("nilObject", func(t *testing.T) {
+		controller.releaseAllWorkflowLocks(nil)
+	})
+	t.Run("unStructuredObject", func(t *testing.T) {
+		un := &unstructured.Unstructured{}
+		controller.releaseAllWorkflowLocks(un)
+	})
+	t.Run("otherObject", func(t *testing.T) {
+		un := &wfv1.Workflow{}
+		controller.releaseAllWorkflowLocks(un)
 	})
 }
