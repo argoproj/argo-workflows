@@ -15,15 +15,15 @@ argo list [flags]
 ```
       --all-namespaces          Show workflows from all namespaces
       --chunk-size int          Return large lists in chunks rather than all at once. Pass 0 to disable.
-      --completed               Show only completed workflows
+      --completed               Show completed workflows. Mutually exclusive with --running.
       --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                    help for list
       --no-headers              Don't print headers (default print headers).
       --older string            List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
   -o, --output string           Output format. One of: wide|name
       --prefix string           Filter workflows by prefix
-      --resubmitted             Show only resubmitted workflows
-      --running                 Show only running workflows
+      --resubmitted             Show resubmitted workflows
+      --running                 Show running workflows. Mutually exclusive with --completed.
   -l, --selector string         Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
       --since string            Show only workflows created after than a relative duration
       --status strings          Filter by status (comma separated)
