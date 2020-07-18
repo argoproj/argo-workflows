@@ -1,6 +1,5 @@
 # This job can be trigger from github.com using an event.
 # You need to set-up an access token, webhook account, and secret.
-
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:

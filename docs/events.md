@@ -8,15 +8,13 @@
 
 To support external webhooks, we have this endpoint `/api/v1/events/{namespace}`. Events can be sent to that can be any JSON data.
 
-These events can:
+These events can submit a workflow template (cluster workflow templates are not supported today).
 
-* [Submit from a workflow template](#submitting-from-a-workflow-template) (or cluster workflow template).
-
-In each use case, the resource must match the event based on an expression.
+You may also wish to read about [webhooks](webhooks.md).
 
 ## Authentication and Security
 
-Clients wanting to send events to the endpoint need an [access token](access-token.md).  The token may be namespace-scoped or cluster-scoped. If it is namespace scoped, the namespace must be sent in the URL, but if it is cluster-scoped, then the namespace can be the empty string.  
+Clients wanting to send events to the endpoint need an [access token](access-token.md). The token may be namespace-scoped or cluster-scoped.  
 
 ```yaml
 # Use this role to enable jenkins to submit a workflow template via webhook.
@@ -41,12 +39,12 @@ rules:
 
 It is only possible to submit workflow templates your access token has access to. 
 
-Example:
+Example (note the trailing slash):
 
 ```bash
 curl https://localhost:2746/api/v1/events/argo/ \
   -H "Authorization: $ARGO_TOKEN" \
-  -d '{"type": "test"}'
+  -d '{"message": "hello"}'
 ```
 
 With a **discriminator**:
@@ -54,26 +52,18 @@ With a **discriminator**:
 ```bash
 curl https://localhost:2746/api/v1/events/argo/my-discriminator \
   -H "Authorization: $ARGO_TOKEN" \
-  -d '{"type": "test"}'
+  -d '{"message": "hello"}'
 ```
 
+The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will only return a failure (503) if the event processing queue is full.  
 
-Or cluster-scoped:
-
-```bash
-curl https://localhost:2746/api/v1/events// \
-  -H "Authorization: $ARGO_TOKEN" \
-  -d '{"type": "test"}'
-```
-
-The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will only return a failure (503) if the queue is full, either due to a large number of events, or problems processing those events.  
-
-!!! WARNING
-    Events may not always be processed sequentially.   
+!!! Warning "Processing Order"
+    Events may not always be processed in the order they are received.   
   
 ## Submitting From A Workflow Template
 
-A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself:
+A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
+The following example will be trigger by an event from "admin" with "message" in the payload. That message will be used as an argument for the created workflow.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -117,10 +107,8 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
 
 The resulting workflow prints "hello events".
 
-Submitting is stateless, so you can only have one expression per workflow template. You cannot wait for series of events before submitting.
-
-!!! Warning
-    If the expression is malformed, this is only logged. It is not visible in logs or the UI. Use `argo template create` rather than `kubectl apply` to catch your mistakes.
+!!! Warning "Malformed Expressions"
+    If the expression is malformed, this is logged. It is not visible in logs or the UI. Use `argo template create` rather than `kubectl apply` to catch your mistakes.
 
 ## Event Expression Syntax and the Event Expression Environment
 
@@ -128,59 +116,81 @@ Submitting is stateless, so you can only have one expression per workflow templa
 
 ### Expression Syntax
 
-[Learn more](https://github.com/antonmedv/expr)
+Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check.
+
+[Learn more about expression syntax](https://github.com/antonmedv/expr).
 
 ### Expression Environment
 
 The event environment typically contains:
 
 * `payload` the event payload.
-* `discriminator` the discriminator from the URL. This is only for edge-cases where neither the claim-set subject, payload, or metadata provide enough information to discriminate. Typically it should be empty and ignored. 
-* `metadata` event metadata, including the user and HTTP headers.
+* `metadata` event metadata, including the user info and HTTP headers.
+* `discriminator` the discriminator from the URL.  
 
 ### Payload
 
 This is the JSON payload of the event.
 
-Example
+Example:
 
 ```
-payload.messsage != nil || payload.code == 200
+payload.repository.clone_url == "http://gihub.com/argoproj/argo"
 ```
 
-### 
+### MetaData 
 
-!!! Note
-    HTTP headers names are lower-case, and their values are lists, not single values.    
-    Wrong: `metadata["X-Github-Event"] = "push"`
-    Wrong: `metadata["x-github-event"] = "push"`
-    Wrong: `metadata["X-Github-Event"] = ["push"`]
-    Right: `metadata["x-github-event"] = ["push"`]
+Metadata is data about the event, this includes **headers** and the **claim set**:
 
-HTTP header names are lowercase and only include those that have `x-` as their prefix.
+#### Headers
 
-Meta-data will contain the `claimSet/sub` which should always to be used to ensure you only accept events from the correct user. 
+HTTP header names are lowercase and only include those that have `x-` as their prefix. Their values are lists, not single values.    
 
-Examples:
+* Wrong: `metadata["X-Github-Event"] = "push"`
+* Wrong: `metadata["x-github-event"] = "push"`
+* Wrong: `metadata["X-Github-Event"] = ["push"]`
+* Wrong: `metadata["github-event"] = ["push"]`
+* Wrong: `metadata["authorization"] = ["push"]`
+* Right: `metadata["x-github-event"] = ["push"]`
+
+Example:
 
 ```
-metadata.claimSet.sub == "system:serviceaccount:argo:jenkins" && metadata["x-argo"] == ["yes"] && payload.repository == "http://gihub.com/argoproj/argo"
+metadata["x-argo"] == ["yes"]
 ```
 
-Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check:
+#### ClaimSet
 
-[Learn more about expression syntax](https://github.com/antonmedv/expr).
+Meta-data will contain the value `claimSet/sub` which should always to be used to ensure you only accept events from the correct client. 
+
+Example:
+
+```
+metadata.claimSet.sub == "system:serviceaccount:argo:jenkins"
+```
+
+### Discriminator
+
+This is only for edge-cases where neither the claim-set subject, payload, or metadata provide enough information to discriminate. Typically, it should be empty and ignored.
+
+Example:
+
+```
+discriminator == "my-discriminator"
+```
 
 ## High-Availability
 
-!!! WARNING
+!!! Warning "Run Minimum 2 Replicas"
     You MUST run a minimum of two Argo Server replicas if you do not want to lose events. 
 
-If you are processing large numbers of events, you may need to scale up the Argo Server to handle them. 
+If you are processing large numbers of events, you may need to scale up the Argo Server to handle them. By default, a single Argo Server can be processing 64 events before the endpoint will start returning 503 errors.
 
-By default, a single Argo Server can be processing 64 events before the endpoint will start returning 503 errors.
+Vertically you can:
+ 
+* Increase the size of the event pipeline `--event-pipeline-size 16` (good for temporary event bursts).
+* Increase the number of workers `--event-worker-count 4` (good for sustained numbers of events).
 
-* Vertically you can: 
-  * Increase the size of the event pipeline `--event-pipeline-size 16` (good for temporary event bursts).
-  * Increase the number of workers `--event-worker-count 4` (good for sustained numbers of events).
-* Horizontally you can run more Argo Servers (good for sustained numbers of events AND high-availability).
+Horizontally you can:
+ 
+* Run more Argo Servers (good for sustained numbers of events AND high-availability).

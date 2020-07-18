@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -40,9 +41,9 @@ var webhookParsers = map[string]parser{
 const pathPrefix = "/api/v1/events/"
 
 // Interceptor creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
-func Interceptor(client kubernetes.Interface, namespace string) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
-		err := addWebhookAuthorization(r, namespace, client)
+		err := addWebhookAuthorization(r, client)
 		if err != nil {
 			log.WithError(err).Error("Failed to parse webhook request")
 			w.WriteHeader(403)
@@ -54,14 +55,16 @@ func Interceptor(client kubernetes.Interface, namespace string) func(w http.Resp
 	}
 }
 
-func addWebhookAuthorization(r *http.Request, namespace string, client kubernetes.Interface) error {
+func addWebhookAuthorization(r *http.Request, client kubernetes.Interface) error {
 	// try and abort before we do any work
 	if r.Method != "POST" || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
 		return nil
 	}
-	if r.URL.Path != pathPrefix {
-		namespace = strings.TrimPrefix(r.URL.Path, pathPrefix)
+	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, pathPrefix), "/", 2)
+	if len(parts) != 2 {
+		return errors.New("expected 2 parts in URL")
 	}
+	namespace := parts[0]
 	secrets := client.CoreV1().Secrets(namespace)
 	webhookClients, err := secrets.Get("argo-workflows-webhook-clients", metav1.GetOptions{})
 	if err != nil {

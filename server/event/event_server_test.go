@@ -16,7 +16,7 @@ func TestController(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	s := NewController(clientset, "my-ns", instanceid.NewService("my-instanceid"), 1, 1)
 
-	_, err := s.ReceiveEvent(context.TODO(), &eventpkg.EventRequest{Namespace: "my-ns", Event: &wfv1.Item{}})
+	_, err := s.ReceiveEvent(context.TODO(), &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}})
 	assert.NoError(t, err)
 
 	assert.Len(t, s.operationPipeline, 1, "one event to be processed")
