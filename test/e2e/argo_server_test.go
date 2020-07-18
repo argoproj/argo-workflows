@@ -138,7 +138,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		Wait(2*time.Second).
+		Wait(10*time.Second).
 		Then().
 		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=github-webhook"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			assert.Len(t, wfList.Items, 1)
@@ -197,7 +197,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		Wait(2*time.Second).
+		Wait(10*time.Second).
 		Then().
 		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=event-consumer"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			if assert.Len(t, wfList.Items, 1) {

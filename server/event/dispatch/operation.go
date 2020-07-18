@@ -42,6 +42,7 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, wor
 }
 
 func (o *Operation) Execute() {
+	log.Debug("Executing event dispatch")
 	o.submitWorkflowsFromWorkflowTemplates()
 }
 

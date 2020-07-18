@@ -38,10 +38,10 @@ func Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *htt
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 		err := addWebhookAuthorization(r, client)
 		if err != nil {
-			log.WithError(err).Error("Failed to parse webhook request")
+			log.WithError(err).Error("Failed to process webhook request")
 			w.WriteHeader(403)
 			// hide the message from the user, because it could help them attack us
-			_, _ = w.Write([]byte(`{"message": "failed to parse webhook request"}`))
+			_, _ = w.Write([]byte(`{"message": "failed to process webhook request"}`))
 		} else {
 			next.ServeHTTP(w, r)
 		}
@@ -74,9 +74,10 @@ func addWebhookAuthorization(r *http.Request, client kubernetes.Interface) error
 		if err != nil {
 			return fmt.Errorf("failed to unmarshal webhook client \"%s\": %w", clientName, err)
 		}
-		log.WithFields(log.Fields{"clientName": clientName, "webhookType": client.Type}).Debug("Parsing webhook request")
+		log.WithFields(log.Fields{"clientName": clientName, "webhookType": client.Type}).Debug("Attempting to match webhook request")
 		ok := webhookParsers[client.Type](client.Secret, r)
 		if ok {
+			log.WithField("clientName", clientName).Debug("Matched webhook request")
 			tokenSecret, err := secrets.Get(clientName, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get token secret for \"%s\": %w", clientName, err)
