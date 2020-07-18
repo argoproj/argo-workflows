@@ -19,7 +19,7 @@ Additionally create:
 
 The secret "argo-workflows-webhook-clients" tells Argo:
 
-* What type of webhook the account can be used for, e.g. "github".
+* What type of webhook the account can be used for, e.g. "github" 
 * What "secret" that webhook is configured for, e.g. in your [Github settings page](https://github.com/alexec/argo/settings/hooks) 
 
 ## Template Examples

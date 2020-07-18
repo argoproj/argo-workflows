@@ -9,16 +9,9 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
-)
-
-var (
-	// sentinel error indicating that the client is not allow to use this webhook
-	ErrVerificationFailed = status.Error(codes.Unauthenticated, "signature verification failed")
 )
 
 type webhookClient struct {
@@ -28,14 +21,14 @@ type webhookClient struct {
 	Secret string `json:"secret"`
 }
 
-// true, nil => matches
-// false, nil => no matches
-// false, error => bogus - please abort
-type parser = func(secret string, r *http.Request) bool
+type matcher = func(secret string, r *http.Request) bool
 
 // parser for each types, these should be fast, i.e. no database or API interactions
-var webhookParsers = map[string]parser{
-	"github": githubParse,
+var webhookParsers = map[string]matcher{
+	"bitbucket":       bitbucketMatch,
+	"bitbucketserver": bitbucketserverMatch,
+	"github":          githubMatch,
+	"gitlab":          gitlabMatch,
 }
 
 const pathPrefix = "/api/v1/events/"
