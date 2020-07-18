@@ -479,7 +479,7 @@ prepare-release: check-version-warning clean codegen manifests
 	git tag -a $(VERSION) -m $(VERSION)
 
 .PHONY: publish-release
-publish-release: check-version-warning build
+publish-release: check-version-warning clis
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
