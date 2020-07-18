@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -65,6 +66,10 @@ func NewLogsCommand() *cobra.Command {
 			default:
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
+			}
+
+			if since > 0 && sinceTime != "" {
+				log.Fatal("--since-time and --since cannot be used together")
 			}
 
 			if since > 0 {

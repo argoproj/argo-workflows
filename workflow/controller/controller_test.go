@@ -5,8 +5,7 @@ import (
 	"testing"
 	"time"
 
-	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
 
@@ -27,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -398,7 +398,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {
@@ -425,5 +425,21 @@ func TestIsArchivable(t *testing.T) {
 		workflow.Labels = make(map[string]string)
 		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
 		assert.True(t, controller.isArchivable(workflow))
+	})
+}
+
+func TestReleaseAllWorkflowLocks(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	t.Run("nilObject", func(t *testing.T) {
+		controller.releaseAllWorkflowLocks(nil)
+	})
+	t.Run("unStructuredObject", func(t *testing.T) {
+		un := &unstructured.Unstructured{}
+		controller.releaseAllWorkflowLocks(un)
+	})
+	t.Run("otherObject", func(t *testing.T) {
+		un := &wfv1.Workflow{}
+		controller.releaseAllWorkflowLocks(un)
 	})
 }

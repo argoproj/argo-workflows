@@ -19,6 +19,27 @@ __argo_get_workflow() {
 	fi
 }
 
+__argo_get_workflow_template() {
+	local -a argo_out
+	if argo_out=($(argo template list --output name 2>/dev/null)); then
+		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
+	fi
+}
+
+__argo_get_cluster_workflow_template() {
+	local -a argo_out
+	if argo_out=($(argo cluster-template list --output name 2>/dev/null)); then
+		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
+	fi
+}
+
+__argo_get_cron_workflow() {
+	local -a argo_out
+	if argo_out=($(argo cron list --output name 2>/dev/null)); then
+		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
+	fi
+}
+
 __argo_get_logs() {
 	# Determine if were completing a workflow or not.
 	local workflow=0
@@ -67,12 +88,32 @@ __argo_custom_func() {
 			__argo_get_logs
 			return
 			;;
-		argo_submit)
+		argo_submit | argo_lint)
 			__argo_list_files
 			return
 			;;
-		argo_lint)
-			__argo_list_files
+		argo_template_get | argo_template_delete)
+			__argo_get_workflow_template
+			return
+			;;
+		argo_template_create | argo_template_lint)
+		    __argo_list_files
+			return
+			;;
+		argo_cluster-template_get | argo_cluster-template_delete)
+			__argo_get_cluster_workflow_template
+			return
+			;;
+		argo_cluster-template_create | argo_cluster-template_lint)
+		    __argo_list_files
+			return
+			;;
+		argo_cron_get | argo_cron_delete | argo_cron_resume | argo_cron_subspend)
+			__argo_get_cron_workflow
+			return
+			;;
+		argo_cron_create | argo_cron_lint)
+		    __argo_list_files
 			return
 			;;
 		*)

@@ -2887,17 +2887,16 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 	}
 
-	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec
-
-	entrypoint := woc.wf.Spec.Entrypoint
-	if entrypoint == "" {
-		entrypoint = woc.wfSpec.Entrypoint
+	// Merge the workflow spec and storedWorkflowspec.
+	targetWf := wfv1.Workflow{Spec: woc.wf.Spec}
+	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
+	if err != nil {
+		return nil, executionParameters, err
 	}
+	woc.wfSpec = &targetWf.Spec
 
 	woc.volumes = woc.wfSpec.DeepCopy().Volumes
-
-	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)}
-
+	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(woc.wfSpec.Entrypoint)}
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {
 		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.wfSpec.Arguments.Parameters)
 	}
