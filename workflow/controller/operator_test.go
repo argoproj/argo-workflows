@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo/workflow/controller/cache"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -3873,7 +3875,7 @@ spec:
       key: "{{inputs.parameters.message}}"
       maxAge: 1d
       cache:
-        configMapName:
+        configMap:
           name: whalesay-cache
     container:
       image: docker/whalesay:latest
@@ -3887,7 +3889,6 @@ spec:
 `
 
 func TestConfigMapCacheLoadOperate(t *testing.T) {
-	var sampleOutput string = "\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   "
 
 	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 		Data: map[string]string{
@@ -3916,48 +3917,47 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 
 	status := woc.wf.Status
 	outputs := status.Nodes[""].Outputs
-
 	assert.NotNil(t, outputs)
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
 	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
 }
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
-	MockParamValue := "Hello world"
-
-	var MockParam = wfv1.Parameter{
-		Name:  "hello",
-		Value: &intstr.IntOrString{StrVal: MockParamValue},
-	}
-
-	outputs := wfv1.Outputs{}
-	outputs.Parameters = append(outputs.Parameters, MockParam)
-
 	wf := unmarshalWF(workflowCached)
 	cancel, controller := newController()
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
 
-	outputString, err := json.Marshal(&outputs)
-	assert.NoError(t, err)
-	fakePod := apiv1.Pod{
-		Status: apiv1.PodStatus{
-			Phase: apiv1.PodSucceeded,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				common.AnnotationKeyOutputs: string(outputString),
+	woc := newWorkflowOperationCtx(wf, controller)
+	outputVal := intstr.Parse(sampleOutput)
+	sampleOutputs := wfv1.Outputs{
+		Parameters: []wfv1.Parameter{
+			wfv1.Parameter{
+				Name:  "hello",
+				Value: &outputVal,
 			},
 		},
 	}
 
 	woc.operate()
-	node := woc.wf.Status.Nodes[""]
-	_ = woc.assessNodeStatus(&fakePod, &node)
+	node := woc.wf.GetNodeByName("")
+	nodeID := node.ID
+	node.Outputs = &sampleOutputs
+	node.Phase = wfv1.NodeSucceeded
+	woc.wf.Status.Nodes[nodeID] = *node
+	woc.operate()
 
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.NotNil(t, cm)
+	assert.NotNil(t, cm.Data)
+
+	rawEntry, ok := cm.Data["hi-there-world"]
+	assert.True(t, ok)
+	var entry cache.CacheEntry
+	err = json.Unmarshal([]byte(rawEntry), &entry)
+	assert.NoError(t, err)
+
+	assert.Equal(t, sampleOutputs, *entry.Outputs)
 }
 
 var propagate = `

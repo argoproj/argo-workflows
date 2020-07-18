@@ -1263,14 +1263,8 @@ type NodeStatus struct {
 	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
 	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 
-	// Memoized indicates if this node was part of a template that had memoization on
-	Memoized bool `json:"memoized,omitempty" protobuf:"varint,23,opt,name=memoized"`
-
-	// Cache key stores the key for accessing this node's output from the memoization cache
-	CacheKey string `json:"cacheKey,omitempty" protobuf:"bytes,24,opt,name=cacheKey"`
-
-	// Cache name stores the name of the cache for accessing a ConfigMap cache
-	CacheName string `json:"cacheName,omitempty" protobuf:"bytes,25,opt,name=cacheName"`
+	// MemoizationStatus holds information about cached nodes
+	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -1692,25 +1686,6 @@ func (tmpl *Template) GetType() TemplateType {
 		return TemplateTypeSuspend
 	}
 	return TemplateTypeUnknown
-}
-
-// GetNodeType returns the type of this template as a Node Type
-//
-func (tmpl *Template) GetNodeType() NodeType {
-	switch tmpl.GetType() {
-	case TemplateTypeContainer:
-		return NodeTypePod
-	case TemplateTypeSteps:
-		return NodeTypeSteps
-	case TemplateTypeDAG:
-		return NodeTypeDAG
-	case TemplateTypeScript:
-		return NodeTypePod
-	case TemplateTypeSuspend:
-		return NodeTypeSuspend
-	default:
-		panic("Could not convert template to NodeType")
-	}
 }
 
 // IsPodType returns whether or not the template is a pod type
@@ -2162,11 +2137,16 @@ type Counter struct {
 
 // Memoization
 type Memoize struct {
-	MaxAge string `json:"maxAge" protobuf:"bytes,1,opt,name=maxAge"`
-	Key    string `json:"key" protobuf:"bytes,2,opt,name=key"`
-	Cache  *Cache `json:"cache" protobuf:"bytes,3,opt,name=cache"`
+	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	Cache *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+}
+
+type MemoizationStatus struct {
+	Hit       bool   `json:"hit" protobuf:"bytes,1,opt,name=hit"`
+	Key       string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	CacheName string `json:"cacheName" protobuf:"bytes,3,opt,name=cacheName"`
 }
 
 type Cache struct {
-	ConfigMapName *apiv1.ConfigMapKeySelector `json:"configMapName" protobuf:"bytes,1,opt,name=configMapName"`
+	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
 }

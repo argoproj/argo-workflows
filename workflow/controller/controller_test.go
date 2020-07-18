@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	cache2 "github.com/argoproj/argo/workflow/controller/cache"
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
@@ -147,7 +147,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
-		cache:                cache2.NewConfigMapCache("default", kube),
+		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
 	return cancel, controller
 }

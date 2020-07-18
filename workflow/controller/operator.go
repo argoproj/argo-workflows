@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+
 	"github.com/argoproj/pkg/humanize"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -758,12 +760,14 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
-				if node.Memoized {
-					err := woc.controller.cache.Save(node.CacheKey, node.ID, node.Outputs, node.CacheName)
+				if node.MemoizationStatus != nil {
+					c := *woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+					err := c.Save(node.MemoizationStatus.Key, node.ID, node.Outputs)
 					if err != nil {
 						log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
 						node.Phase = wfv1.NodeError
 					}
+					log.Infof("%+v", node)
 				}
 				woc.updated = true
 			}
@@ -1414,20 +1418,29 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
 		// return cacheEntry struct instead of wfv1.Outputs
-		entry, err := woc.controller.cache.Load(processedTmpl.Memoize.Key, processedTmpl.Memoize.Cache.ConfigMapName.Name)
+		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+		if c == nil {
+			log.Warnf("Cache could not be found or created")
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
+		}
+		entry, err := (*c).Load(processedTmpl.Memoize.Key)
 		if err != nil {
-			return nil, err
+			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 		hit := false
+		outputs := wfv1.Outputs{}
 		if entry != nil {
 			hit = true
-		} else {
-			log.Warnf("Node %s has empty cache entry", nodeName)
+			outputs = *entry.Outputs
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, &entry.Outputs, hit)
-		if entry != nil {
-			return node, nil
+		memStat := &wfv1.MemoizationStatus{
+			Hit:       hit,
+			Key:       processedTmpl.Memoize.Key,
+			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
 		}
+		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, &outputs, memStat)
+		woc.wf.Status.Nodes[node.ID] = *node
+		woc.updated = true
 	}
 
 	if node != nil {
@@ -1746,18 +1759,20 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 }
 
 // Creates a node status that's completely initialized and marked as finished
-func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, hit bool, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
 		panic(fmt.Sprintf("cannot initialize a cached node from a non-memoized template"))
 	}
-	woc.log.Debugf("Initializing cached node", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
-	nodePhase := wfv1.NodeSucceeded
-	if !hit {
-		nodePhase = wfv1.NodePending
+	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
+	nodePhase := wfv1.NodePending
+	if memStat.Hit {
+		nodePhase = wfv1.NodeSucceeded
 	}
-	node := woc.initializeNode(nodeName, resolvedTmpl.GetNodeType(), templateScope, orgTmpl, boundaryID, nodePhase, messages...)
-	if hit {
+	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, nodePhase, messages...)
+	node.MemoizationStatus = memStat
+	if memStat.Hit {
 		node.Outputs = outputs
+		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 	}
 	return node
 }

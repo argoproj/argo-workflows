@@ -21,47 +21,91 @@ import (
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 
 type MemoizationCache interface {
-	Load(key string, configMapName string) (*CacheEntry, error)
-	Save(key string, nodeId string, value *wfv1.Outputs, configMapName string) error
+	Load(key string) (*CacheEntry, error)
+	Save(key string, nodeId string, value *wfv1.Outputs) error
 }
 
 type CacheEntry struct {
-	NodeID  string       `json:"nodeID"`
-	Outputs wfv1.Outputs `json:"outputs"`
-	// TODO: Add creation timestamp
+	NodeID  string        `json:"nodeID"`
+	Outputs *wfv1.Outputs `json:"outputs"`
 }
+
+type cacheFactory struct {
+	caches     map[string]*MemoizationCache
+	kubeclient kubernetes.Interface
+	namespace  string
+}
+
+type CacheFactory interface {
+	GetCache(ct CacheType, name string) *MemoizationCache
+}
+
+func NewCacheFactory(ki kubernetes.Interface, ns string) CacheFactory {
+	return &cacheFactory{
+		make(map[string]*MemoizationCache),
+		ki,
+		ns,
+	}
+}
+
+type CacheType string
+
+const (
+	// Only config maps are currently supported for caching
+	ConfigMapCache CacheType = "ConfigMapCache"
+)
+
+// Returns a cache if it exists and creates it otherwise
+func (cf *cacheFactory) GetCache(ct CacheType, name string) *MemoizationCache {
+	idx := string(ct) + "." + name
+	if c := cf.caches[idx]; c != nil {
+		return c
+	}
+	switch ct {
+	case ConfigMapCache:
+		c := NewConfigMapCache(cf.namespace, cf.kubeclient, name)
+		cf.caches[idx] = &c
+		return &c
+	default:
+		return nil
+	}
+}
+
+// ConfigMap cache
 
 type configMapCache struct {
 	namespace  string
+	name       string
 	kubeClient kubernetes.Interface
 	locked     *sync.RWMutex
 }
 
-func NewConfigMapCache(ns string, ki kubernetes.Interface) MemoizationCache {
+func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) MemoizationCache {
 	return &configMapCache{
 		namespace:  ns,
+		name:       n,
 		kubeClient: ki,
 		locked:     &sync.RWMutex{},
 	}
 }
 
-func (c *configMapCache) Load(key string, configMapName string) (*CacheEntry, error) {
+func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		log.Errorf("Invalid cache key %s", key)
 		return nil, errors.InternalError("Invalid cache key")
 	}
 	c.locked.Lock()
 	defer c.locked.Unlock()
-	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(configMapName, metav1.GetOptions{})
+	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
 		log.Infof("MemoizationCache miss: ConfigMap does not exist")
 		return nil, nil
 	}
 	if err != nil {
-		log.Infof("Error loading ConfigMap cache %s in namespace %s: %s", configMapName, c.namespace, err)
+		log.Infof("Error loading ConfigMap cache %s in namespace %s: %s", c.name, c.namespace, err)
 		return nil, err
 	}
-	log.Infof("ConfigMap cache %s loaded", configMapName)
+	log.Infof("ConfigMap cache %s loaded", c.name)
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
 		log.Debugf("MemoizationCache miss: Entry for %s doesn't exist", key)
@@ -73,25 +117,25 @@ func (c *configMapCache) Load(key string, configMapName string) (*CacheEntry, er
 		return nil, err
 	}
 	outputs := entry.Outputs
-	log.Infof("ConfigMap cache %s hit for %s", configMapName, key)
+	log.Infof("ConfigMap cache %s hit for %s", c.name, key)
 	return &CacheEntry{
 		Outputs: outputs,
 	}, nil
 }
 
-func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, configMapName string) error {
+func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
 		log.Errorf("Invalid cache key %s", key)
 		return errors.InternalError("Invalid cache key")
 	}
 	c.locked.Lock()
 	defer c.locked.Unlock()
-	log.Infof("Saving to cache %s...", key)
-	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(configMapName, metav1.GetOptions{})
+	log.Infof("Saving key %s to cache %s...", key, c.name)
+	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) || cache == nil {
 		cache, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(&apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: configMapName,
+				Name: c.name,
 			},
 		})
 		if err != nil {
@@ -102,7 +146,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs, co
 
 	newEntry := CacheEntry{
 		NodeID:  nodeId,
-		Outputs: *value,
+		Outputs: value,
 	}
 
 	entryJSON, err := json.Marshal(newEntry)

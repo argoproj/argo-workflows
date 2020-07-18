@@ -3573,7 +3573,7 @@ spec:
                         properties:
                           cache:
                             properties:
-                              configMapName:
+                              configMap:
                                 properties:
                                   key:
                                     type: string
@@ -3585,16 +3585,13 @@ spec:
                                 - key
                                 type: object
                             required:
-                            - configMapName
+                            - configMap
                             type: object
                           key:
-                            type: string
-                          maxAge:
                             type: string
                         required:
                         - cache
                         - key
-                        - maxAge
                         type: object
                       metadata:
                         properties:

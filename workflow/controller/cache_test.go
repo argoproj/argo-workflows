@@ -31,17 +31,39 @@ var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 	},
 }
 
-func TestConfigMapCacheLoad(t *testing.T) {
+var sampleConfigMapEmptyCacheEntry = apiv1.ConfigMap{
+	TypeMeta: metav1.TypeMeta{
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:            "whalesay-cache",
+		ResourceVersion: "1630732",
+	},
+}
+
+func TestConfigMapCacheLoadHit(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
 	assert.NoError(t, err)
-	c := cache.NewConfigMapCache("default", controller.kubeclientset)
-	entry, err := c.Load("hi-there-world", "whalesay-cache")
+	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
+	entry, err := c.Load("hi-there-world")
 	outputs := entry.Outputs
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
 	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
+}
+
+func TestConfigMapCacheLoadMiss(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapEmptyCacheEntry)
+	assert.NoError(t, err)
+	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
+	entry, err := c.Load("hi-there-world")
+	assert.NoError(t, err)
+	assert.Nil(t, entry)
 }
 
 func TestConfigMapCacheSave(t *testing.T) {
@@ -53,10 +75,10 @@ func TestConfigMapCacheSave(t *testing.T) {
 	}
 	cancel, controller := newController()
 	defer cancel()
-	c := cache.NewConfigMapCache("default", controller.kubeclientset)
+	c := cache.NewConfigMapCache("default", controller.kubeclientset, "whalesay-cache")
 	outputs := wfv1.Outputs{}
 	outputs.Parameters = append(outputs.Parameters, MockParam)
-	err := c.Save("hi-there-world", "", &outputs, "whalesay-cache")
+	err := c.Save("hi-there-world", "", &outputs)
 	assert.NoError(t, err)
 	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
 	assert.NoError(t, err)

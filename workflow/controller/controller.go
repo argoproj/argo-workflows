@@ -90,7 +90,7 @@ type WorkflowController struct {
 	metrics               *metrics.Metrics
 	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
-	cache                 controllercache.MemoizationCache
+	cacheFactory          controllercache.CacheFactory
 }
 
 const (
@@ -114,7 +114,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		cache:                      controllercache.NewConfigMapCache(namespace, kubeclientset),
+		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       newEventRecorderManager(kubeclientset),
 	}
 

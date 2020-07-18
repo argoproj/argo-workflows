@@ -1954,7 +1954,7 @@
     "io.argoproj.workflow.v1alpha1.Cache": {
       "type": "object",
       "properties": {
-        "configMapName": {
+        "configMap": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
         }
       }
