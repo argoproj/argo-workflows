@@ -77,7 +77,7 @@ type configMapCache struct {
 	namespace  string
 	name       string
 	kubeClient kubernetes.Interface
-	locked     *sync.RWMutex
+	locked     sync.RWMutex
 }
 
 func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) MemoizationCache {
@@ -85,7 +85,7 @@ func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) Memoization
 		namespace:  ns,
 		name:       n,
 		kubeClient: ki,
-		locked:     &sync.RWMutex{},
+		locked:     sync.RWMutex{},
 	}
 }
 
