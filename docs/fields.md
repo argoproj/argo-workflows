@@ -1949,8 +1949,8 @@ Event can trigger this workflow template.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `event.type == "test"`|
-|`parameters`|`Array<`[`EventParameter`](#eventparameter)`>`|Parameters to set as arguments to workflows created.|
+|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"`|
+|`parameters`|`Array<`[`EventParameter`](#eventparameter)`>`|Parameters extracted from the event and then set as arguments to the workflow created.|
 
 ## Artifact
 
@@ -3250,8 +3250,8 @@ EventParameter is a parameter extracted from the io.argoproj.workflow.v1alpha1.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that is evaluted against the io.argoproj.workflow.v1alpha1. E.g. `event.type`|
-|`name`|`string`|Name of the parameters|
+|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
+|`name`|`string`|Name of the parameter|
 
 ## ArchiveStrategy
 

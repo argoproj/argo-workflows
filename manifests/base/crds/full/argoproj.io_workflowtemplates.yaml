@@ -656,6 +656,7 @@ spec:
                   items:
                     properties:
                       expression:
+                        minLength: 4
                         type: string
                       name:
                         type: string

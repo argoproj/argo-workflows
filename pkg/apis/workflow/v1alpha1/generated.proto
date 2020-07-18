@@ -312,11 +312,11 @@ message DAGTemplate {
 
 // Event can trigger this workflow template.
 message Event {
-  // Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == "test"`
+  // Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
   // +kubebuilder:validation:MinLength=4
   optional string expression = 1;
 
-  // Parameters to set as arguments to workflows created.
+  // Parameters extracted from the event and then set as arguments to the workflow created.
   repeated EventParameter parameters = 2;
 }
 
@@ -324,10 +324,11 @@ message Event {
 // +patchStrategy=merge
 // +patchMergeKey=name
 message EventParameter {
-  // Name of the parameters
+  // Name of the parameter
   optional string name = 1;
 
-  // Expression (https://github.com/antonmedv/expr) that is evaluted against the event. E.g. `event.type`
+  // Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // +kubebuilder:validation:MinLength=4
   optional string expression = 2;
 }
 

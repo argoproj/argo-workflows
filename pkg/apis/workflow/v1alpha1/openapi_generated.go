@@ -1043,14 +1043,14 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `event.type == \"test\"`",
+							Description: "Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == \"test\"`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"parameters": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameters to set as arguments to workflows created.",
+							Description: "Parameters extracted from the event and then set as arguments to the workflow created.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1079,14 +1079,14 @@ func schema_pkg_apis_workflow_v1alpha1_EventParameter(ref common.ReferenceCallba
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name of the parameters",
+							Description: "Name of the parameter",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Expression (https://github.com/antonmedv/expr) that is evaluted against the event. E.g. `event.type`",
+							Description: "Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
 							Type:        []string{"string"},
 							Format:      "",
 						},

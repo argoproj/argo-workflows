@@ -462,10 +462,17 @@ kind: Secret
 metadata:
   name: argo-workflows-webhook-clients
 stringData:
+  bitbucket.org: |
+    type: bitbucket
+    secret: "my-uuid"
+  bitbucketserver: |
+    type: bitbucketserver
+    secret: "shh!"
   github.com: |
-    # The type of the webhook - only `github` supported today.
     type: github
-    # The secret, see https://developer.github.com/webhooks/securing/
+    secret: "shh!"
+  gitlab.com: |
+    type: gitlab
     secret: "shh!"
 ---
 apiVersion: v1
