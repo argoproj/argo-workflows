@@ -298,6 +298,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
@@ -562,6 +564,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -891,6 +895,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
@@ -1182,6 +1188,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
@@ -1367,6 +1375,8 @@ Arguments to a template
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -1707,6 +1717,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
@@ -1930,6 +1942,8 @@ Event can trigger this workflow template.
 <br>
 
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
@@ -2138,6 +2152,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -2704,6 +2720,8 @@ Pod metdata
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
@@ -2834,6 +2852,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
@@ -3138,6 +3158,10 @@ EventParameter is a parameter extracted from the io.argoproj.workflow.v1alpha1.
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
+- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
+
+- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
+
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
 
 - [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
@@ -3211,6 +3235,8 @@ EventParameter is a parameter extracted from the io.argoproj.workflow.v1alpha1.
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -4020,6 +4046,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -5153,6 +5181,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
@@ -6140,6 +6170,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 

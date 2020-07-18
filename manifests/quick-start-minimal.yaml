@@ -460,7 +460,7 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argo-workflows-webhook-accounts
+  name: argo-workflows-webhook-clients
 stringData:
   github.com: |
     # The type of the webhook - only `github` supported today.

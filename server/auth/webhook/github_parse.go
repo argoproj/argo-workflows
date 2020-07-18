@@ -6,16 +6,11 @@ import (
 	"gopkg.in/go-playground/webhooks.v5/github"
 )
 
-func githubParse(secret string, r *http.Request) error {
+func githubParse(secret string, r *http.Request) bool {
 	hook, err := github.New(github.Options.Secret(secret))
 	if err != nil {
-		return err
+		return false
 	}
 	_, err = hook.Parse(r, github.PushEvent)
-	switch err {
-	case github.ErrHMACVerificationFailed:
-		return VerificationFailed
-	default:
-		return err
-	}
+	return err == nil
 }

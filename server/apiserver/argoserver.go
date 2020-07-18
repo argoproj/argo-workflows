@@ -258,7 +258,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 
-	webhookInterceptor := webhook.MiddlewareInterceptor(as.kubeClientset, as.namespace)
+	webhookInterceptor := webhook.Interceptor(as.kubeClientset, as.namespace)
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call

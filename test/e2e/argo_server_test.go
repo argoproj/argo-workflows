@@ -109,19 +109,8 @@ func (s *ArgoServerSuite) TestGithubWebhook() {
 	data, err := ioutil.ReadFile("testdata/github-webhook-payload.json")
 	assert.NoError(s.T(), err)
 
-	s.Run("BadSignature", func() {
-		s.e().
-			POST("/api/v1/events/argo").
-			WithHeader("X-Github-Event", "push").
-			WithHeader("X-Hub-Signature", "sha1=garbage").
-			WithBytes(data).
-			Expect().
-			Status(403)
-	})
-
-	s.Run("SubmitTemplate", func() {
-		s.Given().
-			WorkflowTemplate(`
+	s.Given().
+		WorkflowTemplate(`
 metadata:
   name: github-webhook
   labels:
@@ -138,23 +127,22 @@ spec:
       container:
          image: argoproj/argosay:v2
 `).
-			When().
-			CreateWorkflowTemplates().
-			And(func() {
-				s.e().
-					POST("/api/v1/events/argo").
-					WithHeader("X-Github-Event", "push").
-					WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
-					WithBytes(data).
-					Expect().
-					Status(200)
-			}).
-			Wait(2*time.Second).
-			Then().
-			ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=github-webhook"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
-				assert.Len(t, wfList.Items, 1)
-			})
-	})
+		When().
+		CreateWorkflowTemplates().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo").
+				WithHeader("X-Github-Event", "push").
+				WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
+				WithBytes(data).
+				Expect().
+				Status(200)
+		}).
+		Wait(2*time.Second).
+		Then().
+		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=github-webhook"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+			assert.Len(t, wfList.Items, 1)
+		})
 }
 
 func (s *ArgoServerSuite) TestTemplateWithEvent() {
