@@ -1,29 +1,31 @@
 package webhook
 
 import (
-	"context"
+	"bytes"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 )
 
 var (
 	// sentinal error indicating that the request did not match, and can be safely ignored
-	NotMatched         = errors.New("request not matched")
-	// sentinal error indicating that the request, while not necessarily bogus, is not allow to use this service account
+	NotMatched = errors.New("request not matched")
+	// sentinal error indicating that the request, while not necessarily bogus, is not allow to use this service webhookAccount
 	VerificationFailed = status.Error(codes.Unauthenticated, "signature verification failed")
 )
 
-type account struct {
-	webhookType, secret string
+type webhookAccount struct {
+	Type   string `json:"type"`
+	Secret string `json:"secret"`
 }
 
 type parser = func(secret string, r *http.Request) error
@@ -33,50 +35,60 @@ var webhookParsers = map[string]parser{
 	"github": githubParse,
 }
 
-// Annotator creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
-func Annotator(client typedcorev1.SecretInterface) (func(ctx context.Context, r *http.Request) metadata.MD, error) {
+const pathPrefix = "/api/v1/events/"
 
-	// we must store our config in a specific secret as we do not have `list secrets` RBAC, only `get secrets`
-	list, err := client.Get("webhook-accounts", metav1.GetOptions{})
-	if err != nil {
-		// if the secret is not found, then this is disabled.
-		if apierr.IsNotFound(err) {
-			log.WithError(err).Info("webhook annotation disabled (i.e. github etc webhooks are not supported)")
-			return func(ctx context.Context, r *http.Request) metadata.MD { return nil }, nil
-		}
-		return nil, err
-	}
-	accounts := make(map[string]account)
-	for serviceAccountName, data := range list.Data {
-		datum := map[string]string{}
-		err := yaml.Unmarshal(data, &datum)
+// MiddlewareInterceptor creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
+func MiddlewareInterceptor(client kubernetes.Interface, namespace string) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
+		err := addWebhookAuthorization(r, namespace, client)
 		if err != nil {
-			return nil, err
+			log.WithError(err).Error("Failed to parse webhook request")
+			w.WriteHeader(403)
+			// hide the message from the user, because it could help them attack us
+			_, _ = w.Write([]byte(`{"message": "failed to parse webhook request"}`))
+		} else {
+			next.ServeHTTP(w, r)
 		}
-		accounts[serviceAccountName] = account{datum["type"], datum["secret"]}
 	}
+}
 
-	log.WithField("accountCount", len(accounts)).Info("Webhook accounts loaded")
-
-	return func(ctx context.Context, r *http.Request) metadata.MD {
-		for serviceAccountName, account := range accounts {
-			err := webhookParsers[account.webhookType](account.secret, r)
-			switch err {
-			case NotMatched:
-				// no nothing
-			case nil:
-				secret, err := client.Get(serviceAccountName, metav1.GetOptions{})
-				if err != nil {
-					// it is not possible te error-out here
-					log.WithError(err).WithField("account", serviceAccountName).Error("Failed to get access token, ignoring")
-					return nil
-				}
-				return metadata.Pairs("Authorization", "Bearer "+string(secret.Data["token"]))
-			default:
-				// matched, but error
-				return nil
-			}
-		}
+func addWebhookAuthorization(r *http.Request, namespace string, client kubernetes.Interface) error {
+	if r.Method != "POST" || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
 		return nil
-	}, nil
+	}
+	if r.URL.Path != pathPrefix {
+		namespace = strings.TrimPrefix(r.URL.Path, pathPrefix)
+	}
+	secrets := client.CoreV1().Secrets(namespace)
+	webhookAccounts, err := secrets.Get("argo-workflows-webhook-accounts", metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get secrets: %w", err)
+	}
+	buf, _ := ioutil.ReadAll(r.Body)
+	log.Debugln(string(buf))
+	defer func() { r.Body = ioutil.NopCloser(bytes.NewBuffer(buf)) }()
+	for serviceAccountName, data := range webhookAccounts.Data {
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+		a := &webhookAccount{}
+		err := yaml.Unmarshal(data, a)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal webhook account \"%s\": %w", serviceAccountName, err)
+		}
+		log.WithFields(log.Fields{"serviceAccountName": serviceAccountName, "webhookType": a.Type}).Debug("Parsing webhook request")
+		switch webhookParsers[a.Type](a.Secret, r) {
+		case NotMatched:
+			// no nothing
+		case nil:
+			tokenSecret, err := secrets.Get(serviceAccountName, metav1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get token secret for \"%s\": %w", serviceAccountName, err)
+			}
+			r.Header["Authorization"] = []string{"Bearer " + string(tokenSecret.Data["token"])}
+			return nil
+		default:
+			// matched, but error
+			return fmt.Errorf("error parsing payload \"%s\": %w", serviceAccountName, err)
+		}
+	}
+	return nil
 }

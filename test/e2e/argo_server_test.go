@@ -5,6 +5,7 @@ package e2e
 import (
 	"bufio"
 	"crypto/tls"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
@@ -102,6 +103,60 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
+func (s *ArgoServerSuite) TestGithubWebhook() {
+	s.bearerToken = ""
+
+	data, err := ioutil.ReadFile("testdata/github-webhook-payload.json")
+	assert.NoError(s.T(), err)
+
+	s.Run("BadSignature", func() {
+		s.e().
+			POST("/api/v1/events/argo").
+			WithHeader("X-Github-Event", "push").
+			WithHeader("X-Hub-Signature", "sha1=garbage").
+			WithBytes(data).
+			Expect().
+			Status(403)
+	})
+
+	s.Run("SubmitTemplate", func() {
+		s.Given().
+			WorkflowTemplate(`
+metadata:
+  name: github-webhook
+  labels:
+    argo-e2e: true
+spec:
+  event:
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:github.com" && metadata["x-github-event"] == ["push"]
+  entrypoint: main
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  templates:
+    - name: main
+      container:
+         image: argoproj/argosay:v2
+`).
+			When().
+			CreateWorkflowTemplates().
+			And(func() {
+				s.e().
+					POST("/api/v1/events/argo").
+					WithHeader("X-Github-Event", "push").
+					WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
+					WithBytes(data).
+					Expect().
+					Status(200)
+			}).
+			Wait(2*time.Second).
+			Then().
+			ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=github-webhook"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
+				assert.Len(t, wfList.Items, 1)
+			})
+	})
+}
+
 func (s *ArgoServerSuite) TestTemplateWithEvent() {
 	s.Given().
 		WorkflowTemplate(`
@@ -111,10 +166,10 @@ metadata:
     argo-e2e: true
 spec:
   event:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.honorific != "" && metadata["x-argo-e2e"] == ["true"]
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.appellation != "" && metadata["x-argo-e2e"] == ["true"]
     parameters:
-      - name: honorific
-        expression: event.honorific
+      - name: appellation
+        expression: event.appellation
   entrypoint: main
   workflowMetadata:
     labels:
@@ -123,7 +178,6 @@ spec:
     parameters:
       - name: salutation
         value: "hello"
-      - name: honorific
   templates:
     - name: main
       steps:
@@ -133,17 +187,17 @@ spec:
             parameters:
             - name: salutation
               value: "{{workflow.parameters.salutation}}"
-            - name: honorific
-              value: "{{workflow.parameters.honorific}}"
+            - name: appellation
+              value: "{{workflow.parameters.appellation}}"
 
     - name: argosay
       inputs:
         parameters:
           - name: salutation
-          - name: honorific
+          - name: appellation
       container:
          image: argoproj/argosay:v2
-         args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.honorific}}"]
+         args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.appellation}}"]
 `).
 		When().
 		CreateWorkflowTemplates().
@@ -151,7 +205,7 @@ spec:
 			s.e().
 				POST("/api/v1/events/argo").
 				WithHeader("X-Argo-E2E", "true").
-				WithBytes([]byte(`{"honorific": "Mr Chips"}`)).
+				WithBytes([]byte(`{"appellation": "Mr Chips"}`)).
 				Expect().
 				Status(200)
 		}).

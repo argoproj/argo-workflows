@@ -1,0 +1,30 @@
+# This job can be trigger from github.com using an event.
+# You need to set-up an access token, webhook account, and secret.
+
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: ci-job
+spec:
+  event:
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:github.com" && metadata["x-github-event"] == ["push"]
+    parameters:
+      - expression: event.after
+        name: revision
+      - expression: event.repository.clone_url
+        name: repo
+  arguments:
+    parameters:
+      - name: repo
+      - name: revision
+  entrypoint: main
+  templates:
+    - name: main
+      script:
+        image: docker/whalesay:latest
+        workingDir: /work
+        command:
+          - sh
+        source: |
+          git clone "{{workflow.parameters.repo}}" .
+          git checkout "{{workflow.parameters.revision}}"
