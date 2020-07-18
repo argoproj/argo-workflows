@@ -7,7 +7,7 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null)
+GIT_TAG                = $(shell git describe --tags --abbrev=0)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 export DOCKER_BUILDKIT = 1
@@ -29,7 +29,7 @@ DEV_IMAGE             := true
 # VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
-VERSION               := $(shell git tag|grep ^v|sort -d|tail -n1)
+VERSION               := $(GIT_TAG)
 DEV_IMAGE             := false
 endif
 
@@ -475,14 +475,11 @@ ifneq ($(findstring release,$(GIT_BRANCH)),)
 prepare-release: check-version-warning clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-	git tag $(VERSION)
+    # use "annotated" tag, rather than "lightweight", so in future we can distingush from "stable"
+	git tag -a $(VERSION) -m $(VERSION)
 
 .PHONY: publish-release
 publish-release: check-version-warning build
-	# Push images to Docker Hub
-	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
