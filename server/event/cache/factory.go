@@ -38,11 +38,16 @@ func NewFilterUsingKeyController(restClient rest.Interface, namespace string, re
 			},
 		},
 		ObjectType:       objectType,
-		FullResyncPeriod: 30 * time.Minute,
+		FullResyncPeriod: 30 * time.Second,
 		Process: func(obj interface{}) error {
 			for _, d := range obj.(cache.Deltas) {
 				switch d.Type {
 				case cache.Sync, cache.Added, cache.Updated:
+					// we never want to pass `ExplicitKey` to `filterFunc`
+					// as `filterFunc` will not know how to deal with it
+					if _, ok := d.Object.(cache.ExplicitKey); ok {
+						continue
+					}
 					if filterFunc(d) {
 						knownObjects.Add(d.Object)
 					} else {

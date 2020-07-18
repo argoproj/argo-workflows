@@ -19,7 +19,7 @@ func TestController(t *testing.T) {
 	_, err := s.ReceiveEvent(context.TODO(), &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}})
 	assert.NoError(t, err)
 
-	assert.Len(t, s.operationPipeline, 1, "one event to be processed")
+	assert.Len(t, s.operationQueue, 1, "one event to be processed")
 
 	_, err = s.ReceiveEvent(context.TODO(), &eventpkg.EventRequest{})
 	assert.EqualError(t, err, "operation pipeline full", "backpressure when pipeline is full")
@@ -28,6 +28,6 @@ func TestController(t *testing.T) {
 	stopCh <- struct{}{}
 	s.processEvents(stopCh)
 
-	assert.Len(t, s.operationPipeline, 0, "all events were processed")
+	assert.Len(t, s.operationQueue, 0, "all events were processed")
 
 }

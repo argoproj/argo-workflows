@@ -26,30 +26,30 @@ type Controller struct {
 	workflowTemplateController cache.Controller
 	workflowTemplateKeyLister  cache.KeyLister
 	// a channel for operations to be executed async on
-	operationPipeline chan dispatch.Operation
-	workerCount       int
+	operationQueue chan dispatch.Operation
+	workerCount    int
 }
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(client versioned.Interface, namespace string, instanceIDService instanceid.Service, pipelineSize, workerCount int) *Controller {
+func NewController(client versioned.Interface, namespace string, instanceIDService instanceid.Service, operationQueueSize, workerCount int) *Controller {
 	restClient := client.ArgoprojV1alpha1().RESTClient()
 	instanceIDRequirement := util.InstanceIDRequirement(instanceIDService.InstanceID())
 
 	workflowTemplateController, workflowTemplateKeyLister := eventcache.NewFilterUsingKeyController(restClient, namespace, labels.NewSelector().Add(instanceIDRequirement), "workflowtemplates", &wfv1.WorkflowTemplate{}, func(d cache.Delta) bool {
-		template, ok := d.Object.(*wfv1.WorkflowTemplate)
-		return ok && template.Spec.Event != nil
+		// no `ok` check here because a panic would indicate a bug
+		return d.Object.(*wfv1.WorkflowTemplate).Spec.Event != nil
 	})
 
-	log.WithFields(log.Fields{"workerCount": workerCount, "pipelineSize": pipelineSize}).Info("Creating event controller")
+	log.WithFields(log.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize}).Info("Creating event controller")
 
 	return &Controller{
 		instanceIDService:          instanceIDService,
 		workflowTemplateController: workflowTemplateController,
 		workflowTemplateKeyLister:  workflowTemplateKeyLister,
-		//  so we can have N operations outstanding before we start putting back pressure on the senders
-		operationPipeline: make(chan dispatch.Operation, pipelineSize),
-		workerCount:       workerCount,
+		//  so we can have `operationQueueSize` operations outstanding before we start putting back pressure on the senders
+		operationQueue: make(chan dispatch.Operation, operationQueueSize),
+		workerCount:    workerCount,
 	}
 }
 
@@ -58,7 +58,8 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 	go s.workflowTemplateController.Run(stopCh)
 
 	for _, c := range []cache.Controller{s.workflowTemplateController} {
-		err := wait.PollUntil(3*time.Second, func() (done bool, err error) { return c.HasSynced(), nil }, stopCh)
+		// 30s wait to avoid start up which is unable to dispatch events
+		err := wait.PollUntil(30*time.Second, func() (done bool, err error) { return c.HasSynced(), nil }, stopCh)
 		if err != nil {
 			log.WithError(err).Error("Failed to sync controller")
 		}
@@ -70,13 +71,13 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 }
 
 func (s *Controller) processEvents(stopCh <-chan struct{}) {
-	// this block of code waits for all events to be processed
+	// this `WaitGroup` allows us to wait for all events to dispatch before exiting
 	wg := sync.WaitGroup{}
 
 	for w := 0; w < s.workerCount; w++ {
 		go func() {
 			defer wg.Done()
-			for operation := range s.operationPipeline {
+			for operation := range s.operationQueue {
 				operation.Execute()
 			}
 		}()
@@ -86,9 +87,9 @@ func (s *Controller) processEvents(stopCh <-chan struct{}) {
 	<-stopCh
 
 	// stop accepting new events
-	close(s.operationPipeline)
+	close(s.operationQueue)
 
-	log.WithFields(log.Fields{"operations": len(s.operationPipeline)}).Info("Waiting until all remaining events are processed")
+	log.WithFields(log.Fields{"operations": len(s.operationQueue)}).Info("Waiting until all remaining events are processed")
 
 	// no more new events, process the existing events
 	wg.Wait()
@@ -96,7 +97,7 @@ func (s *Controller) processEvents(stopCh <-chan struct{}) {
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
 	select {
-	case s.operationPipeline <- dispatch.NewOperation(ctx, s.instanceIDService, s.workflowTemplateKeyLister, req.Discriminator, req.Payload):
+	case s.operationQueue <- dispatch.NewOperation(ctx, s.instanceIDService, s.workflowTemplateKeyLister, req.Discriminator, req.Payload):
 		return &eventpkg.EventResponse{}, nil
 	default:
 		return nil, errors.NewServiceUnavailable("operation pipeline full")

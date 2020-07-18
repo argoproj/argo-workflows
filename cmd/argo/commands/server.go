@@ -25,17 +25,17 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes         []string
-		configMap         string
-		port              int
-		baseHRef          string
-		secure            bool
-		htst              bool
-		namespaced        bool   // --namespaced
-		managedNamespace  string // --managed-namespace
-		enableOpenBrowser bool
-		eventPipelineSize int
-		eventWorkerCount  int
+		authModes               []string
+		configMap               string
+		port                    int
+		baseHRef                string
+		secure                  bool
+		htst                    bool
+		namespaced              bool   // --namespaced
+		managedNamespace        string // --managed-namespace
+		enableOpenBrowser       bool
+		eventOperationQueueSize int
+		eventWorkerCount        int
 	)
 
 	var command = cobra.Command{
@@ -96,18 +96,18 @@ See %s`, help.ArgoSever),
 			}
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:          baseHRef,
-				TLSConfig:         tlsConfig,
-				HSTS:              htst,
-				Namespace:         namespace,
-				WfClientSet:       wflientset,
-				KubeClientset:     kubeConfig,
-				RestConfig:        config,
-				AuthModes:         modes,
-				ManagedNamespace:  managedNamespace,
-				ConfigName:        configMap,
-				EventPipelineSize: eventPipelineSize,
-				EventWorkerCount:  eventWorkerCount,
+				BaseHRef:                baseHRef,
+				TLSConfig:               tlsConfig,
+				HSTS:                    htst,
+				Namespace:               namespace,
+				WfClientSet:             wflientset,
+				KubeClientset:           kubeConfig,
+				RestConfig:              config,
+				AuthModes:               modes,
+				ManagedNamespace:        managedNamespace,
+				ConfigName:              configMap,
+				EventOperationQueueSize: eventOperationQueueSize,
+				EventWorkerCount:        eventWorkerCount,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -139,7 +139,7 @@ See %s`, help.ArgoSever),
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
-	command.Flags().IntVar(&eventPipelineSize, "event-pipeline-size", 16, "how many events that can be queued at once")
+	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
 	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
 	return &command
 }

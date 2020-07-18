@@ -188,8 +188,8 @@ If you are processing large numbers of events, you may need to scale up the Argo
 
 Vertically you can:
  
-* Increase the size of the event pipeline `--event-pipeline-size 16` (good for temporary event bursts).
-* Increase the number of workers `--event-worker-count 4` (good for sustained numbers of events).
+* Increase the size of the event operation queue `--event-operation-queue-size` (good for temporary event bursts).
+* Increase the number of workers `--event-worker-count` (good for sustained numbers of events).
 
 Horizontally you can:
  
