@@ -131,7 +131,7 @@ spec:
 		CreateWorkflowTemplates().
 		And(func() {
 			s.e().
-				POST("/api/v1/events/argo").
+				POST("/api/v1/events/argo/").
 				WithHeader("X-Github-Event", "push").
 				WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
 				WithBytes(data).
@@ -154,10 +154,10 @@ metadata:
     argo-e2e: true
 spec:
   event:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && event.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
     parameters:
       - name: appellation
-        expression: event.appellation
+        expression: payload.appellation
   entrypoint: main
   workflowMetadata:
     labels:
@@ -191,7 +191,7 @@ spec:
 		CreateWorkflowTemplates().
 		And(func() {
 			s.e().
-				POST("/api/v1/events/argo").
+				POST("/api/v1/events/argo/").
 				WithHeader("X-Argo-E2E", "true").
 				WithBytes([]byte(`{"appellation": "Mr Chips"}`)).
 				Expect().

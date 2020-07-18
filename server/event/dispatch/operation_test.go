@@ -27,7 +27,7 @@ func TestOperation(t *testing.T) {
 	event, err := wfv1.ParseItem(`{"type":"test"}`)
 	assert.NoError(t, err)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, client), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
-	operation := NewOperation(ctx, instanceid.NewService("my-instanceid"), keyLister, &event)
+	operation := NewOperation(ctx, instanceid.NewService("my-instanceid"), keyLister, "my-discriminator", &event)
 
 	t.Run("EventSpecMissing", func(t *testing.T) {
 		_, err := operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
@@ -66,7 +66,7 @@ func TestOperation(t *testing.T) {
 		}
 	})
 
-	t.Run("MalformedParamaterExpression", func(t *testing.T) {
+	t.Run("MalformedParameterExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowTemplateSpec{
@@ -80,7 +80,7 @@ func TestOperation(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
-		assert.EqualError(t, err, "failed to evalute workflow template parameter \"my-param\" expression: unexpected token EOF (1:1)")
+		assert.EqualError(t, err, "failed to evaluate workflow template parameter \"my-param\" expression: unexpected token EOF (1:1)")
 	})
 
 	t.Run("MatchedExpression", func(t *testing.T) {
@@ -89,9 +89,9 @@ func TestOperation(t *testing.T) {
 			Spec: wfv1.WorkflowTemplateSpec{
 				// note the non-trival expression
 				Event: &wfv1.Event{
-					Expression: "event.type == \"test\"",
+					Expression: "payload.type == \"test\" && discriminator == \"my-discriminator\"",
 					Parameters: []wfv1.EventParameter{
-						{Name: "my-param", Expression: "event.type"},
+						{Name: "my-param", Expression: "payload.type"},
 					},
 				},
 			},

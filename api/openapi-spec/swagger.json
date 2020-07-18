@@ -658,7 +658,7 @@
         }
       }
     },
-    "/api/v1/events/{namespace}": {
+    "/api/v1/events/{namespace}/{discriminator}": {
       "post": {
         "tags": [
           "EventService"
@@ -669,6 +669,13 @@
             "type": "string",
             "description": "The namespace for the io.argoproj.workflow.v1alpha1. This can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in\nall namespaces, or if set - only to workflows in the specified namespace",
             "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty and ignored.\nThere are edge-cases where the claim-set subject or event payload does not provide enough information\nto discriminate the event.\nIt MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or\nto support webhooks on unsecured server. Instead, secure your server and set-up appropriate access tokens.",
+            "name": "discriminator",
             "in": "path",
             "required": true
           },

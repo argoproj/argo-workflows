@@ -96,7 +96,7 @@ func (s *Controller) processEvents(stopCh <-chan struct{}) {
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
 	select {
-	case s.operationPipeline <- dispatch.NewOperation(ctx, s.instanceIDService, s.workflowTemplateKeyLister, req.Event):
+	case s.operationPipeline <- dispatch.NewOperation(ctx, s.instanceIDService, s.workflowTemplateKeyLister, req.Discriminator, req.Payload):
 		return &eventpkg.EventResponse{}, nil
 	default:
 		return nil, errors.NewServiceUnavailable("operation pipeline full")
