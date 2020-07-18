@@ -91,18 +91,17 @@ func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) Memoization
 
 func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 	if !cacheKeyRegex.MatchString(key) {
-		log.Errorf("Invalid cache key %s", key)
-		return nil, errors.InternalError("Invalid cache key")
+		return nil, fmt.Errorf("Invalid cache key %s", key)
 	}
 	c.locked.Lock()
 	defer c.locked.Unlock()
 	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-		log.Infof("MemoizationCache miss: ConfigMap does not exist")
+		log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name, "err": err}).Debug("MemoizationCache miss: ConfigMap does not exist")
 		return nil, nil
 	}
 	if err != nil {
-		log.Infof("Error loading ConfigMap cache %s in namespace %s: %s", c.name, c.namespace, err)
+		log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name, "err": err}).Debug("Error loading ConfigMap cache")
 		return nil, err
 	}
 	log.Infof("ConfigMap cache %s loaded", c.name)
