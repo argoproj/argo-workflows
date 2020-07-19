@@ -73,17 +73,17 @@ func (g *Given) Workflow(text string) *Given {
 func (g *Given) checkImages(templates []wfv1.Template) {
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
-	imageWhitelist := map[string]bool{
-		"argoexec:" + imageTag: true,
-		"argoproj/argosay:v1":  true,
-		"argoproj/argosay:v2":  true,
-		"python:alpine3.6":     true,
+	imageWhitelist := func(image string) bool {
+		return strings.Contains(image, "argoproj/argoexec:") ||
+			image == "argoproj/argosay:v1" ||
+			image == "argoproj/argosay:v2" ||
+			image == "python:alpine3.6"
 	}
 	for _, t := range templates {
 		container := t.Container
 		if container != nil {
 			image := container.Image
-			if !imageWhitelist[image] {
+			if !imageWhitelist(image) {
 				g.t.Fatalf("non-whitelisted image used in test: %s", image)
 			}
 		}

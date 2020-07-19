@@ -22,6 +22,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 const baseUrl = "https://localhost:2746"
@@ -138,10 +139,10 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		Wait(10*time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
-		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=github-webhook"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
-			assert.Len(t, wfList.Items, 1)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
+			assert.Equal(t, "github-webhook", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
 		})
 }
 
@@ -197,10 +198,10 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		Wait(30*time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
-		ExpectWorkflowList(metav1.ListOptions{LabelSelector: "argo-e2e=true,workflows.argoproj.io/workflow-template=event-consumer"}, func(t *testing.T, wfList *wfv1.WorkflowList) {
-			assert.Len(t, wfList.Items, 1)
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
+			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
 		})
 }
 
