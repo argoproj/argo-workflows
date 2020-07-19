@@ -47,9 +47,6 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: make pull-build-images test-images &
-      - name: Download all Go modules
-        run: |
-          go mod download
       - name: Create Kubeconfig
         if: ${{ matrix.test != 'test' }}
         run: |
@@ -118,9 +115,6 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
-      - name: Download all Go modules
-        run: |
-          go mod download
       - name: Install Kustomize
         run: |
             cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
@@ -143,11 +137,6 @@ jobs:
         run: |
           git fetch --tags
           make codegen
-      - name: Make manifests
-        env:
-          GOPATH: /home/runner/go
-        run: |
-          make manifests
       - name: Make lint
         env:
           GOPATH: /home/runner/go
@@ -171,7 +160,7 @@ jobs:
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - name: Install and Lint
+      - name: Install, build and Lint
         run: |
           yarn --cwd ui install
           yarn --cwd ui build

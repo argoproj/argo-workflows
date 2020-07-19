@@ -460,7 +460,7 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 ./node_modules/.bin/swagger-markdown:
 	npm install swagger-markdown
 
-docs/swagger.md: api/openapi-spec/swagger.json ./node_modules/.bin/swagger-markdown 	
+docs/swagger.md: api/openapi-spec/swagger.json ./node_modules/.bin/swagger-markdown
 	./node_modules/.bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
 
 .PHONY: docs
