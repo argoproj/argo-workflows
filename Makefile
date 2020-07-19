@@ -7,7 +7,7 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-GIT_TAG                = $(shell git describe --always --tags --abbrev=0)
+GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 export DOCKER_BUILDKIT = 1
@@ -286,7 +286,7 @@ manifests: crds
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -386,19 +386,19 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e: test-images cli
+test-e2e:
 	# Run E2E tests
 	@mkdir -p test-results
 	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
-test-e2e-cron: test-images cli
+test-e2e-cron:
 	# Run E2E tests
 	@mkdir -p test-results
 	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
-smoke: test-images
+smoke:
 	# Run smoke tests
 	@mkdir -p test-results
 	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
