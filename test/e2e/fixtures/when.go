@@ -109,7 +109,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 
 	fieldSelector := ""
 	if workflowName != "" {
-		fieldSelector = "metadata.name" + workflowName
+		fieldSelector = "metadata.name=" + workflowName
 	}
 
 	logCtx := log.WithFields(log.Fields{"fieldSelector": fieldSelector, "condition": condition, "timeout": timeout})
