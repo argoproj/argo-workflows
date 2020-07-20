@@ -764,10 +764,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					c := *woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 					err := c.Save(node.MemoizationStatus.Key, node.ID, node.Outputs)
 					if err != nil {
-						log.Errorf("Failed to save node %s outputs to cache: %s", node.ID, err)
+						woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
 						node.Phase = wfv1.NodeError
 					}
-					log.Infof("%+v", node)
 				}
 				woc.updated = true
 			}
@@ -1420,7 +1419,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// return cacheEntry struct instead of wfv1.Outputs
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
 		if c == nil {
-			log.Warnf("Cache could not be found or created")
+			err := fmt.Errorf("Cache could not be found or created")
+			woc.log.WithFields(log.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 		entry, err := (*c).Load(processedTmpl.Memoize.Key)
@@ -1761,7 +1761,9 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 // Creates a node status that's completely initialized and marked as finished
 func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
-		panic(fmt.Sprintf("cannot initialize a cached node from a non-memoized template"))
+		err := fmt.Errorf("Cannot initialize a cached node from a non-memoized template")
+		woc.log.WithFields(log.Fields{"namespace": woc.wf.Namespace, "wfName": woc.wf.Name}).WithError(err)
+		panic(err)
 	}
 	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 	nodePhase := wfv1.NodePending
