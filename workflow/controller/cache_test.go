@@ -51,8 +51,10 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	entry, err := c.Load("hi-there-world")
 	outputs := entry.Outputs
 	assert.NoError(t, err)
-	assert.Equal(t, "hello", outputs.Parameters[0].Name)
-	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
+	if assert.Len(t, outputs.Parameters, 1) {
+		assert.Equal(t, "hello", outputs.Parameters[0].Name)
+		assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
+	}
 }
 
 func TestConfigMapCacheLoadMiss(t *testing.T) {
@@ -68,10 +70,10 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 
 func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
-
+	val := intstr.Parse(MockParamValue)
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: &intstr.IntOrString{StrVal: MockParamValue},
+		Value: &val,
 	}
 	cancel, controller := newController()
 	defer cancel()
