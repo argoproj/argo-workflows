@@ -623,7 +623,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 			doForceResetNode = true
 		}
 		switch node.Phase {
-		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
+		case wfv1.NodeSucceeded, wfv1.NodeSkipped, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
 				newWF.Status.Nodes[node.ID] = node
 				continue
