@@ -2535,8 +2535,8 @@ spec:
 `)
 		assert.EqualError(t, err, "malformed event expression: unexpected token EOF (1:1)")
 	})
-	t.Run("InvalidEventParameterExpression", func(t *testing.T) {
 
+	t.Run("InvalidEventParameterExpression", func(t *testing.T) {
 		err := validateWorkflowTemplate(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2548,7 +2548,24 @@ spec:
     expression: "true"
     parameters:
     - name: "my-name"
-      expression: ""
+`)
+		assert.EqualError(t, err, "malformed event parameter \"my-name\": validFrom is nil")
+	})
+
+	t.Run("InvalidEmptyParameterExpression", func(t *testing.T) {
+		err := validateWorkflowTemplate(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  event:
+    expression: "true"
+    parameters:
+    - name: "my-name"
+      valueFrom:
+        expression: ""
 `)
 		assert.EqualError(t, err, "malformed event parameter \"my-name\" expression: unexpected token EOF (1:1)")
 	})

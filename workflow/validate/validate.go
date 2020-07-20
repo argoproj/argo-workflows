@@ -295,7 +295,10 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 			return nil, fmt.Errorf("malformed event expression: %w", err)
 		}
 		for _, p := range wftmpl.Spec.Event.Parameters {
-			_, err := expr.Compile(p.Expression)
+			if p.ValueFrom == nil {
+				return nil, fmt.Errorf("malformed event parameter \"%s\": validFrom is nil", p.Name)
+			}
+			_, err := expr.Compile(p.ValueFrom.Expression)
 			if err != nil {
 				return nil, fmt.Errorf("malformed event parameter \"%s\" expression: %w", p.Name, err)
 			}

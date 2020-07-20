@@ -66,14 +66,31 @@ func TestOperation(t *testing.T) {
 		}
 	})
 
-	t.Run("MalformedParameterExpression", func(t *testing.T) {
+	t.Run("MalformedNilParameterExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowTemplateSpec{
 				Event: &wfv1.Event{
 					Expression: "true",
-					Parameters: []wfv1.EventParameter{
-						{Name: "my-param", Expression: ""},
+					Parameters: []wfv1.Parameter{
+						{Name: "my-param"},
+					},
+				},
+			},
+		})
+		assert.NoError(t, err)
+		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		assert.EqualError(t, err, "malformed workflow template parameter \"my-param\": validFrom is nil")
+	})
+
+	t.Run("MalformedEmptyParameterExpression", func(t *testing.T) {
+		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowTemplateSpec{
+				Event: &wfv1.Event{
+					Expression: "true",
+					Parameters: []wfv1.Parameter{
+						{Name: "my-param", ValueFrom: &wfv1.ValueFrom{}},
 					},
 				},
 			},
@@ -90,8 +107,8 @@ func TestOperation(t *testing.T) {
 				// note the non-trival expression
 				Event: &wfv1.Event{
 					Expression: "payload.type == \"test\" && discriminator == \"my-discriminator\"",
-					Parameters: []wfv1.EventParameter{
-						{Name: "my-param", Expression: "payload.type"},
+					Parameters: []wfv1.Parameter{
+						{Name: "my-param", ValueFrom: &wfv1.ValueFrom{Expression: "payload.type"}},
 					},
 				},
 			},

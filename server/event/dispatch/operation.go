@@ -97,7 +97,10 @@ func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (
 		o.instanceIDService.Label(wf)
 		creator.Label(o.ctx, wf)
 		for _, p := range tmpl.Spec.Event.Parameters {
-			result, err := expr.Eval(p.Expression, env)
+			if p.ValueFrom == nil {
+				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
+			}
+			result, err := expr.Eval(p.ValueFrom.Expression, env)
 			if err != nil {
 				return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
 			}

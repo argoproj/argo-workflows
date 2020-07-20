@@ -317,19 +317,7 @@ message Event {
   optional string expression = 1;
 
   // Parameters extracted from the event and then set as arguments to the workflow created.
-  repeated EventParameter parameters = 2;
-}
-
-// EventParameter is a parameter extracted from the event.
-// +patchStrategy=merge
-// +patchMergeKey=name
-message EventParameter {
-  // Name of the parameter
-  optional string name = 1;
-
-  // Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
-  // +kubebuilder:validation:MinLength=4
-  optional string expression = 2;
+  repeated Parameter parameters = 2;
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -1086,6 +1074,10 @@ message ValueFrom {
 
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
+
+  // Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // +kubebuilder:validation:MinLength=4
+  optional string expression = 6;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')

@@ -158,7 +158,8 @@ spec:
     expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
     parameters:
       - name: appellation
-        expression: payload.appellation
+        valueFrom:
+          expression: payload.appellation
   entrypoint: main
   workflowMetadata:
     labels:
