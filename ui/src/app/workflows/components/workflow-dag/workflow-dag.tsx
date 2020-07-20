@@ -6,8 +6,8 @@ import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
 import {Graph} from './graph/graph';
-import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 import {Shifter} from "./graph/shifter";
+import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
     horizontal: boolean;
