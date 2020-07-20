@@ -97,7 +97,9 @@ func (c *configMapCache) logInfo(fields log.Fields, message string) {
 
 func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 	if !cacheKeyRegex.MatchString(key) {
-		return nil, fmt.Errorf("Invalid cache key %s", key)
+		err := fmt.Errorf("Invalid cache key %s", key)
+		c.logError(err, log.Fields{"key": key}, "Invalid cache key")
+		return nil, err
 	}
 	c.locked.Lock()
 	defer c.locked.Unlock()
