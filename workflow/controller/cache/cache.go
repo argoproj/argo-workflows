@@ -8,8 +8,6 @@ import (
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/argoproj/argo/errors"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,6 +87,14 @@ func NewConfigMapCache(ns string, ki kubernetes.Interface, n string) Memoization
 	}
 }
 
+func (c *configMapCache) logError(err error, fields log.Fields, message string) {
+	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).WithError(err).Debug(message)
+}
+
+func (c *configMapCache) logInfo(fields log.Fields, message string) {
+	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(message)
+}
+
 func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("Invalid cache key %s", key)
@@ -97,17 +103,17 @@ func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 	defer c.locked.Unlock()
 	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-		log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name, "err": err}).Debug("MemoizationCache miss: ConfigMap does not exist")
+		c.logError(err, log.Fields{}, "MemoizationCache miss: ConfigMap does not exist")
 		return nil, nil
 	}
 	if err != nil {
-		log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name, "err": err}).Debug("Error loading ConfigMap cache")
+		c.logError(err, log.Fields{}, "Error loading ConfigMap cache")
 		return nil, err
 	}
-	log.Infof("ConfigMap cache %s loaded", c.name)
+	c.logInfo(log.Fields{}, "ConfigMap cache loaded")
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
-		log.Debugf("MemoizationCache miss: Entry for %s doesn't exist", key)
+		c.logInfo(log.Fields{}, "MemoizationCache miss: entry does not exist")
 		return nil, nil
 	}
 	var entry CacheEntry
@@ -116,7 +122,7 @@ func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 		return nil, err
 	}
 	outputs := entry.Outputs
-	log.Infof("ConfigMap cache %s hit for %s", c.name, key)
+	c.logInfo(log.Fields{"key": key}, "ConfigMap cache hit")
 	return &CacheEntry{
 		Outputs: outputs,
 	}, nil
@@ -124,12 +130,13 @@ func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 
 func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
-		log.Errorf("Invalid cache key %s", key)
-		return errors.InternalError("Invalid cache key")
+		err := fmt.Errorf("Invalid cache key")
+		c.logError(err, log.Fields{"key": key}, "Invalid cache key")
+		return err
 	}
 	c.locked.Lock()
 	defer c.locked.Unlock()
-	log.Infof("Saving key %s to cache %s...", key, c.name)
+	c.logInfo(log.Fields{"key": key, "nodeId": nodeId}, "Saving ConfigMap cache entry")
 	cache, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) || cache == nil {
 		cache, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Create(&apiv1.ConfigMap{
@@ -138,7 +145,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 			},
 		})
 		if err != nil {
-			log.Warnf("Error saving to cache: %s", err)
+			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
 			return err
 		}
 	}
@@ -150,7 +157,8 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 
 	entryJSON, err := json.Marshal(newEntry)
 	if err != nil {
-		return fmt.Errorf("unable to marshal cache entry: %s", err)
+		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Unable to marshal cache entry")
+		return fmt.Errorf("Unable to marshal cache entry: %w", err)
 	}
 
 	if cache.Data == nil {
@@ -160,7 +168,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(cache)
 	if err != nil {
-		log.Infof("Error creating new cache entry for %s: %s", key, err)
+		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
 		return err
 	}
 	return nil
