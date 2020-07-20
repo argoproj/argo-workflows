@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -647,9 +648,9 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		SubmitWorkflow().
 		WaitForWorkflowToStart(5*time.Second).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wfv1.NodePending == wf.Status.Phase
+			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
 		}, "PVC pending", 10*time.Second).
-		DeleteQuota().
+		DeleteStorageQuota().
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {

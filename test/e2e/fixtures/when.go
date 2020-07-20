@@ -35,6 +35,7 @@ type When struct {
 	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
 	resourceQuota     *corev1.ResourceQuota
+	storageQuota      *corev1.ResourceQuota
 	configMap         *corev1.ConfigMap
 }
 
@@ -232,7 +233,16 @@ func (w *When) StorageQuota(quota string) *When {
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.resourceQuota = obj
+	w.storageQuota = obj
+	return w
+}
+
+func (w *When) DeleteStorageQuota() *When {
+	err := util.DeleteQuota(w.kubeClient, w.storageQuota)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.storageQuota = nil
 	return w
 }
 

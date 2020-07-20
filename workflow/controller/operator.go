@@ -284,11 +284,11 @@ func (woc *wfOperationCtx) operate() {
 	if err != nil {
 		if apierr.IsForbidden(err) {
 			// Error was most likely caused by a lack of resources.
-			// In this case, Workflow will be in pending state and requeue.
-			woc.markWorkflowPhase(wfv1.NodePending, false)
-			woc.requeue(0)
+			// In this case, Workflow will be requeued.
+			woc.wf.Status.Message = fmt.Sprintf("Waiting for a PVC to be created. %v", err)
+			woc.updated = true
+			woc.requeue(10)
 			return
-
 		}
 		msg := "pvc create error"
 		woc.log.WithError(err).Error(msg)
@@ -1238,22 +1238,15 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// (e.g. passed validation, or didn't already complete)
 		return nil
 	}
-	existPVC := make(map[string]bool)
-	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
-		if pvc.Name != "" {
-			existPVC[pvc.PersistentVolumeClaim.ClaimName] = true
-		}
-	}
-	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
-		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wfSpec.VolumeClaimTemplates))
+	if len(woc.wfSpec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
+		// If we have already created the PVCs, then there is nothing to do.
+		// This will also handle the case where workflow has no volumeClaimTemplates.
+		return nil
 	}
 	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.wfSpec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
-		}
-		if found := existPVC[pvcTmpl.ObjectMeta.Name]; found {
-			continue
 		}
 		pvcTmpl = *pvcTmpl.DeepCopy()
 		// PVC name will be <workflowname>-<volumeclaimtemplatename>
@@ -1301,7 +1294,11 @@ func (woc *wfOperationCtx) createPVCs() error {
 				},
 			},
 		}
-		woc.wf.Status.PersistentVolumeClaims[i] = vol
+		woc.wf.Status.PersistentVolumeClaims = append(woc.wf.Status.PersistentVolumeClaims, vol)
+		// Clearing previous PVC forbidden error
+		if woc.wf.Status.Message != "" && strings.Contains(woc.wf.Status.Message, "Waiting for a PVC to be created") {
+			woc.wf.Status.Message = ""
+		}
 		woc.updated = true
 	}
 	return nil
