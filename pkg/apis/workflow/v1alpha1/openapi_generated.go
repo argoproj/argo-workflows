@@ -34,7 +34,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":                     schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":                 schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event":                       schema_pkg_apis_workflow_v1alpha1_Event(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EventParameter":              schema_pkg_apis_workflow_v1alpha1_EventParameter(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig":              schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GCSArtifact":                 schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GCSBucket":                   schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref),
@@ -1055,7 +1054,7 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EventParameter"),
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -1066,41 +1065,7 @@ func schema_pkg_apis_workflow_v1alpha1_Event(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EventParameter"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_EventParameter(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "EventParameter is a parameter extracted from the event.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name of the parameter",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"expression": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"name", "expression"},
-			},
-			VendorExtensible: spec.VendorExtensible{
-				Extensions: spec.Extensions{
-					"x-kubernetes-patch-merge-key": "name",
-					"x-kubernetes-patch-strategy":  "merge",
-				},
-			},
-		},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"},
 	}
 }
 
@@ -3802,6 +3767,13 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					"jqFilter": {
 						SchemaProps: spec.SchemaProps{
 							Description: "JQFilter expression against the resource object in resource templates",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"expression": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
 							Type:        []string{"string"},
 							Format:      "",
 						},

@@ -252,6 +252,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -297,8 +299,6 @@ WorkflowTemplate is the definition of a workflow template resource
 <br>
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
@@ -574,6 +574,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -905,6 +907,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1198,6 +1202,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1376,13 +1382,13 @@ Arguments to a template
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
-
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
@@ -1717,8 +1723,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
-
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/retry-with-steps.yaml)
@@ -1726,6 +1730,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 </details>
 
 ### Fields
@@ -1799,6 +1805,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -1942,15 +1950,13 @@ Event can trigger this workflow template.
 <br>
 
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`expression`|`string`|Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"`|
-|`parameters`|`Array<`[`EventParameter`](#eventparameter)`>`|Parameters extracted from the event and then set as arguments to the workflow created.|
+|`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters extracted from the event and then set as arguments to the workflow created.|
 
 ## Artifact
 
@@ -2160,6 +2166,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
@@ -2730,6 +2738,8 @@ Pod metdata
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -2853,7 +2863,7 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 </details>
 
 ### Fields
@@ -3110,149 +3120,6 @@ _No description available_
 |`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
 |`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
 
-## EventParameter
-
-EventParameter is a parameter extracted from the io.argoproj.workflow.v1alpha1.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
-
-- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
-
-- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
-
-- [`conditionals.yaml`](https://github.com/argoproj/argo/blob/master/examples/conditionals.yaml)
-
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
-
-- [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
-
-- [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
-
-- [`daemon-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-step.yaml)
-
-- [`dag-daemon-task.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-daemon-task.yaml)
-
-- [`dag-diamond-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond-steps.yaml)
-
-- [`dag-diamond.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-diamond.yaml)
-
-- [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
-
-- [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
-
-- [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
-
-- [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
-
-- [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
-
-- [`exit-handler-step-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-step-level.yaml)
-
-- [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
-
-- [`global-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-parameters.yaml)
-
-- [`handle-large-output-results.yaml`](https://github.com/argoproj/argo/blob/master/examples/handle-large-output-results.yaml)
-
-- [`influxdb-ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/influxdb-ci.yaml)
-
-- [`k8s-jobs.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
-
-- [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
-
-- [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
-
-- [`loops-maps.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-maps.yaml)
-
-- [`loops-param-argument.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-argument.yaml)
-
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
-
-- [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
-
-- [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
-
-- [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
-
-- [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
-
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
-
-- [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
-
-- [`parallelism-nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-workflow.yaml)
-
-- [`parallelism-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested.yaml)
-
-- [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
-
-- [`parameter-aggregation-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-script.yaml)
-
-- [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
-
-- [`pod-metadata.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-metadata.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
-
-- [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
-
-- [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
-
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
-- [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
-
-- [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
-
-- [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
-
-- [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
-|`name`|`string`|Name of the parameter|
-
 ## ArchiveStrategy
 
 ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -3488,12 +3355,15 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -4056,6 +3926,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -5191,6 +5063,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -5621,6 +5495,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
+
+- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
@@ -6180,6 +6056,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+
+- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
