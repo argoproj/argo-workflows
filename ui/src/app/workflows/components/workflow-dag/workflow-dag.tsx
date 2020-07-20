@@ -25,32 +25,30 @@ export interface WorkflowDagProps {
 class Shifter {
     private shifts: number;
     constructor() {
-        this.shifts = -1
+        this.shifts = -1;
     }
 
     public startShift(): void {
         if (this.shifts !== -1) {
-            console.log("ERROR: Shift started while in progress");
-            return
+            return;
         }
         this.shifts = 0;
     }
 
     public get(i: number): number {
         if (this.shifts === -1) {
-            return i
+            return i;
         } else if (this.shifts === 0) {
             this.shifts++;
-            return i + 2
+            return i + 2;
         } else if (this.shifts === 1) {
             this.shifts++;
-            return i - 1
+            return i - 1;
         } else if (this.shifts === 2) {
             this.shifts = -1;
-            return i -1
+            return i - 1;
         }
-        console.log("ERROR: Unexpected shift count");
-        return i
+        return i;
     }
 }
 
@@ -185,6 +183,24 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             </>
         );
     }
+
+    private static getConcatNodeName(parent: string, hiding: number): string {
+        return '@concat/' + parent + '/' + hiding;
+    }
+
+    private static isConcatNode(id: string): boolean {
+        return id.startsWith('@concat/');
+    }
+
+    private static getConcatNodeParent(id: string): string {
+        const split = id.split('/');
+        return split[1];
+    }
+
+    private static getConcatNodeHiding(id: string): number {
+        const split = id.split('/');
+        return +split[2];
+    }
     private hash: {scale: number; nodeCount: number; nodesToDisplay: string[]};
     private graph: {
         width: number;
@@ -196,7 +212,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
         this.state = this.getOptions();
-        console.log(this.state);
     }
 
     public render() {
@@ -233,10 +248,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
-                                let phase: DagPhase, label: string, hidden: boolean;
+                                let phase: DagPhase;
+                                let label: string;
+                                let hidden: boolean;
                                 if (WorkflowDag.isConcatNode(nodeId)) {
                                     phase = 'Concat';
-                                    label = WorkflowDag.getConcatNodeHiding(nodeId) + " nodes hidden";
+                                    label = WorkflowDag.getConcatNodeHiding(nodeId) + ' nodes hidden';
                                     hidden = this.hiddenNode(WorkflowDag.getConcatNodeParent(nodeId));
                                 } else {
                                     const node = this.props.nodes[nodeId];
@@ -307,24 +324,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         } as WorkflowDagRenderOptions;
     }
 
-    private static getConcatNodeName(parent: string, hiding: number): string {
-        return "@concat/" + parent + "/" + hiding
-    }
-
-    private static isConcatNode(id: string): boolean {
-        return id.startsWith("@concat/")
-    }
-
-    private static getConcatNodeParent(id: string): string {
-        const split = id.split("/");
-        return split[1]
-    }
-
-    private static getConcatNodeHiding(id: string): number {
-        const split = id.split("/");
-        return +split[2]
-    }
-
     private prepareGraph() {
         const collapsedNodes: Set<string> = new Set();
         const nodesToAdd: string[] = [];
@@ -332,31 +331,33 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             .filter(node => !!node)
             .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .map(node => {
-                    if (!node.children || node.children.length == 0) {
-                        return []
-                    } else if (node.children.length > 5 && !this.state.expandNodes.has(node.id)) {
-                        node.children.slice(2, node.children.length - 2).map(node => collapsedNodes.add(node));
-                        const concatNodeName = WorkflowDag.getConcatNodeName(node.id, node.children.length - 4);
-                        nodesToAdd.push(concatNodeName);
-                        const out = [0, 1, node.children.length - 2, node.children.length - 1].map(i => node.children[i])
-                            .filter(childId => this.props.nodes[childId])
-                            .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
-                            .map(childId => ({v: node.id, w: childId}));
-                        out.push({v: node.id, w: concatNodeName});
-                        if (this.props.nodes[node.children[0]] && this.props.nodes[node.children[0]].children && this.props.nodes[this.props.nodes[node.children[0]].children[0]]) {
-                            out.push({v: concatNodeName, w: this.props.nodes[this.props.nodes[node.children[0]].children[0]].id})
-                        }
-                        return out
+                if (!node.children || node.children.length === 0) {
+                    return [];
+                } else if (node.children.length > 5 && !this.state.expandNodes.has(node.id)) {
+                    node.children.slice(2, node.children.length - 2).map(collapsedNode => collapsedNodes.add(collapsedNode));
+                    const concatNodeName = WorkflowDag.getConcatNodeName(node.id, node.children.length - 4);
+                    nodesToAdd.push(concatNodeName);
+                    const out = [0, 1, node.children.length - 2, node.children.length - 1]
+                        .map(i => node.children[i])
+                        .filter(childId => this.props.nodes[childId])
+                        .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
+                        .map(childId => ({v: node.id, w: childId}));
+                    out.push({v: node.id, w: concatNodeName});
+                    if (this.props.nodes[node.children[0]] && this.props.nodes[node.children[0]].children && this.props.nodes[this.props.nodes[node.children[0]].children[0]]) {
+                        out.push({v: concatNodeName, w: this.props.nodes[this.props.nodes[node.children[0]].children[0]].id});
                     }
-                    return (node.children || [])
-                    // we can get outbound nodes, but no node
+                    return out;
+                }
+                return (
+                    (node.children || [])
+                        // we can get outbound nodes, but no node
                         .filter(childId => this.props.nodes[childId])
                         .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
                         .map(childId => ({v: node.id, w: childId}))
-                }
-            )
+                );
+            })
             .reduce((a, b) => a.concat(b));
-        let nodes = Object.values(this.props.nodes)
+        const nodes = Object.values(this.props.nodes)
             .filter(node => !!node)
             .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .filter(node => !collapsedNodes.has(node.id))
@@ -406,7 +407,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         layers.forEach((level, i) => {
             level.forEach((node, j) => {
                 if (WorkflowDag.isConcatNode(node)) {
-                    shifter.startShift()
+                    shifter.startShift();
                 }
                 j = shifter.get(j);
                 const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.hgap;
@@ -441,7 +442,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private selectNode(nodeId: string) {
         if (WorkflowDag.isConcatNode(nodeId)) {
-            this.setState({expandNodes: new Set(this.state.expandNodes).add(WorkflowDag.getConcatNodeParent(nodeId))})
+            this.setState({expandNodes: new Set(this.state.expandNodes).add(WorkflowDag.getConcatNodeParent(nodeId))});
         }
         return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
@@ -478,7 +479,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private hiddenNode(id: string): boolean {
         if (WorkflowDag.isConcatNode(id)) {
-            return this.hiddenNode(WorkflowDag.getConcatNodeParent(id))
+            return this.hiddenNode(WorkflowDag.getConcatNodeParent(id));
         }
 
         const node = this.props.nodes[id];
