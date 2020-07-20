@@ -287,7 +287,7 @@ func (woc *wfOperationCtx) operate() {
 			// In this case, Workflow will be requeued.
 			woc.wf.Status.Message = fmt.Sprintf("Waiting for a PVC to be created. %v", err)
 			woc.updated = true
-			woc.requeue(10)
+			woc.requeue(10 * time.Second)
 			return
 		}
 		msg := "pvc create error"
