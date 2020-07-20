@@ -304,7 +304,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     return [];
                 } else if (node.children.length > 5 && !this.state.expandNodes.has(node.id)) {
                     node.children.slice(2, node.children.length - 2).map(collapsedNode => collapsedNodes.add(collapsedNode));
-                    const collapsedNodeName = WorkflowDag.getCollapsedNodeName(node.id, node.children.length - 4);
+                    const collapsedNodeName = WorkflowDag.getCollapsedNodeName(node.id, node.children.length - 5);
                     nodesToAdd.push(collapsedNodeName);
                     const out = [0, 1, node.children.length - 2, node.children.length - 1]
                         .map(i => node.children[i])
