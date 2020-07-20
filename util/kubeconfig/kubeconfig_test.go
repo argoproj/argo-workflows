@@ -7,11 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
-
-const bearerToken = "bearertoken"
 
 const config = `
 apiVersion: v1
@@ -63,22 +60,5 @@ func Test_BasicAuthString(t *testing.T) {
 			assert.Equal(t, "admin", config.Password)
 		}
 
-	})
-}
-
-func Test_BearerAuthString(t *testing.T) {
-
-	restConfig := rest.Config{}
-
-	t.Run("Bearer Auth", func(t *testing.T) {
-		os.Setenv("ARGO_TOKEN", bearerToken)
-		authString, err := GetAuthString(&restConfig, "")
-		assert.NoError(t, err)
-		assert.True(t, IsBearerAuthScheme(authString))
-		config, err := GetRestConfig(authString)
-		assert.NoError(t, err)
-		if assert.NoError(t, err) {
-			assert.Equal(t, bearerToken, config.BearerToken)
-		}
 	})
 }
