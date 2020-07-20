@@ -5103,6 +5103,13 @@ Represents a cinder volume resource in Openstack. A Cinder volume must exist bef
 
 Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -6022,6 +6029,13 @@ A null or empty node selector term matches no objects. The requirements of them 
 ## ConfigMapProjection
 
 Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
