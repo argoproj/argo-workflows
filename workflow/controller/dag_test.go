@@ -1772,3 +1772,107 @@ func TestOnExitNonLeaf(t *testing.T) {
 	}
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
+
+
+var testDagOptionalInputArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-optional-inputartifacts
+spec:
+  entrypoint: test
+  templates:
+  - name: condition
+    outputs:
+      artifacts:
+      - {name: A-out, from: '{{tasks.A.outputs.artifacts.A-out}}'}
+    dag:
+      tasks:
+      - {name: A, template: A}
+  - name: A
+    container:
+      args: ['mkdir -p /tmp/outputs/A && echo "exist" > /tmp/outputs/A/data']
+      command: [sh, -c]
+      image: alpine:3.7
+    outputs:
+      artifacts:
+      - {name: A-out, path: /tmp/outputs/A/data}
+  - name: B
+    container:
+      args: ['[ -f /tmp/outputs/condition/data ] && cat /tmp/outputs/condition/data || echo not exist']
+      command: [sh, -c]
+      image: alpine:3.7
+    inputs:
+      artifacts:
+      - {name: B-in, optional: true,  path: /tmp/outputs/condition/data}
+  - name: test
+    dag:
+      tasks:
+      - name: condition
+        template: condition
+        when: 'false'
+      - name: B
+        template: B
+        dependencies: [condition]
+        arguments:
+          artifacts:
+          - {name: B-in, optional: true, from: '{{tasks.condition.outputs.artifacts.A-out}}'}
+  arguments:
+    parameters: []
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-07-21T01:56:24Z"
+  nodes:
+    dag-optional-inputartifacts:
+      children:
+      - dag-optional-inputartifacts-3418089753
+      displayName: dag-optional-inputartifacts
+      finishedAt: "2020-07-21T01:56:24Z"
+      id: dag-optional-inputartifacts
+      name: dag-optional-inputartifacts
+      outboundNodes:
+      - dag-optional-inputartifacts-1920355018
+      phase: Running
+      startedAt: "2020-07-21T01:56:18Z"
+      templateName: test
+      templateScope: local/dag-optional-inputartifacts
+      type: DAG
+    dag-optional-inputartifacts-3418089753:
+      boundaryID: dag-optional-inputartifacts
+      children:
+      - dag-optional-inputartifacts-1920355018
+      displayName: condition
+      finishedAt: "2020-07-21T01:56:18Z"
+      id: dag-optional-inputartifacts-3418089753
+      message: when 'false' evaluated false
+      name: dag-optional-inputartifacts.condition
+      phase: Skipped
+      startedAt: "2020-07-21T01:56:18Z"
+      templateName: condition
+      templateScope: local/dag-optional-inputartifacts
+      type: Skipped
+  phase: Running
+  resourcesDuration:
+    cpu: 1
+    memory: 0
+  startedAt: "2020-07-21T01:56:18Z"
+`
+
+func TestDagOptionalInputArtifacts(t *testing.T) {
+  cancel, controller := newController()
+  defer cancel()
+  wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+  wf := unmarshalWF(testDagOptionalInputArtifacts)
+  wf, err := wfcset.Create(wf)
+  assert.NoError(t, err)
+  woc := newWorkflowOperationCtx(wf, controller)
+
+  woc.operate()
+  optionalInputArtifactsNode := woc.getNodeByName("dag-optional-inputartifacts.B")
+  if assert.NotNil(t, optionalInputArtifactsNode) {
+    assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
+  }
+}
