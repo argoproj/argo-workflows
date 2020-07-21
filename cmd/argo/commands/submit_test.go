@@ -40,7 +40,7 @@ func TestSubmitFromResource(t *testing.T) {
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	CLIOpt.client = &client
 	CLIOpt.ctx = context.TODO()
-	output := CaptureOutput(func() { submitWorkflowFromResource("workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
+	output := CaptureOutput(func() { submitWorkflowFromResource(CLIOpt.ctx, wfclient, "default","workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
 	assert.Contains(t, output, "Created:")
 }
 
@@ -56,7 +56,7 @@ func TestSubmitWorkflows(t *testing.T) {
 	err := yaml.Unmarshal([]byte(workflow), &wf)
 	assert.NoError(t, err)
 	workflows := []wfv1.Workflow{wf}
-	output := CaptureOutput(func() { submitWorkflows(workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
+	output := CaptureOutput(func() { submitWorkflows(CLIOpt.ctx, CLIOpt.client, workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
 	fmt.Println(output)
 	assert.Contains(t, output, "Created:")
 }

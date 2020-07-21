@@ -3,14 +3,17 @@ package commands
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/argoproj/argo/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -97,8 +100,8 @@ func Test_listWorkflows(t *testing.T) {
 }
 
 func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
-	c := &workflowmocks.WorkflowServiceClient{}
-	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
+	c := &mocks.WorkflowServiceClient{}
+	c.On("ListWorkflows", mock.Anything, &wfapi.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
 		{ObjectMeta: metav1.ObjectMeta{

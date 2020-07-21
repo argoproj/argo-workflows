@@ -6,6 +6,8 @@ import (
 	clusterworkflowtemplate "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflow "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 
+	info "github.com/argoproj/argo/pkg/apiclient/info"
+
 	mock "github.com/stretchr/testify/mock"
 
 	workflow "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -73,6 +75,29 @@ func (_m *Client) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServic
 	}
 
 	return r0
+}
+
+// NewInfoServiceClient provides a mock function with given fields:
+func (_m *Client) NewInfoServiceClient() (info.InfoServiceClient, error) {
+	ret := _m.Called()
+
+	var r0 info.InfoServiceClient
+	if rf, ok := ret.Get(0).(func() info.InfoServiceClient); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(info.InfoServiceClient)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // NewWorkflowServiceClient provides a mock function with given fields:
