@@ -5,6 +5,7 @@ import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
+import {getCollapsedNodeName, getCollapsedNodeParent, getCollapsedNumHidden, isCollapsedNode} from './graph/collapsible-node';
 import {Graph} from './graph/graph';
 import {Shifter} from './graph/shifter';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
@@ -164,23 +165,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         );
     }
 
-    private static getCollapsedNodeName(parent: string, hiding: number): string {
-        return '@collapsed/' + parent + '/' + hiding;
-    }
-
-    private static isCollapsedNode(id: string): boolean {
-        return id.startsWith('@collapsed/');
-    }
-
-    private static getCollapsedNodeParent(id: string): string {
-        const split = id.split('/');
-        return split[1];
-    }
-
-    private static getCollapsedNodeHiding(id: string): number {
-        const split = id.split('/');
-        return +split[2];
-    }
     private hash: {scale: number; nodeCount: number; nodesToDisplay: string[]};
     private graph: {
         width: number;
@@ -234,10 +218,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 let phase: DagPhase;
                                 let label: string;
                                 let hidden: boolean;
-                                if (WorkflowDag.isCollapsedNode(nodeId)) {
+                                if (isCollapsedNode(nodeId)) {
                                     phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
-                                    label = WorkflowDag.getCollapsedNodeHiding(nodeId) + ' hidden nodes';
-                                    hidden = this.hiddenNode(WorkflowDag.getCollapsedNodeParent(nodeId));
+                                    label = getCollapsedNumHidden(nodeId) + ' hidden nodes';
+                                    hidden = this.hiddenNode(getCollapsedNodeParent(nodeId));
                                 } else {
                                     const node = this.props.nodes[nodeId];
                                     phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
@@ -313,7 +297,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     return [];
                 } else if (node.children.length > 3 && !this.state.expandNodes.has('*') && !this.state.expandNodes.has(node.id)) {
                     node.children.slice(1, node.children.length - 1).map(collapsedNode => collapsedNodes.add(collapsedNode));
-                    const collapsedNodeName = WorkflowDag.getCollapsedNodeName(node.id, node.children.length - 2);
+                    const collapsedNodeName = getCollapsedNodeName(node.id, node.children.length - 2);
                     nodesToAdd.push(collapsedNodeName);
                     const out = [0, node.children.length - 1]
                         .map(i => node.children[i])
@@ -385,7 +369,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const shifter = new Shifter();
         layers.forEach((level, i) => {
             level.forEach((node, j) => {
-                if (WorkflowDag.isCollapsedNode(node)) {
+                if (isCollapsedNode(node)) {
                     shifter.start();
                 }
                 j = shifter.get(j);
@@ -420,8 +404,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private selectNode(nodeId: string) {
-        if (WorkflowDag.isCollapsedNode(nodeId)) {
-            this.setState({expandNodes: new Set(this.state.expandNodes).add(WorkflowDag.getCollapsedNodeParent(nodeId))});
+        if (isCollapsedNode(nodeId)) {
+            this.setState({expandNodes: new Set(this.state.expandNodes).add(getCollapsedNodeParent(nodeId))});
         }
         return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
@@ -457,8 +441,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private hiddenNode(id: string): boolean {
-        if (WorkflowDag.isCollapsedNode(id)) {
-            return this.hiddenNode(WorkflowDag.getCollapsedNodeParent(id));
+        if (isCollapsedNode(id)) {
+            return this.hiddenNode(getCollapsedNodeParent(id));
         }
 
         const node = this.props.nodes[id];
