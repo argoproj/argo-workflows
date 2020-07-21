@@ -493,4 +493,4 @@ check-version-warning:
 
 .PHONY: parse-examples
 parse-examples:
-    go run ./hack parseexamples
+	go run ./hack parseexamples
