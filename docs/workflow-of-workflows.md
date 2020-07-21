@@ -2,30 +2,14 @@
 
 > v2.9 and after
 
-## usecase
-Workflow needs to trigger one of more workflows and manage it. 
+## Introduction
+A workflow can trigger one or more workflow and manager their result.
  
-## solution
-`WorkflowTemplateRef` can be used to create workflow with in two line.
+## Examples
+You can use `workflowTemplateRef` to trigger a workflow inline.
 1. Define your workflow as a `workflowtemplate`.
-E.g:
+
 ```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: workflow-template-whalesay-template
-spec:
-  entrypoint: whalesay-template
-  templates:
-  - name: whalesay-template
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
----
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -48,7 +32,6 @@ spec:
 ```
 2. Create the `Workflowtemplate` in cluster using `argo template create <yaml>`
 3. Define the workflow of workflows. 
-E.g.:
 ```yaml
 # This template demonstrates a workflow of workflows.
 # Workflow triggers one or more workflow and manage it.
@@ -92,6 +75,7 @@ spec:
               name: {{inputs.parameters.workflowtemplate}}
         successCondition: status.phase == Succeeded
         failureCondition: status.phase in (Failed, Error)
+
     - name: triggerWorkflowUsingResourceWithArgument
       inputs:
         parameters:
