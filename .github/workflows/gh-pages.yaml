@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -19,6 +19,9 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: '1.13.12'
+      - name: Download all Go modules
+        run: |
+          go mod download
       - name: build
         run: |
           pip install mkdocs==1.0.4 mkdocs_material==4.1.1
