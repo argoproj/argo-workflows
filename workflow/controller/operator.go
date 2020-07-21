@@ -284,10 +284,9 @@ func (woc *wfOperationCtx) operate() {
 	if err != nil {
 		if apierr.IsForbidden(err) {
 			// Error was most likely caused by a lack of resources.
-			// In this case, Workflow will be requeued.
-			woc.wf.Status.Message = fmt.Sprintf("Waiting for a PVC to be created. %v", err)
-			woc.updated = true
-			woc.requeue(10 * time.Second)
+			// In this case, Workflow will be in pending state and requeue.
+			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
+			woc.requeue(10)
 			return
 		}
 		msg := "pvc create error"
@@ -295,6 +294,9 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("%s %s: %+v", woc.wf.ObjectMeta.Name, msg, err))
 		return
+	} else if woc.wf.Status.Phase == wfv1.NodePending {
+		// Workflow might be in pending state if previous PVC creation is forbidden
+		woc.markWorkflowRunning()
 	}
 
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, execTmplRef, tmplCtx, execArgs, &executeTemplateOpts{})
@@ -1296,10 +1298,6 @@ func (woc *wfOperationCtx) createPVCs() error {
 			},
 		}
 		woc.wf.Status.PersistentVolumeClaims = append(woc.wf.Status.PersistentVolumeClaims, vol)
-		// Clearing previous PVC forbidden error
-		if woc.wf.Status.Message != "" && strings.Contains(woc.wf.Status.Message, "Waiting for a PVC to be created") {
-			woc.wf.Status.Message = ""
-		}
 		woc.updated = true
 	}
 	return nil
@@ -1682,7 +1680,7 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning() {
-	woc.markWorkflowPhase(wfv1.NodeRunning, false)
+	woc.markWorkflowPhase(wfv1.NodeRunning, false, "")
 }
 
 func (woc *wfOperationCtx) markWorkflowSuccess() {
