@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/antonmedv/expr"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -289,21 +288,6 @@ func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) er
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
-	for _, event := range wftmpl.Spec.Events {
-		_, err := expr.Compile(event.Expression)
-		if err != nil {
-			return nil, fmt.Errorf("malformed event expression: %w", err)
-		}
-		for _, p := range event.Parameters {
-			if p.ValueFrom == nil {
-				return nil, fmt.Errorf("malformed event parameter \"%s\": validFrom is nil", p.Name)
-			}
-			_, err := expr.Compile(p.ValueFrom.Expression)
-			if err != nil {
-				return nil, fmt.Errorf("malformed event parameter \"%s\" expression: %w", p.Name, err)
-			}
-		}
-	}
 	wf := &wfv1.Workflow{
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}

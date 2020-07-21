@@ -2356,26 +2356,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Event": {
-      "description": "Event can trigger this workflow template.",
-      "type": "object",
-      "required": [
-        "expression"
-      ],
-      "properties": {
-        "expression": {
-          "description": "Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
-          "type": "string"
-        },
-        "parameters": {
-          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.EventResponse": {
       "type": "object"
     },
@@ -3902,6 +3882,55 @@
     "io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse": {
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.WorkflowEvent": {
+      "description": "WorkflowEvent is the definition of an event resource",
+      "type": "object",
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowEventSpec": {
+      "description": "Event can trigger this workflow template.",
+      "type": "object",
+      "required": [
+        "expression",
+        "workflowTemplateRef"
+      ],
+      "properties": {
+        "expression": {
+          "description": "Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
+          }
+        },
+        "workflowTemplateRef": {
+          "description": "WorkflowTemplateRef the workflow template to submit when we match the event",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.WorkflowLintRequest": {
       "type": "object",
       "properties": {
@@ -4474,13 +4503,6 @@
         "entrypoint": {
           "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
           "type": "string"
-        },
-        "events": {
-          "description": "Event describes the event that can trigger the template.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
-          }
         },
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",

@@ -1212,7 +1212,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
 |`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
-|`events`|`Array<`[`Event`](#event)`>`|Event describes the event that can trigger the template.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1928,16 +1927,6 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
-
-## Event
-
-Event can trigger this workflow template.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`expression`|`string`|Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"`|
-|`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters extracted from the event and then set as arguments to the workflow created.|
 
 ## Artifact
 

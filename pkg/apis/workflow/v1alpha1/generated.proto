@@ -310,16 +310,6 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
-// Event can trigger this workflow template.
-message Event {
-  // Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
-  // +kubebuilder:validation:MinLength=4
-  optional string expression = 1;
-
-  // Parameters extracted from the event and then set as arguments to the workflow created.
-  repeated Parameter parameters = 2;
-}
-
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -1125,6 +1115,38 @@ message Workflow {
   optional WorkflowStatus status = 3;
 }
 
+// WorkflowEvent is the definition of an event resource
+// +genclient
+// +genclient:noStatus
+// +kubebuilder:resource:shortName=wfev
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowEvent {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowEventSpec spec = 2;
+}
+
+// WorkflowEventList is list of event resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowEventList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowEvent items = 2;
+}
+
+// Event can trigger this workflow template.
+message WorkflowEventSpec {
+  // Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  // +kubebuilder:validation:MinLength=4
+  optional string expression = 1;
+
+  // Parameters extracted from the event and then set as arguments to the workflow created.
+  repeated Parameter parameters = 2;
+
+  // WorkflowTemplateRef the workflow template to submit when we match the event
+  optional k8s.io.api.core.v1.LocalObjectReference workflowTemplateRef = 3;
+}
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowList {
@@ -1408,8 +1430,5 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
-
-  // Event describes the event that can trigger the template.
-  repeated Event events = 3;
 }
 

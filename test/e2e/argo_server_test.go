@@ -117,8 +117,6 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  event:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:github.com" && metadata["x-github-event"] == ["push"]
   entrypoint: main
   workflowMetadata:
     labels:
@@ -128,8 +126,19 @@ spec:
       container:
          image: argoproj/argosay:v2
 `).
+		WorkflowEvent(`
+metadata:
+  name: github-webhook
+  labels:
+    argo-e2e: true
+spec:
+  expression: metadata.claimSet.sub == "system:serviceaccount:argo:github.com" && metadata["x-github-event"] == ["push"]
+  workflowTemplateRef:
+    name: github-webhook
+`).
 		When().
 		CreateWorkflowTemplates().
+		CreateWorkflowEvent().
 		And(func() {
 			s.e().
 				POST("/api/v1/events/argo/").
@@ -148,18 +157,26 @@ spec:
 
 func (s *ArgoServerSuite) TestTemplateWithEvent() {
 	s.Given().
+		WorkflowEvent(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+  spec:
+    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+    parameters:
+      - name: appellation
+        valueFrom:
+          expression: payload.appellation
+    workflowTemplateRef:
+      name: event-consumer
+`).
 		WorkflowTemplate(`
 metadata:
   name: event-consumer
   labels:
     argo-e2e: true
 spec:
-  event:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
-    parameters:
-      - name: appellation
-        valueFrom:
-          expression: payload.appellation
   entrypoint: main
   workflowMetadata:
     labels:

@@ -38,14 +38,15 @@ const LabelCron = Label + "-cron"
 
 type E2ESuite struct {
 	suite.Suite
-	Persistence       *Persistence
-	RestConfig        *rest.Config
-	wfClient          v1alpha1.WorkflowInterface
-	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
-	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
-	cronClient        v1alpha1.CronWorkflowInterface
-	KubeClient        kubernetes.Interface
-	hydrator          hydrator.Interface
+	Persistence         *Persistence
+	RestConfig          *rest.Config
+	wfClient            v1alpha1.WorkflowInterface
+	workflowEventClient v1alpha1.WorkflowEventInterface
+	wfTemplateClient    v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient   v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient          v1alpha1.CronWorkflowInterface
+	KubeClient          kubernetes.Interface
+	hydrator            hydrator.Interface
 	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
 	numWorkflows int
@@ -58,6 +59,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	s.CheckError(err)
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
+	s.workflowEventClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEvents(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
@@ -187,6 +189,16 @@ func (s *E2ESuite) DeleteResources(label string) {
 				}
 			}
 		}
+	}
+
+	// delete all workflow events
+	events, err := s.workflowEventClient.List(metav1.ListOptions{LabelSelector: label})
+	s.CheckError(err)
+
+	for _, item := range events.Items {
+		log.WithField("template", item.Name).Debug("Deleting workflow event")
+		err = s.workflowEventClient.Delete(item.Name, nil)
+		s.CheckError(err)
 	}
 
 	// delete all workflow templates
@@ -349,12 +361,13 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:                 s.T(),
-		client:            s.wfClient,
-		wfTemplateClient:  s.wfTemplateClient,
-		cwfTemplateClient: s.cwfTemplateClient,
-		cronClient:        s.cronClient,
-		hydrator:          s.hydrator,
-		kubeClient:        s.KubeClient,
+		t:                   s.T(),
+		client:              s.wfClient,
+		workflowEventClient: s.workflowEventClient,
+		wfTemplateClient:    s.wfTemplateClient,
+		cwfTemplateClient:   s.cwfTemplateClient,
+		cronClient:          s.cronClient,
+		hydrator:            s.hydrator,
+		kubeClient:          s.KubeClient,
 	}
 }
