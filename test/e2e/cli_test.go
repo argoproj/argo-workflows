@@ -961,6 +961,19 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		DeleteConfigMap()
 }
 
+func (s *CLISuite) TestRetryOmit() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/retry-omit.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(2 * time.Second).
+		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "Status:              Running")
+		})
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
