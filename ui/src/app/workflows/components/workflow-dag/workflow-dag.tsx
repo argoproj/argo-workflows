@@ -6,7 +6,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
 import {Graph} from './graph/graph';
-import {Shifter} from "./graph/shifter";
+import {Shifter} from './graph/shifter';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
@@ -127,7 +127,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 return (
                     <path
                         fill='currentColor'
-                        transform="translate(150,0)"
+                        transform='translate(150,0)'
                         // tslint:disable-next-line
                         d='M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z'
                     />
