@@ -97,7 +97,7 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 		}
 
 		printWorkflowStatus(wf, getArgs)
-		if !wf.Status.FinishedAt.IsZero() {
+		if wf != nil && !wf.Status.FinishedAt.IsZero() {
 			return
 		}
 	}
