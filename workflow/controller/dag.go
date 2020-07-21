@@ -64,6 +64,9 @@ func (d *dagContext) GetTaskDependencies(taskName string) []string {
 
 func (d *dagContext) GetTaskFinishedAtTime(taskName string) time.Time {
 	node := d.getTaskNode(taskName)
+	if node == nil {
+		return time.Time{}
+	}
 	if !node.FinishedAt.IsZero() {
 		return node.FinishedAt.Time
 	}
