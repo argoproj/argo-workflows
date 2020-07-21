@@ -339,6 +339,7 @@ rules:
   - argoproj.io
   resources:
   - workflows
+  - workflowevents
   - workflowtemplates
   - cronworkflows
   - clusterworkflowtemplates

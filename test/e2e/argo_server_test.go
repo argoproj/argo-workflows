@@ -155,21 +155,21 @@ spec:
 		})
 }
 
-func (s *ArgoServerSuite) TestTemplateWithEvent() {
+func (s *ArgoServerSuite) TestSubmitTemplateFromEvent() {
 	s.Given().
 		WorkflowEvent(`
 metadata:
   name: event-consumer
   labels:
     argo-e2e: true
-  spec:
-    expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
-    parameters:
-      - name: appellation
-        valueFrom:
-          expression: payload.appellation
-    workflowTemplateRef:
-      name: event-consumer
+spec:
+  expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+  parameters:
+  - name: appellation
+    valueFrom:
+      expression: payload.appellation
+  workflowTemplateRef:
+    name: event-consumer
 `).
 		WorkflowTemplate(`
 metadata:
@@ -207,6 +207,7 @@ spec:
          args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.appellation}}"]
 `).
 		When().
+		CreateWorkflowEvent().
 		CreateWorkflowTemplates().
 		And(func() {
 			s.e().

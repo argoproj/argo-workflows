@@ -23,20 +23,20 @@ import (
 )
 
 type Operation struct {
-	ctx                       context.Context
-	instanceIDService         instanceid.Service
-	payload                   *wfv1.Item
-	namespace                 string
-	discriminator             string
+	ctx               context.Context
+	instanceIDService instanceid.Service
+	payload           *wfv1.Item
+	namespace         string
+	discriminator     string
 }
 
 func NewOperation(ctx context.Context, instanceIDService instanceid.Service, namespace, discriminator string, payload *wfv1.Item) Operation {
 	return Operation{
-		ctx:                       ctx,
-		instanceIDService:         instanceIDService,
-		payload:                   payload,
-		namespace:                 namespace,
-		discriminator:             discriminator,
+		ctx:               ctx,
+		instanceIDService: instanceIDService,
+		payload:           payload,
+		namespace:         namespace,
+		discriminator:     discriminator,
 	}
 }
 

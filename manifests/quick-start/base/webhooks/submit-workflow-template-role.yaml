@@ -8,6 +8,12 @@ rules:
   - apiGroups:
       - argoproj.io
     resources:
+      - workflowevents
+    verbs:
+      - list
+  - apiGroups:
+      - argoproj.io
+    resources:
       - workflowtemplates
     verbs:
       - get

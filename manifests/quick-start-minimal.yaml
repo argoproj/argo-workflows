@@ -264,6 +264,7 @@ rules:
   - argoproj.io
   resources:
   - workflows
+  - workflowevents
   - workflowtemplates
   - cronworkflows
   verbs:
@@ -280,6 +281,12 @@ kind: Role
 metadata:
   name: submit-workflow-template
 rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowevents
+  verbs:
+  - list
 - apiGroups:
   - argoproj.io
   resources:
