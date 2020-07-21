@@ -492,5 +492,5 @@ check-version-warning:
 	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
 
 .PHONY: parse-examples
-parse-examples:
+parse-examples: server/static/files.go
 	go run ./hack parseexamples
