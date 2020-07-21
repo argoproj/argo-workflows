@@ -1,0 +1,310 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8q7vp
+  labels:
+    argo-e2e: true
+spec:
+  arguments: {}
+  entrypoint: diamond
+  templates:
+    - arguments: {}
+      dag:
+        tasks:
+          - arguments: {}
+            name: A
+            template: pass
+          - arguments: {}
+            depends: A
+            name: B
+            template: pass
+          - arguments: {}
+            depends: A
+            name: C
+            template: fail
+          - arguments: {}
+            depends: A && (C.Succeeded || C.Failed)
+            name: should-execute-1
+            template: pass
+          - arguments: {}
+            depends: B || C
+            name: should-execute-2
+            template: pass
+          - arguments: {}
+            depends: B && C
+            name: should-not-execute
+            template: pass
+          - arguments: {}
+            depends: should-execute-2.Succeeded || should-not-execute
+            name: should-execute-3
+            template: pass
+      inputs: {}
+      metadata: {}
+      name: diamond
+      outputs: {}
+    - arguments: {}
+      container:
+        command:
+          - sh
+          - -c
+          - exit 0
+        image: argoproj/argosay:v2
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: pass
+      outputs: {}
+    - arguments: {}
+      container:
+        command:
+          - sh
+          - -c
+          - exit 1
+        image: argoproj/argosay:v2
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: fail
+      outputs: {}
+status:
+  conditions:
+    - status: "True"
+      type: Completed
+  finishedAt: "2020-07-21T02:24:59Z"
+  nodes:
+    dag-diamond-8q7vp:
+      children:
+        - dag-diamond-8q7vp-460213972
+      displayName: dag-diamond-8q7vp
+      finishedAt: "2020-07-21T02:24:59Z"
+      id: dag-diamond-8q7vp
+      name: dag-diamond-8q7vp
+      outboundNodes:
+        - dag-diamond-8q7vp-3409397836
+        - dag-diamond-8q7vp-3442953074
+      phase: Failed
+      startedAt: "2020-07-21T02:24:39Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-8q7vp
+      type: DAG
+    dag-diamond-8q7vp-460213972:
+      boundaryID: dag-diamond-8q7vp
+      children:
+        - dag-diamond-8q7vp-493769210
+        - dag-diamond-8q7vp-510546829
+        - dag-diamond-8q7vp-3442953074
+      displayName: A
+      finishedAt: "2020-07-21T02:24:42Z"
+      hostNodeName: minikube
+      id: dag-diamond-8q7vp-460213972
+      name: dag-diamond-8q7vp.A
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: dag-diamond-8q7vp/dag-diamond-8q7vp-460213972/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-07-21T02:24:39Z"
+      templateName: pass
+      templateScope: local/dag-diamond-8q7vp
+      type: Pod
+    dag-diamond-8q7vp-493769210:
+      boundaryID: dag-diamond-8q7vp
+      children:
+        - dag-diamond-8q7vp-2396503184
+        - dag-diamond-8q7vp-3426175455
+        - dag-diamond-8q7vp-3442953074
+      displayName: C
+      finishedAt: "2020-07-21T02:24:48Z"
+      hostNodeName: minikube
+      id: dag-diamond-8q7vp-493769210
+      message: failed with exit code 1
+      name: dag-diamond-8q7vp.C
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: dag-diamond-8q7vp/dag-diamond-8q7vp-493769210/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-07-21T02:24:44Z"
+      templateName: fail
+      templateScope: local/dag-diamond-8q7vp
+      type: Pod
+    dag-diamond-8q7vp-510546829:
+      boundaryID: dag-diamond-8q7vp
+      children:
+        - dag-diamond-8q7vp-2396503184
+        - dag-diamond-8q7vp-3426175455
+      displayName: B
+      finishedAt: "2020-07-21T02:24:48Z"
+      hostNodeName: minikube
+      id: dag-diamond-8q7vp-510546829
+      name: dag-diamond-8q7vp.B
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: dag-diamond-8q7vp/dag-diamond-8q7vp-510546829/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-07-21T02:24:44Z"
+      templateName: pass
+      templateScope: local/dag-diamond-8q7vp
+      type: Pod
+    dag-diamond-8q7vp-2396503184:
+      boundaryID: dag-diamond-8q7vp
+      children:
+        - dag-diamond-8q7vp-3409397836
+      displayName: should-not-execute
+      finishedAt: "2020-07-21T02:24:50Z"
+      id: dag-diamond-8q7vp-2396503184
+      message: 'omitted: depends condition not met'
+      name: dag-diamond-8q7vp.should-not-execute
+      phase: Omitted
+      startedAt: "2020-07-21T02:24:50Z"
+      templateName: pass
+      templateScope: local/dag-diamond-8q7vp
+      type: Skipped
+    dag-diamond-8q7vp-3409397836:
+      boundaryID: dag-diamond-8q7vp
+      displayName: should-execute-3
+      finishedAt: "2020-07-21T02:24:57Z"
+      hostNodeName: minikube
+      id: dag-diamond-8q7vp-3409397836
+      name: dag-diamond-8q7vp.should-execute-3
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: dag-diamond-8q7vp/dag-diamond-8q7vp-3409397836/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-07-21T02:24:55Z"
+      templateName: pass
+      templateScope: local/dag-diamond-8q7vp
+      type: Pod
+    dag-diamond-8q7vp-3426175455:
+      boundaryID: dag-diamond-8q7vp
+      children:
+        - dag-diamond-8q7vp-3409397836
+      displayName: should-execute-2
+      finishedAt: "2020-07-21T02:24:53Z"
+      hostNodeName: minikube
+      id: dag-diamond-8q7vp-3426175455
+      name: dag-diamond-8q7vp.should-execute-2
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: dag-diamond-8q7vp/dag-diamond-8q7vp-3426175455/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-07-21T02:24:50Z"
+      templateName: pass
+      templateScope: local/dag-diamond-8q7vp
+      type: Pod
+    dag-diamond-8q7vp-3442953074:
+      boundaryID: dag-diamond-8q7vp
+      displayName: should-execute-1
+      finishedAt: "2020-07-21T02:24:53Z"
+      hostNodeName: minikube
+      id: dag-diamond-8q7vp-3442953074
+      name: dag-diamond-8q7vp.should-execute-1
+      outputs:
+        artifacts:
+          - archiveLogs: true
+            name: main-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              key: dag-diamond-8q7vp/dag-diamond-8q7vp-3442953074/main.log
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-07-21T02:24:50Z"
+      templateName: pass
+      templateScope: local/dag-diamond-8q7vp
+      type: Pod
+  phase: Failed
+  resourcesDuration:
+    cpu: 9
+    memory: 2
+  startedAt: "2020-07-21T02:24:39Z"
