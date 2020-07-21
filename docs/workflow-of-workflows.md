@@ -47,7 +47,7 @@ spec:
         args: ["{{inputs.parameters.message}}"]
 ```
 2. Create the `Workflowtemplate` in cluster using `argo template create <yaml>`
-3. Define the workflow of workflows
+3. Define the workflow of workflows. 
 E.g.:
 ```yaml
 # This template demonstrates a workflow of workflows.
