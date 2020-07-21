@@ -2,36 +2,70 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: memoized-simple-workflow-
+  generateName: memoized-fibonacci-
 spec:
-  entrypoint: whalesay
-  arguments:
-    parameters:
-    - name: stopAt
-      value: 10
+  entrypoint: plan
   templates:
-  - name: fibonacci
-    memoize:
-      key: "{{inputs.parameters.cur}}"
-      cache:
-        configMap:
-          name: fibonacci-cache
-    inputs:
-      parameters:
-        - name: prevResult
-        - name: cur
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["echo $(({{inputs.parameters.prevResult}} + {{inputs.parameters.cur}})) > /tmp/fibonacci.txt"]
-    outputs:
-      parameters:
-        - name: result
-          valueFrom:
-            default: 0
-            path: /tmp/fibonacci.txt
+    - name: plan
+      steps:
+        - - name: recurse
+            template: fibonacci
+            arguments:
+              parameters:
+                - name: num
+                  value: 10
+    - name: fibonacci
+      inputs:
+        parameters:
+          - name: num
+      steps:
+        - - name: fibonacci-executor
+            template: fibonacci-step
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{inputs.parameters.num}}"
+        - - name: continue
+            template: fibonacci
+            when: "{{inputs.parameters.num}} > 2"
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{steps.fibonacci-executor.outputs.parameters.result}}"
+        - - name: stop
+            template: base
+            when: "{{inputs.parameters.num}} < 3"
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{steps.fibonacci-executor.outputs.parameters.result}}"
+#
+    - name: fibonacci-step
+      inputs:
+        parameters:
+          - name: num
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo $(({{inputs.parameters.num}}-1 + {{inputs.parameters.num}}-2)) > /tmp/result.txt"]
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              default: 0
+              path: /tmp/result.txt
 
-# argo submit memoize-fibonacci.yaml -p $NUMBER
-
-# check if entry exists for n-1
-# if not, check n-2... etc
+    - name: base
+      inputs:
+        parameters:
+          - name: num
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo {{inputs.parameters.num}} > /tmp/result.txt"]
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              default: 0
+              path: /tmp/result.txt
