@@ -311,11 +311,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             .map(node => {
                 if (!node.children || node.children.length === 0) {
                     return [];
-                } else if (node.children.length > 5 && !this.state.expandNodes.has(node.id)) {
-                    node.children.slice(2, node.children.length - 2).map(collapsedNode => collapsedNodes.add(collapsedNode));
-                    const collapsedNodeName = WorkflowDag.getCollapsedNodeName(node.id, node.children.length - 5);
+                } else if (node.children.length > 3 && !this.state.expandNodes.has('*') && !this.state.expandNodes.has(node.id)) {
+                    node.children.slice(1, node.children.length - 1).map(collapsedNode => collapsedNodes.add(collapsedNode));
+                    const collapsedNodeName = WorkflowDag.getCollapsedNodeName(node.id, node.children.length - 3);
                     nodesToAdd.push(collapsedNodeName);
-                    const out = [0, 1, node.children.length - 2, node.children.length - 1]
+                    const out = [0, node.children.length - 1]
                         .map(i => node.children[i])
                         .filter(childId => this.props.nodes[childId])
                         .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
@@ -381,11 +381,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 this.graph.width = Math.max(this.graph.width, level.length * this.hgap * 2);
             }
         });
+        // Shifter is used to shift the location of a collapsed node to the center of the children nodes.
         const shifter = new Shifter();
         layers.forEach((level, i) => {
             level.forEach((node, j) => {
                 if (WorkflowDag.isCollapsedNode(node)) {
-                    shifter.startShift();
+                    shifter.start();
                 }
                 j = shifter.get(j);
                 const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.hgap;
