@@ -1,34 +1,35 @@
 # Sychronization
 
-![beta](assets/beta.svg)
+![alpha](assets/alpha.svg)
 
 > v2.10 and after
 
-Feature Request: [2550](https://github.com/argoproj/argo/issues/2550)
-
 ## Introduction
-Synchronization feature enables to limit the parallel execution of the certain class of workflows or steps that needs to be 
-rate limited with in namespace, but not to restrict others. 
+Synchronization enable users to limit the parallel execution of the certain workflows or 
+template within a workflow that needs to be rate limited with in namespace, but not to restrict others. 
 
-User can have multiple rate limit configuration in `configmap` and that can be referred 
-in workflow or step in workflow.
+Users can create multiple synchronization configurations in the `ConfigMap` that can be referred to 
+from a workflow or template within a workflow.
 
-E.g:
+For example:
 ```yaml
 apiVersion: v1
  kind: ConfigMap
 metadata:
  name: my-config
 data:
-  workflow: "1" # Only one workflow can run at given time in particular namespace
-  template: "2" # Two instance of template can run at a given time in particular namespace
+  workflow: "1"  # Only one workflow can run at given time in particular namespace
+  template: "2"  # Two instance of template can run at a given time in particular namespace
 ```
 
-### Workflow level Synchronization
+### Workflow-level Synchronization
+Workflow-level synchronization limits parallel execution of the workflow if workflow have same synchronization reference. 
+In this example, Workflow refers `workflow` synchronization key which is configured as rate limit 1, 
+so only one workflow instance will be executed at given time even multiple workflows created. 
 
-E.g:
+example:
+
 ```yaml
-#
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -48,9 +49,13 @@ spec:
       args: ["hello world"]
 ```
 
-### Step level Synchronization
+### Template-level Synchronization
+Template-level synchronization limits parallel execution of the template across workflows, if template have same synchronization reference. 
+In this example, `acquire-lock` template has synchronization reference of `template` key which is configured as rate limit 2, 
+so, two instance of templates will be executed at given time even multiple step/task with in workflow or different workflow refers same template. 
 
-E.g:
+example:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -84,9 +89,9 @@ Examples:
 1. [Workflow level](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 2. [Step level](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-###Existing Parallelism support:
-WorkflowController already has a parallelism configuration in the controller.However, this setting applies to all workflows 
-in the system, and is not granular to a class of workflows, or step. There is also a parallelism setting at a workflow and 
-template level, but this only restricts total concurrent executions of steps from within the same workflow. 
-The existing Parallelism support will be superseded with this feature. 
+### Other Parallelism support:
+In addition to this synchronization, the workflow controller supports a parallelism setting that applies to all workflows 
+in the system (it is not granular to a class of workflows, or tasks withing them). Furthermore, there is a parallelism setting 
+at the workflow and template level, but this only restricts total concurrent executions of tasks within the same workflow.
+
 
