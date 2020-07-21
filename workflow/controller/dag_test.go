@@ -1773,7 +1773,6 @@ func TestOnExitNonLeaf(t *testing.T) {
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
-
 var testDagOptionalInputArtifacts = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1861,18 +1860,18 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
-  cancel, controller := newController()
-  defer cancel()
-  wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-  wf := unmarshalWF(testDagOptionalInputArtifacts)
-  wf, err := wfcset.Create(wf)
-  assert.NoError(t, err)
-  woc := newWorkflowOperationCtx(wf, controller)
+	wf := unmarshalWF(testDagOptionalInputArtifacts)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
 
-  woc.operate()
-  optionalInputArtifactsNode := woc.getNodeByName("dag-optional-inputartifacts.B")
-  if assert.NotNil(t, optionalInputArtifactsNode) {
-    assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
-  }
+	woc.operate()
+	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
+	if assert.NotNil(t, optionalInputArtifactsNode) {
+		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
+	}
 }
