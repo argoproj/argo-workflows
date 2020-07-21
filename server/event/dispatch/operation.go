@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/util/labels"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/creator"
 )
@@ -52,16 +53,16 @@ func (o *Operation) Execute() {
 	}
 	for _, event := range list.Items {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			_, err := o.submitWorkflowsFromWorkflowTemplate(event)
+			_, err := o.submitWorkflowsFromEvent(event)
 			return err == nil, err
 		})
 		if err != nil {
-			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "template": event.Name}).Error("failed to submit workflow from template")
+			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to submit workflow from event")
 		}
 	}
 }
 
-func (o *Operation) submitWorkflowsFromWorkflowTemplate(event wfv1.WorkflowEvent) (*wfv1.Workflow, error) {
+func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Workflow, error) {
 	env, err := expressionEnvironment(o.ctx, o.discriminator, o.payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
@@ -73,7 +74,7 @@ func (o *Operation) submitWorkflowsFromWorkflowTemplate(event wfv1.WorkflowEvent
 	matched, boolExpr := result.(bool)
 	log.WithFields(log.Fields{
 		"namespace":  event.Namespace,
-		"name":       event.Name,
+		"event":      event.Name,
 		"expression": event.Spec.Expression,
 		"matched":    matched,
 		"boolExpr":   boolExpr,
@@ -96,7 +97,10 @@ func (o *Operation) submitWorkflowsFromWorkflowTemplate(event wfv1.WorkflowEvent
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
 		o.instanceIDService.Label(wf)
+		// users will always want to know why a workflow was submitted,
+		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
+		labels.Label(wf, common.LabelKeyWorkflowEvent, event.Name)
 		for _, p := range event.Spec.Parameters {
 			if p.ValueFrom == nil {
 				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
