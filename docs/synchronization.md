@@ -7,9 +7,11 @@
 Feature Request: [2550](https://github.com/argoproj/argo/issues/2550)
 
 ## Introduction
-Synchronization feature enables to control the parallel execution of the class of workflows or templates that needs to be 
-rate limited with in namespace. User can have multiple rate limit configuration in `configmap` and that can be referred 
-in workflow or template in workflow.   
+Synchronization feature enables to limit the parallel execution of the certain class of workflows or steps that needs to be 
+rate limited with in namespace, but not to restrict others. 
+
+User can have multiple rate limit configuration in `configmap` and that can be referred 
+in workflow or step in workflow.
 
 E.g:
 ```yaml
@@ -22,7 +24,7 @@ data:
   template: "2" # Two instance of template can run at a given time in particular namespace
 ```
 
-### Worfklow level Synchronization
+### Workflow level Synchronization
 
 E.g:
 ```yaml
@@ -46,7 +48,7 @@ spec:
       args: ["hello world"]
 ```
 
-### Template level Synchronization
+### Step level Synchronization
 
 E.g:
 ```yaml
@@ -78,9 +80,13 @@ spec:
       command: [sh, -c]
       args: ["sleep 10; echo acquired lock"]
 ```
+Examples:
+1. [Workflow level](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
+2. [Step level](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 ###Existing Parallelism support:
 WorkflowController already has a parallelism configuration in the controller.However, this setting applies to all workflows 
-in the system, and is not granular to a class of workflows, or step. There is also a parallelism setting at a workflow and template level, but this only restricts total concurrent executions 
-of steps from within the same workflow. The existing Parallelism support will be superseded with this feature. 
+in the system, and is not granular to a class of workflows, or step. There is also a parallelism setting at a workflow and 
+template level, but this only restricts total concurrent executions of steps from within the same workflow. 
+The existing Parallelism support will be superseded with this feature. 
 
