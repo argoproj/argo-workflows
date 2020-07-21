@@ -63,7 +63,7 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 const invalidErr = "is invalid"
 
-var unknownField = `
+const unknownField = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

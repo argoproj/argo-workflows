@@ -673,7 +673,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		timeToWait := baseDuration
 		if retryStrategy.Backoff.Factor > 0 {
 			// Formula: timeToWait = duration * factor^retry_number
-			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
+			// Note that timeToWait should equal to duration for the first retry attempt.
+			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children)-1)))
 		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
@@ -879,7 +880,7 @@ func (woc *wfOperationCtx) failSuspendedNodesAfterDeadlineOrShutdown() error {
 				if woc.wfSpec.Shutdown != "" {
 					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
 				} else {
-					message = fmt.Sprintf("Step exceeded its deadline")
+					message = "Step exceeded its deadline"
 				}
 				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			}
@@ -1145,7 +1146,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		if ctr.State.Terminated.ExitCode == 0 {
 			continue
 		}
-		errMsg := fmt.Sprintf("failed to load artifacts")
+		errMsg := "failed to load artifacts"
 		for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
 			if msg != "" {
 				errMsg += ": " + msg
@@ -2667,7 +2668,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			// Finally substitute value parameters
 			value := metricTmpl.Gauge.Value
 			if !(strings.HasPrefix(value, "{{") && strings.HasSuffix(value, "}}")) {
-				woc.reportMetricEmissionError(fmt.Sprintf("real time metrics can only be used with metric variables"))
+				woc.reportMetricEmissionError("real time metrics can only be used with metric variables")
 				continue
 			}
 			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}")
