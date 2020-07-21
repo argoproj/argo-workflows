@@ -25,7 +25,7 @@ export interface WorkflowDagProps {
 
 require('./workflow-dag.scss');
 
-type DagPhase = NodePhase | 'Suspended' | 'Collapsed';
+type DagPhase = NodePhase | 'Suspended' | 'Collapsed-Horizontal' | 'Collapsed-Vertical';
 
 const LOCAL_STORAGE_KEY = 'DagOptions';
 
@@ -115,12 +115,21 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
                     />
                 );
-            case 'Collapsed':
+            case 'Collapsed-Horizontal':
                 return (
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
                         d='M328 256c0 39.8-32.2 72-72 72s-72-32.2-72-72 32.2-72 72-72 72 32.2 72 72zm104-72c-39.8 0-72 32.2-72 72s32.2 72 72 72 72-32.2 72-72-32.2-72-72-72zm-352 0c-39.8 0-72 32.2-72 72s32.2 72 72 72 72-32.2 72-72-32.2-72-72-72z'
+                    />
+                );
+            case 'Collapsed-Vertical':
+                return (
+                    <path
+                        fill='currentColor'
+                        transform="translate(150,0)"
+                        // tslint:disable-next-line
+                        d='M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z'
                     />
                 );
         }
@@ -226,8 +235,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 let label: string;
                                 let hidden: boolean;
                                 if (WorkflowDag.isCollapsedNode(nodeId)) {
-                                    phase = 'Collapsed';
-                                    label = WorkflowDag.getCollapsedNodeHiding(nodeId) + ' nodes hidden';
+                                    phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
+                                    label = WorkflowDag.getCollapsedNodeHiding(nodeId) + ' hidden nodes';
                                     hidden = this.hiddenNode(WorkflowDag.getCollapsedNodeParent(nodeId));
                                 } else {
                                     const node = this.props.nodes[nodeId];
