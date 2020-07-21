@@ -159,7 +159,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
 	if !ok {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to get id_token")))
+		_, _ = w.Write([]byte("failed to get id_token"))
 		return
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)

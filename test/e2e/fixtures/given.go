@@ -82,7 +82,7 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := func(image string) bool {
-		return strings.Contains(image, "argoproj/argoexec:") ||
+		return strings.Contains(image, "argoexec:") ||
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "python:alpine3.6"
