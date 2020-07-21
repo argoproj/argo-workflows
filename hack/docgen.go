@@ -1,3 +1,5 @@
+// +build !fields
+
 package main
 
 import (

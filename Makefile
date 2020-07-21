@@ -493,5 +493,4 @@ check-version-warning:
 
 .PHONY: parse-examples
 parse-examples:
-	go build -o hackbin ./hack
-	./hackbin parseexamples
+	go run -tags fields ./hack parseexamples
