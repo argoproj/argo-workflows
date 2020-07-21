@@ -1,0 +1,37 @@
+# This example demonstrates the ability to memoize the calculation of a fibonacci sequence with a workflow
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-simple-workflow-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: stopAt
+      value: 10
+  templates:
+  - name: fibonacci
+    memoize:
+      key: "{{inputs.parameters.cur}}"
+      cache:
+        configMap:
+          name: fibonacci-cache
+    inputs:
+      parameters:
+        - name: prevResult
+        - name: cur
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo $(({{inputs.parameters.prevResult}} + {{inputs.parameters.cur}})) > /tmp/fibonacci.txt"]
+    outputs:
+      parameters:
+        - name: result
+          valueFrom:
+            default: 0
+            path: /tmp/fibonacci.txt
+
+# argo submit memoize-fibonacci.yaml -p $NUMBER
+
+# check if entry exists for n-1
+# if not, check n-2... etc
