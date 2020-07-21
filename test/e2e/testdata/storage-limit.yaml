@@ -5,7 +5,6 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  serviceAccountName: argo
   entrypoint: wait
   volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
     - metadata:
