@@ -50,7 +50,7 @@ func (o *Operation) submitWorkflowsFromWorkflowTemplates() {
 	for _, key := range o.workflowTemplateKeyLister.ListKeys() {
 		namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			_, err := o.submitWorkflowFromWorkflowTemplate(namespace, name)
+			err := o.submitWorkflowsFromWorkflowTemplate(namespace, name)
 			return err == nil, err
 		})
 		if err != nil {
@@ -59,61 +59,57 @@ func (o *Operation) submitWorkflowsFromWorkflowTemplates() {
 	}
 }
 
-func (o *Operation) submitWorkflowFromWorkflowTemplate(namespace, name string) (*wfv1.Workflow, error) {
+func (o *Operation) submitWorkflowsFromWorkflowTemplate(namespace, name string) error {
 	client := auth.GetWfClient(o.ctx)
 	tmpl, err := client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow template: %w", err)
-	}
-	if tmpl.Spec.Event == nil {
-		// we should have filtered this out
-		return nil, errors.New("event spec is missing (should be impossible)")
+		return fmt.Errorf("failed to get workflow template: %w", err)
 	}
 	env, err := expressionEnvironment(o.ctx, o.discriminator, o.payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
+		return fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
 	}
-	expression := tmpl.Spec.Event.Expression
-	result, err := expr.Eval(expression, env)
-	if err != nil {
-		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
-	}
-	matched, boolExpr := result.(bool)
-	log.WithFields(log.Fields{
-		"namespace":  namespace,
-		"name":       name,
-		"expression": expression,
-		"matched":    matched,
-		"boolExpr":   boolExpr,
-	}).Debug("Expression evaluation")
-
-	data, _ := json.MarshalIndent(env, "", "  ")
-	log.Debugln(string(data))
-
-	if !boolExpr {
-		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
-	} else if matched {
-		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
-		o.instanceIDService.Label(wf)
-		creator.Label(o.ctx, wf)
-		for _, p := range tmpl.Spec.Event.Parameters {
-			if p.ValueFrom == nil {
-				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
-			}
-			result, err := expr.Eval(p.ValueFrom.Expression, env)
-			if err != nil {
-				return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
-			}
-			intOrString := intstr.Parse(fmt.Sprintf("%v", result))
-			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})
-		}
-		wf, err = client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
+	for _, event := range tmpl.Spec.Events {
+		result, err := expr.Eval(event.Expression, env)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create workflow: %w", err)
+			return fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 		}
-		return wf, nil
+		matched, boolExpr := result.(bool)
+		log.WithFields(log.Fields{
+			"namespace":  namespace,
+			"name":       name,
+			"expression": event.Expression,
+			"matched":    matched,
+			"boolExpr":   boolExpr,
+		}).Debug("Expression evaluation")
+
+		data, _ := json.MarshalIndent(env, "", "  ")
+		log.Debugln(string(data))
+
+		if !boolExpr {
+			return errors.New("malformed workflow template expression: did not evaluate to boolean")
+		} else if matched {
+			wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
+			o.instanceIDService.Label(wf)
+			creator.Label(o.ctx, wf)
+			for _, p := range event.Parameters {
+				if p.ValueFrom == nil {
+					return fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
+				}
+				result, err := expr.Eval(p.ValueFrom.Expression, env)
+				if err != nil {
+					return fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
+				}
+				intOrString := intstr.Parse(fmt.Sprintf("%v", result))
+				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})
+			}
+			_, err = client.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
+			if err != nil {
+				return fmt.Errorf("failed to create workflow: %w", err)
+			}
+		}
 	}
-	return nil, nil
+	return nil
 }
 
 func expressionEnvironment(ctx context.Context, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {

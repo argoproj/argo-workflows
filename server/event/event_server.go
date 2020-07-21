@@ -38,7 +38,7 @@ func NewController(client versioned.Interface, namespace string, instanceIDServi
 
 	workflowTemplateController, workflowTemplateKeyLister := eventcache.NewFilterUsingKeyController(restClient, namespace, labels.NewSelector().Add(instanceIDRequirement), "workflowtemplates", &wfv1.WorkflowTemplate{}, func(d cache.Delta) bool {
 		// no `ok` check here because a panic would indicate a bug
-		return d.Object.(*wfv1.WorkflowTemplate).Spec.Event != nil
+		return len(d.Object.(*wfv1.WorkflowTemplate).Spec.Events) > 0
 	})
 
 	log.WithFields(log.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize}).Info("Creating event controller")

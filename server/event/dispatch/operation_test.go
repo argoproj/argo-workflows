@@ -30,37 +30,37 @@ func TestOperation(t *testing.T) {
 	operation := NewOperation(ctx, instanceid.NewService("my-instanceid"), keyLister, "my-discriminator", &event)
 
 	t.Run("EventSpecMissing", func(t *testing.T) {
-		_, err := operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		_, err := operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		assert.EqualError(t, err, "event spec is missing (should be impossible)")
 	})
 
 	t.Run("MalformedExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
-			Spec:       wfv1.WorkflowTemplateSpec{Event: &wfv1.Event{Expression: "="}},
+			Spec:       wfv1.WorkflowTemplateSpec{Events: wfv1.Events{{Expression: "="}}},
 		})
 		assert.NoError(t, err)
-		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		_, err = operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		assert.EqualError(t, err, "failed to evaluate workflow template expression: unexpected token Operator(\"=\") (1:1)\n | =\n | ^")
 	})
 
 	t.Run("NonBooleanExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
-			Spec:       wfv1.WorkflowTemplateSpec{Event: &wfv1.Event{Expression: "invalid"}},
+			Spec:       wfv1.WorkflowTemplateSpec{Events: wfv1.Events{{Expression: "invalid"}}},
 		})
 		assert.NoError(t, err)
-		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		_, err = operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		assert.EqualError(t, err, "malformed workflow template expression: did not evaluate to boolean")
 	})
 
 	t.Run("UnMatchedExpression", func(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
-			Spec:       wfv1.WorkflowTemplateSpec{Event: &wfv1.Event{Expression: "false"}},
+			Spec:       wfv1.WorkflowTemplateSpec{Events: wfv1.Events{{Expression: "false"}}},
 		})
 		assert.NoError(t, err)
-		wf, err := operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		wf, err := operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		if assert.NoError(t, err) {
 			assert.Nil(t, wf, "no workflow created")
 		}
@@ -70,16 +70,16 @@ func TestOperation(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowTemplateSpec{
-				Event: &wfv1.Event{
+				Events: wfv1.Events{{
 					Expression: "true",
 					Parameters: []wfv1.Parameter{
 						{Name: "my-param"},
 					},
-				},
+				}},
 			},
 		})
 		assert.NoError(t, err)
-		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		_, err = operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		assert.EqualError(t, err, "malformed workflow template parameter \"my-param\": validFrom is nil")
 	})
 
@@ -87,16 +87,16 @@ func TestOperation(t *testing.T) {
 		_, err := client.ArgoprojV1alpha1().WorkflowTemplates("my-ns").Update(&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowTemplateSpec{
-				Event: &wfv1.Event{
+				Events: wfv1.Events{{
 					Expression: "true",
 					Parameters: []wfv1.Parameter{
 						{Name: "my-param", ValueFrom: &wfv1.ValueFrom{}},
 					},
-				},
+				}},
 			},
 		})
 		assert.NoError(t, err)
-		_, err = operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		_, err = operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		assert.EqualError(t, err, "failed to evaluate workflow template parameter \"my-param\" expression: unexpected token EOF (1:1)")
 	})
 
@@ -105,16 +105,16 @@ func TestOperation(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-template", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowTemplateSpec{
 				// note the non-trival expression
-				Event: &wfv1.Event{
+				Events: wfv1.Events{{
 					Expression: "payload.type == \"test\" && discriminator == \"my-discriminator\"",
 					Parameters: []wfv1.Parameter{
 						{Name: "my-param", ValueFrom: &wfv1.ValueFrom{Expression: "payload.type"}},
 					},
-				},
+				}},
 			},
 		})
 		assert.NoError(t, err)
-		wf, err := operation.submitWorkflowFromWorkflowTemplate("my-ns", "my-template")
+		wf, err := operation.submitWorkflowsFromWorkflowTemplate("my-ns", "my-template")
 		if assert.NoError(t, err) && assert.NotNil(t, wf, "workflow created") {
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID, "instance ID labels is applied")
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator, "creator label is applied")

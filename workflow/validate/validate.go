@@ -289,12 +289,12 @@ func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) er
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
-	if wftmpl.Spec.Event != nil {
-		_, err := expr.Compile(wftmpl.Spec.Event.Expression)
+	for _, event := range wftmpl.Spec.Events {
+		_, err := expr.Compile(event.Expression)
 		if err != nil {
 			return nil, fmt.Errorf("malformed event expression: %w", err)
 		}
-		for _, p := range wftmpl.Spec.Event.Parameters {
+		for _, p := range event.Parameters {
 			if p.ValueFrom == nil {
 				return nil, fmt.Errorf("malformed event parameter \"%s\": validFrom is nil", p.Name)
 			}

@@ -1410,6 +1410,6 @@ message WorkflowTemplateSpec {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
 
   // Event describes the event that can trigger the template.
-  optional Event event = 3;
+  repeated Event events = 3;
 }
 

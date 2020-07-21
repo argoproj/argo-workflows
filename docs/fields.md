@@ -252,8 +252,6 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
-
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -574,8 +572,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -907,8 +903,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
-
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1202,8 +1196,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
-
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1220,7 +1212,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
 |`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
-|`event`|[`Event`](#event)|Event describes the event that can trigger the template.|
+|`events`|`Array<`[`Event`](#event)`>`|Event describes the event that can trigger the template.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1387,8 +1379,6 @@ Arguments to a template
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
@@ -1730,8 +1720,6 @@ Template is a reusable and composable unit of execution in a workflow
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 </details>
 
 ### Fields
@@ -1944,13 +1932,6 @@ _No description available_
 ## Event
 
 Event can trigger this workflow template.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -2166,8 +2147,6 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
@@ -2738,8 +2717,6 @@ Pod metdata
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
-
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -2862,8 +2839,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 </details>
 
 ### Fields
@@ -3926,8 +3901,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -5063,8 +5036,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
-
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -6056,8 +6027,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-
-- [`tmp.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/tmp.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 

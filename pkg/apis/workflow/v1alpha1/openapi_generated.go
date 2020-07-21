@@ -4967,10 +4967,17 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
 						},
 					},
-					"event": {
+					"events": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Event describes the event that can trigger the template.",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"),
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Event"),
+									},
+								},
+							},
 						},
 					},
 				},

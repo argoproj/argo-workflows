@@ -9,3 +9,5 @@ type Event struct {
 	// Parameters extracted from the event and then set as arguments to the workflow created.
 	Parameters []Parameter `json:"parameters,omitempty" protobuf:"bytes,2,rep,name=parameters"`
 }
+
+type Events []Event
