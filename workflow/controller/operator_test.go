@@ -4053,7 +4053,7 @@ spec:
 	podInterface := controller.kubeclientset.CoreV1().Pods("my-ns")
 	list, err := podInterface.List(metav1.ListOptions{})
 	assert.NoError(t, err)
-	// two items -> two pods
+	// one task in the DAG -> one pods
 	assert.Len(t, list.Items, 1)
 
 	// mark all pods good
