@@ -7,13 +7,11 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
-GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null)
+GIT_TAG                = $(shell git describe --always --tags --abbrev=0 || echo untagged)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 export DOCKER_BUILDKIT = 1
 
-# To allow you to build with or without cache for debugging purposes.
-DOCKER_BUILD_OPTS     := --no-cache
 # Use a different Dockerfile, e.g. for building for Windows or dev images.
 DOCKERFILE            := Dockerfile
 
@@ -29,13 +27,12 @@ DEV_IMAGE             := true
 # VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
 # we assume HEAD means you are on a tag
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
-VERSION               := $(shell git tag|grep ^v|sort -d|tail -n1)
+VERSION               := $(GIT_TAG)
 DEV_IMAGE             := false
 endif
 
 # If we are building dev images, then we want to use the Docker cache for speed.
 ifeq ($(DEV_IMAGE),true)
-DOCKER_BUILD_OPTS     :=
 DOCKERFILE            := Dockerfile.dev
 endif
 
@@ -109,7 +106,7 @@ UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
-	docker build --progress plain $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
@@ -120,14 +117,18 @@ define docker_pull
 endef
 
 .PHONY: build
-build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
+build: status clis images manifests
+
+.PHONY: images
+images: cli-image executor-image controller-image
 
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
+MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
 
 # cli
 
@@ -184,7 +185,7 @@ $(CLI_IMAGE_FILE): $(CLI_PKGS)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
-clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
+clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64
 
 .PHONY: controller
 controller: dist/workflow-controller
@@ -217,8 +218,8 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 .PHONY: executor-image
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
-	# Create executor image
 $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
+	# Create executor image
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
@@ -285,7 +286,7 @@ manifests: crds
 # lint/test/etc
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
@@ -385,19 +386,19 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e: test-images cli
+test-e2e:
 	# Run E2E tests
 	@mkdir -p test-results
 	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
-test-e2e-cron: test-images cli
+test-e2e-cron:
 	# Run E2E tests
 	@mkdir -p test-results
 	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
-smoke: test-images
+smoke:
 	# Run smoke tests
 	@mkdir -p test-results
 	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
@@ -455,9 +456,12 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
-docs/swagger.md:
-	npm install -g swagger-markdown
-	swagger-markdown -i api/openapi-spec/swagger.json -o docs/swagger.md
+
+./node_modules/.bin/swagger-markdown:
+	npm install swagger-markdown
+
+docs/swagger.md: api/openapi-spec/swagger.json ./node_modules/.bin/swagger-markdown
+	./node_modules/.bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
 
 .PHONY: docs
 docs: api/openapi-spec/swagger.json docs/swagger.md
@@ -475,14 +479,11 @@ ifneq ($(findstring release,$(GIT_BRANCH)),)
 prepare-release: check-version-warning clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-	git tag $(VERSION)
+    # use "annotated" tag, rather than "lightweight", so in future we can distingush from "stable"
+	git tag -a $(VERSION) -m $(VERSION)
 
 .PHONY: publish-release
-publish-release: check-version-warning build
-	# Push images to Docker Hub
-	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+publish-release: check-version-warning clis
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
