@@ -1,6 +1,8 @@
 package main
 
-import "os"
+import (
+	"os"
+)
 
 func main() {
 	switch os.Args[1] {
@@ -14,6 +16,8 @@ func main() {
 		kubeifySwagger(os.Args[2], os.Args[3])
 	case "secondaryswaggergen":
 		secondarySwaggerGen()
+	case "parseexamples":
+		parseExamples()
 	default:
 		panic(os.Args[1])
 	}
