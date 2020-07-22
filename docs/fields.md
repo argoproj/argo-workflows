@@ -148,6 +148,8 @@ Workflow is the definition of a workflow resource
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -460,6 +462,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -787,6 +791,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -1076,6 +1082,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -1312,6 +1320,8 @@ Arguments to a template
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -1598,6 +1608,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -1867,6 +1879,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
@@ -2062,6 +2076,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -2373,6 +2389,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -2569,6 +2587,8 @@ Pod metdata
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -3276,6 +3296,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
@@ -3743,6 +3765,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -4224,6 +4248,8 @@ A single application container that you want to run within a pod.
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -4872,6 +4898,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -5074,6 +5102,13 @@ Represents a cinder volume resource in Openstack. A Cinder volume must exist bef
 ## ConfigMapVolumeSource
 
 Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -5396,6 +5431,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -5856,6 +5893,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -5990,6 +6029,13 @@ A null or empty node selector term matches no objects. The requirements of them 
 ## ConfigMapProjection
 
 Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |

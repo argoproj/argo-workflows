@@ -8,15 +8,27 @@ import (
 )
 
 func CreateHardMemoryQuota(clientset kubernetes.Interface, namespace, name, memoryLimit string) (*corev1.ResourceQuota, error) {
+	resourceList := corev1.ResourceList{
+		corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit),
+	}
+	return CreateResourceQuota(clientset, namespace, name, resourceList)
+}
+
+func CreateHardStorageQuota(clientset kubernetes.Interface, namespace, name, storageLimit string) (*corev1.ResourceQuota, error) {
+	resourceList := corev1.ResourceList{
+		"requests.storage": resource.MustParse(storageLimit),
+	}
+	return CreateResourceQuota(clientset, namespace, name, resourceList)
+}
+
+func CreateResourceQuota(clientset kubernetes.Interface, namespace, name string, rl corev1.ResourceList) (*corev1.ResourceQuota, error) {
 	return clientset.CoreV1().ResourceQuotas(namespace).Create(&corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: map[string]string{"argo-e2e": "true"},
 		},
 		Spec: corev1.ResourceQuotaSpec{
-			Hard: corev1.ResourceList{
-				corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit),
-			},
+			Hard: rl,
 		},
 	})
 }
