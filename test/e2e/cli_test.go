@@ -953,7 +953,6 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		Wait(12*time.Second).
-
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
@@ -967,11 +966,19 @@ func (s *CLISuite) TestRetryOmit() {
 		Workflow("@testdata/retry-omit.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(2 * time.Second).
+		WaitForWorkflow(20*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("should-not-execute")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
+			}
+		}).
 		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "Status:              Running")
-		})
+		}).When().
+		WaitForWorkflow(20 * time.Second)
 }
 
 func TestCLISuite(t *testing.T) {
