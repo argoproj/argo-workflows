@@ -5,8 +5,8 @@
 > v2.10 and after
 
 ## Introduction
-Synchronization enable users to limit the parallel execution of the certain workflows or 
-template within a workflow that needs to be rate limited with in namespace, but not to restrict others. 
+Synchronization enables users to limit the parallel execution of certain workflows or 
+templates within a workflow without having to restrict others.
 
 Users can create multiple synchronization configurations in the `ConfigMap` that can be referred to 
 from a workflow or template within a workflow.
