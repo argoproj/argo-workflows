@@ -326,7 +326,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 func (c *DocGeneratorContext) generate() string {
 	c.loadFiles()
 
-	out := fmt.Sprintf("# Field Reference")
+	out := "# Field Reference"
 	for len(c.queue) > 0 {
 		var temp string
 		temp, c.queue = c.queue[0], c.queue[1:]
