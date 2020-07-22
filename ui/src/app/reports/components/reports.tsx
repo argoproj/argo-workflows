@@ -3,7 +3,7 @@ import {ChartScales} from 'chart.js';
 import * as React from 'react';
 import {ChartData, Line} from 'react-chartjs-2';
 import {RouteComponentProps} from 'react-router-dom';
-import {getColorForNodePhase, NodePhase, Workflow} from '../../../models';
+import {getColorForNodePhase, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
 import {ErrorPanel} from '../../shared/components/error-panel';
