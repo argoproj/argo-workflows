@@ -282,11 +282,21 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.createPVCs()
 	if err != nil {
+		if apierr.IsForbidden(err) {
+			// Error was most likely caused by a lack of resources.
+			// In this case, Workflow will be in pending state and requeue.
+			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
+			woc.requeue(10)
+			return
+		}
 		msg := "pvc create error"
 		woc.log.WithError(err).Error(msg)
 		woc.markWorkflowError(err, true)
 		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("%s %s: %+v", woc.wf.ObjectMeta.Name, msg, err))
 		return
+	} else if woc.wf.Status.Phase == wfv1.NodePending {
+		// Workflow might be in pending state if previous PVC creation is forbidden
+		woc.markWorkflowRunning()
 	}
 
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, execTmplRef, tmplCtx, execArgs, &executeTemplateOpts{})
@@ -1225,8 +1235,8 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 }
 
 func (woc *wfOperationCtx) createPVCs() error {
-	if woc.wf.Status.Phase != wfv1.NodeRunning {
-		// Only attempt to create PVCs if workflow transitioned to Running state
+	if !(woc.wf.Status.Phase == wfv1.NodePending || woc.wf.Status.Phase == wfv1.NodeRunning) {
+		// Only attempt to create PVCs if workflow is in Pending or Running state
 		// (e.g. passed validation, or didn't already complete)
 		return nil
 	}
@@ -1234,9 +1244,6 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// If we have already created the PVCs, then there is nothing to do.
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
-	}
-	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
-		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wfSpec.VolumeClaimTemplates))
 	}
 	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.wfSpec.VolumeClaimTemplates {
@@ -1289,7 +1296,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 				},
 			},
 		}
-		woc.wf.Status.PersistentVolumeClaims[i] = vol
+		woc.wf.Status.PersistentVolumeClaims = append(woc.wf.Status.PersistentVolumeClaims, vol)
 		woc.updated = true
 	}
 	return nil
@@ -1672,7 +1679,7 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning() {
-	woc.markWorkflowPhase(wfv1.NodeRunning, false)
+	woc.markWorkflowPhase(wfv1.NodeRunning, false, "")
 }
 
 func (woc *wfOperationCtx) markWorkflowSuccess() {

@@ -566,7 +566,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 
 	newWF.Status.Conditions = wfv1.Conditions{{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted}}
-	newWF.Status.Phase = wfv1.NodePending
+	newWF.Status.Phase = ""
 
 	return &newWF, nil
 }

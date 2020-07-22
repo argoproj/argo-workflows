@@ -4002,7 +4002,7 @@ status:
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 		for _, node := range woc.wf.Status.Nodes {
 			switch node.TemplateName {
 			case "main":
