@@ -27,24 +27,14 @@ spec:
               parameters:
               - name: num
                 value: "{{inputs.parameters.num}}"
-        - - name: continue
-            template: fibonacci
-            when: "{{steps.iteration.outputs.parameters.step-result}} > 2"
-            arguments:
-              parameters:
-                - name: num
-                  value: "{{steps.iteration.outputs.parameters.step-result}}"
         - - name: stop
             template: base
-            when: "{{steps.iteration.outputs.parameters.step-result}} < 3"
-            arguments:
-              parameters:
-                - name: num
-                  value: "{{steps.iteration.outputs.parameters.step-result}}"
+            when: "{{inputs.parameters.num}} <= 2"
       outputs:
         parameters:
           - name: result
-            value: "{{steps.iteration.outputs.parameters.step-result}}"
+            valueFrom:
+              parameter: "{{steps.iteration.outputs.parameters.step-result}}"
 
     - name: fibonacci-step
       inputs: 
