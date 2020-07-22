@@ -45,14 +45,14 @@ argo list
 Use that token in your API requests, e.g. to list workflows:
 
 ```sh
-curl https://localhost:2746/api/v1/workflows/argo -H "Authorisation: $ARGO_TOKEN"
+curl https://localhost:2746/api/v1/workflows/argo -H "Authorization: $ARGO_TOKEN"
 # 200 OK
 ```
 
 You should check you cannot do things you're not allowed!
 
 ```sh
-curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorisation: $ARGO_TOKEN"
+curl https://localhost:2746/api/v1/workflow-templates/argo -H "Authorization: $ARGO_TOKEN"
 # 403 error
 ```
 
