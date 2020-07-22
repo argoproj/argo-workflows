@@ -24,15 +24,19 @@ type WorkflowEventList struct {
 	Items           []WorkflowEvent `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+type SubmitWorkflowTemplate struct {
+	corev1.LocalObjectReference `json:",inline" protobuf:"bytes,1,opt,name=localObjectReference"`
+
+	// Parameters extracted from the event and then set as arguments to the workflow created.
+	Parameters []Parameter `json:"parameters,omitempty" protobuf:"bytes,2,rep,name=parameters"`
+}
+
 // Event can trigger this workflow template.
 type WorkflowEventSpec struct {
 	// Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
 	// +kubebuilder:validation:MinLength=4
 	Expression string `json:"expression" protobuf:"bytes,1,opt,name=expression"`
 
-	// Parameters extracted from the event and then set as arguments to the workflow created.
-	Parameters []Parameter `json:"parameters,omitempty" protobuf:"bytes,2,rep,name=parameters"`
-
-	// WorkflowTemplateRef the workflow template to submit when we match the event
-	WorkflowTemplateRef corev1.LocalObjectReference `json:"workflowTemplateRef" protobuf:"bytes,3,opt,name=workflowTemplateRef"`
+	// WorkflowTemplate the workflow template to submit when we match the event
+	WorkflowTemplate SubmitWorkflowTemplate `json:"workflowTemplate" protobuf:"bytes,2,opt,name=workflowTemplate"`
 }

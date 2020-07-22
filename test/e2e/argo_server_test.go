@@ -133,7 +133,7 @@ metadata:
     argo-e2e: true
 spec:
   expression: metadata.claimSet.sub == "system:serviceaccount:argo:github.com" && metadata["x-github-event"] == ["push"]
-  workflowTemplateRef:
+  workflowTemplate:
     name: github-webhook
 `).
 		When().
@@ -164,12 +164,12 @@ metadata:
     argo-e2e: true
 spec:
   expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
-  parameters:
-  - name: appellation
-    valueFrom:
-      expression: payload.appellation
-  workflowTemplateRef:
+  workflowTemplate:
     name: event-consumer
+    parameters:
+    - name: appellation
+      valueFrom:
+        expression: payload.appellation
 `).
 		WorkflowTemplate(`
 metadata:

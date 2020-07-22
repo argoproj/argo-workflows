@@ -70,6 +70,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreStatus":             schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":                    schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitOpts":                  schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitWorkflowTemplate":      schema_pkg_apis_workflow_v1alpha1_SubmitWorkflowTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":             schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization":             schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus":       schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
@@ -2984,6 +2985,40 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_SubmitWorkflowTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"parameters": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Parameters extracted from the event and then set as arguments to the workflow created.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3992,31 +4027,18 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventSpec(ref common.ReferenceCal
 							Format:      "",
 						},
 					},
-					"parameters": {
+					"workflowTemplate": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameters extracted from the event and then set as arguments to the workflow created.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
-									},
-								},
-							},
-						},
-					},
-					"workflowTemplateRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateRef the workflow template to submit when we match the event",
-							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+							Description: "WorkflowTemplate the workflow template to submit when we match the event",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitWorkflowTemplate"),
 						},
 					},
 				},
-				Required: []string{"expression", "workflowTemplateRef"},
+				Required: []string{"expression", "workflowTemplate"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitWorkflowTemplate"},
 	}
 }
 

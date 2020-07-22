@@ -6,8 +6,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
+	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/event/dispatch"
 	"github.com/argoproj/argo/util/instanceid"
 )
@@ -59,8 +61,22 @@ func (s *Controller) Run(stopCh <-chan struct{}) {
 }
 
 func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventRequest) (*eventpkg.EventResponse, error) {
+
+	options := metav1.ListOptions{}
+	s.instanceIDService.With(&options)
+
+	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEvents(req.Namespace).List(options)
+	if err != nil {
+		return nil, err
+	}
+
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, list.Items, req.Discriminator, req.Payload)
+	if err != nil {
+		return nil, err
+	}
+
 	select {
-	case s.operationQueue <- dispatch.NewOperation(ctx, s.instanceIDService, req.Namespace, req.Discriminator, req.Payload):
+	case s.operationQueue <- *operation:
 		return &eventpkg.EventResponse{}, nil
 	default:
 		return nil, errors.NewServiceUnavailable("operation pipeline full")

@@ -26,48 +26,42 @@ import (
 type Operation struct {
 	ctx               context.Context
 	instanceIDService instanceid.Service
-	payload           *wfv1.Item
-	namespace         string
-	discriminator     string
+	events            []wfv1.WorkflowEvent
+	env               map[string]interface{}
 }
 
-func NewOperation(ctx context.Context, instanceIDService instanceid.Service, namespace, discriminator string, payload *wfv1.Item) Operation {
-	return Operation{
+func NewOperation(ctx context.Context, instanceIDService instanceid.Service, events []wfv1.WorkflowEvent, discriminator string, payload *wfv1.Item) (*Operation, error) {
+	env, err := expressionEnvironment(ctx, discriminator, payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workflow template expression environment: %w", err)
+	}
+	return &Operation{
 		ctx:               ctx,
 		instanceIDService: instanceIDService,
-		payload:           payload,
-		namespace:         namespace,
-		discriminator:     discriminator,
-	}
+		events:            events,
+		env:               env,
+	}, nil
 }
 
 func (o *Operation) Execute() {
 	log.Debug("Executing event dispatch")
 
-	options := metav1.ListOptions{}
-	o.instanceIDService.With(&options)
-	list, err := auth.GetWfClient(o.ctx).ArgoprojV1alpha1().WorkflowEvents(o.namespace).List(options)
-	if err != nil {
-		log.WithError(err).Error("failed to list workflow events")
-		return
-	}
-	for _, event := range list.Items {
+	data, _ := json.MarshalIndent(o.env, "", "  ")
+	log.Debugln(string(data))
+
+	for _, event := range o.events {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 			_, err := o.submitWorkflowsFromEvent(event)
 			return err == nil, err
 		})
 		if err != nil {
-			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to submit workflow from event")
+			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to submit workflows from event")
 		}
 	}
 }
 
 func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Workflow, error) {
-	env, err := expressionEnvironment(o.ctx, o.discriminator, o.payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow template expression environment (should by impossible): %w", err)
-	}
-	result, err := expr.Eval(event.Spec.Expression, env)
+	result, err := expr.Eval(event.Spec.Expression, o.env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
@@ -80,14 +74,11 @@ func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Wo
 		"boolExpr":   boolExpr,
 	}).Debug("Expression evaluation")
 
-	data, _ := json.MarshalIndent(env, "", "  ")
-	log.Debugln(string(data))
-
 	if !boolExpr {
 		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
 	} else if matched {
 		client := auth.GetWfClient(o.ctx)
-		tmpl, err := client.ArgoprojV1alpha1().WorkflowTemplates(event.Namespace).Get(event.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+		tmpl, err := client.ArgoprojV1alpha1().WorkflowTemplates(event.Namespace).Get(event.Spec.WorkflowTemplate.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to get workflow template: %w", err)
 		}
@@ -101,11 +92,11 @@ func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Wo
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEvent, event.Name)
-		for _, p := range event.Spec.Parameters {
+		for _, p := range event.Spec.WorkflowTemplate.Parameters {
 			if p.ValueFrom == nil {
 				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
 			}
-			result, err := expr.Eval(p.ValueFrom.Expression, env)
+			result, err := expr.Eval(p.ValueFrom.Expression, o.env)
 			if err != nil {
 				return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
 			}

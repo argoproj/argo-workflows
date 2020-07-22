@@ -272,6 +272,23 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.cronworkflowdeletedresponse) |
 
+### /api/v1/events/{namespace}/{discriminator}
+
+#### POST
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in all namespaces, or if set - only to workflows in the specified namespace | Yes | string |
+| discriminator | path | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty and ignored. There are edge-cases where the claim-set subject or event payload does not provide enough information to discriminate the event. It MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, secure your server and set-up appropriate access tokens. | Yes | string |
+| body | body | The event itself can be any data. | Yes | [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [io.argoproj.workflow.v1alpha1.EventResponse](#io.argoproj.workflow.v1alpha1.eventresponse) |
+
 ### /api/v1/info
 
 #### GET
@@ -947,6 +964,12 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 | target | string | Target are one or more names of targets to execute in a DAG | No |
 | tasks | [ [io.argoproj.workflow.v1alpha1.DAGTask](#io.argoproj.workflow.v1alpha1.dagtask) ] | Tasks are a list of DAG tasks | Yes |
 
+#### io.argoproj.workflow.v1alpha1.EventResponse
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.EventResponse | object |  |  |
+
 #### io.argoproj.workflow.v1alpha1.ExecutorConfig
 
 ExecutorConfig holds configurations of an executor container.
@@ -1338,6 +1361,13 @@ SubmitOpts are workflow submission options
 | serverDryRun | boolean | ServerDryRun validates the workflow on the server-side without creating it | No |
 | serviceAccount | string | ServiceAccount runs all pods in the workflow using specified ServiceAccount. | No |
 
+#### io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | Name of the referent. More info: <https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names> | No |
+| parameters | [ [io.argoproj.workflow.v1alpha1.Parameter](#io.argoproj.workflow.v1alpha1.parameter) ] | Parameters extracted from the event and then set as arguments to the workflow created. | No |
+
 #### io.argoproj.workflow.v1alpha1.SuspendTemplate
 
 SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1477,6 +1507,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| expression | string | Expression (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
@@ -1522,6 +1553,26 @@ Workflow is the definition of a workflow resource
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse | object |  |  |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEvent
+
+WorkflowEvent is the definition of an event resource
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) |  | Yes |
+| spec | [io.argoproj.workflow.v1alpha1.WorkflowEventSpec](#io.argoproj.workflow.v1alpha1.workfloweventspec) |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventSpec
+
+Event can trigger this workflow template.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| expression | string | Expression (<https://github.com/antonmedv/expr>) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"` | Yes |
+| workflowTemplate | [io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate](#io.argoproj.workflow.v1alpha1.submitworkflowtemplate) | WorkflowTemplate the workflow template to submit when we match the event | Yes |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowLintRequest
 

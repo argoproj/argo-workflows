@@ -850,6 +850,13 @@ message SubmitOpts {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
 }
 
+message SubmitWorkflowTemplate {
+  optional k8s.io.api.core.v1.LocalObjectReference localObjectReference = 1;
+
+  // Parameters extracted from the event and then set as arguments to the workflow created.
+  repeated Parameter parameters = 2;
+}
+
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
@@ -1140,11 +1147,8 @@ message WorkflowEventSpec {
   // +kubebuilder:validation:MinLength=4
   optional string expression = 1;
 
-  // Parameters extracted from the event and then set as arguments to the workflow created.
-  repeated Parameter parameters = 2;
-
-  // WorkflowTemplateRef the workflow template to submit when we match the event
-  optional k8s.io.api.core.v1.LocalObjectReference workflowTemplateRef = 3;
+  // WorkflowTemplate the workflow template to submit when we match the event
+  optional SubmitWorkflowTemplate workflowTemplate = 2;
 }
 
 // WorkflowList is list of Workflow resources

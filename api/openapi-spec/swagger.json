@@ -3341,6 +3341,22 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
       "type": "object",
@@ -3911,23 +3927,16 @@
       "type": "object",
       "required": [
         "expression",
-        "workflowTemplateRef"
+        "workflowTemplate"
       ],
       "properties": {
         "expression": {
           "description": "Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
           "type": "string"
         },
-        "parameters": {
-          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
-        },
-        "workflowTemplateRef": {
-          "description": "WorkflowTemplateRef the workflow template to submit when we match the event",
-          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+        "workflowTemplate": {
+          "description": "WorkflowTemplate the workflow template to submit when we match the event",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate"
         }
       }
     },
