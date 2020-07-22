@@ -1882,13 +1882,13 @@ argo list
 
 
 <p>Use that token in your API requests, e.g. to list workflows:</p>
-<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorisation: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 200 OK</span>
 </code></pre></div>
 
 
 <p>You should check you cannot do things you're not allowed!</p>
-<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorisation: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
+<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 403 error</span>
 </code></pre></div>
 
