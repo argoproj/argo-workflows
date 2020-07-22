@@ -3,7 +3,7 @@
 > v2.9 and after
 
 ## Introduction
-A workflow can trigger one or more workflow and manager their result.
+The Workflow of Workflows pattern involves a parent workflow triggering one or more child workflows, managing them, and acting their results.
  
 ## Examples
 You can use `workflowTemplateRef` to trigger a workflow inline.
