@@ -14,6 +14,7 @@ import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import help from './help';
 import login from './login';
+import reports from './reports';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import userinfo from './userinfo';
@@ -31,6 +32,7 @@ const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
+const reportsUrl = uiUrl('reports');
 const routes: {
     [path: string]: {component: React.ComponentType<RouteComponentProps<any>>};
 } = {
@@ -39,6 +41,7 @@ const routes: {
     [clusterWorkflowTemplatesUrl]: {component: clusterWorkflowTemplates.component},
     [cronWorkflowUrl]: {component: cronWorkflows.component},
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
+    [reportsUrl]: {component: reports.component},
     [helpUrl]: {component: help.component},
     [apiDocsUrl]: {component: apidocs.component},
     [userInfoUrl]: {component: userinfo.component},
@@ -72,6 +75,11 @@ const navItems = [
         title: 'Archived Workflows',
         path: archivedWorkflowUrl,
         iconClassName: 'fa fa-archive'
+    },
+    {
+        title: 'Reports',
+        path: reportsUrl,
+        iconClassName: 'fa fa-chart-bar'
     },
     {
         title: 'User',

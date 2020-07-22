@@ -2,11 +2,14 @@ import {Ticker} from 'argo-ui';
 import * as React from 'react';
 
 import {NODE_PHASE, Workflow} from '../../../models';
+import {uiUrl} from '../../shared/base';
 import {Phase} from '../../shared/components/phase';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
+import {Consumer} from '../../shared/context';
 import {formatDuration, wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
+import {WorkflowLabels} from './workflow-labels/workflow-labels';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
@@ -16,14 +19,23 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Message', value: props.workflow.status.message},
                 {title: 'Name', value: props.workflow.metadata.name},
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
+                {
+                    title: 'Labels',
+                    value: (
+                        <Consumer>
+                            {ctx => (
+                                <WorkflowLabels
+                                    workflow={props.workflow}
+                                    onChange={(key, value) => ctx.navigation.goto(uiUrl(`workflows/${props.workflow.metadata.namespace}?labels=${key}=${value}`))}
+                                />
+                            )}
+                        </Consumer>
+                    )
+                },
                 {title: 'Started', value: <Timestamp date={props.workflow.status.startedAt} />},
                 {title: 'Finished ', value: <Timestamp date={props.workflow.status.finishedAt} />},
                 {title: 'Duration', value: formatDuration(wfDuration(props.workflow.status))}
             ];
-            const creator = props.workflow.metadata.labels['workflows.argoproj.io/creator'];
-            if (creator) {
-                attributes.push({title: 'Creator', value: creator});
-            }
             if (props.workflow.status.resourcesDuration) {
                 attributes.push({
                     title: 'Resources Duration',
