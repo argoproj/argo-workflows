@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo/workflow/controller/cache"
+
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
@@ -3950,6 +3952,111 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	woc.operate()
 	// Must only be one (completed: true)
 	assert.Len(t, woc.wf.Status.Conditions, 1)
+}
+
+var workflowCached = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memoized-workflow-test
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi-there-world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      maxAge: 1d
+      cache:
+        configMap:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestConfigMapCacheLoadOperate(t *testing.T) {
+
+	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{"parameters":[{"name":"hello","value":"\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   ","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-workflow-btfmf/memoized-workflow-btfmf/main.log"}}]}}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+		},
+	}
+	wf := unmarshalWF(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	status := woc.wf.Status
+	outputs := status.Nodes[""].Outputs
+	assert.NotNil(t, outputs)
+	assert.Equal(t, "hello", outputs.Parameters[0].Name)
+	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
+}
+
+func TestConfigMapCacheSaveOperate(t *testing.T) {
+	wf := unmarshalWF(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	outputVal := intstr.Parse(sampleOutput)
+	sampleOutputs := wfv1.Outputs{
+		Parameters: []wfv1.Parameter{
+			wfv1.Parameter{
+				Name:  "hello",
+				Value: &outputVal,
+			},
+		},
+	}
+
+	woc.operate()
+	node := woc.wf.GetNodeByName("")
+	nodeID := node.ID
+	node.Outputs = &sampleOutputs
+	node.Phase = wfv1.NodeSucceeded
+	woc.wf.Status.Nodes[nodeID] = *node
+	woc.operate()
+
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get("whalesay-cache", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.NotNil(t, cm)
+	assert.NotNil(t, cm.Data)
+
+	rawEntry, ok := cm.Data["hi-there-world"]
+	assert.True(t, ok)
+	var entry cache.CacheEntry
+	err = json.Unmarshal([]byte(rawEntry), &entry)
+	assert.NoError(t, err)
+
+	assert.Equal(t, sampleOutputs, *entry.Outputs)
 }
 
 var propagate = `
