@@ -1,0 +1,24 @@
+# Test to ensure parameter aggregation works when every item is filtered
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ui-parameter-aggregation-empty-
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+    - name: parameter-aggregation
+      steps:
+        - - name: generate
+            template: echo
+            withSequence:
+              start: "1"
+              end: "500"
+
+    # echo prints a message
+    - name: echo
+      script:
+        image: argoproj/argosay:v1
+        command: [sh, -x]
+        source: |
+          #!/bin/sh
+          echo hello

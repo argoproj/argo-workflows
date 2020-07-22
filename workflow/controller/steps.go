@@ -414,7 +414,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			if woc.wf.GetNodeByName(childNodeName) == nil {
 				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
-				skipReason := fmt.Sprint("Skipped, empty params")
+				skipReason := "Skipped, empty params"
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
