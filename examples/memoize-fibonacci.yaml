@@ -13,47 +13,85 @@ spec:
             arguments:
               parameters:
                 - name: num
-                  value: 10
+                  value: 3
+
     - name: fibonacci
       inputs:
         parameters:
           - name: num
       steps:
-        - - name: fibonacci-executor
+        - - name: iteration
             template: fibonacci-step
-            arguments:
+            when: "{{inputs.parameters.num}} > 2"
+            arguments: 
               parameters:
-                - name: num
-                  value: "{{inputs.parameters.num}}"
+              - name: num
+                value: "{{inputs.parameters.num}}"
         - - name: continue
             template: fibonacci
-            when: "{{inputs.parameters.num}} > 2"
+            when: "{{steps.iteration.outputs.parameters.step-result}} > 2"
             arguments:
               parameters:
                 - name: num
-                  value: "{{steps.fibonacci-executor.outputs.parameters.result}}"
+                  value: "{{steps.iteration.outputs.parameters.step-result}}"
         - - name: stop
             template: base
-            when: "{{inputs.parameters.num}} < 3"
+            when: "{{steps.iteration.outputs.parameters.step-result}} < 3"
             arguments:
               parameters:
                 - name: num
-                  value: "{{steps.fibonacci-executor.outputs.parameters.result}}"
-#
-    - name: fibonacci-step
-      inputs:
-        parameters:
-          - name: num
-      container:
-        image: alpine:latest
-        command: [sh, -c]
-        args: ["echo $(({{inputs.parameters.num}}-1 + {{inputs.parameters.num}}-2)) > /tmp/result.txt"]
+                  value: "{{steps.iteration.outputs.parameters.step-result}}"
       outputs:
         parameters:
           - name: result
+            value: "{{steps.iteration.outputs.parameters.step-result}}"
+
+    - name: fibonacci-step
+      inputs: 
+        parameters:
+          - name: num
+      steps: 
+        - - name: sub-left
+            template: add
+            arguments: 
+              parameters: [{name: first, value: "{{inputs.parameters.num}}"}, {name: second, value: -1}]
+          - name: sub-right
+            template: add
+            arguments: 
+              parameters: [{name: first, value: "{{inputs.parameters.num}}"}, {name: second, value: -2}]
+        - - name: recurse-left
+            template: fibonacci
+            arguments:
+              parameters: 
+                - name: num
+                  value: "{{steps.sub-left.outputs.result}}"        
+          - name: recurse-right
+            template: fibonacci
+            arguments:
+              parameters: 
+                - name: num
+                  value: "{{steps.sub-right.outputs.result}}"
+        - - name: add-results
+            template: add
+            arguments: 
+              parameters: [{name: first, value: "{{steps.recurse-left.outputs.parameters.result}}"}, {name: second, value: "{{steps.recurse-right.outputs.parameters.result}}"}]
+
+      outputs: 
+        parameters: 
+          - name: step-result
             valueFrom:
-              default: 0
-              path: /tmp/result.txt
+              parameter: "{{steps.add-results.outputs.result}}"
+
+    - name: add
+      inputs:
+        parameters:
+          - name: first
+          - name: second
+      script:
+        image: debian:9.4
+        command: [bash]
+        source: |
+          echo $(({{inputs.parameters.first}} + {{inputs.parameters.second}}))
 
     - name: base
       inputs:
@@ -69,3 +107,4 @@ spec:
             valueFrom:
               default: 0
               path: /tmp/result.txt
+
