@@ -258,11 +258,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             params.append('phase', phase);
         });
         newOptions.selectedPhases = selectedPhases;
+        newOptions.selectedLabels = [];
         selectedLabels.forEach(label => {
             params.append('label', label);
             newOptions.selectedLabels.push(label);
         });
-        newOptions.selectedLabels = selectedLabels;
         if (pagination.offset) {
             params.append('offset', pagination.offset);
         }

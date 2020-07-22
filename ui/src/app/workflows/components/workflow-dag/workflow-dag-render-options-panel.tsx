@@ -105,6 +105,26 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                     title='Zoom out from the timeline'>
                     <i className='fa fa-search-minus' />
                 </a>
+                <a
+                    onClick={() =>
+                        this.props.onChange({
+                            ...this.workflowDagRenderOptions,
+                            expandNodes: new Set()
+                        })
+                    }
+                    title='Collapse all nodes'>
+                    <i className='fa fa-compress' data-fa-transform='rotate-45' />
+                </a>
+                <a
+                    onClick={() =>
+                        this.props.onChange({
+                            ...this.workflowDagRenderOptions,
+                            expandNodes: new Set(['*'])
+                        })
+                    }
+                    title='Expand all nodes'>
+                    <i className='fa fa-expand' data-fa-transform='rotate-45' />
+                </a>
             </div>
         );
     }
