@@ -36,29 +36,6 @@ const Label = "argo-e2e"
 // Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
 const LabelCron = Label + "-cron"
 
-var imageTag string
-
-func init() {
-	gitBranch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
-	if err != nil {
-		panic(err)
-	}
-	imageTag = strings.TrimSpace(gitBranch)
-	if imageTag == "master" {
-		imageTag = "latest"
-	}
-	if strings.HasPrefix(gitBranch, "release-") {
-		tags, err := runCli("git", "tag", "--merged")
-		if err != nil {
-			panic(err)
-		}
-		parts := strings.Split(tags, "\n")
-		imageTag = parts[len(parts)-2]
-	}
-	imageTag = strings.ReplaceAll(imageTag, "/", "-")
-	log.WithFields(log.Fields{"imageTag": imageTag}).Info()
-}
-
 type E2ESuite struct {
 	suite.Suite
 	Persistence       *Persistence
