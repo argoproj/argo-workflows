@@ -141,18 +141,19 @@ export const WorkflowNodeContainer = (props: {
     onShowContainerLogs: (nodeId: string, container: string) => any;
 }) => {
     const container = {name: 'main', args: Array<string>(), source: '', ...props.container};
+    const maybeQuote = (v: string) => (v.includes(' ') ? `'${v}'` : v);
     const attributes = [
         {title: 'NAME', value: container.name || 'main'},
         {title: 'IMAGE', value: container.image},
         {
             title: 'COMMAND',
-            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</pre>
+            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).map(maybeQuote).join(' ')}</pre>
         },
         container.source
             ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
                   title: 'ARGS',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</pre>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).map(maybeQuote).join(' ')}</pre>
               },
         hasEnv(container)
             ? {
@@ -233,7 +234,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
             )}
             {artifacts.length > 0 && props.archived && (
                 <p>
-                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows maybe be overwritten by a more recent workflow with the same name.
+                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows may be overwritten by a more recent workflow with the same name.
                 </p>
             )}
             {artifacts.map(artifact => (

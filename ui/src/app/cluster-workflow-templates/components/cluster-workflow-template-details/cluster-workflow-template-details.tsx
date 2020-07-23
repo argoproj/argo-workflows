@@ -6,7 +6,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import {ClusterWorkflowTemplateSummaryPanel} from '../cluster-workflow-template-summary-panel';
@@ -14,6 +14,7 @@ import {ClusterWorkflowTemplateSummaryPanel} from '../cluster-workflow-template-
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
+    namespace?: string;
     template?: models.ClusterWorkflowTemplate;
     error?: Error;
 }
@@ -37,11 +38,13 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
     }
 
     public componentDidMount(): void {
+        services.info
+            .getInfo()
+            .then(info => this.setState({namespace: info.managedNamespace || 'default'}))
+            .catch(error => this.setState(error));
         services.clusterWorkflowTemplate
             .get(this.name)
-            .then(template => {
-                this.setState({template});
-            })
+            .then(template => this.setState({template}))
             .catch(error => this.setState({error}));
     }
 
@@ -82,13 +85,16 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
                         </div>
                         {this.state.template && (
                             <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                                <ResourceSubmit<models.Workflow>
-                                    resourceName={'Workflow'}
-                                    defaultResource={this.getWorkflow(this.state.template)}
+                                <ResourceEditor
+                                    kind='Workflow'
+                                    title={'Submit Workflow'}
+                                    editing={true}
+                                    value={this.getWorkflow(this.state.template)}
                                     onSubmit={wfValue => {
-                                        return services.workflows
+                                        services.workflows
                                             .create(wfValue, wfValue.metadata.namespace)
-                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)));
+                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+                                            .catch(error => this.setState({error}));
                                     }}
                                 />
                             </SlidingPanel>
@@ -127,10 +133,10 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
         return {
             metadata: {
                 generateName: template.metadata.name + '-',
-                namespace: '<enter the namespace>'
+                namespace: this.state.namespace
             },
             spec: {
-                entrypoint: template.spec.templates[0].name,
+                entrypoint: !!template.spec.templates ? template.spec.templates[0].name : '',
                 workflowTemplateRef: {
                     name: template.metadata.name,
                     clusterScope: true

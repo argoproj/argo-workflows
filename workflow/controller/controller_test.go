@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/record"
+
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -22,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -99,9 +104,20 @@ spec:
       args: ["hello world"]
 `
 
+type testEventRecorderManager struct {
+	eventRecorder *record.FakeRecorder
+}
+
+func (t testEventRecorderManager) Get(string) record.EventRecorder {
+	return t.eventRecorder
+}
+
+var _ EventRecorderManager = &testEventRecorderManager{}
+
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -118,16 +134,20 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:   kube,
-		wfclientset:     wfclientset,
-		completedPods:   make(chan string, 512),
-		wftmplInformer:  wftmplInformer,
-		cwftmplInformer: cwftmplInformer,
-		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		wfArchive:       sqldb.NullWorkflowArchive,
-		hydrator:        hydratorfake.Noop,
-		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		kubeclientset:        kube,
+		wfclientset:          wfclientset,
+		completedPods:        make(chan string, 16),
+		wfInformer:           wfInformer,
+		wftmplInformer:       wftmplInformer,
+		cwftmplInformer:      cwftmplInformer,
+		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:            sqldb.NullWorkflowArchive,
+		hydrator:             hydratorfake.Noop,
+		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
+		archiveLabelSelector: labels.Everything(),
+		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
 	return cancel, controller
 }
@@ -299,7 +319,8 @@ func TestNamespacedController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -315,7 +336,8 @@ func TestClusterController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -351,6 +373,8 @@ metadata:
   name: workflow-template-whalesay-template
   namespace: default
 spec:
+  serviceAccountName: my-sa
+  priority: 77
   templates:
   - name: whalesay-template
     inputs:
@@ -360,21 +384,62 @@ spec:
       image: docker/whalesay
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
+  volumes:
+  - name: data
+    empty: {}
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
-	//_, controller := newController()
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
-	_, controller := newController(wf, wftmpl)
-	//_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wftmpl)
-	//assert.NoError(t, err)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
-	t.Run("WithWorkflowTmplRef", func(t *testing.T) {
-		_, _, err := woc.loadExecutionSpec()
-		assert.NoError(t, err)
-		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
+}
 
+func TestIsArchivable(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	var lblSelector metav1.LabelSelector
+	lblSelector.MatchLabels = make(map[string]string)
+	lblSelector.MatchLabels["workflows.argoproj.io/archive-strategy"] = "true"
+
+	workflow := unmarshalWF(helloWorldWf)
+	t.Run("EverythingSelector", func(t *testing.T) {
+		controller.archiveLabelSelector = labels.Everything()
+		assert.True(t, controller.isArchivable(workflow))
+	})
+	t.Run("NothingSelector", func(t *testing.T) {
+		controller.archiveLabelSelector = labels.Nothing()
+		assert.False(t, controller.isArchivable(workflow))
+	})
+	t.Run("ConfiguredSelector", func(t *testing.T) {
+		selector, err := metav1.LabelSelectorAsSelector(&lblSelector)
+		assert.NoError(t, err)
+		controller.archiveLabelSelector = selector
+		assert.False(t, controller.isArchivable(workflow))
+		workflow.Labels = make(map[string]string)
+		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
+		assert.True(t, controller.isArchivable(workflow))
+	})
+}
+
+func TestReleaseAllWorkflowLocks(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	t.Run("nilObject", func(t *testing.T) {
+		controller.releaseAllWorkflowLocks(nil)
+	})
+	t.Run("unStructuredObject", func(t *testing.T) {
+		un := &unstructured.Unstructured{}
+		controller.releaseAllWorkflowLocks(un)
+	})
+	t.Run("otherObject", func(t *testing.T) {
+		un := &wfv1.Workflow{}
+		controller.releaseAllWorkflowLocks(un)
 	})
 }

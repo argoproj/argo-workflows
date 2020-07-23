@@ -1,3 +1,5 @@
+// +build !fields
+
 package main
 
 import (
@@ -9,6 +11,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/spf13/cobra/doc"
+
+	"github.com/argoproj/argo/cmd/argo/commands"
 )
 
 const sectionHeader = `
@@ -107,7 +113,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "../"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo/blob/master/"+example))
 	}
 	out += dropdownCloser
 	return out
@@ -133,8 +139,8 @@ func getObjectType(field map[string]interface{}, addToQueue func(string)) string
 			addToQueue(refString)
 
 			name := getNameFromFullName(refString)
-			if refString == "io.argoproj.workflow.v1alpha1.WorkflowStep" {
-				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
+			if refString == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
+				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", "WorkflowStep"), fmt.Sprintf("#"+strings.ToLower("WorkflowStep"))))
 			}
 			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
 		}
@@ -320,7 +326,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 func (c *DocGeneratorContext) generate() string {
 	c.loadFiles()
 
-	out := fmt.Sprintf("# Argo Fields")
+	out := "# Field Reference"
 	for len(c.queue) > 0 {
 		var temp string
 		temp, c.queue = c.queue[0], c.queue[1:]
@@ -338,9 +344,38 @@ func (c *DocGeneratorContext) generate() string {
 	return out
 }
 
+func removeContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = d.Close() }()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func generateDocs() {
+	cmd := commands.NewCommand()
+	cmd.DisableAutoGenTag = true
+	err := removeContents("docs/cli")
+	if err != nil {
+		panic(err)
+	}
+	err = doc.GenMarkdownTree(cmd, "docs/cli")
+	if err != nil {
+		panic(err)
+	}
 	c := NewDocGeneratorContext()
-	err := ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
+	err = ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
 	if err != nil {
 		panic(err)
 	}

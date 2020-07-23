@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -96,13 +97,20 @@ var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
 	"Priority":              true,
 	"Arguments":             true,
 	"WorkflowTemplateRef":   true,
+	"TTLStrategy":           true,
+	"Parallelism":           true,
+	"Volumes":               true,
+	"VolumeClaimTemplates":  true,
+	"NodeSelector":          true,
+	"PodGC":                 true,
+	"ServiceAccountName":    true,
 }
 
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	s := placeholderGenerator.NextPlaceholder()
-	return &wfv1.Parameter{Name: name, Value: &s}
+	intOrString := intstr.Parse(placeholderGenerator.NextPlaceholder())
+	return &wfv1.Parameter{Name: name, Value: &intOrString}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -148,7 +156,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfArgs := wf.Spec.Arguments
 
 	if wf.Spec.WorkflowTemplateRef != nil {
-		wfArgs.Parameters = util.MergeParameters(wfSpecHolder.GetWorkflowSpec().Arguments.Parameters, wfArgs.Parameters)
+		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -170,7 +178,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
+				ctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 			} else {
 				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
@@ -532,6 +540,7 @@ func validateTemplateType(tmpl *wfv1.Template) error {
 	case 0:
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s template type unspecified. choose one of: container, steps, script, resource, dag, suspend, template, template ref", tmpl.Name)
 	case 1:
+		// Do nothing
 	default:
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s multiple template types specified. choose one of: container, steps, script, resource, dag, suspend, template, template ref", tmpl.Name)
 	}
@@ -675,6 +684,9 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			}
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		}
+		if tmpl.Container.Image == "" {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.image may not be empty", tmpl.Name)
+		}
 	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
@@ -692,6 +704,11 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 			}
+		}
+	}
+	if tmpl.Script != nil {
+		if tmpl.Script.Image == "" {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script.image may not be empty", tmpl.Name)
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
@@ -835,11 +852,15 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 	if len(withItems) > 0 {
 		for i := range withItems {
 			val := withItems[i]
-			switch val.Type {
+			switch val.GetType() {
 			case wfv1.String, wfv1.Number, wfv1.Bool:
 				scope["item"] = true
+			case wfv1.List:
+				for i := range val.GetListVal() {
+					scope[fmt.Sprintf("item.[%v]", i)] = true
+				}
 			case wfv1.Map:
-				for itemKey := range val.MapVal {
+				for itemKey := range val.GetMapVal() {
 					scope[fmt.Sprintf("item.%s", itemKey)] = true
 				}
 			default:
@@ -852,7 +873,7 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 		// when considering if all variables are resolveable.
 		scope[anyItemMagicValue] = true
 	} else if withSequence != nil {
-		if withSequence.Count != "" && withSequence.End != "" {
+		if withSequence.Count != nil && withSequence.End != nil {
 			return errors.New(errors.CodeBadRequest, "only one of count or end can be defined in withSequence")
 		}
 		scope["item"] = true

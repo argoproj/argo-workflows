@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -203,32 +204,30 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
-	labels := wf.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
+	wfLabels := wf.GetLabels()
+	if wfLabels == nil {
+		wfLabels = make(map[string]string)
 	}
 	if opts.Labels != "" {
 		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
 		if err != nil {
-			return fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+			return fmt.Errorf("expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s: %w", opts.Labels, err)
 		}
 		for k, v := range passedLabels {
-			labels[k] = v
+			wfLabels[k] = v
 		}
 	}
-	wf.SetLabels(labels)
+	wf.SetLabels(wfLabels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
 		for _, paramStr := range opts.Parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+			if len(parts) != 2 {
+				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
+			intOrString := intstr.Parse(parts[1])
+			param := wfv1.Parameter{Name: parts[0], Value: &intOrString}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -262,10 +261,8 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				param := wfv1.Parameter{
-					Name:  k,
-					Value: &value,
-				}
+				intOrString := intstr.Parse(value)
+				param := wfv1.Parameter{Name: k, Value: &intOrString}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
@@ -386,7 +383,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	}
 	if node.Inputs != nil {
 		for _, inParam := range node.Inputs.Parameters {
-			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
+			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = inParam.Value.String()
 		}
 	}
 
@@ -493,19 +490,22 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
+	if newWF.ObjectMeta.Labels == nil {
+		newWF.ObjectMeta.Labels = make(map[string]string)
+	}
 	for key, val := range wf.ObjectMeta.Labels {
 		if strings.HasPrefix(key, workflow.WorkflowFullName+"/") && key != common.LabelKeyControllerInstanceID {
 			continue
 		}
-		if newWF.ObjectMeta.Labels == nil {
-			newWF.ObjectMeta.Labels = make(map[string]string)
-		}
 		newWF.ObjectMeta.Labels[key] = val
 	}
+	// Append an additional label so it's easy for user to see the
+	// name of the original workflow that has been resubmitted.
+	newWF.ObjectMeta.Labels[common.LabelKeyPreviousWorkflowName] = wf.ObjectMeta.Name
+	if newWF.ObjectMeta.Annotations == nil {
+		newWF.ObjectMeta.Annotations = make(map[string]string)
+	}
 	for key, val := range wf.ObjectMeta.Annotations {
-		if newWF.ObjectMeta.Annotations == nil {
-			newWF.ObjectMeta.Annotations = make(map[string]string)
-		}
 		newWF.ObjectMeta.Annotations[key] = val
 	}
 
@@ -532,7 +532,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
 		}
-		if !newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+		if newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
 			newNode.StartedAt = metav1.Time{}
 			newNode.FinishedAt = metav1.Time{}
 		} else {
@@ -549,7 +549,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
 		}
 		newNode.OutboundNodes = newOutboundNodes
-		if newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+		if !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
@@ -566,7 +566,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 
 	newWF.Status.Conditions = wfv1.Conditions{{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted}}
-	newWF.Status.Phase = wfv1.NodePending
+	newWF.Status.Phase = ""
 
 	return &newWF, nil
 }
@@ -628,7 +628,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 				newWF.Status.Nodes[node.ID] = node
 				continue
 			}
-		case wfv1.NodeError, wfv1.NodeFailed:
+		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeOmitted:
 			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
@@ -889,4 +889,21 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 func ValidateJsonStr(jsonStr string, schema interface{}) bool {
 	err := json.Unmarshal([]byte(jsonStr), &schema)
 	return err == nil
+}
+
+func GetNodeType(tmpl *wfv1.Template) wfv1.NodeType {
+	if tmpl.RetryStrategy != nil {
+		return wfv1.NodeTypeRetry
+	}
+	switch tmpl.GetType() {
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
+		return wfv1.NodeTypePod
+	case wfv1.TemplateTypeDAG:
+		return wfv1.NodeTypeDAG
+	case wfv1.TemplateTypeSteps:
+		return wfv1.NodeTypeSteps
+	case wfv1.TemplateTypeSuspend:
+		return wfv1.NodeTypeSuspend
+	}
+	return ""
 }

@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -167,6 +168,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	assert.NoError(t, err)
 
 	cs := fake.NewSimpleClientset()
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
@@ -174,12 +176,100 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
+		metrics:     testMetrics,
 	}
 	woc.Run()
 
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
-	assert.Equal(t, v1alpha1.ConditionTypeSubmissionError, submissionErrorCond.Type)
+	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
 	assert.Contains(t, submissionErrorCond.Message, "'bad template name' is invalid")
+}
+
+var specError = `
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: hello-world
+spec:
+  concurrencyPolicy: Replace
+  failedJobsHistoryLimit: 4
+  schedule: 10 * * 12737123 *
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  timezone: America/Los_Angeles
+  workflowSpec:
+    arguments: {}
+    entrypoint: whalesay
+    templates:
+    - arguments: {}
+      container:
+        args:
+        - "\U0001F553 hello world"
+        command:
+        - cowsay
+        image: docker/whalesay:latest
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: whalesay
+      outputs: {}
+`
+
+func TestSpecError(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(specError), &cronWf)
+	assert.NoError(t, err)
+
+	cs := fake.NewSimpleClientset()
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfLister:    &fakeLister{},
+		cronWf:      &cronWf,
+		log:         logrus.WithFields(logrus.Fields{}),
+		metrics:     testMetrics,
+	}
+
+	err = woc.validateCronWorkflow()
+	assert.Error(t, err)
+	assert.Len(t, woc.cronWf.Status.Conditions, 1)
+	submissionErrorCond := woc.cronWf.Status.Conditions[0]
+	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
+	assert.Equal(t, v1alpha1.ConditionTypeSpecError, submissionErrorCond.Type)
+	assert.Contains(t, submissionErrorCond.Message, "cron schedule is malformed: end of range (12737123) above maximum (12): 12737123")
+}
+
+func TestReapplyUpdate(t *testing.T) {
+	cronWf := v1alpha1.CronWorkflow{
+		ObjectMeta: v1.ObjectMeta{Name: "my-wf"},
+		Spec:       v1alpha1.CronWorkflowSpec{Schedule: "* * * * *"},
+	}
+
+	cs := fake.NewSimpleClientset(&cronWf)
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfLister:    &fakeLister{},
+		cronWf:      &cronWf,
+		origCronWf:  cronWf.DeepCopy(),
+		name:        cronWf.Name,
+		log:         logrus.WithFields(logrus.Fields{}),
+		metrics:     testMetrics,
+	}
+
+	cronWf.Spec.Schedule = "1 * * * *"
+	err := woc.reapplyUpdate()
+	if assert.NoError(t, err) {
+		updatedCronWf, err := woc.cronWfIf.Get("my-wf", v1.GetOptions{})
+		if assert.NoError(t, err) {
+			assert.Equal(t, "1 * * * *", updatedCronWf.Spec.Schedule)
+		}
+	}
 }

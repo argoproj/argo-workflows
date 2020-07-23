@@ -53,16 +53,48 @@ var (
 	hostPathSocket = apiv1.HostPathSocket
 )
 
-func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
+func (woc *wfOperationCtx) getVolumeMountDockerSock(tmpl *wfv1.Template) apiv1.VolumeMount {
 	return apiv1.VolumeMount{
 		Name:      common.DockerSockVolumeName,
-		MountPath: "/var/run/docker.sock",
-		ReadOnly:  true,
+		MountPath: getDockerSockPath(tmpl),
+		ReadOnly:  getDockerSockReadOnly(tmpl),
 	}
 }
 
-func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
-	dockerSockPath := "/var/run/docker.sock"
+func getDockerSockReadOnly(tmpl *wfv1.Template) bool {
+	return !hasWindowsOSNodeSelector(tmpl.NodeSelector)
+}
+
+func getDockerSockPath(tmpl *wfv1.Template) string {
+	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
+		return "\\\\.\\pipe\\docker_engine"
+	}
+
+	return "/var/run/docker.sock"
+}
+
+func getVolumeHostPathType(tmpl *wfv1.Template) *apiv1.HostPathType {
+	if hasWindowsOSNodeSelector(tmpl.NodeSelector) {
+		return nil
+	}
+
+	return &hostPathSocket
+}
+
+func hasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
+	if nodeSelector == nil {
+		return false
+	}
+
+	if os, keyExists := nodeSelector["kubernetes.io/os"]; keyExists && os == "windows" {
+		return true
+	}
+
+	return false
+}
+
+func (woc *wfOperationCtx) getVolumeDockerSock(tmpl *wfv1.Template) apiv1.Volume {
+	dockerSockPath := getDockerSockPath(tmpl)
 
 	if woc.controller.Config.DockerSockPath != "" {
 		dockerSockPath = woc.controller.Config.DockerSockPath
@@ -77,7 +109,7 @@ func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 		VolumeSource: apiv1.VolumeSource{
 			HostPath: &apiv1.HostPathVolumeSource{
 				Path: dockerSockPath,
-				Type: &hostPathSocket,
+				Type: getVolumeHostPathType(tmpl),
 			},
 		},
 	}
@@ -90,6 +122,7 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 type createWorkflowPodOpts struct {
 	includeScriptOutput bool
 	onExitPod           bool
+	executionDeadline   time.Time
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
@@ -132,7 +165,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		},
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
-			Volumes:               woc.createVolumes(),
+			Volumes:               woc.createVolumes(tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wfSpec.ImagePullSecrets,
 		},
@@ -162,7 +195,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
-	err := woc.addArchiveLocation(pod, tmpl)
+	err := woc.addArchiveLocation(tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +229,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, opts.includeScriptOutput)
+	woc.addMetadata(pod, tmpl, opts)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -317,7 +350,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
-		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
+		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	podParams[common.LocalVarPodName] = pod.Name
 	specBytes, err := json.Marshal(pod)
@@ -362,7 +395,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
 	case "", common.ContainerRuntimeExecutorDocker:
-		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock())
+		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock(tmpl))
 	}
 	return ctr, nil
 }
@@ -443,7 +476,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	return execEnvVars
 }
 
-func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
+func (woc *wfOperationCtx) createVolumes(tmpl *wfv1.Template) []apiv1.Volume {
 	volumes := []apiv1.Volume{
 		volumePodMetadata,
 	}
@@ -465,7 +498,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:
-		return append(volumes, woc.getVolumeDockerSock())
+		return append(volumes, woc.getVolumeDockerSock(tmpl))
 	}
 }
 
@@ -528,7 +561,7 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 }
 
 // addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, includeScriptOutput bool) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, opts *createWorkflowPodOpts) {
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
@@ -537,14 +570,20 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, incl
 	}
 
 	execCtl := common.ExecutionControl{
-		IncludeScriptOutput: includeScriptOutput,
+		IncludeScriptOutput: opts.includeScriptOutput,
 	}
 
 	if woc.workflowDeadline != nil {
 		execCtl.Deadline = woc.workflowDeadline
 	}
 
-	if woc.workflowDeadline != nil || includeScriptOutput {
+	// If we're passed down an executionDeadline, only set it if there isn't one set already, or if it's before than
+	// the one already set.
+	if !opts.executionDeadline.IsZero() && (execCtl.Deadline == nil || opts.executionDeadline.Before(*execCtl.Deadline)) {
+		execCtl.Deadline = &opts.executionDeadline
+	}
+
+	if execCtl.Deadline != nil || opts.includeScriptOutput {
 		execCtlBytes, err := json.Marshal(execCtl)
 		if err != nil {
 			panic(err)
@@ -844,7 +883,7 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // information configured in the controller, for the purposes of archiving outputs. This is skipped
 // for templates which do not need to archive anything, or have explicitly set an archive location
 // in the template.
-func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	// needLocation keeps track if the workflow needs to have an archive location set.
 	// If so, and one was not supplied (or defaulted), we will return error
 	var needLocation bool

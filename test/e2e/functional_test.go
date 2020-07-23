@@ -1,3 +1,5 @@
+// +build e2e
+
 package e2e
 
 import (
@@ -11,10 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/util/argo"
 )
 
 type FunctionalSuite struct {
@@ -187,20 +187,23 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(30*time.Second).
 		Then().
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-") &&
-				e.Reason == argo.EventReasonWorkflowFailed &&
-				e.Message == "failed with exit code 1"
-		}).
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
-				e.Reason == argo.EventReasonWorkflowNodeFailed &&
-				strings.HasPrefix(e.Message, "Failed node failed-step-event-") &&
-				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
-				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
-		})
+		ExpectAuditEvents(
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e.Reason)
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, e.Reason, "WorkflowNodeFailed")
+				assert.Contains(t, e.Message, "Failed node failed-step-event-")
+				assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
+				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowFailed", e.Reason)
+				assert.Equal(t, "failed with exit code 1", e.Message)
+			},
+		)
 }
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
@@ -209,20 +212,23 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(60 * time.Second).
+		WaitForWorkflow(60*time.Second).
 		Then().
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return strings.HasPrefix(e.InvolvedObject.Name, "success-event-") &&
-				e.Reason == argo.EventReasonWorkflowSucceeded &&
-				e.Message == "Workflow completed"
-		}).
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
-				e.Reason == argo.EventReasonWorkflowNodeSucceeded &&
-				strings.HasPrefix(e.Message, "Succeeded node success-event-") &&
-				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
-				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
-		})
+		ExpectAuditEvents(
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e.Reason)
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowNodeSucceeded", e.Reason)
+				assert.Contains(t, e.Message, "Succeeded node success-event-")
+				assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
+				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowSucceeded", e.Reason)
+				assert.Equal(t, "Workflow completed", e.Message)
+			},
+		)
 }
 
 func (s *FunctionalSuite) TestEventOnPVCFail() {
@@ -231,12 +237,28 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(120 * time.Second).
+		WaitForWorkflow(120*time.Second).
 		Then().
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-") &&
-				e.Reason == argo.EventReasonWorkflowFailed &&
-				strings.Contains(e.Message, "pvc create error")
+		ExpectAuditEvents(
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e.Reason)
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowFailed", e.Reason)
+				assert.Contains(t, e.Message, "pvc create error")
+			},
+		)
+}
+
+func (s *FunctionalSuite) TestArtifactRepositoryRef() {
+	s.Given().
+		Workflow("@testdata/artifact-repository-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 
@@ -456,10 +478,10 @@ func (s *FunctionalSuite) TestDAGDepends() {
 		Workflow("@functional/dag-depends.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -477,7 +499,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
 			assert.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, wfv1.NodeOmitted, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -529,7 +551,7 @@ spec:
 			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				if node.Outputs != nil {
 					for _, param := range node.Outputs.Parameters {
-						if param.Value != nil && *param.Value == "Default value" {
+						if param.Value != nil && param.Value.String() == "Default value" {
 							return true
 						}
 					}
@@ -556,6 +578,79 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 		Workflow("@testdata/input-artifacts.yaml").
 		When().
 		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates()
+	s.Given().
+		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestPropagateMaxDuration() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-backoff-2
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: retry-backoff
+  templates:
+  - name: retry-backoff
+    retryStrategy:
+      limit: 10
+      backoff:
+        duration: "1"
+        factor: 1
+        maxDuration: "10"
+    container:
+      image: python:alpine3.6
+      command: [sh, -c]
+      args: ["sleep $(( {{retries}} * 40 )); exit 1"]
+
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(45 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Len(t, status.Nodes, 3)
+			node := status.Nodes.FindByDisplayName("retry-backoff-2(1)")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, "Step exceeded its deadline", node.Message)
+			}
+		})
+}
+
+func (s *FunctionalSuite) TestStorageQuotaLimit() {
+	s.Given().
+		Workflow("@testdata/storage-limit.yaml").
+		When().
+		StorageQuota("5Mi").
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
+		}, "PVC pending", 10*time.Second).
+		DeleteStorageQuota().
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {

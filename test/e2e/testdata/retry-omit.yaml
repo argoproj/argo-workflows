@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-8q7vp
+  labels:
+    argo-e2e: true
+spec:
+  arguments: {}
+  entrypoint: diamond
+  templates:
+    - arguments: {}
+      dag:
+        tasks:
+          - arguments: {}
+            name: A
+            template: pass
+          - arguments: {}
+            depends: A
+            name: C
+            template: fail
+          - arguments: {}
+            depends: C
+            name: should-not-execute
+            template: pass
+          - arguments: {}
+            depends: A
+            name: should-execute-3
+            template: fail
+      inputs: {}
+      metadata: {}
+      name: diamond
+      outputs: {}
+    - arguments: {}
+      container:
+        args:
+          - exit
+          - 0
+        image: argoproj/argosay:v2
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: pass
+      outputs: {}
+    - arguments: {}
+      container:
+        args:
+          - exit
+          - 1
+        image: argoproj/argosay:v2
+        name: ""
+        resources: {}
+      inputs: {}
+      metadata: {}
+      name: fail
+      outputs: {}

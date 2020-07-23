@@ -63,7 +63,7 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 const invalidErr = "is invalid"
 
-var unknownField = `
+const unknownField = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -1205,45 +1205,9 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 `
 
-var invalidWithItems = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: loops-
-spec:
-  entrypoint: loop-example
-  templates:
-  - name: loop-example
-    steps:
-    - - name: print-message
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{item}}"
-        withItems:
-        - hello world
-        - goodbye world
-        - [a, b, c]
-
-  - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
-`
-
 func TestValidWithItems(t *testing.T) {
 	_, err := validate(validWithItems)
 	assert.NoError(t, err)
-
-	_, err = validate(invalidWithItems)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "withItems")
-	}
 }
 
 var podNameVariable = `
@@ -2449,6 +2413,15 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: A
+  serviceAccountName: argo
+  parallelism: 1
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  podGC:
+    strategy: OnPodSuccess
+  nodeSelector:
+    beta.kubernetes.io/arch: "{{inputs.parameters.arch}}"
   arguments:
     parameters:
     - name: lines-count
@@ -2489,4 +2462,83 @@ func TestValidateFieldsWithWFTRef(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = validate(invalidWFWithWFTRef)
 	assert.Error(t, err)
+}
+
+var invalidWfNoImage = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestInvalidWfNoImageField(t *testing.T) {
+	_, err := validate(invalidWfNoImage)
+	assert.EqualError(t, err, "templates.whalesay.container.image may not be empty")
+}
+
+var invalidWfNoImageScript = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-right-env-12
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    script:
+      command:
+      - cowsay
+      args:
+      - hello world
+      env: []`
+
+func TestInvalidWfNoImageFieldScript(t *testing.T) {
+	_, err := validate(invalidWfNoImageScript)
+	assert.EqualError(t, err, "templates.whalesay.script.image may not be empty")
+}
+
+var templateRefWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-param
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: some-param
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+var wfWithWFTRefOverrideParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: some-param
+      value: a-value
+  workflowTemplateRef:
+    name: template-ref-with-param
+`
+
+func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithParam)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefOverrideParam)
+	assert.NoError(t, err)
 }

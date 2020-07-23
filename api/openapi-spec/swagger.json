@@ -6,7 +6,8 @@
     "application/json"
   ],
   "schemes": [
-    "http"
+    "http",
+    "https"
   ],
   "swagger": "2.0",
   "info": {
@@ -14,7 +15,6 @@
     "title": "Argo",
     "version": "latest"
   },
-  "host": "localhost:2746",
   "paths": {
     "/api/v1/archived-workflows": {
       "get": {
@@ -45,7 +45,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -161,7 +161,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -412,7 +412,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -674,6 +674,22 @@
         }
       }
     },
+    "/api/v1/userinfo": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "GetUserInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetUserInfoResponse"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/version": {
       "get": {
         "tags": [
@@ -725,7 +741,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -810,7 +826,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1091,7 +1107,7 @@
           {
             "type": "boolean",
             "format": "boolean",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "name": "listOptions.allowWatchBookmarks",
             "in": "query"
           },
@@ -1658,6 +1674,13 @@
             "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
             "name": "logOptions.limitBytes",
             "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
+            "name": "logOptions.insecureSkipTLSVerifyBackend",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1717,6 +1740,10 @@
           "type": "string"
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.Amount": {
+      "description": "Amount represent a numeric amount.",
+      "type": "number"
     },
     "io.argoproj.workflow.v1alpha1.ArchiveStrategy": {
       "description": "ArchiveStrategy describes how to archive files/directory when saving artifacts",
@@ -1924,10 +1951,19 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Cache": {
+      "type": "object",
+      "properties": {
+        "configMap": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "type": "object",
       "required": [
+        "metadata",
         "spec"
       ],
       "properties": {
@@ -2071,8 +2107,8 @@
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "type": "object",
       "required": [
-        "spec",
-        "status"
+        "metadata",
+        "spec"
       ],
       "properties": {
         "apiVersion": {
@@ -2337,6 +2373,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "type": "object",
@@ -2460,13 +2507,25 @@
           "description": "Buckets is a list of bucket divisors for the histogram",
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Amount"
           }
         },
         "value": {
           "description": "Value is the value of the metric",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HolderNames": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name stores the name of the resource holding lock",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": "atomic"
         }
       }
     },
@@ -2509,9 +2568,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
-      "type": "string",
-      "format": "item"
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -2616,7 +2673,6 @@
       "required": [
         "id",
         "name",
-        "displayName",
         "type"
       ],
       "properties": {
@@ -2725,7 +2781,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
-      "description": "OSSArtifact is the location of an OSS artifact",
+      "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
       "required": [
         "endpoint",
@@ -2803,8 +2859,8 @@
       ],
       "properties": {
         "default": {
-          "description": "Default is the default value to use for an input parameter if a value was not supplied DEPRECATED: This field is not used",
-          "type": "string"
+          "description": "Default is the default value to use for an input parameter if a value was not supplied",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -2816,7 +2872,7 @@
         },
         "value": {
           "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "valueFrom": {
           "description": "ValueFrom is the source for the output parameter's value",
@@ -2839,12 +2895,7 @@
       "type": "object",
       "required": [
         "name",
-        "labels",
-        "help",
-        "when",
-        "gauge",
-        "histogram",
-        "counter"
+        "help"
       ],
       "properties": {
         "counter": {
@@ -2897,8 +2948,7 @@
       "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
       "type": "object",
       "required": [
-        "action",
-        "manifest"
+        "action"
       ],
       "properties": {
         "action": {
@@ -3006,7 +3056,7 @@
       "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
       "type": "object",
       "required": [
-        "name",
+        "image",
         "source"
       ],
       "properties": {
@@ -3138,17 +3188,63 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SemaphoreHolding": {
+      "type": "object",
+      "properties": {
+        "holders": {
+          "description": "Holders stores the list of current holder names in the io.argoproj.workflow.v1alpha1.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": "atomic"
+        },
+        "semaphore": {
+          "description": "Semaphore stores the semaphore name.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SemaphoreRef": {
+      "description": "SemaphoreRef is a reference of Semaphore",
+      "type": "object",
+      "properties": {
+        "configMapKeyRef": {
+          "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SemaphoreStatus": {
+      "type": "object",
+      "properties": {
+        "holding": {
+          "description": "Holding stores the list of resource acquired synchronization lock for workflows.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
+          }
+        },
+        "waiting": {
+          "description": "Waiting indicates the list of current synchronization lock holders",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Sequence": {
       "description": "Sequence expands a workflow step into numeric range",
       "type": "object",
       "properties": {
         "count": {
           "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "end": {
           "description": "Number at which to end the sequence (default: 0). Not to be used with Count",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "format": {
           "description": "Format is a printf format string to format the value in the sequence",
@@ -3156,7 +3252,7 @@
         },
         "start": {
           "description": "Number at which to start the sequence (default: 0)",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
     },
@@ -3216,6 +3312,25 @@
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Synchronization": {
+      "description": "Synchronization holds synchronization lock configuration",
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "Semaphore holds the Semaphore configuration",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SynchronizationStatus": {
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreStatus"
         }
       }
     },
@@ -3405,6 +3520,10 @@
         "suspend": {
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
+        },
+        "synchronization": {
+          "description": "Synchronization holds synchronization lock configuration for this template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "template": {
           "description": "Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used.",
@@ -3612,7 +3731,7 @@
       "properties": {
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",
@@ -3676,8 +3795,7 @@
       "type": "object",
       "required": [
         "metadata",
-        "spec",
-        "status"
+        "spec"
       ],
       "properties": {
         "apiVersion": {
@@ -3812,9 +3930,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowSpec": {
       "description": "WorkflowSpec is the specification of a Workflow.",
       "type": "object",
-      "required": [
-        "templates"
-      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
@@ -3939,6 +4054,10 @@
         "suspend": {
           "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
           "type": "boolean"
+        },
+        "synchronization": {
+          "description": "Synchronization holds synchronization lock configuration for this Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
         },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
@@ -4062,6 +4181,10 @@
         "storedWorkflowTemplateSpec": {
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "synchronization": {
+          "description": "Synchronization stores the status of synchronization locks",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SynchronizationStatus"
         }
       }
     },
@@ -4163,6 +4286,7 @@
       "description": "WorkflowTemplate is the definition of a workflow template resource",
       "type": "object",
       "required": [
+        "metadata",
         "spec"
       ],
       "properties": {
@@ -4257,9 +4381,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",
-      "required": [
-        "templates"
-      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
@@ -4385,6 +4506,10 @@
           "description": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
           "type": "boolean"
         },
+        "synchronization": {
+          "description": "Synchronization holds synchronization lock configuration for this Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Synchronization"
+        },
         "templates": {
           "description": "Templates is a list of workflow templates used in a workflow",
           "type": "array",
@@ -4429,6 +4554,10 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "workflowMetadata": {
+          "description": "WorkflowMetadata contains some metadata of the workflow to be refer",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "workflowTemplateRef": {
           "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution",
@@ -4774,7 +4903,7 @@
       "description": "A single application container that you want to run within a pod.",
       "type": "object",
       "required": [
-        "name"
+        "image"
       ],
       "properties": {
         "args": {

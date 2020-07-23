@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
 	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -40,6 +42,7 @@ type Controller struct {
 	cronWfInformer     extv1alpha1.CronWorkflowInformer
 	cronWfQueue        workqueue.RateLimitingInterface
 	restConfig         *rest.Config
+	metrics            *metrics.Metrics
 }
 
 const (
@@ -54,6 +57,7 @@ func NewCronController(
 	namespace string,
 	managedNamespace string,
 	instanceId string,
+	metrics *metrics.Metrics,
 ) *Controller {
 	return &Controller{
 		wfClientset:        wfclientset,
@@ -64,8 +68,9 @@ func NewCronController(
 		restConfig:         restConfig,
 		nameEntryIDMap:     make(map[string]cron.EntryID),
 		nameEntryIDMapLock: &sync.Mutex{},
-		wfQueue:            workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfQueue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
+		cronWfQueue:        workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
+		metrics:            metrics,
 	}
 }
 
@@ -122,7 +127,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get CronWorkflow '%s' from informer index: %+v", key, err)
+		log.WithError(err).Error(fmt.Sprintf("Failed to get CronWorkflow '%s' from informer index", key))
 		return true
 	}
 	cc.nameEntryIDMapLock.Lock()
@@ -142,15 +147,17 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+
+	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
-		log.Error(err)
+		log.WithError(err).Error("invalid cron workflow")
 		return true
 	}
 
 	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
 	if err != nil {
-		log.Errorf("could not run outstanding Workflow: %s", err)
+		log.WithError(err).Error("could not run outstanding Workflow")
 		return true
 	}
 
@@ -167,7 +174,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	entryId, err := cc.cron.AddJob(cronSchedule, cronWorkflowOperationCtx)
 	if err != nil {
-		log.Errorf("could not schedule CronWorkflow: %s", err)
+		log.WithError(err).Error("could not schedule CronWorkflow")
 		return true
 	}
 	cc.nameEntryIDMap[key.(string)] = entryId
@@ -191,7 +198,7 @@ func (cc *Controller) processNextWorkflowItem() bool {
 
 	obj, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+		log.WithError(err).Error(fmt.Sprintf("Failed to get Workflow '%s' from informer index", key))
 		return true
 	}
 

@@ -1,3 +1,5 @@
+// +build e2e
+
 package e2e
 
 import (
@@ -12,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -335,69 +338,128 @@ func (s *CLISuite) TestNodeSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowDelete() {
-	s.Run("DeleteByName", func() {
-		s.Given().
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(30*time.Second).
-			Given().
-			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
-				}
-			})
-	})
-	s.Run("DeleteAll", func() {
-		s.Given().
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(1*time.Minute).
-			Given().
-			RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
-				}
-			})
-	})
-	s.Run("DeleteCompleted", func() {
-		s.Given().
-			Workflow("@testdata/sleep-3s.yaml").
-			When().
-			SubmitWorkflow().
-			Given().
-			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					// nothing should be deleted yet
-					assert.NotContains(t, output, "deleted")
-				}
-			}).
-			When().
-			WaitForWorkflow(1*time.Minute).
-			Given().
-			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "deleted")
-				}
-			})
-	})
-	s.Run("DeleteOlder", func() {
-		s.Given().
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(1*time.Minute).
-			Given().
-			RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					// nothing over a day should be deleted
-					assert.NotContains(t, output, "deleted")
-				}
-			})
-	})
+func (s *CLISuite) TestWorkflowDeleteByName() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'basic' deleted")
+			}
+		})
 }
+
+func (s *CLISuite) TestWorkflowDeleteDryRun() {
+	s.Given().
+		When().
+		RunCli([]string{"delete", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'basic' deleted (dry-run)")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteNothing() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		RunCli([]string{"delete"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.NotContains(t, output, "deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteNotFound() {
+	s.Given().
+		When().
+		RunCli([]string{"delete", "not-found"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'not-found' not found")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteAll() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'basic' deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteCompleted() {
+	s.Given().
+		Workflow("@testdata/sleep-3s.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				// nothing should be deleted yet
+				assert.NotContains(t, output, "deleted")
+			}
+		}).
+		When().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteOlder() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				// nothing over a day should be deleted
+				assert.NotContains(t, output, "deleted")
+			}
+		}).
+		RunCli([]string{"delete", "--older", "0s", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteByPrefix() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--prefix", "missing-prefix", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				// nothing should be deleted
+				assert.NotContains(t, output, "deleted")
+			}
+		}).
+		RunCli([]string{"delete", "--prefix", "basic", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowLint() {
 	s.Run("LintFile", func() {
 		s.Given().RunCli([]string{"lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
@@ -720,6 +782,21 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+
+	s.Run("Delete", func() {
+		s.Given().RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		})
+	})
+
+	s.Run("Create Schedule Override", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--schedule", "1 2 3 * *"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Schedule:                      1 2 3 * *")
+			}
+		})
+	})
+
 	s.Run("List", func() {
 		s.Given().RunCli([]string{"cron", "list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -761,11 +838,6 @@ func (s *CLISuite) TestCron() {
 				assert.Contains(t, output, "StartingDeadlineSeconds:")
 				assert.Contains(t, output, "ConcurrencyPolicy:")
 			}
-		})
-	})
-	s.Run("Delete", func() {
-		s.Given().RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
 		})
 	})
 }
@@ -841,6 +913,72 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 			}
 		})
 	})
+}
+
+func (s *CLISuite) TestWorkflowLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"workflow": "1",
+	}
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-wf-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "semaphore-wf-level-1")
+			}
+		}).
+		SubmitWorkflow().
+		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(30 * time.Second).
+		DeleteConfigMap().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *CLISuite) TestTemplateLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"template": "1",
+	}
+
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-tmpl-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		SubmitWorkflow().
+		Wait(12*time.Second).
+		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		DeleteConfigMap()
+}
+
+func (s *CLISuite) TestRetryOmit() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/retry-omit.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(20*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("should-not-execute")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
+			}
+		}).
+		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "Status:              Running")
+		}).When().
+		WaitForWorkflow(20 * time.Second)
 }
 
 func TestCLISuite(t *testing.T) {
