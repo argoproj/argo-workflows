@@ -1,9 +1,11 @@
 import {Page} from 'argo-ui/src/index';
-import {ChartScales} from 'chart.js';
+// @ts-ignore
+import {ChartOptions} from 'chart.js';
+import 'chartjs-plugin-annotation';
 import * as React from 'react';
-import {ChartData, Line} from 'react-chartjs-2';
+import {Bar, ChartData} from 'react-chartjs-2';
 import {RouteComponentProps} from 'react-router-dom';
-import {getColorForNodePhase, Workflow} from '../../../models';
+import {getColorForNodePhase, NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
 import {ErrorPanel} from '../../shared/components/error-panel';
@@ -11,25 +13,21 @@ import {InputFilter} from '../../shared/components/input-filter';
 import {Loading} from '../../shared/components/loading';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {ZeroState} from '../../shared/components/zero-state';
-import {Consumer} from '../../shared/context';
+import {Consumer, ContextApis} from '../../shared/context';
 import {denominator} from '../../shared/duration';
 import {services} from '../../shared/services';
 
-interface State {
-    error?: Error;
-    data?: ChartData<any>;
-    scales?: ChartScales;
-    numWorkflows?: number;
+interface Chart {
+    data: ChartData<any>;
+    options: ChartOptions;
 }
 
-const maxAge = 90;
+interface State {
+    error?: Error;
+    charts?: Chart[];
+}
 
 export class Reports extends BasePage<RouteComponentProps<any>, State> {
-    constructor(props: any) {
-        super(props);
-        this.state = {};
-    }
-
     private get namespace() {
         return this.props.match.params.namespace || '';
     }
@@ -46,108 +44,33 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         this.setQueryParams({labels: labels.join(',')});
     }
 
-    private get ready() {
+    private get phase() {
+        return (this.labels.find(label => label.startsWith('workflows.argoproj.io/phase')) || '').replace(/workflows.argoproj.io\/phase=/, '');
+    }
+
+    private set phase(phase: string) {
+        this.labels = this.labels.filter(label => !label.startsWith('workflows.argoproj.io/phase')).concat('workflows.argoproj.io/phase=' + phase);
+    }
+
+    private get shouldListWorkflows() {
         return this.namespace !== '' && this.labels.length > 0;
+    }
+    constructor(props: any) {
+        super(props);
+        this.state = {};
     }
 
     public componentDidMount() {
-        if (!this.ready) {
+        if (!this.shouldListWorkflows) {
             return;
         }
-
-        const extractDatasets = (workflows: Workflow[]): {scales: Chart.ChartScales; datasets: any[]; numWorkflows: number} => {
-            const datasets = new Map<string, any>();
-            const scales: ChartScales = {
-                xAxes: [
-                    {
-                        type: 'time',
-                        scaleLabel: {
-                            labelString: 'Finished At'
-                        }
-                    }
-                ],
-                yAxes: [
-                    {
-                        id: 'duration',
-                        ticks: {
-                            beginAtZero: true
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Duration (seconds)'
-                        }
-                    }
-                ]
-            };
-            const thirtyDaysAgo = new Date().getTime() - maxAge * 24 * 60 * 60 * 1000;
-
-            const filteredWorkflows = workflows.filter(wf => wf.status.finishedAt !== '' && new Date(wf.status.finishedAt).getTime() > thirtyDaysAgo);
-            filteredWorkflows.forEach(wf => {
-                const finishedAt = new Date(wf.status.finishedAt);
-                const startedAt = new Date(wf.status.startedAt);
-                const duration: number = finishedAt.getTime() - startedAt.getTime();
-
-                const phase = wf.status.phase;
-
-                if (!datasets.has(phase)) {
-                    datasets.set(phase, {
-                        yAxisID: 'duration',
-                        data: [],
-                        fill: false,
-                        borderColor: getColorForNodePhase(phase),
-                        lineTension: 0,
-                        label: phase
-                    });
-                }
-
-                datasets.get(phase).data.push({t: finishedAt, y: duration / 1000, label: wf.metadata.name});
-
-                Object.keys(wf.status.resourcesDuration).forEach(resource => {
-                    if (!datasets.has(resource)) {
-                        datasets.set(resource, {
-                            yAxisID: resource,
-                            data: [],
-                            fill: false,
-                            borderColor: '#000',
-                            lineTension: 0,
-                            label: resource
-                        });
-                        scales.yAxes.push({
-                            id: resource,
-                            ticks: {
-                                beginAtZero: true
-                            },
-                            position: 'right',
-                            scaleLabel: {
-                                display: true,
-                                labelString: resource + ' (' + denominator(resource) + ')'
-                            }
-                        });
-                    }
-                    datasets.get(resource).data.push({
-                        t: finishedAt,
-                        y: wf.status.resourcesDuration[resource],
-                        label: wf.metadata.name
-                    });
-                });
-            });
-            return {datasets: Array.from(datasets.values()), scales, numWorkflows: filteredWorkflows.length};
-        };
-
-        services.workflows
-            .list(this.namespace, [], this.labels, {})
-            .then(list => extractDatasets(list.items || []))
-            .then(item =>
-                this.setState({
-                    numWorkflows: item.numWorkflows,
-                    data: {
-                        datasets: item.datasets
-                    },
-                    scales: item.scales,
-                    error: null
-                })
-            )
-            .catch(error => this.setState({error}));
+        this.setState({charts: null}, () => {
+            services.workflows
+                .list(this.namespace, [], this.labels, {})
+                .then(list => this.getExtractDatasets(list.items || []))
+                .then(charts => this.setState({charts, error: null}))
+                .catch(error => this.setState({error}));
+        });
     }
 
     public render() {
@@ -163,18 +86,152 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                                     {
                                         title: 'Workflow List',
                                         iconClassName: 'fa fa-stream',
-                                        disabled: !this.ready,
+                                        disabled: !this.shouldListWorkflows,
                                         action: () => ctx.navigation.goto(uiUrl(`workflows/${this.namespace}?labels=${this.labels.join(',')}`))
                                     }
                                 ]
                             }
                         }}>
                         {this.renderFilters()}
-                        {this.renderReport()}
+                        {this.renderReport(ctx)}
                     </Page>
                 )}
             </Consumer>
         );
+    }
+
+    private getExtractDatasets(workflows: Workflow[]) {
+        const filteredWorkflows = workflows
+            .filter(wf => wf.status.finishedAt !== '')
+            .map(wf => ({
+                name: wf.metadata.name,
+                finishedAt: new Date(wf.status.finishedAt),
+                startedAt: new Date(wf.status.startedAt),
+                phase: wf.status.phase,
+                resourcesDuration: wf.status.resourcesDuration
+            }))
+            .sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime())
+            .slice(0, 50)
+            .reverse();
+
+        const labels: string[] = new Array(filteredWorkflows.length);
+        const backgroundColors: string[] = new Array(filteredWorkflows.length);
+        const durationData: number[] = new Array(filteredWorkflows.length);
+        const resourceData = {} as any;
+
+        filteredWorkflows.forEach((wf, i) => {
+            labels[i] = wf.name;
+            backgroundColors[i] = getColorForNodePhase(wf.phase);
+            durationData[i] = (wf.finishedAt.getTime() - wf.startedAt.getTime()) / 1000;
+            Object.entries(wf.resourcesDuration || {}).forEach(([resource, value]) => {
+                if (!resourceData[resource]) {
+                    resourceData[resource] = new Array(filteredWorkflows.length);
+                }
+                resourceData[resource][i] = value;
+            });
+        });
+        const resourceColors = {
+            'cpu': 'teal',
+            'memory': 'blue',
+            'storage': 'purple',
+            'ephemeral-storage': 'purple'
+        } as any;
+
+        return [
+            {
+                data: {
+                    name: 'duration',
+                    labels,
+                    datasets: [
+                        {
+                            data: durationData,
+                            backgroundColor: backgroundColors
+                        }
+                    ]
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: 'Duration'
+                    },
+                    legend: {display: false},
+                    scales: {
+                        xAxes: [{}],
+                        yAxes: [
+                            {
+                                id: 'duration',
+                                ticks: {
+                                    beginAtZero: true
+                                },
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Duration (seconds)'
+                                }
+                            }
+                        ]
+                    },
+                    annotation: {
+                        annotations: [
+                            {
+                                type: 'line',
+                                mode: 'horizontal',
+                                scaleID: 'duration',
+                                value: durationData.length > 0 ? durationData.reduce((a, b) => a + b, 0) / durationData.length : 0,
+                                borderColor: 'gray',
+                                borderWidth: 1,
+                                label: {
+                                    enabled: true,
+                                    position: 'left',
+                                    content: 'Average'
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                data: {
+                    name: 'resources',
+                    labels,
+                    datasets: Object.entries(resourceData).map(([resource, data]) => ({
+                        yAxesID: resource,
+                        label: resource,
+                        data,
+                        backgroundColor: resourceColors[resource] || 'black'
+                    }))
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: 'Resources'
+                    },
+                    scales: {
+                        xAxes: [{}],
+                        yAxes: Object.keys(resourceData).map(resource => ({
+                            id: resource,
+                            ticks: {
+                                beginAtZero: true
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: resource + ' (' + denominator(resource) + ')'
+                            }
+                        }))
+                    }
+                }
+            }
+        ];
+    }
+
+    // @ts-ignore
+    private label(label: string, checked: boolean) {
+        const labels = this.labels;
+        const i = labels.indexOf(label);
+        if (checked && i < 0) {
+            this.labels = labels.concat(label);
+        } else if (!checked && i >= 0) {
+            this.labels = labels.slice(i, i + 1);
+        }
     }
 
     private renderFilters() {
@@ -183,11 +240,21 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 <div className='columns small-12'>
                     <div className='white-box'>
                         <div className='row'>
-                            <div className='columns small-3'>
+                            <div className='columns small-3' key='namespace'>
                                 <InputFilter name='namespace' value={this.namespace} placeholder='Namespace' onChange={namespace => (this.namespace = namespace)} />
                             </div>
-                            <div className='columns small-3'>
+                            <div className='columns small-6' key='labels'>
                                 <TagsInput placeholder='Labels' tags={this.labels} onChange={labels => (this.labels = labels)} />
+                            </div>
+                            <div className='columns small-3' key='phases'>
+                                <p>
+                                    {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
+                                        <a key={phase} className='argo-button' onClick={() => (this.phase = phase)}>
+                                            {this.phase === phase && <i className='fa fa-check' />}
+                                            {phase}
+                                        </a>
+                                    ))}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -196,13 +263,13 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private renderReport() {
-        if (!this.ready) {
+    private renderReport(ctx: ContextApis) {
+        if (!this.shouldListWorkflows) {
             return (
                 <ZeroState title='Workflow Report'>
                     <p>
                         Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
-                        <b>cron workflows</b>, your workflows will be automatacially labelled.
+                        <b>cron workflows</b>, your workflows will be automatically labelled.
                     </p>
                     <p>Select a namespace and at least one label to get a report.</p>
                 </ZeroState>
@@ -211,38 +278,39 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         if (this.state.error) {
             return <ErrorPanel error={this.state.error} />;
         }
-        if (!this.state.data) {
+        if (!this.state.charts) {
             return <Loading />;
         }
         return (
-            <Consumer>
-                {ctx => (
-                    <div className='row'>
+            <>
+                {this.state.charts.map(chart => (
+                    <div className='row' key={chart.data.name}>
                         <div className='columns small-12'>
                             <div className='white-box'>
-                                <Line
-                                    data={this.state.data}
-                                    options={{
-                                        scales: this.state.scales
-                                    }}
+                                <Bar
+                                    data={chart.data}
+                                    options={chart.options}
                                     onElementsClick={(e: any[]) => {
                                         const activePoint = e[0];
                                         if (activePoint === undefined) {
                                             return;
                                         }
-                                        const workflowName = this.state.data.datasets[activePoint._datasetIndex].data[activePoint._index].label;
+                                        const workflowName = chart.data.labels[activePoint._index];
                                         ctx.navigation.goto(uiUrl('workflows/' + this.namespace + '/' + workflowName));
                                     }}
                                 />
                             </div>
-                            <small>
-                                <i className='fa fa-info-circle' /> Showing {this.state.numWorkflows} workflows finished in the last {maxAge} days. Deleted workflows (even if
-                                archived) are not shown.
-                            </small>
                         </div>
                     </div>
-                )}
-            </Consumer>
+                ))}
+                <div className='row' key='info'>
+                    <div className='columns small-12'>
+                        <small>
+                            <i className='fa fa-info-circle' /> Showing {this.state.charts[0].data.labels.length} workflows. Deleted workflows (even if archived) are not shown.
+                        </small>
+                    </div>
+                </div>
+            </>
         );
     }
 }

@@ -26,7 +26,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                             {ctx => (
                                 <WorkflowLabels
                                     workflow={props.workflow}
-                                    onChange={(key, value) => ctx.navigation.goto(uiUrl(`workflows/${props.workflow.metadata.namespace}?labels=${key}=${value}`))}
+                                    onChange={(key, value) => ctx.navigation.goto(uiUrl(`workflows/${props.workflow.metadata.namespace}?label=${key}=${value}`))}
                                 />
                             )}
                         </Consumer>
