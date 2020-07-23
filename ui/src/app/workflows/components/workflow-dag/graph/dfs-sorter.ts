@@ -10,6 +10,7 @@ export class DfsSorter {
     }
 
     public sort() {
+        // Pre-order DFS sort
         this.graph.nodes.forEach(n => this.visit(n));
         return this.sorted.reverse();
     }

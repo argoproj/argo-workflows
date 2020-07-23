@@ -78,5 +78,13 @@
     &--suspended {
       fill: $argo-color-gray-4;
     }
+
+    &--collapsed-horizontal {
+      fill: $argo-color-gray-6;
+    }
+
+    &--collapsed-vertical {
+      fill: $argo-color-gray-6;
+    }
   }
 }
