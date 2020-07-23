@@ -653,13 +653,7 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		DeleteStorageQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeRunning
-		}, "Workflow is running, ", 10*time.Second).
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-	
+		}, "Workflow is running, ", 10*time.Second)
 }
 
 func TestFunctionalSuite(t *testing.T) {
