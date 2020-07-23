@@ -138,10 +138,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		claimSet, _ := jwt.ClaimSetFor(restConfig)
 		return wfClient, kubeClient, claimSet, nil
 	case Server:
-		claimSet, err := jwt.ClaimSetFor(s.restConfig)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to parse token: %v", err)
-		}
+		claimSet, _ := jwt.ClaimSetFor(s.restConfig)
 		return s.wfClient, s.kubeClient, claimSet, nil
 	case SSO:
 		claimSet, err := s.ssoIf.Authorize(ctx, authorization)
