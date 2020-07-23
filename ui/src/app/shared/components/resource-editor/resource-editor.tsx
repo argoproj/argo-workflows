@@ -34,7 +34,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
         localStorage.setItem(LOCAL_STORAGE_KEY, newLang);
     }
 
-    private static getLang(): string {
+    private static loadLang(): string {
         const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (stored !== null) {
             if (stored === 'yaml' || stored === 'json') {
@@ -46,7 +46,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        const storedLang = ResourceEditor.getLang();
+        const storedLang = ResourceEditor.loadLang();
         this.state = {editing: this.props.editing, lang: storedLang, value: stringify(this.props.value, storedLang)};
     }
 
@@ -112,7 +112,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                             renderIndentGuides: false
                         }}
                     />
-                </div> 
+                </div>
                 {this.renderWarning()}
             </>
         );
@@ -130,7 +130,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                 {(this.state.editing && (
                     <>
                         <label className={`argo-button argo-button--base-o resource-editor-panel__lang-toggle ${this.state.lang}`} onClick={e => this.changeLang()}>
-                            {this.state.lang === 'yaml' ? <i className='fa fa-check'/> : <i className='fa fa-times'/>} YAML
+                            {this.state.lang === 'yaml' ? <i className='fa fa-check' /> : <i className='fa fa-times' />} YAML
                         </label>
                         {this.props.upload && (
                             <label className='argo-button argo-button--base-o'>
@@ -163,7 +163,8 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private renderWarning() {
         return (
             <div style={{marginTop: '1em'}}>
-                <i className='fa fa-info-circle' /> Note: {this.state.lang === 'json' ? <>Full auto-completion enabled</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
+                <i className='fa fa-info-circle' /> Note:{' '}
+                {this.state.lang === 'json' ? <>Full auto-completion enabled</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
             </div>
         );
     }
