@@ -19,13 +19,13 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/test"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -193,30 +193,15 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 }
 
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
-	return &wf
+	return test.LoadWorkflowFromBytes([]byte(yamlStr))
 }
 
 func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
-	var wftmpl wfv1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &wftmpl
+	return test.LoadWorkflowTemplateFromBytes([]byte(yamlStr))
 }
 
 func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
-	var cwftmpl wfv1.ClusterWorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &cwftmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &cwftmpl
+	return test.LoadClusterWorkflowTemplateFromBytes([]byte(yamlStr))
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
