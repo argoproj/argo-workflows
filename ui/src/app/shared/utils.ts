@@ -50,7 +50,7 @@ export const Utils = {
         if (wf === null || wf.spec === null) {
             return false;
         }
-        if (wf.spec.suspend !== undefined && wf.spec.suspend) {
+        if (wf.spec.suspend !== undefined && wf.spec.suspend && wf.status.phase === 'Running') {
             return true;
         }
         if (wf.status && wf.status.nodes) {
