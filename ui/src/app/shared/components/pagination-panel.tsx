@@ -39,7 +39,7 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                                 limit: parseLimit(e.target.value)
                             })
                         }
-                        value={this.props.pagination.limit || 'all'}>
+                        value={this.props.pagination.limit || 100}>
                         {[5, 10, 20, 50, 100, 500, 'all'].map(limit => (
                             <option key={limit} value={limit}>
                                 {limit}
