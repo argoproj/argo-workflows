@@ -4252,17 +4252,16 @@ spec:
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
 
+	// reconcille
+	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
+	// make all created pods as successful
 	podInterface := controller.kubeclientset.CoreV1().Pods("my-ns")
 	list, err := podInterface.List(metav1.ListOptions{})
 	assert.NoError(t, err)
-	// two items -> two pods
 	assert.Len(t, list.Items, 1)
-
-	// mark all pods good
 	for _, pod := range list.Items {
 		pod.Status.Phase = apiv1.PodSucceeded
 		pod.GetAnnotations()[common.AnnotationKeyOutputs] = `{"parameters": [{"name": "my-param"}]}`
@@ -4270,8 +4269,8 @@ spec:
 		assert.NoError(t, err)
 	}
 
+	// reconcille
 	woc.operate()
-
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
