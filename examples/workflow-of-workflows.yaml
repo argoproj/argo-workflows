@@ -1,0 +1,63 @@
+# This template demonstrates a workflow of workflows.
+# Workflow triggers one or more workflow and manage it.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-of-workflows-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: workflow1
+            template: triggerWorkflowUsingResourceWithoutArgument
+            arguments:
+              parameters:
+              - name: workflowtemplate
+                value: "workflow-template-submittable"
+        - - name: workflow2
+            template: triggerWorkflowUsingResourceWithArgument
+            arguments:
+              parameters:
+              - name: workflowtemplate
+                value: "workflow-template-submittable"
+              - name: message
+                value: "Welcome Argo"
+
+    - name: triggerWorkflowUsingResourceWithoutArgument
+      inputs:
+        parameters:
+          - name: workflowtemplate
+      resource:
+        action: create
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: workflow-of-workflows-1-
+          spec:
+            workflowTemplateRef:
+              name: {{inputs.parameters.workflowtemplate}}
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase in (Failed, Error)
+    - name: triggerWorkflowUsingResourceWithArgument
+      inputs:
+        parameters:
+          - name: workflowtemplate
+          - name: message
+      resource:
+        action: create
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: workflow-of-workflows-2-
+          spec:
+            arguments:
+              parameters:
+              - name: message
+                value: {{inputs.parameters.message}}
+            workflowTemplateRef:
+              name: {{inputs.parameters.workflowtemplate}}
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase in (Failed, Error)

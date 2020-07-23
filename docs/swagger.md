@@ -798,6 +798,12 @@ Backoff is a backoff strategy to use within retryStrategy
 | factor | integer | Factor is a factor to multiply the base duration after each failed retry | No |
 | maxDuration | string | MaxDuration is the maximum amount of time allowed for the backoff strategy | No |
 
+#### io.argoproj.workflow.v1alpha1.Cache
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | No |
+
 #### io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate
 
 ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
