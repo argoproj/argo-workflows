@@ -19,4 +19,5 @@ spec:
   - name: wait
     script:
       image: argoproj/argosay:v2
+      args: [echo, "hello world"]
       imagePullPolicy: IfNotPresent
