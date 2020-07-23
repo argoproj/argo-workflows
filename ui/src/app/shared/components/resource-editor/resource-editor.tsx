@@ -129,7 +129,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <>
-                        <label className={`argo-button argo-button--base-o ${this.state.lang}`} style={{marginRight: "5px"}} onClick={e => this.changeLang()}>
+                        <label className={`argo-button argo-button--base-o ${this.state.lang}`} style={{marginRight: '5px'}} onClick={e => this.changeLang()}>
                             {this.state.lang === 'yaml' ? <i className='fa fa-check' /> : <i className='fa fa-times' />} YAML
                         </label>
                         {this.props.upload && (
