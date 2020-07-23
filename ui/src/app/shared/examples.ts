@@ -11,7 +11,7 @@ const randomSillyName = () => {
 const argumentz = {parameters: [{name: 'message', value: 'hello argo'}]};
 const entrypoint = 'argosay';
 const labels = {example: 'true'};
-const ttlStrategy = {secondsAfterCompletion: 60};
+const ttlStrategy = {secondsAfterCompletion: 5 * 60};
 const podGC = {strategy: 'OnPodCompletion'};
 
 const templates: Template[] = [

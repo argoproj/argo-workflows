@@ -53,23 +53,22 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                             onChange={selected => this.setState({entrypoint: selected.value})}
                         />
                     </div>
-
                     <div key='parameters'>
                         <label>Parameters</label>
                         {this.state.parameters.length > 0 ? (
                             <>
-                                {this.state.parameters.map(p => (
-                                    <p key={p.name}>
+                                {this.state.parameters.map(parameter => (
+                                    <p key={parameter.name}>
                                         <label>
-                                            {p.name}
+                                            {parameter.name}
                                             <input
                                                 className='argo-field'
-                                                value={p.value}
+                                                value={parameter.value}
                                                 onChange={event => {
                                                     this.setState({
-                                                        parameters: this.state.parameters.map(p1 => ({
-                                                            name: p1.name,
-                                                            value: p1.name === p.name ? event.target.value : p1.value
+                                                        parameters: this.state.parameters.map(p => ({
+                                                            name: p.name,
+                                                            value: p.name === parameter.name ? event.target.value : p.value
                                                         }))
                                                     });
                                                 }}
