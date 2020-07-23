@@ -93,33 +93,35 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <>
                 {this.props.title && <h4>{this.props.title}</h4>}
                 {this.renderButtons()}
-                {this.renderWarning()}
                 {this.state.error && (
                     <p>
                         <i className='fa fa-exclamation-triangle status-icon--failed' /> {this.state.error.message}
                     </p>
                 )}
-                <MonacoEditor
-                    value={this.state.value}
-                    language={this.state.lang}
-                    height={'600px'}
-                    onChange={value => this.setState({value})}
-                    options={{
-                        readOnly: !this.state.editing,
-                        extraEditorClassName: 'resource',
-                        minimap: {enabled: false},
-                        lineNumbers: 'off',
-                        renderIndentGuides: false
-                    }}
-                />
+                <div className='resource-editor-panel__editor'>
+                    <MonacoEditor
+                        value={this.state.value}
+                        language={this.state.lang}
+                        height={'600px'}
+                        onChange={value => this.setState({value})}
+                        options={{
+                            readOnly: !this.state.editing,
+                            extraEditorClassName: 'resource',
+                            minimap: {enabled: false},
+                            lineNumbers: 'off',
+                            renderIndentGuides: false
+                        }}
+                    />
+                </div> 
+                {this.renderWarning()}
             </>
         );
     }
 
-    private changeLang(checked: boolean) {
-        const lang = checked ? 'yaml' : 'json';
-        this.lang = lang;
-        ResourceEditor.saveLang(lang);
+    private changeLang() {
+        const newLang = this.state.lang === 'yaml' ? 'json' : 'yaml';
+        this.lang = newLang;
+        ResourceEditor.saveLang(newLang);
     }
 
     private renderButtons() {
@@ -127,9 +129,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <>
-                        <label className='argo-button argo-button--base-o'>
-                            <input type={'checkbox'} checked={this.state.lang === 'yaml'} onChange={e => this.changeLang(e.target.checked)} /> YAML
-                        </label>{' '}
+                        <label className={`argo-button argo-button--base-o resource-editor-panel__lang-toggle ${this.state.lang}`} onClick={e => this.changeLang()}>
+                            {this.state.lang === 'yaml' ? <i className='fa fa-check'/> : <i className='fa fa-times'/>} YAML
+                        </label>
                         {this.props.upload && (
                             <label className='argo-button argo-button--base-o'>
                                 <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
@@ -161,7 +163,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private renderWarning() {
         return (
             <div style={{marginTop: '1em'}}>
-                <i className='fa fa-info-circle' /> Note: {this.state.lang === 'json' ? <>Full auto-completion</> : <>Only basic completion</>} for {this.state.lang.toUpperCase()}
+                <i className='fa fa-info-circle' /> Note: {this.state.lang === 'json' ? <>Full auto-completion enabled</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
             </div>
         );
     }
