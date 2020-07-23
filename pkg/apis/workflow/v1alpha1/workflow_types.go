@@ -532,6 +532,9 @@ type Template struct {
 
 	// Synchronization holds synchronization lock configuration for this template
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,36,opt,name=synchronization,casttype=Synchronization"`
+
+	// Memoize allows templates to use outputs generated from already executed templates
+	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -1259,6 +1262,9 @@ type NodeStatus struct {
 
 	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
 	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
+
+	// MemoizationStatus holds information about cached nodes
+	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -2127,4 +2133,20 @@ func (in *Histogram) GetBuckets() []float64 {
 type Counter struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+}
+
+// Memoization
+type Memoize struct {
+	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	Cache *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+}
+
+type MemoizationStatus struct {
+	Hit       bool   `json:"hit" protobuf:"bytes,1,opt,name=hit"`
+	Key       string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	CacheName string `json:"cacheName" protobuf:"bytes,3,opt,name=cacheName"`
+}
+
+type Cache struct {
+	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
 }
