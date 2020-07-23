@@ -644,18 +644,16 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 	s.Given().
 		Workflow("@testdata/storage-limit.yaml").
 		When().
-		StorageQuota("5Mi").
+		StorageQuota("1Mi").
 		SubmitWorkflow().
 		WaitForWorkflowToStart(5*time.Second).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
 		}, "PVC pending", 10*time.Second).
 		DeleteStorageQuota().
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeRunning
+		}, "Workflow is running, ", 10*time.Second)
 }
 
 func TestFunctionalSuite(t *testing.T) {

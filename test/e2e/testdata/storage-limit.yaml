@@ -10,13 +10,13 @@ spec:
     - metadata:
         name: workdir1                     # name of volume claim
       spec:
-        accessModes: [ "ReadWriteMany" ]
+        accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 20Mi
+            storage: 2Mi
 
   templates:
   - name: wait
     script:
       image: argoproj/argosay:v2
-      args: [echo, ":) Hello Argo!"]
+      imagePullPolicy: IfNotPresent
