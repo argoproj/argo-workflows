@@ -659,6 +659,7 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
+	
 }
 
 func TestFunctionalSuite(t *testing.T) {
