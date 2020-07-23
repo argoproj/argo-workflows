@@ -920,7 +920,7 @@ func (s *CLISuite) TestRetryOmit() {
 		SubmitWorkflow().
 		WaitForWorkflow(20*time.Second).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("should-not-execute")
 			if assert.NotNil(t, node) {
 				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
