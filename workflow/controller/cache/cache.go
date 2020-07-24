@@ -19,11 +19,11 @@ import (
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 
 type MemoizationCache interface {
-	Load(key string) (*CacheEntry, error)
+	Load(key string) (*Entry, error)
 	Save(key string, nodeId string, value *wfv1.Outputs) error
 }
 
-type CacheEntry struct {
+type Entry struct {
 	NodeID  string        `json:"nodeID"`
 	Outputs *wfv1.Outputs `json:"outputs"`
 }
@@ -34,11 +34,11 @@ type cacheFactory struct {
 	namespace  string
 }
 
-type CacheFactory interface {
-	GetCache(ct CacheType, name string) *MemoizationCache
+type Factory interface {
+	GetCache(ct Type, name string) *MemoizationCache
 }
 
-func NewCacheFactory(ki kubernetes.Interface, ns string) CacheFactory {
+func NewCacheFactory(ki kubernetes.Interface, ns string) Factory {
 	return &cacheFactory{
 		make(map[string]*MemoizationCache),
 		ki,
@@ -46,15 +46,15 @@ func NewCacheFactory(ki kubernetes.Interface, ns string) CacheFactory {
 	}
 }
 
-type CacheType string
+type Type string
 
 const (
 	// Only config maps are currently supported for caching
-	ConfigMapCache CacheType = "ConfigMapCache"
+	ConfigMapCache Type = "ConfigMapCache"
 )
 
 // Returns a cache if it exists and creates it otherwise
-func (cf *cacheFactory) GetCache(ct CacheType, name string) *MemoizationCache {
+func (cf *cacheFactory) GetCache(ct Type, name string) *MemoizationCache {
 	idx := string(ct) + "." + name
 	if c := cf.caches[idx]; c != nil {
 		return c
@@ -95,9 +95,9 @@ func (c *configMapCache) logInfo(fields log.Fields, message string) {
 	log.WithFields(log.Fields{"namespace": c.namespace, "name": c.name}).WithFields(fields).Info(message)
 }
 
-func (c *configMapCache) Load(key string) (*CacheEntry, error) {
+func (c *configMapCache) Load(key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
-		return nil, fmt.Errorf("Invalid cache key %s", key)
+		return nil, fmt.Errorf("invalid cache key %s", key)
 	}
 	c.locked.Lock()
 	defer c.locked.Unlock()
@@ -116,21 +116,21 @@ func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 		c.logInfo(log.Fields{}, "MemoizationCache miss: entry does not exist")
 		return nil, nil
 	}
-	var entry CacheEntry
+	var entry Entry
 	err = json.Unmarshal([]byte(rawEntry), &entry)
 	if err != nil {
 		return nil, err
 	}
 	outputs := entry.Outputs
 	c.logInfo(log.Fields{"key": key}, "ConfigMap cache hit")
-	return &CacheEntry{
+	return &Entry{
 		Outputs: outputs,
 	}, nil
 }
 
 func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) error {
 	if !cacheKeyRegex.MatchString(key) {
-		err := fmt.Errorf("Invalid cache key")
+		err := fmt.Errorf("invalid cache key")
 		c.logError(err, log.Fields{"key": key}, "Invalid cache key")
 		return err
 	}
@@ -150,7 +150,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 		}
 	}
 
-	newEntry := CacheEntry{
+	newEntry := Entry{
 		NodeID:  nodeId,
 		Outputs: value,
 	}
@@ -158,7 +158,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 	entryJSON, err := json.Marshal(newEntry)
 	if err != nil {
 		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Unable to marshal cache entry")
-		return fmt.Errorf("Unable to marshal cache entry: %w", err)
+		return fmt.Errorf("unable to marshal cache entry: %w", err)
 	}
 
 	if cache.Data == nil {

@@ -4052,7 +4052,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 
 	rawEntry, ok := cm.Data["hi-there-world"]
 	assert.True(t, ok)
-	var entry cache.CacheEntry
+	var entry cache.Entry
 	err = json.Unmarshal([]byte(rawEntry), &entry)
 	assert.NoError(t, err)
 

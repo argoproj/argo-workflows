@@ -88,7 +88,7 @@ type WorkflowController struct {
 	metrics               *metrics.Metrics
 	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
-	cacheFactory          controllercache.CacheFactory
+	cacheFactory          controllercache.Factory
 }
 
 const (
