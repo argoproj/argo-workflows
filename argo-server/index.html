@@ -534,6 +534,30 @@
   </li>
 
         
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../synchronization/" title="Sychronization" class="md-nav__link">
+      Sychronization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../workflow-of-workflows/" title="Workflow of Workflows" class="md-nav__link">
+      Workflow of Workflows
+    </a>
+  </li>
+
+        
       </ul>
     </nav>
   </li>
@@ -1601,22 +1625,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#method-1-kubectl-port-forward" title="Method 1: kubectl port-forward" class="md-nav__link">
-    Method 1: kubectl port-forward
+  <a href="#kubectl-port-forward" title="kubectl port-forward" class="md-nav__link">
+    kubectl port-forward
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#method-2-kubectl-proxy" title="Method 2: kubectl proxy" class="md-nav__link">
-    Method 2: kubectl proxy
+  <a href="#expose-a-loadbalancer" title="Expose a LoadBalancer" class="md-nav__link">
+    Expose a LoadBalancer
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#method-3-expose-a-loadbalancer" title="Method 3: Expose a LoadBalancer" class="md-nav__link">
-    Method 3: Expose a LoadBalancer
+  <a href="#ingress" title="Ingress" class="md-nav__link">
+    Ingress
   </a>
   
 </li>
@@ -1978,22 +2002,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#method-1-kubectl-port-forward" title="Method 1: kubectl port-forward" class="md-nav__link">
-    Method 1: kubectl port-forward
+  <a href="#kubectl-port-forward" title="kubectl port-forward" class="md-nav__link">
+    kubectl port-forward
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#method-2-kubectl-proxy" title="Method 2: kubectl proxy" class="md-nav__link">
-    Method 2: kubectl proxy
+  <a href="#expose-a-loadbalancer" title="Expose a LoadBalancer" class="md-nav__link">
+    Expose a LoadBalancer
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#method-3-expose-a-loadbalancer" title="Method 3: Expose a LoadBalancer" class="md-nav__link">
-    Method 3: Expose a LoadBalancer
+  <a href="#ingress" title="Ingress" class="md-nav__link">
+    Ingress
   </a>
   
 </li>
@@ -2058,48 +2082,75 @@
 <p>If the server is running behind reverse proxy with a subpath different from <code>/</code> (for example, 
 <code>/argo</code>), you can set an alternative subpath with the <code>--base-href</code> flag or the <code>BASE_HREF</code> 
 environment variable.</p>
+<p>You probably now should <a href="#ingress">read how to set-up an ingress</a></p>
 <h3 id="transport-layer-security">Transport Layer Security<a class="headerlink" href="#transport-layer-security" title="Permanent link">&para;</a></h3>
 <p>See <a href="../tls/">TLS</a>.</p>
 <h3 id="sso">SSO<a class="headerlink" href="#sso" title="Permanent link">&para;</a></h3>
 <p>See <a href="../argo-server-sso/">SSO</a>.</p>
 <h2 id="access-the-argo-workflows-ui">Access the Argo Workflows UI<a class="headerlink" href="#access-the-argo-workflows-ui" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
+<p>By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
+following:</p>
+<h3 id="kubectl-port-forward"><code>kubectl port-forward</code><a class="headerlink" href="#kubectl-port-forward" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>kubectl -n argo port-forward svc/argo-server <span class="m">2746</span>:2746
 </code></pre></div>
 
 
 <p>Then visit: http://127.0.0.1:2746</p>
-<p>By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
-following:</p>
-<h3 id="method-1-kubectl-port-forward">Method 1: kubectl port-forward<a class="headerlink" href="#method-1-kubectl-port-forward" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="err">kubectl -n argo port-forward deployment/argo-server 2746:2746</span>
-</code></pre></div>
-
-
-<p>Then visit: http://127.0.0.1:8001</p>
-<h3 id="method-2-kubectl-proxy">Method 2: kubectl proxy<a class="headerlink" href="#method-2-kubectl-proxy" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="err">kubectl proxy</span>
-</code></pre></div>
-
-
-<p>Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-server:web/proxy/</p>
-<p>NOTE: artifact download and webconsole is not supported using this method</p>
-<h3 id="method-3-expose-a-loadbalancer">Method 3: Expose a LoadBalancer<a class="headerlink" href="#method-3-expose-a-loadbalancer" title="Permanent link">&para;</a></h3>
-<p>Update the argo-ui service to be of type <code>LoadBalancer</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="err">kubectl patch svc argo-ui -n argo -p &#39;{&quot;spec&quot;: {&quot;type&quot;: &quot;LoadBalancer&quot;}}&#39;</span>
+<h3 id="expose-a-loadbalancer">Expose a <code>LoadBalancer</code><a class="headerlink" href="#expose-a-loadbalancer" title="Permanent link">&para;</a></h3>
+<p>Update the service to be of type <code>LoadBalancer</code>.</p>
+<div class="codehilite"><pre><span></span><code>kubectl patch svc argo-server -n argo -p <span class="s1">&#39;{&quot;spec&quot;: {&quot;type&quot;: &quot;LoadBalancer&quot;}}&#39;</span>
 </code></pre></div>
 
 
 <p>Then wait for the external IP to be made available:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">kubectl get svc argo-ui -n argo</span>
-<span class="err">NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE</span>
-<span class="err">argo-ui   LoadBalancer   10.19.255.205   35.197.49.167   80:30999/TCP   1m</span>
+<div class="codehilite"><pre><span></span><code>kubectl get svc argo-server -n argo
 </code></pre></div>
 
 
-<p>NOTE: On Minikube, you won't get an external IP after updating the service -- it will always show
-<code>pending</code>. Run the following command to determine the Argo UI URL:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">minikube service -n argo --url argo-ui</span>
+<div class="codehilite"><pre><span></span><code>NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT<span class="o">(</span>S<span class="o">)</span>          AGE
+argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="m">172</span>.18.0.2    <span class="m">2746</span>:30008/TCP   18h
 </code></pre></div>
+
+
+<h3 id="ingress">Ingress<a class="headerlink" href="#ingress" title="Permanent link">&para;</a></h3>
+<p>You can get ingress working as follows:</p>
+<p>Update <code>service/argo-server</code> spec with <code>type: LoadBalancer</code>:</p>
+<div class="codehilite"><pre><span></span><code>    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">web</span>
+      <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2746</span>
+      <span class="nt">targetPort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2746</span>
+ <span class=" -Error"> </span><span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+</code></pre></div>
+
+
+<p>Add <code>BASH_HREF</code> as environment variable to <code>deployment/argo-server</code> :</p>
+<div class="codehilite"><pre><span></span><code>        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+          <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
+          <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">server</span><span class="p p-Indicator">]</span>
+          <span class="nt">env</span><span class="p">:</span>
+            <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">BASE_HREF</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo/</span>
+</code></pre></div>
+
+
+<p>Create a ingress, with the annotation <code>ingress.kubernetes.io/rewrite-target: /</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+  <span class="nt">annotations</span><span class="p">:</span>
+    <span class="nt">ingress.kubernetes.io/rewrite-target</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">rules</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">paths</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">backend</span><span class="p">:</span>
+              <span class="nt">serviceName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
+              <span class="nt">servicePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2746</span>
+            <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo</span>
+</code></pre></div>
+
+
+<p><a href="https://github.com/argoproj/argo/issues/3080">Learn more</a></p>
                 
                   
                 
