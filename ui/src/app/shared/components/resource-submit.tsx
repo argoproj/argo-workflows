@@ -134,7 +134,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
         });
     }
 
-    private readFile(files: FileList, handleRead: (newResource: string) => void) {
+    private readFile(files: FileList, handleRead: (newResource: string | ArrayBuffer) => void) {
         if (files.length !== 1) {
             this.setState({
                 error: {
