@@ -64,6 +64,9 @@ func (d *dagContext) GetTaskDependencies(taskName string) []string {
 
 func (d *dagContext) GetTaskFinishedAtTime(taskName string) time.Time {
 	node := d.getTaskNode(taskName)
+	if node == nil {
+		return time.Time{}
+	}
 	if !node.FinishedAt.IsZero() {
 		return node.FinishedAt.Time
 	}
@@ -536,6 +539,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		}
 		resolvedArt, err := scope.resolveArtifact(art.From)
 		if err != nil {
+			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
+				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)
+				continue
+			}
 			return nil, err
 		}
 		resolvedArt.Name = art.Name
