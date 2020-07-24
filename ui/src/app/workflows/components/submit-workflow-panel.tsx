@@ -41,8 +41,8 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                     {this.props.namespace}/{this.props.name}
                 </h5>
                 {this.state.error && <ErrorNotice error={this.state.error} />}
-                <div>
-                    <div key='entrypoint' title='Entrypoint'>
+                <div className='white-box'>
+                    <div key='entrypoint' title='Entrypoint' style={{marginBottom: 25}}>
                         <label>Entrypoint</label>
                         <Select
                             value={this.state.entrypoint}
@@ -53,7 +53,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                             onChange={selected => this.setState({entrypoint: selected.value})}
                         />
                     </div>
-                    <div key='parameters'>
+                    <div key='parameters' style={{marginBottom: 25}}>
                         <label>Parameters</label>
                         {this.state.parameters.length > 0 ? (
                             <>
@@ -81,7 +81,7 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                             <label>No parameters</label>
                         )}
                     </div>
-                    <div key='labels'>
+                    <div key='labels' style={{marginBottom: 25}}>
                         <label>Labels</label>
                         <TagsInput tags={this.state.labels} onChange={labels => this.setState({labels})} />
                     </div>

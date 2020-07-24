@@ -98,13 +98,13 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                 {this.state.error && <ErrorNotice error={this.state.error} />}
                 <div className='resource-editor-panel__editor'>
                     <MonacoEditor
-                    key='editor'
+                        key='editor'
                         value={this.state.value}
                         language={this.state.lang}
                         height={'600px'}
                         onChange={value => this.setState({value})}
                         options={{
-                        readOnly: this.props.readonly || !this.state.editing,
+                            readOnly: this.props.readonly || !this.state.editing,
                             extraEditorClassName: 'resource',
                             minimap: {enabled: false},
                             lineNumbers: 'off',
