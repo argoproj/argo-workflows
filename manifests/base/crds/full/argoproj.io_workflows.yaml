@@ -3566,6 +3566,30 @@ spec:
                           type: object
                         type: array
                     type: object
+                  memoize:
+                    properties:
+                      cache:
+                        properties:
+                          configMap:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        required:
+                        - configMap
+                        type: object
+                      key:
+                        type: string
+                    required:
+                    - cache
+                    - key
+                    type: object
                   metadata:
                     properties:
                       annotations:
@@ -7319,6 +7343,19 @@ spec:
                           - name
                           type: object
                         type: array
+                    type: object
+                  memoizationStatus:
+                    properties:
+                      cacheName:
+                        type: string
+                      hit:
+                        type: boolean
+                      key:
+                        type: string
+                    required:
+                    - cacheName
+                    - hit
+                    - key
                     type: object
                   message:
                     type: string
@@ -11312,6 +11349,30 @@ spec:
                           - name
                           type: object
                         type: array
+                    type: object
+                  memoize:
+                    properties:
+                      cache:
+                        properties:
+                          configMap:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        required:
+                        - configMap
+                        type: object
+                      key:
+                        type: string
+                    required:
+                    - cache
+                    - key
                     type: object
                   metadata:
                     properties:
@@ -17483,6 +17544,30 @@ spec:
                               - name
                               type: object
                             type: array
+                        type: object
+                      memoize:
+                        properties:
+                          cache:
+                            properties:
+                              configMap:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
+                            required:
+                            - configMap
+                            type: object
+                          key:
+                            type: string
+                        required:
+                        - cache
+                        - key
                         type: object
                       metadata:
                         properties:

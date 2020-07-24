@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/record"
 
@@ -18,13 +19,14 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/test"
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -145,6 +147,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
+		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
 	return cancel, controller
 }
@@ -190,30 +193,15 @@ func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController
 }
 
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(yamlStr), &wf)
-	if err != nil {
-		panic(err)
-	}
-	return &wf
+	return test.LoadWorkflowFromBytes([]byte(yamlStr))
 }
 
 func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
-	var wftmpl wfv1.WorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &wftmpl
+	return test.LoadWorkflowTemplateFromBytes([]byte(yamlStr))
 }
 
 func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
-	var cwftmpl wfv1.ClusterWorkflowTemplate
-	err := yaml.Unmarshal([]byte(yamlStr), &cwftmpl)
-	if err != nil {
-		panic(err)
-	}
-	return &cwftmpl
+	return test.LoadClusterWorkflowTemplateFromBytes([]byte(yamlStr))
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
@@ -395,7 +383,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {
@@ -422,5 +410,21 @@ func TestIsArchivable(t *testing.T) {
 		workflow.Labels = make(map[string]string)
 		workflow.Labels["workflows.argoproj.io/archive-strategy"] = "true"
 		assert.True(t, controller.isArchivable(workflow))
+	})
+}
+
+func TestReleaseAllWorkflowLocks(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	t.Run("nilObject", func(t *testing.T) {
+		controller.releaseAllWorkflowLocks(nil)
+	})
+	t.Run("unStructuredObject", func(t *testing.T) {
+		un := &unstructured.Unstructured{}
+		controller.releaseAllWorkflowLocks(un)
+	})
+	t.Run("otherObject", func(t *testing.T) {
+		un := &wfv1.Workflow{}
+		controller.releaseAllWorkflowLocks(un)
 	})
 }

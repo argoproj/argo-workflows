@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -636,6 +637,28 @@ spec:
 			if assert.NotNil(t, node) {
 				assert.Equal(t, "Step exceeded its deadline", node.Message)
 			}
+		})
+}
+
+func (s *FunctionalSuite) TestStorageQuotaLimit() {
+	// TODO Test fails due to unstable PVC creation and termination in K3S
+	// PVC will stuck in pending state for while.
+
+	s.T().SkipNow()
+	s.Given().
+		Workflow("@testdata/storage-limit.yaml").
+		When().
+		StorageQuota("5Mi").
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
+		}, "PVC pending", 10*time.Second).
+		DeleteStorageQuota().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 

@@ -50,7 +50,7 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 			AuthSupplier: func() string {
 				return GetAuthString()
 			},
-			ClientConfig: GetConfig(),
+			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
 		})
 	if err != nil {
 		log.Fatal(err)
@@ -59,6 +59,10 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 }
 
 func Namespace() string {
+	namespace, ok := os.LookupEnv("ARGO_NAMESPACE")
+	if ok {
+		return namespace
+	}
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
 		log.Fatal(err)
@@ -67,6 +71,10 @@ func Namespace() string {
 }
 
 func GetAuthString() string {
+	token, ok := os.LookupEnv("ARGO_TOKEN")
+	if ok {
+		return token
+	}
 	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
 		log.Fatal(err)

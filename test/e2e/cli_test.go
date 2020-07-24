@@ -420,6 +420,31 @@ func (s *CLISuite) TestWorkflowDeleteCompleted() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowDeleteResubmitted() {
+	(s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		}).
+		When().
+		Given().
+		RunCli([]string{"delete", "--resubmitted", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "deleted")
+		}
+	}))
+}
+
 func (s *CLISuite) TestWorkflowDeleteOlder() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -953,12 +978,32 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		Wait(12*time.Second).
-
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(20 * time.Second).
 		DeleteConfigMap()
+}
+
+func (s *CLISuite) TestRetryOmit() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/retry-omit.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(20*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("should-not-execute")
+			if assert.NotNil(t, node) {
+				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
+			}
+		}).
+		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "Status:              Running")
+		}).When().
+		WaitForWorkflow(20 * time.Second)
 }
 
 func TestCLISuite(t *testing.T) {

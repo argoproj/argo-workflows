@@ -32,7 +32,7 @@
         "rxjs": "^5.5.6",
         "superagent": "^3.8.2",
         "superagent-promise": "^1.1.0",
-        "swagger-ui-react": "^3.28.0"
+        "swagger-ui-react": "^3.29.0"
     },
     "devDependencies": {
         "@types/classnames": "^2.2.3",

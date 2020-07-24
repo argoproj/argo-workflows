@@ -1,3 +1,5 @@
+// +build !fields
+
 package main
 
 import (
@@ -12,7 +14,7 @@ import (
 
 	"github.com/spf13/cobra/doc"
 
-	commands "github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/cmd/argo/commands"
 )
 
 const sectionHeader = `
@@ -324,7 +326,7 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 func (c *DocGeneratorContext) generate() string {
 	c.loadFiles()
 
-	out := fmt.Sprintf("# Field Reference")
+	out := "# Field Reference"
 	for len(c.queue) > 0 {
 		var temp string
 		temp, c.queue = c.queue[0], c.queue[1:]
@@ -342,10 +344,33 @@ func (c *DocGeneratorContext) generate() string {
 	return out
 }
 
+func removeContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = d.Close() }()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func generateDocs() {
 	cmd := commands.NewCommand()
 	cmd.DisableAutoGenTag = true
-	err := doc.GenMarkdownTree(cmd, "docs/cli")
+	err := removeContents("docs/cli")
+	if err != nil {
+		panic(err)
+	}
+	err = doc.GenMarkdownTree(cmd, "docs/cli")
 	if err != nil {
 		panic(err)
 	}

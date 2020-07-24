@@ -63,7 +63,7 @@ func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 const invalidErr = "is invalid"
 
-var unknownField = `
+const unknownField = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -2413,6 +2413,15 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: A
+  serviceAccountName: argo
+  parallelism: 1
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  podGC:
+    strategy: OnPodSuccess
+  nodeSelector:
+    beta.kubernetes.io/arch: "{{inputs.parameters.arch}}"
   arguments:
     parameters:
     - name: lines-count
