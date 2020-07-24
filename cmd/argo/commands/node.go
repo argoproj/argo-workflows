@@ -48,7 +48,6 @@ func NewNodeCommand() *cobra.Command {
 				log.Fatalf("unknown action '%s'", args[0])
 			}
 
-			fmt.Printf("args: %v\n", args)
 			outputParameters := ""
 			if len(setArgs.outputParameters) > 0 {
 				outputParams := make(map[string]string)
@@ -57,7 +56,6 @@ func NewNodeCommand() *cobra.Command {
 					if len(parts) != 2 {
 						log.Fatalf("expected parameter of the form: NAME=VALUE. Received: %s", param)
 					}
-					fmt.Printf("unquoting: %s\n", parts[1])
 					unquoted, err := strconv.Unquote(parts[1])
 					if err != nil {
 						unquoted = parts[1]
@@ -70,8 +68,6 @@ func NewNodeCommand() *cobra.Command {
 				}
 				outputParameters = string(res)
 			}
-
-			fmt.Printf("outputs: %s\n", outputParameters)
 
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
