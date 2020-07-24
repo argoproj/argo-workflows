@@ -1195,14 +1195,3 @@ func TestPropagateMaxDuration(t *testing.T) {
 		assert.Equal(t, string(out), pod.Annotations[common.AnnotationKeyExecutionControl])
 	}
 }
-
-func TestWorkflowActiveDeadlineSeconds(t *testing.T) {
-	wf := unmarshalWF(helloLinuxWf)
-	var deadline int64 = 0
-	wf.Spec.ActiveDeadlineSeconds = &deadline
-	wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-	woc := newWoc(*wf)
-	mainCtr := woc.wfSpec.Templates[0].Container
-	_, err := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, err, ErrDeadlineExceeded)
-}

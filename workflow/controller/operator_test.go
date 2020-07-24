@@ -4387,3 +4387,126 @@ func TestGlobalVarsOnExit(t *testing.T) {
 		assert.Equal(t, "nononono", node.Inputs.Parameters[0].Value.StrVal)
 	}
 }
+
+var deadlineWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-9fvnv
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 1
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: approve
+        template: approve
+      - name: hello1
+        template: whalesay
+  - name: approve
+    suspend: {}
+  - container:
+      args:
+      - sleep 50
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      resources:
+        requests:
+          memory: 1Gi
+    name: whalesay
+    resubmitPendingPods: true
+status:
+  finishedAt: null
+  nodes:
+    steps-9fvnv:
+      children:
+      - steps-9fvnv-3514116232
+      displayName: steps-9fvnv
+      finishedAt: null
+      id: steps-9fvnv
+      name: steps-9fvnv
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: main
+      templateScope: local/steps-9fvnv
+      type: Steps
+    steps-9fvnv-3392004273:
+      boundaryID: steps-9fvnv
+      displayName: hello1
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server
+      id: steps-9fvnv-3392004273
+      message: 'ErrImageNeverPull: Container image "argoproj/argoexec:latest" is not
+        present with pull policy of Never'
+      name: steps-9fvnv[0].hello1
+      phase: Pending
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: whalesay
+      templateScope: local/steps-9fvnv
+      type: Pod
+    steps-9fvnv-3514116232:
+      boundaryID: steps-9fvnv
+      children:
+      - steps-9fvnv-3700512507
+      - steps-9fvnv-3392004273
+      displayName: '[0]'
+      finishedAt: null
+      id: steps-9fvnv-3514116232
+      name: steps-9fvnv[0]
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: main
+      templateScope: local/steps-9fvnv
+      type: StepGroup
+    steps-9fvnv-3700512507:
+      boundaryID: steps-9fvnv
+      displayName: approve
+      finishedAt: null
+      id: steps-9fvnv-3700512507
+      name: steps-9fvnv[0].approve
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: approve
+      templateScope: local/steps-9fvnv
+      type: Suspend
+  phase: Running
+  startedAt: "2020-07-24T16:39:25Z"
+`
+
+func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
+	wf := unmarshalWF(deadlineWf)
+	wf.Status.StartedAt = metav1.Now()
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	t.Run("Before Deadline", func(t *testing.T) {
+		woc.operate()
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	})
+	time.Sleep(1 * time.Second)
+	t.Run("After Deadline", func(t *testing.T) {
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		}
+	})
+}
+
+func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
+	wf := unmarshalWF(deadlineWf)
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	t.Run("After Shutdown", func(t *testing.T) {
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		}
+	})
+}

@@ -224,6 +224,12 @@ func (woc *wfOperationCtx) operate() {
 
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
+		// Workflow will not be queued, if workflow steps are in pending state.
+		// Workflow needs to requeue on its deadline,
+		if woc.workflowDeadline != nil {
+			woc.requeue(time.Until(*woc.workflowDeadline))
+		}
+
 		if woc.wfSpec.Metrics != nil {
 			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
@@ -234,7 +240,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
 		if err == nil {
-			err = woc.failSuspendedNodesAfterDeadlineOrShutdown()
+			err = woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
@@ -881,11 +887,11 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
-//fails any suspended nodes if the workflow deadline has passed
-func (woc *wfOperationCtx) failSuspendedNodesAfterDeadlineOrShutdown() error {
+//fails any suspended and pending nodes if the workflow deadline has passed
+func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() error {
 	if woc.wfSpec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
 		for _, node := range woc.wf.Status.Nodes {
-			if node.IsActiveSuspendNode() {
+			if node.IsActiveSuspendNode() || node.Phase == wfv1.NodePending {
 				var message string
 				if woc.wfSpec.Shutdown != "" {
 					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
