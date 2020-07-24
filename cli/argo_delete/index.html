@@ -1926,7 +1926,7 @@
 <p>delete workflows</p>
 <h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
 <p>delete workflows</p>
-<div class="codehilite"><pre><span></span><code><span class="n">argo</span><span class="w"> </span><span class="k">delete</span><span class="w"> </span><span class="o">[</span><span class="n">--dry-run</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">WORKFLOW...|[--all</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--older</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--completed</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--prefix PREFIX</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--selector SELECTOR</span><span class="o">]</span><span class="err">]</span><span class="w"> </span><span class="o">[</span><span class="n">flags</span><span class="o">]</span><span class="w"></span>
+<div class="codehilite"><pre><span></span><code><span class="n">argo</span><span class="w"> </span><span class="k">delete</span><span class="w"> </span><span class="o">[</span><span class="n">--dry-run</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">WORKFLOW...|[--all</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--older</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--completed</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--resubmitted</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--prefix PREFIX</span><span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="n">--selector SELECTOR</span><span class="o">]</span><span class="err">]</span><span class="w"> </span><span class="o">[</span><span class="n">flags</span><span class="o">]</span><span class="w"></span>
 </code></pre></div>
 
 
@@ -1949,6 +1949,7 @@
 <span class="err">  -h, --help              help for delete</span>
 <span class="err">      --older string      Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)</span>
 <span class="err">      --prefix string     Delete workflows by prefix</span>
+<span class="err">      --resubmitted       Delete resubmitted workflows</span>
 <span class="err">  -l, --selector string   Selector (label query) to filter on, not including uninitialized ones</span>
 </code></pre></div>
 
