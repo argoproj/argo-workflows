@@ -40,6 +40,8 @@ nav:
           - artifact-repository-ref.md
           - resource-duration.md
           - workflow-creator.md
+          - synchronization.md
+          - workflow-of-workflows.md
       # all other topics, including API access
       - Advanced:
           - workflow-requirements.md

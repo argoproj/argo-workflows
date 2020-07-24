@@ -50,6 +50,8 @@ If the server is running behind reverse proxy with a subpath different from `/` 
 `/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
 environment variable.
 
+You probably now should [read how to set-up an ingress](#ingress)
+
 ### Transport Layer Security
 
 See [TLS](tls.md).
@@ -61,52 +63,78 @@ See [SSO](argo-server-sso.md).
 
 ## Access the Argo Workflows UI
 
+By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
+following:
+
+### `kubectl port-forward`
+
 ```sh
-kubectl -n argo port-forward deployment/argo-server 2746:2746
+kubectl -n argo port-forward svc/argo-server 2746:2746
 ```
 
 Then visit: http://127.0.0.1:2746
 
-By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
-following:
 
-### Method 1: kubectl port-forward
+### Expose a `LoadBalancer`
 
-```
-kubectl -n argo port-forward deployment/argo-server 2746:2746
-```
+Update the service to be of type `LoadBalancer`.
 
-Then visit: http://127.0.0.1:8001
-
-### Method 2: kubectl proxy
-
-```
-kubectl proxy
-```
-
-Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-server:web/proxy/
-
-NOTE: artifact download and webconsole is not supported using this method
-
-### Method 3: Expose a LoadBalancer
-
-Update the argo-ui service to be of type `LoadBalancer`.
-
-```
-kubectl patch svc argo-ui -n argo -p '{"spec": {"type": "LoadBalancer"}}'
+```sh
+kubectl patch svc argo-server -n argo -p '{"spec": {"type": "LoadBalancer"}}'
 ```
 
 Then wait for the external IP to be made available:
 
+```sh
+kubectl get svc argo-server -n argo
 ```
-kubectl get svc argo-ui -n argo
-NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
-argo-ui   LoadBalancer   10.19.255.205   35.197.49.167   80:30999/TCP   1m
+```sh
+NAME          TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+argo-server   LoadBalancer   10.43.43.130   172.18.0.2    2746:30008/TCP   18h
 ```
 
-NOTE: On Minikube, you won't get an external IP after updating the service -- it will always show
-`pending`. Run the following command to determine the Argo UI URL:
+### Ingress
 
+You can get ingress working as follows:
+
+Update `service/argo-server` spec with `type: LoadBalancer`:
+
+```yaml
+    - name: web
+      port: 2746
+      targetPort: 2746
+  type: LoadBalancer
 ```
-minikube service -n argo --url argo-ui
+
+Add `BASH_HREF` as environment variable to `deployment/argo-server` :
+
+
+```yaml
+        - name: argo-server
+          image: argoproj/argocli:latest
+          args: [server]
+          env:
+            - name: BASE_HREF
+              value: /argo/
 ```
+
+Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
+
+```yaml
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: argo-server
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              serviceName: argo-server
+              servicePort: 2746
+            path: /argo
+```
+
+[Learn more](https://github.com/argoproj/argo/issues/3080)

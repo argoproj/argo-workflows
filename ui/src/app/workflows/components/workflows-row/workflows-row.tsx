@@ -12,19 +12,18 @@ interface WorkflowsRowProps {
     workflow: Workflow;
     onChange: (key: string) => void;
     select: (wf: Workflow) => void;
+    checked: boolean;
 }
 
 interface WorkflowRowState {
     hideDrawer: boolean;
-    selected: boolean;
 }
 
 export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRowState> {
     constructor(props: WorkflowsRowProps) {
         super(props);
         this.state = {
-            hideDrawer: true,
-            selected: false
+            hideDrawer: true
         };
     }
 
@@ -37,12 +36,11 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         <input
                             type='checkbox'
                             className='workflows-list__status--checkbox'
-                            checked={this.state.selected}
+                            checked={this.props.checked}
                             onClick={e => {
                                 e.stopPropagation();
                             }}
                             onChange={e => {
-                                this.setState({selected: !this.state.selected});
                                 this.props.select(this.props.workflow);
                             }}
                         />
