@@ -15,7 +15,7 @@ import {Query} from '../../../shared/components/query';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import * as Actions from '../../../shared/workflow-operations';
+import * as Actions from '../../../shared/workflow-operations-map';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
@@ -35,7 +35,7 @@ interface State {
     namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
-    selectedWorkflows: {[index: string]: models.Workflow};
+    selectedWorkflows: Map<string, models.Workflow>;
     workflows?: Workflow[];
     error?: Error;
     batchActionDisabled: Actions.OperationDisabled;
@@ -95,18 +95,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
             selectedLabels: this.queryParams('label').length > 0 ? this.queryParams('label') : savedOptions.selectedLabels,
-            selectedWorkflows: {},
+            selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
         };
     }
 
     public componentDidMount(): void {
         this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
-        this.setState({selectedWorkflows: {}});
+        this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
     }
 
     public componentWillUnmount(): void {
-        this.setState({selectedWorkflows: {}});
+        this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
@@ -139,8 +139,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <WorkflowsToolbar
                             selectedWorkflows={this.state.selectedWorkflows}
+                            clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
                             loadWorkflows={() => {
-                                this.setState({selectedWorkflows: {}});
+                                this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
                                 this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
                             }}
                             isDisabled={this.state.batchActionDisabled}
@@ -212,7 +213,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     namespace: newNamespace,
                     selectedPhases,
                     selectedLabels,
-                    selectedWorkflows: {}
+                    selectedWorkflows: new Map<string, models.Workflow>()
                 });
                 Utils.setCurrentNamespace(newNamespace);
                 return wfList.metadata.resourceVersion;
@@ -327,6 +328,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             <WorkflowsRow
                                 workflow={wf}
                                 key={wf.metadata.uid}
+                                checked={this.state.selectedWorkflows.has(wf.metadata.uid)}
                                 onChange={key => {
                                     const value = `${key}=${wf.metadata.labels[key]}`;
                                     let newTags: string[] = [];
@@ -344,12 +346,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     const currentlySelected = this.state.selectedWorkflows;
                                     if (!(wfUID in currentlySelected)) {
                                         this.updateBatchActionsDisabled(subWf, false);
-                                        currentlySelected[wfUID] = subWf;
+                                        currentlySelected.set(wfUID, subWf);
                                     } else {
                                         this.updateBatchActionsDisabled(subWf, true);
-                                        delete currentlySelected[wfUID];
+                                        currentlySelected.delete(wfUID);
                                     }
-                                    this.setState({selectedWorkflows: {...currentlySelected}});
+                                    this.setState({selectedWorkflows: new Map<string, models.Workflow>(currentlySelected)});
                                 }}
                             />
                         );
@@ -365,7 +367,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private updateBatchActionsDisabled(wf: Workflow, deselect: boolean): void {
         const currentlyDisabled: any = this.state.batchActionDisabled;
-        const actions: any = Actions.WorkflowOperations;
+        const actions: any = Actions.WorkflowOperationsMap;
         const nowDisabled: any = {...allBatchActionsEnabled};
         for (const action of Object.keys(currentlyDisabled)) {
             if (deselect) {
@@ -373,7 +375,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     if (wfUID === wf.metadata.uid) {
                         continue;
                     }
-                    nowDisabled[action] = actions[action].disabled(this.state.selectedWorkflows[wfUID]) || nowDisabled[action];
+                    nowDisabled[action] = actions[action].disabled(this.state.selectedWorkflows.get(wfUID)) || nowDisabled[action];
                 }
             } else {
                 nowDisabled[action] = actions[action].disabled(wf) || currentlyDisabled[action];
