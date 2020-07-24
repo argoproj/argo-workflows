@@ -420,6 +420,31 @@ func (s *CLISuite) TestWorkflowDeleteCompleted() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowDeleteResubmitted() {
+	(s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		}).
+		When().
+		Given().
+		RunCli([]string{"delete", "--resubmitted", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "deleted")
+		}
+	}))
+}
+
 func (s *CLISuite) TestWorkflowDeleteOlder() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
