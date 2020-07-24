@@ -9,13 +9,19 @@ export type OperationDisabled = {
 export type WorkflowOperationName = 'RETRY' | 'RESUBMIT' | 'SUSPEND' | 'RESUME' | 'STOP' | 'TERMINATE' | 'DELETE';
 
 export interface WorkflowOperation {
-    title: string;
-    action: () => Promise<any>;
+    title: WorkflowOperationName;
+    action: WorkflowOperationAction;
     iconClassName: string;
     disabled: (wf: Workflow) => boolean;
 }
 
-export const WorkflowOperations = {
+export type WorkflowOperationAction = (wf: Workflow) => Promise<any>;
+
+export interface WorkflowOperations {
+    [name: string]: WorkflowOperation;
+}
+
+export const WorkflowOperationsMap: WorkflowOperations = {
     RETRY: {
         title: 'RETRY',
         iconClassName: 'fa fa-undo',
@@ -23,42 +29,42 @@ export const WorkflowOperations = {
             const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
             return workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error');
         },
-        action: services.workflows.retry
+        action: (wf: Workflow) => services.workflows.retry(wf.metadata.name, wf.metadata.namespace)
     },
     RESUBMIT: {
         title: 'RESUBMIT',
         iconClassName: 'fa fa-plus-circle',
         disabled: () => false,
-        action: services.workflows.resubmit
+        action: (wf: Workflow) => services.workflows.resubmit(wf.metadata.name, wf.metadata.namespace)
     },
     SUSPEND: {
         title: 'SUSPEND',
         iconClassName: 'fa fa-pause',
         disabled: (wf: Workflow) => !Utils.isWorkflowRunning(wf) || Utils.isWorkflowSuspended(wf),
-        action: services.workflows.suspend
+        action: (wf: Workflow) => services.workflows.suspend(wf.metadata.name, wf.metadata.namespace)
     },
     RESUME: {
         title: 'RESUME',
         iconClassName: 'fa fa-play',
         disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
-        action: services.workflows.resume
+        action: (wf: Workflow) => services.workflows.resume(wf.metadata.name, wf.metadata.namespace)
     },
     STOP: {
         title: 'STOP',
         iconClassName: 'fa fa-stop-circle',
-        disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
-        action: services.workflows.stop
+        disabled: (wf: Workflow) => !Utils.isWorkflowRunning(wf),
+        action: (wf: Workflow) => services.workflows.stop(wf.metadata.name, wf.metadata.namespace)
     },
     TERMINATE: {
         title: 'TERMINATE',
         iconClassName: 'fa fa-times-circle',
-        disabled: (wf: Workflow) => !Utils.isWorkflowSuspended(wf),
-        action: services.workflows.terminate
+        disabled: (wf: Workflow) => !Utils.isWorkflowRunning(wf),
+        action: (wf: Workflow) => services.workflows.terminate(wf.metadata.name, wf.metadata.namespace)
     },
     DELETE: {
         title: 'DELETE',
         iconClassName: 'fa fa-trash',
         disabled: () => false,
-        action: services.workflows.delete
+        action: (wf: Workflow) => services.workflows.delete(wf.metadata.name, wf.metadata.namespace)
     }
 };
