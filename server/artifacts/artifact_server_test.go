@@ -62,7 +62,7 @@ func newServer() *ArtifactServer {
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
 	a := &mocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
-	return NewArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId))
+	return NewArtifactServer(hydratorfake.Noop, a, instanceid.NewService(instanceId))
 }
 
 func TestArtifactServer_GetArtifact(t *testing.T) {

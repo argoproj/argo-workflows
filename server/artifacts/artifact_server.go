@@ -10,7 +10,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -23,24 +22,17 @@ import (
 )
 
 type ArtifactServer struct {
-	gatekeeper        auth.Gatekeeper
 	hydrator          hydrator.Interface
 	wfArchive         sqldb.WorkflowArchive
 	instanceIDService instanceid.Service
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService}
+func NewArtifactServer(hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
+	return &ArtifactServer{hydrator, wfArchive, instanceIDService}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
-
-	ctx, err := a.gateKeeping(r)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
+	ctx := r.Context()
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	namespace := path[2]
@@ -66,13 +58,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
 
-	ctx, err := a.gateKeeping(r)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
-
+	ctx := r.Context()
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	uid := path[2]
@@ -94,22 +80,6 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
-}
-
-func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		cookie, err := r.Cookie("authorization")
-		if err != nil {
-			if err != http.ErrNoCookie {
-				return nil, err
-			}
-		} else {
-			token = cookie.Value
-		}
-	}
-	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.gatekeeper.Context(ctx)
 }
 
 func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {

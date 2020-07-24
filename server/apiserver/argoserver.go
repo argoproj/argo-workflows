@@ -2,11 +2,13 @@ package apiserver
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/casbin/casbin"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -14,7 +16,10 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -42,7 +47,7 @@ import (
 	"github.com/argoproj/argo/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/util/json"
+	jsonutil "github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -59,7 +64,7 @@ type argoServer struct {
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
-	authenticator    auth.Gatekeeper
+	gatekeeper       auth.Gatekeeper
 	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
@@ -106,7 +111,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    gatekeeper,
+		gatekeeper:       gatekeeper,
 		oAuth2Service:    ssoIf,
 		configController: configController,
 		stopCh:           make(chan struct{}),
@@ -146,7 +151,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
+	artifactServer := artifacts.NewArtifactServer(hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -204,13 +209,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			as.authenticator.UnaryServerInterceptor(),
+			as.gatekeeper.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
-			as.authenticator.StreamServerInterceptor(),
+			as.gatekeeper.StreamServerInterceptor(),
 		)),
 	}
 
@@ -252,7 +257,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
-	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
+	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(jsonutil.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
 	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -261,12 +266,48 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	mux.Handle("/api/", gwmux)
-	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
+
+	enforcer, err := casbin.NewEnforcerSafe("model.conf", "policy.csv")
+	if err != nil {
+		log.Fatalf("failed to configur enforcer: %w", err)
+	}
+
+	middleware := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			log.Debug(r.URL)
+			ctx, err := as.gatekeeper.Context(metadata.NewIncomingContext(r.Context(), metadata.Pairs("authorization", r.Header.Get("Authorization"), "grpcgateway-cookie", r.Header.Get("Cookie"))))
+			if err == nil {
+				sub := auth.GetClaimSet(ctx).Sub
+				obj := r.URL.String()
+				act := r.Method
+				ok := enforcer.Enforce(sub, obj, act)
+				if !ok {
+					err = status.Error(codes.PermissionDenied, fmt.Sprintf("permission denied to %s %s %s", sub, obj, act))
+				}
+			}
+			if err != nil {
+				log.WithError(err).Debug("Access denied")
+				switch status.Code(err) {
+				case codes.Unauthenticated:
+					w.WriteHeader(401)
+				default:
+					w.WriteHeader(403)
+				}
+				data, _ := json.Marshal(err)
+				_, _ = w.Write(data)
+			} else {
+				log.Debug("Access granted")
+				next.ServeHTTP(w, r.WithContext(ctx))
+			}
+		}
+	}
+
+	mux.HandleFunc("/api/", middleware(gwmux.ServeHTTP))
+	mux.HandleFunc("/artifacts/", middleware(artifactServer.GetArtifact))
+	mux.HandleFunc("/artifacts-by-uid/", middleware(artifactServer.GetArtifactByUID))
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
-	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
+	// we only enable HSTS if we are insecure mode, otherwise you would never be able access the UI
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
 	return &httpServer
 }

@@ -35,7 +35,7 @@ type Gatekeeper interface {
 }
 
 type gatekeeper struct {
-	Modes Modes
+	modes Modes
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
@@ -118,7 +118,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	if err != nil {
 		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if !s.Modes[mode] {
+	if !s.modes[mode] {
 		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
 	}
 	switch mode {
