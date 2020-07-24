@@ -2155,32 +2155,22 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 }
 
 func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
-	if outputs == nil {
+	if outputs == nil || scope == nil {
 		return
 	}
 	if prefix != "workflow" && outputs.Result != nil {
-		key := fmt.Sprintf("%s.outputs.result", prefix)
-		if scope != nil {
-			scope.addParamToScope(key, *outputs.Result)
-		}
+		scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), *outputs.Result)
 	}
 	if prefix != "workflow" && outputs.ExitCode != nil {
-		key := fmt.Sprintf("%s.exitCode", prefix)
-		if scope != nil {
-			scope.addParamToScope(key, *outputs.ExitCode)
-		}
+		scope.addParamToScope(fmt.Sprintf("%s.exitCode", prefix), *outputs.ExitCode)
 	}
 	for _, param := range outputs.Parameters {
-		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
-		if scope != nil {
-			scope.addParamToScope(key, param.Value.String())
+		if param.Value != nil {
+			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
 		}
 	}
 	for _, art := range outputs.Artifacts {
-		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)
-		if scope != nil {
-			scope.addArtifactToScope(key, art)
-		}
+		scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name), art)
 	}
 }
 
