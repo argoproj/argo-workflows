@@ -7,7 +7,7 @@ delete workflows
 delete workflows
 
 ```
-argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]] [flags]
+argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]] [flags]
 ```
 
 ### Examples
@@ -33,6 +33,7 @@ argo delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--prefix P
   -h, --help              help for delete
       --older string      Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)
       --prefix string     Delete workflows by prefix
+      --resubmitted       Delete resubmitted workflows
   -l, --selector string   Selector (label query) to filter on, not including uninitialized ones
 ```
 
