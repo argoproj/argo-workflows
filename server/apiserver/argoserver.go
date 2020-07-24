@@ -49,6 +49,7 @@ import (
 const (
 	// MaxGRPCMessageSize contains max grpc message size
 	MaxGRPCMessageSize = 100 * 1024 * 1024
+	Localhost = "127.0.0.1"
 )
 
 type argoServer struct {
@@ -180,9 +181,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	url := "http://localhost" + address
+	url := "http://" + Localhost + address
 	if as.tlsConfig != nil {
-		url = "https://localhost" + address
+		url = "https://" + Localhost + address
 	}
 	log.Infof("Argo Server started successfully on %s", url)
 	browserOpenFunc(url)
@@ -229,7 +230,7 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 // using grpc-gateway as a proxy to the gRPC server.
 func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 
-	endpoint := fmt.Sprintf("localhost:%d", port)
+	endpoint := fmt.Sprintf("%s:%d", Localhost, port)
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{
