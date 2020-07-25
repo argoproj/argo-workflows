@@ -2,16 +2,16 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: workflowevents.argoproj.io
+  name: workfloweventbindings.argoproj.io
 spec:
   group: argoproj.io
   names:
-    kind: WorkflowEvent
-    listKind: WorkflowEventList
-    plural: workflowevents
+    kind: WorkflowEventBinding
+    listKind: WorkflowEventBindingList
+    plural: workfloweventbindings
     shortNames:
-    - wfev
-    singular: workflowevent
+    - wfeb
+    singular: workfloweventbinding
   scope: Namespaced
   validation:
     openAPIV3Schema:
@@ -24,13 +24,16 @@ spec:
           type: object
         spec:
           properties:
-            expression:
-              minLength: 4
-              type: string
-            workflowTemplate:
+            event:
               properties:
-                name:
+                selector:
+                  minLength: 4
                   type: string
+              required:
+              - selector
+              type: object
+            submit:
+              properties:
                 parameters:
                   items:
                     properties:
@@ -71,10 +74,18 @@ spec:
                     - name
                     type: object
                   type: array
+                workflowTemplateRef:
+                  properties:
+                    clusterScope:
+                      type: boolean
+                    name:
+                      type: string
+                  type: object
+              required:
+              - workflowTemplateRef
               type: object
           required:
-          - expression
-          - workflowTemplate
+          - event
           type: object
       required:
       - metadata

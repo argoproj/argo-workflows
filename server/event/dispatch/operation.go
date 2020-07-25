@@ -26,11 +26,11 @@ import (
 type Operation struct {
 	ctx               context.Context
 	instanceIDService instanceid.Service
-	events            []wfv1.WorkflowEvent
+	events            []wfv1.WorkflowEventBinding
 	env               map[string]interface{}
 }
 
-func NewOperation(ctx context.Context, instanceIDService instanceid.Service, events []wfv1.WorkflowEvent, discriminator string, payload *wfv1.Item) (*Operation, error) {
+func NewOperation(ctx context.Context, instanceIDService instanceid.Service, events []wfv1.WorkflowEventBinding, discriminator string, payload *wfv1.Item) (*Operation, error) {
 	env, err := expressionEnvironment(ctx, discriminator, payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow template expression environment: %w", err)
@@ -43,7 +43,7 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
-func (o *Operation) Execute() {
+func (o *Operation) Dispatch() {
 	log.Debug("Executing event dispatch")
 
 	data, _ := json.MarshalIndent(o.env, "", "  ")
@@ -51,34 +51,36 @@ func (o *Operation) Execute() {
 
 	for _, event := range o.events {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			_, err := o.submitWorkflowsFromEvent(event)
+			_, err := o.dispatch(event)
 			return err == nil, err
 		})
 		if err != nil {
-			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to submit workflows from event")
+			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispacth from event")
 		}
 	}
 }
 
-func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Workflow, error) {
-	result, err := expr.Eval(event.Spec.Expression, o.env)
+func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding) (*wfv1.Workflow, error) {
+	selector := wfeb.Spec.Event.Selector
+	result, err := expr.Eval(selector, o.env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to evaluate workflow template expression: %w", err)
 	}
 	matched, boolExpr := result.(bool)
-	log.WithFields(log.Fields{
-		"namespace":  event.Namespace,
-		"event":      event.Name,
-		"expression": event.Spec.Expression,
-		"matched":    matched,
-		"boolExpr":   boolExpr,
-	}).Debug("Expression evaluation")
-
+	log.WithFields(log.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched, "boolExpr": boolExpr}).Debug("Selector evaluation")
+	submit := wfeb.Spec.Submit
 	if !boolExpr {
 		return nil, errors.New("malformed workflow template expression: did not evaluate to boolean")
-	} else if matched {
+	} else if matched && submit != nil {
 		client := auth.GetWfClient(o.ctx)
-		tmpl, err := client.ArgoprojV1alpha1().WorkflowTemplates(event.Namespace).Get(event.Spec.WorkflowTemplate.Name, metav1.GetOptions{})
+		ref := wfeb.Spec.Submit.WorkflowTemplateRef
+		var tmpl wfv1.WorkflowSpecHolder
+		var err error
+		if ref.ClusterScope {
+			tmpl, err = client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ref.Name, metav1.GetOptions{})
+		} else {
+			tmpl, err = client.ArgoprojV1alpha1().WorkflowTemplates(wfeb.Namespace).Get(ref.Name, metav1.GetOptions{})
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to get workflow template: %w", err)
 		}
@@ -86,13 +88,13 @@ func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Wo
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate workflow template instanceid: %w", err)
 		}
-		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false)
+		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
-		labels.Label(wf, common.LabelKeyWorkflowEvent, event.Name)
-		for _, p := range event.Spec.WorkflowTemplate.Parameters {
+		labels.Label(wf, common.LabelKeyWorkflowEvent, wfeb.Name)
+		for _, p := range submit.Parameters {
 			if p.ValueFrom == nil {
 				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
 			}
@@ -103,7 +105,7 @@ func (o *Operation) submitWorkflowsFromEvent(event wfv1.WorkflowEvent) (*wfv1.Wo
 			intOrString := intstr.Parse(fmt.Sprintf("%v", result))
 			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})
 		}
-		wf, err = client.ArgoprojV1alpha1().Workflows(tmpl.Namespace).Create(wf)
+		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(wf)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create workflow: %w", err)
 		}
@@ -127,9 +129,7 @@ func expressionEnvironment(ctx context.Context, discriminator string, payload *w
 }
 
 func metaData(ctx context.Context) map[string]interface{} {
-	meta := map[string]interface{}{
-		"claimSet": auth.GetClaimSet(ctx),
-	}
+	meta := make(map[string]interface{})
 	md, _ := metadata.FromIncomingContext(ctx)
 	for k, v := range md {
 		// only allow headers `X-`  headers, e.g. `X-Github-Action`

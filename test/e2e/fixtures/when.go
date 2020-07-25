@@ -18,25 +18,25 @@ import (
 )
 
 type When struct {
-	t                   *testing.T
-	wf                  *wfv1.Workflow
-	workflowEvent       *wfv1.WorkflowEvent
-	wfTemplates         []*wfv1.WorkflowTemplate
-	cwfTemplates        []*wfv1.ClusterWorkflowTemplate
-	cronWf              *wfv1.CronWorkflow
-	client              v1alpha1.WorkflowInterface
-	workflowEventClient v1alpha1.WorkflowEventInterface
-	wfTemplateClient    v1alpha1.WorkflowTemplateInterface
-	cwfTemplateClient   v1alpha1.ClusterWorkflowTemplateInterface
-	cronClient          v1alpha1.CronWorkflowInterface
-	hydrator            hydrator.Interface
-	workflowName        string
-	wfTemplateNames     []string
-	cronWorkflowName    string
-	kubeClient          kubernetes.Interface
-	resourceQuota       *corev1.ResourceQuota
+	t                 *testing.T
+	wf                *wfv1.Workflow
+	wfeb              *wfv1.WorkflowEventBinding
+	wfTemplates       []*wfv1.WorkflowTemplate
+	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
+	cronWf            *wfv1.CronWorkflow
+	client            v1alpha1.WorkflowInterface
+	wfebClient        v1alpha1.WorkflowEventBindingInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	hydrator          hydrator.Interface
+	workflowName      string
+	wfTemplateNames   []string
+	cronWorkflowName  string
+	kubeClient        kubernetes.Interface
+	resourceQuota     *corev1.ResourceQuota
 	storageQuota      *corev1.ResourceQuota
-	configMap           *corev1.ConfigMap
+	configMap         *corev1.ConfigMap
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -55,13 +55,13 @@ func (w *When) SubmitWorkflow() *When {
 	return w
 }
 
-func (w *When) CreateWorkflowEvent() *When {
+func (w *When) CreateWorkflowEventBinding() *When {
 	w.t.Helper()
-	if w.workflowEvent == nil {
+	if w.wfeb == nil {
 		w.t.Fatal("No workflow event to create")
 	}
-	log.WithField("event", w.workflowEvent.Name).Info("Creating workflow event")
-	_, err := w.workflowEventClient.Create(w.workflowEvent)
+	log.WithField("event", w.wfeb.Name).Info("Creating workflow event")
+	_, err := w.wfebClient.Create(w.wfeb)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -273,6 +273,7 @@ func (w *When) MemoryQuota(quota string) *When {
 }
 
 func (w *When) StorageQuota(quota string) *When {
+	w.t.Helper()
 	obj, err := util.CreateHardStorageQuota(w.kubeClient, "argo", "storage-quota", quota)
 	if err != nil {
 		w.t.Fatal(err)
@@ -282,6 +283,7 @@ func (w *When) StorageQuota(quota string) *When {
 }
 
 func (w *When) DeleteStorageQuota() *When {
+	w.t.Helper()
 	err := util.DeleteQuota(w.kubeClient, w.storageQuota)
 	if err != nil {
 		w.t.Fatal(err)
@@ -315,19 +317,19 @@ func (w *When) Then() *Then {
 
 func (w *When) Given() *Given {
 	return &Given{
-		t:                   w.t,
-		client:              w.client,
-		workflowEventClient: w.workflowEventClient,
-		wfTemplateClient:    w.wfTemplateClient,
-		cwfTemplateClient:   w.cwfTemplateClient,
-		cronClient:          w.cronClient,
-		hydrator:            w.hydrator,
-		wf:                  w.wf,
-		workflowEvent:       w.workflowEvent,
-		wfTemplates:         w.wfTemplates,
-		cwfTemplates:        w.cwfTemplates,
-		cronWf:              w.cronWf,
-		workflowName:        w.workflowName,
-		kubeClient:          w.kubeClient,
+		t:                 w.t,
+		client:            w.client,
+		wfebClient:        w.wfebClient,
+		wfTemplateClient:  w.wfTemplateClient,
+		cwfTemplateClient: w.cwfTemplateClient,
+		cronClient:        w.cronClient,
+		hydrator:          w.hydrator,
+		wf:                w.wf,
+		wfeb:              w.wfeb,
+		wfTemplates:       w.wfTemplates,
+		cwfTemplates:      w.cwfTemplates,
+		cronWf:            w.cronWf,
+		workflowName:      w.workflowName,
+		kubeClient:        w.kubeClient,
 	}
 }

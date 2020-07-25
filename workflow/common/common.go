@@ -65,7 +65,7 @@ const (
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
-	// LabelKeyWorkflowEvent is a label applied to Workflows that are submitted from a WorkflowEvent
+	// LabelKeyWorkflowEvent is a label applied to Workflows that are submitted from a WorkflowEventBinding
 	LabelKeyWorkflowEvent = workflow.WorkflowFullName + "/workflow-event"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"

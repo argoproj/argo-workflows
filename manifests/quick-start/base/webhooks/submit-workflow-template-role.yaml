@@ -8,7 +8,7 @@ rules:
   - apiGroups:
       - argoproj.io
     resources:
-      - workflowevents
+      - workfloweventbindings
     verbs:
       - list
   - apiGroups:

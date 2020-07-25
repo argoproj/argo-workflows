@@ -104,7 +104,7 @@ func (s *ArgoServerSuite) TestVersion() {
 	})
 }
 
-func (s *ArgoServerSuite) TestGithubWebhook() {
+func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 	s.bearerToken = ""
 
 	data, err := ioutil.ReadFile("testdata/github-webhook-payload.json")
@@ -126,19 +126,21 @@ spec:
       container:
          image: argoproj/argosay:v2
 `).
-		WorkflowEvent(`
+		WorkflowEventBinding(`
 metadata:
   name: github-webhook
   labels:
     argo-e2e: true
 spec:
-  expression: metadata.claimSet.sub == "system:serviceaccount:argo:github.com" && metadata["x-github-event"] == ["push"]
-  workflowTemplate:
-    name: github-webhook
+  event:
+    selector: metadata["x-github-event"] == ["push"]
+  submit:
+    workflowTemplateRef:
+      name: github-webhook
 `).
 		When().
 		CreateWorkflowTemplates().
-		CreateWorkflowEvent().
+		CreateWorkflowEventBinding().
 		And(func() {
 			s.e().
 				POST("/api/v1/events/argo/").
@@ -155,22 +157,8 @@ spec:
 		})
 }
 
-func (s *ArgoServerSuite) TestSubmitTemplateFromEvent() {
+func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromEvent() {
 	s.Given().
-		WorkflowEvent(`
-metadata:
-  name: event-consumer
-  labels:
-    argo-e2e: true
-spec:
-  expression: metadata.claimSet.sub == "system:serviceaccount:argo:argo-server" && payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
-  workflowTemplate:
-    name: event-consumer
-    parameters:
-    - name: appellation
-      valueFrom:
-        expression: payload.appellation
-`).
 		WorkflowTemplate(`
 metadata:
   name: event-consumer
@@ -206,8 +194,24 @@ spec:
          image: argoproj/argosay:v2
          args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.appellation}}"]
 `).
+		WorkflowEventBinding(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  event:
+    selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+  submit:
+    workflowTemplateRef:
+      name: event-consumer
+    parameters:
+      - name: appellation
+        valueFrom:
+          expression: payload.appellation
+`).
 		When().
-		CreateWorkflowEvent().
+		CreateWorkflowEventBinding().
 		CreateWorkflowTemplates().
 		And(func() {
 			s.e().
@@ -221,6 +225,53 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
 			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
+		})
+}
+
+func (s *ArgoServerSuite) TestSubmitClusterWorkflowTemplateFromEvent() {
+	s.Given().
+		ClusterWorkflowTemplate(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  templates:
+    - name: main
+      container:
+         image: argoproj/argosay:v2
+`).
+		WorkflowEventBinding(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  event:
+    selector: true
+  submit:
+    workflowTemplateRef:
+      name: event-consumer
+      clusterScope: true
+`).
+		When().
+		CreateWorkflowEventBinding().
+		CreateClusterWorkflowTemplates().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo/").
+				WithBytes([]byte(`{}`)).
+				Expect().
+				Status(200)
+		}).
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
+			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyClusterWorkflowTemplate])
 		})
 }
 

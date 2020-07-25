@@ -802,7 +802,7 @@ Backoff is a backoff strategy to use within retryStrategy
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | No |
+| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | Yes |
 
 #### io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate
 
@@ -970,6 +970,12 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 | target | string | Target are one or more names of targets to execute in a DAG | No |
 | tasks | [ [io.argoproj.workflow.v1alpha1.DAGTask](#io.argoproj.workflow.v1alpha1.dagtask) ] | Tasks are a list of DAG tasks | Yes |
 
+#### io.argoproj.workflow.v1alpha1.Event
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| selector | string | Selector (<https://github.com/antonmedv/expr>) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"` | Yes |
+
 #### io.argoproj.workflow.v1alpha1.EventResponse
 
 | Name | Type | Description | Required |
@@ -1113,6 +1119,23 @@ A link to another app.
 | content | string |  | No |
 | podName | string |  | No |
 
+#### io.argoproj.workflow.v1alpha1.MemoizationStatus
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| cacheName | string |  | Yes |
+| hit | boolean |  | Yes |
+| key | string |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Memoize
+
+Memoization
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) |  | Yes |
+| key | string |  | Yes |
+
 #### io.argoproj.workflow.v1alpha1.Metadata
 
 Pod metdata
@@ -1153,6 +1176,7 @@ NodeStatus contains status information about an individual node in the workflow
 | hostNodeName | string | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | No |
 | id | string | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | Yes |
 | inputs | [io.argoproj.workflow.v1alpha1.Inputs](#io.argoproj.workflow.v1alpha1.inputs) | Inputs captures input parameter values and artifact locations supplied to this template invocation | No |
+| memoizationStatus | [io.argoproj.workflow.v1alpha1.MemoizationStatus](#io.argoproj.workflow.v1alpha1.memoizationstatus) | MemoizationStatus holds information about cached nodes | No |
 | message | string | A human readable message indicating details about why the node is in this condition. | No |
 | name | string | Name is unique name in the node tree used to generate the node ID | Yes |
 | outboundNodes | [ string ] | OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children. | No |
@@ -1350,6 +1374,13 @@ Sequence expands a workflow step into numeric range
 | format | string | Format is a printf format string to format the value in the sequence | No |
 | start | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Number at which to start the sequence (default: 0) | No |
 
+#### io.argoproj.workflow.v1alpha1.Submit
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| parameters | [ [io.argoproj.workflow.v1alpha1.Parameter](#io.argoproj.workflow.v1alpha1.parameter) ] | Parameters extracted from the event and then set as arguments to the workflow created. | No |
+| workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef the workflow template to submit | Yes |
+
 #### io.argoproj.workflow.v1alpha1.SubmitOpts
 
 SubmitOpts are workflow submission options
@@ -1366,13 +1397,6 @@ SubmitOpts are workflow submission options
 | parameters | [ string ] | Parameters passes input parameters to workflow | No |
 | serverDryRun | boolean | ServerDryRun validates the workflow on the server-side without creating it | No |
 | serviceAccount | string | ServiceAccount runs all pods in the workflow using specified ServiceAccount. | No |
-
-#### io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| name | string | Name of the referent. More info: <https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names> | No |
-| parameters | [ [io.argoproj.workflow.v1alpha1.Parameter](#io.argoproj.workflow.v1alpha1.parameter) ] | Parameters extracted from the event and then set as arguments to the workflow created. | No |
 
 #### io.argoproj.workflow.v1alpha1.SuspendTemplate
 
@@ -1432,6 +1456,7 @@ Template is a reusable and composable unit of execution in a workflow
 | hostAliases | [ [io.k8s.api.core.v1.HostAlias](#io.k8s.api.core.v1.hostalias) ] | HostAliases is an optional list of hosts and IPs that will be injected into the pod spec | No |
 | initContainers | [ [io.argoproj.workflow.v1alpha1.UserContainer](#io.argoproj.workflow.v1alpha1.usercontainer) ] | InitContainers is a list of containers which run before the main container. | No |
 | inputs | [io.argoproj.workflow.v1alpha1.Inputs](#io.argoproj.workflow.v1alpha1.inputs) | Inputs describe what inputs parameters and artifacts are supplied to this template | No |
+| memoize | [io.argoproj.workflow.v1alpha1.Memoize](#io.argoproj.workflow.v1alpha1.memoize) | Memoize allows templates to use outputs generated from already executed templates | No |
 | metadata | [io.argoproj.workflow.v1alpha1.Metadata](#io.argoproj.workflow.v1alpha1.metadata) | Metdata sets the pods's metadata, i.e. annotations and labels | No |
 | metrics | [io.argoproj.workflow.v1alpha1.Metrics](#io.argoproj.workflow.v1alpha1.metrics) | Metrics are a list of metrics emitted from this template | No |
 | name | string | Name is the name of the template | Yes |
@@ -1513,7 +1538,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
-| expression | string | Expression (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
+| expression | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
@@ -1560,25 +1585,23 @@ Workflow is the definition of a workflow resource
 | ---- | ---- | ----------- | -------- |
 | io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse | object |  |  |
 
-#### io.argoproj.workflow.v1alpha1.WorkflowEvent
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBinding
 
-WorkflowEvent is the definition of an event resource
+WorkflowEventBinding is the definition of an event resource
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
 | kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
 | metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) |  | Yes |
-| spec | [io.argoproj.workflow.v1alpha1.WorkflowEventSpec](#io.argoproj.workflow.v1alpha1.workfloweventspec) |  | Yes |
+| spec | [io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec](#io.argoproj.workflow.v1alpha1.workfloweventbindingspec) |  | Yes |
 
-#### io.argoproj.workflow.v1alpha1.WorkflowEventSpec
-
-Event can trigger this workflow template.
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| expression | string | Expression (<https://github.com/antonmedv/expr>) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"` | Yes |
-| workflowTemplate | [io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate](#io.argoproj.workflow.v1alpha1.submitworkflowtemplate) | WorkflowTemplate the workflow template to submit when we match the event | Yes |
+| event | [io.argoproj.workflow.v1alpha1.Event](#io.argoproj.workflow.v1alpha1.event) | Event is the event to bind to | Yes |
+| submit | [io.argoproj.workflow.v1alpha1.Submit](#io.argoproj.workflow.v1alpha1.submit) | Submit is the workflow template to submit | No |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowLintRequest
 

@@ -1994,6 +1994,9 @@
     },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "type": "object",
+      "required": [
+        "configMap"
+      ],
       "properties": {
         "configMap": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
@@ -2364,6 +2367,18 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Event": {
+      "type": "object",
+      "required": [
+        "selector"
+      ],
+      "properties": {
+        "selector": {
+          "description": "Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.EventResponse": {
       "type": "object"
     },
@@ -2661,6 +2676,41 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
+      "type": "object",
+      "required": [
+        "hit",
+        "key",
+        "cacheName"
+      ],
+      "properties": {
+        "cacheName": {
+          "type": "string"
+        },
+        "hit": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Memoize": {
+      "description": "Memoization",
+      "type": "object",
+      "required": [
+        "key",
+        "cache"
+      ],
+      "properties": {
+        "cache": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
       "type": "object",
@@ -2754,6 +2804,10 @@
         "inputs": {
           "description": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoizationStatus": {
+          "description": "MemoizationStatus holds information about cached nodes",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MemoizationStatus"
         },
         "message": {
           "description": "A human readable message indicating details about why the node is in this condition.",
@@ -3300,6 +3354,25 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Submit": {
+      "type": "object",
+      "required": [
+        "workflowTemplateRef"
+      ],
+      "properties": {
+        "parameters": {
+          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
+          }
+        },
+        "workflowTemplateRef": {
+          "description": "WorkflowTemplateRef the workflow template to submit",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SubmitOpts": {
       "description": "SubmitOpts are workflow submission options",
       "type": "object",
@@ -3346,22 +3419,6 @@
         "serviceAccount": {
           "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount.",
           "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
-          "type": "string"
-        },
-        "parameters": {
-          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
         }
       }
     },
@@ -3491,6 +3548,10 @@
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoize": {
+          "description": "Memoize allows templates to use outputs generated from already executed templates",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize"
         },
         "metadata": {
           "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
@@ -3794,7 +3855,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "expression": {
-          "description": "Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+          "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
           "type": "string"
         },
         "jqFilter": {
@@ -3906,8 +3967,8 @@
     "io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse": {
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowEvent": {
-      "description": "WorkflowEvent is the definition of an event resource",
+    "io.argoproj.workflow.v1alpha1.WorkflowEventBinding": {
+      "description": "WorkflowEventBinding is the definition of an event resource",
       "type": "object",
       "required": [
         "metadata",
@@ -3926,25 +3987,23 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventSpec"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec"
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowEventSpec": {
-      "description": "Event can trigger this workflow template.",
+    "io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec": {
       "type": "object",
       "required": [
-        "expression",
-        "workflowTemplate"
+        "event"
       ],
       "properties": {
-        "expression": {
-          "description": "Expression (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
-          "type": "string"
+        "event": {
+          "description": "Event is the event to bind to",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
         },
-        "workflowTemplate": {
-          "description": "WorkflowTemplate the workflow template to submit when we match the event",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitWorkflowTemplate"
+        "submit": {
+          "description": "Submit is the workflow template to submit",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Submit"
         }
       }
     },

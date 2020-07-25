@@ -137,6 +137,10 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+message Cache {
+  optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
+}
+
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
 // +genclient
 // +genclient:noStatus
@@ -310,6 +314,12 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
+message Event {
+  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  // +kubebuilder:validation:MinLength=4
+  optional string selector = 1;
+}
+
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -478,6 +488,21 @@ message Link {
   optional string url = 3;
 }
 
+message MemoizationStatus {
+  optional bool hit = 1;
+
+  optional string key = 2;
+
+  optional string cacheName = 3;
+}
+
+// Memoization
+message Memoize {
+  optional string key = 1;
+
+  optional Cache cache = 2;
+}
+
 // Pod metdata
 message Metadata {
   map<string, string> annotations = 1;
@@ -582,6 +607,9 @@ message NodeStatus {
 
   // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
   optional string hostNodeName = 22;
+
+  // MemoizationStatus holds information about cached nodes
+  optional MemoizationStatus memoizationStatus = 23;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -817,6 +845,14 @@ message Sequence {
   optional string format = 4;
 }
 
+message Submit {
+  // WorkflowTemplateRef the workflow template to submit
+  optional WorkflowTemplateRef workflowTemplateRef = 1;
+
+  // Parameters extracted from the event and then set as arguments to the workflow created.
+  repeated Parameter parameters = 2;
+}
+
 // SubmitOpts are workflow submission options
 message SubmitOpts {
   // Name overrides metadata.name
@@ -848,13 +884,6 @@ message SubmitOpts {
 
   // OwnerReference creates a metadata.ownerReference
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
-}
-
-message SubmitWorkflowTemplate {
-  optional k8s.io.api.core.v1.LocalObjectReference localObjectReference = 1;
-
-  // Parameters extracted from the event and then set as arguments to the workflow created.
-  repeated Parameter parameters = 2;
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1032,6 +1061,9 @@ message Template {
 
   // Synchronization holds synchronization lock configuration for this template
   optional Synchronization synchronization = 36;
+
+  // Memoize allows templates to use outputs generated from already executed templates
+  optional Memoize memoize = 37;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1072,7 +1104,7 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
-  // Expression (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   // +kubebuilder:validation:MinLength=4
   optional string expression = 6;
 
@@ -1122,33 +1154,32 @@ message Workflow {
   optional WorkflowStatus status = 3;
 }
 
-// WorkflowEvent is the definition of an event resource
+// WorkflowEventBinding is the definition of an event resource
 // +genclient
 // +genclient:noStatus
-// +kubebuilder:resource:shortName=wfev
+// +kubebuilder:resource:shortName=wfeb
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowEvent {
+message WorkflowEventBinding {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowEventSpec spec = 2;
+  optional WorkflowEventBindingSpec spec = 2;
 }
 
-// WorkflowEventList is list of event resources
+// WorkflowEventBindingList is list of event resources
+// +kubebuilder:resource:shortName=wfebs
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-message WorkflowEventList {
+message WorkflowEventBindingList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
-  repeated WorkflowEvent items = 2;
+  repeated WorkflowEventBinding items = 2;
 }
 
-// Event can trigger this workflow template.
-message WorkflowEventSpec {
-  // Expression (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
-  // +kubebuilder:validation:MinLength=4
-  optional string expression = 1;
+message WorkflowEventBindingSpec {
+  // Event is the event to bind to
+  optional Event event = 1;
 
-  // WorkflowTemplate the workflow template to submit when we match the event
-  optional SubmitWorkflowTemplate workflowTemplate = 2;
+  // Submit is the workflow template to submit
+  optional Submit submit = 2;
 }
 
 // WorkflowList is list of Workflow resources

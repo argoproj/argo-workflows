@@ -15,20 +15,20 @@ import (
 )
 
 type Given struct {
-	t                   *testing.T
-	client              v1alpha1.WorkflowInterface
-	workflowEventClient v1alpha1.WorkflowEventInterface
-	wfTemplateClient    v1alpha1.WorkflowTemplateInterface
-	cwfTemplateClient   v1alpha1.ClusterWorkflowTemplateInterface
-	cronClient          v1alpha1.CronWorkflowInterface
-	hydrator            hydrator.Interface
-	wf                  *wfv1.Workflow
-	workflowEvent       *wfv1.WorkflowEvent
-	wfTemplates         []*wfv1.WorkflowTemplate
-	cwfTemplates        []*wfv1.ClusterWorkflowTemplate
-	cronWf              *wfv1.CronWorkflow
-	workflowName        string
-	kubeClient          kubernetes.Interface
+	t                 *testing.T
+	client            v1alpha1.WorkflowInterface
+	wfebClient        v1alpha1.WorkflowEventBindingInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	hydrator          hydrator.Interface
+	wf                *wfv1.Workflow
+	wfeb              *wfv1.WorkflowEventBinding
+	wfTemplates       []*wfv1.WorkflowTemplate
+	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
+	cronWf            *wfv1.CronWorkflow
+	workflowName      string
+	kubeClient        kubernetes.Interface
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -111,10 +111,10 @@ func (g *Given) WorkflowName(name string) *Given {
 	return g
 }
 
-func (g *Given) WorkflowEvent(text string) *Given {
+func (g *Given) WorkflowEventBinding(text string) *Given {
 	g.t.Helper()
-	g.workflowEvent = &wfv1.WorkflowEvent{}
-	g.readResource(text, g.workflowEvent)
+	g.wfeb = &wfv1.WorkflowEventBinding{}
+	g.readResource(text, g.wfeb)
 	return g
 }
 
@@ -155,19 +155,19 @@ func (g *Given) ClusterWorkflowTemplate(text string) *Given {
 
 func (g *Given) When() *When {
 	return &When{
-		t:                   g.t,
-		wf:                  g.wf,
-		workflowEvent:       g.workflowEvent,
-		wfTemplates:         g.wfTemplates,
-		cwfTemplates:        g.cwfTemplates,
-		cronWf:              g.cronWf,
-		client:              g.client,
-		workflowEventClient: g.workflowEventClient,
-		wfTemplateClient:    g.wfTemplateClient,
-		cwfTemplateClient:   g.cwfTemplateClient,
-		cronClient:          g.cronClient,
-		hydrator:            g.hydrator,
-		workflowName:        g.workflowName,
-		kubeClient:          g.kubeClient,
+		t:                 g.t,
+		wf:                g.wf,
+		wfeb:              g.wfeb,
+		wfTemplates:       g.wfTemplates,
+		cwfTemplates:      g.cwfTemplates,
+		cronWf:            g.cronWf,
+		client:            g.client,
+		wfebClient:        g.wfebClient,
+		wfTemplateClient:  g.wfTemplateClient,
+		cwfTemplateClient: g.cwfTemplateClient,
+		cronClient:        g.cronClient,
+		hydrator:          g.hydrator,
+		workflowName:      g.workflowName,
+		kubeClient:        g.kubeClient,
 	}
 }

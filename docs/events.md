@@ -14,30 +14,9 @@ You may also wish to read about [webhooks](webhooks.md).
 
 ## Authentication and Security
 
-Clients wanting to send events to the endpoint need an [access token](access-token.md). The token may be namespace-scoped or cluster-scoped.  
+Clients wanting to send events to the endpoint need an [access token](access-token.md).   
 
-```yaml
-# Use this role to enable jenkins to submit a workflow template via webhook.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: jenkins
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflowtemplates
-  verbs:
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  verbs:
-  - create
-```
-
-It is only possible to submit workflow templates your access token has access to. 
+It is only possible to submit workflow templates your access token has access to, [example](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
@@ -72,7 +51,7 @@ metadata:
   name: event-consumer
 spec:
   event:
-    expression: metadata.claimSet.sub == "admin" && payload.message != "" && metadata["x-argo"] == ["true"] && discriminator == "my-discriminator"
+    expression: payload.message != "" && metadata["x-argo"] == ["true"] && discriminator == "my-discriminator"
     parameters:
       - name: message
         expression: payload.message
@@ -125,7 +104,7 @@ Because the endpoint accepts any JSON data, it is the user's responsibility to w
 The event environment typically contains:
 
 * `payload` the event payload.
-* `metadata` event metadata, including the user info and HTTP headers.
+* `metadata` event metadata, including HTTP headers.
 * `discriminator` the discriminator from the URL.  
 
 ### Payload
@@ -157,16 +136,6 @@ Example:
 
 ```
 metadata["x-argo"] == ["yes"]
-```
-
-#### ClaimSet
-
-Meta-data will contain the value `claimSet/sub` which should always to be used to ensure you only accept events from the correct client. 
-
-Example:
-
-```
-metadata.claimSet.sub == "system:serviceaccount:argo:jenkins"
 ```
 
 ### Discriminator
