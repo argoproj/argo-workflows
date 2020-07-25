@@ -96,14 +96,22 @@ func RecoverIndexFromNodeName(name string) int {
 
 func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 	result := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String()
-	if compare := RecoverWorkflowNameFromSelectorString(result); wfName != compare {
+	compare, err := RecoverWorkflowNameFromSelectorString(result)
+	if err != nil {
+		log.WithFields(log.Fields{"wfName": wfName}).Error(err)
+	}
+	if wfName != compare {
 		panic(fmt.Sprintf("Could not recover field selector from workflow name. Expected '%s' but got '%s'\n", wfName, compare))
 	}
 	return result
 }
 
-func RecoverWorkflowNameFromSelectorString(selector string) string {
+func RecoverWorkflowNameFromSelectorString(selector string) (string, error) {
 	nameIndex := strings.Index(selector, "=")
+	prefix := selector[:nameIndex]
+	if prefix != "metadata.name" {
+		return "", fmt.Errorf("Incorrect prefix. Expected 'metadata.name' but got '%s'", prefix)
+	}
 	name := selector[nameIndex+1:]
-	return name
+	return name, nil
 }
