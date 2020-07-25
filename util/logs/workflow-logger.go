@@ -37,6 +37,15 @@ type sender interface {
 	Send(entry *workflowpkg.LogEntry) error
 }
 
+func timeIn(theTime time.Time, timezone string) time.Time {
+
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		panic(err)
+	}
+	return theTime.In(loc)
+}
+
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
 
 	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
@@ -70,6 +79,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		logOptions = &corev1.PodLogOptions{}
 	}
 	logOptions.Timestamps = true
+
+	var logTimezone string = "America/Toronto"
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
@@ -111,6 +122,11 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						if req.GetLogOptions().Timestamps {
 							content = line
 						}
+
+						// Convert timestamp to local time
+						timestamp = timeIn(timestamp, logTimezone)
+						content = "test_1"
+
 						logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
 						unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 					}
@@ -238,6 +254,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				// head
 				var e logEntry
 				e, entries = entries[0], entries[1:]
+
+				// Convert timestamp to local time
+				e.timestamp = timeIn(e.timestamp, logTimezone)
+
+				e.content = "test_2"
+
 				logCtx.WithFields(log.Fields{"timestamp": e.timestamp, "content": e.content}).Debug("Sending entry")
 				err := sender.Send(&workflowpkg.LogEntry{Content: e.content, PodName: e.podName})
 				if err != nil {
