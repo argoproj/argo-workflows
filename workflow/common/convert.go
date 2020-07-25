@@ -26,7 +26,7 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return wf
 }
 
-func NewWorkflowFromWorkflowTemplate(templateName string, workflowMetadata metav1.Object, clusterScope bool) *wfv1.Workflow {
+func NewWorkflowFromWorkflowTemplate(templateName string, workflowMetadata *metav1.ObjectMeta, clusterScope bool) *wfv1.Workflow {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,10 +43,10 @@ func NewWorkflowFromWorkflowTemplate(templateName string, workflowMetadata metav
 	}
 
 	if workflowMetadata != nil {
-		for key, label := range workflowMetadata.GetLabels() {
+		for key, label := range workflowMetadata.Labels {
 			wf.Labels[key] = label
 		}
-		for key, annotation := range workflowMetadata.GetAnnotations() {
+		for key, annotation := range workflowMetadata.Annotations {
 			wf.Annotations[key] = annotation
 		}
 	}

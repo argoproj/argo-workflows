@@ -57,7 +57,7 @@ func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
 }
 
-func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowMetadata() metav1.Object {
+func (cwftmpl *ClusterWorkflowTemplate) GetWorkflowMetadata() *metav1.ObjectMeta {
 	return cwftmpl.Spec.WorkflowMetadata
 }
 

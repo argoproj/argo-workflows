@@ -63,7 +63,7 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
 
-func (wftmpl *WorkflowTemplate) GetWorkflowMetadata() metav1.Object {
+func (wftmpl *WorkflowTemplate) GetWorkflowMetadata() *metav1.ObjectMeta {
 	return wftmpl.Spec.WorkflowMetadata
 }
 
