@@ -4208,7 +4208,7 @@ status:
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 		for _, node := range woc.wf.Status.Nodes {
 			switch node.TemplateName {
 			case "main":
@@ -4225,6 +4225,53 @@ status:
 			assert.Len(t, list.Items, 1)
 		}
 	}
+}
+
+func TestWorkflowOutputs(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: step-1
+        template: child
+  - name: child
+    container:
+      image: my-image
+    outputs:
+      parameters:
+      - name: my-param
+        valueFrom: 
+          path: /my-path
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	// reconcille
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+
+	// make all created pods as successful
+	podInterface := controller.kubeclientset.CoreV1().Pods("my-ns")
+	list, err := podInterface.List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, list.Items, 1)
+	for _, pod := range list.Items {
+		pod.Status.Phase = apiv1.PodSucceeded
+		pod.GetAnnotations()[common.AnnotationKeyOutputs] = `{"parameters": [{"name": "my-param"}]}`
+		_, err := podInterface.Update(&pod)
+		assert.NoError(t, err)
+	}
+
+	// reconcille
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 var globalVarsOnExit = `
