@@ -675,9 +675,6 @@ type Artifact struct {
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty" protobuf:"varint,8,opt,name=optional"`
-
-	// FromSubPath allows an artifact to reference a subpath from a previous step
-	FromSubpath string `json:"fromSubpath,omitempty" protobuf:"bytes,9,opt,name=fromSubpath"`
 }
 
 // PodGC describes how to delete completed pods as they complete

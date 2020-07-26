@@ -144,20 +144,22 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	originalArtifact := artifact.DeepCopy()
 	artifactWithSubPath := unmarshalArtifact(subPathArtifactString)
 
-	scope.addArtifactToScope("steps.test", *artifact)
+	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact("steps.test", "")
+	resolvedArtifact, err := scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}")
 	assert.Nil(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in artifact key being modified
-	resolvedArtifact, err = scope.resolveArtifact("steps.test", "some/subkey")
+	resolvedArtifact, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}/some/subkey")
 	assert.Nil(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
-	// Ensure that resolution with subpath operation does not overwrite the original artifact
-	resolvedArtifact, err = scope.resolveArtifact("steps.test", "some/subkey")
+	// Ensure that subpath template values are also resolved
+	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
+
+	resolvedArtifact, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}/{{steps.test.outputs.parameters.subkey}}/subkey")
 	assert.Nil(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 	assert.Equal(t, artifact, originalArtifact)
