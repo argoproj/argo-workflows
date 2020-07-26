@@ -20,6 +20,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
