@@ -103,26 +103,26 @@ func (c *configMapCache) Load(key string) (*CacheEntry, error) {
 	defer c.locked.Unlock()
 	cm, err := c.kubeClient.CoreV1().ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-		c.logError(err, log.Fields{}, "MemoizationCache miss: ConfigMap does not exist")
+		c.logError(err, log.Fields{}, "config map cache miss: config map does not exist")
 		return nil, nil
 	}
 	if err != nil {
-		c.logError(err, log.Fields{}, "Error loading ConfigMap cache")
-		return nil, err
+		c.logError(err, log.Fields{}, "Error loading config map cache")
+		return nil, fmt.Errorf("could not load config map cache: %w", err)
 	}
-	c.logInfo(log.Fields{}, "ConfigMap cache loaded")
+	c.logInfo(log.Fields{}, "config map cache loaded")
 	rawEntry, ok := cm.Data[key]
 	if !ok || rawEntry == "" {
-		c.logInfo(log.Fields{}, "MemoizationCache miss: entry does not exist")
+		c.logInfo(log.Fields{}, "config map cache miss: entry does not exist")
 		return nil, nil
 	}
 	var entry CacheEntry
 	err = json.Unmarshal([]byte(rawEntry), &entry)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
 	}
 	outputs := entry.Outputs
-	c.logInfo(log.Fields{"key": key}, "ConfigMap cache hit")
+	c.logInfo(log.Fields{"key": key}, "config map cache hit")
 	return &CacheEntry{
 		Outputs: outputs,
 	}, nil

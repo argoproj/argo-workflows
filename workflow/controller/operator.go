@@ -1425,6 +1425,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
 		// return cacheEntry struct instead of wfv1.Outputs
+		log.Infof("%s", processedTmpl.Memoize.Cache.ConfigMap.Name)
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
 		if c == nil {
 			err := fmt.Errorf("Cache could not be found or created")
@@ -1436,17 +1437,17 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 		hit := false
-		outputs := wfv1.Outputs{}
+		outputs := &wfv1.Outputs{}
 		if entry != nil {
 			hit = true
-			outputs = *entry.Outputs
+			outputs = entry.Outputs
 		}
 		memStat := &wfv1.MemoizationStatus{
 			Hit:       hit,
 			Key:       processedTmpl.Memoize.Key,
 			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, &outputs, memStat)
+		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memStat)
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
@@ -1745,10 +1746,6 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
-	}
-
-	if nodeType == wfv1.NodeTypeSuspend {
-		node = addRawOutputFields(node, executeTmpl)
 	}
 
 	if len(messages) > 0 {
@@ -2432,21 +2429,6 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
-}
-
-func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
-	if tmpl.GetType() != wfv1.TemplateTypeSuspend || node.Type != wfv1.NodeTypeSuspend {
-		panic("addRawOutputFields should only be used for nodes and templates of type suspend")
-	}
-	for _, param := range tmpl.Outputs.Parameters {
-		if param.ValueFrom.Supplied != nil {
-			if node.Outputs == nil {
-				node.Outputs = &wfv1.Outputs{Parameters: []wfv1.Parameter{}}
-			}
-			node.Outputs.Parameters = append(node.Outputs.Parameters, param)
-		}
-	}
-	return node
 }
 
 func parseStringToDuration(durationString string) (time.Duration, error) {
