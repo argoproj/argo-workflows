@@ -53,4 +53,7 @@ func TestRecoverWorkflowNameFromSelectorStringError(t *testing.T) {
 	name, err := RecoverWorkflowNameFromSelectorString("whatever=whalesay")
 	assert.NotNil(t, err)
 	assert.Equal(t, name, "")
+	assert.NotPanics(t, func() {
+		_, _ = RecoverWorkflowNameFromSelectorString("whatever")
+	})
 }
