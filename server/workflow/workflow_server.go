@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -348,6 +349,51 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 		return nil, err
 	}
 	err = util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector, req.Message)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(wf.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
+}
+
+func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.WorkflowSetRequest) (*v1alpha1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	err = s.validateWorkflow(wf)
+	if err != nil {
+		return nil, err
+	}
+
+	phaseToSet := v1alpha1.NodePhase(req.Phase)
+	switch phaseToSet {
+	case v1alpha1.NodeSucceeded, v1alpha1.NodeFailed, v1alpha1.NodeError, "":
+		// Do nothing, passes validation
+	default:
+		return nil, fmt.Errorf("%s is an invalid phase to set to", req.Phase)
+	}
+
+	outputParams := make(map[string]string)
+	if req.OutputParameters != "" {
+		err = json.Unmarshal([]byte(req.OutputParameters), &outputParams)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse output parameter set request: %s", err)
+		}
+	}
+
+	operation := util.SetOperationValues{
+		Phase:            phaseToSet,
+		Message:          req.Message,
+		OutputParameters: outputParams,
+	}
+
+	err = util.SetWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector, operation)
 	if err != nil {
 		return nil, err
 	}
