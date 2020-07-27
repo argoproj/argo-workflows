@@ -586,6 +586,23 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
 
+### /api/v1/workflows/{namespace}/{name}/set
+
+#### PUT
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path |  | Yes | string |
+| name | path |  | Yes | string |
+| body | body |  | Yes | [io.argoproj.workflow.v1alpha1.WorkflowSetRequest](#io.argoproj.workflow.v1alpha1.workflowsetrequest) |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
+
 ### /api/v1/workflows/{namespace}/{name}/stop
 
 #### PUT
@@ -785,7 +802,7 @@ Backoff is a backoff strategy to use within retryStrategy
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | No |
+| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | Yes |
 
 #### io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate
 
@@ -1090,6 +1107,23 @@ A link to another app.
 | content | string |  | No |
 | podName | string |  | No |
 
+#### io.argoproj.workflow.v1alpha1.MemoizationStatus
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| cacheName | string |  | Yes |
+| hit | boolean |  | Yes |
+| key | string |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Memoize
+
+Memoization
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) |  | Yes |
+| key | string |  | Yes |
+
 #### io.argoproj.workflow.v1alpha1.Metadata
 
 Pod metdata
@@ -1130,6 +1164,7 @@ NodeStatus contains status information about an individual node in the workflow
 | hostNodeName | string | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | No |
 | id | string | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | Yes |
 | inputs | [io.argoproj.workflow.v1alpha1.Inputs](#io.argoproj.workflow.v1alpha1.inputs) | Inputs captures input parameter values and artifact locations supplied to this template invocation | No |
+| memoizationStatus | [io.argoproj.workflow.v1alpha1.MemoizationStatus](#io.argoproj.workflow.v1alpha1.memoizationstatus) | MemoizationStatus holds information about cached nodes | No |
 | message | string | A human readable message indicating details about why the node is in this condition. | No |
 | name | string | Name is unique name in the node tree used to generate the node ID | Yes |
 | outboundNodes | [ string ] | OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.  In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children. | No |
@@ -1344,6 +1379,14 @@ SubmitOpts are workflow submission options
 | serverDryRun | boolean | ServerDryRun validates the workflow on the server-side without creating it | No |
 | serviceAccount | string | ServiceAccount runs all pods in the workflow using specified ServiceAccount. | No |
 
+#### io.argoproj.workflow.v1alpha1.SuppliedValueFrom
+
+SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.SuppliedValueFrom | object | SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc. |  |
+
 #### io.argoproj.workflow.v1alpha1.SuspendTemplate
 
 SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1402,6 +1445,7 @@ Template is a reusable and composable unit of execution in a workflow
 | hostAliases | [ [io.k8s.api.core.v1.HostAlias](#io.k8s.api.core.v1.hostalias) ] | HostAliases is an optional list of hosts and IPs that will be injected into the pod spec | No |
 | initContainers | [ [io.argoproj.workflow.v1alpha1.UserContainer](#io.argoproj.workflow.v1alpha1.usercontainer) ] | InitContainers is a list of containers which run before the main container. | No |
 | inputs | [io.argoproj.workflow.v1alpha1.Inputs](#io.argoproj.workflow.v1alpha1.inputs) | Inputs describe what inputs parameters and artifacts are supplied to this template | No |
+| memoize | [io.argoproj.workflow.v1alpha1.Memoize](#io.argoproj.workflow.v1alpha1.memoize) | Memoize allows templates to use outputs generated from already executed templates | No |
 | metadata | [io.argoproj.workflow.v1alpha1.Metadata](#io.argoproj.workflow.v1alpha1.metadata) | Metdata sets the pods's metadata, i.e. annotations and labels | No |
 | metrics | [io.argoproj.workflow.v1alpha1.Metrics](#io.argoproj.workflow.v1alpha1.metrics) | Metrics are a list of metrics emitted from this template | No |
 | name | string | Name is the name of the template | Yes |
@@ -1487,6 +1531,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
 | path | string | Path in the container to retrieve an output parameter value from in container templates | No |
+| supplied | [io.argoproj.workflow.v1alpha1.SuppliedValueFrom](#io.argoproj.workflow.v1alpha1.suppliedvaluefrom) | Supplied value to be filled in directly, either through the CLI, API, etc. | No |
 
 #### io.argoproj.workflow.v1alpha1.Version
 
@@ -1571,6 +1616,17 @@ WorkflowList is list of Workflow resources
 | namespace | string |  | No |
 | nodeFieldSelector | string |  | No |
 | restartSuccessful | boolean (boolean) |  | No |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowSetRequest
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| message | string |  | No |
+| name | string |  | No |
+| namespace | string |  | No |
+| nodeFieldSelector | string |  | No |
+| outputParameters | string |  | No |
+| phase | string |  | No |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowSpec
 
