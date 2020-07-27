@@ -88,6 +88,14 @@ func (c *errorTranslatingWorkflowServiceClient) SuspendWorkflow(ctx context.Cont
 	return workflow, nil
 }
 
+func (c *errorTranslatingWorkflowServiceClient) SetWorkflow(ctx context.Context, req *workflowpkg.WorkflowSetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	workflow, err := c.delegate.SetWorkflow(ctx, req)
+	if err != nil {
+		return nil, grpcutil.TranslateError(err)
+	}
+	return workflow, nil
+}
+
 func (c *errorTranslatingWorkflowServiceClient) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	workflow, err := c.delegate.StopWorkflow(ctx, req)
 	if err != nil {

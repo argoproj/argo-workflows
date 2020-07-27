@@ -327,6 +327,131 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
 
+var susWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  arguments: {}
+  entrypoint: suspend
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: suspend
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: approve
+        template: approve
+    - - arguments:
+          parameters:
+          - name: message
+            value: '{{steps.approve.outputs.parameters.message}}'
+        name: release
+        template: whalesay
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: approve
+    outputs:
+      parameters:
+      - name: message
+        valueFrom:
+          supplied: {}
+    suspend: {}
+  - arguments: {}
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  finishedAt: null
+  nodes:
+    suspend-template-kgfn7:
+      children:
+      - suspend-template-kgfn7-1405476480
+      displayName: suspend-template-kgfn7
+      finishedAt: null
+      id: suspend-template-kgfn7
+      name: suspend-template-kgfn7
+      phase: Running
+      startedAt: "2020-06-25T18:01:56Z"
+      templateName: suspend
+      templateScope: local/suspend-template-kgfn7
+      type: Steps
+    suspend-template-kgfn7-1405476480:
+      boundaryID: suspend-template-kgfn7
+      children:
+      - suspend-template-kgfn7-2667278707
+      displayName: '[0]'
+      finishedAt: null
+      id: suspend-template-kgfn7-1405476480
+      name: suspend-template-kgfn7[0]
+      phase: Running
+      startedAt: "2020-06-25T18:01:56Z"
+      templateName: suspend
+      templateScope: local/suspend-template-kgfn7
+      type: StepGroup
+    suspend-template-kgfn7-2667278707:
+      boundaryID: suspend-template-kgfn7
+      displayName: approve
+      finishedAt: null
+      id: suspend-template-kgfn7-2667278707
+      name: suspend-template-kgfn7[0].approve
+      outputs:
+        parameters:
+        - name: message
+          valueFrom:
+            supplied: {}
+      phase: Running
+      startedAt: "2020-06-25T18:01:56Z"
+      templateName: approve
+      templateScope: local/suspend-template-kgfn7
+      type: Suspend
+  phase: Running
+  startedAt: "2020-06-25T18:01:56Z"
+`
+
+func TestUpdateSuspendedNode(t *testing.T) {
+	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	origWf := unmarshalWF(susWorkflow)
+
+	_, err := wfIf.Create(origWf)
+	if assert.NoError(t, err) {
+		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
+		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
+		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
+		assert.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
+		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.NoError(t, err)
+	}
+
+	noSpaceWf := unmarshalWF(susWorkflow)
+	noSpaceWf.Name = "suspend-template-no-outputs"
+	node := noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"]
+	node.Outputs = nil
+	noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"] = node
+	_, err = wfIf.Create(noSpaceWf)
+	if assert.NoError(t, err) {
+		err = updateSuspendedNode(wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
+		assert.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
+	}
+}
+
 func TestGetNodeType(t *testing.T) {
 	t.Run("getNodeType", func(t *testing.T) {
 		assert.Equal(t, wfv1.NodeTypePod, GetNodeType(&wfv1.Template{Script: &wfv1.ScriptTemplate{}}))
