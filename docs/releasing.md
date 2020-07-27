@@ -66,11 +66,16 @@ git push -f origin stable
 
 If this is GA:
 
-* [ ] Update the [Homebrew tap](https://github.com/argoproj/homebrew-tap).
-* [ ] Check Homebrew was successfully updated:
+* [ ] Update the Homebrew formula.
+
+```bash
+brew bump-formula-pr argo --version $VERSION
+```
+
+* [ ] Check that Homebrew was successfully updated after the PR was merged:
  
  ```
- brew upgrade argoproj/tap/argo
+ brew upgrade argo
  argo version
  ```
 
