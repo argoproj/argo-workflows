@@ -2,6 +2,8 @@ package util
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateFieldSelectorFromWorkflowName(t *testing.T) {
@@ -34,12 +36,21 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 		want string
 	}{
 		{"TestRecoverWorkflowNameFromSelectorString", args{"metadata.name=whalesay"}, "whalesay"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"metadata.name="}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RecoverWorkflowNameFromSelectorString(tt.args.selector); got != tt.want {
+			got, err := RecoverWorkflowNameFromSelectorString(tt.args.selector)
+			assert.NoError(t, err)
+			if got != tt.want {
 				t.Errorf("RecoverWorkflowNameFromSelectorString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+}
+
+func TestRecoverWorkflowNameFromSelectorStringError(t *testing.T) {
+	name, err := RecoverWorkflowNameFromSelectorString("whatever=whalesay")
+	assert.NotNil(t, err)
+	assert.Equal(t, name, "")
 }
