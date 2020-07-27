@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {ResourceViewer} from '../../../shared/components/resource-editor/resource-viewer';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 
 export const WorkflowResourcePanel = (props: {workflow: Workflow}) => (
-    <div className='white-box'>
+    <div className='white-box' key='workflow-resource'>
         <div className='white-box__details'>
-            <ResourceViewer value={props.workflow} />
+            <ResourceEditor readonly={true} value={props.workflow} kind='Workflow' />
         </div>
     </div>
 );

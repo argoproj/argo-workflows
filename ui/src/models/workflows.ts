@@ -627,11 +627,17 @@ export interface WorkflowSpec {
      * deleted after the time to live expires. If this field is unset,
      * the controller config map will hold the default values.
      */
-    ttlStrategy?: {};
+    ttlStrategy?: {
+        secondsAfterCompletion?: number;
+        secondsAfterSuccess?: number;
+        secondsAfterFailure?: number;
+    };
     /**
      * PodGC describes the strategy to use when to deleting completed pods
      */
-    podGC?: {};
+    podGC?: {
+        strategy?: string;
+    };
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */

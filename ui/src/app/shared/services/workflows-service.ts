@@ -3,6 +3,7 @@ import {Observable, Observer} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Workflow, WorkflowList} from '../../../models';
+import {SubmitOpts} from '../../../models/submit-opts';
 import {Pagination} from '../pagination';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
@@ -107,10 +108,10 @@ export class WorkflowsService {
         return requests.delete(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
-    public submit(kind: string, name: string, namespace: string) {
+    public submit(kind: string, name: string, namespace: string, submitOptions?: SubmitOpts) {
         return requests
             .post(`api/v1/workflows/${namespace}/submit`)
-            .send({namespace, resourceKind: kind, resourceName: name})
+            .send({namespace, resourceKind: kind, resourceName: name, submitOptions})
             .then(res => res.body as Workflow);
     }
 
