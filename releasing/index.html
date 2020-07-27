@@ -2003,10 +2003,16 @@
 <h3 id="update-homebrew">Update Homebrew<a class="headerlink" href="#update-homebrew" title="Permanent link">&para;</a></h3>
 <p>If this is GA:</p>
 <ul>
-<li>[ ] Update the <a href="https://github.com/argoproj/homebrew-tap">Homebrew tap</a>.</li>
-<li>[ ] Check Homebrew was successfully updated:</li>
+<li>[ ] Update the Homebrew formula.</li>
 </ul>
-<p><code>brew upgrade argoproj/tap/argo
+<div class="codehilite"><pre><span></span><code>brew bump-formula-pr argo --version <span class="nv">$VERSION</span>
+</code></pre></div>
+
+
+<ul>
+<li>[ ] Check that Homebrew was successfully updated after the PR was merged:</li>
+</ul>
+<p><code>brew upgrade argo
  argo version</code></p>
                 
                   
