@@ -242,18 +242,16 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <div className='white-box'>
                         <div className='row'>
                             <div className='columns small-3' key='namespace'>
-                                <InputFilter name='namespace' value={this.namespace} placeholder='Namespace'
-                                             onChange={namespace => (this.namespace = namespace)}/>
+                                <InputFilter name='namespace' value={this.namespace} placeholder='Namespace' onChange={namespace => (this.namespace = namespace)} />
                             </div>
                             <div className='columns small-6' key='labels'>
-                                <TagsInput placeholder='Labels' tags={this.labels}
-                                           onChange={labels => (this.labels = labels)}/>
+                                <TagsInput placeholder='Labels' tags={this.labels} onChange={labels => (this.labels = labels)} />
                             </div>
                             <div className='columns small-3' key='phases'>
                                 <p>
                                     {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
                                         <a key={phase} className='argo-button' onClick={() => (this.phase = phase)}>
-                                            {this.phase === phase && <i className='fa fa-check'/>}
+                                            {this.phase === phase && <i className='fa fa-check' />}
                                             {phase}
                                         </a>
                                     ))}
@@ -271,21 +269,22 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
             return (
                 <ZeroState title='Workflow Report'>
                     <p>
-                        Use this page to find costly or time consuming workflows. You must label workflows you want to
-                        report on. If you use <b>workflow templates</b> or{' '}
+                        Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
                         <b>cron workflows</b>, your workflows will be automatically labelled.
                     </p>
                     <p>Select a namespace and at least one label to get a report.</p>
-                   <p> <a href='https://github.com/argoproj/argo/blob/master/docs/cost-optimisation.md'>Learn about cost
-                        optimization</a></p>
+                    <p>
+                        {' '}
+                        <a href='https://github.com/argoproj/argo/blob/master/docs/cost-optimisation.md'>Learn about cost optimization</a>
+                    </p>
                 </ZeroState>
             );
         }
         if (this.state.error) {
-            return <ErrorPanel error={this.state.error}/>;
+            return <ErrorPanel error={this.state.error} />;
         }
         if (!this.state.charts) {
-            return <Loading/>;
+            return <Loading />;
         }
         return (
             <>
@@ -312,8 +311,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 <div className='row' key='info'>
                     <div className='columns small-12'>
                         <small>
-                            <i className='fa fa-info-circle'/> Showing {this.state.charts[0].data.labels.length} workflows.
-                            Deleted workflows (even if archived) are not shown.
+                            <i className='fa fa-info-circle' /> Showing {this.state.charts[0].data.labels.length} workflows. Deleted workflows (even if archived) are not shown.
                         </small>
                     </div>
                 </div>
