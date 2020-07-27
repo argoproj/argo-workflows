@@ -1474,6 +1474,44 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/set": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "SetWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSetRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/stop": {
       "put": {
         "tags": [
@@ -1953,6 +1991,9 @@
     },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "type": "object",
+      "required": [
+        "configMap"
+      ],
       "properties": {
         "configMap": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
@@ -2617,6 +2658,41 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
+      "type": "object",
+      "required": [
+        "hit",
+        "key",
+        "cacheName"
+      ],
+      "properties": {
+        "cacheName": {
+          "type": "string"
+        },
+        "hit": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Memoize": {
+      "description": "Memoization",
+      "type": "object",
+      "required": [
+        "key",
+        "cache"
+      ],
+      "properties": {
+        "cache": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
       "type": "object",
@@ -2710,6 +2786,10 @@
         "inputs": {
           "description": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoizationStatus": {
+          "description": "MemoizationStatus holds information about cached nodes",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MemoizationStatus"
         },
         "message": {
           "description": "A human readable message indicating details about why the node is in this condition.",
@@ -3305,6 +3385,10 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SuppliedValueFrom": {
+      "description": "SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.",
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
       "type": "object",
@@ -3431,6 +3515,10 @@
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoize": {
+          "description": "Memoize allows templates to use outputs generated from already executed templates",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize"
         },
         "metadata": {
           "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
@@ -3748,6 +3836,10 @@
         "path": {
           "description": "Path in the container to retrieve an output parameter value from in container templates",
           "type": "string"
+        },
+        "supplied": {
+          "description": "Supplied value to be filled in directly, either through the CLI, API, etc.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuppliedValueFrom"
         }
       }
     },
@@ -3924,6 +4016,29 @@
         "restartSuccessful": {
           "type": "boolean",
           "format": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowSetRequest": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "outputParameters": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
         }
       }
     },

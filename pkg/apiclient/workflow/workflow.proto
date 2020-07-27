@@ -20,6 +20,7 @@ message WorkflowCreateRequest {
     bool serverDryRun = 4;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
 }
+
 message WorkflowGetRequest {
     string name = 1;
     string namespace = 2;
@@ -63,6 +64,15 @@ message WorkflowStopRequest {
      string namespace = 2;
      string nodeFieldSelector = 3;
      string message = 4;
+}
+
+message WorkflowSetRequest {
+    string name = 1;
+    string namespace = 2;
+    string nodeFieldSelector = 3;
+    string message = 4;
+    string phase = 5;
+    string outputParameters = 6;
 }
 
 message WorkflowSuspendRequest {
@@ -178,6 +188,13 @@ service WorkflowService {
     rpc StopWorkflow (WorkflowStopRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
 			put: "/api/v1/workflows/{namespace}/{name}/stop"
+			body: "*"
+		};
+    }
+
+    rpc SetWorkflow (WorkflowSetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{name}/set"
 			body: "*"
 		};
     }
