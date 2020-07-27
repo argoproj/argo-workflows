@@ -176,6 +176,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			}
 			if !ok {
 				log.Debug("Re-establishing workflow watch")
+				watch.Stop()
 				watch, err = wfIf.Watch(*opts)
 				if err != nil {
 					return err
@@ -193,6 +194,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			if err != nil {
 				return err
 			}
+			// when we re-establish, we want to start at the same place
+			opts.ResourceVersion = wf.ResourceVersion
 		}
 	}
 }
