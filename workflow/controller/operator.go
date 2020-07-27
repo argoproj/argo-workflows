@@ -224,7 +224,7 @@ func (woc *wfOperationCtx) operate() {
 
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
-		// Workflow will not be queued, if workflow steps are in pending state.
+		// Workflow will not be requeued if workflow steps are in pending state.
 		// Workflow needs to requeue on its deadline,
 		if woc.workflowDeadline != nil {
 			woc.requeue(time.Until(*woc.workflowDeadline))
