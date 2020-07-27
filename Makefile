@@ -168,10 +168,10 @@ dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/argo: server/static/files.go $(CLI_PKGS)
-	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
+	go build -v -i -ldflags '-s ${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '-s ${LDFLAGS}' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
 
