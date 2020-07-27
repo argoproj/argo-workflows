@@ -2,13 +2,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: memoized-workflow-
+  generateName: memoized-simple-workflow-
 spec:
   entrypoint: whalesay
   arguments:
     parameters:
     - name: message
-      value: test-3
+      value: test-5
   templates:
   - name: whalesay
     inputs:
