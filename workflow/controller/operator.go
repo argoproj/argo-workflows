@@ -224,6 +224,12 @@ func (woc *wfOperationCtx) operate() {
 
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
+		// Workflow will not be requeued if workflow steps are in pending state.
+		// Workflow needs to requeue on its deadline,
+		if woc.workflowDeadline != nil {
+			woc.requeue(time.Until(*woc.workflowDeadline))
+		}
+
 		if woc.wfSpec.Metrics != nil {
 			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
@@ -234,7 +240,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
 		if err == nil {
-			err = woc.failSuspendedNodesAfterDeadlineOrShutdown()
+			err = woc.failSuspendedAndPendingNodesAfterDeadlineOrShutdown()
 		}
 		if err != nil {
 			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error("workflow timeout")
@@ -881,11 +887,12 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
-//fails any suspended nodes if the workflow deadline has passed
-func (woc *wfOperationCtx) failSuspendedNodesAfterDeadlineOrShutdown() error {
-	if woc.wfSpec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+//fails any suspended and pending nodes if the workflow deadline has passed
+func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() error {
+	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
+	if woc.wfSpec.Shutdown != "" || deadlineExceeded {
 		for _, node := range woc.wf.Status.Nodes {
-			if node.IsActiveSuspendNode() {
+			if node.IsActiveSuspendNode() || (node.Phase == wfv1.NodePending && deadlineExceeded) {
 				var message string
 				if woc.wfSpec.Shutdown != "" {
 					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
@@ -1747,6 +1754,10 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
+	if nodeType == wfv1.NodeTypeSuspend {
+		node = addRawOutputFields(node, executeTmpl)
+	}
+
 	if len(messages) > 0 {
 		node.Message = messages[0]
 	}
@@ -2428,6 +2439,21 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return node, nil
+}
+
+func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeStatus {
+	if tmpl.GetType() != wfv1.TemplateTypeSuspend || node.Type != wfv1.NodeTypeSuspend {
+		panic("addRawOutputFields should only be used for nodes and templates of type suspend")
+	}
+	for _, param := range tmpl.Outputs.Parameters {
+		if param.ValueFrom.Supplied != nil {
+			if node.Outputs == nil {
+				node.Outputs = &wfv1.Outputs{Parameters: []wfv1.Parameter{}}
+			}
+			node.Outputs.Parameters = append(node.Outputs.Parameters, param)
+		}
+	}
+	return node
 }
 
 func parseStringToDuration(durationString string) (time.Duration, error) {
