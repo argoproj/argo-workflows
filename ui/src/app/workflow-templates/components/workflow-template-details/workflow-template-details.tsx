@@ -6,9 +6,9 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
+import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
@@ -84,17 +84,13 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                         </div>
                         {this.state.template && (
                             <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                                <ResourceEditor
-                                    title='Submit New Workflow'
-                                    kind='Workflow'
-                                    value={this.getWorkflow(this.state.template)}
-                                    onSubmit={wfValue => {
-                                        services.workflows
-                                            .create(wfValue, wfValue.metadata.namespace)
-                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
-                                            .catch(error => this.setState({error}));
-                                    }}
-                                    editing={true}
+                                <SubmitWorkflowPanel
+                                    kind='WorkflowTemplate'
+                                    namespace={this.state.template.metadata.namespace}
+                                    name={this.state.template.metadata.name}
+                                    entrypoint={this.state.template.spec.entrypoint}
+                                    entrypoints={(this.state.template.spec.templates || []).map(t => t.name)}
+                                    parameters={this.state.template.spec.arguments.parameters || []}
                                 />
                             </SlidingPanel>
                         )}
@@ -126,20 +122,5 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             .then(() => {
                 document.location.href = uiUrl('workflow-templates');
             });
-    }
-
-    private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
-        return {
-            metadata: {
-                generateName: template.metadata.name + '-',
-                namespace: template.metadata.namespace
-            },
-            spec: {
-                entrypoint: !!template.spec.templates ? template.spec.templates[0].name : '',
-                workflowTemplateRef: {
-                    name: template.metadata.name
-                }
-            }
-        };
     }
 }
