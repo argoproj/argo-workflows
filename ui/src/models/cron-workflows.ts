@@ -11,6 +11,7 @@ export interface CronWorkflow {
 
 export interface CronWorkflowSpec {
     workflowSpec: WorkflowSpec;
+    workflowMetadata?: kubernetes.ObjectMeta;
     schedule: string;
     concurrencyPolicy?: string;
     suspend?: boolean;
