@@ -148,6 +148,8 @@ Workflow is the definition of a workflow resource
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -224,6 +226,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -243,6 +247,8 @@ Workflow is the definition of a workflow resource
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -461,6 +467,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -537,6 +545,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -558,6 +568,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -787,6 +799,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -863,6 +877,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -884,6 +900,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -1076,6 +1094,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -1152,6 +1172,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -1173,6 +1195,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -1313,6 +1337,8 @@ Arguments to a template
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -1353,9 +1379,13 @@ Arguments to a template
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -1598,6 +1628,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -1674,6 +1706,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -1693,6 +1727,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -1720,6 +1756,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|HostAliases is an optional list of hosts and IPs that will be injected into the pod spec|
 |`initContainers`|`Array<`[`UserContainer`](#usercontainer)`>`|InitContainers is a list of containers which run before the main container.|
 |`inputs`|[`Inputs`](#inputs)|Inputs describe what inputs parameters and artifacts are supplied to this template|
+|`memoize`|[`Memoize`](#memoize)|Memoize allows templates to use outputs generated from already executed templates|
 |`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
 |`name`|`string`|Name is the name of the template|
@@ -1777,6 +1814,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref.yaml)
@@ -1814,6 +1853,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|
+|`memoizationStatus`|[`MemoizationStatus`](#memoizationstatus)|MemoizationStatus holds information about cached nodes|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
 |`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.|
@@ -1867,6 +1907,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-gcs.yaml)
@@ -1880,6 +1922,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
@@ -2063,6 +2107,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -2103,9 +2149,13 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -2373,6 +2423,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -2407,7 +2459,11 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
@@ -2417,6 +2473,23 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 |:----------:|:----------:|---------------|
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifact are a list of artifacts passed as inputs|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters are a list of parameters passed as inputs|
+
+## Memoize
+
+Memoization
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`cache`|[`Cache`](#cache)|_No description available_|
+|`key`|`string`|_No description available_|
 
 ## Metadata
 
@@ -2570,6 +2643,8 @@ Pod metdata
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -2646,6 +2721,8 @@ Pod metdata
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -2667,6 +2744,8 @@ Pod metdata
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -2714,6 +2793,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 </details>
 
 ### Fields
@@ -2945,6 +3026,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -2958,6 +3041,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -2991,6 +3076,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 <br>
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 </details>
@@ -3034,6 +3121,17 @@ TemplateRef is a reference of template resource.
 |`name`|`string`|Name is the resource name of the template.|
 |`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
+
+## MemoizationStatus
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`cacheName`|`string`|_No description available_|
+|`hit`|`boolean`|_No description available_|
+|`key`|`string`|_No description available_|
 
 ## SemaphoreStatus
 
@@ -3276,6 +3374,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
@@ -3287,6 +3387,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 </details>
 
 ### Fields
@@ -3297,6 +3399,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
+|`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
 
 ## Counter
 
@@ -3438,6 +3541,22 @@ DAGTask represents a node in the graph during DAG execution
 |`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a task into a numeric sequence|
 
+## Cache
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|_No description available_|
+
 ## Backoff
 
 Backoff is a backoff strategy to use within retryStrategy
@@ -3577,6 +3696,17 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## SuppliedValueFrom
+
+SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+</details>
 
 ## Amount
 
@@ -3744,6 +3874,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -3820,6 +3952,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -3841,6 +3975,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -4225,6 +4361,8 @@ A single application container that you want to run within a pod.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -4288,6 +4426,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
@@ -4872,6 +5012,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -4948,6 +5090,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -4969,6 +5113,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -5074,6 +5220,13 @@ Represents a cinder volume resource in Openstack. A Cinder volume must exist bef
 ## ConfigMapVolumeSource
 
 Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data field will be presented in a volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. ConfigMap volumes support ownership management and SELinux relabeling.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -5397,6 +5550,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
@@ -5408,6 +5563,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 </details>
 
 ### Fields
@@ -5856,6 +6013,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](https://github.com/argoproj/argo/blob/master/examples/node-selector.yaml)
@@ -5932,6 +6091,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -5953,6 +6114,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
 
@@ -5990,6 +6153,13 @@ A null or empty node selector term matches no objects. The requirements of them 
 ## ConfigMapProjection
 
 Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap's Data field will be presented in a projected volume as files using the keys in the Data field as the file names, unless the items element is populated with specific mappings of keys to paths. Note that this is identical to a configmap volume source without the default mode.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
