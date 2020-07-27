@@ -164,8 +164,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-ctx.Done():
 					return
-				case event, open := <-wfWatch.ResultChan():
-					if !open {
+				case event, ok := <-wfWatch.ResultChan():
+					var wf *wfv1.Workflow
+					if ok {
+						wf, ok = event.Object.(*wfv1.Workflow)
+					}
+					if !ok {
 						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch, err = wfInterface.Watch(wfListOptions)
 						if err != nil {
@@ -173,11 +177,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							return
 						}
 						continue
-					}
-					wf, ok := event.Object.(*wfv1.Workflow)
-					if !ok {
-						logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
-						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
