@@ -13,7 +13,7 @@ import (
 
 var (
 	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
-	descRegex = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels`, argoNamespace, workflowsSubsystem))
+	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels`, argoNamespace, workflowsSubsystem))
 )
 
 type RealTimeMetric struct {
