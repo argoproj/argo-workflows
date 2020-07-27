@@ -23,7 +23,7 @@ func NewDeleteCommand() *cobra.Command {
 		dryRun        bool
 	)
 	var command = &cobra.Command{
-		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]]",
+		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR]]",
 		Short: "delete workflows",
 		Example: `# Delete a workflow:
 
@@ -45,7 +45,7 @@ func NewDeleteCommand() *cobra.Command {
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
 			}
-			if all || flags.completed || flags.prefix != "" || flags.labels != "" {
+			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" {
 				listed, err := listWorkflows(CLIOpt.ctx, serviceClient, flags)
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)
@@ -69,6 +69,7 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().BoolVar(&allNamespaces, "all-namespaces", false, "Delete workflows from all namespaces")
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
 	command.Flags().BoolVar(&flags.completed, "completed", false, "Delete completed workflows")
+	command.Flags().BoolVar(&flags.resubmitted, "resubmitted", false, "Delete resubmitted workflows")
 	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
 	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")

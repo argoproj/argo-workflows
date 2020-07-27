@@ -608,6 +608,8 @@ spec:
                             type: string
                           path:
                             type: string
+                          supplied:
+                            type: object
                         type: object
                     required:
                     - name
@@ -1718,6 +1720,8 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                supplied:
+                                  type: object
                               type: object
                           required:
                           - name
@@ -2590,6 +2594,8 @@ spec:
                                             type: string
                                           path:
                                             type: string
+                                          supplied:
+                                            type: object
                                         type: object
                                     required:
                                     - name
@@ -3541,11 +3547,37 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                supplied:
+                                  type: object
                               type: object
                           required:
                           - name
                           type: object
                         type: array
+                    type: object
+                  memoize:
+                    properties:
+                      cache:
+                        properties:
+                          configMap:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
+                        required:
+                        - configMap
+                        type: object
+                      key:
+                        type: string
+                    required:
+                    - cache
+                    - key
                     type: object
                   metadata:
                     properties:
@@ -3951,6 +3983,8 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                supplied:
+                                  type: object
                               type: object
                           required:
                           - name
@@ -5465,6 +5499,8 @@ spec:
                                               type: string
                                             path:
                                               type: string
+                                            supplied:
+                                              type: object
                                           type: object
                                       required:
                                       - name

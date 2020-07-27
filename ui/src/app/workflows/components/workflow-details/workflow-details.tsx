@@ -14,7 +14,8 @@ import {CostOptimisationNudge} from '../../../shared/components/cost-optimisatio
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
-import * as Operations from '../../../shared/workflow-operations';
+import * as Operations from '../../../shared/workflow-operations-map';
+import {WorkflowOperationAction, WorkflowOperationName, WorkflowOperations} from '../../../shared/workflow-operations-map';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
@@ -177,12 +178,18 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         );
     }
 
-    private performAction(action: (name: string, namespace: string) => Promise<any>, title: string, redirect: string, ctx: ContextApis): void {
+    private performAction(action: WorkflowOperationAction, title: WorkflowOperationName, ctx: ContextApis): void {
         if (!confirm(`Are you sure you want to ${title.toLowerCase()} this workflow?`)) {
             return;
         }
-        action(this.props.match.params.name, this.props.match.params.namespace)
-            .then(() => ctx.navigation.goto(uiUrl(redirect)))
+        action(this.state.workflow)
+            .then(wf => {
+                if (title === 'DELETE') {
+                    ctx.navigation.goto(uiUrl(``));
+                } else {
+                    ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                }
+            })
             .catch(() => {
                 this.appContext.apis.notifications.show({
                     content: `Unable to ${title} workflow`,
@@ -192,14 +199,14 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private getItems(workflowPhase: NodePhase, ctx: any) {
-        const actions: any = Operations.WorkflowOperations;
-        const items = Object.keys(actions).map(actionName => {
-            const action = actions[actionName];
+        const workflowOperationsMap: WorkflowOperations = Operations.WorkflowOperationsMap;
+        const items = Object.keys(workflowOperationsMap).map(actionName => {
+            const workflowOperation = workflowOperationsMap[actionName];
             return {
-                title: action.title.charAt(0).toUpperCase() + action.title.slice(1),
-                iconClassName: action.iconClassName,
-                disabled: action.disabled(this.state.workflow),
-                action: () => this.performAction(action.action, action.title, ``, ctx)
+                title: workflowOperation.title.charAt(0).toUpperCase() + workflowOperation.title.slice(1),
+                iconClassName: workflowOperation.iconClassName,
+                disabled: workflowOperation.disabled(this.state.workflow),
+                action: () => this.performAction(workflowOperation.action, workflowOperation.title, ctx)
             };
         });
 

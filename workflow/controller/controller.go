@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -86,6 +88,7 @@ type WorkflowController struct {
 	metrics               *metrics.Metrics
 	eventRecorderManager  EventRecorderManager
 	archiveLabelSelector  labels.Selector
+	cacheFactory          controllercache.CacheFactory
 }
 
 const (
@@ -109,6 +112,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       newEventRecorderManager(kubeclientset),
 	}
 

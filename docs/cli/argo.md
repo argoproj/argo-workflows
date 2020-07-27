@@ -56,6 +56,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 * [argo lint](argo_lint.md)	 - validate files or directories of workflow manifests
 * [argo list](argo_list.md)	 - list workflows
 * [argo logs](argo_logs.md)	 - view logs of a pod or workflow
+* [argo node](argo_node.md)	 - perform action on a node in a workflow
 * [argo resubmit](argo_resubmit.md)	 - resubmit one or more workflows
 * [argo resume](argo_resume.md)	 - resume zero or more workflows
 * [argo retry](argo_retry.md)	 - retry zero or more workflows
