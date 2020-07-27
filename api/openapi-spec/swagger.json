@@ -1991,6 +1991,9 @@
     },
     "io.argoproj.workflow.v1alpha1.Cache": {
       "type": "object",
+      "required": [
+        "configMap"
+      ],
       "properties": {
         "configMap": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
@@ -2655,6 +2658,41 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
+      "type": "object",
+      "required": [
+        "hit",
+        "key",
+        "cacheName"
+      ],
+      "properties": {
+        "cacheName": {
+          "type": "string"
+        },
+        "hit": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Memoize": {
+      "description": "Memoization",
+      "type": "object",
+      "required": [
+        "key",
+        "cache"
+      ],
+      "properties": {
+        "cache": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
       "type": "object",
@@ -2748,6 +2786,10 @@
         "inputs": {
           "description": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoizationStatus": {
+          "description": "MemoizationStatus holds information about cached nodes",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MemoizationStatus"
         },
         "message": {
           "description": "A human readable message indicating details about why the node is in this condition.",
@@ -3473,6 +3515,10 @@
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "memoize": {
+          "description": "Memoize allows templates to use outputs generated from already executed templates",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Memoize"
         },
         "metadata": {
           "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
