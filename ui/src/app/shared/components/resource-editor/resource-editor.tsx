@@ -3,6 +3,7 @@ import MonacoEditor from 'react-monaco-editor';
 import {uiUrl} from '../../base';
 
 import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
+import {ErrorNotice} from '../error-notice';
 import {parse, stringify} from './resource';
 
 require('./resource.scss');
@@ -12,6 +13,7 @@ interface Props<T> {
     upload?: boolean;
     title?: string;
     value: T;
+    readonly?: boolean;
     editing?: boolean;
     onSubmit?: (value: T) => void;
 }
@@ -92,20 +94,17 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
         return (
             <>
                 {this.props.title && <h4>{this.props.title}</h4>}
-                {this.renderButtons()}
-                {this.state.error && (
-                    <p>
-                        <i className='fa fa-exclamation-triangle status-icon--failed' /> {this.state.error.message}
-                    </p>
-                )}
+                {!this.props.readonly && this.renderButtons()}
+                {this.state.error && <ErrorNotice error={this.state.error} />}
                 <div className='resource-editor-panel__editor'>
                     <MonacoEditor
+                        key='editor'
                         value={this.state.value}
                         language={this.state.lang}
                         height={'600px'}
                         onChange={value => this.setState({value})}
                         options={{
-                            readOnly: !this.state.editing,
+                            readOnly: this.props.readonly || !this.state.editing,
                             extraEditorClassName: 'resource',
                             minimap: {enabled: false},
                             lineNumbers: 'off',
@@ -129,21 +128,21 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <>
-                        <label className={`argo-button argo-button--base-o ${this.state.lang}`} style={{marginRight: '5px'}} onClick={e => this.changeLang()}>
+                        <label className={`argo-button argo-button--base-o ${this.state.lang}`} style={{marginRight: '5px'}} onClick={e => this.changeLang()} key='data-type'>
                             {this.state.lang === 'yaml' ? <i className='fa fa-check' /> : <i className='fa fa-times' />} YAML
                         </label>
                         {this.props.upload && (
-                            <label className='argo-button argo-button--base-o'>
+                            <label className='argo-button argo-button--base-o' key='upload-file'>
                                 <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
                                 <i className='fa fa-upload' /> Upload file
                             </label>
                         )}
-                        <button onClick={() => this.submit()} className='argo-button argo-button--base'>
+                        <button onClick={() => this.submit()} className='argo-button argo-button--base' key='submit'>
                             <i className='fa fa-plus' /> Submit
                         </button>
                     </>
                 )) || (
-                    <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>
+                    <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base' key='edit'>
                         <i className='fa fa-edit' /> Edit
                     </button>
                 )}
