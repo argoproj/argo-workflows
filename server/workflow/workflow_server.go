@@ -144,7 +144,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
-		wfName := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
+		wfName, err := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
+		if err != nil {
+			return err
+		}
 		if len(wfName) > 0 {
 			wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
 			if err != nil {
