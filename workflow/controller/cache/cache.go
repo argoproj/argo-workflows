@@ -146,7 +146,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 		})
 		if err != nil {
 			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
-			return err
+			return fmt.Errorf("could not save to config map cache: %", err)
 		}
 	}
 
@@ -158,7 +158,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 	entryJSON, err := json.Marshal(newEntry)
 	if err != nil {
 		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Unable to marshal cache entry")
-		return fmt.Errorf("Unable to marshal cache entry: %w", err)
+		return fmt.Errorf("unable to marshal cache entry: %w", err)
 	}
 
 	if cache.Data == nil {
@@ -169,7 +169,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 	_, err = c.kubeClient.CoreV1().ConfigMaps(c.namespace).Update(cache)
 	if err != nil {
 		c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Kubernetes error creating new cache entry")
-		return err
+		return fmt.Errorf("error creating cache entry: %w", err)
 	}
 	return nil
 }
