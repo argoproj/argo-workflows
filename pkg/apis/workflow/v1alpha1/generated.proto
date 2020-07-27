@@ -886,6 +886,10 @@ message SubmitOpts {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
 }
 
+// SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+message SuppliedValueFrom {
+}
+
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
@@ -1106,11 +1110,14 @@ message ValueFrom {
 
   // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   // +kubebuilder:validation:MinLength=4
-  optional string expression = 6;
+  optional string expression = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
+
+  // Supplied value to be filled in directly, either through the CLI, API, etc.
+  optional SuppliedValueFrom supplied = 6;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;

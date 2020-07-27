@@ -1,11 +1,11 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {WorkflowSpec} from './workflows';
+import {WorkflowTemplateSpec} from './workflow-templates';
 
 export interface ClusterWorkflowTemplate {
     apiVersion?: string;
     kind?: string;
     metadata: kubernetes.ObjectMeta;
-    spec: WorkflowSpec;
+    spec: WorkflowTemplateSpec;
 }
 
 export interface ClusterWorkflowTemplateList {

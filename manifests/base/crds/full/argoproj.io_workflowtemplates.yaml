@@ -611,6 +611,8 @@ spec:
                             type: string
                           path:
                             type: string
+                          supplied:
+                            type: object
                         type: object
                     required:
                     - name
@@ -1724,6 +1726,8 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                supplied:
+                                  type: object
                               type: object
                           required:
                           - name
@@ -2599,6 +2603,8 @@ spec:
                                             type: string
                                           path:
                                             type: string
+                                          supplied:
+                                            type: object
                                         type: object
                                     required:
                                     - name
@@ -3553,6 +3559,8 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                supplied:
+                                  type: object
                               type: object
                           required:
                           - name
@@ -3990,6 +3998,8 @@ spec:
                                   type: string
                                 path:
                                   type: string
+                                supplied:
+                                  type: object
                               type: object
                           required:
                           - name
@@ -5507,6 +5517,8 @@ spec:
                                               type: string
                                             path:
                                               type: string
+                                            supplied:
+                                              type: object
                                           type: object
                                       required:
                                       - name

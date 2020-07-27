@@ -226,6 +226,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -542,6 +544,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
@@ -877,6 +881,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -1174,6 +1180,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -1382,6 +1390,8 @@ Arguments to a template
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -1710,6 +1720,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -1928,6 +1940,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
@@ -2152,6 +2166,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -2465,6 +2481,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
@@ -2726,6 +2744,8 @@ Pod metdata
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
@@ -3034,6 +3054,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -3084,6 +3106,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 <br>
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 </details>
@@ -3394,6 +3418,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
 
 - [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
@@ -3408,6 +3434,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
+|`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
 
 ## Counter
 
@@ -3705,6 +3732,17 @@ TarStrategy will tar and gzip the file or directory when saving
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
 
+## SuppliedValueFrom
+
+SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+</details>
+
 ## Amount
 
 Amount represent a numeric amount.
@@ -3948,6 +3986,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
@@ -4425,6 +4465,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
@@ -5089,6 +5131,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
@@ -5564,6 +5608,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
 
@@ -6093,6 +6139,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
+
+- [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
 

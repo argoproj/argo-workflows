@@ -100,7 +100,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist server workflow pkg -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 # docker_build,image_name,binary_name,marker_file_name
@@ -458,10 +458,12 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 
 
 ./node_modules/.bin/swagger-markdown:
+	npm init -y
 	npm install swagger-markdown
 
 docs/swagger.md: api/openapi-spec/swagger.json ./node_modules/.bin/swagger-markdown
 	./node_modules/.bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
+	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
 docs: api/openapi-spec/swagger.json docs/swagger.md

@@ -1,5 +1,5 @@
+import {Autocomplete} from 'argo-ui';
 import * as React from 'react';
-import {Autocomplete} from '../../../../node_modules/argo-ui';
 
 interface InputProps {
     value: string;

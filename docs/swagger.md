@@ -603,6 +603,23 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
 
+### /api/v1/workflows/{namespace}/{name}/set
+
+#### PUT
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path |  | Yes | string |
+| name | path |  | Yes | string |
+| body | body |  | Yes | [io.argoproj.workflow.v1alpha1.WorkflowSetRequest](#io.argoproj.workflow.v1alpha1.workflowsetrequest) |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
+
 ### /api/v1/workflows/{namespace}/{name}/stop
 
 #### PUT
@@ -1398,6 +1415,14 @@ SubmitOpts are workflow submission options
 | serverDryRun | boolean | ServerDryRun validates the workflow on the server-side without creating it | No |
 | serviceAccount | string | ServiceAccount runs all pods in the workflow using specified ServiceAccount. | No |
 
+#### io.argoproj.workflow.v1alpha1.SuppliedValueFrom
+
+SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.SuppliedValueFrom | object | SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc. |  |
+
 #### io.argoproj.workflow.v1alpha1.SuspendTemplate
 
 SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1543,6 +1568,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
 | path | string | Path in the container to retrieve an output parameter value from in container templates | No |
+| supplied | [io.argoproj.workflow.v1alpha1.SuppliedValueFrom](#io.argoproj.workflow.v1alpha1.suppliedvaluefrom) | Supplied value to be filled in directly, either through the CLI, API, etc. | No |
 
 #### io.argoproj.workflow.v1alpha1.Version
 
@@ -1645,6 +1671,17 @@ WorkflowList is list of Workflow resources
 | namespace | string |  | No |
 | nodeFieldSelector | string |  | No |
 | restartSuccessful | boolean (boolean) |  | No |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowSetRequest
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| message | string |  | No |
+| name | string |  | No |
+| namespace | string |  | No |
+| nodeFieldSelector | string |  | No |
+| outputParameters | string |  | No |
+| phase | string |  | No |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowSpec
 

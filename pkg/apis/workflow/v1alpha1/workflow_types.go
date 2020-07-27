@@ -632,14 +632,21 @@ type ValueFrom struct {
 
 	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
 	// +kubebuilder:validation:MinLength=4
-	Expression string `json:"expression,omitempty" protobuf:"bytes,6,opt,name=expression"`
+	Expression string `json:"expression,omitempty" protobuf:"bytes,7,opt,name=expression"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
+	// Supplied value to be filled in directly, either through the CLI, API, etc.
+	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
+
 	// Default specifies a value to be used if retrieving the value from the specified source fails
 	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+}
+
+// SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
+type SuppliedValueFrom struct {
 }
 
 // Artifact indicates an artifact to place at a specified path
