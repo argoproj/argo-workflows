@@ -36,7 +36,7 @@
     
     
       
-        <title>argo - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Argo node - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#argo" tabindex="1" class="md-skip">
+      <a href="#argo-node" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              argo
+              Argo node
             </span>
           
         </div>
@@ -296,12 +296,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
     
     <label class="md-nav__link" for="nav-4">
       User Guide
@@ -761,12 +759,10 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-6" type="checkbox" id="nav-4-6" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-6" type="checkbox" id="nav-4-6">
     
     <label class="md-nav__link" for="nav-4-6">
       CLI Reference
@@ -782,79 +778,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        argo
-      </label>
-    
-    <a href="./" title="argo" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../argo/" title="argo" class="md-nav__link">
       argo
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#argo" title="argo" class="md-nav__link">
-    argo
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#synopsis" title="Synopsis" class="md-nav__link">
-    Synopsis
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" title="Examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#options" title="Options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#see-also" title="SEE ALSO" class="md-nav__link">
-    SEE ALSO
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -1871,8 +1799,8 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo" title="argo" class="md-nav__link">
-    argo
+  <a href="#argo-node" title="argo node" class="md-nav__link">
+    argo node
   </a>
   
     <nav class="md-nav">
@@ -1895,6 +1823,13 @@
           <li class="md-nav__item">
   <a href="#options" title="Options" class="md-nav__link">
     Options
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options-inherited-from-parent-commands" title="Options inherited from parent commands" class="md-nav__link">
+    Options inherited from parent commands
   </a>
   
 </li>
@@ -1927,25 +1862,39 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/cli/argo.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo/edit/master/docs/cli/argo_node.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                  <h1>argo</h1>
+                  <h1>Argo node</h1>
                 
-                <h2 id="argo">argo<a class="headerlink" href="#argo" title="Permanent link">&para;</a></h2>
-<p>argo is the command line interface to Argo</p>
+                <h2 id="argo-node">argo node<a class="headerlink" href="#argo-node" title="Permanent link">&para;</a></h2>
+<p>perform action on a node in a workflow</p>
 <h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
-<p>argo is the command line interface to Argo</p>
-<div class="codehilite"><pre><span></span><code><span class="n">argo</span><span class="w"> </span><span class="o">[</span><span class="n">flags</span><span class="o">]</span><span class="w"></span>
+<p>perform action on a node in a workflow</p>
+<div class="codehilite"><pre><span></span><code><span class="n">argo</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="k">ACTION</span><span class="w"> </span><span class="n">WORKFLOW</span><span class="w"> </span><span class="n">FLAGS</span><span class="w"> </span><span class="o">[</span><span class="n">flags</span><span class="o">]</span><span class="w"></span>
 </code></pre></div>
 
 
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="err">If you&#39;re using the Argo Server (e.g. because you need large workflow support or workflow archive), please read https://github.com/argoproj/argo/blob/master/docs/cli.md.</span>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span> <span class="k">Set</span> <span class="n">outputs</span> <span class="k">to</span> <span class="n">a</span> <span class="n">node</span> <span class="n">within</span> <span class="n">a</span> <span class="n">workflow</span><span class="p">:</span>
+
+  <span class="n">argo</span> <span class="n">node</span> <span class="k">set</span> <span class="n">my</span><span class="o">-</span><span class="n">wf</span> <span class="c1">--output-parameter parameter-name=&quot;Hello, world!&quot; --node-field-selector displayName=approve</span>
+
+<span class="o">#</span> <span class="k">Set</span> <span class="n">the</span> <span class="n">message</span> <span class="k">of</span> <span class="n">a</span> <span class="n">node</span> <span class="n">within</span> <span class="n">a</span> <span class="n">workflow</span><span class="p">:</span>
+
+  <span class="n">argo</span> <span class="n">node</span> <span class="k">set</span> <span class="n">my</span><span class="o">-</span><span class="n">wf</span> <span class="c1">--message &quot;We did it!&quot;&quot; --node-field-selector displayName=approve</span>
 </code></pre></div>
 
 
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="err">  -h, --help                           help for node</span>
+<span class="err">  -m, --message string                 Set the message of a node, eg: --message &quot;Hello, world!&quot;</span>
+<span class="err">      --node-field-selector string     Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc</span>
+<span class="err">  -p, --output-parameter stringArray   Set a &quot;supplied&quot; output parameter of node, eg: --output-parameter parameter-name=&quot;Hello, world!&quot;</span>
+</code></pre></div>
+
+
+<h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
 <div class="codehilite"><pre><span></span><code><span class="err">  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.</span>
 <span class="err">      --as string                      Username to impersonate for the operation</span>
 <span class="err">      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.</span>
@@ -1954,7 +1903,6 @@
 <span class="err">      --client-key string              Path to a client key file for TLS</span>
 <span class="err">      --cluster string                 The name of the kubeconfig cluster to use</span>
 <span class="err">      --context string                 The name of the kubeconfig context to use</span>
-<span class="err">  -h, --help                           help for argo</span>
 <span class="err">      --insecure-skip-tls-verify       If true, the server&#39;s certificate will not be checked for validity. This will make your HTTPS connections insecure</span>
 <span class="err">  -k, --insecure-skip-verify           If true, the Argo Server&#39;s certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.</span>
 <span class="err">      --instanceid string              submit with a specific controller&#39;s instance id label. Default to the ARGO_INSTANCEID environment variable.</span>
@@ -1974,29 +1922,7 @@
 
 <h3 id="see-also">SEE ALSO<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="../argo_archive/">argo archive</a>    - </li>
-<li><a href="../argo_auth/">argo auth</a>  - </li>
-<li><a href="../argo_cluster-template/">argo cluster-template</a>  - manipulate cluster workflow templates</li>
-<li><a href="../argo_completion/">argo completion</a>  - output shell completion code for the specified shell (bash or zsh)</li>
-<li><a href="../argo_cron/">argo cron</a>  - manage cron workflows</li>
-<li><a href="../argo_delete/">argo delete</a>  - delete workflows</li>
-<li><a href="../argo_get/">argo get</a>    - display details about a workflow</li>
-<li><a href="../argo_lint/">argo lint</a>  - validate files or directories of workflow manifests</li>
-<li><a href="../argo_list/">argo list</a>  - list workflows</li>
-<li><a href="../argo_logs/">argo logs</a>  - view logs of a pod or workflow</li>
-<li><a href="../argo_node/">argo node</a>  - perform action on a node in a workflow</li>
-<li><a href="../argo_resubmit/">argo resubmit</a>  - resubmit one or more workflows</li>
-<li><a href="../argo_resume/">argo resume</a>  - resume zero or more workflows</li>
-<li><a href="../argo_retry/">argo retry</a>    - retry zero or more workflows</li>
-<li><a href="../argo_server/">argo server</a>  - Start the Argo Server</li>
-<li><a href="../argo_stop/">argo stop</a>  - stop zero or more workflows</li>
-<li><a href="../argo_submit/">argo submit</a>  - submit a workflow</li>
-<li><a href="../argo_suspend/">argo suspend</a>    - suspend zero or more workflow</li>
-<li><a href="../argo_template/">argo template</a>  - manipulate workflow templates</li>
-<li><a href="../argo_terminate/">argo terminate</a>    - terminate zero or more workflows</li>
-<li><a href="../argo_version/">argo version</a>    - Print version information</li>
-<li><a href="../argo_wait/">argo wait</a>  - waits for workflows to complete</li>
-<li><a href="../argo_watch/">argo watch</a>    - watch a workflow until it completes</li>
+<li><a href="../argo/">argo</a>    - argo is the command line interface to Argo</li>
 </ul>
                 
                   
@@ -2014,41 +1940,6 @@
       
         
 <footer class="md-footer">
-  
-    <div class="md-footer-nav">
-      <nav class="md-footer-nav__inner md-grid">
-        
-          <a href="../../fields/" title="Field Reference" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-            </div>
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Previous
-                </span>
-                Field Reference
-              </span>
-            </div>
-          </a>
-        
-        
-          <a href="../argo_archive/" title="argo archive" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-              <span class="md-flex__ellipsis">
-                <span class="md-footer-nav__direction">
-                  Next
-                </span>
-                argo archive
-              </span>
-            </div>
-            <div class="md-flex__cell md-flex__cell--shrink">
-              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-            </div>
-          </a>
-        
-      </nav>
-    </div>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
