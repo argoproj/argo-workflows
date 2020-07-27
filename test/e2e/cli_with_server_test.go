@@ -8,12 +8,11 @@ import (
 	"testing"
 	"time"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type CLIWithServerSuite struct {
@@ -197,6 +196,93 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 		}).
 		WaitForWorkflow(20 * time.Second).
 		DeleteConfigMap()
+}
+
+func (s *CLIWithServerSuite) TestArgoSetOutputs() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+      - name: approve-no-vars
+        template: approve-no-vars
+    - - name: release
+        template: whalesay
+        arguments:
+          parameters:
+            - name: message
+              value: "{{steps.approve.outputs.parameters.message}}"
+
+  - name: approve
+    suspend: {}
+    outputs:
+      parameters:
+        - name: message
+          valueFrom:
+            supplied: {}
+
+  - name: approve-no-vars
+    suspend: {}
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "{{inputs.parameters.message}}"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
+			assert.Error(t, err)
+			assert.Contains(t, output, "has not been set and does not have a default value")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow values set")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+			// Cannot double-set the same parameter
+			assert.Error(t, err)
+			assert.Contains(t, output, "it was already set")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve-no-vars"}, func(t *testing.T, output string, err error) {
+			assert.Error(t, err)
+			assert.Contains(t, output, "cannot set output parameters because node is not expecting any raw parameters")
+		}).
+		RunCli([]string{"node", "set", "suspend-template", "--message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow values set")
+		}).
+		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow suspend-template resumed")
+		}).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("release")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("approve")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, "Test message", nodeStatus.Message)
+			}
+		})
 }
 
 func TestCLIWithServerSuite(t *testing.T) {

@@ -1,22 +1,38 @@
-## argo
+## argo node
 
-argo is the command line interface to Argo
+perform action on a node in a workflow
 
 ### Synopsis
 
-argo is the command line interface to Argo
+perform action on a node in a workflow
 
 ```
-argo [flags]
+argo node ACTION WORKFLOW FLAGS [flags]
 ```
 
 ### Examples
 
 ```
-If you're using the Argo Server (e.g. because you need large workflow support or workflow archive), please read https://github.com/argoproj/argo/blob/master/docs/cli.md.
+# Set outputs to a node within a workflow:
+
+  argo node set my-wf --output-parameter parameter-name="Hello, world!" --node-field-selector displayName=approve
+
+# Set the message of a node within a workflow:
+
+  argo node set my-wf --message "We did it!"" --node-field-selector displayName=approve
+
 ```
 
 ### Options
+
+```
+  -h, --help                           help for node
+  -m, --message string                 Set the message of a node, eg: --message "Hello, world!"
+      --node-field-selector string     Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+  -p, --output-parameter stringArray   Set a "supplied" output parameter of node, eg: --output-parameter parameter-name="Hello, world!"
+```
+
+### Options inherited from parent commands
 
 ```
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
@@ -27,7 +43,6 @@ If you're using the Argo Server (e.g. because you need large workflow support or
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
       --context string                 The name of the kubeconfig context to use
-  -h, --help                           help for argo
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
@@ -46,27 +61,5 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 
 ### SEE ALSO
 
-* [argo archive](argo_archive.md)	 - 
-* [argo auth](argo_auth.md)	 - 
-* [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
-* [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
-* [argo cron](argo_cron.md)	 - manage cron workflows
-* [argo delete](argo_delete.md)	 - delete workflows
-* [argo get](argo_get.md)	 - display details about a workflow
-* [argo lint](argo_lint.md)	 - validate files or directories of workflow manifests
-* [argo list](argo_list.md)	 - list workflows
-* [argo logs](argo_logs.md)	 - view logs of a pod or workflow
-* [argo node](argo_node.md)	 - perform action on a node in a workflow
-* [argo resubmit](argo_resubmit.md)	 - resubmit one or more workflows
-* [argo resume](argo_resume.md)	 - resume zero or more workflows
-* [argo retry](argo_retry.md)	 - retry zero or more workflows
-* [argo server](argo_server.md)	 - Start the Argo Server
-* [argo stop](argo_stop.md)	 - stop zero or more workflows
-* [argo submit](argo_submit.md)	 - submit a workflow
-* [argo suspend](argo_suspend.md)	 - suspend zero or more workflow
-* [argo template](argo_template.md)	 - manipulate workflow templates
-* [argo terminate](argo_terminate.md)	 - terminate zero or more workflows
-* [argo version](argo_version.md)	 - Print version information
-* [argo wait](argo_wait.md)	 - waits for workflows to complete
-* [argo watch](argo_watch.md)	 - watch a workflow until it completes
+* [argo](argo.md)	 - argo is the command line interface to Argo
 
