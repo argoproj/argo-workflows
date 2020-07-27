@@ -1432,7 +1432,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// If memoization is on, check if node output exists in cache
 	if resolvedTmpl.Memoize != nil && node == nil {
 		// return cacheEntry struct instead of wfv1.Outputs
-		log.Infof("%s", processedTmpl.Memoize.Cache.ConfigMap.Name)
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
 		if c == nil {
 			err := fmt.Errorf("Cache could not be found or created")

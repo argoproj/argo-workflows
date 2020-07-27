@@ -8,7 +8,7 @@ spec:
   arguments:
     parameters:
     - name: message
-      value: test-abc-foo
+      value: test-3
   templates:
   - name: whalesay
     inputs:
