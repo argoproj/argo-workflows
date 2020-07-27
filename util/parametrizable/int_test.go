@@ -2,8 +2,8 @@ package parametrizable
 
 import (
 	"fmt"
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"sigs.k8s.io/yaml"
 	"testing"
 )
 
@@ -14,29 +14,35 @@ type testStruct struct {
 	Val Int `json:"val"`
 }
 
-func unmarshal(val string) *testStruct {
+func unmarshal(val string) (*testStruct, error) {
 	var res testStruct
 	err := yaml.Unmarshal([]byte(fmt.Sprintf(template, val)), &res)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return &res
+	return &res, nil
 }
 
 func TestInt_UnmarshalJSON(t *testing.T) {
-	val, err := unmarshal("2").Val.Int()
+	val, err := unmarshal("2")
 	assert.NoError(t, err)
-	assert.Equal(t, 2, val)
-
-
-	val, err = unmarshal("\"2\"").Val.Int()
+	i, err := val.Val.Int()
 	assert.NoError(t, err)
-	assert.Equal(t, 2, val)
+	assert.Equal(t, 2, i)
 
-	var res *testStruct
-	assert.NotPanics(t, func() {
-		res = unmarshal("\"{{var}}\"")
-	})
-	_, err = res.Val.Int()
+	val, err = unmarshal("\"2\"")
+	assert.NoError(t, err)
+	i, err = val.Val.Int()
+	assert.NoError(t, err)
+	assert.Equal(t, 2, i)
+
+
+	val, err = unmarshal("2.1")
+	assert.Error(t, err)
+	assert.EqualError(t, err, "error unmarshaling JSON: 2.1 is not an int or argo variable")
+
+	val, err = unmarshal("\"{{var}}\"")
+	assert.NoError(t, err)
+	i, err = val.Val.Int()
 	assert.Error(t, err)
 }

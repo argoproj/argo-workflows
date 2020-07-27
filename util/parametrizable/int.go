@@ -34,7 +34,7 @@ func (l *Int) UnmarshalJSON(b []byte) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("cannot parse: %s", b)
+	return fmt.Errorf("%s is not an int or argo variable", b)
 }
 
 func (l *Int) Int() (int, error) {
