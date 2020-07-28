@@ -2771,6 +2771,10 @@
           "description": "DisplayName is a human readable representation of the node. Unique within a template boundary",
           "type": "string"
         },
+        "estimatedDuration": {
+          "type": "integer",
+          "format": "int64"
+        },
         "finishedAt": {
           "description": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
@@ -4239,6 +4243,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           }
+        },
+        "estimatedDuration": {
+          "type": "integer",
+          "format": "int64"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",

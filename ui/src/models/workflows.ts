@@ -450,6 +450,8 @@ export interface NodeStatus {
      */
     finishedAt: kubernetes.Time;
 
+    estimatedDuration?: number;
+
     /**
      * How much resource was requested.
      */
@@ -545,6 +547,7 @@ export interface WorkflowStatus {
     phase: NodePhase;
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
+    estimatedDuration?: number;
     /**
      * A human readable message indicating details about why the workflow is in this condition.
      */

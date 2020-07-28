@@ -1,3 +1,4 @@
+// @ts-ignore
 import * as classNames from 'classnames';
 import * as React from 'react';
 
@@ -218,16 +219,29 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 let phase: DagPhase;
                                 let label: string;
                                 let hidden: boolean;
+                                const node = this.props.nodes[nodeId];
                                 if (isCollapsedNode(nodeId)) {
                                     phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
                                     label = getCollapsedNumHidden(nodeId) + ' hidden nodes';
                                     hidden = this.hiddenNode(getCollapsedNodeParent(nodeId));
                                 } else {
-                                    const node = this.props.nodes[nodeId];
                                     phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
                                     label = Utils.shortNodeName(node);
                                     hidden = this.hiddenNode(nodeId);
                                 }
+
+                                const duration = new Date().getTime() - new Date(node.startedAt).getTime(); // ms
+                                const estimatedDuration = node.estimatedDuration ? node.estimatedDuration / 1000 / 1000 : Number.MAX_SAFE_INTEGER; // ms
+                                const radius = this.nodeSize / 2;
+                                const complete = Math.min(duration / estimatedDuration, 0.999);
+                                const offset = (2 * Math.PI * 3) / 4;
+                                const theta0 = offset;
+                                const theta1 = 2 * Math.PI * complete + offset;
+                                const start = {x: radius * Math.cos(theta0), y: radius * Math.sin(theta0)};
+                                const end = {x: radius * Math.cos(theta1), y: radius * Math.sin(theta1)};
+                                const theta = theta1 - theta0;
+                                const largeArcFlag = theta > Math.PI ? 1 : 0;
+                                const sweepFlag = 1;
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
@@ -239,7 +253,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                         />
                                         {!hidden && (
                                             <>
-                                                {this.icon(phase)}
+                                                <path
+                                                    key='progress-path'
+                                                    d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`}
+                                                    className='progress'
+                                                />
+                                                ;{this.icon(phase)}
                                                 <g transform={`translate(0,${this.nodeSize})`}>
                                                     <text className='label' fontSize={12 / this.scale}>
                                                         {WorkflowDag.formatLabel(label)}

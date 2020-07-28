@@ -93,7 +93,8 @@ type wfOperationCtx struct {
 	// This should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
-	wfSpec *wfv1.WorkflowSpec
+	wfSpec       *wfv1.WorkflowSpec
+	lastWorkflow *wfv1.Workflow
 }
 
 var (
@@ -236,6 +237,8 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.wfSpec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
+
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -1479,6 +1482,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1665,6 +1669,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1808,15 +1813,16 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	}
 
 	node := wfv1.NodeStatus{
-		ID:            nodeID,
-		Name:          nodeName,
-		TemplateName:  orgTmpl.GetTemplateName(),
-		TemplateRef:   orgTmpl.GetTemplateRef(),
-		TemplateScope: templateScope,
-		Type:          nodeType,
-		BoundaryID:    boundaryID,
-		Phase:         phase,
-		StartedAt:     metav1.Time{Time: time.Now().UTC()},
+		ID:                nodeID,
+		Name:              nodeName,
+		TemplateName:      orgTmpl.GetTemplateName(),
+		TemplateRef:       orgTmpl.GetTemplateRef(),
+		TemplateScope:     templateScope,
+		Type:              nodeType,
+		BoundaryID:        boundaryID,
+		Phase:             phase,
+		StartedAt:         metav1.Time{Time: time.Now().UTC()},
+		EstimatedDuration: woc.estimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -2928,4 +2934,69 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	return tmplRef, executionParameters, nil
+}
+
+func (woc *wfOperationCtx) getLastWorkflow() *wfv1.Workflow {
+	if woc.lastWorkflow == nil {
+		wf, err := woc.getLastWorkflowAux()
+		if err != nil {
+			log.WithError(err).Error("failed to get last workflow")
+			return nil
+		}
+		if wf == nil {
+			return nil
+		}
+		err = woc.controller.hydrator.Hydrate(wf)
+		if err != nil {
+			log.WithError(err).Error("failed hydrate last workflow")
+			return nil
+		}
+		woc.lastWorkflow = wf
+	}
+	return woc.lastWorkflow
+}
+
+func (woc *wfOperationCtx) getLastWorkflowAux() (*wfv1.Workflow, error) {
+	// TODO workflows.argoproj.io/resubmitted-from-workflow
+	for _, labelName := range []string{common.LabelKeyWorkflowTemplate, common.LabelKeyClusterWorkflowTemplate, common.LabelKeyCronWorkflow} {
+		labelValue, ok := woc.wf.Labels[labelName]
+		if ok {
+			// TODO instanceid
+			list, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace).List(metav1.ListOptions{
+				LabelSelector: common.LabelKeyCompleted + "=true," + labelName + "=" + labelValue,
+			})
+			if err != nil {
+				return nil, err
+			}
+			sort.Sort(list.Items)
+			for _, item := range list.Items {
+				return &item, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (woc *wfOperationCtx) estimateWorkflowDuration() time.Duration {
+	wf := woc.getLastWorkflow()
+	if wf == nil {
+		return 0
+	}
+	return wf.Status.GetDuration()
+}
+
+func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) time.Duration {
+	woc.log.WithField("nodeName", nodeName).Debug("estimating node duration")
+	wf := woc.getLastWorkflow()
+	if wf == nil {
+		woc.log.WithField("nodeName", nodeName).Debug("no last workflow")
+		return 0
+	}
+	// special case for root node
+	nodeName = strings.Replace(nodeName, woc.wf.Name, wf.Name, 1)
+	oldNodeID := wf.NodeID(nodeName)
+	status := wf.Status.Nodes[oldNodeID]
+	duration := status.GetDuration()
+	woc.log.WithFields(log.Fields{"nodeName": nodeName, "oldNodeID": oldNodeID, "status": status, "duration": duration}).Debug("got estimated node duration")
+	return duration
 }

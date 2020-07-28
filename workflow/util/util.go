@@ -596,6 +596,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
 			newNode.FinishedAt = newNode.StartedAt
 		}
+		newNode.EstimatedDuration = node.GetDuration()
 		newChildren := make([]string, len(node.Children))
 		for i, childID := range node.Children {
 			newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
