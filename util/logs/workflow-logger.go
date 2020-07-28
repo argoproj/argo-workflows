@@ -3,7 +3,6 @@ package logs
 import (
 	"bufio"
 	"context"
-	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -164,9 +163,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-ctx.Done():
 					return
-				case event, open := <-wfWatch.ResultChan():
-					if !open {
+				case event, ok := <-wfWatch.ResultChan():
+					var wf *wfv1.Workflow
+					if ok {
+						wf, ok = event.Object.(*wfv1.Workflow)
+					}
+					if !ok {
 						logCtx.Debug("Re-establishing workflow watch")
+						wfWatch.Stop()
 						wfWatch, err = wfInterface.Watch(wfListOptions)
 						if err != nil {
 							logCtx.Error(err)
@@ -174,15 +178,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						}
 						continue
 					}
-					wf, ok := event.Object.(*wfv1.Workflow)
-					if !ok {
-						logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
-						return
-					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
 						return
 					}
+					// in case we re-establish the watch, make sure we start at the same place
+					wfListOptions.ResourceVersion = wf.ResourceVersion
 				}
 			}
 		}()
@@ -197,9 +198,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-stopWatchingPods:
 					return
-				case event, open := <-podWatch.ResultChan():
-					if !open {
+				case event, ok := <-podWatch.ResultChan():
+					var pod *corev1.Pod
+					if ok {
+						pod, ok = event.Object.(*corev1.Pod)
+					}
+					if !ok {
 						logCtx.Info("Re-establishing pod watch")
+						podWatch.Stop()
 						podWatch, err = podInterface.Watch(podListOptions)
 						if err != nil {
 							logCtx.Error(err)
@@ -207,15 +213,11 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						}
 						continue
 					}
-					pod, ok := event.Object.(*corev1.Pod)
-					if !ok {
-						logCtx.Errorf("watch object was not a pod %v", reflect.TypeOf(event.Object))
-						return
-					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
 					if pod.Status.Phase == corev1.PodRunning {
 						ensureWeAreStreaming(pod)
 					}
+					podListOptions.ResourceVersion = pod.ResourceVersion
 				}
 			}
 		}()
