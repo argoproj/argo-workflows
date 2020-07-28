@@ -110,6 +110,7 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 			Labels:            map[string]string{common.LabelKeyPreviousWorkflowName: "foo-"},
 		}},
 	}}, nil)
+
 	workflows, err := listWorkflows(context.Background(), c, flags)
 	return workflows, err
 }

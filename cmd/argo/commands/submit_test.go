@@ -36,11 +36,11 @@ spec:
 func TestSubmitFromResource(t *testing.T) {
 	client := mocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
-	wfClient.On("SubmitFrom", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
+	wfClient.On("SubmitWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	CLIOpt.client = &client
 	CLIOpt.ctx = context.TODO()
-	output := CaptureOutput(func() { submitWorkflowFromResource(CLIOpt.ctx, wfclient, "default","workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
+	output := CaptureOutput(func() { submitWorkflowFromResource(CLIOpt.ctx, &wfClient, "default","workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
 	assert.Contains(t, output, "Created:")
 }
 
@@ -56,7 +56,7 @@ func TestSubmitWorkflows(t *testing.T) {
 	err := yaml.Unmarshal([]byte(workflow), &wf)
 	assert.NoError(t, err)
 	workflows := []wfv1.Workflow{wf}
-	output := CaptureOutput(func() { submitWorkflows(CLIOpt.ctx, CLIOpt.client, workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
+	output := CaptureOutput(func() { submitWorkflows(CLIOpt.ctx, &wfClient, "default", workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{}) })
 	fmt.Println(output)
 	assert.Contains(t, output, "Created:")
 }
