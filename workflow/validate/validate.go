@@ -1002,6 +1002,10 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 
 // validateBaseImageOutputs detects if the template contains an valid output from base image layer
 func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error {
+	// This validation is not applicable for DAG and Step Template types
+	if tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps {
+		return nil
+	}
 	switch ctx.ContainerRuntimeExecutor {
 	case "", common.ContainerRuntimeExecutorDocker:
 		// docker executor supports all modes of artifact outputs
