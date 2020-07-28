@@ -6,7 +6,7 @@ For set-up information and running your first Workflows, please see our [Getting
 
 ### Examples
 
-For detailed examples about what Argo can do, please see our [documentation by example](examples/README.md) page.
+For detailed examples about what Argo can do, please see our [documentation by example](../examples/README.md) page.
 
 ### Fields
 
