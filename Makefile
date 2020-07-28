@@ -46,7 +46,7 @@ STATIC_BUILD          ?= true
 CI                    ?= false
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
-SECURE                := true
+SECURE                := false
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
