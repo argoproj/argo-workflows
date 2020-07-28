@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/antonmedv/expr"
 	log "github.com/sirupsen/logrus"
@@ -50,17 +51,21 @@ func (o *Operation) Dispatch() {
 	log.Debugln(string(data))
 
 	for _, event := range o.events {
+		// we use a predicable suffix to the name so that lost connections cannot result in the same workflow
+		// being created twice
+		nameSuffix := fmt.Sprintf("%v", time.Now().Unix())
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			_, err := o.dispatch(event)
+			_, err := o.dispatch(event, nameSuffix)
 			return err == nil, err
 		})
 		if err != nil {
+
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispacth from event")
 		}
 	}
 }
 
-func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding) (*wfv1.Workflow, error) {
+func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) (*wfv1.Workflow, error) {
 	selector := wfeb.Spec.Event.Selector
 	result, err := expr.Eval(selector, o.env)
 	if err != nil {
@@ -90,10 +95,11 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding) (*wfv1.Workflow, er
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
+		wf.SetName(wf.GetGenerateName() + nameSuffix)
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
-		labels.Label(wf, common.LabelKeyWorkflowEvent, wfeb.Name)
+		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
 		for _, p := range submit.Parameters {
 			if p.ValueFrom == nil {
 				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
