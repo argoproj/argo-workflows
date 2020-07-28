@@ -24,7 +24,7 @@ var DefaultRetry = wait.Backoff{
 func IsRetryableKubeAPIError(err error) bool {
 	// get original error if it was wrapped
 	err = argoerrs.Cause(err)
-	if apierr.IsNotFound(err) || apierr.IsForbidden(err) || apierr.IsInvalid(err) || apierr.IsMethodNotSupported(err) {
+	if apierr.IsNotFound(err) || apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || apierr.IsInvalid(err) || apierr.IsMethodNotSupported(err) {
 		return false
 	}
 	return true
