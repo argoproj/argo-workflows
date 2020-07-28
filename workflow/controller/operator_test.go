@@ -4015,7 +4015,11 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	woc.operate()
 
 	status := woc.wf.Status
-	outputs := status.Nodes[""].Outputs
+	assert.Len(t, status.Nodes, 1)
+	outputs := &wfv1.Outputs{}
+	for _, node := range status.Nodes {
+		outputs = node.Outputs
+	}
 	assert.NotNil(t, outputs)
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
 	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
@@ -4049,7 +4053,11 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	assert.NotPanics(t, woc.operate)
 
 	status := woc.wf.Status
-	outputs := status.Nodes[""].Outputs
+	assert.Len(t, status.Nodes, 1)
+	outputs := &wfv1.Outputs{}
+	for _, node := range status.Nodes {
+		outputs = node.Outputs
+	}
 	assert.Nil(t, outputs)
 }
 
