@@ -290,7 +290,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.createPVCs()
 	if err != nil {
-		if apierr.IsForbidden(err) {
+		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
@@ -2131,7 +2131,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 }
 
 func (woc *wfOperationCtx) checkForbiddenErrorAndResubmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
-	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
+	if (apierr.IsForbidden(err) || apierr.IsTooManyRequests(err)) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
 		woc.requeue(0)
 		return woc.markNodePending(nodeName, err), nil
