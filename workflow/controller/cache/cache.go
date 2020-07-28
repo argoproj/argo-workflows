@@ -146,7 +146,7 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 		})
 		if err != nil {
 			c.logError(err, log.Fields{"key": key, "nodeId": nodeId}, "Error saving to ConfigMap cache")
-			return fmt.Errorf("could not save to config map cache: %", err)
+			return fmt.Errorf("could not save to config map cache: %w", err)
 		}
 	}
 

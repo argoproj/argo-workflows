@@ -4021,6 +4021,38 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
 }
 
+func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
+
+	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+		},
+	}
+	wf := unmarshalWF(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotPanics(t, woc.operate)
+
+	status := woc.wf.Status
+	outputs := status.Nodes[""].Outputs
+	assert.Nil(t, outputs)
+}
+
 func TestConfigMapCacheSaveOperate(t *testing.T) {
 	wf := unmarshalWF(workflowCached)
 	cancel, controller := newController()
