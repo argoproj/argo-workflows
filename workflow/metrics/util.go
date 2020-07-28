@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
@@ -13,7 +14,7 @@ import (
 
 var (
 	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
-	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels`, argoNamespace, workflowsSubsystem))
+	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
 )
 
 type RealTimeMetric struct {
@@ -181,17 +182,17 @@ func IsValidMetricName(name string) bool {
 func mustBeRecoverable(name, help string, metric prometheus.Metric) {
 	recoveredName, recoveredHelp := recoverMetricNameAndHelpFromDesc(metric.Desc().String())
 	if name != recoveredName {
-		panic(fmt.Sprintf("unable to recover metric name from desc provided by prometheus: expected '%s' got '%s", name, recoveredName))
+		panic(fmt.Sprintf("unable to recover metric name from desc provided by prometheus: expected '%s' got '%s'", name, recoveredName))
 	}
 	if help != recoveredHelp {
-		panic(fmt.Sprintf("unable to recover metric help from desc provided by prometheus: expected '%s' got '%s", help, recoveredHelp))
+		panic(fmt.Sprintf("unable to recover metric help from desc provided by prometheus: expected '%s' got '%s'", help, recoveredHelp))
 	}
 }
 
 func recoverMetricNameAndHelpFromDesc(desc string) (string, string) {
 	finds := descRegex.FindStringSubmatch(desc)
 	if len(finds) != 3 {
-		panic("malformed desc provided by prometheus")
+		panic(fmt.Sprintf("malformed desc provided by prometheus: '%s' parsed to %v", desc, finds))
 	}
-	return finds[1], finds[2]
+	return finds[1], strings.ReplaceAll(finds[2], `\"`, `"`)
 }

@@ -99,7 +99,8 @@ Metrics are defined in-place on the Workflow/Step/Task where they are emitted fr
 the Workflow/Step/Task completes, with the exception of [realtime metrics](#realtime-metrics).
 
 Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
-defining labels avoid cardinality explosion).
+defining labels avoid cardinality explosion). Metrics with the same `name` **must always** the same exact `help` string (
+this is a Prometheus requirement).
 
 All metrics can also be conditionally emitted by defining a `when` clause. This `when` clause works the same as elsewhere
 in a workflow.
