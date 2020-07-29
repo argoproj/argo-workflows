@@ -2043,45 +2043,42 @@ your <code>Workflows</code>.</p>
 <p>The terms <code>WorkflowTemplate</code> and <code>template</code> have created an unfortunate naming collision and have created some confusion
 in the past. However, a quick description should clarify each and their differences.</p>
 <ul>
-<li>
-<p>A <code>template</code> (lower-case) is a task within a <code>Workflow</code> or (confusingly) a <code>WorkflowTemplate</code> under the field <code>templates</code>. Whenever you define a
+<li>A <code>template</code> (lower-case) is a task within a <code>Workflow</code> or (confusingly) a <code>WorkflowTemplate</code> under the field <code>templates</code>. Whenever you define a
 <code>Workflow</code>, you must define at least one (but usually more than one) <code>template</code> to run. This <code>template</code> can be of type
 <code>container</code>, <code>script</code>, <code>dag</code>, <code>steps</code>, <code>resource</code>, or <code>suspend</code> and can be referenced by an <code>entrypoint</code> or by other
-<code>dag</code>, and <code>step</code> templates.</p>
-<p>Here is an example of a <code>Workflow</code> with two <code>templates</code>:
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: steps-
-spec:
-  entrypoint: hello           # We reference our first "template" here</p>
-<p>templates:
-  - name: hello               # The first "template" in this Workflow, it is referenced by "entrypoint"
-    steps:                    # The type of this "template" is "steps"
-    - - name: hello
-        template: whalesay    # We reference our second "template" here
-        arguments:
-          parameters: [{name: message, value: "hello1"}]</p>
+<code>dag</code>, and <code>step</code> templates.</li>
+</ul>
+<p>Here is an example of a <code>Workflow</code> with two <code>templates</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">steps-</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello</span>           <span class="c1"># We reference our first &quot;template&quot; here</span>
+
+  <span class="nt">templates</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello</span>               <span class="c1"># The first &quot;template&quot; in this Workflow, it is referenced by &quot;entrypoint&quot;</span>
+    <span class="nt">steps</span><span class="p">:</span>                    <span class="c1"># The type of this &quot;template&quot; is &quot;steps&quot;</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello</span>
+        <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>    <span class="c1"># We reference our second &quot;template&quot; here</span>
+        <span class="nt">arguments</span><span class="p">:</span>
+          <span class="nt">parameters</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">message</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="s">&quot;hello1&quot;</span><span class="p p-Indicator">}]</span>
+
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>             <span class="c1"># The second &quot;template&quot; in this Workflow, it is referenced by &quot;hello&quot;</span>
+    <span class="nt">inputs</span><span class="p">:</span>
+      <span class="nt">parameters</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
+    <span class="nt">container</span><span class="p">:</span>                <span class="c1"># The type of this &quot;template&quot; is &quot;container&quot;</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay</span>
+      <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
+      <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+
 <ul>
-<li>name: whalesay             # The second "template" in this Workflow, it is referenced by "hello"
-    inputs:
-      parameters:<ul>
-<li>name: message
-container:                # The type of this "template" is "container"
-  image: docker/whalesay
-  command: [cowsay]
-  args: ["{{inputs.parameters.message}}"]
-```</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p>A <code>WorkflowTemplate</code> is a definition of a <code>Workflow</code> that lives in your cluster. Since it is a definition of a <code>Workflow</code>
+<li>A <code>WorkflowTemplate</code> is a definition of a <code>Workflow</code> that lives in your cluster. Since it is a definition of a <code>Workflow</code>
 it also contains <code>templates</code>. These <code>templates</code> can be referenced from within the <code>WorkflowTemplate</code> and from other <code>Workflows</code>
-and <code>WorkflowTemplates</code> on your cluster. To see how, please see <a href="#referencing-other-workflowtemplates">Referencing Other <code>WorkflowTemplates</code></a>.</p>
-</li>
+and <code>WorkflowTemplates</code> on your cluster. To see how, please see <a href="#referencing-other-workflowtemplates">Referencing Other <code>WorkflowTemplates</code></a>.</li>
 </ul>
 <h2 id="workflowtemplate-spec"><code>WorkflowTemplate</code> Spec<a class="headerlink" href="#workflowtemplate-spec" title="Permanent link">&para;</a></h2>
 <blockquote>
