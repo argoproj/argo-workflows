@@ -142,7 +142,7 @@ access is on a per project rather than per bucket basis.
   (https://console.cloud.google.com/storage/settings).
 - Enable interoperability access if needed.
 - Create a new key if needed.
-- Confiture `s3` artifact as following exmaple.
+- Configure `s3` artifact as following exmaple.
 
 ```yaml
 artifacts:
@@ -203,7 +203,7 @@ endpoint and access/secret keys for your repository.
 
 ## S3 compatible artifact repository bucket (such as AWS, GCS, Minio, and Alibaba Cloud OSS)
 
-Use the `endpoint` corresponding to your artifact provider:
+Use the `endpoint` corresponding to your provider:
 
 - AWS: s3.amazonaws.com
 - GCS: storage.googleapis.com
@@ -216,7 +216,7 @@ secret. The secret is expected to have the keys 'accessKey' and 'secretKey',
 containing the base64 encoded credentials to the bucket.
 
 For AWS, the `accessKeySecret` and `secretKeySecret` correspond to
-AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY respectively.
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` respectively.
 
 EC2 provides a metadata API via which applications using the AWS SDK may assume
 IAM roles associated with the instance. If you are running argo on EC2 and the
