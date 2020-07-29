@@ -4573,7 +4573,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 		woc.operate()
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	})
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	t.Run("After Deadline", func(t *testing.T) {
 		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
