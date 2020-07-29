@@ -36,6 +36,43 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Finished ', value: <Timestamp date={props.workflow.status.finishedAt} />},
                 {title: 'Duration', value: formatDuration(wfDuration(props.workflow.status))}
             ];
+            const workflowTemplate = props.workflow.metadata.labels['workflows.argoproj.io/workflow-template'];
+            if (workflowTemplate) {
+                attributes.push({
+                    title: 'Workflow Template',
+                    value: (
+                        <a key='workflow-template' href={uiUrl('workflow-templates/' + props.workflow.metadata.namespace + '/' + workflowTemplate)}>
+                            {workflowTemplate}
+                        </a>
+                    )
+                });
+            }
+            const clusterWorkflowTemplate = props.workflow.metadata.labels['workflows.argoproj.io/cluster-workflow-template'];
+            if (clusterWorkflowTemplate) {
+                attributes.push({
+                    title: 'Cluster Workflow Template',
+                    value: (
+                        <a key='cluster-workflow-template' href={uiUrl('cluster-workflow-templates/' + clusterWorkflowTemplate)}>
+                            {clusterWorkflowTemplate}
+                        </a>
+                    )
+                });
+            }
+            const cronWorkflow = props.workflow.metadata.labels['workflows.argoproj.io/cron-workflow'];
+            if (cronWorkflow) {
+                attributes.push({
+                    title: 'Cron Workflow',
+                    value: (
+                        <a key='cron-workflows' href={uiUrl('cron-workflows/' + props.workflow.metadata.namespace + '/' + cronWorkflow)}>
+                            {cronWorkflow}
+                        </a>
+                    )
+                });
+            }
+            const creator = props.workflow.metadata.labels['workflows.argoproj.io/creator'];
+            if (creator) {
+                attributes.push({title: 'Creator', value: creator});
+            }
             if (props.workflow.status.resourcesDuration) {
                 attributes.push({
                     title: 'Resources Duration',

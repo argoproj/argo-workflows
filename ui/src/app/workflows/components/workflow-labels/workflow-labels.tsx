@@ -20,6 +20,7 @@ export class WorkflowLabels extends React.Component<WorkflowLabelsProps, {}> {
             labels.push(
                 Object.entries(w.metadata.labels).map(([key, value]) => (
                     <div
+                        title={`List workflows labelled with ${key}=${value}`}
                         className='tag'
                         key={`${w.metadata.uid}-${key}`}
                         onClick={async e => {
