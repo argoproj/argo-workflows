@@ -164,19 +164,51 @@ artifacts:
         key: secretKey
 ```
 
+## Configuring Alibaba Cloud OSS (Object Storage Service)
+
+To configure artifact storage for Alibaba Cloud OSS, please first follow
+the [official documentation](https://www.alibabacloud.com/product/oss) to set up
+an OSS account and bucket. 
+
+Once it's set up, you can find endpoint and bucket
+information on your OSS dashboard and then use them like the following to
+configure the artifact storage for your workflow:
+
+```yaml
+artifacts:
+  - name: my-art
+    path: /my-artifact
+    oss:
+      endpoint: http://oss-cn-hangzhou-zmf.aliyuncs.com
+      bucket: test-bucket-name
+      key: test/mydirectory/ # this is path in the bucket
+      # accessKeySecret and secretKeySecret are secret selectors.
+      # It references the k8s secret named 'my-oss-credentials'.
+      # This secret is expected to have have the keys 'accessKey'
+      # and 'secretKey', containing the base64 encoded credentials
+      # to the bucket.
+      accessKeySecret:
+        name: my-oss-credentials
+        key: accessKey
+      secretKeySecret:
+        name: my-oss-credentials
+        key: secretKey
+```
+
 # Configure the Default Artifact Repository
 
 In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
 endpoint and access/secret keys for your repository.
 
-## S3 compatible artifact repository bucket (such as AWS, GCS and Minio)
+## S3 compatible artifact repository bucket (such as AWS, GCS, Minio, and Alibaba Cloud OSS)
 
-Use the `endpoint` corresponding to your S3 provider:
+Use the `endpoint` corresponding to your artifact provider:
 
 - AWS: s3.amazonaws.com
 - GCS: storage.googleapis.com
 - Minio: my-minio-endpoint.default:9000
+- Alibaba Cloud OSS: oss-cn-hangzhou-zmf.aliyuncs.com
 
 The `key` is name of the object in the `bucket` The `accessKeySecret` and
 `secretKeySecret` are secret selectors that reference the specified kubernetes
@@ -203,6 +235,9 @@ project rather than per bucket basis.
 
 For Minio, the `accessKeySecret` and `secretKeySecret` naturally correspond the
 AccessKey and SecretKey.
+
+For Alibaba Cloud OSS, the `accessKeySecret` and `secretKeySecret` corresponds to
+`accessKeyID` `and accessKeySecret` respectively.
 
 Example:
 
