@@ -517,6 +517,19 @@ message Metrics {
   repeated Prometheus prometheus = 1;
 }
 
+// Mutex is a Mutex
+message Mutex {
+  // name of the mutex
+  optional string name = 1;
+}
+
+message MutexHolding {
+  // Name of the mutex
+  optional string mutex = 1;
+
+  optional string holder = 2;
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 message NodeStatus {
   // ID is a unique identifier of a node within the worklow
@@ -886,6 +899,8 @@ message SuspendTemplate {
 message Synchronization {
   // Semaphore holds the Semaphore configuration
   optional SemaphoreRef semaphore = 1;
+
+  optional Mutex mutex = 2;
 }
 
 message SynchronizationStatus {

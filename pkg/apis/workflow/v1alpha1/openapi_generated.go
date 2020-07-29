@@ -53,6 +53,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":                    schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricLabel":                 schema_pkg_apis_workflow_v1alpha1_MetricLabel(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics":                     schema_pkg_apis_workflow_v1alpha1_Metrics(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Mutex":                       schema_pkg_apis_workflow_v1alpha1_Mutex(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexHolding":                schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus":                  schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":                schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact":                 schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
@@ -1813,6 +1815,52 @@ func schema_pkg_apis_workflow_v1alpha1_Metrics(ref common.ReferenceCallback) com
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Mutex is a Mutex",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "name of the mutex",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"mutex": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the mutex",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"Holder": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"Holder"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3113,11 +3161,16 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
 						},
 					},
+					"mutex": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Mutex"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Mutex", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"},
 	}
 }
 

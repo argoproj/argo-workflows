@@ -1150,6 +1150,14 @@ Metrics are a list of metrics emitted from a Workflow/Template
 | ---- | ---- | ----------- | -------- |
 | prometheus | [ [io.argoproj.workflow.v1alpha1.Prometheus](#io.argoproj.workflow.v1alpha1.prometheus) ] | Prometheus is a list of prometheus metrics to be emitted | Yes |
 
+#### io.argoproj.workflow.v1alpha1.Mutex
+
+Mutex is a Mutex
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | name of the mutex | No |
+
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 
 NodeStatus contains status information about an individual node in the workflow
@@ -1401,6 +1409,7 @@ Synchronization holds synchronization lock configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| mutex | [io.argoproj.workflow.v1alpha1.Mutex](#io.argoproj.workflow.v1alpha1.mutex) |  | No |
 | semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreRef](#io.argoproj.workflow.v1alpha1.semaphoreref) | Semaphore holds the Semaphore configuration | No |
 
 #### io.argoproj.workflow.v1alpha1.SynchronizationStatus

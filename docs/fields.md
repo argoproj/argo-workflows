@@ -1478,6 +1478,7 @@ Synchronization holds synchronization lock configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`mutex`|[`Mutex`](#mutex)|_No description available_|
 |`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration|
 
 ## Template
@@ -2198,6 +2199,15 @@ Prometheus is a prometheus metric to be emitted
 |`labels`|`Array<`[`MetricLabel`](#metriclabel)`>`|Labels is a list of metric labels|
 |`name`|`string`|Name is the name of the metric|
 |`when`|`string`|When is a conditional statement that decides when to emit the metric|
+
+## Mutex
+
+Mutex is a Mutex
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|name of the mutex|
 
 ## SemaphoreRef
 

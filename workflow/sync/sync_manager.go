@@ -53,6 +53,7 @@ type LockType string
 
 const (
 	LockTypeSemaphore LockType = "semaphore"
+	LockTypeMutex LockType = "mutex"
 )
 
 func NewLockManager(getSyncLimitConfigFunc func(string) (int, error), callbackFunc func(string)) *SyncManager {
@@ -104,7 +105,11 @@ func (cm *SyncManager) initializeSemaphore(semaphoreName string) (Synchronizatio
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semaphoreName, limit, cm.releaseNotifyFunc), nil
+	return NewSemaphore(semaphoreName, limit, cm.releaseNotifyFunc, LockTypeSemaphore), nil
+}
+
+func (cm *SyncManager) initializeMutex(mutexName string) (Synchronization, error) {
+	return NewMutex(mutexName, cm.releaseNotifyFunc), nil
 }
 
 func (cm *SyncManager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, int, error) {
@@ -160,6 +165,18 @@ func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority i
 			return false, false, "", err
 		}
 		lockType = LockTypeSemaphore
+	}else if syncLockRef.Mutex != nil  {
+		syncLockName = getMutexLockName(wf.Namespace, syncLockRef.Mutex)
+		mutexLockKey := syncLockName.getLockKey()
+		mutexLock, found := cm.syncLockMap[mutexLockKey]
+		if !found {
+			mutexLock, err = cm.initializeMutex(mutexLockKey)
+			if err != nil {
+				return false, false, "", err
+			}
+			cm.syncLockMap[mutexLockKey] = mutexLock
+		}
+		lockType = LockTypeMutex
 	}
 
 	if syncLockName == nil {
@@ -337,6 +354,10 @@ func getSemaphoreLockName(namespace string, semaphoreRef *wfv1.SemaphoreRef) *Lo
 		return NewLockName(namespace, "configmap", semaphoreRef.ConfigMapKeyRef.Name, semaphoreRef.ConfigMapKeyRef.Key)
 	}
 	return nil
+}
+
+func getMutexLockName(namespace string, mutex *wfv1.Mutex) *LockName{
+	return NewLockName(namespace, "mutex", mutex.Name, "")
 }
 
 func getResourceKey(namespace, wfName, resourceName string) string {

@@ -857,12 +857,19 @@ type TemplateRef struct {
 type Synchronization struct {
 	// Semaphore holds the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	Mutex     *Mutex        `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+}
+
+// Mutex is a Mutex
+type Mutex struct {
+	// name of the mutex
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -1007,6 +1014,12 @@ type HolderNames struct {
 	// Name stores the name of the resource holding lock
 	// +listType=atomic
 	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+}
+
+type MutexHolding struct {
+	// Name of the mutex
+	Mutex  string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	Holder string `protobuf:"bytes,2,opt,name=holder"`
 }
 
 type SynchronizationStatus struct {
