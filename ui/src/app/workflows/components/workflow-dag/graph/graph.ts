@@ -1,8 +1,8 @@
 export type node = string;
 
 export interface Edge {
-    v: node;
-    w: node;
+    from: node;
+    to: node;
 }
 
 export class Graph {
@@ -22,8 +22,8 @@ export class Graph {
     public outgoingEdges(v: node) {
         const edges: node[] = [];
         this.edges.forEach(e => {
-            if (v === e.v) {
-                edges.push(e.w);
+            if (v === e.from) {
+                edges.push(e.to);
             }
         });
         return edges;
@@ -32,18 +32,18 @@ export class Graph {
     public incomingEdges(w: node) {
         const edges: node[] = [];
         this.edges.forEach(e => {
-            if (e.w === w) {
-                edges.push(e.v);
+            if (e.to === w) {
+                edges.push(e.from);
             }
         });
         return edges;
     }
 
     private edgeExists(v: node, w: node) {
-        return this.edges.has({v, w});
+        return this.edges.has({from: v, to: w});
     }
 
     private removeEdge(v: node, w: node) {
-        this.edges.delete({v, w});
+        this.edges.delete({from: v, to: w});
     }
 }

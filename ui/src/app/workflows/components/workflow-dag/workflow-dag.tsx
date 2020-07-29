@@ -6,7 +6,7 @@ import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
 import {getCollapsedNodeName, getCollapsedNodeParent, getCollapsedNumHidden, isCollapsedNode} from './graph/collapsible-node';
-import {Graph} from './graph/graph';
+import {Edge, Graph} from './graph/graph';
 import {Shifter} from './graph/shifter';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
@@ -62,7 +62,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-            d='M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z'
+                        d='M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z'
                     />
                 );
             case 'Failed':
@@ -72,7 +72,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <path
                             fill='currentColor'
                             // tslint:disable-next-line
-              d='M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z'
+                            d='M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z'
                         />
                     </g>
                 );
@@ -81,7 +81,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-            d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
+                        d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
                     />
                 );
             case 'Omitted':
@@ -97,7 +97,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-            d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'
+                        d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'
                     />
                 );
             case 'Running':
@@ -105,7 +105,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-            d='M288 39.056v16.659c0 10.804 7.281 20.159 17.686 23.066C383.204 100.434 440 171.518 440 256c0 101.689-82.295 184-184 184-101.689 0-184-82.295-184-184 0-84.47 56.786-155.564 134.312-177.219C216.719 75.874 224 66.517 224 55.712V39.064c0-15.709-14.834-27.153-30.046-23.234C86.603 43.482 7.394 141.206 8.003 257.332c.72 137.052 111.477 246.956 248.531 246.667C393.255 503.711 504 392.788 504 256c0-115.633-79.14-212.779-186.211-240.236C302.678 11.889 288 23.456 288 39.056z'
+                        d='M288 39.056v16.659c0 10.804 7.281 20.159 17.686 23.066C383.204 100.434 440 171.518 440 256c0 101.689-82.295 184-184 184-101.689 0-184-82.295-184-184 0-84.47 56.786-155.564 134.312-177.219C216.719 75.874 224 66.517 224 55.712V39.064c0-15.709-14.834-27.153-30.046-23.234C86.603 43.482 7.394 141.206 8.003 257.332c.72 137.052 111.477 246.956 248.531 246.667C393.255 503.711 504 392.788 504 256c0-115.633-79.14-212.779-186.211-240.236C302.678 11.889 288 23.456 288 39.056z'
                     />
                 );
             case 'Suspended':
@@ -113,7 +113,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-            d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
+                        d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
                     />
                 );
             case 'Collapsed-Horizontal':
@@ -169,7 +169,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private graph: {
         width: number;
         height: number;
-        edges: {v: string; w: string; points: {x: number; y: number}[]}[];
+        edges: {from: string; to: string; points: {x: number; y: number}[]}[];
         nodes: Map<string, {x: number; y: number}>;
     };
 
@@ -212,7 +212,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <g transform={`translate(${this.hgap},${this.vgap})`}>
                             {this.graph.edges.map(edge => {
                                 const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
+                                return <path key={`line/${edge.from}-${edge.to}`} d={points} className='line' markerEnd={this.hiddenNode(edge.to) ? '' : 'url(#arrow)'} />;
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 let phase: DagPhase;
@@ -287,52 +287,93 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private prepareGraph() {
-        const collapsedNodes: Set<string> = new Set();
-        const nodesToAdd: string[] = [];
-        const edges = Object.values(this.props.nodes)
-            .filter(node => !!node)
-            .filter(node => node.phase !== NODE_PHASE.OMITTED)
-            .map(node => {
-                if (!node.children || node.children.length === 0) {
-                    return [];
-                } else if (node.children.length > 3 && !this.state.expandNodes.has('*') && !this.state.expandNodes.has(node.id)) {
-                    node.children.slice(1, node.children.length - 1).map(collapsedNode => collapsedNodes.add(collapsedNode));
-                    const collapsedNodeName = getCollapsedNodeName(node.id, node.children.length - 2);
-                    nodesToAdd.push(collapsedNodeName);
-                    const out = [0, node.children.length - 1]
-                        .map(i => node.children[i])
-                        .filter(childId => this.props.nodes[childId])
-                        .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
-                        .map(childId => ({v: node.id, w: childId}));
-                    out.push({v: node.id, w: collapsedNodeName});
-                    if (this.props.nodes[node.children[0]] && this.props.nodes[node.children[0]].children && this.props.nodes[this.props.nodes[node.children[0]].children[0]]) {
-                        out.push({v: collapsedNodeName, w: this.props.nodes[this.props.nodes[node.children[0]].children[0]].id});
-                    }
-                    return out;
-                }
-                return (
-                    (node.children || [])
-                        // we can get outbound nodes, but no node
-                        .filter(childId => this.props.nodes[childId])
-                        .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
-                        .map(childId => ({v: node.id, w: childId}))
-                );
-            })
-            .reduce((a, b) => a.concat(b));
-        const nodes = Object.values(this.props.nodes)
-            .filter(node => !!node)
-            .filter(node => node.phase !== NODE_PHASE.OMITTED)
-            .filter(node => !collapsedNodes.has(node.id))
-            .map(node => node.id);
-        const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
-        if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({v, w: onExitHandlerNodeId}));
+        const edges: Edge[] = [];
+        const nodes: string[] = [];
+
+        interface PrepareNode {
+            nodeName: string;
+            children: string[];
+            parent: string;
         }
-        nodes.push(...nodesToAdd);
+
+        const root: PrepareNode = {
+            nodeName: this.props.workflowName,
+            parent: '',
+            children: this.props.nodes[this.props.workflowName].children
+        };
+        const queue: PrepareNode[] = [root];
+        let previousCollapsed: string = '';
+
+        while (queue.length > 0) {
+            const item = queue.pop();
+            if (isCollapsedNode(item.nodeName)) {
+                if (item.nodeName !== previousCollapsed) {
+                    nodes.push(item.nodeName);
+                    edges.push({from: item.parent, to: item.nodeName});
+                    previousCollapsed = item.nodeName;
+                    if (item.children.length > 0 && !this.state.expandNodes.has('*') && !this.state.expandNodes.has(item.nodeName)) {
+                        const newChildren: string[] = [];
+                        queue.push({
+                            nodeName: getCollapsedNodeName(item.nodeName, item.children.length),
+                            parent: item.nodeName,
+                            children: newChildren
+                        });
+                    }
+                }
+            } else {
+                const node: NodeStatus = this.props.nodes[item.nodeName];
+
+                if (!node || node.phase === NODE_PHASE.OMITTED) {
+                    continue;
+                }
+
+                nodes.push(node.id);
+                edges.push({from: item.parent, to: node.id});
+
+                if (!node.children) {
+                    continue;
+                }
+
+                if (node.children.length > 3 && !this.state.expandNodes.has('*') && !this.state.expandNodes.has(node.id)) {
+                    queue.push({
+                        nodeName: node.children[0],
+                        parent: node.id,
+                        children: this.props.nodes[node.children[0]].children
+                    });
+                    const newChildren: string[] = node.children
+                        .slice(1, node.children.length - 1)
+                        .map(v => [v])
+                        .reduce((a, b) => a.concat(b), []);
+                    queue.push({
+                        nodeName: getCollapsedNodeName(node.id, node.children.length - 2),
+                        parent: node.id,
+                        children: newChildren
+                    });
+                    queue.push({
+                        nodeName: node.children[node.children.length - 1],
+                        parent: node.id,
+                        children: this.props.nodes[node.children[node.children.length - 1]].children
+                    });
+                } else {
+                    node.children.map(child =>
+                        queue.push({
+                            nodeName: child,
+                            parent: node.id,
+                            children: this.props.nodes[child].children
+                        })
+                    );
+                }
+            }
+        }
+
+        const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId] && this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
+        if (onExitHandlerNodeId) {
+            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({from: v, to: onExitHandlerNodeId}));
+        }
         return {nodes, edges};
     }
 
-    private layoutGraph(nodes: string[], edges: {v: string; w: string}[]) {
+    private layoutGraph(nodes: string[], edges: Edge[]) {
         const hash = {scale: this.scale, nodeCount: nodes.length, nodesToDisplay: this.state.nodesToDisplay};
         // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
         if (this.hash === hash) {
@@ -372,7 +413,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 if (isCollapsedNode(node)) {
                     shifter.start();
                 }
-                j = shifter.get(j);
+                // j = shifter.get(j);
                 const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.hgap;
                 const t = !this.state.horizontal ? 0 : this.graph.height / 2 - level.length * this.vgap;
                 this.graph.nodes.set(node, {
@@ -385,19 +426,19 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const h = this.state.horizontal ? this.nodeSize / 2 : 0;
         const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
         this.graph.edges = edges
-            .filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w))
+            .filter(e => this.graph.nodes.has(e.from) && this.graph.nodes.has(e.to))
             .map(e => ({
-                v: e.v,
-                w: e.w,
+                from: e.from,
+                to: e.to,
                 points: [
                     {
                         // for hidden nodes, we want to size them zero
-                        x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
-                        y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
+                        x: this.graph.nodes.get(e.from).x + (this.hiddenNode(e.from) ? 0 : h),
+                        y: this.graph.nodes.get(e.from).y + (this.hiddenNode(e.from) ? 0 : v)
                     },
                     {
-                        x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
-                        y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
+                        x: this.graph.nodes.get(e.to).x - (this.hiddenNode(e.to) ? 0 : h),
+                        y: this.graph.nodes.get(e.to).y - (this.hiddenNode(e.to) ? 0 : v)
                     }
                 ]
             }));
@@ -405,9 +446,17 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private selectNode(nodeId: string) {
         if (isCollapsedNode(nodeId)) {
-            this.setState({expandNodes: new Set(this.state.expandNodes).add(getCollapsedNodeParent(nodeId))});
+            this.expandNode(nodeId);
         }
         return this.props.nodeClicked && this.props.nodeClicked(nodeId);
+    }
+
+    private expandNode(nodeId: string) {
+        if (isCollapsedNode(getCollapsedNodeParent(nodeId))) {
+            this.expandNode(getCollapsedNodeParent(nodeId));
+        } else {
+            this.setState({expandNodes: new Set(this.state.expandNodes).add(getCollapsedNodeParent(nodeId))});
+        }
     }
 
     private icon(phase: DagPhase) {

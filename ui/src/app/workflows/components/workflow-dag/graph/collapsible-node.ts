@@ -1,17 +1,25 @@
+interface CollapsedNode {
+    is: boolean;
+    parent: string;
+    numHidden: number;
+}
+
 export function getCollapsedNodeName(parent: string, numHidden: number): string {
-    return '@collapsed/' + parent + '/' + numHidden;
+    return JSON.stringify({is: true, parent, numHidden} as CollapsedNode);
 }
 
 export function isCollapsedNode(id: string): boolean {
-    return id.startsWith('@collapsed/');
+    try {
+        return (JSON.parse(id) as CollapsedNode).is;
+    } catch (e) {
+        return false;
+    }
 }
 
 export function getCollapsedNodeParent(id: string): string {
-    const split = id.split('/');
-    return split[1];
+    return (JSON.parse(id) as CollapsedNode).parent;
 }
 
 export function getCollapsedNumHidden(id: string): number {
-    const split = id.split('/');
-    return Number(split[2]);
+    return (JSON.parse(id) as CollapsedNode).numHidden;
 }
