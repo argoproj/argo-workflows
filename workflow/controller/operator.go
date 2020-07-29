@@ -1446,17 +1446,17 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 		hit := false
-		outputs := wfv1.Outputs{}
+		outputs := &wfv1.Outputs{}
 		if entry != nil {
 			hit = true
-			outputs = *entry.Outputs
+			outputs = entry.Outputs
 		}
 		memStat := &wfv1.MemoizationStatus{
 			Hit:       hit,
 			Key:       processedTmpl.Memoize.Key,
 			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, &outputs, memStat)
+		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memStat)
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
