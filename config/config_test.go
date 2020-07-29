@@ -24,3 +24,14 @@ func TestDatabaseConfig_GetOptions(t *testing.T) {
 		assert.Equal(t, map[string]string{"sslmode": "disable"}, c.GetOptions())
 	})
 }
+
+func TestDatabaseConfig_GetTableName(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		c := DatabaseConfig{}
+		assert.Equal(t, "argo_workflows", c.GetTableName())
+	})
+	t.Run("OtherTableName", func(t *testing.T) {
+		c := DatabaseConfig{TableName: "my-tablename"}
+		assert.Equal(t, "my-tablename", c.GetTableName())
+	})
+}

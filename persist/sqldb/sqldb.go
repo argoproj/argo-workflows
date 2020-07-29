@@ -2,10 +2,12 @@ package sqldb
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
 	"upper.io/db.v3/postgresql"
@@ -20,93 +22,68 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	if persistConfig == nil {
 		return nil, "", errors.InternalError("Persistence config is not found")
 	}
-
-	log.Info("Creating DB session")
-
+	cfg := persistConfig.GetDatabaseConfig()
+	if cfg == nil {
+		return nil, "", fmt.Errorf("no databases are configured")
+	}
+	// get the connectionURL
+	var connectionURL db.ConnectionURL
+	{
+		userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
+		if err != nil {
+			return nil, "", err
+		}
+		passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
+		if err != nil {
+			return nil, "", err
+		}
+		username := string(userNameByte)
+		password := string(passwordByte)
+		host := cfg.Host + ":" + cfg.Port
+		database := cfg.Database
+		options := cfg.GetOptions()
+		if persistConfig.PostgreSQL != nil {
+			connectionURL = postgresql.ConnectionURL{User: username, Password: password, Host: host, Database: database, Options: options}
+		} else {
+			connectionURL = mysql.ConnectionURL{User: username, Password: password, Host: host, Database: database, Options: options}
+		}
+		log.WithField("connectionURL", redactConnectionURL(connectionURL, password)).Info("Creating DB session")
+	}
+	var session sqlbuilder.Database
+	var err error
 	if persistConfig.PostgreSQL != nil {
-		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.ConnectionPool)
-	} else if persistConfig.MySQL != nil {
-		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
+		session, err = postgresql.Open(connectionURL)
+		if err != nil {
+			return nil, "", err
+		}
+	} else {
+		session, err = mysql.Open(connectionURL)
+		if err != nil {
+			return nil, "", err
+		}
 	}
-	return nil, "", fmt.Errorf("no databases are configured")
-}
-
-// CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.DatabaseConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
-	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("tableName is empty")
-	}
-
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
-	if err != nil {
-		return nil, "", err
-	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
-	if err != nil {
-		return nil, "", err
-	}
-
-	var settings = postgresql.ConnectionURL{
-		User:     string(userNameByte),
-		Password: string(passwordByte),
-		Host:     cfg.Host + ":" + cfg.Port,
-		Database: cfg.Database,
-		Options:  cfg.GetOptions(),
-	}
-	session, err := postgresql.Open(settings)
-	if err != nil {
-		return nil, "", err
-	}
-
+	// apply the connection pool values
+	persistPool := persistConfig.ConnectionPool
 	if persistPool != nil {
+		log.WithFields(log.Fields{"maxOpenConns": persistPool.MaxOpenConns, "maxIdleConns": persistPool.MaxIdleConns, "connMaxLifetime": persistPool.ConnMaxLifetime}).Info("Setting connection pool fields on the database session")
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
 	}
-	return session, cfg.TableName, nil
+	if persistConfig.MySQL != nil {
+		log.Info("Making MySQL run in a Golang-compatible UTF-8 character set")
+		_, err = session.Exec("SET NAMES 'utf8mb4'")
+		if err != nil {
+			return nil, "", err
+		}
+		_, err = session.Exec("SET CHARACTER SET utf8mb4")
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	return session, cfg.GetTableName(), nil
 }
 
-// CreateMySQLDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.DatabaseConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
-
-	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("tableName is empty")
-	}
-
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
-	if err != nil {
-		return nil, "", err
-	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
-	if err != nil {
-		return nil, "", err
-	}
-
-	session, err := mysql.Open(mysql.ConnectionURL{
-		User:     string(userNameByte),
-		Password: string(passwordByte),
-		Host:     cfg.Host + ":" + cfg.Port,
-		Database: cfg.Database,
-		Options:  cfg.GetOptions(),
-	})
-	if err != nil {
-		return nil, "", err
-	}
-
-	if persistPool != nil {
-		session.SetMaxOpenConns(persistPool.MaxOpenConns)
-		session.SetMaxIdleConns(persistPool.MaxIdleConns)
-		session.SetConnMaxLifetime(time.Duration(persistPool.ConnMaxLifetime))
-	}
-	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
-	_, err = session.Exec("SET NAMES 'utf8mb4'")
-	if err != nil {
-		return nil, "", err
-	}
-	_, err = session.Exec("SET CHARACTER SET utf8mb4")
-	if err != nil {
-		return nil, "", err
-	}
-	return session, cfg.TableName, nil
+func redactConnectionURL(connectionURL db.ConnectionURL, password string) string {
+	return strings.Replace(strings.Replace(connectionURL.String(), "="+password, "=******", -1), ":"+password, ":******", -1)
 }

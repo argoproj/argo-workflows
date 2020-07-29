@@ -427,6 +427,8 @@ data:
       passwordSecret:
         name: argo-mysql-config
         key: password
+      options:
+        maxAllowedPacket: "4194304"
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

@@ -161,6 +161,13 @@ func (c PersistConfig) GetClusterName() string {
 	return "default"
 }
 
+func (c PersistConfig) GetDatabaseConfig() *DatabaseConfig {
+	if c.MySQL != nil {
+		return c.MySQL
+	}
+	return c.PostgreSQL
+}
+
 type ConnectionPool struct {
 	MaxIdleConns    int `json:"maxIdleConns,omitempty"`
 	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
@@ -180,13 +187,20 @@ type DatabaseConfig struct {
 }
 
 func (c DatabaseConfig) GetOptions() map[string]string {
+	if c.Options == nil {
+		c.Options = make(map[string]string)
+	}
 	if c.SSLMode != "" {
-		if c.Options == nil {
-			c.Options = make(map[string]string)
-		}
 		c.Options["sslmode"] = c.SSLMode
 	}
 	return c.Options
+}
+
+func (c DatabaseConfig) GetTableName() string {
+	if c.TableName != "" {
+		return c.TableName
+	}
+	return "argo_workflows"
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
