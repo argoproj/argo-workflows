@@ -142,11 +142,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
-		wfName, err := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
-		if err != nil {
-			return fmt.Errorf("malformed request: workflows must be specified with a 'metadata.name=...' field selector; unable to parse: %w", err)
-		}
-		if len(wfName) > 0 {
+		wfName := argoutil.RecoverWorkflowNameFromSelectorStringIfAny(opts.FieldSelector)
+		if wfName != "" {
+			// If we are using an alias (such as `@latest`) we need to dereference it.
+			// s.getWorkflow does that for us
 			wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
 			if err != nil {
 				return err
