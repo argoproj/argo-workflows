@@ -411,8 +411,7 @@ smoke:
 
 .PHONY: clean
 clean:
-	# Delete build files
-	rm -Rf vendor dist/* ui/dist
+	git clean -fxd
 
 # swagger
 
