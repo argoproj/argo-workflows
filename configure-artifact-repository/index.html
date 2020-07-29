@@ -1475,6 +1475,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#configuring-alibaba-cloud-oss-object-storage-service" title="Configuring Alibaba Cloud OSS (Object Storage Service)" class="md-nav__link">
+    Configuring Alibaba Cloud OSS (Object Storage Service)
+  </a>
+  
+</li>
+      
       
       
       
@@ -1917,6 +1924,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#configuring-alibaba-cloud-oss-object-storage-service" title="Configuring Alibaba Cloud OSS (Object Storage Service)" class="md-nav__link">
+    Configuring Alibaba Cloud OSS (Object Storage Service)
+  </a>
+  
+</li>
+      
       
       
       
@@ -2115,7 +2129,7 @@ access is on a per project rather than per bucket basis.</p>
   (https://console.cloud.google.com/storage/settings).</li>
 <li>Enable interoperability access if needed.</li>
 <li>Create a new key if needed.</li>
-<li>Confiture <code>s3</code> artifact as following exmaple.</li>
+<li>Configure <code>s3</code> artifact as following exmaple.</li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
@@ -2137,23 +2151,52 @@ access is on a per project rather than per bucket basis.</p>
 </code></pre></div>
 
 
+<h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
+<p>To configure artifact storage for Alibaba Cloud OSS, please first follow
+the <a href="https://www.alibabacloud.com/product/oss">official documentation</a> to set up
+an OSS account and bucket. </p>
+<p>Once it's set up, you can find endpoint and bucket
+information on your OSS dashboard and then use them like the following to
+configure the artifact storage for your workflow:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-art</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-artifact</span>
+    <span class="nt">oss</span><span class="p">:</span>
+      <span class="nt">endpoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">http://oss-cn-hangzhou-zmf.aliyuncs.com</span>
+      <span class="nt">bucket</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test-bucket-name</span>
+      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test/mydirectory/</span> <span class="c1"># this is path in the bucket</span>
+      <span class="c1"># accessKeySecret and secretKeySecret are secret selectors.</span>
+      <span class="c1"># It references the k8s secret named &#39;my-oss-credentials&#39;.</span>
+      <span class="c1"># This secret is expected to have have the keys &#39;accessKey&#39;</span>
+      <span class="c1"># and &#39;secretKey&#39;, containing the base64 encoded credentials</span>
+      <span class="c1"># to the bucket.</span>
+      <span class="nt">accessKeySecret</span><span class="p">:</span>
+        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
+        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">accessKey</span>
+      <span class="nt">secretKeySecret</span><span class="p">:</span>
+        <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
+        <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
+</code></pre></div>
+
+
 <h1 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h1>
 <p>In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
 endpoint and access/secret keys for your repository.</p>
-<h2 id="s3-compatible-artifact-repository-bucket-such-as-aws-gcs-and-minio">S3 compatible artifact repository bucket (such as AWS, GCS and Minio)<a class="headerlink" href="#s3-compatible-artifact-repository-bucket-such-as-aws-gcs-and-minio" title="Permanent link">&para;</a></h2>
-<p>Use the <code>endpoint</code> corresponding to your S3 provider:</p>
+<h2 id="s3-compatible-artifact-repository-bucket-such-as-aws-gcs-minio-and-alibaba-cloud-oss">S3 compatible artifact repository bucket (such as AWS, GCS, Minio, and Alibaba Cloud OSS)<a class="headerlink" href="#s3-compatible-artifact-repository-bucket-such-as-aws-gcs-minio-and-alibaba-cloud-oss" title="Permanent link">&para;</a></h2>
+<p>Use the <code>endpoint</code> corresponding to your provider:</p>
 <ul>
 <li>AWS: s3.amazonaws.com</li>
 <li>GCS: storage.googleapis.com</li>
 <li>Minio: my-minio-endpoint.default:9000</li>
+<li>Alibaba Cloud OSS: oss-cn-hangzhou-zmf.aliyuncs.com</li>
 </ul>
 <p>The <code>key</code> is name of the object in the <code>bucket</code> The <code>accessKeySecret</code> and
 <code>secretKeySecret</code> are secret selectors that reference the specified kubernetes
 secret. The secret is expected to have the keys 'accessKey' and 'secretKey',
 containing the base64 encoded credentials to the bucket.</p>
 <p>For AWS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> correspond to
-AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY respectively.</p>
+<code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> respectively.</p>
 <p>EC2 provides a metadata API via which applications using the AWS SDK may assume
 IAM roles associated with the instance. If you are running argo on EC2 and the
 instance role allows access to your S3 bucket, you can configure the workflow
@@ -2170,6 +2213,8 @@ project rather than per bucket basis.</p>
 </ul>
 <p>For Minio, the <code>accessKeySecret</code> and <code>secretKeySecret</code> naturally correspond the
 AccessKey and SecretKey.</p>
+<p>For Alibaba Cloud OSS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> corresponds to
+<code>accessKeyID</code> <code>and accessKeySecret</code> respectively.</p>
 <p>Example:</p>
 <div class="codehilite"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo      <span class="c1"># assumes argo was installed in the argo namespace</span>
 ...
