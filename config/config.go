@@ -140,11 +140,11 @@ type PersistConfig struct {
 	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
 	// in days
-	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
-	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
-	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
+	ArchiveTTL     TTL             `json:"archiveTTL,omitempty"`
+	ClusterName    string          `json:"clusterName,omitempty"`
+	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
+	PostgreSQL     *DatabaseConfig `json:"postgresql,omitempty"`
+	MySQL          *DatabaseConfig `json:"mysql,omitempty"`
 }
 
 func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
@@ -167,25 +167,26 @@ type ConnectionPool struct {
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
 
-type PostgreSQLConfig struct {
+type DatabaseConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
-	SSL            bool                    `json:"ssl,omitempty"`
-	SSLMode        string                  `json:"sslMode,omitempty"`
+	// DEPRECATED: Use `options: {"sslmode": "true"}` instead.
+	SSLMode string            `json:"sslMode,omitempty"`
+	Options map[string]string `json:"options,omitempty"`
 }
 
-type MySQLConfig struct {
-	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
-	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName,omitempty"`
-	Options        map[string]string       `json:"options,omitempty"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+func (c DatabaseConfig) GetOptions() map[string]string {
+	if c.SSLMode != "" {
+		if c.Options == nil {
+			c.Options = make(map[string]string)
+		}
+		c.Options["sslmode"] = c.SSLMode
+	}
+	return c.Options
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
