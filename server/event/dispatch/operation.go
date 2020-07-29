@@ -59,7 +59,7 @@ func (o *Operation) Dispatch() {
 			return err == nil, err
 		})
 		if err != nil {
-
+			// TODO - in v2 we should report back to the user via status field
 			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispacth from event")
 		}
 	}
@@ -95,6 +95,7 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), tmpl.GetWorkflowMetadata(), ref.ClusterScope)
 		o.instanceIDService.Label(wf)
+		// make sure we have a predicable name, so re-creation doesn't create two workflows
 		wf.SetName(wf.GetGenerateName() + nameSuffix)
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
