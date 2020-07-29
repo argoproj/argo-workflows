@@ -1,5 +1,4 @@
 import {Page} from 'argo-ui/src/index';
-// @ts-ignore
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
@@ -52,7 +51,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         this.labels = this.labels.filter(label => !label.startsWith('workflows.argoproj.io/phase')).concat('workflows.argoproj.io/phase=' + phase);
     }
 
-    private get shouldListWorkflows() {
+    private get canRunReport() {
         return this.namespace !== '' && this.labels.length > 0;
     }
 
@@ -62,7 +61,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount() {
-        if (!this.shouldListWorkflows) {
+        if (!this.canRunReport) {
             return;
         }
         this.setState({charts: null}, () => {
@@ -87,7 +86,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                                     {
                                         title: 'Workflow List',
                                         iconClassName: 'fa fa-stream',
-                                        disabled: !this.shouldListWorkflows,
+                                        disabled: !this.canRunReport,
                                         action: () => ctx.navigation.goto(uiUrl(`workflows/${this.namespace}?labels=${this.labels.join(',')}`))
                                     }
                                 ]
@@ -112,7 +111,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 resourcesDuration: wf.status.resourcesDuration
             }))
             .sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime())
-            .slice(0, 50)
+            .slice(0, 100)
             .reverse();
 
         const labels: string[] = new Array(filteredWorkflows.length);
@@ -244,16 +243,15 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                             <div className='columns small-3' key='namespace'>
                                 <InputFilter name='namespace' value={this.namespace} placeholder='Namespace' onChange={namespace => (this.namespace = namespace)} />
                             </div>
-                            <div className='columns small-6' key='labels'>
+                            <div className='columns small-5' key='labels'>
                                 <TagsInput placeholder='Labels' tags={this.labels} onChange={labels => (this.labels = labels)} />
                             </div>
-                            <div className='columns small-3' key='phases'>
+                            <div className='columns small-4' key='phases'>
                                 <p>
                                     {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
-                                        <a key={phase} className='argo-button' onClick={() => (this.phase = phase)}>
-                                            {this.phase === phase && <i className='fa fa-check' />}
-                                            {phase}
-                                        </a>
+                                        <label key={phase} className='argo-button argo-button--base-o' style={{marginRight: 5}} onClick={() => (this.phase = phase)}>
+                                            {this.phase === phase ? <i className='fa fa-check' /> : <i className='fa fa-times' />} {phase}
+                                        </label>
                                     ))}
                                 </p>
                             </div>
@@ -265,7 +263,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private renderReport(ctx: ContextApis) {
-        if (!this.shouldListWorkflows) {
+        if (!this.canRunReport) {
             return (
                 <ZeroState title='Workflow Report'>
                     <p>
@@ -275,7 +273,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <p>Select a namespace and at least one label to get a report.</p>
                     <p>
                         {' '}
-                        <a href='https://github.com/argoproj/argo/blob/master/docs/cost-optimisation.md'>Learn about cost optimization</a>
+                        <a href='https://github.com/argoproj/argo/blob/master/docs/cost-optimisation.md'>Learn more about cost optimization</a>
                     </p>
                 </ZeroState>
             );
