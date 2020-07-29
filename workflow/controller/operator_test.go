@@ -4482,15 +4482,13 @@ metadata:
   name: steps-9fvnv
   namespace: argo
 spec:
-  activeDeadlineSeconds: 1
+  activeDeadlineSeconds: 3
   entrypoint: main
   templates:
   - name: main
     steps:
     - - name: approve
         template: approve
-      - name: hello1
-        template: whalesay
   - name: approve
     suspend: {}
   - container:
@@ -4520,25 +4518,11 @@ status:
       templateName: main
       templateScope: local/steps-9fvnv
       type: Steps
-    steps-9fvnv-3392004273:
-      boundaryID: steps-9fvnv
-      displayName: hello1
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server
-      id: steps-9fvnv-3392004273
-      message: 'ErrImageNeverPull: Container image "argoproj/argoexec:latest" is not
-        present with pull policy of Never'
-      name: steps-9fvnv[0].hello1
-      phase: Pending
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: whalesay
-      templateScope: local/steps-9fvnv
-      type: Pod
+
     steps-9fvnv-3514116232:
       boundaryID: steps-9fvnv
       children:
       - steps-9fvnv-3700512507
-      - steps-9fvnv-3392004273
       displayName: '[0]'
       finishedAt: null
       id: steps-9fvnv-3514116232
