@@ -2,7 +2,9 @@ package metrics
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
@@ -10,8 +12,9 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-const (
+var (
 	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
+	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
 )
 
 type RealTimeMetric struct {
@@ -104,7 +107,9 @@ func newCounter(name, help string, labels map[string]string) prometheus.Counter 
 		Help:        help,
 		ConstLabels: labels,
 	}
-	return prometheus.NewCounter(counterOpts)
+	m := prometheus.NewCounter(counterOpts)
+	mustBeRecoverable(name, help, m)
+	return m
 }
 
 func newGauge(name, help string, labels map[string]string) prometheus.Gauge {
@@ -115,7 +120,9 @@ func newGauge(name, help string, labels map[string]string) prometheus.Gauge {
 		Help:        help,
 		ConstLabels: labels,
 	}
-	return prometheus.NewGauge(gaugeOpts)
+	m := prometheus.NewGauge(gaugeOpts)
+	mustBeRecoverable(name, help, m)
+	return m
 }
 
 func newHistogram(name, help string, labels map[string]string, buckets []float64) prometheus.Histogram {
@@ -127,7 +134,9 @@ func newHistogram(name, help string, labels map[string]string, buckets []float64
 		ConstLabels: labels,
 		Buckets:     buckets,
 	}
-	return prometheus.NewHistogram(histOpts)
+	m := prometheus.NewHistogram(histOpts)
+	mustBeRecoverable(name, help, m)
+	return m
 }
 
 func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
@@ -168,4 +177,22 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 
 func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
+}
+
+func mustBeRecoverable(name, help string, metric prometheus.Metric) {
+	recoveredName, recoveredHelp := recoverMetricNameAndHelpFromDesc(metric.Desc().String())
+	if name != recoveredName {
+		panic(fmt.Sprintf("unable to recover metric name from desc provided by prometheus: expected '%s' got '%s'", name, recoveredName))
+	}
+	if help != recoveredHelp {
+		panic(fmt.Sprintf("unable to recover metric help from desc provided by prometheus: expected '%s' got '%s'", help, recoveredHelp))
+	}
+}
+
+func recoverMetricNameAndHelpFromDesc(desc string) (string, string) {
+	finds := descRegex.FindStringSubmatch(desc)
+	if len(finds) != 3 {
+		panic(fmt.Sprintf("malformed desc provided by prometheus: '%s' parsed to %v", desc, finds))
+	}
+	return finds[1], strings.ReplaceAll(finds[2], `\"`, `"`)
 }
