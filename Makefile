@@ -170,6 +170,9 @@ dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
+dist/argo-%.gz: dist/argo-%
+	gzip --force --keep dist/argo-$*
+
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
@@ -185,7 +188,7 @@ $(CLI_IMAGE_FILE): $(CLI_PKGS)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
-clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64
+clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
 
 .PHONY: controller
 controller: dist/workflow-controller
