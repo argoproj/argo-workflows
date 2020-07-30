@@ -546,15 +546,16 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	newWF.Spec.Shutdown = ""
 
 	// carry over user labels and annotations from previous workflow.
-	// skip any argoproj.io labels except for the controller instanceID label.
 	if newWF.ObjectMeta.Labels == nil {
 		newWF.ObjectMeta.Labels = make(map[string]string)
 	}
 	for key, val := range wf.ObjectMeta.Labels {
-		if strings.HasPrefix(key, workflow.WorkflowFullName+"/") && key != common.LabelKeyControllerInstanceID {
-			continue
+		switch key {
+		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted:
+			// ignore
+		default:
+			newWF.ObjectMeta.Labels[key] = val
 		}
-		newWF.ObjectMeta.Labels[key] = val
 	}
 	// Append an additional label so it's easy for user to see the
 	// name of the original workflow that has been resubmitted.
