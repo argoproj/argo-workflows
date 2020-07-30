@@ -25,7 +25,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
-const baseUrl = "https://localhost:2746"
+const baseUrl = "http://localhost:2746"
 
 var httpClient = &http.Client{
 	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
