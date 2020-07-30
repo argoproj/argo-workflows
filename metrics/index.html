@@ -2085,7 +2085,8 @@ labels wherever it is emitted. This is how these metrics are "linked" as belongi
 <p>Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed <em>after</em>
 the Workflow/Step/Task completes, with the exception of <a href="#realtime-metrics">realtime metrics</a>.</p>
 <p>Metric definitions <strong>must</strong> include a <code>name</code> and a <code>help</code> doc string. They can also include any number of <code>labels</code> (when
-defining labels avoid cardinality explosion).</p>
+defining labels avoid cardinality explosion). Metrics with the same <code>name</code> <strong>must always</strong> use the same exact <code>help</code> string,
+having different metrics with the same name, but with a different <code>help</code> string will cause an error (this is a Prometheus requirement).</p>
 <p>All metrics can also be conditionally emitted by defining a <code>when</code> clause. This <code>when</code> clause works the same as elsewhere
 in a workflow.</p>
 <p>A metric must also have a type, it can be one of <code>gauge</code>, <code>histogram</code>, and <code>counter</code> (<a href="#metric-spec">see below</a>). Within
