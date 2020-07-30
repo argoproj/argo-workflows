@@ -307,7 +307,10 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := globalParams.Merge(localParams)
-	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(tmplBytes), "{{", "}}")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
 		return nil, err
@@ -347,7 +350,10 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		}
 	}
 
-	fstTmpl = fasttemplate.New(globalReplacedTmplStr, "{{", "}}")
+	fstTmpl, err = fasttemplate.NewTemplate(globalReplacedTmplStr, "{{", "}}")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
 		return nil, err

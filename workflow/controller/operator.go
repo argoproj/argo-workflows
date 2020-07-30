@@ -2463,7 +2463,10 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	fstTmpl := fasttemplate.New(string(volumesBytes), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(volumesBytes), "{{", "}}")
+	if err != nil {
+		return fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	newVolumesStr, err := common.Replace(fstTmpl, params, true)
 	if err != nil {
 		return err
@@ -2532,7 +2535,11 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
 			continue
 		}
-		fstTmpl := fasttemplate.New(string(metricTmplBytes), "{{", "}}")
+		fstTmpl, err := fasttemplate.NewTemplate(string(metricTmplBytes), "{{", "}}")
+		if err != nil {
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
+			continue
+		}
 		replacedValue, err := common.Replace(fstTmpl, localScope, false)
 		if err != nil {
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
@@ -2588,7 +2595,11 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
+			fstTmpl, err = fasttemplate.NewTemplate(metricSpec.GetValueString(), "{{", "}}")
+			if err != nil {
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
+				continue
+			}
 			replacedValue, err := common.Replace(fstTmpl, localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))

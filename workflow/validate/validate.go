@@ -588,7 +588,10 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
-	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(tmplStr, "{{", "}}")
+	if err != nil {
+		return fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 

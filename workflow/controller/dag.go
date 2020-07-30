@@ -502,7 +502,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 
 	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
@@ -591,7 +594,10 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 		return []wfv1.DAGTask{task}, nil
 	}
 
-	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
