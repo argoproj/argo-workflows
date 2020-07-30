@@ -49,6 +49,7 @@ type Metrics struct {
 
 	// Used to quickly check if a metric desc is already used by the system
 	defaultMetricDescs map[string]bool
+	metricNameHelps    map[string]string
 }
 
 var _ prometheus.Collector = &Metrics{}
@@ -64,6 +65,8 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		defaultMetricDescs: make(map[string]bool),
+		metricNameHelps:    make(map[string]string),
+
 	}
 
 	for _, metric := range metrics.allMetrics() {
@@ -136,6 +139,9 @@ func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
 }
 
 func (m *Metrics) OperationCompleted(durationSeconds float64) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	m.operationDurations.Observe(durationSeconds)
 }
 
@@ -151,8 +157,15 @@ func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) er
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if _, inUse := m.defaultMetricDescs[newMetric.Desc().String()]; inUse {
+	metricDesc := newMetric.Desc().String()
+	if _, inUse := m.defaultMetricDescs[metricDesc]; inUse {
 		return fmt.Errorf("metric '%s' is already in use by the system, please use a different name", newMetric.Desc())
+	}
+	name, help := recoverMetricNameAndHelpFromDesc(metricDesc)
+	if existingHelp, inUse := m.metricNameHelps[name]; inUse && help != existingHelp {
+		return fmt.Errorf("metric '%s' has help string '%s' but should have '%s' (help strings must be identical for metrics of the same name)", name, help, existingHelp)
+	} else {
+		m.metricNameHelps[name] = help
 	}
 	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
 	return nil

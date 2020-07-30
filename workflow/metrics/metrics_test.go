@@ -108,6 +108,9 @@ func TestMetrics(t *testing.T) {
 		assert.NotNil(t, m.GetCustomMetric("metric"))
 	}
 
+	err = m.UpsertCustomMetric("metric2", newCounter("test", "new test", nil))
+	assert.Error(t, err)
+
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
 		Name:   "count",
 		Help:   "Number of Workflows currently accessible by the controller by status",
