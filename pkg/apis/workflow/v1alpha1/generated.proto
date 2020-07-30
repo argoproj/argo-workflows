@@ -439,12 +439,6 @@ message Histogram {
   repeated Amount buckets = 4;
 }
 
-message HolderNames {
-  // Name stores the name of the resource holding lock
-  // +listType=atomic
-  repeated string name = 1;
-}
-
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
@@ -527,7 +521,14 @@ message MutexHolding {
   // Name of the mutex
   optional string mutex = 1;
 
+  // Holders stores the current mutex holder names.
   optional string holder = 2;
+}
+
+message MutexStatus {
+  repeated MutexHolding holding = 1;
+
+  repeated MutexHolding waiting = 2;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -904,8 +905,11 @@ message Synchronization {
 }
 
 message SynchronizationStatus {
-  // SemaphoreHolders stores this workflow's Semaphore holder details
+  // Semaphore stores this workflow's Semaphore holder details
   optional SemaphoreStatus semaphore = 1;
+
+  // Mutex stores this workflow's mutex holder details
+  optional MutexStatus mutex = 2;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
@@ -1136,11 +1140,6 @@ message Version {
   optional string compiler = 7;
 
   optional string platform = 8;
-}
-
-message WaitingStatus {
-  // Holders stores the list of current holder names
-  optional HolderNames holders = 1;
 }
 
 // Workflow is the definition of a workflow resource

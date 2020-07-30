@@ -1005,26 +1005,34 @@ type SemaphoreHolding struct {
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
-type WaitingStatus struct {
-	// Holders stores the list of current holder names
-	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
-}
-
-type HolderNames struct {
-	// Name stores the name of the resource holding lock
-	// +listType=atomic
-	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
-}
+//type WaitingStatus struct {
+//	// Holders stores the list of current holder names
+//	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
+//}
+//
+//type HolderNames struct {
+//	// Name stores the name of the resource holding lock
+//	// +listType=atomic
+//	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+//}
 
 type MutexHolding struct {
 	// Name of the mutex
-	Mutex  string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
-	Holder string `protobuf:"bytes,2,opt,name=holder"`
+	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	// Holders stores the current mutex holder names.
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
+}
+
+type MutexStatus struct {
+	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
 type SynchronizationStatus struct {
-	// SemaphoreHolders stores this workflow's Semaphore holder details
+	// Semaphore stores this workflow's Semaphore holder details
 	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex stores this workflow's mutex holder details
+	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

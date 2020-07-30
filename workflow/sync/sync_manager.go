@@ -245,6 +245,18 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 		wf.Status.Synchronization.Semaphore = nil
 		wf.Status.Synchronization = nil
 	}
+	if wf.Status.Synchronization.Mutex != nil {
+		for _, ele := range wf.Status.Synchronization.Mutex.Holding {
+			syncLockHolder := cm.syncLockMap[ele.Mutex]
+			if syncLockHolder == nil {
+				continue
+			}
+			resourceKey := getResourceKey(wf.Namespace, wf.Name, ele.Holder)
+			syncLockHolder.release(resourceKey)
+			cm.updateConcurrencyStatus(ele.Holder, ele.Mutex, LockTypeMutex, LockActionReleased, wf)
+			log.Infof("%s released a lock from %s", resourceKey, ele.Mutex)
+		}
+	}
 	return true
 }
 
@@ -293,6 +305,44 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 				wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
 			}
 		}
+	}else if lockType == LockTypeMutex {
+		if lockAction == LockActionWaiting {
+			index, mutexWaiting := getMutexHolding(wf.Status.Synchronization.Mutex.Waiting, lockKey)
+			currentHolder := cm.getCurrentLockHolders(lockKey)
+			if len(currentHolder) == 0 {
+				return true
+			}
+			if index == -1 {
+				wf.Status.Synchronization.Mutex.Waiting = append(wf.Status.Synchronization.Mutex.Waiting, wfv1.MutexHolding{Mutex: lockKey, Holder: currentHolder[0]})
+			} else {
+				mutexWaiting.Holder = currentHolder[0]
+				wf.Status.Synchronization.Mutex.Waiting[index] = mutexWaiting
+			}
+			return true
+		}
+		if lockAction == LockActionAcquired {
+			index, mutexHolding := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
+			items := strings.Split(holderKey, "/")
+			holdingName := items[len(items)-1]
+			if index == -1 {
+				wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding, wfv1.MutexHolding{Mutex: lockKey, Holder: holdingName })
+				return true
+			} else {
+				if mutexHolding.Holder != holdingName {
+					mutexHolding.Holder =  holdingName
+					wf.Status.Synchronization.Mutex.Holding[index] = mutexHolding
+					return true
+				}
+			}
+			return false
+		}
+		if lockAction == LockActionReleased {
+			index, _ := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
+			if index != -1 {
+				wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding[:index], wf.Status.Synchronization.Mutex.Holding[index+1:]...)
+			}
+		}
+
 	}
 	return false
 }
@@ -376,4 +426,13 @@ func getSemaphoreHolding(semaphoreHolding []wfv1.SemaphoreHolding, semaphoreName
 		}
 	}
 	return -1, wfv1.SemaphoreHolding{}
+}
+
+func getMutexHolding(mutexHolding []wfv1.MutexHolding, mutexName string) (int, wfv1.MutexHolding) {
+	for idx, holder := range mutexHolding {
+		if holder.Mutex == mutexName {
+			return idx, holder
+		}
+	}
+	return -1, wfv1.MutexHolding{}
 }

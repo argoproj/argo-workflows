@@ -1953,7 +1953,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
+|`mutex`|[`MutexStatus`](#mutexstatus)|Mutex stores this workflow's mutex holder details|
+|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|Semaphore stores this workflow's Semaphore holder details|
 
 ## Artifact
 
@@ -3143,6 +3144,16 @@ _No description available_
 |`hit`|`boolean`|_No description available_|
 |`key`|`string`|_No description available_|
 
+## MutexStatus
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holding`|`Array<`[`MutexHolding`](#mutexholding)`>`|_No description available_|
+|`waiting`|`Array<`[`MutexHolding`](#mutexholding)`>`|_No description available_|
+
 ## SemaphoreStatus
 
 _No description available_
@@ -3667,6 +3678,16 @@ Sequence expands a workflow step into numeric range
 |`end`|[`IntOrString`](#intorstring)|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
+
+## MutexHolding
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holder`|`string`|Holders stores the current mutex holder names.|
+|`mutex`|`string`|Name of the mutex|
 
 ## SemaphoreHolding
 

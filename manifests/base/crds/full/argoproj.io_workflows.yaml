@@ -20983,6 +20983,27 @@ spec:
               type: object
             synchronization:
               properties:
+                mutex:
+                  properties:
+                    holding:
+                      items:
+                        properties:
+                          holder:
+                            type: string
+                          mutex:
+                            type: string
+                        type: object
+                      type: array
+                    waiting:
+                      items:
+                        properties:
+                          holder:
+                            type: string
+                          mutex:
+                            type: string
+                        type: object
+                      type: array
+                  type: object
                 semaphore:
                   properties:
                     holding:

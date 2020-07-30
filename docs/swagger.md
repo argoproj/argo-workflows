@@ -1053,12 +1053,6 @@ Histogram is a Histogram prometheus metric
 | buckets | [ [io.argoproj.workflow.v1alpha1.Amount](#io.argoproj.workflow.v1alpha1.amount) ] | Buckets is a list of bucket divisors for the histogram | Yes |
 | value | string | Value is the value of the metric | Yes |
 
-#### io.argoproj.workflow.v1alpha1.HolderNames
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| name | [ string ] | Name stores the name of the resource holding lock | No |
-
 #### io.argoproj.workflow.v1alpha1.InfoResponse
 
 | Name | Type | Description | Required |
@@ -1157,6 +1151,20 @@ Mutex is a Mutex
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | name | string | name of the mutex | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexHolding
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holder | string | Holders stores the current mutex holder names. | No |
+| mutex | string | Name of the mutex | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexStatus
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] |  | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] |  | No |
 
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 
@@ -1416,7 +1424,8 @@ Synchronization holds synchronization lock configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | SemaphoreHolders stores this workflow's Semaphore holder details | No |
+| mutex | [io.argoproj.workflow.v1alpha1.MutexStatus](#io.argoproj.workflow.v1alpha1.mutexstatus) | Mutex stores this workflow's mutex holder details | No |
+| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | Semaphore stores this workflow's Semaphore holder details | No |
 
 #### io.argoproj.workflow.v1alpha1.TTLStrategy
 

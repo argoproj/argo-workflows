@@ -2557,19 +2557,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.HolderNames": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "Name stores the name of the resource holding lock",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "x-kubernetes-list-type": "atomic"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
@@ -2750,6 +2737,36 @@
         "name": {
           "description": "name of the mutex",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MutexHolding": {
+      "type": "object",
+      "properties": {
+        "holder": {
+          "description": "Holders stores the current mutex holder names.",
+          "type": "string"
+        },
+        "mutex": {
+          "description": "Name of the mutex",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MutexStatus": {
+      "type": "object",
+      "properties": {
+        "holding": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
+          }
+        },
+        "waiting": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
+          }
         }
       }
     },
@@ -3425,8 +3442,12 @@
     "io.argoproj.workflow.v1alpha1.SynchronizationStatus": {
       "type": "object",
       "properties": {
+        "mutex": {
+          "description": "Mutex stores this workflow's mutex holder details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexStatus"
+        },
         "semaphore": {
-          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
+          "description": "Semaphore stores this workflow's Semaphore holder details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreStatus"
         }
       }
