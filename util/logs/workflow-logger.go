@@ -10,6 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -163,12 +164,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-ctx.Done():
 					return
-				case event, ok := <-wfWatch.ResultChan():
-					var wf *wfv1.Workflow
-					if ok {
-						wf, ok = event.Object.(*wfv1.Workflow)
-					}
-					if !ok {
+				case event, open := <-wfWatch.ResultChan():
+					if !open {
 						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch.Stop()
 						wfWatch, err = wfInterface.Watch(wfListOptions)
@@ -177,6 +174,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							return
 						}
 						continue
+					}
+					wf, ok := event.Object.(*wfv1.Workflow)
+					if !ok {
+						// object is probably probably metav1.Status
+						logCtx.WithError(apierr.FromObject(event.Object)).Warn("watch object was not a workflow")
+						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
@@ -198,12 +201,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-stopWatchingPods:
 					return
-				case event, ok := <-podWatch.ResultChan():
-					var pod *corev1.Pod
-					if ok {
-						pod, ok = event.Object.(*corev1.Pod)
-					}
-					if !ok {
+				case event, open := <-podWatch.ResultChan():
+					if !open {
 						logCtx.Info("Re-establishing pod watch")
 						podWatch.Stop()
 						podWatch, err = podInterface.Watch(podListOptions)
@@ -212,6 +211,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							return
 						}
 						continue
+					}
+					pod, ok := event.Object.(*corev1.Pod)
+					if !ok {
+						// object is probably probably metav1.Status
+						logCtx.WithError(apierr.FromObject(event.Object)).Warn("watch object was not a pod")
+						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
 					if pod.Status.Phase == corev1.PodRunning {
