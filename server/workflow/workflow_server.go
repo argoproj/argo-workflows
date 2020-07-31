@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
@@ -167,12 +168,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		select {
 		case <-ctx.Done():
 			return nil
-		case event, ok := <-watch.ResultChan():
-			var wf *wfv1.Workflow
-			if ok {
-				wf, ok = event.Object.(*wfv1.Workflow)
-			}
-			if !ok {
+		case event, open := <-watch.ResultChan():
+			if !open {
 				log.Debug("Re-establishing workflow watch")
 				watch.Stop()
 				watch, err = wfIf.Watch(*opts)
@@ -182,6 +179,11 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				continue
 			}
 			log.Debug("Received event")
+			wf, ok := event.Object.(*wfv1.Workflow)
+			if !ok {
+				// object is probably probably metav1.Status, `FromObject` can deal with anything
+				return apierr.FromObject(event.Object)
+			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			err := s.hydrator.Hydrate(wf)
 			if err != nil {
