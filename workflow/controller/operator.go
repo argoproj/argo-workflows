@@ -2798,7 +2798,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	// Merge the workflow spec and storedWorkflowspec.
-	targetWf := wfv1.Workflow{Spec: woc.wf.Spec}
+	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
 	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
 	if err != nil {
 		return nil, executionParameters, err
