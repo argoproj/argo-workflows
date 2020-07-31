@@ -15,6 +15,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
@@ -520,4 +521,34 @@ func TestApplySubmitOpts(t *testing.T) {
 			assert.Equal(t, "1", parameters[0].Value.String())
 		}
 	})
+}
+
+func TestFormulateResubmitWorkflow(t *testing.T) {
+	t.Run("Labels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyControllerInstanceID:    "1",
+					common.LabelKeyClusterWorkflowTemplate: "1",
+					common.LabelKeyCronWorkflow:            "1",
+					common.LabelKeyWorkflowTemplate:        "1",
+					common.LabelKeyCreator:                 "1",
+					common.LabelKeyPhase:                   "1",
+					common.LabelKeyCompleted:               "1",
+				},
+			},
+		}
+		wf, err := FormulateResubmitWorkflow(wf, false)
+		if assert.NoError(t, err) {
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyCronWorkflow)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyWorkflowTemplate)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
+		}
+	})
+
 }
