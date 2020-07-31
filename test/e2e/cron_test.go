@@ -69,7 +69,9 @@ spec:
 			Wait(1 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				if assert.NotNil(t, cronWf.Status.LastScheduledTime) {
+					assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				}
 			})
 	})
 	s.Run("TestBasicTimezone", func() {
@@ -253,7 +255,7 @@ spec:
 			Wait(2 * time.Minute).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-				assert.Equal(t, 2, len(cronWf.Status.Active))
+				assert.Len(t, cronWf.Status.Active, 2)
 			})
 	})
 	s.Run("TestBasicReplace", func() {

@@ -265,10 +265,9 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "Name:                test-cron-wf-basic-")
 				r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
 				res := r.FindStringSubmatch(output)
-				if len(res) != 2 {
-					assert.Fail(t, "Internal test error, please report a bug")
+				if assert.Len(t, res, 2) {
+					createdWorkflowName = res[1]
 				}
-				createdWorkflowName = res[1]
 			}).
 			WaitForWorkflowName(createdWorkflowName, 30*time.Second).
 			Then().
@@ -439,10 +438,10 @@ func (s *CLISuite) TestWorkflowDeleteResubmitted() {
 		When().
 		Given().
 		RunCli([]string{"delete", "--resubmitted", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-		if assert.NoError(t, err) {
-			assert.Contains(t, output, "deleted")
-		}
-	}))
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		}))
 }
 
 func (s *CLISuite) TestWorkflowDeleteOlder() {

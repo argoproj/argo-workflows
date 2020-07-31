@@ -11,11 +11,15 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+// If `scheduleTime == 0`, then we assume that you are manually (i.e. `--from`). The name will be generated and
+// `cronScheduleTime` parameter will not be set.
+// If `scheduleTime > 0` then we assume this is being created on a cron schedule and the name will be deterministic AND
+// the `cronScheduleTime` parameter will be set to its value (RFC3339).
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow, scheduleTime time.Time) *wfv1.Workflow {
+	generateName := cronWf.Name + "-"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			// truncate the time to 1m because we know that no more than one cron job can run per minute
-			Name: fmt.Sprintf("%s-%v", cronWf.GetName(), scheduleTime.Truncate(time.Minute).Unix()),
+			GenerateName: generateName,
 			Labels: map[string]string{
 				LabelKeyCronWorkflow: cronWf.Name,
 			},
@@ -25,6 +29,10 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow, scheduleTime time.
 			},
 		},
 		Spec: cronWf.Spec.WorkflowSpec,
+	}
+	if !scheduleTime.IsZero() {
+		// truncate the time to 1m because we know that no more than one cron job can run per minute
+		cronWf.SetName(fmt.Sprintf("%s%v", generateName, scheduleTime.Truncate(time.Minute).Unix()))
 	}
 	if instanceId, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
 		wf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID] = instanceId
@@ -37,8 +45,10 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow, scheduleTime time.
 			wf.Annotations[key] = annotation
 		}
 	}
-	intOrString := intstr.Parse(scheduleTime.Format(time.RFC3339))
-	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: "cronScheduleTime", Value: &intOrString})
+	if !scheduleTime.IsZero() {
+		intOrString := intstr.Parse(scheduleTime.Format(time.RFC3339))
+		wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: "cronScheduleTime", Value: &intOrString})
+	}
 	return wf
 }
 
