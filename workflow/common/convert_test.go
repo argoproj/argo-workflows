@@ -39,7 +39,7 @@ spec:
   labels:
     label1: value1
     workflows.argoproj.io/cron-workflow: hello-world
-  name: hello-world--62135596800
+  name: hello-world-0
   ownerReferences:
   - apiVersion: argoproj.io/v1alpha1
     blockOwnerDeletion: true
@@ -51,7 +51,7 @@ spec:
   arguments:
     parameters:
     - name: cronScheduleTime
-      value: "0001-01-01T00:00:00Z"
+      value: "1970-01-01T00:00:00Z"
   entrypoint: whalesay
   templates:
   - arguments: {}
@@ -75,7 +75,9 @@ status:
 	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
-	wf := ConvertCronWorkflowToWorkflow(&cronWf, time.Time{})
+	scheduleTime, err := time.Parse(time.RFC3339, "1970-01-01T00:00:00Z")
+	assert.NoError(t, err)
+	wf := ConvertCronWorkflowToWorkflow(&cronWf, scheduleTime)
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))

@@ -14,11 +14,15 @@ import (
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow, scheduleTime time.Time) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%v", cronWf.GetName(), scheduleTime.Unix()),
+			// truncate the time to 1m because we know that no more than one cron job can run per minute
+			Name: fmt.Sprintf("%s-%v", cronWf.GetName(), scheduleTime.Truncate(time.Minute).Unix()),
 			Labels: map[string]string{
 				LabelKeyCronWorkflow: cronWf.Name,
 			},
 			Annotations: make(map[string]string),
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind)),
+			},
 		},
 		Spec: cronWf.Spec.WorkflowSpec,
 	}
@@ -33,7 +37,6 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow, scheduleTime time.
 			wf.Annotations[key] = annotation
 		}
 	}
-	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 	intOrString := intstr.Parse(scheduleTime.Format(time.RFC3339))
 	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: "cronScheduleTime", Value: &intOrString})
 	return wf
