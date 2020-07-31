@@ -2,6 +2,7 @@ package common
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,16 +32,14 @@ spec:
           command: [cowsay]
           args: ["hello world"]
 `
-	expectedWf := `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
+	expectedWf := `metadata:
   annotations:
     annotation2: value2
   creationTimestamp: null
-  generateName: hello-world-
   labels:
     label1: value1
     workflows.argoproj.io/cron-workflow: hello-world
+  name: hello-world--62135596800
   ownerReferences:
   - apiVersion: argoproj.io/v1alpha1
     blockOwnerDeletion: true
@@ -49,7 +48,10 @@ metadata:
     name: hello-world
     uid: ""
 spec:
-  arguments: {}
+  arguments:
+    parameters:
+    - name: cronScheduleTime
+      value: "0001-01-01T00:00:00Z"
   entrypoint: whalesay
   templates:
   - arguments: {}
@@ -73,7 +75,7 @@ status:
 	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
-	wf := ConvertCronWorkflowToWorkflow(&cronWf)
+	wf := ConvertCronWorkflowToWorkflow(&cronWf, time.Time{})
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
@@ -103,7 +105,7 @@ spec:
 
 	err = yaml.Unmarshal([]byte(cronWfInstanceIdString), &cronWf)
 	assert.NoError(t, err)
-	wf = ConvertCronWorkflowToWorkflow(&cronWf)
+	wf = ConvertCronWorkflowToWorkflow(&cronWf, time.Time{})
 	if assert.Contains(t, wf.GetLabels(), LabelKeyControllerInstanceID) {
 		assert.Equal(t, wf.GetLabels()[LabelKeyControllerInstanceID], "test-controller")
 	}

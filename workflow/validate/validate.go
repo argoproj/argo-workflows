@@ -294,7 +294,7 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
 	}
 
-	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
+	wf := common.ConvertCronWorkflowToWorkflow(cronWf, time.Now())
 
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	if err != nil {

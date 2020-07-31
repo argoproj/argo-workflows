@@ -10,7 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -55,7 +55,9 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 }
 
 func (woc *cronWfOperationCtx) Run() {
-	woc.log.Infof("Running %s", woc.name)
+	// we capture the now time because we want this as close as possible as to when we were invoked
+	started := time.Now()
+	woc.log.WithField("started", started).Info("Running job")
 
 	err := woc.validateCronWorkflow()
 	if err != nil {
@@ -76,18 +78,34 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
-
-	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
+	spec, err := cron.ParseStandard(woc.cronWf.Spec.GetScheduleWithTimezone())
 	if err != nil {
-		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("failed to parse cron workflow schedule: %s", err))
 		return
 	}
 
-	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
-	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
-	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
-	woc.persistUpdate()
+	for scheduleTime := started; ; {
+		// if we can, determine the next run time
+		if woc.cronWf.Status.LastScheduledTime != nil {
+			scheduleTime = spec.Next(woc.cronWf.Status.LastScheduledTime.Time)
+		}
+		if scheduleTime.After(started) {
+			break
+		}
+		woc.log.WithField("scheduleTime", scheduleTime).Info("submitting cron workflow")
+
+		wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf, scheduleTime)
+		runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
+		if err != nil && !apierr.IsAlreadyExists(err) {
+			woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
+			return
+		}
+
+		woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
+		woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: scheduleTime}
+		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
+		woc.persistUpdate()
+	}
 }
 
 func (woc *cronWfOperationCtx) validateCronWorkflow() error {
@@ -119,7 +137,7 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 func (woc *cronWfOperationCtx) persistUpdate() {
 	_, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		if errors.IsConflict(err) {
+		if apierr.IsConflict(err) {
 			reapplyErr := woc.reapplyUpdate()
 			if reapplyErr != nil {
 				woc.log.WithError(reapplyErr).WithField("original error", err).Error("failed to update CronWorkflow after reapply attempt")
@@ -369,7 +387,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(wf.Name, &v1.DeleteOptions{})
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierr.IsNotFound(err) {
 				woc.log.Infof("Workflow '%s' was already deleted", wf.Name)
 				continue
 			}

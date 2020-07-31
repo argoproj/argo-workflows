@@ -56,6 +56,13 @@ type CronWorkflowSpec struct {
 	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
 }
 
+func (m *CronWorkflowSpec) GetScheduleWithTimezone() string {
+	if m.Timezone != "" {
+		return "CRON_TZ=" + m.Timezone + " " + m.Schedule
+	}
+	return m.Schedule
+}
+
 // CronWorkflowStatus is the status of a CronWorkflow
 type CronWorkflowStatus struct {
 	// Active is a list of active workflows stemming from this CronWorkflow

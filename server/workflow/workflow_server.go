@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -483,7 +484,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		if err != nil {
 			return nil, err
 		}
-		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
+		wf = common.ConvertCronWorkflowToWorkflow(cronWf, time.Now())
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
 		wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(req.ResourceName, metav1.GetOptions{})
 		if err != nil {
