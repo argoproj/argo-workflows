@@ -264,10 +264,11 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 // It return the status of workflow updated or not.
 func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockType LockType, lockAction LockAction, wf *wfv1.Workflow) bool {
 
-	if wf.Status.Synchronization == nil {
-		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
-	}
+
 	if lockType == LockTypeSemaphore {
+		if wf.Status.Synchronization == nil  || wf.Status.Synchronization.Semaphore == nil {
+			wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
+		}
 		if lockAction == LockActionWaiting {
 			index, semaphoreWaiting := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Waiting, lockKey)
 			currentHolder := cm.getCurrentLockHolders(lockKey)
@@ -306,6 +307,9 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 			}
 		}
 	}else if lockType == LockTypeMutex {
+		if wf.Status.Synchronization == nil  || wf.Status.Synchronization.Mutex== nil {
+			wf.Status.Synchronization = &wfv1.SynchronizationStatus{Mutex: &wfv1.MutexStatus{}}
+		}
 		if lockAction == LockActionWaiting {
 			index, mutexWaiting := getMutexHolding(wf.Status.Synchronization.Mutex.Waiting, lockKey)
 			currentHolder := cm.getCurrentLockHolders(lockKey)
