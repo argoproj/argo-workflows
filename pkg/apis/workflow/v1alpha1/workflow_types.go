@@ -77,6 +77,16 @@ const (
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
 
+// VolumeGCStrategy is the strategy to use when deleting volumes from completed workflows
+type VolumeGCStrategy string
+
+// VolumeGCStrategy
+
+const (
+	VolumeGCOnCompletion VolumeGCStrategy = "OnWorkflowCompletion"
+	VolumeGCOnSuccess    VolumeGCStrategy = "OnWorkflowSuccess"
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -318,6 +328,9 @@ type WorkflowSpec struct {
 
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
+
+	// VolumeGC describes the strategy to use when to deleting volumes from completed workflows
+	VolumeGC *VolumeGC `json:"volumeGC,omitempty" protobuf:"bytes,36,opt,name=volumeGC,casttype=VolumeGC"`
 }
 
 type ShutdownStrategy string
@@ -692,6 +705,12 @@ type Artifact struct {
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+}
+
+// VolumeGC describes how to delete volumes from completed Workflows
+type VolumeGC struct {
+	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+	Strategy VolumeGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeGCStrategy"`
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts

@@ -5981,6 +5981,11 @@ spec:
                         type: object
                     type: object
                   type: array
+                volumeGC:
+                  properties:
+                    strategy:
+                      type: string
+                  type: object
                 volumes:
                   items:
                     properties:

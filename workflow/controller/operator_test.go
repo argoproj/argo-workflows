@@ -177,6 +177,108 @@ func TestSidecarWithVolume(t *testing.T) {
 	assert.True(t, existingVolFound, "existing vol was not referenced by sidecar")
 }
 
+func makeVolumeGcStrategyTemplate(strategy wfv1.VolumeGCStrategy, phase wfv1.NodePhase) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-with-volumes
+spec:
+  entrypoint: workflow-with-volumes
+  volumeGC:
+    strategy: %s
+  volumeClaimTemplates:
+  - metadata:
+      name: claim-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  volumes:
+  - name: existing-vol
+    persistentVolumeClaim:
+      claimName: my-existing-volume
+  templates:
+  - name: workflow-with-volumes
+    script:
+      image: python:alpine3.6
+      command: [python]
+      volumeMounts:
+      - name: claim-vol
+        mountPath: /mnt/vol
+      - name: existing-vol
+        mountPath: /mnt/existing-vol
+      source: |
+        print("hello world")
+status:
+  phase: %s
+  startedAt: 2020-08-01T15:32:09Z
+  nodes:
+    workflow-with-volumes:
+      id: workflow-with-volumes
+      name: workflow-with-volumes
+      displayName: workflow-with-volumes
+      type: Pod
+      templateName: workflow-with-volumes
+      templateScope: local/workflow-with-volumes
+      startedAt: 2020-08-01T15:32:09Z
+      phase: %s
+  persistentVolumeClaims:
+    - name: claim-vol
+      persistentVolumeClaim:
+        claimName: workflow-with-volumes-claim-vol
+`, strategy, phase, phase)
+}
+
+func TestVolumeGCStrategy(t *testing.T) {
+	tests := []struct {
+		name                     string
+		strategy                 wfv1.VolumeGCStrategy
+		phase                    wfv1.NodePhase
+		expectedVolumesRemaining int
+	}{{
+		name:                     "failed/OnWorkflowCompletion",
+		strategy:                 wfv1.VolumeGCOnCompletion,
+		phase:                    wfv1.NodeFailed,
+		expectedVolumesRemaining: 0,
+	}, {
+		name:                     "failed/OnWorkflowSuccess",
+		strategy:                 wfv1.VolumeGCOnSuccess,
+		phase:                    wfv1.NodeFailed,
+		expectedVolumesRemaining: 1,
+	}, {
+		name:                     "succeeded/OnWorkflowSuccess",
+		strategy:                 wfv1.VolumeGCOnSuccess,
+		phase:                    wfv1.NodeSucceeded,
+		expectedVolumesRemaining: 0,
+	}, {
+		name:                     "succeeded/OnWorkflowCompletion",
+		strategy:                 wfv1.VolumeGCOnCompletion,
+		phase:                    wfv1.NodeSucceeded,
+		expectedVolumesRemaining: 0,
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cancel, controller := newController()
+			defer cancel()
+			assert.NotNil(t, controller)
+			wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+			wf := unmarshalWF(makeVolumeGcStrategyTemplate(tt.strategy, tt.phase))
+			wf, err := wfcset.Create(wf)
+			assert.NoError(t, err)
+			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			assert.NoError(t, err)
+			woc := newWorkflowOperationCtx(wf, controller)
+			woc.operate()
+			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedVolumesRemaining, len(wf.Status.PersistentVolumeClaims))
+		})
+	}
+}
+
 // TestProcessNodesWithRetries tests the processNodesWithRetries() method.
 func TestProcessNodesWithRetries(t *testing.T) {
 	cancel, controller := newController()
