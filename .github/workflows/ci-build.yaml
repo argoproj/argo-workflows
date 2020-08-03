@@ -39,14 +39,6 @@ jobs:
         run: |
             cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
             kustomize version
-      - name: Install Kubectl
-        if: ${{ matrix.test != 'test' }}
-        run: |
-          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x ./kubectl
-          mkdir ~/bin
-          mv ./kubectl ~/bin/kubectl
-          echo "::add-path::~/bin"
       - name: Install and start K3S v1.0.1
         if: ${{ matrix.test != 'test' }}
         run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &

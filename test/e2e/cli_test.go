@@ -824,8 +824,6 @@ func (s *CLISuite) TestCron() {
 
 	s.Run("Create Parameter Override", func() {
 		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\""}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-		}).RunKubectl([]string{"get", "cwf", "test-cron-wf-basic-param", "-o", "yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "bar test passed")
 			}

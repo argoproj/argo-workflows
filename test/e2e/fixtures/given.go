@@ -183,16 +183,6 @@ func (g *Given) RunCli(args []string, block func(t *testing.T, output string, er
 	return g
 }
 
-func (g *Given) RunKubectl(args []string, block func(t *testing.T, output string, err error)) *Given {
-	g.t.Helper()
-	output, err := runCli("kubectl", append([]string{"-n", Namespace}, args...)...)
-	block(g.t, output, err)
-	if g.t.Failed() {
-		g.t.FailNow()
-	}
-	return g
-}
-
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {
 	var file string
 	if strings.HasPrefix(text, "@") {
