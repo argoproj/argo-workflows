@@ -20994,6 +20994,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     waiting:
                       items:
                         properties:
@@ -21003,6 +21004,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                   type: object
                 semaphore:
                   properties:

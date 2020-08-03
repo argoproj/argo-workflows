@@ -526,8 +526,12 @@ message MutexHolding {
 }
 
 message MutexStatus {
+  // Holding stores the list of resource acquired synchronization lock for workflows.
+  // +listType=atomic
   repeated MutexHolding holding = 1;
 
+  // Waiting indicates the list of current synchronization lock holders.
+  // +listType=atomic
   repeated MutexHolding waiting = 2;
 }
 
@@ -834,7 +838,7 @@ message SemaphoreStatus {
   // Holding stores the list of resource acquired synchronization lock for workflows.
   repeated SemaphoreHolding holding = 1;
 
-  // Waiting indicates the list of current synchronization lock holders
+  // Waiting indicates the list of current synchronization lock holders.
   repeated SemaphoreHolding waiting = 2;
 }
 

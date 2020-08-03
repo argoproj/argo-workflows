@@ -3207,8 +3207,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holding`|`Array<`[`MutexHolding`](#mutexholding)`>`|_No description available_|
-|`waiting`|`Array<`[`MutexHolding`](#mutexholding)`>`|_No description available_|
+|`holding`|`Array<`[`MutexHolding`](#mutexholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
+|`waiting`|`Array<`[`MutexHolding`](#mutexholding)`>`|Waiting indicates the list of current synchronization lock holders.|
 
 ## SemaphoreStatus
 
@@ -3227,7 +3227,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
-|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
+|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders.|
 
 ## ArchiveStrategy
 

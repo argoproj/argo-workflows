@@ -993,7 +993,7 @@ type WorkflowStatus struct {
 type SemaphoreStatus struct {
 	// Holding stores the list of resource acquired synchronization lock for workflows.
 	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders
+	// Waiting indicates the list of current synchronization lock holders.
 	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
@@ -1013,7 +1013,11 @@ type MutexHolding struct {
 }
 
 type MutexStatus struct {
+	// Holding stores the list of resource acquired synchronization lock for workflows.
+	// +listType=atomic
 	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting indicates the list of current synchronization lock holders.
+	// +listType=atomic
 	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 

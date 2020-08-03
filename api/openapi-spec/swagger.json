@@ -2757,16 +2757,20 @@
       "type": "object",
       "properties": {
         "holding": {
+          "description": "Holding stores the list of resource acquired synchronization lock for workflows.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "waiting": {
+          "description": "Waiting indicates the list of current synchronization lock holders.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
-          }
+          },
+          "x-kubernetes-list-type": "atomic"
         }
       }
     },
@@ -3333,7 +3337,7 @@
           }
         },
         "waiting": {
-          "description": "Waiting indicates the list of current synchronization lock holders",
+          "description": "Waiting indicates the list of current synchronization lock holders.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"

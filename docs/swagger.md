@@ -1163,8 +1163,8 @@ Mutex is a Mutex
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] |  | No |
-| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] |  | No |
+| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Holding stores the list of resource acquired synchronization lock for workflows. | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Waiting indicates the list of current synchronization lock holders. | No |
 
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 
@@ -1365,7 +1365,7 @@ SemaphoreRef is a reference of Semaphore
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | holding | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Holding stores the list of resource acquired synchronization lock for workflows. | No |
-| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders. | No |
 
 #### io.argoproj.workflow.v1alpha1.Sequence
 

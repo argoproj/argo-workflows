@@ -1836,8 +1836,14 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
 					"holding": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Holding stores the list of resource acquired synchronization lock for workflows.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -1848,8 +1854,14 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 						},
 					},
 					"waiting": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Waiting indicates the list of current synchronization lock holders.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -2973,7 +2985,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 					},
 					"waiting": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Waiting indicates the list of current synchronization lock holders",
+							Description: "Waiting indicates the list of current synchronization lock holders.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
