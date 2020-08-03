@@ -356,7 +356,6 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 			return true
 		}
 		if lockAction == LockActionAcquired {
-			update := false
 			index, mutexHolding := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
 			items := strings.Split(holderKey, "/")
 			holdingName := items[len(items)-1]
