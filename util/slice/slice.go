@@ -18,6 +18,3 @@ func ContainsString(slice []string, element string) bool {
 	return false
 }
 
-func Remove(slice []interface{}, index int) []interface{}{
-	return append(slice[:index], slice[index+1:]...)
-}
