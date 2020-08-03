@@ -1818,7 +1818,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref common.ReferenceCallback
 					},
 					"holder": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Holders stores the current mutex holder names.",
+							Description: "Holders stores the current mutex holder name.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

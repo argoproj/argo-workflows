@@ -3742,7 +3742,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holder`|`string`|Holders stores the current mutex holder names.|
+|`holder`|`string`|Holders stores the current mutex holder name.|
 |`mutex`|`string`|Name of the mutex|
 
 ## SemaphoreHolding

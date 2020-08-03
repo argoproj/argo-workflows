@@ -2744,7 +2744,7 @@
       "type": "object",
       "properties": {
         "holder": {
-          "description": "Holders stores the current mutex holder names.",
+          "description": "Holders stores the current mutex holder name.",
           "type": "string"
         },
         "mutex": {

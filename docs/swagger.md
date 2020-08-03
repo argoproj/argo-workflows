@@ -1156,7 +1156,7 @@ Mutex is a Mutex
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| holder | string | Holders stores the current mutex holder names. | No |
+| holder | string | Holders stores the current mutex holder name. | No |
 | mutex | string | Name of the mutex | No |
 
 #### io.argoproj.workflow.v1alpha1.MutexStatus

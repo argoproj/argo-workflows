@@ -521,7 +521,7 @@ message MutexHolding {
   // Name of the mutex
   optional string mutex = 1;
 
-  // Holders stores the current mutex holder names.
+  // Holders stores the current mutex holder name.
   optional string holder = 2;
 }
 
