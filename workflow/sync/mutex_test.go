@@ -176,6 +176,105 @@ func TestMutexLock(t *testing.T) {
 
 }
 
+var mutexWfWithTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: synchronization-tmpl-level-mutex-vjcdk
+  namespace: default
+spec:
+  entrypoint: synchronization-tmpl-level-mutex-example
+  templates:
+  - name: synchronization-tmpl-level-mutex-example
+    steps:
+    - - arguments:
+          parameters:
+          - name: seconds
+            value: '{{item}}'
+        name: synchronization-acquire-lock
+        template: acquire-lock
+        withParam: '["1","2","3"]'
+  - container:
+      args:
+      - sleep 20; echo acquired lock
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+    name: acquire-lock
+    synchronization:
+      mutex:
+        name: welcome
+status:
+  finishedAt: null
+  nodes:
+    synchronization-tmpl-level-mutex-vjcdk:
+      children:
+      - synchronization-tmpl-level-mutex-vjcdk-1320763997
+      displayName: synchronization-tmpl-level-mutex-vjcdk
+      finishedAt: null
+      id: synchronization-tmpl-level-mutex-vjcdk
+      name: synchronization-tmpl-level-mutex-vjcdk
+      phase: Pending
+      startedAt: "2020-08-03T04:13:26Z"
+      templateName: synchronization-tmpl-level-mutex-example
+      templateScope: local/synchronization-tmpl-level-mutex-vjcdk
+      type: Steps
+    synchronization-tmpl-level-mutex-vjcdk-1320763997:
+      boundaryID: synchronization-tmpl-level-mutex-vjcdk
+      children:
+      - synchronization-tmpl-level-mutex-vjcdk-3941195474
+      - synchronization-tmpl-level-mutex-vjcdk-1432992664
+      - synchronization-tmpl-level-mutex-vjcdk-2216915482
+      displayName: '[0]'
+      finishedAt: null
+      id: synchronization-tmpl-level-mutex-vjcdk-1320763997
+      name: synchronization-tmpl-level-mutex-vjcdk[0]
+      phase: Pending
+      startedAt: "2020-08-03T04:13:26Z"
+      templateName: synchronization-tmpl-level-mutex-example
+      templateScope: local/synchronization-tmpl-level-mutex-vjcdk
+      type: StepGroup
+    synchronization-tmpl-level-mutex-vjcdk-1432992664:
+      boundaryID: synchronization-tmpl-level-mutex-vjcdk
+      displayName: synchronization-acquire-lock(1:2)
+      finishedAt: null
+      id: synchronization-tmpl-level-mutex-vjcdk-1432992664
+      message: 'Waiting for argo/mutex/welcome lock. Lock status: 0/1 '
+      name: synchronization-tmpl-level-mutex-vjcdk[0].synchronization-acquire-lock(1:2)
+      phase: Pending
+      startedAt: "2020-08-03T04:13:26Z"
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-mutex-vjcdk
+      type: Pod
+    synchronization-tmpl-level-mutex-vjcdk-2216915482:
+      boundaryID: synchronization-tmpl-level-mutex-vjcdk
+      displayName: synchronization-acquire-lock(2:3)
+      finishedAt: null
+      id: synchronization-tmpl-level-mutex-vjcdk-2216915482
+      message: 'Waiting for argo/mutex/welcome lock. Lock status: 0/1 '
+      name: synchronization-tmpl-level-mutex-vjcdk[0].synchronization-acquire-lock(2:3)
+      phase: Pending
+      startedAt: "2020-08-03T04:13:26Z"
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-mutex-vjcdk
+      type: Pod
+    synchronization-tmpl-level-mutex-vjcdk-3941195474:
+      boundaryID: synchronization-tmpl-level-mutex-vjcdk
+      displayName: synchronization-acquire-lock(0:1)
+      finishedAt: null
+      id: synchronization-tmpl-level-mutex-vjcdk-3941195474
+      name: synchronization-tmpl-level-mutex-vjcdk[0].synchronization-acquire-lock(0:1)
+      phase: Pending
+      startedAt: "2020-08-03T04:13:26Z"
+      templateName: acquire-lock
+      templateScope: local/synchronization-tmpl-level-mutex-vjcdk
+      type: Pod
+  phase: Running
+  startedAt: "2020-08-03T04:13:26Z"
+`
+
 func TestMutexTmplLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
 
@@ -185,44 +284,43 @@ func TestMutexTmplLevel(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 			//nextKey = key
 		})
-		wf := unmarshalWF(wfWithTmplSemaphore)
-		tmpl := wf.Spec.Templates[2]
+		wf := unmarshalWF(mutexWfWithTmplLevel)
+		tmpl := wf.Spec.Templates[1]
 
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", 0, time.Now(), tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, "semaphore-tmpl-level-xjvln-3448864205", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Status.Synchronization.Mutex.Holding[0].Holder)
 
 		// Try to acquire again
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", 0, time.Now(), tmpl.Synchronization)
 		assert.NoError(t, err)
-		assert.True(t, status)
-		assert.False(t, wfUpdate)
-		assert.Empty(t, msg)
+		assert.True(t, wfUpdate)
+		assert.False(t, status)
+		assert.NotEmpty(t, msg)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-1432992664", 0, time.Now(), tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.True(t, wfUpdate)
 		assert.False(t, status)
 
-		concurrenyMgr.Release(wf, "semaphore-tmpl-level-xjvln-3448864205", wf.Namespace, tmpl.Synchronization)
+		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Namespace, tmpl.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
-		assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders)
+		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		assert.Empty(t, wf.Status.Synchronization.Mutex.Holding)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-2216915482", 0, time.Now(), tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
-		assert.Equal(t, "semaphore-tmpl-level-xjvln-1607747183", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
-
+		assert.NotNil(t, wf.Status.Synchronization.Mutex)
+		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-2216915482", wf.Status.Synchronization.Mutex.Holding[0].Holder)
 	})
 }
