@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/workflow/controller/cache"
-
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -4482,15 +4482,13 @@ metadata:
   name: steps-9fvnv
   namespace: argo
 spec:
-  activeDeadlineSeconds: 1
+  activeDeadlineSeconds: 3
   entrypoint: main
   templates:
   - name: main
     steps:
     - - name: approve
         template: approve
-      - name: hello1
-        template: whalesay
   - name: approve
     suspend: {}
   - container:
@@ -4520,25 +4518,11 @@ status:
       templateName: main
       templateScope: local/steps-9fvnv
       type: Steps
-    steps-9fvnv-3392004273:
-      boundaryID: steps-9fvnv
-      displayName: hello1
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server
-      id: steps-9fvnv-3392004273
-      message: 'ErrImageNeverPull: Container image "argoproj/argoexec:latest" is not
-        present with pull policy of Never'
-      name: steps-9fvnv[0].hello1
-      phase: Pending
-      startedAt: "2020-07-24T16:39:25Z"
-      templateName: whalesay
-      templateScope: local/steps-9fvnv
-      type: Pod
+
     steps-9fvnv-3514116232:
       boundaryID: steps-9fvnv
       children:
       - steps-9fvnv-3700512507
-      - steps-9fvnv-3392004273
       displayName: '[0]'
       finishedAt: null
       id: steps-9fvnv-3514116232
@@ -4573,7 +4557,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 		woc.operate()
 		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	})
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	t.Run("After Deadline", func(t *testing.T) {
 		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
@@ -4596,4 +4580,24 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 		}
 	})
+}
+
+func Test_processItem(t *testing.T) {
+	task := wfv1.DAGTask{
+		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+	}
+	taskBytes, err := json.Marshal(task)
+	assert.NoError(t, err)
+	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
+	assert.NoError(t, err)
+
+	var items []wfv1.Item
+	err = json.Unmarshal([]byte(task.WithParam), &items)
+	assert.NoError(t, err)
+
+	var newTask wfv1.DAGTask
+	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
+	if assert.NoError(t, err) {
+		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
+	}
 }

@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
@@ -142,11 +143,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
-		wfName, err := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
-		if err != nil {
-			return fmt.Errorf("malformed request: workflows must be specified with a 'metadata.name=...' field selector; unable to parse: %w", err)
-		}
-		if len(wfName) > 0 {
+		wfName := argoutil.RecoverWorkflowNameFromSelectorStringIfAny(opts.FieldSelector)
+		if wfName != "" {
+			// If we are using an alias (such as `@latest`) we need to dereference it.
+			// s.getWorkflow does that for us
 			wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -169,12 +169,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		select {
 		case <-ctx.Done():
 			return nil
-		case event, ok := <-watch.ResultChan():
-			var wf *wfv1.Workflow
-			if ok {
-				wf, ok = event.Object.(*wfv1.Workflow)
-			}
-			if !ok {
+		case event, open := <-watch.ResultChan():
+			if !open {
 				log.Debug("Re-establishing workflow watch")
 				watch.Stop()
 				watch, err = wfIf.Watch(*opts)
@@ -184,6 +180,11 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				continue
 			}
 			log.Debug("Received event")
+			wf, ok := event.Object.(*wfv1.Workflow)
+			if !ok {
+				// object is probably probably metav1.Status, `FromObject` can deal with anything
+				return apierr.FromObject(event.Object)
+			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			err := s.hydrator.Hydrate(wf)
 			if err != nil {

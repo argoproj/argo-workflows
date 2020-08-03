@@ -213,6 +213,8 @@ data:
         parallelism: 3
 
     # SSO Configuration for the Argo server.
+    # You must also start argo server with `--auth-mode sso`.
+    # https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md
     sso:
       # This is the root URL of the OIDC provider (required).
       issuer: https://issuer.root.url/
