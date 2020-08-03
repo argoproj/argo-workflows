@@ -51,7 +51,7 @@ func (o *Operation) Dispatch() {
 	log.Debugln(string(data))
 
 	for _, event := range o.events {
-		// we use a predicable suffix to the name so that lost connections cannot result in the same workflow
+		// we use a predicable suffix for the name so that lost connections cannot result in the same workflow being created twice
 		// being created twice
 		nameSuffix := fmt.Sprintf("%v", time.Now().Unix())
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
