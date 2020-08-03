@@ -1,25 +1,37 @@
 interface CollapsedNode {
-    is: boolean;
+    kind: string;
     parent: string;
-    numHidden: number;
+    message: string;
 }
 
-export function getCollapsedNodeName(parent: string, numHidden: number): string {
-    return JSON.stringify({is: true, parent, numHidden} as CollapsedNode);
+export function getCollapsedNodeName(parent: string, message: string): string {
+    return JSON.stringify({kind: 'collapsed', parent, message} as CollapsedNode);
+}
+
+export function getOutboundNodeName(parent: string, message: string): string {
+    return JSON.stringify({kind: 'outbound', parent, message} as CollapsedNode);
 }
 
 export function isCollapsedNode(id: string): boolean {
     try {
-        return (JSON.parse(id) as CollapsedNode).is;
+        return (JSON.parse(id) as CollapsedNode).kind === 'collapsed';
     } catch (e) {
         return false;
     }
 }
 
-export function getCollapsedNodeParent(id: string): string {
+export function isOutboundNode(id: string): boolean {
+    try {
+        return (JSON.parse(id) as CollapsedNode).kind === 'outbound';
+    } catch (e) {
+        return false;
+    }
+}
+
+export function getNodeParent(id: string): string {
     return (JSON.parse(id) as CollapsedNode).parent;
 }
 
-export function getCollapsedNumHidden(id: string): number {
-    return (JSON.parse(id) as CollapsedNode).numHidden;
+export function getMessage(id: string): string {
+    return (JSON.parse(id) as CollapsedNode).message;
 }
