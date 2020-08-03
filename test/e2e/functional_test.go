@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -660,6 +661,40 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
+}
+
+func (s *FunctionalSuite) TestSynchronizationWfLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-wf-level.yaml").
+		When().
+		RunCli([]string{"submit", "functional/synchronization-mutex-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "synchronization-wf-level-mutex")
+			}
+		}).
+		SubmitWorkflow().
+		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
+			fmt.Println(output)
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestTemplateLevelMutex() {
+	s.Given().
+		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
+		When().
+		SubmitWorkflow().
+		Wait(3*time.Second).
+		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		DeleteConfigMap()
 }
 
 func TestFunctionalSuite(t *testing.T) {
