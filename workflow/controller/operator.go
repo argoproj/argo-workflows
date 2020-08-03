@@ -2233,7 +2233,9 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 		if len(node.Outputs.Parameters) > 0 {
 			param := make(map[string]string)
 			for _, p := range node.Outputs.Parameters {
-				param[p.Name] = p.Value.String()
+				if p.Value != nil {
+					param[p.Name] = p.Value.String()
+				}
 			}
 			paramList = append(paramList, param)
 		}

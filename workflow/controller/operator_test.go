@@ -1559,7 +1559,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(newSteps))
-	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
+	assert.Equal(t, `debian 9.1 JSON({"os":"debian","version":9.1})`, newSteps[0].Arguments.Parameters[0].Value.String())
 }
 
 var suspendTemplate = `
@@ -4293,7 +4293,7 @@ spec:
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	// reconcille
+	// reconcile
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
@@ -4309,7 +4309,63 @@ spec:
 		assert.NoError(t, err)
 	}
 
-	// reconcille
+	// reconcile
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+}
+
+func TestNestedItems(t *testing.T) {
+	wf := unmarshalWF(`
+kind: Workflow
+metadata:
+  generateName: nested-test-
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: things
+        value: '[{"nested": {"B": "2 \"foo\""}}]'
+    steps:
+    - - name: echoitems
+        template: echo
+        arguments:
+          parameters:
+            - name: thing
+              value: "{{item.nested}}"
+        withParam: "{{inputs.parameters.things}}"
+  - name: echo
+    inputs:
+      parameters:
+        - name: thing
+    container:
+      image: busybox
+      command: [echo]
+      args: ["{{inputs.parameters.thing}}"]
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	// reconcile
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+
+	// make all created pods as successful
+	podInterface := controller.kubeclientset.CoreV1().Pods("my-ns")
+	list, err := podInterface.List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, list.Items, 1)
+	for _, pod := range list.Items {
+		pod.Status.Phase = apiv1.PodSucceeded
+		pod.GetAnnotations()[common.AnnotationKeyOutputs] = `{}`
+		_, err := podInterface.Update(&pod)
+		assert.NoError(t, err)
+	}
+
+	// reconcile
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -4582,7 +4638,7 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 	})
 }
 
-func TestProcessItem(t *testing.T) {
+func Test_processItem(t *testing.T) {
 	task := wfv1.DAGTask{
 		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
 	}
@@ -4598,6 +4654,6 @@ func TestProcessItem(t *testing.T) {
 	var newTask wfv1.DAGTask
 	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
 	if assert.NoError(t, err) {
-		assert.Equal(t, `task-name(0:json:map[list:[0 1] number:2 string:foo],list:[0 1],number:2,string:foo)`, newTaskName)
+		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
 }
