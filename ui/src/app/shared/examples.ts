@@ -1,84 +1,96 @@
-import {ClusterWorkflowTemplate, CronWorkflow, Workflow, WorkflowTemplate} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, Template, Workflow, WorkflowTemplate} from '../../models';
 
 const randomSillyName = () => {
-    const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely'];
-    const nouns = ['rhino', 'python', 'bear', 'dragon', 'octopus', 'tiger'];
+    const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely', 'sparkly', 'omniscient'];
+    const nouns = ['rhino', 'python', 'bear', 'dragon', 'octopus', 'tiger', 'whale', 'poochenheimer'];
     const random = (array: string[]) => array[Math.floor(Math.random() * array.length)];
     return `${random(adjectives)}-${random(nouns)}`;
 };
 
-// TODO - remove "name: 'main'" - we should not have it in these examples
-const container = {
-    name: 'main',
-    image: 'argoproj/argosay:v2',
-    command: ['/argosay'],
-    args: ['echo', 'hello argo!']
-};
+// cannot be called `arguments` due to typescript
+const argumentz = {parameters: [{name: 'message', value: 'hello argo'}]};
+const entrypoint = 'argosay';
+const labels = {example: 'true'};
+const ttlStrategy = {secondsAfterCompletion: 5 * 60};
+const podGC = {strategy: 'OnPodCompletion'};
 
-export const exampleWorkflow = (namespace: string): Workflow => ({
-    metadata: {
-        name: randomSillyName(),
-        namespace: namespace || 'default'
-    },
-    spec: {
-        entrypoint: 'argosay',
-        templates: [
-            {
-                name: 'argosay',
-                container
-            }
-        ]
+const templates: Template[] = [
+    {
+        name: entrypoint,
+        inputs: {
+            parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
+        },
+        container: {
+            name: 'main',
+            image: 'argoproj/argosay:v2',
+            command: ['/argosay'],
+            args: ['echo', '{{inputs.parameters.message}}']
+        }
     }
-});
+];
+
+export const exampleWorkflow = (namespace: string): Workflow => {
+    return {
+        metadata: {
+            name: randomSillyName(),
+            namespace: namespace || 'default',
+            labels
+        },
+        spec: {
+            arguments: argumentz,
+            entrypoint,
+            templates,
+            ttlStrategy,
+            podGC
+        }
+    };
+};
 export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
     metadata: {
-        name: randomSillyName()
+        name: randomSillyName(),
+        labels
     },
     spec: {
-        templates: [
-            {
-                name: 'argosay',
-                container: {
-                    name: 'main',
-                    image: 'argoproj/argosay:v2',
-                    command: ['argosay'],
-                    args: ['echo', 'hello world']
-                }
-            }
-        ]
+        workflowMetadata: {labels},
+        entrypoint,
+        arguments: argumentz,
+        templates,
+        ttlStrategy,
+        podGC
     }
 });
 
 export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => ({
     metadata: {
         name: randomSillyName(),
-        namespace
+        namespace,
+        labels
     },
     spec: {
-        templates: [
-            {
-                name: 'argosay',
-                container
-            }
-        ]
+        workflowMetadata: {labels},
+        entrypoint,
+        arguments: argumentz,
+        templates,
+        ttlStrategy,
+        podGC
     }
 });
 
 export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     metadata: {
         name: randomSillyName(),
-        namespace: namespace || 'default'
+        namespace: namespace || 'default',
+        labels
     },
     spec: {
+        workflowMetadata: {labels},
         schedule: '* * * * *',
         workflowSpec: {
-            entrypoint: 'argosay',
-            templates: [
-                {
-                    name: 'argosay',
-                    container
-                }
-            ]
+            entrypoint,
+            arguments: argumentz,
+            templates,
+            ttlStrategy,
+            podGC
         }
     }
 });

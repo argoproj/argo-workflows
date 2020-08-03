@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/workflow/controller/cache"
-
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -4015,10 +4015,50 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	woc.operate()
 
 	status := woc.wf.Status
-	outputs := status.Nodes[""].Outputs
+	assert.Len(t, status.Nodes, 1)
+	outputs := &wfv1.Outputs{}
+	for _, node := range status.Nodes {
+		outputs = node.Outputs
+	}
 	assert.NotNil(t, outputs)
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
 	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
+}
+
+func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
+
+	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
+		Data: map[string]string{
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}`,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "whalesay-cache",
+			ResourceVersion: "1630732",
+		},
+	}
+	wf := unmarshalWF(workflowCached)
+	cancel, controller := newController()
+	defer cancel()
+
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	assert.NoError(t, err)
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&sampleConfigMapCacheEntry)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotPanics(t, woc.operate)
+
+	status := woc.wf.Status
+	assert.Len(t, status.Nodes, 1)
+	outputs := &wfv1.Outputs{}
+	for _, node := range status.Nodes {
+		outputs = node.Outputs
+	}
+	assert.Nil(t, outputs)
 }
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
@@ -4432,5 +4472,132 @@ func TestGlobalVarsOnExit(t *testing.T) {
 	node := woc.wf.Status.Nodes["hello-world-6gphm-8n22g-3224262006"]
 	if assert.NotNil(t, node) && assert.NotNil(t, node.Inputs) && assert.NotEmpty(t, node.Inputs.Parameters) {
 		assert.Equal(t, "nononono", node.Inputs.Parameters[0].Value.StrVal)
+	}
+}
+
+var deadlineWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-9fvnv
+  namespace: argo
+spec:
+  activeDeadlineSeconds: 3
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: approve
+        template: approve
+  - name: approve
+    suspend: {}
+  - container:
+      args:
+      - sleep 50
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      resources:
+        requests:
+          memory: 1Gi
+    name: whalesay
+    resubmitPendingPods: true
+status:
+  finishedAt: null
+  nodes:
+    steps-9fvnv:
+      children:
+      - steps-9fvnv-3514116232
+      displayName: steps-9fvnv
+      finishedAt: null
+      id: steps-9fvnv
+      name: steps-9fvnv
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: main
+      templateScope: local/steps-9fvnv
+      type: Steps
+
+    steps-9fvnv-3514116232:
+      boundaryID: steps-9fvnv
+      children:
+      - steps-9fvnv-3700512507
+      displayName: '[0]'
+      finishedAt: null
+      id: steps-9fvnv-3514116232
+      name: steps-9fvnv[0]
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: main
+      templateScope: local/steps-9fvnv
+      type: StepGroup
+    steps-9fvnv-3700512507:
+      boundaryID: steps-9fvnv
+      displayName: approve
+      finishedAt: null
+      id: steps-9fvnv-3700512507
+      name: steps-9fvnv[0].approve
+      phase: Running
+      startedAt: "2020-07-24T16:39:25Z"
+      templateName: approve
+      templateScope: local/steps-9fvnv
+      type: Suspend
+  phase: Running
+  startedAt: "2020-07-24T16:39:25Z"
+`
+
+func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
+	wf := unmarshalWF(deadlineWf)
+	wf.Status.StartedAt = metav1.Now()
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	t.Run("Before Deadline", func(t *testing.T) {
+		woc.operate()
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	})
+	time.Sleep(3 * time.Second)
+	t.Run("After Deadline", func(t *testing.T) {
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		}
+	})
+}
+
+func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
+	wf := unmarshalWF(deadlineWf)
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	t.Run("After Shutdown", func(t *testing.T) {
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+		}
+	})
+}
+
+func Test_processItem(t *testing.T) {
+	task := wfv1.DAGTask{
+		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+	}
+	taskBytes, err := json.Marshal(task)
+	assert.NoError(t, err)
+	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
+	assert.NoError(t, err)
+
+	var items []wfv1.Item
+	err = json.Unmarshal([]byte(task.WithParam), &items)
+	assert.NoError(t, err)
+
+	var newTask wfv1.DAGTask
+	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
+	if assert.NoError(t, err) {
+		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
 }

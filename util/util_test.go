@@ -37,20 +37,30 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 	}{
 		{"TestRecoverWorkflowNameFromSelectorString", args{"metadata.name=whalesay"}, "whalesay"},
 		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"metadata.name="}, ""},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"metadata.name=whalesay,other=hello"}, "whalesay"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,metadata.name=whalesay,other=hello"}, "whalesay"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,metadata.name=whalesay"}, "whalesay"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,metadata.name= whalesay ,other=hello"}, "whalesay"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,other=hello"}, ""},
+		{"TestRecoverWorkflowNameFromSelectorString", args{"metadata.name=@latest"}, "@latest"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"metadata.name="}, ""},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"metadata.name=@latest,other=hello"}, "@latest"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,metadata.name=@latest,other=hello"}, "@latest"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,metadata.name=@latest"}, "@latest"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,metadata.name= @latest ,other=hello"}, "@latest"},
+		{"TestRecoverWorkflowNameFromSelectorStringEmptyWf", args{"foo=bar,other=hello"}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := RecoverWorkflowNameFromSelectorString(tt.args.selector)
-			assert.NoError(t, err)
+			got := RecoverWorkflowNameFromSelectorStringIfAny(tt.args.selector)
 			if got != tt.want {
-				t.Errorf("RecoverWorkflowNameFromSelectorString() = %v, want %v", got, tt.want)
+				t.Errorf("RecoverWorkflowNameFromSelectorStringIfAny() = %v, want %v", got, tt.want)
 			}
 		})
 	}
-}
-
-func TestRecoverWorkflowNameFromSelectorStringError(t *testing.T) {
-	name, err := RecoverWorkflowNameFromSelectorString("whatever=whalesay")
-	assert.NotNil(t, err)
+	name := RecoverWorkflowNameFromSelectorStringIfAny("whatever=whalesay")
 	assert.Equal(t, name, "")
+	assert.NotPanics(t, func() {
+		_ = RecoverWorkflowNameFromSelectorStringIfAny("whatever")
+	})
 }
