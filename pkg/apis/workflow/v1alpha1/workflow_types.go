@@ -1005,17 +1005,6 @@ type SemaphoreHolding struct {
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
-//type WaitingStatus struct {
-//	// Holders stores the list of current holder names
-//	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
-//}
-//
-//type HolderNames struct {
-//	// Name stores the name of the resource holding lock
-//	// +listType=atomic
-//	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
-//}
-
 type MutexHolding struct {
 	// Name of the mutex
 	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
