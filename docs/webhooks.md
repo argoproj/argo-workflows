@@ -4,13 +4,13 @@
 
 ![alpha](assets/alpha.svg)
 
-Many clients can send events via the [events](events.md) API endpoint. However, for clients that are unable to do so (e.g. because they use signature verification as proof of origin), additional configuration is required.
+Many clients can send events via the [events](events.md) API endpoint using a standard authorization header. However, for clients that are unable to do so (e.g. because they use signature verification as proof of origin), additional configuration is required.
 
-In the namespace that will receive the event, create standard [access token](access-token.md) resources for your client:
+In the namespace that will receive the event, create [access token](access-token.md) resources for your client:
 
 * A role with permissions to get workflow templates and to create a workflow: [example](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml)
 * A service account for the client: [example](manifests/quick-start/base/webhooks/github.com-sa.yaml). 
-* Bind the account to the role: [example](manifests/quick-start/base/webhooks/github.com-rolebinding.yaml)
+* A binding of the account to the role: [example](manifests/quick-start/base/webhooks/github.com-rolebinding.yaml)
 
 Additionally create:
 

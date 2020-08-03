@@ -6,9 +6,9 @@
 
 ## Overview
 
-To support external webhooks, we have this endpoint `/api/v1/events/{namespace}`. Events can be sent to that can be any JSON data.
+To support external webhooks, we have this endpoint `/api/v1/events/{namespace}/{descriminator}`. Events can be sent to that can be any JSON data.
 
-These events can submit a workflow template (cluster workflow templates are not supported today).
+These events can submit *workflow templates* or *cluster workflow templates*.
 
 You may also wish to read about [webhooks](webhooks.md).
 
@@ -16,7 +16,7 @@ You may also wish to read about [webhooks](webhooks.md).
 
 Clients wanting to send events to the endpoint need an [access token](access-token.md).   
 
-It is only possible to submit workflow templates your access token has access to, [example](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
+It is only possible to submit workflow templates your access token has access to: [example role](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml).
 
 Example (note the trailing slash):
 
@@ -39,10 +39,10 @@ The event endpoint will always return in under 10 seconds because the event will
 !!! Warning "Processing Order"
     Events may not always be processed in the order they are received.   
   
-## Submitting From A Workflow Template
+## Submitting A Workflow From A Workflow Template
 
 A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
-The following example will be trigger by an event from "admin" with "message" in the payload. That message will be used as an argument for the created workflow.
+The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -72,7 +72,7 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
 ```
 
 !!! Warning "Malformed Expressions"
-    If the expression is malformed, this is logged. It is not visible in logs or the UI. Use `argo template create` rather than `kubectl apply` to catch your mistakes.
+    If the expression is malformed, this is logged. It is not visible in logs or the UI. 
 
 ## Event Expression Syntax and the Event Expression Environment
 
@@ -86,7 +86,7 @@ Because the endpoint accepts any JSON data, it is the user's responsibility to w
 
 ### Expression Environment
 
-The event environment typically contains:
+The event environment contains:
 
 * `payload` the event payload.
 * `metadata` event metadata, including HTTP headers.
@@ -104,7 +104,7 @@ payload.repository.clone_url == "http://gihub.com/argoproj/argo"
 
 ### MetaData 
 
-Metadata is data about the event, this includes **headers** and the **claim set**:
+Metadata is data about the event, this includes **headers**:
 
 #### Headers
 
@@ -125,7 +125,7 @@ metadata["x-argo"] == ["yes"]
 
 ### Discriminator
 
-This is only for edge-cases where neither the claim-set subject, payload, or metadata provide enough information to discriminate. Typically, it should be empty and ignored.
+This is only for edge-cases where neither the payload, or metadata provide enough information to discriminate. Typically, it should be empty and ignored.
 
 Example:
 
