@@ -555,8 +555,6 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -574,8 +572,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -891,8 +887,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -910,8 +904,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -1190,8 +1182,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -1209,8 +1199,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -1394,8 +1382,6 @@ Arguments to a template
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
@@ -1730,8 +1716,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
@@ -1831,8 +1815,6 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
@@ -2171,15 +2153,11 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -2483,8 +2461,6 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
@@ -2755,8 +2731,6 @@ Pod metdata
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -2774,8 +2748,6 @@ Pod metdata
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -3061,8 +3033,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
 
@@ -3419,10 +3389,6 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
@@ -3997,8 +3963,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -4016,8 +3980,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -4475,8 +4437,6 @@ A single application container that you want to run within a pod.
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
 
@@ -5141,8 +5101,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -5160,8 +5118,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
@@ -5610,10 +5566,6 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
-
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 </details>
 
 ### Fields
@@ -6150,8 +6102,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-on-exit.yaml)
 
-- [`template-with-event.yaml`](https://github.com/argoproj/argo/blob/master/examples/template-with-event.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
@@ -6169,8 +6119,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/dag.yaml)
-
-- [`github-triggered-ci-job.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/github-triggered-ci-job.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/hello-world.yaml)
 
