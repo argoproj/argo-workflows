@@ -3015,17 +3015,10 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
-					"parameters": {
+					"arguments": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameters extracted from the event and then set as arguments to the workflow created.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"),
-									},
-								},
-							},
+							Description: "Arguments extracted from the event and then set as arguments to the workflow created.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
 				},
@@ -3033,7 +3026,7 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"},
 	}
 }
 
@@ -3898,7 +3891,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
-					"expression": {
+					"event": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
 							Type:        []string{"string"},

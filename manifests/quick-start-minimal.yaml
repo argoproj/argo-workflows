@@ -123,7 +123,6 @@ metadata:
   name: argo-server
 ---
 apiVersion: v1
-automountServiceAccountToken: false
 kind: ServiceAccount
 metadata:
   name: github.com
@@ -501,14 +500,6 @@ stringData:
   gitlab.com: |
     type: gitlab
     secret: "shh!"
----
-apiVersion: v1
-kind: Secret
-metadata:
-  annotations:
-    kubernetes.io/service-account.name: github.com
-  name: github.com
-type: kubernetes.io/service-account-token
 ---
 apiVersion: v1
 kind: Secret

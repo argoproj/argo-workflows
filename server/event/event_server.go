@@ -79,6 +79,6 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	case s.operationQueue <- *operation:
 		return &eventpkg.EventResponse{}, nil
 	default:
-		return nil, errors.NewServiceUnavailable("operation pipeline full")
+		return nil, errors.NewServiceUnavailable("operation queue full")
 	}
 }

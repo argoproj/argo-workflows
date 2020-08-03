@@ -9,21 +9,15 @@ Many clients can send events via the [events](events.md) API endpoint. However, 
 In the namespace that will receive the event, create standard [access token](access-token.md) resources for your client:
 
 * A role with permissions to get workflow templates and to create a workflow: [example](manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml)
-* A service account for the client: [example](manifests/quick-start/base/webhooks/github.com-sa.yaml). For security, disable token auto-mount.
+* A service account for the client: [example](manifests/quick-start/base/webhooks/github.com-sa.yaml). 
 * Bind the account to the role: [example](manifests/quick-start/base/webhooks/github.com-rolebinding.yaml)
 
 Additionally create:
 
-* A service account token secret for your client: [example](manifests/quick-start/base/webhooks/github.com-secret.yaml) [learn more](https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#to-create-additional-api-tokens)
-* A secret named "argo-workflows-webhook-clients" listing the service account token secrets: [example](manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
+* A secret named "argo-workflows-webhook-clients" listing the service accounts: [example](manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
 
 The secret "argo-workflows-webhook-clients" tells Argo:
 
 * What type of webhook the account can be used for, e.g. "github" 
 * What "secret" that webhook is configured for, e.g. in your [Github settings page](https://github.com/alexec/argo/settings/hooks) 
-
-## Template Examples
-
-* [Github Triggered CI Job](examples/workflow-template/github-triggered-ci-job.yaml)
-
 

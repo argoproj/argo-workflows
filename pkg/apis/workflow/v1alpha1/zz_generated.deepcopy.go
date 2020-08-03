@@ -1603,12 +1603,10 @@ func (in *Sequence) DeepCopy() *Sequence {
 func (in *Submit) DeepCopyInto(out *Submit) {
 	*out = *in
 	out.WorkflowTemplateRef = in.WorkflowTemplateRef
-	if in.Parameters != nil {
-		in, out := &in.Parameters, &out.Parameters
-		*out = make([]Parameter, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
+	if in.Arguments != nil {
+		in, out := &in.Arguments, &out.Arguments
+		*out = new(Arguments)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

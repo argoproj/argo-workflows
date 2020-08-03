@@ -24,7 +24,7 @@ func TestController(t *testing.T) {
 	assert.Len(t, s.operationQueue, 1, "one event to be processed")
 
 	_, err = s.ReceiveEvent(ctx, &eventpkg.EventRequest{})
-	assert.EqualError(t, err, "operation pipeline full", "backpressure when pipeline is full")
+	assert.EqualError(t, err, "operation queue full", "backpressure when queue is full")
 
 	stopCh := make(chan struct{}, 1)
 	stopCh <- struct{}{}

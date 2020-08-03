@@ -205,10 +205,11 @@ spec:
   submit:
     workflowTemplateRef:
       name: event-consumer
-    parameters:
-      - name: appellation
-        valueFrom:
-          expression: payload.appellation
+    arguments:
+      parameters:
+        - name: appellation
+          valueFrom:
+            event: payload.appellation
 `).
 		When().
 		CreateWorkflowEventBinding().

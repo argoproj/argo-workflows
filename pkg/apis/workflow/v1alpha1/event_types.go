@@ -41,6 +41,6 @@ type Submit struct {
 	// WorkflowTemplateRef the workflow template to submit
 	WorkflowTemplateRef WorkflowTemplateRef `json:"workflowTemplateRef" protobuf:"bytes,1,opt,name=workflowTemplateRef"`
 
-	// Parameters extracted from the event and then set as arguments to the workflow created.
-	Parameters []Parameter `json:"parameters,omitempty" protobuf:"bytes,2,rep,name=parameters"`
+	// Arguments extracted from the event and then set as arguments to the workflow created.
+	Arguments *Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
 }

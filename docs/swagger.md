@@ -1395,7 +1395,7 @@ Sequence expands a workflow step into numeric range
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| parameters | [ [io.argoproj.workflow.v1alpha1.Parameter](#io.argoproj.workflow.v1alpha1.parameter) ] | Parameters extracted from the event and then set as arguments to the workflow created. | No |
+| arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments extracted from the event and then set as arguments to the workflow created. | No |
 | workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef the workflow template to submit | Yes |
 
 #### io.argoproj.workflow.v1alpha1.SubmitOpts
@@ -1563,7 +1563,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
-| expression | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
+| event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |

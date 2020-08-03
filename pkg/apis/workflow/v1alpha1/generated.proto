@@ -849,8 +849,8 @@ message Submit {
   // WorkflowTemplateRef the workflow template to submit
   optional WorkflowTemplateRef workflowTemplateRef = 1;
 
-  // Parameters extracted from the event and then set as arguments to the workflow created.
-  repeated Parameter parameters = 2;
+  // Arguments extracted from the event and then set as arguments to the workflow created.
+  optional Arguments arguments = 2;
 }
 
 // SubmitOpts are workflow submission options
@@ -1110,7 +1110,7 @@ message ValueFrom {
 
   // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
   // +kubebuilder:validation:MinLength=4
-  optional string expression = 7;
+  optional string event = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')

@@ -34,7 +34,7 @@ curl https://localhost:2746/api/v1/events/argo/my-discriminator \
   -d '{"message": "hello"}'
 ```
 
-The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will only return a failure (503) if the event processing queue is full.  
+The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  
 
 !!! Warning "Processing Order"
     Events may not always be processed in the order they are received.   
@@ -46,33 +46,20 @@ The following example will be trigger by an event from "admin" with "message" in
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: WorkflowEventBinding
 metadata:
   name: event-consumer
 spec:
   event:
-    expression: payload.message != "" && metadata["x-argo"] == ["true"] && discriminator == "my-discriminator"
-    parameters:
+    selector: payload.message != "" && metadata["x-argo"] == ["true"] && discriminator == "my-discriminator"
+  submit:
+    workflowTemplateRef:
+      name: my-wf-tmple
+    arguments:
+      parameters:
       - name: message
-        expression: payload.message
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-      - - name: a
-          template: argosay
-          arguments:
-            parameters:
-            - name: message
-              value: "{{workflow.parameters.message}}"
-
-    - name: argosay
-      inputs:
-        parameters:
-          - name: message
-      container:
-         image: argoproj/argosay:v2
-         args: [echo, "{{inputs.parameters.message}}"]
+        valueFrom:
+          event: payload.message
 ```
 
 Event:
@@ -83,8 +70,6 @@ curl $ARGO_SERVER/api/v1/events/argo/my-discriminator \
     -H "X-Argo-E2E: true" \
     -d '{"message": "hello events"}'
 ```
-
-The resulting workflow prints "hello events".
 
 !!! Warning "Malformed Expressions"
     If the expression is malformed, this is logged. It is not visible in logs or the UI. Use `argo template create` rather than `kubectl apply` to catch your mistakes.

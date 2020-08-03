@@ -632,7 +632,7 @@ type ValueFrom struct {
 
 	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
 	// +kubebuilder:validation:MinLength=4
-	Expression string `json:"expression,omitempty" protobuf:"bytes,7,opt,name=expression"`
+	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')

@@ -101,16 +101,18 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 		// so we label with creator (which is a standard) and the name of the triggering event
 		creator.Label(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
-		for _, p := range submit.Parameters {
-			if p.ValueFrom == nil {
-				return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
+		if submit.Arguments != nil {
+			for _, p := range submit.Arguments.Parameters {
+				if p.ValueFrom == nil {
+					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": validFrom is nil", p.Name)
+				}
+				result, err := expr.Eval(p.ValueFrom.Event, o.env)
+				if err != nil {
+					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
+				}
+				intOrString := intstr.Parse(fmt.Sprintf("%v", result))
+				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})
 			}
-			result, err := expr.Eval(p.ValueFrom.Expression, o.env)
-			if err != nil {
-				return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
-			}
-			intOrString := intstr.Parse(fmt.Sprintf("%v", result))
-			wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: &intOrString})
 		}
 		wf, err = client.ArgoprojV1alpha1().Workflows(wfeb.Namespace).Create(wf)
 		if err != nil {

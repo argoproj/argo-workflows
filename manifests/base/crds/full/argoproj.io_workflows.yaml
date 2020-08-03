@@ -611,7 +611,7 @@ spec:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
-                          expression:
+                          event:
                             minLength: 4
                             type: string
                           jqFilter:
@@ -1726,7 +1726,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -2603,7 +2603,7 @@ spec:
                                             - type: integer
                                             - type: string
                                             x-kubernetes-int-or-string: true
-                                          expression:
+                                          event:
                                             minLength: 4
                                             type: string
                                           jqFilter:
@@ -3559,7 +3559,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -3998,7 +3998,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -5517,7 +5517,7 @@ spec:
                                               - type: integer
                                               - type: string
                                               x-kubernetes-int-or-string: true
-                                            expression:
+                                            event:
                                               minLength: 4
                                               type: string
                                             jqFilter:
@@ -7346,7 +7346,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -7699,7 +7699,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -8074,7 +8074,7 @@ spec:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
-                          expression:
+                          event:
                             minLength: 4
                             type: string
                           jqFilter:
@@ -9534,7 +9534,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -10411,7 +10411,7 @@ spec:
                                             - type: integer
                                             - type: string
                                             x-kubernetes-int-or-string: true
-                                          expression:
+                                          event:
                                             minLength: 4
                                             type: string
                                           jqFilter:
@@ -11367,7 +11367,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -11806,7 +11806,7 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
-                                expression:
+                                event:
                                   minLength: 4
                                   type: string
                                 jqFilter:
@@ -13325,7 +13325,7 @@ spec:
                                               - type: integer
                                               - type: string
                                               x-kubernetes-int-or-string: true
-                                            expression:
+                                            event:
                                               minLength: 4
                                               type: string
                                             jqFilter:
@@ -14632,7 +14632,7 @@ spec:
                                 - type: integer
                                 - type: string
                                 x-kubernetes-int-or-string: true
-                              expression:
+                              event:
                                 minLength: 4
                                 type: string
                               jqFilter:
@@ -15747,7 +15747,7 @@ spec:
                                       - type: integer
                                       - type: string
                                       x-kubernetes-int-or-string: true
-                                    expression:
+                                    event:
                                       minLength: 4
                                       type: string
                                     jqFilter:
@@ -16624,7 +16624,7 @@ spec:
                                                 - type: integer
                                                 - type: string
                                                 x-kubernetes-int-or-string: true
-                                              expression:
+                                              event:
                                                 minLength: 4
                                                 type: string
                                               jqFilter:
@@ -17580,7 +17580,7 @@ spec:
                                       - type: integer
                                       - type: string
                                       x-kubernetes-int-or-string: true
-                                    expression:
+                                    event:
                                       minLength: 4
                                       type: string
                                     jqFilter:
@@ -18019,7 +18019,7 @@ spec:
                                       - type: integer
                                       - type: string
                                       x-kubernetes-int-or-string: true
-                                    expression:
+                                    event:
                                       minLength: 4
                                       type: string
                                     jqFilter:
@@ -19538,7 +19538,7 @@ spec:
                                                   - type: integer
                                                   - type: string
                                                   x-kubernetes-int-or-string: true
-                                                expression:
+                                                event:
                                                   minLength: 4
                                                   type: string
                                                 jqFilter:

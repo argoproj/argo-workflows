@@ -3398,12 +3398,9 @@
         "workflowTemplateRef"
       ],
       "properties": {
-        "parameters": {
-          "description": "Parameters extracted from the event and then set as arguments to the workflow created.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
+        "arguments": {
+          "description": "Arguments extracted from the event and then set as arguments to the workflow created.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "workflowTemplateRef": {
           "description": "WorkflowTemplateRef the workflow template to submit",
@@ -3896,7 +3893,7 @@
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
-        "expression": {
+        "event": {
           "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
           "type": "string"
         },
