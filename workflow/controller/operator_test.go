@@ -9,12 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/workflow/controller/cache"
-
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -4580,4 +4580,24 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 		}
 	})
+}
+
+func TestProcessItem(t *testing.T) {
+	task := wfv1.DAGTask{
+		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+	}
+	taskBytes, err := json.Marshal(task)
+	assert.NoError(t, err)
+	fstTmpl, err := fasttemplate.NewTemplate(string(taskBytes), "{{", "}}")
+	assert.NoError(t, err)
+
+	var items []wfv1.Item
+	err = json.Unmarshal([]byte(task.WithParam), &items)
+	assert.NoError(t, err)
+
+	var newTask wfv1.DAGTask
+	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
+	if assert.NoError(t, err) {
+		assert.Equal(t, `task-name(0:json:map[list:[0 1] number:2 string:foo],list:[0 1],number:2,string:foo)`, newTaskName)
+	}
 }
