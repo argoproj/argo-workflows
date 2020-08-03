@@ -18,7 +18,7 @@ func TestItem(t *testing.T) {
 		"{\"val\":\"123\"}":               Map,
 		"[\"1\",\"2\",\"3\",\"4\",\"5\"]": List,
 	} {
-		t.Run(string(expectedType), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%v", expectedType), func(t *testing.T) {
 			t.Run("Item", func(t *testing.T) {
 				runItemTest(t, data, expectedType)
 			})
@@ -47,7 +47,7 @@ func TestItem_GetMapVal(t *testing.T) {
 	err := json.Unmarshal([]byte(`{"foo":"bar"}`), &item)
 	assert.NoError(t, err)
 	val := item.GetMapVal()
-	assert.Len(t, val, 1)
+	assert.Equal(t, map[string]Item{"foo": {Value: []byte(`"bar"`)}}, val)
 }
 
 func TestItem_GetListVal(t *testing.T) {
@@ -55,7 +55,7 @@ func TestItem_GetListVal(t *testing.T) {
 	err := json.Unmarshal([]byte(`["foo"]`), &item)
 	assert.NoError(t, err)
 	val := item.GetListVal()
-	assert.Len(t, val, 1)
+	assert.Equal(t, []Item{{Value: []byte(`"foo"`)}}, val)
 }
 
 func TestItem_GetStrVal(t *testing.T) {

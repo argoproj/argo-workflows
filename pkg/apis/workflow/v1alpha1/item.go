@@ -63,6 +63,7 @@ func (i *Item) String() string {
 	if err != nil {
 		panic(err)
 	}
+	// this convenience to remove quotes from strings will cause many problems
 	if jsonBytes[0] == '"' {
 		return string(jsonBytes[1 : len(jsonBytes)-1])
 	}
@@ -95,15 +96,15 @@ func (i Item) OpenAPISchemaType() []string {
 func (i Item) OpenAPISchemaFormat() string { return "" }
 
 // you MUST assert `GetType() == Map` before invocation as this does not return errors
-func (i *Item) GetMapVal() map[string]interface{} {
-	val := make(map[string]interface{})
+func (i *Item) GetMapVal() map[string]Item {
+	val := make(map[string]Item)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
 
 // you MUST assert `GetType() == List` before invocation as this does not return errors
-func (i *Item) GetListVal() []interface{} {
-	val := make([]interface{}, 0)
+func (i *Item) GetListVal() []Item {
+	val := make([]Item, 0)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
