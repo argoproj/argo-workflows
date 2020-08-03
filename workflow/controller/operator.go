@@ -2487,7 +2487,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		mapVal := item.GetMapVal()
 		for itemKey, itemVal := range mapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-			vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
+			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
@@ -2925,7 +2925,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	// Merge the workflow spec and storedWorkflowspec.
-	targetWf := wfv1.Workflow{Spec: woc.wf.Spec}
+	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
 	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
 	if err != nil {
 		return nil, executionParameters, err
