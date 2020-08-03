@@ -2408,7 +2408,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		mapVal := item.GetMapVal()
 		for itemKey, itemVal := range mapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-			vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
+			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
