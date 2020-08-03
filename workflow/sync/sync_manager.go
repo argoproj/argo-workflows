@@ -345,7 +345,6 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 			if len(currentHolder) == 0 {
 				return true
 			}
-			fmt.Println("Waiting -->", index, lockKey)
 			if index == -1 {
 				wf.Status.Synchronization.Mutex.Waiting = append(wf.Status.Synchronization.Mutex.Waiting, wfv1.MutexHolding{Mutex: lockKey, Holder: currentHolder[0]})
 			} else {
@@ -359,25 +358,22 @@ func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockTy
 		if lockAction == LockActionAcquired {
 			update := false
 			index, mutexHolding := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
-
 			items := strings.Split(holderKey, "/")
 			holdingName := items[len(items)-1]
-			fmt.Println("Acquired -->", index, holdingName, lockKey)
 			if index == -1 {
 				wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding, wfv1.MutexHolding{Mutex: lockKey, Holder: holdingName})
-				update = true
+				return true
 			} else {
 				if mutexHolding.Holder != holdingName {
 					mutexHolding.Holder = holdingName
 					wf.Status.Synchronization.Mutex.Holding[index] = mutexHolding
-					update = true
+					return true
 				}
 			}
-			return update
+			return false
 		}
 		if lockAction == LockActionReleased {
 			index, _ := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
-			fmt.Println("Release-->", index, lockKey)
 			if index != -1 {
 				wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding[:index], wf.Status.Synchronization.Mutex.Holding[index+1:]...)
 			}

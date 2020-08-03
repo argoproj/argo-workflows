@@ -1009,7 +1009,7 @@ type SemaphoreHolding struct {
 type MutexHolding struct {
 	// Name of the mutex
 	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
-	// Holders stores the current mutex holder names.
+	// Holders stores the current mutex holder name.
 	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
 }
 
