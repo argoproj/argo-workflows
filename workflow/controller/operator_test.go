@@ -4437,7 +4437,7 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 	})
 }
 
-func TestProcessItem(t *testing.T) {
+func Test_processItem(t *testing.T) {
 	task := wfv1.DAGTask{
 		WithParam: `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
 	}
@@ -4453,6 +4453,6 @@ func TestProcessItem(t *testing.T) {
 	var newTask wfv1.DAGTask
 	newTaskName, err := processItem(fstTmpl, "task-name", 0, items[0], &newTask)
 	if assert.NoError(t, err) {
-		assert.Equal(t, `task-name(0:json:map[list:[0 1] number:2 string:foo],list:[0 1],number:2,string:foo)`, newTaskName)
+		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
 }
