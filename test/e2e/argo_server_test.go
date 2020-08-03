@@ -23,7 +23,7 @@ import (
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
-const baseUrl = "https://localhost:2746"
+const baseUrl = "http://localhost:2746"
 
 var httpClient = &http.Client{
 	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
