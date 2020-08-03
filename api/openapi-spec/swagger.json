@@ -3435,6 +3435,7 @@
       "type": "object",
       "properties": {
         "mutex": {
+          "description": "Mutex holds the Mutex lock details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
         },
         "semaphore": {

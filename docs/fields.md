@@ -1500,7 +1500,7 @@ Synchronization holds synchronization lock configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`mutex`|[`Mutex`](#mutex)|_No description available_|
+|`mutex`|[`Mutex`](#mutex)|Mutex holds the Mutex lock details|
 |`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration|
 
 ## Template

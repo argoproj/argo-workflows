@@ -857,7 +857,8 @@ type TemplateRef struct {
 type Synchronization struct {
 	// Semaphore holds the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	Mutex     *Mutex        `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+	// Mutex holds the Mutex lock details
+	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 // SemaphoreRef is a reference of Semaphore

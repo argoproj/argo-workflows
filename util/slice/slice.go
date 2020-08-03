@@ -17,4 +17,3 @@ func ContainsString(slice []string, element string) bool {
 	}
 	return false
 }
-

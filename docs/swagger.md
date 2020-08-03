@@ -1417,7 +1417,7 @@ Synchronization holds synchronization lock configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| mutex | [io.argoproj.workflow.v1alpha1.Mutex](#io.argoproj.workflow.v1alpha1.mutex) |  | No |
+| mutex | [io.argoproj.workflow.v1alpha1.Mutex](#io.argoproj.workflow.v1alpha1.mutex) | Mutex holds the Mutex lock details | No |
 | semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreRef](#io.argoproj.workflow.v1alpha1.semaphoreref) | Semaphore holds the Semaphore configuration | No |
 
 #### io.argoproj.workflow.v1alpha1.SynchronizationStatus

@@ -3181,7 +3181,8 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 					},
 					"mutex": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Mutex"),
+							Description: "Mutex holds the Mutex lock details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Mutex"),
 						},
 					},
 				},

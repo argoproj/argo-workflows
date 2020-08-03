@@ -905,6 +905,7 @@ message Synchronization {
   // Semaphore holds the Semaphore configuration
   optional SemaphoreRef semaphore = 1;
 
+  // Mutex holds the Mutex lock details
   optional Mutex mutex = 2;
 }
 
