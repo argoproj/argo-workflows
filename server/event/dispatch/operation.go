@@ -59,8 +59,7 @@ func (o *Operation) Dispatch() {
 			return err == nil, err
 		})
 		if err != nil {
-			// TODO - in v2 we should report back to the user via status field
-			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispacth from event")
+			log.WithError(err).WithFields(log.Fields{"namespace": event.Namespace, "event": event.Name}).Error("failed to dispatch from event")
 		}
 	}
 }
