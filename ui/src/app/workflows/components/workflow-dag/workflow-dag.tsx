@@ -490,7 +490,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private hiddenNode(id: string): boolean {
         if (isCollapsedNode(id)) {
-            return this.hiddenNode(getNodeParent(id));
+            return false;
         }
 
         const node = this.props.nodes[id];
