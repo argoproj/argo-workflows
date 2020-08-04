@@ -168,7 +168,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private graph: {
         width: number;
         height: number;
-        edges: {from: string; to: string; points: {x: number; y: number}[]}[];
+        edges: {v: string; w: string; points: {x: number; y: number}[]}[];
         nodes: Map<string, {x: number; y: number}>;
     };
 
@@ -211,7 +211,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <g transform={`translate(${this.hgap},${this.vgap})`}>
                             {this.graph.edges.map(edge => {
                                 const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                return <path key={`line/${edge.from}-${edge.to}`} d={points} className='line' markerEnd={this.hiddenNode(edge.to) ? '' : 'url(#arrow)'} />;
+                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.v) ? '' : 'url(#arrow)'} />;
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 let phase: DagPhase;
@@ -345,7 +345,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (isCollapsedNode(item.nodeName)) {
                 if (item.nodeName !== previousCollapsed) {
                     nodes.push(item.nodeName);
-                    edges.push({from: item.parent, to: item.nodeName});
+                    edges.push({v: item.parent, w: item.nodeName});
                     previousCollapsed = item.nodeName;
                 }
                 continue;
@@ -353,7 +353,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
             const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
             nodes.push(item.nodeName);
-            edges.push({from: item.parent, to: item.nodeName});
+            edges.push({v: item.parent, w: item.nodeName});
 
             const node: NodeStatus = this.props.nodes[item.nodeName];
             if (!node || node.phase === NODE_PHASE.OMITTED) {
@@ -365,7 +365,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
         const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId] && this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({from: v, to: onExitHandlerNodeId}));
+            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({v, w: onExitHandlerNodeId}));
         }
         return {nodes, edges};
     }
@@ -417,19 +417,19 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const h = this.state.horizontal ? this.nodeSize / 2 : 0;
         const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
         this.graph.edges = edges
-            .filter(e => this.graph.nodes.has(e.from) && this.graph.nodes.has(e.to))
+            .filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w))
             .map(e => ({
-                from: e.from,
-                to: e.to,
+                v: e.v,
+                w: e.w,
                 points: [
                     {
                         // for hidden nodes, we want to size them zero
-                        x: this.graph.nodes.get(e.from).x + (this.hiddenNode(e.from) ? 0 : h),
-                        y: this.graph.nodes.get(e.from).y + (this.hiddenNode(e.from) ? 0 : v)
+                        x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
+                        y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
                     },
                     {
-                        x: this.graph.nodes.get(e.to).x - (this.hiddenNode(e.to) ? 0 : h),
-                        y: this.graph.nodes.get(e.to).y - (this.hiddenNode(e.to) ? 0 : v)
+                        x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
+                        y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
                     }
                 ]
             }));
