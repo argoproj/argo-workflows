@@ -211,7 +211,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <g transform={`translate(${this.hgap},${this.vgap})`}>
                             {this.graph.edges.map(edge => {
                                 const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.v) ? '' : 'url(#arrow)'} />;
+                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 let phase: DagPhase;
