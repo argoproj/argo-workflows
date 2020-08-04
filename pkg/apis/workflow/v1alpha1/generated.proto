@@ -992,7 +992,7 @@ message Template {
   // Optional duration in seconds relative to the StartTime that the pod may be active on a node
   // before the system actively tries to terminate the pod; value must be positive integer
   // This field is only applicable to container and script templates.
-  optional int64 activeDeadlineSeconds = 21;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 21;
 
   // RetryStrategy describes how to retry a template when it fails
   optional RetryStrategy retryStrategy = 22;

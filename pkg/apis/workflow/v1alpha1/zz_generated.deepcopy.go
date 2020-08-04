@@ -1824,7 +1824,7 @@ func (in *Template) DeepCopyInto(out *Template) {
 	}
 	if in.ActiveDeadlineSeconds != nil {
 		in, out := &in.ActiveDeadlineSeconds, &out.ActiveDeadlineSeconds
-		*out = new(int64)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	if in.RetryStrategy != nil {

@@ -3459,8 +3459,7 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
-          "type": "integer",
-          "format": "int64"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "affinity": {
           "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",

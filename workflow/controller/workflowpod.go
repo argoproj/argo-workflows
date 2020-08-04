@@ -135,16 +135,20 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
+	tmplActiveDeadlineSeconds, err := wfv1.Int64(*tmpl.ActiveDeadlineSeconds)
+	if err != nil {
+		return nil, err
+	}
 	if wfDeadline == nil || opts.onExitPod { //ignore the workflow deadline for exit handler so they still run if the deadline has passed
-		activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		activeDeadlineSeconds = &tmplActiveDeadlineSeconds
 	} else {
 		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
 		if wfActiveDeadlineSeconds <= 0 {
 			return nil, nil
-		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
+		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < tmplActiveDeadlineSeconds {
 			activeDeadlineSeconds = &wfActiveDeadlineSeconds
 		} else {
-			activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+			activeDeadlineSeconds = &tmplActiveDeadlineSeconds
 		}
 	}
 
@@ -195,7 +199,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
-	err := woc.addArchiveLocation(tmpl)
+	err = woc.addArchiveLocation(tmpl)
 	if err != nil {
 		return nil, err
 	}

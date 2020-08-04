@@ -690,8 +690,8 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if *tmpl.ActiveDeadlineSeconds <= 0 {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0", tmpl.Name)
+		if !wfv1.IsIntOrArgoVariable(*tmpl.ActiveDeadlineSeconds) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}
 	if tmpl.Parallelism != nil {

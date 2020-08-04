@@ -1433,7 +1433,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| activeDeadlineSeconds | long | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
+| activeDeadlineSeconds | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
 | affinity | [io.k8s.api.core.v1.Affinity](#io.k8s.api.core.v1.affinity) | Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any) | No |
 | archiveLocation | [io.argoproj.workflow.v1alpha1.ArtifactLocation](#io.argoproj.workflow.v1alpha1.artifactlocation) | Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key. | No |
 | arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments hold arguments to the template. DEPRECATED: This field is not used. | No |
