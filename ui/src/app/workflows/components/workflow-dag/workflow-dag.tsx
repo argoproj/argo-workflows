@@ -301,7 +301,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 return;
             }
 
-            if (children.length > 3 && !isExpanded && false) {
+            if (children.length > 3 && !isExpanded) {
                 queue.push({
                     nodeName: children[0],
                     parent: nodeId,
