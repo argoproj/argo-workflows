@@ -8,21 +8,9 @@ export function getCollapsedNodeName(parent: string, message: string): string {
     return JSON.stringify({kind: 'collapsed', parent, message} as CollapsedNode);
 }
 
-export function getOutboundNodeName(parent: string, message: string): string {
-    return JSON.stringify({kind: 'outbound', parent, message} as CollapsedNode);
-}
-
 export function isCollapsedNode(id: string): boolean {
     try {
         return (JSON.parse(id) as CollapsedNode).kind === 'collapsed';
-    } catch (e) {
-        return false;
-    }
-}
-
-export function isOutboundNode(id: string): boolean {
-    try {
-        return (JSON.parse(id) as CollapsedNode).kind === 'outbound';
     } catch (e) {
         return false;
     }

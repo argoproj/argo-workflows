@@ -5,7 +5,7 @@ import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
-import {getCollapsedNodeName, getMessage, getNodeParent, getOutboundNodeName, isCollapsedNode, isOutboundNode} from './graph/collapsible-node';
+import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
 import {Edge, Graph} from './graph/graph';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
@@ -217,7 +217,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 let phase: DagPhase;
                                 let label: string;
                                 let hidden: boolean;
-                                if (isCollapsedNode(nodeId) || isOutboundNode(nodeId)) {
+                                if (isCollapsedNode(nodeId)) {
                                     phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
                                     label = getMessage(nodeId);
                                     hidden = this.hiddenNode(getNodeParent(nodeId));
@@ -347,14 +347,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     nodes.push(item.nodeName);
                     edges.push({from: item.parent, to: item.nodeName});
                     previousCollapsed = item.nodeName;
-                    // if (isOutboundNode(item.nodeName) && !this.state.expandNodes.has('*') && !this.state.expandNodes.has(item.nodeName)) {
-                    //     item.children.map(child => queue.push({
-                    //             nodeName: child,
-                    //             parent: item.nodeName,
-                    //             children: this.props.nodes[child].children
-                    //         }
-                    //     ));
-                    // }
                 }
                 continue;
             }
@@ -363,26 +355,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             nodes.push(item.nodeName);
             edges.push({from: item.parent, to: item.nodeName});
 
-            if (isOutboundNode(item.nodeName)) {
-                pushChildren(item.nodeName, item.children, isExpanded);
-            } else {
-                const node: NodeStatus = this.props.nodes[item.nodeName];
-
-                if (!node || node.phase === NODE_PHASE.OMITTED) {
-                    continue;
-                }
-
-                if (node.outboundNodes && node.outboundNodes.length > 0 && !isExpanded) {
-                    queue.push({
-                        nodeName: getOutboundNodeName(node.id, node.type + ' contents hidden'),
-                        parent: item.nodeName,
-                        children: node.outboundNodes
-                    });
-                    continue;
-                }
-
-                pushChildren(node.id, node.children, isExpanded);
+            const node: NodeStatus = this.props.nodes[item.nodeName];
+            if (!node || node.phase === NODE_PHASE.OMITTED) {
+                continue;
             }
+
+            pushChildren(node.id, node.children, isExpanded);
         }
 
         const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId] && this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
@@ -458,14 +436,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private selectNode(nodeId: string) {
-        if (isCollapsedNode(nodeId) || isOutboundNode(nodeId)) {
+        if (isCollapsedNode(nodeId)) {
             this.expandNode(nodeId);
         }
         return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
 
     private expandNode(nodeId: string) {
-        if (isCollapsedNode(getNodeParent(nodeId)) || isOutboundNode(getNodeParent(nodeId))) {
+        if (isCollapsedNode(getNodeParent(nodeId))) {
             this.expandNode(getNodeParent(nodeId));
         } else {
             this.setState({expandNodes: new Set(this.state.expandNodes).add(getNodeParent(nodeId))});
@@ -503,7 +481,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private hiddenNode(id: string): boolean {
-        if (isCollapsedNode(id) || isOutboundNode(id)) {
+        if (isCollapsedNode(id)) {
             return this.hiddenNode(getNodeParent(id));
         }
 
