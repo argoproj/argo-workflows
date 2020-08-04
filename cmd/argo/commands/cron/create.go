@@ -51,7 +51,6 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewCronWorkflowServiceClient()
-	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -81,9 +80,11 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 			log.Fatal(err)
 		}
 		cronWf.Spec.WorkflowSpec = newWf.Spec
-
+		if cronWf.Namespace == "" {
+			cronWf.Namespace = client.Namespace()
+		}
 		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
-			Namespace:    namespace,
+			Namespace:    cronWf.Namespace,
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {

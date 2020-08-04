@@ -33,11 +33,10 @@ func NewLintCommand() *cobra.Command {
 					return fmt.Errorf("there was nothing to validate")
 				}
 				for _, wf := range wfs {
-					namespace := wf.Namespace
-					if namespace == "" {
-						namespace = client.Namespace()
+					if wf.Namespace == "" {
+						wf.Namespace = client.Namespace()
 					}
-					_, err := serviceClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: &wf})
+					_, err := serviceClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: wf.Namespace, CronWorkflow: &wf})
 					if err != nil {
 						return err
 					}

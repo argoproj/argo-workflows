@@ -46,7 +46,6 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -65,8 +64,11 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	for _, wftmpl := range workflowTemplates {
+		if wftmpl.Namespace == "" {
+			wftmpl.Namespace = client.Namespace()
+		}
 		created, err := serviceClient.CreateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateCreateRequest{
-			Namespace: namespace,
+			Namespace: wftmpl.Namespace,
 			Template:  &wftmpl,
 		})
 		if err != nil {
