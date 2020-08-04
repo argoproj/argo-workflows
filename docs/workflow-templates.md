@@ -19,33 +19,33 @@ in the past. However, a quick description should clarify each and their differen
 `Workflow`, you must define at least one (but usually more than one) `template` to run. This `template` can be of type
 `container`, `script`, `dag`, `steps`, `resource`, or `suspend` and can be referenced by an `entrypoint` or by other
 `dag`, and `step` templates.
-    
-    Here is an example of a `Workflow` with two `templates`:
-    ```yaml
-    apiVersion: argoproj.io/v1alpha1
-    kind: Workflow
-    metadata:
-      generateName: steps-
-    spec:
-      entrypoint: hello           # We reference our first "template" here
-  
-      templates:
-      - name: hello               # The first "template" in this Workflow, it is referenced by "entrypoint"
-        steps:                    # The type of this "template" is "steps"
-        - - name: hello
-            template: whalesay    # We reference our second "template" here
-            arguments:
-              parameters: [{name: message, value: "hello1"}]
-    
-      - name: whalesay             # The second "template" in this Workflow, it is referenced by "hello"
-        inputs:
-          parameters:
-          - name: message
-        container:                # The type of this "template" is "container"
-          image: docker/whalesay
-          command: [cowsay]
-          args: ["{{inputs.parameters.message}}"]
-    ```
+ 
+Here is an example of a `Workflow` with two `templates`:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello           # We reference our first "template" here
+
+  templates:
+  - name: hello               # The first "template" in this Workflow, it is referenced by "entrypoint"
+    steps:                    # The type of this "template" is "steps"
+    - - name: hello
+        template: whalesay    # We reference our second "template" here
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
+
+  - name: whalesay             # The second "template" in this Workflow, it is referenced by "hello"
+    inputs:
+      parameters:
+      - name: message
+    container:                # The type of this "template" is "container"
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+```
   
 - A `WorkflowTemplate` is a definition of a `Workflow` that lives in your cluster. Since it is a definition of a `Workflow`
 it also contains `templates`. These `templates` can be referenced from within the `WorkflowTemplate` and from other `Workflows`
