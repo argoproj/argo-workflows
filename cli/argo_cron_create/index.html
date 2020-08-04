@@ -1941,10 +1941,17 @@
 
 
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><code><span class="err">  -h, --help              help for create</span>
-<span class="err">  -o, --output string     Output format. One of: name|json|yaml|wide</span>
-<span class="err">      --schedule string   override cron workflow schedule</span>
-<span class="err">      --strict            perform strict workflow validation (default true)</span>
+<div class="codehilite"><pre><span></span><code><span class="err">      --entrypoint string       override entrypoint</span>
+<span class="err">      --generate-name string    override metadata.generateName</span>
+<span class="err">  -h, --help                    help for create</span>
+<span class="err">  -l, --labels string           Comma separated labels to apply to the workflow. Will override previous values.</span>
+<span class="err">      --name string             override metadata.name</span>
+<span class="err">  -o, --output string           Output format. One of: name|json|yaml|wide</span>
+<span class="err">  -p, --parameter stringArray   pass an input parameter</span>
+<span class="err">  -f, --parameter-file string   pass a file containing all input parameters</span>
+<span class="err">      --schedule string         override cron workflow schedule</span>
+<span class="err">      --serviceaccount string   run all pods in the workflow using specified serviceaccount</span>
+<span class="err">      --strict                  perform strict workflow validation (default true)</span>
 </code></pre></div>
 
 
