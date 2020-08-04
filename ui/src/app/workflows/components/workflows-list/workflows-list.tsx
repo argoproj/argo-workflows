@@ -132,11 +132,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         title: 'Submit New Workflow',
                                         iconClassName: 'fa fa-plus',
                                         action: () => ctx.navigation.goto('.', {new: '{}'})
-                                    },
-                                    {
-                                        title: 'Workflow Report',
-                                        iconClassName: 'fa fa-chart-bar',
-                                        action: () => ctx.navigation.goto(uiUrl('reports/' + this.state.namespace), {labels: this.state.selectedLabels.join(',')})
                                     }
                                 ]
                             },
