@@ -337,11 +337,19 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             parent: '',
             children: this.props.nodes[this.props.workflowName].children
         };
+
         const queue: PrepareNode[] = [root];
+        const considered: Set<string> = new Set<string>();
         let previousCollapsed: string = '';
 
         while (queue.length > 0) {
             const item = queue.pop();
+
+            if (considered.has(item.nodeName)) {
+                continue
+            }
+            considered.add(item.nodeName);
+
             if (isCollapsedNode(item.nodeName)) {
                 if (item.nodeName !== previousCollapsed) {
                     nodes.push(item.nodeName);
