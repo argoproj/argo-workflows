@@ -13,10 +13,17 @@ argo cron create FILE1 FILE2... [flags]
 ### Options
 
 ```
-  -h, --help              help for create
-  -o, --output string     Output format. One of: name|json|yaml|wide
-      --schedule string   override cron workflow schedule
-      --strict            perform strict workflow validation (default true)
+      --entrypoint string       override entrypoint
+      --generate-name string    override metadata.generateName
+  -h, --help                    help for create
+  -l, --labels string           Comma separated labels to apply to the workflow. Will override previous values.
+      --name string             override metadata.name
+  -o, --output string           Output format. One of: name|json|yaml|wide
+  -p, --parameter stringArray   pass an input parameter
+  -f, --parameter-file string   pass a file containing all input parameters
+      --schedule string         override cron workflow schedule
+      --serviceaccount string   run all pods in the workflow using specified serviceaccount
+      --strict                  perform strict workflow validation (default true)
 ```
 
 ### Options inherited from parent commands
