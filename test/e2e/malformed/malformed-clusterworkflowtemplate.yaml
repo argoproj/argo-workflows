@@ -1,0 +1,8 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: malformed
+spec:
+  arguments:
+    parameters:
+      someParam: "Hello, world!"

@@ -16,6 +16,7 @@ import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
+import {Utils} from './shared/utils';
 import userinfo from './userinfo';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
@@ -24,8 +25,8 @@ const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 
-const cronWorkflowUrl = uiUrl('cron-workflows');
-const archivedWorkflowUrl = uiUrl('archived-workflows');
+const cronWorkflowsUrl = uiUrl('cron-workflows');
+const archivedWorkflowsUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
@@ -37,8 +38,8 @@ const routes: {
     [workflowsUrl]: {component: workflows.component},
     [workflowTemplatesUrl]: {component: workflowTemplates.component},
     [clusterWorkflowTemplatesUrl]: {component: clusterWorkflowTemplates.component},
-    [cronWorkflowUrl]: {component: cronWorkflows.component},
-    [archivedWorkflowUrl]: {component: archivedWorkflows.component},
+    [cronWorkflowsUrl]: {component: cronWorkflows.component},
+    [archivedWorkflowsUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
     [apiDocsUrl]: {component: apidocs.component},
     [userInfoUrl]: {component: userinfo.component},
@@ -47,50 +48,7 @@ const routes: {
 
 export const history = createBrowserHistory();
 
-const navItems = [
-    {
-        title: 'Timeline',
-        path: workflowsUrl,
-        iconClassName: 'fa fa-stream'
-    },
-    {
-        title: 'Workflow Templates',
-        path: workflowTemplatesUrl,
-        iconClassName: 'fa fa-window-maximize'
-    },
-    {
-        title: 'Cluster Workflow Templates',
-        path: clusterWorkflowTemplatesUrl,
-        iconClassName: 'fa fa-window-restore'
-    },
-    {
-        title: 'Cron Workflows',
-        path: cronWorkflowUrl,
-        iconClassName: 'fa fa-clock'
-    },
-    {
-        title: 'Archived Workflows',
-        path: archivedWorkflowUrl,
-        iconClassName: 'fa fa-archive'
-    },
-    {
-        title: 'User',
-        path: userInfoUrl,
-        iconClassName: 'fa fa-user-alt'
-    },
-    {
-        title: 'API Docs',
-        path: apiDocsUrl,
-        iconClassName: 'fa fa-code'
-    },
-    {
-        title: 'Help',
-        path: helpUrl,
-        iconClassName: 'fa fa-question-circle'
-    }
-];
-
-export class App extends React.Component<{}, {version?: Version; popupProps: PopupProps}> {
+export class App extends React.Component<{}, {version?: Version; popupProps: PopupProps; namespace?: string; error?: Error}> {
     public static childContextTypes = {
         history: PropTypes.object,
         apis: PropTypes.object
@@ -110,7 +68,12 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
 
     public componentDidMount() {
         this.popupManager.popupProps.subscribe(popupProps => this.setState({popupProps}));
-        services.info.getVersion().then(version => this.setState({version}));
+        services.info
+            .getVersion()
+            .then(version => this.setState({version}))
+            .then(() => services.info.getInfo())
+            .then(info => this.setState({namespace: Utils.getCurrentNamespace() || info.managedNamespace || ''}))
+            .catch(error => this.setState({error}));
     }
 
     public render() {
@@ -126,9 +89,49 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                 <Router history={history}>
                     <Switch>
                         <Redirect exact={true} path={uiUrl('')} to={workflowsUrl} />
-                        <Redirect from={timelineUrl} to={uiUrl('workflows')} />
+                        <Redirect from={timelineUrl} to={workflowsUrl} />
+                        {this.state.namespace && false && (
+                            <>
+                                <Redirect exact={true} strict={true} from={workflowsUrl} to={workflowsUrl + '/' + this.state.namespace} />
+                                <Redirect exact={true} strict={true} from={workflowTemplatesUrl} to={workflowTemplatesUrl + '/' + this.state.namespace} />
+                                <Redirect exact={true} strict={true} from={clusterWorkflowTemplatesUrl} to={clusterWorkflowTemplatesUrl + '/?namespace=' + this.state.namespace} />
+                                <Redirect exact={true} strict={true} from={cronWorkflowsUrl} to={cronWorkflowsUrl + '/' + this.state.namespace} />
+                                <Redirect exact={true} strict={true} from={archivedWorkflowsUrl} to={archivedWorkflowsUrl + '/' + this.state.namespace} />
+                            </>
+                        )}
                         <ErrorBoundary>
-                            <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
+                            <Layout
+                                navItems={[
+                                    {
+                                        title: 'Timeline',
+                                        path: workflowsUrl + '/' + this.state.namespace,
+                                        iconClassName: 'fa fa-stream'
+                                    },
+                                    {
+                                        title: 'Workflow Templates',
+                                        path: workflowTemplatesUrl + '/' + this.state.namespace,
+                                        iconClassName: 'fa fa-window-maximize'
+                                    },
+                                    {
+                                        title: 'Cluster Workflow Templates',
+                                        path: clusterWorkflowTemplatesUrl + '/?namespace=' + this.state.namespace,
+                                        iconClassName: 'fa fa-window-restore'
+                                    },
+                                    {
+                                        title: 'Cron Workflows',
+                                        path: cronWorkflowsUrl + '/' + this.state.namespace,
+                                        iconClassName: 'fa fa-clock'
+                                    },
+                                    {
+                                        title: 'Archived Workflows',
+                                        path: archivedWorkflowsUrl + '/' + this.state.namespace,
+                                        iconClassName: 'fa fa-archive'
+                                    },
+                                    {title: 'User', path: userInfoUrl, iconClassName: 'fa fa-user-alt'},
+                                    {title: 'API Docs', path: apiDocsUrl, iconClassName: 'fa fa-code'},
+                                    {title: 'Help', path: helpUrl, iconClassName: 'fa fa-question-circle'}
+                                ]}
+                                version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
                                 <Notifications notifications={this.notificationsManager.notifications} />
                                 {Object.keys(routes).map(path => {
                                     const route = routes[path];

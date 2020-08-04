@@ -4,6 +4,7 @@ import {RouteComponentProps} from 'react-router';
 import {CronWorkflow, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {services} from '../../../shared/services';
 import {CronWorkflowSummaryPanel} from '../cron-workflow-summary-panel';
@@ -38,9 +39,6 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     public render() {
-        if (this.state.error !== undefined) {
-            throw this.state.error;
-        }
         const suspendButton =
             this.state.cronWorkflow && !this.state.cronWorkflow.spec.suspend
                 ? {
@@ -90,6 +88,9 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private renderCronWorkflow() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} />;
+        }
         if (!this.state.cronWorkflow) {
             return <Loading />;
         }

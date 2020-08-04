@@ -4,6 +4,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
@@ -17,21 +18,17 @@ import {Utils} from '../../../shared/utils';
 require('./workflow-template-list.scss');
 
 interface State {
-    loading: boolean;
-    namespace: string;
     templates?: models.WorkflowTemplate[];
     error?: Error;
 }
 
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.state.namespace;
+        return this.props.match.params.namespace || '';
     }
 
     private set namespace(namespace: string) {
-        this.setState({namespace});
-        history.pushState(null, '', uiUrl('workflow-templates/' + namespace));
-        this.fetchWorkflowTemplates();
+        this.appContext.router.history.push(uiUrl('workflow-templates/' + namespace));
         Utils.setCurrentNamespace(namespace);
     }
 
@@ -45,7 +42,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -53,12 +50,6 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -84,12 +75,11 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 kind='WorkflowTemplate'
                                 upload={true}
                                 value={exampleWorkflowTemplate(this.namespace || 'default')}
-                                onSubmit={wfTmpl => {
+                                onSubmit={wfTmpl =>
                                     services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
-                                }}
+                                }
                                 editing={true}
                             />
                         </SlidingPanel>
@@ -100,19 +90,16 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private fetchWorkflowTemplates(): void {
-        services.info
-            .getInfo()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.workflowTemplate.list(this.namespace);
-            })
-            .then(templates => this.setState({templates, loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+        services.workflowTemplate
+            .list(this.namespace)
+            .then(templates => this.setState({templates}))
+            .catch(error => this.setState({error}));
     }
 
     private renderTemplates() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
         if (!this.state.templates) {
             return <Loading />;
         }

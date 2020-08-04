@@ -72,12 +72,11 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
                             // magic - we get the latest from the server and then apply the changes from the rendered version to this
                             const original = props.cronWorkflow;
                             const patch = jsonMergePatch.generate(original, value) || {};
-                            services.cronWorkflows
+                            return services.cronWorkflows
                                 .get(props.cronWorkflow.metadata.name, props.cronWorkflow.metadata.namespace)
                                 .then(latest => jsonMergePatch.apply(latest, patch))
                                 .then(patched => services.cronWorkflows.update(patched, props.cronWorkflow.metadata.name, props.cronWorkflow.metadata.namespace))
-                                .then(updated => props.onChange(updated))
-                                .catch(error => props.onError(error));
+                                .then(updated => props.onChange(updated));
                         }}
                     />
                 </div>

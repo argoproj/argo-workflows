@@ -5,6 +5,7 @@ import {RouteComponentProps} from 'react-router';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -48,9 +49,6 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     public render() {
-        if (this.state.error !== undefined) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -101,6 +99,9 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private renderWorkflowTemplate() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} />;
+        }
         if (!this.state.template) {
             return <Loading />;
         }

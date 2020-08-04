@@ -4,6 +4,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
@@ -17,21 +18,17 @@ import {Utils} from '../../../shared/utils';
 require('./cron-workflow-list.scss');
 
 interface State {
-    loading: boolean;
-    namespace: string;
     cronWorkflows?: models.CronWorkflow[];
     error?: Error;
 }
 
 export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.state.namespace;
+        return this.props.match.params.namespace || '';
     }
 
     private set namespace(namespace: string) {
-        this.setState({namespace});
-        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
-        this.fetchCronWorkflows();
+        this.appContext.router.history.push(uiUrl('cron-workflows/' + namespace));
         Utils.setCurrentNamespace(namespace);
     }
 
@@ -42,9 +39,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     private set sidePanel(sidePanel) {
         this.setQueryParams({sidePanel});
     }
+
     constructor(props: any) {
         super(props);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -52,12 +50,6 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -83,12 +75,11 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <ResourceEditor
                                 title={'New Cron Workflow'}
                                 value={exampleCronWorkflow(this.namespace)}
-                                onSubmit={cronWf => {
+                                onSubmit={cronWf =>
                                     services.cronWorkflows
                                         .create(cronWf, cronWf.metadata.namespace)
                                         .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
-                                }}
+                                }
                                 upload={true}
                                 editing={true}
                                 kind='CronWorkflow'
@@ -101,19 +92,16 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private fetchCronWorkflows(): void {
-        services.info
-            .getInfo()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.cronWorkflows.list(this.namespace);
-            })
-            .then(cronWorkflows => this.setState({cronWorkflows, loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+        services.cronWorkflows
+            .list(this.namespace)
+            .then(cronWorkflows => this.setState({cronWorkflows}))
+            .catch(error => this.setState({error}));
     }
 
     private renderCronWorkflows() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
         if (!this.state.cronWorkflows) {
             return <Loading />;
         }

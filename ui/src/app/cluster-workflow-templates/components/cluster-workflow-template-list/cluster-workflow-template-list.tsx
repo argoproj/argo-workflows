@@ -4,6 +4,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
@@ -11,13 +12,10 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleClusterWorkflowTemplate} from '../../../shared/examples';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
 
 require('./cluster-workflow-template-list.scss');
 
 interface State {
-    loading: boolean;
-    namespace: string;
     templates?: models.ClusterWorkflowTemplate[];
     error?: Error;
 }
@@ -33,7 +31,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -41,12 +39,6 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
     }
 
     public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -72,12 +64,9 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                 title={'New Cluster Workflow Template'}
                                 kind='ClusterWorkflowTemplate'
                                 value={exampleClusterWorkflowTemplate()}
-                                onSubmit={wfTmpl => {
-                                    services.clusterWorkflowTemplate
-                                        .create(wfTmpl)
-                                        .then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
-                                }}
+                                onSubmit={wfTmpl =>
+                                    services.clusterWorkflowTemplate.create(wfTmpl).then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)))
+                                }
                             />
                         </SlidingPanel>
                     </Page>
@@ -87,16 +76,16 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
     }
 
     private fetchClusterWorkflowTemplates(): void {
-        services.info
-            .getInfo()
-            .then(() => {
-                return services.clusterWorkflowTemplate.list();
-            })
-            .then(templates => this.setState({templates, loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+        services.clusterWorkflowTemplate
+            .list()
+            .then(templates => this.setState({templates}))
+            .catch(error => this.setState({error}));
     }
 
     private renderTemplates() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
         if (!this.state.templates) {
             return <Loading />;
         }

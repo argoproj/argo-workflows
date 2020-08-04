@@ -18,6 +18,7 @@ import {Utils} from '../../../shared/utils';
 import * as Actions from '../../../shared/workflow-operations-map';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Pagination, parseLimit} from '../../../shared/pagination';
@@ -29,10 +30,6 @@ require('./workflows-list.scss');
 
 interface State {
     pagination: Pagination;
-    loading: boolean;
-    initialized: boolean;
-    managedNamespace: boolean;
-    namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
     selectedWorkflows: Map<string, models.Workflow>;
@@ -85,14 +82,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         const savedOptions = WorkflowsList.getOptions();
         this.state = {
-            loading: true,
             pagination: {
                 offset: this.queryParam('offset'),
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit
             },
-            initialized: false,
-            managedNamespace: false,
-            namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
             selectedLabels: this.queryParams('label').length > 0 ? this.queryParams('label') : savedOptions.selectedLabels,
             selectedWorkflows: new Map<string, models.Workflow>(),
@@ -100,8 +93,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         };
     }
 
+    private get namespace() {
+        return this.props.match.params.namespace || '';
+    }
+
     public componentDidMount(): void {
-        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+        this.fetchWorkflows(this.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
     }
 
@@ -113,12 +110,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -142,7 +133,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
                             loadWorkflows={() => {
                                 this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-                                this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
+                                this.fetchWorkflows(this.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
                             }}
                             isDisabled={this.state.batchActionDisabled}
                         />
@@ -151,8 +142,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
-                                        workflows={this.state.workflows}
-                                        namespace={this.state.namespace}
+                                        workflows={this.state.workflows || []}
+                                        namespace={this.namespace}
                                         phaseItems={Object.values(models.NODE_PHASE)}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
@@ -170,13 +161,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 kind='Workflow'
                                 upload={true}
                                 editing={true}
-                                value={exampleWorkflow(this.state.namespace)}
-                                onSubmit={wfValue => {
+                                value={exampleWorkflow(this.namespace)}
+                                onSubmit={wfValue =>
                                     services.workflows
-                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
+                                        .create(wfValue, wfValue.metadata.namespace || this.namespace)
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
-                                }}
+                                }
                             />
                         </SlidingPanel>
                     </Page>
@@ -189,38 +179,21 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
-        let workflowList;
-        let newNamespace = namespace;
-        if (!this.state.initialized) {
-            workflowList = services.info.getInfo().then(info => {
-                if (info.managedNamespace) {
-                    newNamespace = info.managedNamespace;
-                }
-                this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
-                return services.workflows.list(newNamespace, selectedPhases, selectedLabels, pagination);
-            });
-        } else {
-            if (this.state.managedNamespace) {
-                newNamespace = this.state.namespace;
-            }
-            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels, pagination);
-        }
-        workflowList
+        services.workflows
+            .list(namespace, selectedPhases, selectedLabels, pagination)
             .then(wfList => {
                 this.setState({
                     workflows: wfList.items || [],
                     pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
-                    namespace: newNamespace,
                     selectedPhases,
                     selectedLabels,
                     selectedWorkflows: new Map<string, models.Workflow>()
                 });
-                Utils.setCurrentNamespace(newNamespace);
                 return wfList.metadata.resourceVersion;
             })
             .then(resourceVersion => {
                 this.subscription = services.workflows
-                    .watchFields({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels, resourceVersion})
+                    .watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
@@ -245,11 +218,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     })
                     .filter(item => item.updated)
                     .map(item => item.workflows)
-                    .catch((error, caught) => caught)
-                    .subscribe(workflows => this.setState({workflows}));
+                    .subscribe(
+                        workflows => this.setState({workflows}),
+                        error => this.setState({error})
+                    );
             })
-            .then(_ => this.setState({loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+            .then(_ => this.setState({error: null}))
+            .catch(error => this.setState({error}));
     }
 
     private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination) {
@@ -272,8 +247,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             newOptions.paginationLimit = pagination.limit;
         }
         WorkflowsList.saveOptions(newOptions);
-        const url = 'workflows/' + namespace + '?' + params.toString();
-        history.pushState(null, '', uiUrl(url));
+        Utils.setCurrentNamespace(namespace);
+        this.appContext.router.history.push(uiUrl('workflows/' + namespace + '?' + params.toString()));
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 
@@ -290,10 +265,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private renderWorkflows() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} />;
+        }
         if (!this.state.workflows) {
             return <Loading />;
         }
-
         if (this.state.workflows.length === 0) {
             return (
                 <ZeroState title='No workflows'>
@@ -336,7 +313,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         newTags = this.state.selectedLabels.concat(value);
                                         this.setState({selectedLabels: newTags});
                                     }
-                                    this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
+                                    this.changeFilters(this.namespace, this.state.selectedPhases, newTags, this.state.pagination);
                                 }}
                                 select={subWf => {
                                     const wfUID = subWf.metadata.uid;
@@ -358,7 +335,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     })}
                 </div>
                 <PaginationPanel
-                    onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
+                    onChange={pagination => this.changeFilters(this.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
                     pagination={this.state.pagination}
                 />
             </>
@@ -424,7 +401,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
                             }}
                             value={q.get('search') || ''}
-                            items={this.state.workflows.map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
+                            items={(this.state.workflows || []).map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
                         />
                     </div>
                 )}
