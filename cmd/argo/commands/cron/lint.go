@@ -24,8 +24,6 @@ func NewLintCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
-			namespace := client.Namespace()
-
 			lint := func(file string) error {
 				wfs, err := validate.ParseCronWorkflowsFromFile(file, strict)
 				if err != nil {
@@ -35,6 +33,10 @@ func NewLintCommand() *cobra.Command {
 					return fmt.Errorf("there was nothing to validate")
 				}
 				for _, wf := range wfs {
+					namespace := wf.Namespace
+					if namespace == "" {
+						namespace = client.Namespace()
+					}
 					_, err := serviceClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: &wf})
 					if err != nil {
 						return err
