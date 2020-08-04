@@ -14,6 +14,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -191,6 +192,21 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 		Into(wf)
 	wf.TypeMeta = workflowTypeMeta
 	return wf, err
+}
+
+func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, includeDryRun bool) {
+	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
+	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
+	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
+	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
+	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
+
+	if includeDryRun {
+		command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
+		command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
+	}
 }
 
 // Apply the Submit options into workflow object
