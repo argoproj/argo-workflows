@@ -122,9 +122,10 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
             <Provider value={providerContext}>
                 {this.state.popupProps && <Popup {...this.state.popupProps} />}
                 <Router history={history}>
-                    <ErrorBoundary>
-                        <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
-                            <Notifications notifications={this.notificationsManager.notifications} />
+                    <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
+                        <Notifications notifications={this.notificationsManager.notifications} />
+
+                        <ErrorBoundary>
                             <Switch>
                                 <Route exact={true} strict={true} path={uiUrl('')}>
                                     <Redirect to={workflowsUrl} />
@@ -162,8 +163,8 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
                                 <Route exact={true} strict={true} path={loginUrl} component={login.component} />
                             </Switch>
-                        </Layout>
-                    </ErrorBoundary>
+                        </ErrorBoundary>
+                    </Layout>
                 </Router>
             </Provider>
         );
