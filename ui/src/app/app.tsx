@@ -124,7 +124,6 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                 <Router history={history}>
                     <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
                         <Notifications notifications={this.notificationsManager.notifications} />
-
                         <ErrorBoundary>
                             <Switch>
                                 <Route exact={true} strict={true} path={uiUrl('')}>

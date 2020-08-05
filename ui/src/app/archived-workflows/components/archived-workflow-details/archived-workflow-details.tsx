@@ -134,7 +134,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     private renderArchivedWorkflowDetails() {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error} />;
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
         }
         if (!this.state.workflow) {
             return <Loading />;
