@@ -29,10 +29,11 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private set namespace(namespace: string) {
-        this.setState({namespace});
-        this.url = uiUrl('workflow-templates/' + namespace);
-        this.fetchWorkflowTemplates();
-        Utils.setCurrentNamespace(namespace);
+        this.setState({namespace}, () => {
+            this.url = uiUrl('workflow-templates/' + namespace);
+            this.fetchWorkflowTemplates();
+            Utils.setCurrentNamespace(namespace);
+        });
     }
 
     private get sidePanel() {

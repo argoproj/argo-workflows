@@ -106,43 +106,51 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
+        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
+    }
+
+    private get filterParams() {
         const params = new URLSearchParams();
-        selectedPhases.forEach(phase => {
+        this.state.selectedPhases.forEach(phase => {
             params.append('phase', phase);
         });
-        selectedLabels.forEach(label => {
+        this.state.selectedLabels.forEach(label => {
             params.append('label', label);
         });
-        params.append('minStartedAt', minStartedAt.toISOString());
-        params.append('maxStartedAt', maxStartedAt.toISOString());
-        if (pagination.offset) {
-            params.append('offset', pagination.offset);
+        params.append('minStartedAt', this.state.minStartedAt.toISOString());
+        params.append('maxStartedAt', this.state.maxStartedAt.toISOString());
+        if (this.state.pagination.offset) {
+            params.append('offset', this.state.pagination.offset);
         }
-        if (pagination.limit !== defaultPaginationLimit) {
-            params.append('limit', pagination.limit.toString());
+        if (this.state.pagination.limit !== defaultPaginationLimit) {
+            params.append('limit', this.state.pagination.limit.toString());
         }
-        Utils.setCurrentNamespace(namespace);
-        this.url = uiUrl('archived-workflows/' + namespace + '?' + params.toString());
-        this.setState({namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination});
-        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
+        return params;
     }
 
     private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         services.archivedWorkflows
             .list(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination)
             .then(list => {
-                this.setState({
-                    workflows: list.items || [],
-                    selectedPhases,
-                    selectedLabels,
-                    minStartedAt,
-                    maxStartedAt,
-                    pagination: {
-                        limit: pagination.limit,
-                        offset: pagination.offset,
-                        nextOffset: list.metadata.continue
+                this.setState(
+                    {
+                        namespace,
+                        workflows: list.items || [],
+                        selectedPhases,
+                        selectedLabels,
+                        minStartedAt,
+                        maxStartedAt,
+                        pagination: {
+                            limit: pagination.limit,
+                            offset: pagination.offset,
+                            nextOffset: list.metadata.continue
+                        }
+                    },
+                    () => {
+                        this.url = uiUrl('archived-workflows/' + namespace + '?' + this.filterParams.toString());
+                        Utils.setCurrentNamespace(namespace);
                     }
-                });
+                );
             })
             .catch(error => this.setState({error}));
     }
