@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/client-go/dynamic"
+
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
 	"github.com/argoproj/pkg/errors"
@@ -66,9 +68,10 @@ type WorkflowController struct {
 	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig    *rest.Config
-	kubeclientset kubernetes.Interface
-	wfclientset   wfclientset.Interface
+	restConfig       *rest.Config
+	kubeclientset    kubernetes.Interface
+	dynamicInterface dynamic.Interface
+	wfclientset      wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -99,10 +102,16 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace string, managedNamespace string, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) *WorkflowController {
+func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+	dynamicInterface, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
+		dynamicInterface:           dynamicInterface,
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
@@ -126,7 +135,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.throttler.SetParallelism(wfc.getParallelism())
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
-	return &wfc
+	return &wfc, nil
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -139,7 +148,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
 	cronController.Run(ctx)
 }
 

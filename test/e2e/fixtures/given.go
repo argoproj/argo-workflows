@@ -174,13 +174,19 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+var Noop = func(*testing.T, string, error) {}
+
+func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
+	output, err := runCli(name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()
 	}
 	return g
+}
+
+func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
+	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {

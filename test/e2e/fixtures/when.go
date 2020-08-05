@@ -1,7 +1,6 @@
 package fixtures
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -108,10 +106,17 @@ func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condi
 }
 
 func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
+	w.t.Helper()
 	start := time.Now()
-	logCtx := log.WithFields(log.Fields{"workflow": workflowName, "condition": condition, "timeout": timeout})
+
+	fieldSelector := ""
+	if workflowName != "" {
+		fieldSelector = "metadata.name=" + workflowName
+	}
+
+	logCtx := log.WithFields(log.Fields{"fieldSelector": fieldSelector, "condition": condition, "timeout": timeout})
 	logCtx.Info("Waiting for condition")
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName)).String()}
+	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
 		w.t.Fatal(err)
@@ -127,10 +132,11 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
+				logCtx.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
 				if test(wf) {
 					logCtx.Infof("Condition met after %v", time.Since(start).Truncate(time.Second))
+					w.workflowName = wf.Name
 					return w
 				}
 			} else {

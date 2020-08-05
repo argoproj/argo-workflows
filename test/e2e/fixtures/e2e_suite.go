@@ -94,6 +94,11 @@ func (s *E2ESuite) countWorkflows() int {
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
+
+	// delete any malformed items first, as they'll break later clean-up
+	_, err := runCli("kubectl", "-n", Namespace, "delete", "cwft,wftmpl,cwf,wf", "-l", "argo-e2e=malformed")
+	s.CheckError(err)
+
 	// delete all cron workflows
 	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	s.CheckError(err)
