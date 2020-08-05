@@ -10,6 +10,7 @@ import (
 
 	"k8s.io/client-go/dynamic"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
 	"github.com/argoproj/pkg/errors"
@@ -785,7 +786,7 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 }
 
 func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
-	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.GetManagedNamespace())).Argoproj().V1alpha1().WorkflowTemplates()
+	return controllercache.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.namespace, workflow.WorkflowTemplatePlural)
 }
 
 func (wfc *WorkflowController) newClusterWorkflowTemplateInformer() wfextvv1alpha1.ClusterWorkflowTemplateInformer {

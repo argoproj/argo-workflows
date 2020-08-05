@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -174,7 +175,9 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-var Noop = func(*testing.T, string, error) {}
+var NoError = func(t *testing.T, output string, err error) {
+	assert.NoError(t, err, output)
+}
 
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	output, err := runCli(name, args...)

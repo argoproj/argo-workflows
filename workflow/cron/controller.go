@@ -81,12 +81,10 @@ func (cc *Controller) Run(ctx context.Context) {
 		log.Infof("...with InstanceID: %s", cc.instanceId)
 	}
 
-	resource := dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
+	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceId)
 	}).
 		ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: "v1alpha1", Resource: workflow.CronWorkflowPlural})
-
-	cc.cronWfInformer = resource
 	cc.addCronWorkflowInformerHandler()
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
@@ -144,13 +142,13 @@ func (cc *Controller) processNextCronItem() bool {
 
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.Warnf("Key '%s' in index is not a Unstructured", key)
+		log.WithError(err).WithField("key", key).Error("object is not Unstructured")
 		return true
 	}
 	cronWf := &v1alpha1.CronWorkflow{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, cronWf)
 	if err != nil {
-		log.WithError(err).Error("could not convert unstructured to cron workflow")
+		log.WithError(err).WithField("key", key).Error("could not convert unstructured to cron workflow")
 		return true
 	}
 
@@ -158,7 +156,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
-		log.WithError(err).Error("invalid cron workflow")
+		log.WithError(err).WithField("key", key).Error("invalid cron workflow")
 		return true
 	}
 
