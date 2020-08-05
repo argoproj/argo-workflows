@@ -1,13 +1,12 @@
 import * as React from 'react';
 
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {Link} from 'react-router-dom';
 import {CronWorkflow} from '../../../models';
-import {uiUrl} from '../../shared/base';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {services} from '../../shared/services';
+import {WorkflowLink} from '../../workflows/components/workflow-link';
 
 const jsonMergePatch = require('json-merge-patch');
 
@@ -86,16 +85,6 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
     );
 };
 
-function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]): JSX.Element {
-    return (
-        <div>
-            {active.reverse().map(activeWf => (
-                <div>
-                    <Link to={uiUrl(`workflows/${activeWf.namespace}/${activeWf.name}`)}>
-                        {activeWf.namespace}/{activeWf.name}
-                    </Link>
-                </div>
-            ))}
-        </div>
-    );
+function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]) {
+    return active.reverse().map(activeWf => <WorkflowLink key={activeWf.uid} namespace={activeWf.namespace} name={activeWf.name} />);
 }

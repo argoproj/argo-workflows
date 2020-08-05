@@ -1,7 +1,11 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 
 export const labels = {
-    completed: 'workflows.argoproj.io/completed'
+    clusterWorkflowTemplate: 'workflows.argoproj.io/cluster-workflow-template',
+    completed: 'workflows.argoproj.io/completed',
+    creator: 'workflows.argoproj.io/creator',
+    cronWorkflow: 'workflows.argoproj.io/cron-workflow',
+    workflowTemplate: 'workflows.argoproj.io/workflow-template'
 };
 
 /**
