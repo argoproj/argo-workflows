@@ -248,8 +248,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         }
         WorkflowsList.saveOptions(newOptions);
         Utils.setCurrentNamespace(namespace);
-        this.appContext.router.history.push(uiUrl('workflows/' + namespace + '?' + params.toString()));
-        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
+        this.url = uiUrl('workflows/' + namespace + '?' + params.toString());
     }
 
     private countsByCompleted() {

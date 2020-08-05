@@ -28,7 +28,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private set namespace(namespace: string) {
-        this.appContext.router.history.push(uiUrl('workflow-templates/' + namespace));
+        this.url = uiUrl('workflow-templates/' + namespace);
         Utils.setCurrentNamespace(namespace);
     }
 

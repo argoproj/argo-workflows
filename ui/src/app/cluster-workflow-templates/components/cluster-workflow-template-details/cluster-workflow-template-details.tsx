@@ -9,21 +9,19 @@ import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
+import {Utils} from '../../../shared/utils';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateSummaryPanel} from '../cluster-workflow-template-summary-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
+    namespace?: string;
     template?: models.ClusterWorkflowTemplate;
     error?: Error;
 }
 
 export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, State> {
-    private get namespace() {
-        return this.props.match.params.namespace || 'default';
-    }
-
     private get name() {
         return this.props.match.params.name;
     }
@@ -45,6 +43,8 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
         services.clusterWorkflowTemplate
             .get(this.name)
             .then(template => this.setState({template}))
+            .then(() => services.info.getInfo())
+            .then(info => this.setState({namespace: info.managedNamespace || Utils.getCurrentNamespace() || 'default'}))
             .catch(error => this.setState({error}));
     }
 
@@ -84,7 +84,7 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
                             <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                                 <SubmitWorkflowPanel
                                     kind='ClusterWorkflowTemplate'
-                                    namespace={this.namespace}
+                                    namespace={this.state.namespace}
                                     name={this.state.template.metadata.name}
                                     entrypoint={this.state.template.spec.entrypoint}
                                     entrypoints={(this.state.template.spec.templates || []).map(t => t.name)}

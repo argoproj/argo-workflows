@@ -108,10 +108,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                             <div className='columns small-3'>CREATED</div>
                         </div>
                         {this.state.templates.map(t => (
-                            <Link
-                                className='row argo-table-list__row'
-                                key={`${t.metadata.namespace}/${t.metadata.name}`}
-                                to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
+                            <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
                                 <div className='columns small-1'>
                                     <i className='fa fa-clone' />
                                 </div>

@@ -115,8 +115,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (pagination.limit !== defaultPaginationLimit) {
             params.append('limit', pagination.limit.toString());
         }
-        this.appContext.router.history.push(uiUrl('archived-workflows/' + namespace + '?' + params.toString()));
-        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
+        this.url = uiUrl('archived-workflows/' + namespace + '?' + params.toString());
     }
 
     private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {

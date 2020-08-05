@@ -28,7 +28,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private set namespace(namespace: string) {
-        this.appContext.router.history.push(uiUrl('cron-workflows/' + namespace));
+        this.url = uiUrl('cron-workflows/' + namespace);
         Utils.setCurrentNamespace(namespace);
     }
 
