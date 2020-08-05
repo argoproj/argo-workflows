@@ -105,7 +105,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         if (!this.state.template) {
             return <Loading />;
         }
-        return <WorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} onError={error => this.setState({error})} />;
+        return <WorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} />;
     }
 
     private deleteWorkflowTemplate() {

@@ -14,8 +14,6 @@ const jsonMergePatch = require('json-merge-patch');
 interface Props {
     cronWorkflow: CronWorkflow;
     onChange: (cronWorkflow: CronWorkflow) => void;
-
-    onError(error: Error): void;
 }
 
 export const CronWorkflowSummaryPanel = (props: Props) => {

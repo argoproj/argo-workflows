@@ -94,9 +94,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         if (!this.state.cronWorkflow) {
             return <Loading />;
         }
-        return (
-            <CronWorkflowSummaryPanel cronWorkflow={this.state.cronWorkflow} onChange={cronWorkflow => this.setState({cronWorkflow})} onError={error => this.setState({error})} />
-        );
+        return <CronWorkflowSummaryPanel cronWorkflow={this.state.cronWorkflow} onChange={cronWorkflow => this.setState({cronWorkflow})} />;
     }
 
     private submitCronWorkflow() {

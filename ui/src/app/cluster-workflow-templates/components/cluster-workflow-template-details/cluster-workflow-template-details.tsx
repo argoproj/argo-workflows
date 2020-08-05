@@ -105,7 +105,7 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
         if (!this.state.template) {
             return <Loading />;
         }
-        return <ClusterWorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} onError={error => this.setState({error})} />;
+        return <ClusterWorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} />;
     }
 
     private deleteClusterWorkflowTemplate() {

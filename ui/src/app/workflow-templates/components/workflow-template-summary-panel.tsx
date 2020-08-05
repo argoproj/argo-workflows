@@ -8,7 +8,6 @@ import {services} from '../../shared/services';
 interface Props {
     template: WorkflowTemplate;
     onChange: (template: WorkflowTemplate) => void;
-    onError: (error: Error) => void;
 }
 
 export const WorkflowTemplateSummaryPanel = (props: Props) => {
