@@ -190,7 +190,7 @@ func (w *When) DeleteWorkflow() *When {
 }
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()

@@ -180,7 +180,7 @@ var NoError = func(t *testing.T, output string, err error) {
 }
 
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
-	output, err := runCli(name, args...)
+	output, err := Exec(name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()
