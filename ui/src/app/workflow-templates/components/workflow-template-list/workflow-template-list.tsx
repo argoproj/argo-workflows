@@ -18,17 +18,20 @@ import {Utils} from '../../../shared/utils';
 require('./workflow-template-list.scss');
 
 interface State {
+    namespace: string;
     templates?: models.WorkflowTemplate[];
     error?: Error;
 }
 
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
+        this.setState({namespace});
         this.url = uiUrl('workflow-templates/' + namespace);
+        this.fetchWorkflowTemplates();
         Utils.setCurrentNamespace(namespace);
     }
 
@@ -42,7 +45,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = {namespace: this.props.match.params.namespace};
     }
 
     public componentDidMount(): void {

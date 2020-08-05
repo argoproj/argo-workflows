@@ -15,10 +15,12 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
+import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
 
 interface State {
     pagination: Pagination;
+    namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
     minStartedAt?: Date;
@@ -36,17 +38,21 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || defaultPaginationLimit},
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
+            namespace: this.props.match.params.namespace,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
             maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay()
         };
     }
 
-    private get namespace() {
-        return this.props.match.params.namespace || '';
-    }
-
     public componentDidMount(): void {
-        this.fetchArchivedWorkflows(this.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, this.state.pagination);
+        this.fetchArchivedWorkflows(
+            this.state.namespace,
+            this.state.selectedPhases,
+            this.state.selectedLabels,
+            this.state.minStartedAt,
+            this.state.maxStartedAt,
+            this.state.pagination
+        );
     }
 
     public render() {
@@ -61,7 +67,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <div>
                             <ArchivedWorkflowFilters
                                 workflows={this.state.workflows || []}
-                                namespace={this.namespace}
+                                namespace={this.state.namespace}
                                 phaseItems={Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR])}
                                 selectedPhases={this.state.selectedPhases}
                                 selectedLabels={this.state.selectedLabels}
@@ -115,7 +121,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (pagination.limit !== defaultPaginationLimit) {
             params.append('limit', pagination.limit.toString());
         }
+        Utils.setCurrentNamespace(namespace);
         this.url = uiUrl('archived-workflows/' + namespace + '?' + params.toString());
+        this.setState({namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination});
+        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
     }
 
     private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
@@ -185,7 +194,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
                 <PaginationPanel
                     onChange={pagination =>
-                        this.changeFilters(this.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, pagination)
+                        this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, pagination)
                     }
                     pagination={this.state.pagination}
                 />

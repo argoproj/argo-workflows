@@ -18,17 +18,20 @@ import {Utils} from '../../../shared/utils';
 require('./cron-workflow-list.scss');
 
 interface State {
+    namespace: string;
     cronWorkflows?: models.CronWorkflow[];
     error?: Error;
 }
 
 export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
+        this.setState({namespace});
         this.url = uiUrl('cron-workflows/' + namespace);
+        this.fetchCronWorkflows();
         Utils.setCurrentNamespace(namespace);
     }
 
@@ -42,7 +45,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     constructor(props: any) {
         super(props);
-        this.state = {};
+        this.state = {namespace: this.props.match.params.namespace};
     }
 
     public componentDidMount(): void {

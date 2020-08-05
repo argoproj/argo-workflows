@@ -29,6 +29,7 @@ import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 require('./workflows-list.scss');
 
 interface State {
+    namespace: string;
     pagination: Pagination;
     selectedPhases: string[];
     selectedLabels: string[];
@@ -86,6 +87,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 offset: this.queryParam('offset'),
                 limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit
             },
+            namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
             selectedLabels: this.queryParams('label').length > 0 ? this.queryParams('label') : savedOptions.selectedLabels,
             selectedWorkflows: new Map<string, models.Workflow>(),
@@ -93,12 +95,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         };
     }
 
-    private get namespace() {
-        return this.props.match.params.namespace || '';
-    }
-
     public componentDidMount(): void {
-        this.fetchWorkflows(this.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
     }
 
@@ -133,7 +131,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             clearSelection={() => this.setState({selectedWorkflows: new Map<string, models.Workflow>()})}
                             loadWorkflows={() => {
                                 this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-                                this.fetchWorkflows(this.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, {limit: this.state.pagination.limit});
                             }}
                             isDisabled={this.state.batchActionDisabled}
                         />
@@ -143,7 +141,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>
                                     <WorkflowFilters
                                         workflows={this.state.workflows || []}
-                                        namespace={this.namespace}
+                                        namespace={this.state.namespace}
                                         phaseItems={Object.values(models.NODE_PHASE)}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
@@ -161,10 +159,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 kind='Workflow'
                                 upload={true}
                                 editing={true}
-                                value={exampleWorkflow(this.namespace)}
+                                value={exampleWorkflow(this.state.namespace)}
                                 onSubmit={wfValue =>
                                     services.workflows
-                                        .create(wfValue, wfValue.metadata.namespace || this.namespace)
+                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
                                 }
                             />
@@ -249,6 +247,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         WorkflowsList.saveOptions(newOptions);
         Utils.setCurrentNamespace(namespace);
         this.url = uiUrl('workflows/' + namespace + '?' + params.toString());
+        this.setState({namespace, selectedPhases, selectedLabels, pagination});
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 
     private countsByCompleted() {
@@ -312,7 +312,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         newTags = this.state.selectedLabels.concat(value);
                                         this.setState({selectedLabels: newTags});
                                     }
-                                    this.changeFilters(this.namespace, this.state.selectedPhases, newTags, this.state.pagination);
+                                    this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
                                 }}
                                 select={subWf => {
                                     const wfUID = subWf.metadata.uid;
@@ -334,7 +334,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     })}
                 </div>
                 <PaginationPanel
-                    onChange={pagination => this.changeFilters(this.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
+                    onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
                     pagination={this.state.pagination}
                 />
             </>

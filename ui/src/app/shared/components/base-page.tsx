@@ -53,18 +53,6 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
 
     public set url(url: string) {
         this.appContext.router.history.push(url);
-        this.refreshComponent();
-    }
-
-    private refreshComponent() {
-        setTimeout(() => {
-            if (this.componentWillUnmount) {
-                this.componentWillUnmount();
-            }
-            if (this.componentDidMount) {
-                this.componentDidMount();
-            }
-        }, 300);
     }
 
     protected get appContext() {
