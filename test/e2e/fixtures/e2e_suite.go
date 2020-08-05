@@ -98,7 +98,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 	// delete any malformed items first, as they'll break later clean-up
 	_, err := runCli("kubectl", "-n", Namespace, "delete", "wftmpl,cwf,wf", "-l", "argo-e2e=malformed")
 	s.CheckError(err)
-	_, err = runCli("kubectl",  "delete", "cwft", "-l", "argo-e2e=malformed")
+	_, err = runCli("kubectl", "delete", "cwft", "-l", "argo-e2e=malformed")
 	s.CheckError(err)
 
 	// delete all cron workflows
