@@ -346,7 +346,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             const item = queue.pop();
 
             if (considered.has(item.nodeName)) {
-                continue
+                continue;
             }
             considered.add(item.nodeName);
 
