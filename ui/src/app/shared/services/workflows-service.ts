@@ -33,7 +33,6 @@ export class WorkflowsService {
             'items.status.phase',
             'items.status.finishedAt',
             'items.status.startedAt',
-            'items.status.resourcesDuration',
             'items.spec.suspend'
         ];
         params.push(`fields=${fields.join(',')}`);

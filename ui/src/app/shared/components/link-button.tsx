@@ -1,9 +1,8 @@
 import * as React from 'react';
 import {ReactNode} from 'react';
-import {Link} from 'react-router-dom';
 
 export const LinkButton = (props: {to: string; children?: ReactNode}) => (
-    <Link className='argo-button argo-button--base' to={props.to}>
+    <button className='argo-button argo-button--base' onClick={() => (document.location.href = props.to)}>
         {props.children}
-    </Link>
+    </button>
 );
