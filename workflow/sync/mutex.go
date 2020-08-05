@@ -11,6 +11,9 @@ type Mutex struct {
 	lock  *sync.Mutex
 }
 
+// NewMutex creates new mutex lock object
+// name of the mutex
+// callbackFunc is a release notification function.
 func NewMutex(name string, callbackFunc func(string)) *Mutex {
 	return &Mutex{
 		name:  name,

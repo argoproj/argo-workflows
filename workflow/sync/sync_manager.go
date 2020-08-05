@@ -289,95 +289,112 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 	return true
 }
 
+// updateSemaphoreStatus updates the semaphore holding and waiting details
+func (cm *SyncManager) updateSemaphoreStatus(holderKey, lockKey string, lockAction LockAction, wf *wfv1.Workflow) bool {
+	if wf.Status.Synchronization == nil || wf.Status.Synchronization.Semaphore == nil {
+		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
+	}
+	// Update the semaphore which the workflow is waiting for
+	if lockAction == LockActionWaiting {
+		index, semaphoreWaiting := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Waiting, lockKey)
+		currentHolder := cm.getCurrentLockHolders(lockKey)
+		if index == -1 {
+			wf.Status.Synchronization.Semaphore.Waiting = append(wf.Status.Synchronization.Semaphore.Waiting, wfv1.SemaphoreHolding{Semaphore: lockKey, Holders: currentHolder})
+		} else {
+			semaphoreWaiting.Holders = currentHolder
+			wf.Status.Synchronization.Semaphore.Waiting[index] = semaphoreWaiting
+		}
+		return true
+	}
+	// Update the semaphore which is acquired by the workflow
+	if lockAction == LockActionAcquired {
+		index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
+		items := strings.Split(holderKey, "/")
+		holdingName := items[len(items)-1]
+		if index == -1 {
+			wf.Status.Synchronization.Semaphore.Holding = append(wf.Status.Synchronization.Semaphore.Holding, wfv1.SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
+			return true
+		} else {
+			if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+				semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
+				wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
+				return true
+			}
+		}
+		return false
+	}
+	// Clear the semaphore which is released by the workflow
+	if lockAction == LockActionReleased {
+		items := strings.Split(holderKey, "/")
+		holdingName := items[len(items)-1]
+		index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
+		if index != -1 {
+			semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+			wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
+		}
+		return true
+	}
+	return false
+}
+
+// updateMutexStatus updates the mutex holding and waiting details
+func (cm *SyncManager) updateMutexStatus(holderKey, lockKey string, lockAction LockAction, wf *wfv1.Workflow) bool {
+	if wf.Status.Synchronization == nil || wf.Status.Synchronization.Mutex == nil {
+		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Mutex: &wfv1.MutexStatus{}}
+	}
+	// Update mutex which the workflow is waiting for
+	if lockAction == LockActionWaiting {
+		index, mutexWaiting := getMutexHolding(wf.Status.Synchronization.Mutex.Waiting, lockKey)
+		currentHolder := cm.getCurrentLockHolders(lockKey)
+		if len(currentHolder) == 0 {
+			return true
+		}
+		if index == -1 {
+			wf.Status.Synchronization.Mutex.Waiting = append(wf.Status.Synchronization.Mutex.Waiting, wfv1.MutexHolding{Mutex: lockKey, Holder: currentHolder[0]})
+		} else {
+			if mutexWaiting.Holder != currentHolder[0] {
+				mutexWaiting.Holder = currentHolder[0]
+				wf.Status.Synchronization.Mutex.Waiting[index] = mutexWaiting
+			}
+		}
+		return true
+	}
+	// Update mutex which is acquired by the workflow
+	if lockAction == LockActionAcquired {
+		index, mutexHolding := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
+		items := strings.Split(holderKey, "/")
+		holdingName := items[len(items)-1]
+		if index == -1 {
+			wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding, wfv1.MutexHolding{Mutex: lockKey, Holder: holdingName})
+			return true
+		} else {
+			if mutexHolding.Holder != holdingName {
+				mutexHolding.Holder = holdingName
+				wf.Status.Synchronization.Mutex.Holding[index] = mutexHolding
+				return true
+			}
+		}
+		return false
+	}
+	// Clear the mutex which is released by the workflow
+	if lockAction == LockActionReleased {
+		index, _ := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
+		if index != -1 {
+			wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding[:index], wf.Status.Synchronization.Mutex.Holding[index+1:]...)
+		}
+		return true
+	}
+	return false
+}
+
 // updateConcurrencyStatus updates the synchronization status update
 // It return the status of workflow updated or not.
 func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockType LockType, lockAction LockAction, wf *wfv1.Workflow) bool {
 
 	if lockType == LockTypeSemaphore {
-		if wf.Status.Synchronization == nil || wf.Status.Synchronization.Semaphore == nil {
-			wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
-		}
-		if lockAction == LockActionWaiting {
-			index, semaphoreWaiting := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Waiting, lockKey)
-			currentHolder := cm.getCurrentLockHolders(lockKey)
-			if index == -1 {
-				wf.Status.Synchronization.Semaphore.Waiting = append(wf.Status.Synchronization.Semaphore.Waiting, wfv1.SemaphoreHolding{Semaphore: lockKey, Holders: currentHolder})
-			} else {
-				semaphoreWaiting.Holders = currentHolder
-				wf.Status.Synchronization.Semaphore.Waiting[index] = semaphoreWaiting
-			}
-			return true
-		}
-
-		if lockAction == LockActionAcquired {
-			index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
-			items := strings.Split(holderKey, "/")
-			holdingName := items[len(items)-1]
-			if index == -1 {
-				wf.Status.Synchronization.Semaphore.Holding = append(wf.Status.Synchronization.Semaphore.Holding, wfv1.SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
-				return true
-			} else {
-				if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
-					semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
-					wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
-					return true
-				}
-			}
-			return false
-		}
-		if lockAction == LockActionReleased {
-			items := strings.Split(holderKey, "/")
-			holdingName := items[len(items)-1]
-			index, semaphoreHolding := getSemaphoreHolding(wf.Status.Synchronization.Semaphore.Holding, lockKey)
-			if index != -1 {
-				semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
-				wf.Status.Synchronization.Semaphore.Holding[index] = semaphoreHolding
-			}
-			return true
-		}
+		return cm.updateSemaphoreStatus(holderKey, lockKey, lockAction, wf)
 	} else if lockType == LockTypeMutex {
-		if wf.Status.Synchronization == nil || wf.Status.Synchronization.Mutex == nil {
-			wf.Status.Synchronization = &wfv1.SynchronizationStatus{Mutex: &wfv1.MutexStatus{}}
-		}
-		if lockAction == LockActionWaiting {
-			index, mutexWaiting := getMutexHolding(wf.Status.Synchronization.Mutex.Waiting, lockKey)
-			currentHolder := cm.getCurrentLockHolders(lockKey)
-			if len(currentHolder) == 0 {
-				return true
-			}
-			if index == -1 {
-				wf.Status.Synchronization.Mutex.Waiting = append(wf.Status.Synchronization.Mutex.Waiting, wfv1.MutexHolding{Mutex: lockKey, Holder: currentHolder[0]})
-			} else {
-				if mutexWaiting.Holder != currentHolder[0] {
-					mutexWaiting.Holder = currentHolder[0]
-					wf.Status.Synchronization.Mutex.Waiting[index] = mutexWaiting
-				}
-			}
-			return true
-		}
-		if lockAction == LockActionAcquired {
-			index, mutexHolding := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
-			items := strings.Split(holderKey, "/")
-			holdingName := items[len(items)-1]
-			if index == -1 {
-				wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding, wfv1.MutexHolding{Mutex: lockKey, Holder: holdingName})
-				return true
-			} else {
-				if mutexHolding.Holder != holdingName {
-					mutexHolding.Holder = holdingName
-					wf.Status.Synchronization.Mutex.Holding[index] = mutexHolding
-					return true
-				}
-			}
-			return false
-		}
-		if lockAction == LockActionReleased {
-			index, _ := getMutexHolding(wf.Status.Synchronization.Mutex.Holding, lockKey)
-			if index != -1 {
-				wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding[:index], wf.Status.Synchronization.Mutex.Holding[index+1:]...)
-			}
-			return true
-		}
+		return cm.updateMutexStatus(holderKey, lockKey, lockAction, wf)
 	}
 	return false
 }
@@ -406,14 +423,14 @@ func (ln *LockName) validate() error {
 
 func DecodeLockName(lockName string) (*LockName, error) {
 	items := strings.Split(lockName, "/")
-	if len(items) < 3 {
-		return nil, errors.New(errors.CodeBadRequest, "Invalid Lock Key")
-	}
 	var lock LockName
-	if items[1] == string(LockTypeMutex) {
+	// For mutex lockname
+	if len(items) == 3 && items[1] == string(LockTypeMutex) {
 		lock = LockName{Namespace: items[0], Kind: items[1], ResourceName: items[2]}
-	} else {
+	} else if len(items) == 4 { // For Semaphore lockname
 		lock = LockName{Namespace: items[0], Kind: items[1], ResourceName: items[2], Key: items[3]}
+	} else {
+		return nil, errors.New(errors.CodeBadRequest, "Invalid Lock Key")
 	}
 	err := lock.validate()
 	if err != nil {
