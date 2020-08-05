@@ -3,10 +3,13 @@ package executor
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -18,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -114,8 +118,26 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
+func signalMonitoring(doneChan chan struct{}) {
+	log.Infof("Starting signal monitoring")
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os_specific.GetOsSignal())
+	for {
+		<-sigs
+		log.Infof("Received update signal. Reloading annotations from API")
+		doneChan <- struct{}{}
+		return
+	}
+}
+
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName string) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	signalNotifyChan := make(chan struct{})
+	go signalMonitoring(signalNotifyChan)
+
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -143,7 +165,7 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 	// Poll intervall of 5 seconds serves as a backoff intervall in case of immediate result reader failure
 	err := wait.PollImmediateInfinite(time.Second*5,
 		func() (bool, error) {
-			isErrRetry, err := checkResourceState(resourceNamespace, resourceName, successReqs, failReqs)
+			isErrRetry, err := checkResourceState(resourceNamespace, resourceName, successReqs, failReqs, ctx, signalNotifyChan)
 
 			if err == nil {
 				log.Infof("Returning from successful wait for resource %s", resourceName)
@@ -152,7 +174,6 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 
 			if isErrRetry {
 				log.Infof("Waiting for resource %s resulted in retryable error %v", resourceName, err)
-				return false, nil
 			}
 
 			log.Warnf("Waiting for resource %s resulted in non-retryable error %v", resourceName, err)
@@ -191,7 +212,7 @@ func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool 
 }
 
 // Function to do the kubectl get -w command and then waiting on json reading.
-func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements, ctx context.Context, signalChan chan struct{}) (bool, error) {
 
 	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
 	if err != nil {
@@ -202,6 +223,13 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 	}()
 
 	for {
+		select {
+		case <-ctx.Done():
+			return false, nil
+		case <-signalChan:
+			return false, fmt.Errorf("workflow shutdown with strategy")
+		default:
+		}
 		jsonBytes, err := readJSON(reader)
 
 		if err != nil {
