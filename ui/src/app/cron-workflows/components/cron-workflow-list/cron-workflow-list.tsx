@@ -91,15 +91,15 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         );
     }
 
+    private saveHistory() {
+        this.url = uiUrl('cron-workflows/' + this.state.namespace);
+        Utils.setCurrentNamespace(this.state.namespace);
+    }
+
     private fetchCronWorkflows(namespace: string): void {
         services.cronWorkflows
             .list(namespace)
-            .then(cronWorkflows =>
-                this.setState({namespace, cronWorkflows}, () => {
-                    this.url = uiUrl('cron-workflows/' + namespace);
-                    Utils.setCurrentNamespace(namespace);
-                })
-            )
+            .then(cronWorkflows => this.setState({namespace, cronWorkflows}, this.saveHistory))
             .catch(error => this.setState({error}));
     }
 

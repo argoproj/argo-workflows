@@ -36,9 +36,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         super(props, context);
         this.state = {
             pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || defaultPaginationLimit},
+            namespace: this.props.match.params.namespace,
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label'),
-            namespace: this.props.match.params.namespace,
             minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
             maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay()
         };
@@ -128,6 +128,11 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         return params;
     }
 
+    private saveHistory() {
+        this.url = uiUrl('archived-workflows/' + this.state.namespace + '?' + this.filterParams.toString());
+        Utils.setCurrentNamespace(this.state.namespace);
+    }
+
     private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         services.archivedWorkflows
             .list(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination)
@@ -146,10 +151,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             nextOffset: list.metadata.continue
                         }
                     },
-                    () => {
-                        this.url = uiUrl('archived-workflows/' + namespace + '?' + this.filterParams.toString());
-                        Utils.setCurrentNamespace(namespace);
-                    }
+                    this.saveHistory
                 );
             })
             .catch(error => this.setState({error}));

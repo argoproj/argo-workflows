@@ -96,8 +96,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
-        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+        this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
+            this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+        });
     }
 
     public componentWillUnmount(): void {
@@ -188,11 +189,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         selectedLabels,
                         selectedWorkflows: new Map<string, models.Workflow>()
                     },
-                    () => {
-                        WorkflowsList.saveOptions(this.newOptions);
-                        this.url = uiUrl('workflows/' + namespace + '?' + this.filterParams.toString());
-                        Utils.setCurrentNamespace(namespace);
-                    }
+                    this.saveHistory
                 );
                 return wfList.metadata.resourceVersion;
             })
@@ -253,17 +250,23 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         return params;
     }
 
-    private get newOptions() {
-        const newOptions: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
-        newOptions.selectedPhases = this.state.selectedPhases;
-        newOptions.selectedLabels = [];
+    private get options() {
+        const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
+        options.selectedPhases = this.state.selectedPhases;
+        options.selectedLabels = [];
         this.state.selectedLabels.forEach(label => {
-            newOptions.selectedLabels.push(label);
+            options.selectedLabels.push(label);
         });
         if (this.state.pagination.limit) {
-            newOptions.paginationLimit = this.state.pagination.limit;
+            options.paginationLimit = this.state.pagination.limit;
         }
-        return newOptions;
+        return options;
+    }
+
+    private saveHistory() {
+        WorkflowsList.saveOptions(this.options);
+        this.url = uiUrl('workflows/' + this.state.namespace + '?' + this.filterParams.toString());
+        Utils.setCurrentNamespace(this.state.namespace);
     }
 
     private countsByCompleted() {
