@@ -118,14 +118,14 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
-func signalMonitoring(doneChan chan struct{}) {
+func signalMonitoring(signalChan chan struct{}) {
 	log.Infof("Starting signal monitoring")
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os_specific.GetOsSignal())
 	for {
 		<-sigs
 		log.Infof("Received update signal. Reloading annotations from API")
-		doneChan <- struct{}{}
+		signalChan <- struct{}{}
 		return
 	}
 }
