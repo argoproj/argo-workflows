@@ -1,4 +1,4 @@
-package intstr
+package intstrutil
 
 import (
 	"fmt"
@@ -21,6 +21,15 @@ func Int(is *intstr.IntOrString) (*int, error) {
 	}
 	i := int(is.IntVal)
 	return &i, nil
+}
+
+func Int32(is *intstr.IntOrString) (*int32, error) {
+	v, err := Int(is)
+	if v == nil {
+		return nil, nil
+	}
+	i := int32(*v)
+	return &i, err
 }
 
 func Int64(is *intstr.IntOrString) (*int64, error) {

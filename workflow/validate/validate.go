@@ -24,7 +24,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
-	intstr2 "github.com/argoproj/argo/util/intstr"
+	"github.com/argoproj/argo/util/intstrutil"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -692,7 +692,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if !intstr2.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+		if !intstrutil.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}

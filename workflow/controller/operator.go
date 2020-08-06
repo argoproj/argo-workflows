@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/util/intstrutil"
 	"math"
 	"reflect"
 	"regexp"
@@ -1921,7 +1922,11 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		// if we are about to execute a DAG/Steps template, make sure we havent already reached our limit
 		if tmpl.Parallelism != nil && node != nil {
 			templateActivePods := woc.countActivePods(node.ID)
-			if templateActivePods >= *tmpl.Parallelism {
+			tmplParallelism, err := intstrutil.Int64(tmpl.Parallelism)
+			if err != nil {
+				return err
+			}
+			if templateActivePods >= *tmplParallelism {
 				woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", node.ID, templateActivePods, *tmpl.Parallelism)
 				return ErrParallelismReached
 			}
@@ -1950,7 +1955,11 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			if boundaryTemplate != nil && boundaryTemplate.Parallelism != nil {
 				activeSiblings := woc.countActiveChildren(boundaryID)
 				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
-				if activeSiblings >= *boundaryTemplate.Parallelism {
+				boundaryTemplateParallelism, err := intstrutil.Int64(tmpl.Parallelism)
+				if err != nil {
+					return err
+				}
+				if activeSiblings >= *boundaryTemplateParallelism {
 					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplate.Parallelism)
 					return ErrParallelismReached
 				}

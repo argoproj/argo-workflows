@@ -754,7 +754,7 @@ func TestOutOfCluster(t *testing.T) {
 
 // TestPriority verifies the ability to carry forward priorityClassName and priority.
 func TestPriority(t *testing.T) {
-	priority := int32(15)
+	priority := intstr.FromInt(15)
 	woc := newWoc()
 	woc.wfSpec.Templates[0].PriorityClassName = "foo"
 	woc.wfSpec.Templates[0].Priority = &priority
