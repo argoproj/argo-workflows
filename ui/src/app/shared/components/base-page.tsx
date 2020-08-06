@@ -36,8 +36,7 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
     }
 
     public clearQueryParams() {
-        this.appContext.router.history.push(this.props.match.url);
-        this.refreshComponent();
+        this.url = this.props.match.url;
     }
 
     // this allows us to set-multiple parameters at once
@@ -49,19 +48,11 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
     }
 
     private pushParams(params: URLSearchParams) {
-        this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
-        this.refreshComponent();
+        this.url = `${this.props.match.url}?${params.toString()}`;
     }
 
-    private refreshComponent() {
-        setTimeout(() => {
-            if (this.componentWillUnmount) {
-                this.componentWillUnmount();
-            }
-            if (this.componentDidMount) {
-                this.componentDidMount();
-            }
-        }, 300);
+    public set url(url: string) {
+        this.appContext.router.history.push(url);
     }
 
     protected get appContext() {

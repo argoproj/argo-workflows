@@ -8,7 +8,6 @@ import {services} from '../../shared/services';
 interface Props {
     template: WorkflowTemplate;
     onChange: (template: WorkflowTemplate) => void;
-    onError: (error: Error) => void;
 }
 
 export const ClusterWorkflowTemplateSummaryPanel = (props: Props) => {
@@ -35,12 +34,9 @@ export const ClusterWorkflowTemplateSummaryPanel = (props: Props) => {
                         kind='ClusterWorkflowTemplate'
                         title='Update Cluster Workflow Template'
                         value={props.template}
-                        onSubmit={(value: WorkflowTemplate) => {
-                            services.clusterWorkflowTemplate
-                                .update(value, props.template.metadata.name)
-                                .then(clusterWorkflowTemplate => props.onChange(clusterWorkflowTemplate))
-                                .catch(err => props.onError(err));
-                        }}
+                        onSubmit={(value: WorkflowTemplate) =>
+                            services.clusterWorkflowTemplate.update(value, props.template.metadata.name).then(clusterWorkflowTemplate => props.onChange(clusterWorkflowTemplate))
+                        }
                     />
                 </div>
             </div>
