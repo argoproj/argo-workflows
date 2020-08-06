@@ -15,7 +15,7 @@ interface Props<T> {
     value: T;
     readonly?: boolean;
     editing?: boolean;
-    onSubmit?: (value: T) => void;
+    onSubmit?: (value: T) => Promise<any>;
 }
 
 interface State {
@@ -156,8 +156,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            this.props.onSubmit(parse(this.state.value));
-            this.setState({editing: false});
+            this.props.onSubmit(parse(this.state.value)).catch(error => this.setState({error}));
         } catch (error) {
             this.setState({error});
         }
