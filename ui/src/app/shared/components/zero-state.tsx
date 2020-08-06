@@ -1,19 +1,10 @@
 import * as React from 'react';
-
-interface Props {
-    title: string;
-}
+import {ReactNode} from 'react';
 
 // https://designsystem.quickbooks.com/pattern/zero-states/
-export class ZeroState extends React.Component<Props> {
-    public render() {
-        return (
-            <div style={{margin: '50px'}}>
-                <div className='white-box'>
-                    <h4>{this.props.title}</h4>
-                    {this.props.children}
-                </div>
-            </div>
-        );
-    }
-}
+export const ZeroState = (props: {title: string; children: ReactNode}) => (
+    <div className='white-box' style={{margin: 20}}>
+        <h4>{props.title}</h4>
+        {props.children}
+    </div>
+);
