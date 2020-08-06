@@ -66,7 +66,6 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		customMetrics:      make(map[string]metric),
 		defaultMetricDescs: make(map[string]bool),
 		metricNameHelps:    make(map[string]string),
-
 	}
 
 	for _, metric := range metrics.allMetrics() {
