@@ -76,9 +76,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                     </div>
                 )}
                 <div className='workflow-drawer__section'>
-                    <div className='workflow-drawer__title'>
-                        FROM
-                    </div>
+                    <div className='workflow-drawer__title'>FROM</div>
                     <div className='workflow-drawer__workflowFrom'>
                         <WorkflowFrom namespace={wf.metadata.namespace} labels={wf.metadata.labels} />
                     </div>
