@@ -11,6 +11,8 @@ What happened/what you expected to happen?
 
 What version of Argo Workflows are you running?
 
+Paste a screenshot of your workflow.
+
 ```yaml
 Paste here either:
   A workflow anyone can run that reproduces your bug (tip: we can't run private images). 
