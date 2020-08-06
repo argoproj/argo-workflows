@@ -29,7 +29,11 @@ const LOCAL_STORAGE_KEY = 'ResourceEditorLang';
 
 export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private set lang(lang: string) {
-        this.setState({lang, value: stringify(parse(this.state.value), lang)});
+        try {
+            this.setState({lang, error: null, value: stringify(parse(this.state.value), lang)});
+        } catch (error) {
+            this.setState({error});
+        }
     }
 
     private static saveLang(newLang: string) {
