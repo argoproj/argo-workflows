@@ -279,8 +279,8 @@ Argo
 
 | Name | Located in | Description | Required | Schema |
 | ---- | ---------- | ----------- | -------- | ---- |
-| namespace | path | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in all namespaces, or if set - only to workflows in the specified namespace | Yes | string |
-| discriminator | path | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty and ignored. There are edge-cases where the claim-set subject or event payload does not provide enough information to discriminate the event. It MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, secure your server and set-up appropriate access tokens. | Yes | string |
+| namespace | path | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is "broadcast" to workflow event binding in all namespaces. | Yes | string |
+| discriminator | path | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)` | Yes | string |
 | body | body | The event itself can be any data. | Yes | [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) |
 
 ##### Responses

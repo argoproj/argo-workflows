@@ -70,7 +70,7 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 		return nil, err
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, list.Items, req.Discriminator, req.Payload)
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, list.Items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, err
 	}

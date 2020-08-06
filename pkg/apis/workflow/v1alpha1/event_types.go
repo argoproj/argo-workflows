@@ -33,7 +33,6 @@ type WorkflowEventBindingSpec struct {
 
 type Event struct {
 	// Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
-	// +kubebuilder:validation:MinLength=4
 	Selector string `json:"selector" protobuf:"bytes,1,opt,name=selector"`
 }
 

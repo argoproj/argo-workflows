@@ -31,8 +31,8 @@ type Operation struct {
 	env               map[string]interface{}
 }
 
-func NewOperation(ctx context.Context, instanceIDService instanceid.Service, events []wfv1.WorkflowEventBinding, discriminator string, payload *wfv1.Item) (*Operation, error) {
-	env, err := expressionEnvironment(ctx, discriminator, payload)
+func NewOperation(ctx context.Context, instanceIDService instanceid.Service, events []wfv1.WorkflowEventBinding, namespace, discriminator string, payload *wfv1.Item) (*Operation, error) {
+	env, err := expressionEnvironment(ctx, namespace, discriminator, payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow template expression environment: %w", err)
 	}
@@ -122,8 +122,9 @@ func (o *Operation) dispatch(wfeb wfv1.WorkflowEventBinding, nameSuffix string) 
 	return nil, nil
 }
 
-func expressionEnvironment(ctx context.Context, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
+func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
 	src := map[string]interface{}{
+		"namespace":     namespace,
 		"discriminator": discriminator,
 		"metadata":      metaData(ctx),
 		"payload":       payload,

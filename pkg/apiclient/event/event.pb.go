@@ -31,14 +31,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type EventRequest struct {
-	// The namespace for the event. This can be empty - i.e. the client has cluster scoped permissions and want this dispatched to all workflows in
-	// all namespaces, or if set - only to workflows in the specified namespace
+	// The namespace for the event. This can be empty if the client has cluster scoped permissions.
+	// If empty, then the event is "broadcast" to workflow event binding in all namespaces.
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	// Optional discriminator for the event. This should almost always be empty and ignored.
-	// There are edge-cases where the claim-set subject or event payload does not provide enough information
-	// to discriminate the event.
-	// It MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or
-	// to support webhooks on unsecured server. Instead, secure your server and set-up appropriate access tokens.
+	// Optional discriminator for the event. This should almost always be empty.
+	// Used for edge-cases where the event payload alone is not provide enough information to discriminate the event.
+	// This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or
+	// to support webhooks on unsecured server. Instead, use access tokens.
+	// This is made available as `discriminator` in the event binding selector (`/spec/event/selector)`
 	Discriminator string `protobuf:"bytes,2,opt,name=discriminator,proto3" json:"discriminator,omitempty"`
 	// The event itself can be any data.
 	Payload              *v1alpha1.Item `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`

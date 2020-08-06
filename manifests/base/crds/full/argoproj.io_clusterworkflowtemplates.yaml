@@ -602,7 +602,6 @@ spec:
                             - type: string
                             x-kubernetes-int-or-string: true
                           event:
-                            minLength: 4
                             type: string
                           jqFilter:
                             type: string
@@ -1717,7 +1716,6 @@ spec:
                                   - type: string
                                   x-kubernetes-int-or-string: true
                                 event:
-                                  minLength: 4
                                   type: string
                                 jqFilter:
                                   type: string
@@ -2594,7 +2592,6 @@ spec:
                                             - type: string
                                             x-kubernetes-int-or-string: true
                                           event:
-                                            minLength: 4
                                             type: string
                                           jqFilter:
                                             type: string
@@ -3550,7 +3547,6 @@ spec:
                                   - type: string
                                   x-kubernetes-int-or-string: true
                                 event:
-                                  minLength: 4
                                   type: string
                                 jqFilter:
                                   type: string
@@ -3989,7 +3985,6 @@ spec:
                                   - type: string
                                   x-kubernetes-int-or-string: true
                                 event:
-                                  minLength: 4
                                   type: string
                                 jqFilter:
                                   type: string
@@ -5508,7 +5503,6 @@ spec:
                                               - type: string
                                               x-kubernetes-int-or-string: true
                                             event:
-                                              minLength: 4
                                               type: string
                                             jqFilter:
                                               type: string

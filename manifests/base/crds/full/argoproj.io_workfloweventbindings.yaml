@@ -27,7 +27,6 @@ spec:
             event:
               properties:
                 selector:
-                  minLength: 4
                   type: string
               required:
               - selector
@@ -346,7 +345,6 @@ spec:
                                 - type: string
                                 x-kubernetes-int-or-string: true
                               event:
-                                minLength: 4
                                 type: string
                               jqFilter:
                                 type: string
