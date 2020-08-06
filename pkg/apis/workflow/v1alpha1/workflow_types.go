@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -2157,30 +2156,4 @@ type MemoizationStatus struct {
 
 type Cache struct {
 	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
-}
-
-func Int(is intstr.IntOrString) (int, error) {
-	if is.Type == intstr.String {
-		i, err := strconv.Atoi(is.StrVal)
-		if err != nil {
-			return 0, fmt.Errorf("value '%s' cannot be resolved to an int", is.StrVal)
-		}
-		return i, nil
-	}
-	return int(is.IntVal), nil
-}
-
-func Int64(is intstr.IntOrString) (int64, error) {
-	v, err := Int(is)
-	return int64(v), err
-}
-
-func IsIntOrArgoVariable(is intstr.IntOrString) bool {
-	if is.Type == intstr.Int {
-		return true
-	} else if _, err := strconv.Atoi(is.StrVal); err == nil {
-		return true
-	} else {
-		return strings.HasPrefix(is.StrVal, "{{") && strings.HasSuffix(is.StrVal, "}}")
-	}
 }

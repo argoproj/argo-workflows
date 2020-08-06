@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -135,20 +136,20 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
-	tmplActiveDeadlineSeconds, err := wfv1.Int64(*tmpl.ActiveDeadlineSeconds)
+	tmplActiveDeadlineSeconds, err := intstr.Int64(tmpl.ActiveDeadlineSeconds)
 	if err != nil {
 		return nil, err
 	}
 	if wfDeadline == nil || opts.onExitPod { //ignore the workflow deadline for exit handler so they still run if the deadline has passed
-		activeDeadlineSeconds = &tmplActiveDeadlineSeconds
+		activeDeadlineSeconds = tmplActiveDeadlineSeconds
 	} else {
 		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
 		if wfActiveDeadlineSeconds <= 0 {
 			return nil, nil
-		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < tmplActiveDeadlineSeconds {
+		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmplActiveDeadlineSeconds {
 			activeDeadlineSeconds = &wfActiveDeadlineSeconds
 		} else {
-			activeDeadlineSeconds = &tmplActiveDeadlineSeconds
+			activeDeadlineSeconds = tmplActiveDeadlineSeconds
 		}
 	}
 

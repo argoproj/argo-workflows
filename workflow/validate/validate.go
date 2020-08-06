@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -23,6 +24,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
+	intstr2 "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -690,7 +692,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if !wfv1.IsIntOrArgoVariable(*tmpl.ActiveDeadlineSeconds) {
+		if !intstr2.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}
