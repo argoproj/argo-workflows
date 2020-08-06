@@ -69,11 +69,37 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 		})
 }
 
+func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
+	s.Given().
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-workflow-template-ref.yaml"}, fixtures.NoError).
+		When().
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "wellformed", metadata.Name)
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+		})
+}
+
 func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 	s.Given().
 		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
 		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
 		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
+		When().
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, "wellformed", metadata.Name)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplateRef() {
+	s.Given().
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
 		When().
 		WaitForWorkflow(15 * time.Second).
 		Then().
