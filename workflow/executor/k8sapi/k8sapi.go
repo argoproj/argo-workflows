@@ -3,6 +3,7 @@ package k8sapi
 import (
 	"fmt"
 	"io"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +32,16 @@ func (k *K8sAPIExecutor) GetFileContents(containerID string, sourcePath string) 
 }
 
 func (k *K8sAPIExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
-	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the k8sapi executor.")
+	command := []string{"cat", sourcePath}
+	writer, err := os.Create(destPath)
+	if err != nil {
+		return errors.InternalWrapError(err, "Failed to create new file in CopyFile() using the k8sapi executor.")
+	}
+	_, err = k.client.ExecCommand(containerID, command, writer)
+	if err != nil {
+		return errors.InternalWrapError(err, "Failed to copy file using the k8sapi executor.")
+	}
+	return nil
 }
 
 func (k *K8sAPIExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/remotecommand"
 	"syscall"
 	"time"
 
@@ -95,4 +97,45 @@ func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.Containe
 
 func (c *k8sAPIClient) killGracefully(containerID string) error {
 	return execcommon.KillGracefully(c, containerID)
+}
+
+func (c *k8sAPIClient) ExecCommand(containerName string, command []string, stdout io.Writer) ([]byte, error) {
+
+	req := c.clientset.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(c.podName).
+		Namespace(c.namespace).
+		SubResource("exec")
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("fail to add to scheme: %v", err)
+	}
+
+	parameterCodec := runtime.NewParameterCodec(scheme)
+	req.VersionedParams(&corev1.PodExecOptions{
+		Command:   command,
+		Container: containerName,
+		Stdin:     false,
+		Stdout:    stdout != nil,
+		Stderr:    true,
+		TTY:       false,
+	}, parameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(c.config, "POST", req.URL())
+	if err != nil {
+		return nil, fmt.Errorf("faild to create SPDY Executor: %v", err)
+	}
+
+	var stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to stream the output: %v", err)
+	}
+
+	return stderr.Bytes(), nil
 }
