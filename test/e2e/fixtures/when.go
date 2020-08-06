@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/pkg/humanize"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -173,10 +172,9 @@ func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *
 }
 
 func (w *When) Wait(timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"cronWorkflow": w.cronWorkflowName})
-	logCtx.Infof("Waiting for %s", humanize.Duration(timeout))
+	log.Infof("Waiting for %s", timeout)
 	time.Sleep(timeout)
-	logCtx.Infof("Done waiting")
+	log.Info("Done waiting")
 	return w
 }
 

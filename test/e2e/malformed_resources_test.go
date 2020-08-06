@@ -31,8 +31,10 @@ func (s *MalformedResourcesSuite) AfterTest(suiteName, testName string) {
 func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 	s.Given().
 		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflow.yaml"}, fixtures.NoError).
+		WorkflowName("malformed").
 		When().
-		WaitForWorkflow(15 * time.Second).
+		// it is not possible to wait for this to finish, because it is malformed
+		Wait(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "malformed", metadata.Name)
@@ -45,7 +47,7 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
 		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
 		When().
-		WaitForWorkflow(1 * time.Minute).
+		WaitForWorkflow(1*time.Minute + 15*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])

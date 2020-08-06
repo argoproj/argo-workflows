@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -141,13 +142,13 @@ func (cc *Controller) processNextCronItem() bool {
 
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithError(err).WithField("key", key).Error("object is not Unstructured")
+		log.WithField("key", key).Error("malformed cluster workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
 		return true
 	}
 	cronWf := &v1alpha1.CronWorkflow{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, cronWf)
 	if err != nil {
-		log.WithError(err).WithField("key", key).Error("could not convert unstructured to cron workflow")
+		log.WithError(err).WithField("key", key).Error("malformed cron workflow: could not convert from unstructured")
 		return true
 	}
 
