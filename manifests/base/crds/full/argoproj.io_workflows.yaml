@@ -2626,6 +2626,11 @@ spec:
                               type: array
                             depends:
                               type: string
+                            maxDuration:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              x-kubernetes-int-or-string: true
                             name:
                               type: string
                             onExit:
@@ -5525,6 +5530,11 @@ spec:
                                   failed:
                                     type: boolean
                                 type: object
+                              maxDuration:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
                               name:
                                 type: string
                               onExit:
@@ -10410,6 +10420,11 @@ spec:
                               type: array
                             depends:
                               type: string
+                            maxDuration:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              x-kubernetes-int-or-string: true
                             name:
                               type: string
                             onExit:
@@ -13309,6 +13324,11 @@ spec:
                                   failed:
                                     type: boolean
                                 type: object
+                              maxDuration:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
                               name:
                                 type: string
                               onExit:
@@ -16605,6 +16625,11 @@ spec:
                                   type: array
                                 depends:
                                   type: string
+                                maxDuration:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  x-kubernetes-int-or-string: true
                                 name:
                                   type: string
                                 onExit:
@@ -19504,6 +19529,11 @@ spec:
                                       failed:
                                         type: boolean
                                     type: object
+                                  maxDuration:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    x-kubernetes-int-or-string: true
                                   name:
                                     type: string
                                   onExit:

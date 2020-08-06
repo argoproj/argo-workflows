@@ -2301,6 +2301,9 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
+        "maxDuration": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -4314,6 +4317,9 @@
         "continueOn": {
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
+        },
+        "maxDuration": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "name": {
           "description": "Name of the step",

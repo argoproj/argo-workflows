@@ -809,6 +809,8 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	MaxDuration *intstr.IntOrString `json:"maxDuration,omitempty" protobuf:"bytes,12,opt,name=maxDuration"`
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
@@ -1773,6 +1775,8 @@ type DAGTask struct {
 
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
+
+	MaxDuration *intstr.IntOrString `json:"maxDuration,omitempty" protobuf:"bytes,13,opt,name=maxDuration"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}

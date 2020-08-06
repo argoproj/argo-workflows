@@ -604,6 +604,11 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = new(ContinueOn)
 		**out = **in
 	}
+	if in.MaxDuration != nil {
+		in, out := &in.MaxDuration, &out.MaxDuration
+		*out = new(intstr.IntOrString)
+		**out = **in
+	}
 	return
 }
 
@@ -2316,6 +2321,11 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 	if in.ContinueOn != nil {
 		in, out := &in.ContinueOn, &out.ContinueOn
 		*out = new(ContinueOn)
+		**out = **in
+	}
+	if in.MaxDuration != nil {
+		in, out := &in.MaxDuration, &out.MaxDuration
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	return

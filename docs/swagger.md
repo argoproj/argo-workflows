@@ -951,6 +951,7 @@ DAGTask represents a node in the graph during DAG execution
 | continueOn | [io.argoproj.workflow.v1alpha1.ContinueOn](#io.argoproj.workflow.v1alpha1.continueon) | ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified | No |
 | dependencies | [ string ] | Dependencies are name of other targets which this depends on | No |
 | depends | string | Depends are name of other targets which this depends on | No |
+| maxDuration | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) |  | No |
 | name | string | Name is the name of the target | Yes |
 | onExit | string | OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. | No |
 | template | string | Name of template to execute | Yes |
@@ -1699,6 +1700,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 | ---- | ---- | ----------- | -------- |
 | arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments hold arguments to the template | No |
 | continueOn | [io.argoproj.workflow.v1alpha1.ContinueOn](#io.argoproj.workflow.v1alpha1.continueon) | ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified | No |
+| maxDuration | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) |  | No |
 | name | string | Name of the step | No |
 | onExit | string | OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. | No |
 | template | string | Template is the name of the template to execute as the step | No |
