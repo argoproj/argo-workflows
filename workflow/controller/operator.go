@@ -294,7 +294,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(10)
+			woc.requeue(10 * time.Second)
 			return
 		}
 		msg := "pvc create error"
