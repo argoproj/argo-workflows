@@ -142,7 +142,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithField("key", key).Error("malformed cluster workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
+		log.WithField("key", key).Errorf("malformed cluster workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(obj).Name())
 		return true
 	}
 	cronWf := &v1alpha1.CronWorkflow{}
