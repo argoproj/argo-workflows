@@ -13,7 +13,7 @@
   "info": {
     "description": "Argo",
     "title": "Argo",
-    "version": "v2.10.0-rc5"
+    "version": "v2.10.0-rc6"
   },
   "paths": {
     "/api/v1/archived-workflows": {
