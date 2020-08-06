@@ -98,5 +98,14 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 	if len(wf.Status.Conditions) > 0 {
 		out += wf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
 	}
+	if len(wf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
+		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")
+		for _, param := range wf.Spec.WorkflowSpec.Arguments.Parameters {
+			if param.Value == nil {
+				continue
+			}
+			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", *param.Value)
+		}
+	}
 	return out
 }
