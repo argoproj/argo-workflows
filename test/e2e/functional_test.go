@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
@@ -190,6 +191,9 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		WaitForWorkflow(30*time.Second).
 		Then().
 		ExpectAuditEvents(
+			func(event corev1.Event) bool {
+				return strings.HasPrefix(event.InvolvedObject.Name, "failed-step-event-") && event.InvolvedObject.Kind == workflow.WorkflowKind
+			},
 			func(t *testing.T, e corev1.Event) {
 				assert.Equal(t, "WorkflowRunning", e.Reason)
 			},
@@ -215,6 +219,9 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		WaitForWorkflow(60*time.Second).
 		Then().
 		ExpectAuditEvents(
+			func(event corev1.Event) bool {
+				return strings.HasPrefix(event.InvolvedObject.Name, "success-event-") && event.InvolvedObject.Kind == workflow.WorkflowKind
+			},
 			func(t *testing.T, e corev1.Event) {
 				assert.Equal(t, "WorkflowRunning", e.Reason)
 			},
@@ -240,6 +247,9 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		WaitForWorkflow(120*time.Second).
 		Then().
 		ExpectAuditEvents(
+			func(event corev1.Event) bool {
+				return strings.HasPrefix(event.InvolvedObject.Name, "volumes-pvc-fail-event-") && event.InvolvedObject.Kind == workflow.WorkflowKind
+			},
 			func(t *testing.T, e corev1.Event) {
 				assert.Equal(t, "WorkflowRunning", e.Reason)
 			},

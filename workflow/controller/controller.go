@@ -40,6 +40,7 @@ import (
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
+	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/sync"
@@ -85,7 +86,7 @@ type WorkflowController struct {
 	wfArchive             sqldb.WorkflowArchive
 	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
-	eventRecorderManager  EventRecorderManager
+	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.CacheFactory
 }
@@ -112,7 +113,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
-		eventRecorderManager:       newEventRecorderManager(kubeclientset),
+		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
 
 	wfc.UpdateConfig()
