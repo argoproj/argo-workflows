@@ -82,6 +82,9 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
+      - name: Print test error annotations
+        if: failure()
+        run: ./hack/print-test-error-annotations.sh
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1
