@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/intstrutil"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -29,11 +29,10 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: intstrutil.Parse("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -50,11 +49,10 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: intstrutil.Parse("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)

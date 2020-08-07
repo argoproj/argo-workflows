@@ -14,10 +14,10 @@ import (
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/util/intstrutil"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -316,8 +316,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			if param.ValueFrom.Default != nil {
 				output = param.ValueFrom.Default.String()
 			}
-			intOrString := intstr.Parse(output)
-			we.Template.Outputs.Parameters[i].Value = &intOrString
+			we.Template.Outputs.Parameters[i].Value = intstrutil.Parse(output)
 			continue
 		}
 		var cmd *exec.Cmd
@@ -351,8 +350,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			}
 		}
 		output := string(out)
-		intOrString := intstr.Parse(output)
-		we.Template.Outputs.Parameters[i].Value = &intOrString
+		we.Template.Outputs.Parameters[i].Value = intstrutil.Parse(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)

@@ -3,9 +3,8 @@ package controller
 import (
 	"testing"
 
+	"github.com/argoproj/argo/util/intstrutil"
 	"github.com/argoproj/argo/workflow/controller/cache"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	apiv1 "k8s.io/api/core/v1"
 
@@ -70,10 +69,9 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 
 func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
-	val := intstr.Parse(MockParamValue)
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: &val,
+		Value: intstrutil.Parse(MockParamValue),
 	}
 	cancel, controller := newController()
 	defer cancel()

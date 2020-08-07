@@ -42,6 +42,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/intstrutil"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
@@ -242,8 +243,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			intOrString := intstr.Parse(parts[1])
-			param := wfv1.Parameter{Name: parts[0], Value: &intOrString}
+			param := wfv1.Parameter{Name: parts[0], Value: intstrutil.Parse(parts[1])}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -277,8 +277,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				intOrString := intstr.Parse(value)
-				param := wfv1.Parameter{Name: k, Value: &intOrString}
+				param := wfv1.Parameter{Name: k, Value: intstrutil.Parse(value)}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue

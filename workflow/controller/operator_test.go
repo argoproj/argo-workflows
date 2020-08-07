@@ -19,12 +19,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/util/intstrutil"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
@@ -1871,10 +1871,10 @@ func TestWorkflowSpecParam(t *testing.T) {
 func TestAddGlobalParamToScope(t *testing.T) {
 	woc := newWoc()
 	woc.globalParams = make(map[string]string)
-	testVal := intstr.Parse("test-value")
+	testVal := intstrutil.Parse("test-value")
 	param := wfv1.Parameter{
 		Name:  "test-param",
-		Value: &testVal,
+		Value: testVal,
 	}
 	// Make sure if the param is not global, don't add to scope
 	woc.addParamToGlobalScope(param)
@@ -1889,8 +1889,8 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
-	newValue := intstr.Parse("new-value")
-	param.Value = &newValue
+	newValue := intstrutil.Parse("new-value")
+	param.Value = newValue
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
@@ -1976,9 +1976,8 @@ func TestExpandWithSequence(t *testing.T) {
 	var items []wfv1.Item
 	var err error
 
-	ten := intstr.Parse("10")
 	seq = wfv1.Sequence{
-		Count: &ten,
+		Count: intstrutil.Parse("10"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1986,10 +1985,9 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "0", items[0].GetStrVal())
 	assert.Equal(t, "9", items[9].GetStrVal())
 
-	oneOhOne := intstr.Parse("101")
 	seq = wfv1.Sequence{
-		Start: &oneOhOne,
-		Count: &ten,
+		Start: intstrutil.Parse("101"),
+		Count: intstrutil.Parse("10"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1997,11 +1995,9 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "101", items[0].GetStrVal())
 	assert.Equal(t, "110", items[9].GetStrVal())
 
-	fifty := intstr.Parse("50")
-	sixty := intstr.Parse("60")
 	seq = wfv1.Sequence{
-		Start: &fifty,
-		End:   &sixty,
+		Start: intstrutil.Parse("50"),
+		End:   intstrutil.Parse("60"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2010,8 +2006,8 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Start: &sixty,
-		End:   &fifty,
+		Start: intstrutil.Parse("60"),
+		End:   intstrutil.Parse("50"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2019,29 +2015,26 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[0].GetStrVal())
 	assert.Equal(t, "50", items[10].GetStrVal())
 
-	zero := intstr.Parse("0")
 	seq = wfv1.Sequence{
-		Count: &zero,
+		Count: intstrutil.Parse("0"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(items))
 
-	eight := intstr.Parse("8")
 	seq = wfv1.Sequence{
-		Start: &eight,
-		End:   &eight,
+		Start: intstrutil.Parse("8"),
+		End:   intstrutil.Parse("8"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(items))
 	assert.Equal(t, "8", items[0].GetStrVal())
 
-	one := intstr.Parse("1")
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
-		Count:  &ten,
-		Start:  &one,
+		Count:  intstrutil.Parse("10"),
+		Start:  intstrutil.Parse("1"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -4067,13 +4060,9 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	outputVal := intstr.Parse(sampleOutput)
 	sampleOutputs := wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
-			wfv1.Parameter{
-				Name:  "hello",
-				Value: &outputVal,
-			},
+			{Name: "hello", Value: intstrutil.Parse(sampleOutput)},
 		},
 	}
 

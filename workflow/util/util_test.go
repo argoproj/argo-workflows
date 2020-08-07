@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/util/intstrutil"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
@@ -490,11 +490,10 @@ func TestApplySubmitOpts(t *testing.T) {
 		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
 	})
 	t.Run("Parameters", func(t *testing.T) {
-		intOrString := intstr.Parse("0")
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: &intOrString}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: intstrutil.Parse("0")}},
 				},
 			},
 		}
