@@ -6,3 +6,4 @@ resources:
 - argoproj.io_cronworkflows.yaml
 - argoproj.io_workflows.yaml
 - argoproj.io_workflowtemplates.yaml
+- argoproj.io_workfloweventbindings.yaml
