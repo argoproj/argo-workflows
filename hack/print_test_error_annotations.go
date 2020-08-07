@@ -43,8 +43,8 @@ func printTestResultAnnotations() {
 				parts := strings.SplitN(c.Failure.Text, ":", 3)
 				file := strings.ReplaceAll(s.Name, "github.com/argoproj/argo/", "") + "/" + parts[0]
 				line := parts[1]
-				message := strings.ReplaceAll(parts[2], "\n", "%0A")
-				_, _ = fmt.Printf("::error file=%s,line=%v,col=0::%s", file, line, message)
+				message := strings.ReplaceAll(strings.TrimSpace(parts[2]), "\n", "%0A")
+				_, _ = fmt.Printf("::error file=%s,line=%v,col=0::%s\n", file, line, message)
 			}
 		}
 	}
