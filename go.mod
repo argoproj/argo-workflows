@@ -67,10 +67,10 @@ require (
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	k8s.io/api v1.17.8
-	k8s.io/apimachinery v1.17.8
-	k8s.io/client-go v1.17.8
-	k8s.io/code-generator v1.17.8
+	k8s.io/api v0.17.8
+	k8s.io/apimachinery v0.17.8
+	k8s.io/client-go v0.17.8
+	k8s.io/code-generator v0.17.0
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
 	k8s.io/utils v0.0.0-20200327001022-6496210b90e8
 	sigs.k8s.io/controller-tools v0.3.0
@@ -78,11 +78,4 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-replace (
-	// https://github.com/kubernetes/kubernetes/issues/79384#issuecomment-505627280
-	k8s.io/api => k8s.io/api v0.17.8
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.8 // indirect
-	k8s.io/apiserver => k8s.io/apiserver v0.17.8
-	k8s.io/client-go => k8s.io/client-go v0.17.8
-	k8s.io/code-generator => k8s.io/code-generator v0.17.8
-)
+replace sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
