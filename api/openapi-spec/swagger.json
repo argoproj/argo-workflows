@@ -21,7 +21,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_ListArchivedWorkflows",
+        "operationId": "ListArchivedWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -82,12 +82,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -97,7 +91,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_GetArchivedWorkflow",
+        "operationId": "GetArchivedWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -112,12 +106,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -125,7 +113,7 @@
         "tags": [
           "ArchivedWorkflowService"
         ],
-        "operationId": "ArchivedWorkflowService_DeleteArchivedWorkflow",
+        "operationId": "DeleteArchivedWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -140,12 +128,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -155,7 +137,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_ListClusterWorkflowTemplates",
+        "operationId": "ListClusterWorkflowTemplates",
         "parameters": [
           {
             "type": "string",
@@ -216,12 +198,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -229,7 +205,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_CreateClusterWorkflowTemplate",
+        "operationId": "CreateClusterWorkflowTemplate",
         "parameters": [
           {
             "name": "body",
@@ -246,12 +222,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -261,7 +231,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_LintClusterWorkflowTemplate",
+        "operationId": "LintClusterWorkflowTemplate",
         "parameters": [
           {
             "name": "body",
@@ -278,12 +248,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -293,7 +257,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_GetClusterWorkflowTemplate",
+        "operationId": "GetClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -314,12 +278,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -327,7 +285,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_UpdateClusterWorkflowTemplate",
+        "operationId": "UpdateClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -351,12 +309,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -364,7 +316,7 @@
         "tags": [
           "ClusterWorkflowTemplateService"
         ],
-        "operationId": "ClusterWorkflowTemplateService_DeleteClusterWorkflowTemplate",
+        "operationId": "DeleteClusterWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -421,12 +373,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateDeleteResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -436,7 +382,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_ListCronWorkflows",
+        "operationId": "ListCronWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -503,12 +449,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -516,7 +456,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_CreateCronWorkflow",
+        "operationId": "CreateCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -539,12 +479,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -554,7 +488,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_LintCronWorkflow",
+        "operationId": "LintCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -577,12 +511,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -592,7 +520,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_GetCronWorkflow",
+        "operationId": "GetCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -619,12 +547,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -632,7 +554,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_UpdateCronWorkflow",
+        "operationId": "UpdateCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -662,12 +584,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -675,7 +591,7 @@
         "tags": [
           "CronWorkflowService"
         ],
-        "operationId": "CronWorkflowService_DeleteCronWorkflow",
+        "operationId": "DeleteCronWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -738,12 +654,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -753,7 +663,7 @@
         "tags": [
           "EventService"
         ],
-        "operationId": "EventService_ReceiveEvent",
+        "operationId": "ReceiveEvent",
         "parameters": [
           {
             "type": "string",
@@ -785,12 +695,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -800,18 +704,12 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "InfoService_GetInfo",
+        "operationId": "GetInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.InfoResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -822,18 +720,12 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "InfoService_GetUserInfo",
+        "operationId": "GetUserInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GetUserInfoResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -844,18 +736,12 @@
         "tags": [
           "InfoService"
         ],
-        "operationId": "InfoService_GetVersion",
+        "operationId": "GetVersion",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Version"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
             }
           }
         }
@@ -866,7 +752,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_WatchWorkflows",
+        "operationId": "WatchWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -942,12 +828,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -957,7 +837,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_ListWorkflowTemplates",
+        "operationId": "ListWorkflowTemplates",
         "parameters": [
           {
             "type": "string",
@@ -1024,12 +904,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1037,7 +911,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_CreateWorkflowTemplate",
+        "operationId": "CreateWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1060,12 +934,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1075,7 +943,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_LintWorkflowTemplate",
+        "operationId": "LintWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1098,12 +966,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1113,7 +975,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_GetWorkflowTemplate",
+        "operationId": "GetWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1140,12 +1002,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1153,7 +1009,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_UpdateWorkflowTemplate",
+        "operationId": "UpdateWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1183,12 +1039,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1196,7 +1046,7 @@
         "tags": [
           "WorkflowTemplateService"
         ],
-        "operationId": "WorkflowTemplateService_DeleteWorkflowTemplate",
+        "operationId": "DeleteWorkflowTemplate",
         "parameters": [
           {
             "type": "string",
@@ -1259,12 +1109,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateDeleteResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1274,7 +1118,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_ListWorkflows",
+        "operationId": "ListWorkflows",
         "parameters": [
           {
             "type": "string",
@@ -1347,12 +1191,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowList"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1360,7 +1198,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_CreateWorkflow",
+        "operationId": "CreateWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1383,12 +1221,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1398,7 +1230,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_LintWorkflow",
+        "operationId": "LintWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1421,12 +1253,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1436,7 +1262,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_SubmitWorkflow",
+        "operationId": "SubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1459,12 +1285,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1474,7 +1294,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_GetWorkflow",
+        "operationId": "GetWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1507,12 +1327,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       },
@@ -1520,7 +1334,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_DeleteWorkflow",
+        "operationId": "DeleteWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1583,12 +1397,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1598,7 +1406,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_ResubmitWorkflow",
+        "operationId": "ResubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1627,12 +1435,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1642,7 +1444,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_ResumeWorkflow",
+        "operationId": "ResumeWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1671,12 +1473,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1686,7 +1482,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_RetryWorkflow",
+        "operationId": "RetryWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1715,12 +1511,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1730,7 +1520,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_SetWorkflow",
+        "operationId": "SetWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1759,12 +1549,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1774,7 +1558,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_StopWorkflow",
+        "operationId": "StopWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1803,12 +1587,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1818,7 +1596,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_SuspendWorkflow",
+        "operationId": "SuspendWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1847,12 +1625,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1862,7 +1634,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_TerminateWorkflow",
+        "operationId": "TerminateWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1891,12 +1663,6 @@
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -1906,7 +1672,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "WorkflowService_PodLogs",
+        "operationId": "PodLogs",
         "parameters": [
           {
             "type": "string",
@@ -2011,12 +1777,6 @@
                 }
               }
             }
-          },
-          "default": {
-            "description": "An unexpected error response",
-            "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
-            }
           }
         }
       }
@@ -2032,27 +1792,6 @@
         "value": {
           "type": "string",
           "format": "byte"
-        }
-      }
-    },
-    "grpc.gateway.runtime.Error": {
-      "type": "object",
-      "properties": {
-        "code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          }
-        },
-        "error": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
         }
       }
     },

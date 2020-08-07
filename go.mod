@@ -79,4 +79,7 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-replace sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
+replace (
+	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.12.2
+	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
+)

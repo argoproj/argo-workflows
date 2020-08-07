@@ -39,7 +39,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowList](#io.argoproj.workflow.v1alpha1.workflowlist) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/archived-workflows/{uid}
 
@@ -55,7 +54,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### DELETE
 ##### Parameters
@@ -69,7 +67,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.archivedworkflowdeletedresponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/cluster-workflow-templates
 
@@ -92,7 +89,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList](#io.argoproj.workflow.v1alpha1.clusterworkflowtemplatelist) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### POST
 ##### Parameters
@@ -106,7 +102,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate](#io.argoproj.workflow.v1alpha1.clusterworkflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/cluster-workflow-templates/lint
 
@@ -122,7 +117,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate](#io.argoproj.workflow.v1alpha1.clusterworkflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/cluster-workflow-templates/{name}
 
@@ -139,7 +133,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate](#io.argoproj.workflow.v1alpha1.clusterworkflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### PUT
 ##### Parameters
@@ -154,7 +147,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate](#io.argoproj.workflow.v1alpha1.clusterworkflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### DELETE
 ##### Parameters
@@ -174,7 +166,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateDeleteResponse](#io.argoproj.workflow.v1alpha1.clusterworkflowtemplatedeleteresponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/cron-workflows/{namespace}
 
@@ -198,7 +189,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowList](#io.argoproj.workflow.v1alpha1.cronworkflowlist) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### POST
 ##### Parameters
@@ -213,7 +203,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflow](#io.argoproj.workflow.v1alpha1.cronworkflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/cron-workflows/{namespace}/lint
 
@@ -230,7 +219,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflow](#io.argoproj.workflow.v1alpha1.cronworkflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/cron-workflows/{namespace}/{name}
 
@@ -248,7 +236,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflow](#io.argoproj.workflow.v1alpha1.cronworkflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### PUT
 ##### Parameters
@@ -264,7 +251,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflow](#io.argoproj.workflow.v1alpha1.cronworkflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### DELETE
 ##### Parameters
@@ -285,7 +271,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.cronworkflowdeletedresponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/events/{namespace}/{discriminator}
 
@@ -303,7 +288,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.EventResponse](#io.argoproj.workflow.v1alpha1.eventresponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/info
 
@@ -313,7 +297,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.InfoResponse](#io.argoproj.workflow.v1alpha1.inforesponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/userinfo
 
@@ -323,7 +306,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.GetUserInfoResponse](#io.argoproj.workflow.v1alpha1.getuserinforesponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/version
 
@@ -333,7 +315,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Version](#io.argoproj.workflow.v1alpha1.version) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflow-events/{namespace}
 
@@ -357,7 +338,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response.(streaming responses) | object |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflow-templates/{namespace}
 
@@ -381,7 +361,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowTemplateList](#io.argoproj.workflow.v1alpha1.workflowtemplatelist) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### POST
 ##### Parameters
@@ -396,7 +375,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowTemplate](#io.argoproj.workflow.v1alpha1.workflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflow-templates/{namespace}/lint
 
@@ -413,7 +391,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowTemplate](#io.argoproj.workflow.v1alpha1.workflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflow-templates/{namespace}/{name}
 
@@ -431,7 +408,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowTemplate](#io.argoproj.workflow.v1alpha1.workflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### PUT
 ##### Parameters
@@ -447,7 +423,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowTemplate](#io.argoproj.workflow.v1alpha1.workflowtemplate) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### DELETE
 ##### Parameters
@@ -468,7 +443,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowTemplateDeleteResponse](#io.argoproj.workflow.v1alpha1.workflowtemplatedeleteresponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}
 
@@ -493,7 +467,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowList](#io.argoproj.workflow.v1alpha1.workflowlist) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### POST
 ##### Parameters
@@ -508,7 +481,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/lint
 
@@ -525,7 +497,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/submit
 
@@ -542,7 +513,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}
 
@@ -561,7 +531,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 #### DELETE
 ##### Parameters
@@ -582,7 +551,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse](#io.argoproj.workflow.v1alpha1.workflowdeleteresponse) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/resubmit
 
@@ -600,7 +568,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/resume
 
@@ -618,7 +585,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/retry
 
@@ -636,7 +602,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/set
 
@@ -654,7 +619,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/stop
 
@@ -672,7 +636,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/suspend
 
@@ -690,7 +653,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/terminate
 
@@ -708,7 +670,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### /api/v1/workflows/{namespace}/{name}/{podName}/log
 
@@ -736,7 +697,6 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response.(streaming responses) | object |
-| default | An unexpected error response | [grpc.gateway.runtime.Error](#grpc.gateway.runtime.error) |
 
 ### Models
 
@@ -746,15 +706,6 @@ Argo
 | ---- | ---- | ----------- | -------- |
 | type_url | string |  | No |
 | value | byte |  | No |
-
-#### grpc.gateway.runtime.Error
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| code | integer |  | No |
-| details | [ [google.protobuf.Any](#google.protobuf.any) ] |  | No |
-| error | string |  | No |
-| message | string |  | No |
 
 #### grpc.gateway.runtime.StreamError
 
