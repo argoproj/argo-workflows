@@ -1000,7 +1000,7 @@ message Template {
   // Parallelism limits the max total parallel pods that can execute at the same time within the
   // boundaries of this template invocation. If additional steps/dag templates are invoked, the
   // pods created by those templates will not be counted towards this total.
-  optional int64 parallelism = 23;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString parallelism = 23;
 
   // Tolerations to apply to workflow pods.
   // +patchStrategy=merge
@@ -1017,7 +1017,7 @@ message Template {
   optional string priorityClassName = 26;
 
   // Priority to apply to workflow pods.
-  optional int32 priority = 27;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString priority = 27;
 
   // ServiceAccountName to apply to workflow pods
   optional string serviceAccountName = 28;

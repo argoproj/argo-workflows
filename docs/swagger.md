@@ -1451,9 +1451,9 @@ Template is a reusable and composable unit of execution in a workflow
 | name | string | Name is the name of the template | Yes |
 | nodeSelector | object | NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level. | No |
 | outputs | [io.argoproj.workflow.v1alpha1.Outputs](#io.argoproj.workflow.v1alpha1.outputs) | Outputs describe the parameters and artifacts that this template produces | No |
-| parallelism | long | Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total. | No |
+| parallelism | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
-| priority | integer | Priority to apply to workflow pods. | No |
+| priority | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Priority to apply to workflow pods. | No |
 | priorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | resource | [io.argoproj.workflow.v1alpha1.ResourceTemplate](#io.argoproj.workflow.v1alpha1.resourcetemplate) | Resource template subtype which can run k8s resources | No |
 | resubmitPendingPods | boolean | ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission | No |

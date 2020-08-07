@@ -1834,7 +1834,7 @@ func (in *Template) DeepCopyInto(out *Template) {
 	}
 	if in.Parallelism != nil {
 		in, out := &in.Parallelism, &out.Parallelism
-		*out = new(int64)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	if in.Tolerations != nil {
@@ -1846,7 +1846,7 @@ func (in *Template) DeepCopyInto(out *Template) {
 	}
 	if in.Priority != nil {
 		in, out := &in.Priority, &out.Priority
-		*out = new(int32)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	if in.AutomountServiceAccountToken != nil {
