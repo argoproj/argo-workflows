@@ -3,7 +3,7 @@ package intstr
 import (
 	"testing"
 
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParse(t *testing.T) {
