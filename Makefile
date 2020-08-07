@@ -319,6 +319,10 @@ $(GOPATH)/bin/go-junit-report:
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
+.PHONY: printtestresultannotations
+printtestresultannotations:
+	go run ./hack printtestresultannotations
+
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	mkdir -p dist
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
