@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      name: mysql
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: main
+          image: mysql:8
+          env:
+            - name: MYSQL_USER
+              value: mysql
+            - name: MYSQL_PASSWORD
+              value: password
+            - name: MYSQL_DATABASE
+              value: argo
+            - name: MYSQL_RANDOM_ROOT_PASSWORD
+              value: "yes"
+          ports:
+            - containerPort: 3306
+          readinessProbe:
+            exec:
+              command: ["mysql", "-u", "mysql", "-ppassword", "argo", "-e", "SELECT 1"]
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+      nodeSelector:
+        kubernetes.io/os: linux

@@ -674,6 +674,30 @@
           
           
 
+
+  <li class="md-nav__item">
+    <a href="../events/" title="Events" class="md-nav__link">
+      Events
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../webhooks/" title="Webhooks" class="md-nav__link">
+      Webhooks
+    </a>
+  </li>
+
+        
+          
+          
+          
+
   
 
 
@@ -1828,6 +1852,7 @@
 <blockquote>
 <p>v2.8 and after</p>
 </blockquote>
+<p>You may want to consider using <a href="../events/">events</a> or <a href="../webhooks/">webhooks</a> instead.</p>
 <p>Firstly, to do any automation, you'll need an (<a href="../access-token/">access token</a>). For this example, our role needs extra permissions:</p>
 <div class="codehilite"><pre><span></span><code>kubectl patch role jenkins -p <span class="s1">&#39;{&quot;rules&quot;: [{&quot;apiGroups&quot;: [&quot;argoproj.io&quot;], &quot;resources&quot;: [&quot;workflowtemplates&quot;], &quot;verbs&quot;: [&quot;get&quot;]}, {&quot;apiGroups&quot;: [&quot;argoproj.io&quot;], &quot;resources&quot;: [&quot;workflows&quot;], &quot;verbs&quot;: [&quot;create&quot;, &quot;list&quot;, &quot;get&quot;, &quot;update&quot;]}]}&#39;</span>
 </code></pre></div>
@@ -1876,6 +1901,8 @@ hello-argo-77m4l   Running   33s   33s        <span class="m">0</span>
 <p>See also:</p>
 <ul>
 <li><a href="../access-token/">access token</a></li>
+<li><a href="../events/">events</a></li>
+<li><a href="../webhooks/">webhooks</a></li>
 <li><a href="../resuming-workflow-via-automation/">resuming a workflow via automation</a></li>
 <li><a href="../workflow-submitting-workflow/">one workflow submitting another</a></li>
 <li><a href="../async-pattern/">async pattern</a></li>
@@ -1900,7 +1927,7 @@ hello-argo-77m4l   Running   33s   33s        <span class="m">0</span>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../rest-examples/" title="API Examples" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../webhooks/" title="Webhooks" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1909,7 +1936,7 @@ hello-argo-77m4l   Running   33s   33s        <span class="m">0</span>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                API Examples
+                Webhooks
               </span>
             </div>
           </a>

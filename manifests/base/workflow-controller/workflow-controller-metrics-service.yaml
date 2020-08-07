@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  selector:
+    app: workflow-controller
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
