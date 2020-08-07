@@ -439,10 +439,10 @@ func (s *CLISuite) TestWorkflowDeleteResubmitted() {
 		When().
 		Given().
 		RunCli([]string{"delete", "--resubmitted", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-		if assert.NoError(t, err) {
-			assert.Contains(t, output, "deleted")
-		}
-	}))
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		}))
 }
 
 func (s *CLISuite) TestWorkflowDeleteOlder() {
@@ -1012,6 +1012,44 @@ func (s *CLISuite) TestRetryOmit() {
 			assert.Contains(t, output, "Status:              Running")
 		}).When().
 		WaitForWorkflow(20 * time.Second)
+}
+
+func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
+	s.testNeedsOffloading()
+	s.Run("ResourceTemplateStop", func() {
+		s.Given().
+			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "Pending")
+			}).
+			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "Running")
+			}).
+			RunCli([]string{"stop", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "workflow resource-tmpl-wf stopped")
+			}).
+			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "Stopped with strategy 'Stop'")
+			}).
+			RunCli([]string{"delete", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "deleted")
+			})
+
+	})
+	s.Run("ResourceTemplateTerminate", func() {
+		s.Given().
+			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "Pending")
+			}).
+			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "Running")
+			}).
+			RunCli([]string{"terminate", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "workflow resource-tmpl-wf terminated")
+			}).
+			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
+			})
+	})
 }
 
 func TestCLISuite(t *testing.T) {
