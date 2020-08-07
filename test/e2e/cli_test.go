@@ -1015,8 +1015,11 @@ func (s *CLISuite) TestRetryOmit() {
 }
 
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
+	s.testNeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
 		s.Given().
+			WorkflowName("resource-tmpl-wf").
+			When().
 			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
@@ -1026,8 +1029,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"stop", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf stopped")
 			}).
-			When().
-			Wait(10 * time.Second).
+			WaitForWorkflow(10 * time.Second).
 			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Stop'")
 			}).
@@ -1038,6 +1040,8 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 	})
 	s.Run("ResourceTemplateTerminate", func() {
 		s.Given().
+			WorkflowName("resource-tmpl-wf-1").
+			When().
 			RunCli([]string{"submit", "functional/resource-template.yaml", "--name", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
@@ -1047,8 +1051,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"terminate", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf-1 terminated")
 			}).
-			When().
-			Wait(10 * time.Second).
+			WaitForWorkflow(10 * time.Second).
 			RunCli([]string{"get", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
 			})

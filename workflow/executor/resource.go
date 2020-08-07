@@ -118,16 +118,18 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
+// signalMonitoring start the goroutine which listens for a SIGUSR2.
+// Upon receiving of the signal, We update the pod annotation and exit the process.
 func (we *WorkflowExecutor) signalMonitoring() {
-	log.Infof("Starting signal monitoring")
+	log.Infof("Starting SIGUSR2 signal monitor")
 	sigs := make(chan os.Signal, 1)
 
 	signal.Notify(sigs, os_specific.GetOsSignal())
 	go func() {
 		for {
 			<-sigs
-			log.Infof("Received update signal.")
-			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, "Workflow shutdown with strategy")
+			log.Infof("Received SIGUSR2 signal. Process is terminated")
+			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, "Received user signal to terminate the workflow")
 			os.Exit(130)
 		}
 	}()
