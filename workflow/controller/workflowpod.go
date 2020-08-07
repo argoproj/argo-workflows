@@ -335,7 +335,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
-		if apierr.IsForbidden(err) {
+		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) {
 			return nil, err
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
@@ -357,7 +357,10 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	if err != nil {
 		return nil, err
 	}
-	fstTmpl := fasttemplate.New(string(specBytes), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(specBytes), "{{", "}}")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
 	if err != nil {
 		return nil, err
@@ -1111,7 +1114,10 @@ func verifyResolvedVariables(obj interface{}) error {
 		return err
 	}
 	var unresolvedErr error
-	fstTmpl := fasttemplate.New(string(str), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(str), "{{", "}}")
+	if err != nil {
+		return fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 		return 0, nil

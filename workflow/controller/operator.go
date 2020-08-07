@@ -290,11 +290,11 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.createPVCs()
 	if err != nil {
-		if apierr.IsForbidden(err) {
+		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(10)
+			woc.requeue(10 * time.Second)
 			return
 		}
 		msg := "pvc create error"
@@ -516,6 +516,20 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
+
+	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
+	// cache is now invalid. It's very common that we will need to immediately re-operate on a
+	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
+	// informer's cache to catch up to the version of the workflow we just persisted. Without
+	// this sleep, the next worker to work on this workflow will very likely operate on a stale
+	// object and redo work.
+	//
+	// This line was removed in v2.9.0, but issues arose with the controller picking up outdated versions of workflows,
+	// operating on them, then attempting to update the resources on the cluster. Since the workflows were outdated,
+	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
+	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
+	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
+	time.Sleep(1 * time.Second)
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -1443,17 +1457,17 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 		hit := false
-		outputs := wfv1.Outputs{}
+		outputs := &wfv1.Outputs{}
 		if entry != nil {
 			hit = true
-			outputs = *entry.Outputs
+			outputs = entry.Outputs
 		}
 		memStat := &wfv1.MemoizationStatus{
 			Hit:       hit,
 			Key:       processedTmpl.Memoize.Key,
 			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, &outputs, memStat)
+		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memStat)
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
@@ -2131,7 +2145,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 }
 
 func (woc *wfOperationCtx) checkForbiddenErrorAndResubmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
-	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
+	if (apierr.IsForbidden(err) || apierr.IsTooManyRequests(err)) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
 		woc.requeue(0)
 		return woc.markNodePending(nodeName, err), nil
@@ -2487,7 +2501,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		mapVal := item.GetMapVal()
 		for itemKey, itemVal := range mapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-			vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
+			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
@@ -2590,7 +2604,10 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	fstTmpl := fasttemplate.New(string(volumesBytes), "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(string(volumesBytes), "{{", "}}")
+	if err != nil {
+		return fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 	newVolumesStr, err := common.Replace(fstTmpl, params, true)
 	if err != nil {
 		return err
@@ -2659,7 +2676,11 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
 			continue
 		}
-		fstTmpl := fasttemplate.New(string(metricTmplBytes), "{{", "}}")
+		fstTmpl, err := fasttemplate.NewTemplate(string(metricTmplBytes), "{{", "}}")
+		if err != nil {
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
+			continue
+		}
 		replacedValue, err := common.Replace(fstTmpl, localScope, false)
 		if err != nil {
 			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
@@ -2715,7 +2736,11 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			metricSpec := metricTmpl.DeepCopy()
 
 			// Finally substitute value parameters
-			fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
+			fstTmpl, err = fasttemplate.NewTemplate(metricSpec.GetValueString(), "{{", "}}")
+			if err != nil {
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to parse argo varaible for metric '%s': %s", metricTmpl.Name, err))
+				continue
+			}
 			replacedValue, err := common.Replace(fstTmpl, localScope, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
@@ -2914,7 +2939,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	// Merge the workflow spec and storedWorkflowspec.
-	targetWf := wfv1.Workflow{Spec: woc.wf.Spec}
+	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
 	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
 	if err != nil {
 		return nil, executionParameters, err

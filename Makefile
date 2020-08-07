@@ -46,7 +46,7 @@ STATIC_BUILD          ?= true
 CI                    ?= false
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
-SECURE                := true
+SECURE                := false
 AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
@@ -56,6 +56,7 @@ AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
+NAMESPACED            := true
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
 ifeq ($(PROFILE),mysql)
@@ -170,6 +171,9 @@ dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
+dist/argo-%.gz: dist/argo-%
+	gzip --force --keep dist/argo-$*
+
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
@@ -185,7 +189,7 @@ $(CLI_IMAGE_FILE): $(CLI_PKGS)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
-clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64
+clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.gz dist/argo-linux-s390x.gz dist/argo-darwin-amd64.gz dist/argo-windows-amd64.gz
 
 .PHONY: controller
 controller: dist/workflow-controller
@@ -316,6 +320,7 @@ test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
+	mkdir -p dist
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
 .PHONY: install
@@ -367,7 +372,7 @@ endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
 .PHONY: wait
 wait:
