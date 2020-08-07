@@ -44,6 +44,26 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: workfloweventbindings.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowEventBinding
+    listKind: WorkflowEventBindingList
+    plural: workfloweventbindings
+    shortNames:
+    - wfeb
+    singular: workfloweventbinding
+  scope: Namespaced
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: workflows.argoproj.io
 spec:
   additionalPrinterColumns:
@@ -101,6 +121,11 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github.com
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -238,6 +263,7 @@ rules:
   - argoproj.io
   resources:
   - workflows
+  - workfloweventbindings
   - workflowtemplates
   - cronworkflows
   verbs:
@@ -248,6 +274,30 @@ rules:
   - update
   - patch
   - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: submit-workflow-template
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workfloweventbindings
+  verbs:
+  - list
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -326,6 +376,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github.com
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: submit-workflow-template
+subjects:
+- kind: ServiceAccount
+  name: github.com
+  namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -419,6 +482,24 @@ metadata:
 stringData:
   clientID: argo-server
   clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argo-workflows-webhook-clients
+stringData:
+  bitbucket.org: |
+    type: bitbucket
+    secret: "my-uuid"
+  bitbucketserver: |
+    type: bitbucketserver
+    secret: "shh!"
+  github.com: |
+    type: github
+    secret: "shh!"
+  gitlab.com: |
+    type: gitlab
+    secret: "shh!"
 ---
 apiVersion: v1
 kind: Secret
