@@ -1015,7 +1015,6 @@ func (s *CLISuite) TestRetryOmit() {
 }
 
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
-	s.testNeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
 		s.Given().
 			RunCli([]string{"submit", "functional/resource-template.yaml"}, func(t *testing.T, output string, err error) {
