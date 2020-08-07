@@ -6267,14 +6267,20 @@ spec:
                 ttlStrategy:
                   properties:
                     secondsAfterCompletion:
-                      format: int32
-                      type: integer
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
                     secondsAfterFailure:
-                      format: int32
-                      type: integer
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
                     secondsAfterSuccess:
-                      format: int32
-                      type: integer
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
                   type: object
                 volumeClaimTemplates:
                   items:

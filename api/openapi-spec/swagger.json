@@ -3424,18 +3424,15 @@
       "properties": {
         "secondsAfterCompletion": {
           "description": "SecondsAfterCompletion is the number of seconds to live after completion",
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "secondsAfterFailure": {
           "description": "SecondsAfterFailure is the number of seconds to live after failure",
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "secondsAfterSuccess": {
           "description": "SecondsAfterSuccess is the number of seconds to live after success",
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         }
       }
     },

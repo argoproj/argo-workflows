@@ -896,13 +896,13 @@ message SynchronizationStatus {
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 message TTLStrategy {
   // SecondsAfterCompletion is the number of seconds to live after completion
-  optional int32 secondsAfterCompletion = 1;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString secondsAfterCompletion = 1;
 
   // SecondsAfterSuccess is the number of seconds to live after success
-  optional int32 secondsAfterSuccess = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString secondsAfterSuccess = 2;
 
   // SecondsAfterFailure is the number of seconds to live after failure
-  optional int32 secondsAfterFailure = 3;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString secondsAfterFailure = 3;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving

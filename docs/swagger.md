@@ -1415,9 +1415,9 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| secondsAfterCompletion | integer | SecondsAfterCompletion is the number of seconds to live after completion | No |
-| secondsAfterFailure | integer | SecondsAfterFailure is the number of seconds to live after failure | No |
-| secondsAfterSuccess | integer | SecondsAfterSuccess is the number of seconds to live after success | No |
+| secondsAfterCompletion | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | SecondsAfterCompletion is the number of seconds to live after completion | No |
+| secondsAfterFailure | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | SecondsAfterFailure is the number of seconds to live after failure | No |
+| secondsAfterSuccess | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | SecondsAfterSuccess is the number of seconds to live after success | No |
 
 #### io.argoproj.workflow.v1alpha1.TarStrategy
 

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
 	"time"
 
@@ -166,7 +167,7 @@ func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
 func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController) {
 	cancel, controller := newController()
 	myBool := true
-	var ten int32 = 10
+	var ten = intstr.FromInt(10)
 	var seven int32 = 10
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{

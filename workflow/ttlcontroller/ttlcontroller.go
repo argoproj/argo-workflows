@@ -2,6 +2,7 @@ package ttlcontroller
 
 import (
 	"fmt"
+	"github.com/argoproj/argo/util/intstrutil"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -128,7 +129,11 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		return
 	}
 	now := c.clock.Now()
-	remaining, expiration := timeLeft(wf, &now)
+	remaining, expiration, err := timeLeft(wf, &now)
+	if err != nil {
+		log.Warnf("unable to determine expiry time for a workflow: %v", err)
+		return
+	}
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
 	}
@@ -172,7 +177,10 @@ func (c *Controller) deleteWorkflow(key string) error {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		return nil
 	}
-	if c.ttlExpired(wf) {
+	expired, err := c.ttlExpired(wf)
+	if err != nil {
+		return err
+	} else if expired {
 		log.Infof("Deleting TTL expired workflow %s/%s", wf.Namespace, wf.Name)
 		policy := metav1.DeletePropagationForeground
 		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
@@ -184,30 +192,42 @@ func (c *Controller) deleteWorkflow(key string) error {
 	return nil
 }
 
-func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
+func (c *Controller) ttlExpired(wf *wfv1.Workflow) (bool, error) {
 	ttlStrategy := getTTLStrategy(wf)
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
-		return false
+		return false, nil
 	}
 	now := c.clock.Now()
 
-	if wf.Status.Failed() && ttlStrategy != nil && ttlStrategy.SecondsAfterFailure != nil {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterFailure))
-		return now.After(expiry)
-	} else if wf.Status.Successful() && ttlStrategy != nil && ttlStrategy.SecondsAfterSuccess != nil {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterSuccess))
-		return now.After(expiry)
+	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
+		secondsAfterFailure, err := intstrutil.Int32(ttlStrategy.SecondsAfterFailure)
+		if err != nil {
+			return false, err
+		}
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*secondsAfterFailure))
+		return now.After(expiry), nil
+	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
+		secondsAfterSuccess, err := intstrutil.Int32(ttlStrategy.SecondsAfterSuccess)
+		if err != nil {
+			return false, err
+		}
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*secondsAfterSuccess))
+		return now.After(expiry), nil
 	} else {
-		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterCompletion))
-		return now.After(expiry)
+		secondsAfterCompletion, err := intstrutil.Int32(ttlStrategy.SecondsAfterCompletion)
+		if err != nil {
+			return false, err
+		}
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*secondsAfterCompletion))
+		return now.After(expiry), nil
 	}
 }
 
-func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
+func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time, error) {
 	ttlStrategy := getTTLStrategy(wf)
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	sinceUTC := since.UTC()
@@ -216,19 +236,31 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 		log.Infof("Warning: Found Workflow %s/%s finished in the future. This is likely due to time skew in the cluster. Workflow cleanup will be deferred.", wf.Namespace, wf.Name)
 	}
 	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterFailure) * time.Second)
+		secondsAfterFailure, err := intstrutil.Int32(ttlStrategy.SecondsAfterFailure)
+		if err != nil {
+			return nil, nil, err
+		}
+		expireAtUTC := finishAtUTC.Add(time.Duration(*secondsAfterFailure) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
-		return &remaining, &expireAtUTC
+		return &remaining, &expireAtUTC, nil
 	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterSuccess) * time.Second)
+		secondsAfterSuccess, err := intstrutil.Int32(ttlStrategy.SecondsAfterSuccess)
+		if err != nil {
+			return nil, nil, err
+		}
+		expireAtUTC := finishAtUTC.Add(time.Duration(*secondsAfterSuccess) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
-		return &remaining, &expireAtUTC
+		return &remaining, &expireAtUTC, nil
 	} else if ttlStrategy.SecondsAfterCompletion != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*ttlStrategy.SecondsAfterCompletion) * time.Second)
+		secondsAfterCompletion, err := intstrutil.Int32(ttlStrategy.SecondsAfterCompletion)
+		if err != nil {
+			return nil, nil, err
+		}
+		expireAtUTC := finishAtUTC.Add(time.Duration(*secondsAfterCompletion) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
-		return &remaining, &expireAtUTC
+		return &remaining, &expireAtUTC, nil
 	} else {
-		return nil, nil
+		return nil, nil, nil
 	}
 }
 
