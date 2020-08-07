@@ -39,28 +39,11 @@ export default {
         return auth(superagent.del(apiUrl(url)));
     },
 
-    loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
+    loadEventSource(url: string): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
             const eventSource = new EventSource(url);
-            let opened = false;
-            eventSource.onopen = () => {
-                if (!opened) {
-                    opened = true;
-                } else if (!allowAutoRetry) {
-                    eventSource.close();
-                    observer.complete();
-                }
-            };
-            eventSource.onmessage = (msg: any) => observer.next(msg.data);
-            eventSource.onerror = (e: any) => {
-                if (e.eventPhase === Event.AT_TARGET) {
-                    if (!allowAutoRetry) {
-                        observer.complete();
-                    }
-                } else {
-                    observer.error(e);
-                }
-            };
+            eventSource.onmessage = x => observer.next(x.data);
+            eventSource.onerror = x => observer.error(x);
             return () => {
                 eventSource.close();
             };
