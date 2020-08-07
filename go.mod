@@ -9,13 +9,12 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.2
-	github.com/argoproj/pkg v0.0.0-20200424003221-9b858eff18a1
+	github.com/argoproj/pkg v0.1.0
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
-	github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect/v2 v2.0.3
@@ -25,7 +24,6 @@ require (
 	github.com/go-swagger/go-swagger v0.23.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
-	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
@@ -42,7 +40,7 @@ require (
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
-	github.com/prometheus/client_model v0.1.0
+	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.7.0
 	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/robfig/cron/v3 v3.0.1
@@ -72,21 +70,19 @@ require (
 	k8s.io/api v1.17.8
 	k8s.io/apimachinery v1.17.8
 	k8s.io/client-go v1.17.8
-	k8s.io/code-generator v0.17.8
+	k8s.io/code-generator v1.17.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
 	k8s.io/utils v0.0.0-20200327001022-6496210b90e8
-	sigs.k8s.io/controller-tools v0.0.0-00010101000000-000000000000
+	sigs.k8s.io/controller-tools v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
 replace (
-	github.com/argoproj/pkg => /Users/sbalasubram/go/src/github.com/argoproj/pkg
 	// https://github.com/kubernetes/kubernetes/issues/79384#issuecomment-505627280
 	k8s.io/api => k8s.io/api v0.17.8
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.8 // indirect
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.8 // indirect
 	k8s.io/apiserver => k8s.io/apiserver v0.17.8
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.17.8
 	k8s.io/client-go => k8s.io/client-go v0.17.8
+	k8s.io/code-generator => k8s.io/code-generator v0.17.8
 )

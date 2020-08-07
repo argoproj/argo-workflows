@@ -40,7 +40,7 @@ func (s3Driver *S3ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Cli
 		Trace:       os.Getenv(common.EnvVarArgoTrace) == "1",
 		UseSDKCreds: s3Driver.UseSDKCreds,
 	}
-	return argos3.NewS3Client(opts, ctx)
+	return argos3.NewS3Client(ctx, opts)
 }
 
 // Load downloads artifacts from S3 compliant storage
@@ -89,6 +89,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
