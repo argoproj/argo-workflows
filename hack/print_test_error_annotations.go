@@ -39,8 +39,12 @@ func printTestResultAnnotations() {
 		for _, c := range s.TestCases {
 			if c.Failure.Text != "" {
 				parts := strings.SplitN(c.Failure.Text, ":", 3)
+			https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-error-message
 				// Replace ‘/n’ with ‘%0A’ for multiple strings output.
-				_, _ = fmt.Printf("::error file=%s,line=%v,col=0::%s", s.Name+"/"+parts[0], parts[1], strings.ReplaceAll(parts[2], "\n", "%0A"))
+				file := strings.ReplaceAll(s.Name, "github.com/argoproj/argo/", "") + "/" + parts[0]
+				line := parts[1]
+				message := strings.ReplaceAll(parts[2], "\n", "%0A")
+				_, _ = fmt.Printf("::error file=%s,line=%v,col=0::%s", file, line, message)
 			}
 		}
 	}
