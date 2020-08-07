@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo/util/intstrutil"
+	"github.com/argoproj/argo/util/intstr"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
 	"github.com/argoproj/pkg/humanize"
@@ -2060,7 +2060,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 					return nil, err
 				}
 			}
-			param.Value = intstrutil.Parse(val)
+			param.Value = intstr.Parse(val)
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
 		}

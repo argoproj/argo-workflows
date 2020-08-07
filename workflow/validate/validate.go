@@ -22,7 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
-	"github.com/argoproj/argo/util/intstrutil"
+	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -92,7 +92,7 @@ var (
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	return &wfv1.Parameter{Name: name, Value: intstrutil.Parse(placeholderGenerator.NextPlaceholder())}
+	return &wfv1.Parameter{Name: name, Value: intstr.Parse(placeholderGenerator.NextPlaceholder())}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {

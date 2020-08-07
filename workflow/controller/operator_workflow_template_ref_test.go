@@ -7,7 +7,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/intstrutil"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {

@@ -24,7 +24,7 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/util/intstrutil"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
@@ -1885,7 +1885,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
-	assert.Equal(t, testVal, *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, testVal, woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
@@ -1894,7 +1894,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
-	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Add a new global parameter
@@ -1902,7 +1902,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
-	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[1].Value)
+	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[1].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
 
 }

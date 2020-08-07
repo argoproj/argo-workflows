@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/intstrutil"
+	"github.com/argoproj/argo/util/intstr"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -316,7 +316,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			if param.ValueFrom.Default != nil {
 				output = param.ValueFrom.Default.String()
 			}
-			we.Template.Outputs.Parameters[i].Value = intstrutil.Parse(output)
+			we.Template.Outputs.Parameters[i].Value = intstr.Parse(output)
 			continue
 		}
 		var cmd *exec.Cmd
@@ -350,7 +350,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			}
 		}
 		output := string(out)
-		we.Template.Outputs.Parameters[i].Value = intstrutil.Parse(output)
+		we.Template.Outputs.Parameters[i].Value = intstr.Parse(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)

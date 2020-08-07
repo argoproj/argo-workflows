@@ -11,7 +11,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/intstrutil"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 )
 
 func TestPrintWorkflows(t *testing.T) {
