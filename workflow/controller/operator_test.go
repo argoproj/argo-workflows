@@ -1871,7 +1871,7 @@ func TestWorkflowSpecParam(t *testing.T) {
 func TestAddGlobalParamToScope(t *testing.T) {
 	woc := newWoc()
 	woc.globalParams = make(map[string]string)
-	testVal := intstrutil.Parse("test-value")
+	testVal := intstrutil.ParsePtr("test-value")
 	param := wfv1.Parameter{
 		Name:  "test-param",
 		Value: testVal,
@@ -1889,7 +1889,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
-	newValue := intstrutil.Parse("new-value")
+	newValue := intstrutil.ParsePtr("new-value")
 	param.Value = newValue
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
@@ -1977,7 +1977,7 @@ func TestExpandWithSequence(t *testing.T) {
 	var err error
 
 	seq = wfv1.Sequence{
-		Count: intstrutil.Parse("10"),
+		Count: intstrutil.ParsePtr("10"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1986,8 +1986,8 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "9", items[9].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Start: intstrutil.Parse("101"),
-		Count: intstrutil.Parse("10"),
+		Start: intstrutil.ParsePtr("101"),
+		Count: intstrutil.ParsePtr("10"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1996,8 +1996,8 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "110", items[9].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Start: intstrutil.Parse("50"),
-		End:   intstrutil.Parse("60"),
+		Start: intstrutil.ParsePtr("50"),
+		End:   intstrutil.ParsePtr("60"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2006,8 +2006,8 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Start: intstrutil.Parse("60"),
-		End:   intstrutil.Parse("50"),
+		Start: intstrutil.ParsePtr("60"),
+		End:   intstrutil.ParsePtr("50"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2016,15 +2016,15 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "50", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Count: intstrutil.Parse("0"),
+		Count: intstrutil.ParsePtr("0"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(items))
 
 	seq = wfv1.Sequence{
-		Start: intstrutil.Parse("8"),
-		End:   intstrutil.Parse("8"),
+		Start: intstrutil.ParsePtr("8"),
+		End:   intstrutil.ParsePtr("8"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2033,8 +2033,8 @@ func TestExpandWithSequence(t *testing.T) {
 
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
-		Count:  intstrutil.Parse("10"),
-		Start:  intstrutil.Parse("1"),
+		Count:  intstrutil.ParsePtr("10"),
+		Start:  intstrutil.ParsePtr("1"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -4062,7 +4062,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	sampleOutputs := wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
-			{Name: "hello", Value: intstrutil.Parse(sampleOutput)},
+			{Name: "hello", Value: intstrutil.ParsePtr(sampleOutput)},
 		},
 	}
 

@@ -2060,7 +2060,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 					return nil, err
 				}
 			}
-			param.Value = intstr.Parse(val)
+			param.Value = intstr.ParsePtr(val)
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
 		}

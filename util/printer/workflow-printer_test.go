@@ -21,7 +21,7 @@ func TestPrintWorkflows(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now}},
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
-					{Name: "my-param", Value: intstrutil.Parse("my-value")},
+					{Name: "my-param", Value: intstrutil.ParsePtr("my-value")},
 				}},
 				Priority: pointer.Int32Ptr(2),
 				Templates: []wfv1.Template{

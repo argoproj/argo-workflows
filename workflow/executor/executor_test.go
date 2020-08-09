@@ -116,7 +116,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: intstrutil.Parse("Default Value"),
+						Default: intstrutil.ParsePtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -148,7 +148,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: intstrutil.Parse(""),
+						Default: intstrutil.ParsePtr(""),
 						Path:    "/path",
 					},
 				},

@@ -320,9 +320,9 @@ $(GOPATH)/bin/go-junit-report:
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
-.PHONY: printtestresultannotations
-printtestresultannotations:
-	go run ./hack printtestresultannotations
+.PHONY: test-report
+test-report: test-results/junit.xml
+	go run ./hack test-report
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	mkdir -p dist

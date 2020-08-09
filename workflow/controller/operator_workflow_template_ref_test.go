@@ -32,7 +32,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: intstrutil.Parse("test"),
+				Value: intstrutil.ParsePtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -52,7 +52,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: intstrutil.Parse("test"),
+				Value: intstrutil.ParsePtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)

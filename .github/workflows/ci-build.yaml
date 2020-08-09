@@ -84,7 +84,7 @@ jobs:
           make ${{ matrix.test }}
       - name: Print test error annotations
         if: failure()
-        run: make printtestresultannotations
+        run: make test-report
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1

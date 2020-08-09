@@ -316,7 +316,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			if param.ValueFrom.Default != nil {
 				output = param.ValueFrom.Default.String()
 			}
-			we.Template.Outputs.Parameters[i].Value = intstr.Parse(output)
+			we.Template.Outputs.Parameters[i].Value = intstr.ParsePtr(output)
 			continue
 		}
 		var cmd *exec.Cmd
@@ -350,7 +350,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			}
 		}
 		output := string(out)
-		we.Template.Outputs.Parameters[i].Value = intstr.Parse(output)
+		we.Template.Outputs.Parameters[i].Value = intstr.ParsePtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)

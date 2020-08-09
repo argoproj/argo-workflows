@@ -493,7 +493,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: intstrutil.Parse("0")}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: intstrutil.ParsePtr("0")}},
 				},
 			},
 		}

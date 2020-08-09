@@ -477,7 +477,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = intstrutil.Parse(fileContents)
+				output = intstrutil.ParsePtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -491,13 +491,13 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = intstrutil.Parse(string(data))
+				output = intstrutil.ParsePtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
 		if output.Type == intstr.String {
-			output = intstrutil.Parse(strings.TrimSuffix(output.String(), "\n"))
+			output = intstrutil.ParsePtr(strings.TrimSuffix(output.String(), "\n"))
 		}
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
