@@ -14,6 +14,8 @@ type Interface interface {
 	CronWorkflows() CronWorkflowInformer
 	// Workflows returns a WorkflowInformer.
 	Workflows() WorkflowInformer
+	// WorkflowEventBindings returns a WorkflowEventBindingInformer.
+	WorkflowEventBindings() WorkflowEventBindingInformer
 	// WorkflowTemplates returns a WorkflowTemplateInformer.
 	WorkflowTemplates() WorkflowTemplateInformer
 }
@@ -42,6 +44,11 @@ func (v *version) CronWorkflows() CronWorkflowInformer {
 // Workflows returns a WorkflowInformer.
 func (v *version) Workflows() WorkflowInformer {
 	return &workflowInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkflowEventBindings returns a WorkflowEventBindingInformer.
+func (v *version) WorkflowEventBindings() WorkflowEventBindingInformer {
+	return &workflowEventBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // WorkflowTemplates returns a WorkflowTemplateInformer.

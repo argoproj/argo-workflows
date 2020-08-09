@@ -96,6 +96,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
+	pkg/apiclient/event/event.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
@@ -460,8 +461,7 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
-	mv dist/swagger.json api/openapi-spec/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 

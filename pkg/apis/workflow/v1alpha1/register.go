@@ -34,6 +34,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Workflow{},
 		&WorkflowList{},
+		&WorkflowEventBinding{},
+		&WorkflowEventBindingList{},
 		&WorkflowTemplate{},
 		&WorkflowTemplateList{},
 		&CronWorkflow{},
