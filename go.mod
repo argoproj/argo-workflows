@@ -36,7 +36,6 @@ require (
 	github.com/klauspost/compress v1.9.7 // indirect
 	github.com/lib/pq v1.3.0 // indirect
 	github.com/mattn/goreman v0.3.5
-	github.com/minio/minio-go v6.0.14+incompatible // indirect
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
