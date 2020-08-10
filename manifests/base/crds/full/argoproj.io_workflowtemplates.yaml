@@ -600,6 +600,8 @@ spec:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
+                          event:
+                            type: string
                           jqFilter:
                             type: string
                           jsonPath:
@@ -1714,6 +1716,8 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                                event:
+                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -2588,6 +2592,8 @@ spec:
                                             - type: integer
                                             - type: string
                                             x-kubernetes-int-or-string: true
+                                          event:
+                                            type: string
                                           jqFilter:
                                             type: string
                                           jsonPath:
@@ -3541,6 +3547,8 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                                event:
+                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -3977,6 +3985,8 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                                event:
+                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -5497,6 +5507,8 @@ spec:
                                               - type: integer
                                               - type: string
                                               x-kubernetes-int-or-string: true
+                                            event:
+                                              type: string
                                             jqFilter:
                                               type: string
                                             jsonPath:

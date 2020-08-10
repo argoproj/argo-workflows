@@ -8,21 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 )
 
 func TestPrintWorkflows(t *testing.T) {
 	now := time.Now()
-	intOrString := intstr.Parse("my-value")
 	workflows := wfv1.Workflows{
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now}},
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
-					{Name: "my-param", Value: &intOrString},
+					{Name: "my-param", Value: intstrutil.ParsePtr("my-value")},
 				}},
 				Priority: pointer.Int32Ptr(2),
 				Templates: []wfv1.Template{

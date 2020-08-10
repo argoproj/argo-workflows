@@ -3395,6 +3395,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|

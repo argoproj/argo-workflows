@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/util"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -658,11 +658,10 @@ func TestVolumesPodSubstitution(t *testing.T) {
 			MountPath: "/test",
 		},
 	}
-	tmpStr := intstr.Parse("test-name")
 	inputParameters := []wfv1.Parameter{
 		{
 			Name:  "volume-name",
-			Value: &tmpStr,
+			Value: intstrutil.ParsePtr("test-name"),
 		},
 	}
 

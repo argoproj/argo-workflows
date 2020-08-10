@@ -1,6 +1,7 @@
 package pod
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,8 +10,14 @@ import (
 )
 
 func Test_SgnificantPodChange(t *testing.T) {
-	assert.False(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{}), "No change")
-
+	t.Run("NoChange", func(t *testing.T) {
+		assert.False(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{}))
+	})
+	t.Run("ALL_POD_CHANGES_SIGNIFICANT", func(t *testing.T) {
+		_ = os.Setenv("ALL_POD_CHANGES_SIGNIFICANT", "true")
+		defer func() { _ = os.Unsetenv("ALL_POD_CHANGES_SIGNIFICANT") }()
+		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{}))
+	})
 	t.Run("DeletionTimestamp", func(t *testing.T) {
 		now := metav1.Now()
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}}), "deletion timestamp change")
