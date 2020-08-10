@@ -1418,7 +1418,7 @@ func (in *RetryStrategy) DeepCopyInto(out *RetryStrategy) {
 	*out = *in
 	if in.Limit != nil {
 		in, out := &in.Limit, &out.Limit
-		*out = new(int32)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	if in.Backoff != nil {

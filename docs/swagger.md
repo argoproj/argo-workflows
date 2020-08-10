@@ -1309,7 +1309,7 @@ RetryStrategy provides controls on how to retry a workflow step
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | backoff | [io.argoproj.workflow.v1alpha1.Backoff](#io.argoproj.workflow.v1alpha1.backoff) | Backoff is a backoff strategy | No |
-| limit | integer | Limit is the maximum number of attempts when retrying a container | No |
+| limit | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Limit is the maximum number of attempts when retrying a container | No |
 | retryPolicy | string | RetryPolicy is a policy of NodePhase statuses that will be retried | No |
 
 #### io.argoproj.workflow.v1alpha1.S3Artifact

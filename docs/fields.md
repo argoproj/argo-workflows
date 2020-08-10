@@ -2839,7 +2839,7 @@ RetryStrategy provides controls on how to retry a workflow step
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
-|`limit`|`int32`|Limit is the maximum number of attempts when retrying a container|
+|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## ScriptTemplate
