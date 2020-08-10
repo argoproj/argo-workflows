@@ -12,9 +12,12 @@ The following variables are made available to reference various metadata of a wo
 ## Steps Templates
 | Variable | Description|
 |----------|------------|
+| `steps.<STEPNAME>.id` | unique id of container step |
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
+| `steps.<STEPNAME>.startedAt` | Timestamp when the step started |
+| `steps.<STEPNAME>.finishedAt` | Timestamp when the step finised |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
@@ -23,9 +26,12 @@ The following variables are made available to reference various metadata of a wo
 ## DAG Templates
 | Variable | Description|
 |----------|------------|
+| `steps.<STEPNAME>.id` | unique id of container task |
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
 | `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
+| `steps.<STEPNAME>.startedAt` | Timestamp when the task started |
+| `steps.<STEPNAME>.finishedAt` | Timestamp when the task finised |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
 | `tasks.<STEPNAME>.outputs.parameters` | When the previous task uses 'withItems', this contains a JSON array of the output parameters of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
