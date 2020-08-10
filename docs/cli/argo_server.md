@@ -14,7 +14,7 @@ argo server [flags]
 
 ```
 
-See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
+See https://argoproj.github.io/argo/argo-server/
 ```
 
 ### Options

@@ -13,7 +13,7 @@ argo [flags]
 ### Examples
 
 ```
-If you're using the Argo Server (e.g. because you need large workflow support or workflow archive), please read https://github.com/argoproj/argo/blob/master/docs/cli.md.
+If you're using the Argo Server (e.g. because you need large workflow support or workflow archive), please read https://argoproj.github.io/argo/cli/.
 ```
 
 ### Options
