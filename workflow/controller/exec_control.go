@@ -73,7 +73,8 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		}
 	}
 	containerName := common.WaitContainerName
-	// ResourceTemplate pod will have main container only
+	// A resource template does not have a wait container,
+	// instead the only container is the main container (which is running argoexec)
 	if len(pod.Spec.Containers) == 1 {
 		containerName = common.MainContainerName
 	}
