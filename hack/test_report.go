@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
-	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -39,16 +39,40 @@ func testReport() {
 	for _, s := range v.TestSuites {
 		for _, c := range s.TestCases {
 			if c.Failure.Text != "" {
+				x := newFailureText(s.Name, c.Failure.Text)
 				// https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-error-message
 				// Replace ‘/n’ with ‘%0A’ for multiple strings output.
-				parts := strings.SplitN(c.Failure.Text, ":", 3)
-				file := strings.ReplaceAll(s.Name, "github.com/argoproj/argo/", "") + "/" + parts[0]
-				line := parts[1]
-				message := strings.TrimSpace(parts[2])
-				message = regexp.MustCompile("^.*Error Trace").ReplaceAllString(message, "")
-				message = strings.ReplaceAll(message, "\n", "%0A")
-				_, _ = fmt.Printf("::error file=%s,line=%v,col=0::%s\n", file, line, message)
+				_, _ = fmt.Printf("::error file=%s,line=%v,col=0::%s\n", x.file, x.line, x.message)
 			}
 		}
+	}
+}
+
+type failureText struct {
+	file    string
+	line    int
+	message string
+}
+
+func trimStdoutLines(text string) string {
+	split := strings.Split(text, "\n")
+	for i, s := range split {
+		if strings.Contains(s, "_test.go") {
+			return strings.Join(split[i:], "\n")
+		}
+	}
+	panic(text)
+}
+
+func newFailureText(suite, text string) failureText {
+	text = trimStdoutLines(text)
+	parts := strings.SplitN(text, ":", 3)
+	file := strings.TrimPrefix(suite, "github.com/argoproj/argo/") + "/" + parts[0]
+	line, _ := strconv.Atoi(parts[1])
+	message := strings.ReplaceAll(strings.TrimSpace(parts[2]), "\n", "%0A")
+	return failureText{
+		file:    file,
+		line:    line,
+		message: message,
 	}
 }
