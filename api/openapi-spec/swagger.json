@@ -2731,7 +2731,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Mutex": {
-      "description": "Mutex is a Mutex",
+      "description": "Mutex holds Mutex configuration",
       "type": "object",
       "properties": {
         "name": {
@@ -2743,8 +2743,8 @@
     "io.argoproj.workflow.v1alpha1.MutexHolding": {
       "type": "object",
       "properties": {
-        "holder": {
-          "description": "Holders stores the current mutex holder name.",
+        "holderName": {
+          "description": "HolderName stores the current mutex holder name.",
           "type": "string"
         },
         "mutex": {

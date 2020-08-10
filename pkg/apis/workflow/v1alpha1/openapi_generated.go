@@ -1787,7 +1787,7 @@ func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) commo
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Mutex is a Mutex",
+				Description: "Mutex holds Mutex configuration",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -1816,9 +1816,9 @@ func schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
-					"holder": {
+					"holderName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Holders stores the current mutex holder name.",
+							Description: "HolderName stores the current mutex holder name.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

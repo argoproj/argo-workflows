@@ -101,8 +101,8 @@ func (cm *SyncManager) Initialize(wfList *wfv1.WorkflowList) {
 						log.Warnf("Synchronization Mutex %s initialization failed. %v", holding.Mutex, err)
 						continue
 					}
-					if holding.Holder != "" {
-						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.Holder)
+					if holding.HolderName != "" {
+						resourceKey := getResourceKey(wf.Namespace, wf.Name, holding.HolderName)
 						mutex.acquire(resourceKey)
 					}
 					cm.syncLockMap[holding.Mutex] = mutex
@@ -278,9 +278,9 @@ func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 			if syncLockHolder == nil {
 				continue
 			}
-			resourceKey := getResourceKey(wf.Namespace, wf.Name, ele.Holder)
+			resourceKey := getResourceKey(wf.Namespace, wf.Name, ele.HolderName)
 			syncLockHolder.release(resourceKey)
-			cm.updateConcurrencyStatus(ele.Holder, ele.Mutex, LockTypeMutex, LockActionReleased, wf)
+			cm.updateConcurrencyStatus(ele.HolderName, ele.Mutex, LockTypeMutex, LockActionReleased, wf)
 			log.Infof("%s released a lock from %s", resourceKey, ele.Mutex)
 		}
 		wf.Status.Synchronization.Mutex = nil
@@ -350,10 +350,10 @@ func (cm *SyncManager) updateMutexStatus(holderKey, lockKey string, lockAction L
 			return true
 		}
 		if index == -1 {
-			wf.Status.Synchronization.Mutex.Waiting = append(wf.Status.Synchronization.Mutex.Waiting, wfv1.MutexHolding{Mutex: lockKey, Holder: currentHolder[0]})
+			wf.Status.Synchronization.Mutex.Waiting = append(wf.Status.Synchronization.Mutex.Waiting, wfv1.MutexHolding{Mutex: lockKey, HolderName: currentHolder[0]})
 		} else {
-			if mutexWaiting.Holder != currentHolder[0] {
-				mutexWaiting.Holder = currentHolder[0]
+			if mutexWaiting.HolderName != currentHolder[0] {
+				mutexWaiting.HolderName = currentHolder[0]
 				wf.Status.Synchronization.Mutex.Waiting[index] = mutexWaiting
 			}
 		}
@@ -365,11 +365,11 @@ func (cm *SyncManager) updateMutexStatus(holderKey, lockKey string, lockAction L
 		items := strings.Split(holderKey, "/")
 		holdingName := items[len(items)-1]
 		if index == -1 {
-			wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding, wfv1.MutexHolding{Mutex: lockKey, Holder: holdingName})
+			wf.Status.Synchronization.Mutex.Holding = append(wf.Status.Synchronization.Mutex.Holding, wfv1.MutexHolding{Mutex: lockKey, HolderName: holdingName})
 			return true
 		} else {
-			if mutexHolding.Holder != holdingName {
-				mutexHolding.Holder = holdingName
+			if mutexHolding.HolderName != holdingName {
+				mutexHolding.HolderName = holdingName
 				wf.Status.Synchronization.Mutex.Holding[index] = mutexHolding
 				return true
 			}

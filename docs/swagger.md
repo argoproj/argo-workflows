@@ -1146,7 +1146,7 @@ Metrics are a list of metrics emitted from a Workflow/Template
 
 #### io.argoproj.workflow.v1alpha1.Mutex
 
-Mutex is a Mutex
+Mutex holds Mutex configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
@@ -1156,7 +1156,7 @@ Mutex is a Mutex
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| holder | string | Holders stores the current mutex holder name. | No |
+| holderName | string | HolderName stores the current mutex holder name. | No |
 | mutex | string | Name of the mutex | No |
 
 #### io.argoproj.workflow.v1alpha1.MutexStatus

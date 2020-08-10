@@ -867,7 +867,7 @@ type SemaphoreRef struct {
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
 }
 
-// Mutex is a Mutex
+// Mutex holds Mutex configuration
 type Mutex struct {
 	// name of the mutex
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
@@ -1009,8 +1009,8 @@ type SemaphoreHolding struct {
 type MutexHolding struct {
 	// Name of the mutex
 	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
-	// Holders stores the current mutex holder name.
-	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
+	// HolderName stores the current mutex holder name.
+	HolderName string `json:"holderName,omitempty" protobuf:"bytes,2,opt,name=holderName"`
 }
 
 type MutexStatus struct {

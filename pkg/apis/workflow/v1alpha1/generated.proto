@@ -511,7 +511,7 @@ message Metrics {
   repeated Prometheus prometheus = 1;
 }
 
-// Mutex is a Mutex
+// Mutex holds Mutex configuration
 message Mutex {
   // name of the mutex
   optional string name = 1;
@@ -521,8 +521,8 @@ message MutexHolding {
   // Name of the mutex
   optional string mutex = 1;
 
-  // Holders stores the current mutex holder name.
-  optional string holder = 2;
+  // HolderName stores the current mutex holder name.
+  optional string holderName = 2;
 }
 
 message MutexStatus {

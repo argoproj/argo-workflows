@@ -2235,7 +2235,7 @@ Prometheus is a prometheus metric to be emitted
 
 ## Mutex
 
-Mutex is a Mutex
+Mutex holds Mutex configuration
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3742,7 +3742,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holder`|`string`|Holders stores the current mutex holder name.|
+|`holderName`|`string`|HolderName stores the current mutex holder name.|
 |`mutex`|`string`|Name of the mutex|
 
 ## SemaphoreHolding
