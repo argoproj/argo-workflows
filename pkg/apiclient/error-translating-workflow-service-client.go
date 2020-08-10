@@ -48,6 +48,14 @@ func (c *errorTranslatingWorkflowServiceClient) WatchWorkflows(ctx context.Conte
 	return workflows, nil
 }
 
+func (c *errorTranslatingWorkflowServiceClient) WatchEvents(ctx context.Context, req *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
+	events, err := c.delegate.WatchEvents(ctx, req)
+	if err != nil {
+		return nil, grpcutil.TranslateError(err)
+	}
+	return events, nil
+}
+
 func (c *errorTranslatingWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
 	workflow, err := c.delegate.DeleteWorkflow(ctx, req)
 	if err != nil {

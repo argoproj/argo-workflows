@@ -17,6 +17,7 @@ import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperationAction, WorkflowOperationName, WorkflowOperations} from '../../../shared/workflow-operations-map';
+import {EventsPanel} from '../events-panel';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
@@ -115,6 +116,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                             <span className='badge' />
                                         )}
                                     </a>
+                                    <a className={classNames({active: this.selectedTabKey === 'events'})} onClick={() => this.selectTab('events')}>
+                                        <i className='fa argo-icon-notification' />
+                                    </a>
                                     <a className={classNames({active: this.selectedTabKey === 'timeline'})} onClick={() => this.selectTab('timeline')}>
                                         <i className='fa argo-icon-timeline' />
                                     </a>
@@ -136,14 +140,20 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                                     selectedNodeId={this.selectedNodeId}
                                                     nodeClicked={nodeId => this.selectNode(nodeId)}
                                                 />
-                                            )) || (
-                                                <WorkflowTimeline
-                                                    workflow={this.state.workflow}
-                                                    selectedNodeId={this.selectedNodeId}
-                                                    nodeClicked={node => this.selectNode(node.id)}
-                                                    ref={timeline => (this.timelineComponent = timeline)}
-                                                />
-                                            )}
+                                            )) ||
+                                                (this.selectedTabKey && (
+                                                    <EventsPanel
+                                                        namespace={this.state.workflow.metadata.namespace}
+                                                        fieldSelector={'involvedObject.kind=Workflow,involvedObject.name=' + this.state.workflow.metadata.name}
+                                                    />
+                                                )) || (
+                                                    <WorkflowTimeline
+                                                        workflow={this.state.workflow}
+                                                        selectedNodeId={this.selectedNodeId}
+                                                        nodeClicked={node => this.selectNode(node.id)}
+                                                        ref={timeline => (this.timelineComponent = timeline)}
+                                                    />
+                                                )}
                                         </div>
                                         <div className='workflow-details__step-info'>
                                             <button className='workflow-details__step-info-close' onClick={() => this.removeNodeSelection()}>
