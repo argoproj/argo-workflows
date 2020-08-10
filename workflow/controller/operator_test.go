@@ -2899,20 +2899,31 @@ spec:
 `
 
 func TestPDBCreation(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.NotNil(t, pdb)
 	assert.Equal(t, pdb.Name, wf.Name)
 	woc.markWorkflowSuccess()
 	woc.operate()
-	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	pdb, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Nil(t, pdb)
+}
+
+func TestPDBCreationRaceDelete(t *testing.T) {
+	wf := unmarshalWF(pdbwf)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
+	assert.NoError(t, err)
+	woc.operate()
+	pdb, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
 	assert.Nil(t, pdb)
 }
 

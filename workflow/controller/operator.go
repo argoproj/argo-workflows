@@ -2831,7 +2831,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		}
 		return true, nil
 	})
-	if err != nil {
+	if err != nil && !apierr.IsNotFound(err) {
 		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
 		return err
 	}
