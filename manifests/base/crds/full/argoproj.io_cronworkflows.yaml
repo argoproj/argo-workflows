@@ -4071,8 +4071,10 @@ spec:
                               duration:
                                 type: string
                               factor:
-                                format: int32
-                                type: integer
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
                               maxDuration:
                                 type: string
                             type: object

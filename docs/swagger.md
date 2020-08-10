@@ -812,7 +812,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | duration | string | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") | No |
-| factor | integer | Factor is a factor to multiply the base duration after each failed retry | No |
+| factor | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Factor is a factor to multiply the base duration after each failed retry | No |
 | maxDuration | string | MaxDuration is the maximum amount of time allowed for the backoff strategy | No |
 
 #### io.argoproj.workflow.v1alpha1.Cache

@@ -3573,7 +3573,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
-|`factor`|`int32`|Factor is a factor to multiply the base duration after each failed retry|
+|`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
 |`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
 
 ## ContinueOn

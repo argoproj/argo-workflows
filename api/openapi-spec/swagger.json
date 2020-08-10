@@ -2021,8 +2021,7 @@
         },
         "factor": {
           "description": "Factor is a factor to multiply the base duration after each failed retry",
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "maxDuration": {
           "description": "MaxDuration is the maximum amount of time allowed for the backoff strategy",
