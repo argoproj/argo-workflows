@@ -63,6 +63,10 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
 
+func (wftmpl *WorkflowTemplate) GetWorkflowMetadata() *metav1.ObjectMeta {
+	return wftmpl.Spec.WorkflowMetadata
+}
+
 // GetWorkflowSpec returns the WorkflowSpec of workflow template.
 func (wftmpl *WorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
 	return &wftmpl.Spec.WorkflowSpec

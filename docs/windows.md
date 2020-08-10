@@ -80,6 +80,27 @@ hello-hybrid-plqpp-1977432187: "Hello from Windows Container!"
 hello-hybrid-plqpp-764774907: Hello from Linux Container!
 ```
 
+## Artifact mount path
+
+Artifacts work mostly the same way as on Linux. All paths get automatically mapped to the `C:` drive. For example:
+
+```yaml
+ # ...
+    - name: print-message
+      inputs:
+        artifacts:
+          # unpack the message input artifact
+          # and put it at C:\message
+          - name: message
+            path: "/message" # gets mapped to C:\message
+      nodeSelector:
+        kubernetes.io/os: windows
+      container:
+        image: mcr.microsoft.com/windows/nanoserver:1809
+        command: ["cmd", "/c"]
+        args: ["dir C:\\message"]   # List the C:\message directory
+```
+
 ## Building the workflow executor image for Windows
 
 To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described [in the docs](https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise).

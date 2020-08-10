@@ -8,7 +8,7 @@ data:
     clientSecret:
       name: argo-server-sso
       key: clientSecret
-    redirectUrl: https://localhost:2746/oauth2/callback
+    redirectUrl: http://localhost:2746/oauth2/callback
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

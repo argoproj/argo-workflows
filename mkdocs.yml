@@ -51,6 +51,8 @@ nav:
           - access-token.md
           - rest-api.md
           - rest-examples.md
+          - events.md
+          - webhooks.md
           - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md

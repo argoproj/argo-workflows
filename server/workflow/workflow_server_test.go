@@ -886,6 +886,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 			assert.Contains(t, wf.Labels, "labelTest")
 			assert.Contains(t, wf.Annotations, "annotationTest")
 		}
@@ -899,6 +900,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("SubmitFromClusterWorkflowTemplate", func(t *testing.T) {
@@ -910,6 +912,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 			assert.Contains(t, wf.Labels, "labelTest")
 			assert.Contains(t, wf.Annotations, "annotationTest")
 		}

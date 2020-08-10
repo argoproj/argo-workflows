@@ -5,6 +5,7 @@ import {Loading} from '../../../shared/components/loading';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
 import {formatDuration} from '../../../shared/duration';
 import {services} from '../../../shared/services';
+import {WorkflowFrom} from '../workflow-from';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
 require('./workflow-drawer.scss');
@@ -74,6 +75,12 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                         </div>
                     </div>
                 )}
+                <div className='workflow-drawer__section'>
+                    <div className='workflow-drawer__title'>FROM</div>
+                    <div className='workflow-drawer__workflowFrom'>
+                        <WorkflowFrom namespace={wf.metadata.namespace} labels={wf.metadata.labels} />
+                    </div>
+                </div>
                 <div className='workflow-drawer__section workflow-drawer__labels'>
                     <div className='workflow-drawer__title'>LABELS</div>
                     <div className='workflow-drawer__labels--list'>
