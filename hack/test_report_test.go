@@ -33,8 +33,8 @@ Error:      	Received unexpected error:
             	poddisruptionbudgets.policy "artifact-repo-config-ref" not found
 Test:       	TestPDBCreation`)
 	assert.Equal(t, failureText{
-		file:    "controller/operator_test.go",
-		line:    2912,
+		file: "controller/operator_test.go",
+		line: 2912,
 		message: `Error Trace:	operator_test.go:2912%0AError:      	Received unexpected error:%0A            	poddisruptionbudgets.policy "artifact-repo-config-ref" not found%0ATest:       	TestPDBCreation`,
 	}, x)
 }

@@ -2885,17 +2885,15 @@ var pdbwf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: artifact-repo-config-ref
+  name: my-pdb-wf
 spec:
-  entrypoint: whalesay
+  entrypoint: main
   poddisruptionbudget:
     minavailable: 100%
   templates:
-  - name: whalesay
+  - name: main
     container:
       image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
 `
 
 func TestPDBCreation(t *testing.T) {
@@ -2907,10 +2905,8 @@ func TestPDBCreation(t *testing.T) {
 	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
 	assert.Equal(t, pdb.Name, wf.Name)
 	woc.markWorkflowSuccess()
-	woc.operate()
-	pdb, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Nil(t, pdb)
+	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
 }
 
 func TestPDBCreationRaceDelete(t *testing.T) {
@@ -2919,24 +2915,24 @@ func TestPDBCreationRaceDelete(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("my-pdb-wf", metav1.GetOptions{})
+	assert.NoError(t, err)
+	pod.Status.Phase = apiv1.PodSucceeded
+	_, err = controller.kubeclientset.CoreV1().Pods("").Update(pod)
+	assert.NoError(t, err)
+	err = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
 	assert.NoError(t, err)
 	woc.operate()
-	pdb, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Nil(t, pdb)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 func TestStatusConditions(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
+	assert.Empty(t, woc.wf.Status.Conditions)
 	woc.markWorkflowSuccess()
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
