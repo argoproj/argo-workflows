@@ -2,8 +2,9 @@ package ttlcontroller
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/util/intstrutil"
 	"time"
+
+	"github.com/argoproj/argo/util/intstr"
 
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -201,21 +202,21 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) (bool, error) {
 	now := c.clock.Now()
 
 	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
-		secondsAfterFailure, err := intstrutil.Int32(ttlStrategy.SecondsAfterFailure)
+		secondsAfterFailure, err := intstr.Int32(ttlStrategy.SecondsAfterFailure)
 		if err != nil {
 			return false, err
 		}
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*secondsAfterFailure))
 		return now.After(expiry), nil
 	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
-		secondsAfterSuccess, err := intstrutil.Int32(ttlStrategy.SecondsAfterSuccess)
+		secondsAfterSuccess, err := intstr.Int32(ttlStrategy.SecondsAfterSuccess)
 		if err != nil {
 			return false, err
 		}
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*secondsAfterSuccess))
 		return now.After(expiry), nil
 	} else {
-		secondsAfterCompletion, err := intstrutil.Int32(ttlStrategy.SecondsAfterCompletion)
+		secondsAfterCompletion, err := intstr.Int32(ttlStrategy.SecondsAfterCompletion)
 		if err != nil {
 			return false, err
 		}
@@ -236,7 +237,7 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time, 
 		log.Infof("Warning: Found Workflow %s/%s finished in the future. This is likely due to time skew in the cluster. Workflow cleanup will be deferred.", wf.Namespace, wf.Name)
 	}
 	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
-		secondsAfterFailure, err := intstrutil.Int32(ttlStrategy.SecondsAfterFailure)
+		secondsAfterFailure, err := intstr.Int32(ttlStrategy.SecondsAfterFailure)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -244,7 +245,7 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time, 
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC, nil
 	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
-		secondsAfterSuccess, err := intstrutil.Int32(ttlStrategy.SecondsAfterSuccess)
+		secondsAfterSuccess, err := intstr.Int32(ttlStrategy.SecondsAfterSuccess)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -252,7 +253,7 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time, 
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC, nil
 	} else if ttlStrategy.SecondsAfterCompletion != nil {
-		secondsAfterCompletion, err := intstrutil.Int32(ttlStrategy.SecondsAfterCompletion)
+		secondsAfterCompletion, err := intstr.Int32(ttlStrategy.SecondsAfterCompletion)
 		if err != nil {
 			return nil, nil, err
 		}

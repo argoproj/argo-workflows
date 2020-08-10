@@ -1,10 +1,12 @@
 package ttlcontroller
 
 import (
-	"github.com/argoproj/argo/util/intstrutil"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	intstr2 "github.com/argoproj/argo/util/intstr"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -566,7 +568,7 @@ func TestTTLlExpired(t *testing.T) {
 	assert.Equal(t, true, wf.Status.Failed())
 	now := controller.clock.Now()
 
-	secondsAfterFailure, err := intstrutil.Int64(wf.Spec.TTLStrategy.SecondsAfterFailure)
+	secondsAfterFailure, err := intstr2.Int64(wf.Spec.TTLStrategy.SecondsAfterFailure)
 	assert.NoError(t, err)
 	assert.Equal(t, true, now.After(wf.Status.FinishedAt.Add(time.Second*time.Duration(*secondsAfterFailure))))
 	assert.Equal(t, true, wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailure != nil)

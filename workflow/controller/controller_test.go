@@ -2,9 +2,10 @@ package controller
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"

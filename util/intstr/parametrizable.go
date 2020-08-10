@@ -1,4 +1,4 @@
-package intstrutil
+package intstr
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+// These are utility functions when using IntOrString to hold either an Int or an Argo Variable
 func Int(is *intstr.IntOrString) (*int, error) {
 	if is == nil {
 		return nil, nil

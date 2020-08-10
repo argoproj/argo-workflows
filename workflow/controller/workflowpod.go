@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/argoproj/argo/util/intstr"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -20,7 +22,6 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/intstrutil"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -136,7 +137,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
-	tmplActiveDeadlineSeconds, err := intstrutil.Int64(tmpl.ActiveDeadlineSeconds)
+	tmplActiveDeadlineSeconds, err := intstr.Int64(tmpl.ActiveDeadlineSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +234,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
-	addSchedulingConstraints(pod, wfSpec, tmpl)
+	err = addSchedulingConstraints(pod, wfSpec, tmpl)
+	if err != nil {
+		return nil, err
+	}
 	woc.addMetadata(pod, tmpl, opts)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
@@ -636,7 +640,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	}
 	// Set priority (if specified)
 	if tmpl.Priority != nil {
-		tmplPriority, err := intstrutil.Int32(tmpl.Parallelism)
+		tmplPriority, err := intstr.Int32(tmpl.Parallelism)
 		if err != nil {
 			return err
 		}
