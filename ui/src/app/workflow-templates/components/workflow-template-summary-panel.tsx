@@ -8,7 +8,6 @@ import {services} from '../../shared/services';
 interface Props {
     template: WorkflowTemplate;
     onChange: (template: WorkflowTemplate) => void;
-    onError: (error: Error) => void;
 }
 
 export const WorkflowTemplateSummaryPanel = (props: Props) => {
@@ -34,12 +33,11 @@ export const WorkflowTemplateSummaryPanel = (props: Props) => {
                 <div className='white-box__details'>
                     <ResourceEditor
                         value={props.template}
-                        onSubmit={(value: WorkflowTemplate) => {
+                        onSubmit={(value: WorkflowTemplate) =>
                             services.workflowTemplate
                                 .update(value, props.template.metadata.name, props.template.metadata.namespace)
                                 .then(workflowTemplate => props.onChange(workflowTemplate))
-                                .catch(err => props.onError(err));
-                        }}
+                        }
                         kind='WorkflowTemplate'
                         title='Update Workflow Template'
                     />

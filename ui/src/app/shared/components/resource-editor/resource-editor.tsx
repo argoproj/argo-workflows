@@ -15,7 +15,7 @@ interface Props<T> {
     value: T;
     readonly?: boolean;
     editing?: boolean;
-    onSubmit?: (value: T) => void;
+    onSubmit?: (value: T) => Promise<any>;
 }
 
 interface State {
@@ -29,7 +29,11 @@ const LOCAL_STORAGE_KEY = 'ResourceEditorLang';
 
 export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private set lang(lang: string) {
-        this.setState({lang, value: stringify(parse(this.state.value), lang)});
+        try {
+            this.setState({lang, error: null, value: stringify(parse(this.state.value), lang)});
+        } catch (error) {
+            this.setState({error});
+        }
     }
 
     private static saveLang(newLang: string) {
@@ -152,8 +156,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            this.props.onSubmit(parse(this.state.value));
-            this.setState({editing: false});
+            this.props.onSubmit(parse(this.state.value)).catch(error => this.setState({error}));
         } catch (error) {
             this.setState({error});
         }
