@@ -10,5 +10,5 @@ import (
 
 func TestIsResourceQuotaConflictErr(t *testing.T) {
 	assert.False(t, IsResourceQuotaConflictErr(apierr.NewConflict(schema.GroupResource{}, "", nil)))
-	assert.True(t, IsResourceQuotaConflictErr(apierr.NewConflict(schema.GroupResource{"v1", "resourcequotas"}, "", nil)))
+	assert.True(t, IsResourceQuotaConflictErr(apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
 }
