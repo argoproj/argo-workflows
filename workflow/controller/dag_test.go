@@ -1875,3 +1875,158 @@ func TestDagOptionalInputArtifacts(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)
 	}
 }
+
+var testDagTargetTaskOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-primay-branch-6bnnl
+spec:
+  arguments: {}
+  entrypoint: statis
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: a
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit!
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: exit
+    outputs: {}
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: steps
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: step-a
+        template: a
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        onExit: exit
+        template: steps
+    inputs: {}
+    metadata: {}
+    name: statis
+    outputs: {}
+status:
+  nodes:
+    dag-primay-branch-6bnnl:
+      children:
+      - dag-primay-branch-6bnnl-1650817843
+      displayName: dag-primay-branch-6bnnl
+      finishedAt: "2020-08-10T14:30:19Z"
+      id: dag-primay-branch-6bnnl
+      name: dag-primay-branch-6bnnl
+      outboundNodes:
+      - dag-primay-branch-6bnnl-1181733215
+      phase: Running
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: statis
+      templateScope: local/dag-primay-branch-6bnnl
+      type: DAG
+    dag-primay-branch-6bnnl-1181733215:
+      boundaryID: dag-primay-branch-6bnnl-1650817843
+      displayName: step-a
+      finishedAt: "2020-08-10T14:30:11Z"
+      hostNodeName: minikube
+      id: dag-primay-branch-6bnnl-1181733215
+      name: dag-primay-branch-6bnnl.A[0].step-a
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-primay-branch-6bnnl/dag-primay-branch-6bnnl-1181733215/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: a
+      templateScope: local/dag-primay-branch-6bnnl
+      type: Pod
+    dag-primay-branch-6bnnl-1650817843:
+      boundaryID: dag-primay-branch-6bnnl
+      children:
+      - dag-primay-branch-6bnnl-3841864351
+      - dag-primay-branch-6bnnl-1342580575
+      displayName: A
+      finishedAt: "2020-08-10T14:30:13Z"
+      id: dag-primay-branch-6bnnl-1650817843
+      name: dag-primay-branch-6bnnl.A
+      outboundNodes:
+      - dag-primay-branch-6bnnl-1181733215
+      phase: Running
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: steps
+      templateScope: local/dag-primay-branch-6bnnl
+      type: Steps
+    dag-primay-branch-6bnnl-3841864351:
+      boundaryID: dag-primay-branch-6bnnl-1650817843
+      children:
+      - dag-primay-branch-6bnnl-1181733215
+      displayName: '[0]'
+      finishedAt: "2020-08-10T14:30:13Z"
+      id: dag-primay-branch-6bnnl-3841864351
+      name: dag-primay-branch-6bnnl.A[0]
+      phase: Running
+      startedAt: "2020-08-10T14:30:08Z"
+      templateName: steps
+      templateScope: local/dag-primay-branch-6bnnl
+      type: StepGroup
+  phase: Running
+  resourcesDuration:
+    cpu: 5
+    memory: 2
+  startedAt: "2020-08-10T14:30:08Z"
+`
+
+func TestDagTargetTaskOnExit(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(testDagTargetTaskOnExit)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	onExitNode := woc.wf.GetNodeByName("A.onExit")
+	if assert.NotNil(t, onExitNode) {
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	}
+}
