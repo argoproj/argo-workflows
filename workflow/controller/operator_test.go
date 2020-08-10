@@ -3142,6 +3142,9 @@ func TestRetryNodeOutputs(t *testing.T) {
 	}
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
+	assert.Contains(t, scope.scope, "steps.influx.id")
+	assert.Contains(t, scope.scope, "steps.influx.startedAt")
+	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
 }
 
 var containerOutputsResult = `
