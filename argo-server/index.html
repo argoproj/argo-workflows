@@ -2146,7 +2146,7 @@ argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="
 </code></pre></div>
 
 
-<p>Add <code>BASH_HREF</code> as environment variable to <code>deployment/argo-server</code> :</p>
+<p>Add <code>BASE_HREF</code> as environment variable to <code>deployment/argo-server</code> :</p>
 <div class="codehilite"><pre><span></span><code>        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
           <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
           <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">server</span><span class="p p-Indicator">]</span>
