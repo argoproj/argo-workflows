@@ -1675,6 +1675,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#artifact-mount-path" title="Artifact mount path" class="md-nav__link">
+    Artifact mount path
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#building-the-workflow-executor-image-for-windows" title="Building the workflow executor image for Windows" class="md-nav__link">
     Building the workflow executor image for Windows
   </a>
@@ -1907,6 +1914,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#artifact-mount-path" title="Artifact mount path" class="md-nav__link">
+    Artifact mount path
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#building-the-workflow-executor-image-for-windows" title="Building the workflow executor image for Windows" class="md-nav__link">
     Building the workflow executor image for Windows
   </a>
@@ -2005,6 +2019,25 @@ hello-windows-s9kk5: <span class="s2">&quot;Hello from Windows Container!&quot;<
 $ argo logs hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187: <span class="s2">&quot;Hello from Windows Container!&quot;</span>
 hello-hybrid-plqpp-764774907: Hello from Linux Container!
+</code></pre></div>
+
+
+<h2 id="artifact-mount-path">Artifact mount path<a class="headerlink" href="#artifact-mount-path" title="Permanent link">&para;</a></h2>
+<p>Artifacts work mostly the same way as on Linux. All paths get automatically mapped to the <code>C:</code> drive. For example:</p>
+<div class="codehilite"><pre><span></span><code> <span class="c1"># ...</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">print-message</span>
+      <span class="nt">inputs</span><span class="p">:</span>
+        <span class="nt">artifacts</span><span class="p">:</span>
+          <span class="c1"># unpack the message input artifact</span>
+          <span class="c1"># and put it at C:\message</span>
+          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
+            <span class="nt">path</span><span class="p">:</span> <span class="s">&quot;/message&quot;</span> <span class="c1"># gets mapped to C:\message</span>
+      <span class="nt">nodeSelector</span><span class="p">:</span>
+        <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">windows</span>
+      <span class="nt">container</span><span class="p">:</span>
+        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mcr.microsoft.com/windows/nanoserver:1809</span>
+        <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span>
+        <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;dir</span><span class="nv"> </span><span class="s">C:\\message&quot;</span><span class="p p-Indicator">]</span>   <span class="c1"># List the C:\message directory</span>
 </code></pre></div>
 
 
