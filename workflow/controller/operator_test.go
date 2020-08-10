@@ -330,7 +330,7 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
 		Duration:    "10s",
-		Factor:      2,
+		Factor:      intstrutil.ParsePtr("2"),
 		MaxDuration: "10m",
 	}
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -386,7 +386,7 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
-		Factor:   2,
+		Factor:   intstrutil.ParsePtr("2"),
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -4123,7 +4123,7 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
 			Duration:    "0",
-			Factor:      1,
+			Factor:      intstrutil.ParsePtr("1"),
 			MaxDuration: "20",
 		},
 	}

@@ -1042,7 +1042,7 @@ type Backoff struct {
 	// Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
-	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
 	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
