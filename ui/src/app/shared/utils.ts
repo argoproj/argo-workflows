@@ -47,7 +47,7 @@ export const Utils = {
     },
 
     isWorkflowSuspended(wf: models.Workflow): boolean {
-        if (wf === null || wf.spec === null) {
+        if (!wf || !wf.spec) {
             return false;
         }
         if (wf.spec.suspend !== undefined && wf.spec.suspend) {
@@ -64,7 +64,7 @@ export const Utils = {
     },
 
     isWorkflowRunning(wf: models.Workflow): boolean {
-        if (wf === null || wf.spec === null) {
+        if (!wf || !wf.spec) {
             return false;
         }
         return wf.status.phase === 'Running';

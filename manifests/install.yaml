@@ -44,6 +44,26 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: workfloweventbindings.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowEventBinding
+    listKind: WorkflowEventBindingList
+    plural: workfloweventbindings
+    shortNames:
+    - wfeb
+    singular: workfloweventbinding
+  scope: Namespaced
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: workflows.argoproj.io
 spec:
   additionalPrinterColumns:
@@ -319,6 +339,7 @@ rules:
   - argoproj.io
   resources:
   - workflows
+  - workfloweventbindings
   - workflowtemplates
   - cronworkflows
   - clusterworkflowtemplates

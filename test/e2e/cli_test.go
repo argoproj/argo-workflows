@@ -421,7 +421,7 @@ func (s *CLISuite) TestWorkflowDeleteCompleted() {
 }
 
 func (s *CLISuite) TestWorkflowDeleteResubmitted() {
-	(s.Given().
+	s.Given().
 		Workflow("@testdata/exit-1.yaml").
 		When().
 		SubmitWorkflow().
@@ -439,10 +439,10 @@ func (s *CLISuite) TestWorkflowDeleteResubmitted() {
 		When().
 		Given().
 		RunCli([]string{"delete", "--resubmitted", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-		if assert.NoError(t, err) {
-			assert.Contains(t, output, "deleted")
-		}
-	}))
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
 }
 
 func (s *CLISuite) TestWorkflowDeleteOlder() {
@@ -818,6 +818,14 @@ func (s *CLISuite) TestCron() {
 		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--schedule", "1 2 3 * *"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Schedule:                      1 2 3 * *")
+			}
+		})
+	})
+
+	s.Run("Create Parameter Override", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/param.yaml", "-p", "message=\"bar test passed\""}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "bar test passed")
 			}
 		})
 	})
