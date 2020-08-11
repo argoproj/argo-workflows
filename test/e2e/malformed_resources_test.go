@@ -79,6 +79,7 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Name)
 			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Contains(t, status.Message, "malformed workflow template")
 		})
 }
 
@@ -106,6 +107,7 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplateRef() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Name)
 			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Contains(t, status.Message, "malformed cluster workflow template")
 		})
 }
 

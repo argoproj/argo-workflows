@@ -14,7 +14,7 @@ import (
 func Test_objectToWorkflowTemplate(t *testing.T) {
 	t.Run("NotUnstructured", func(t *testing.T) {
 		v, err := objectToWorkflowTemplate(&corev1.Status{})
-		assert.EqualError(t, err, "malformed workflow template: expected *unstructured.Unstructured, got ")
+		assert.EqualError(t, err, "malformed workflow template: expected \"*unstructured.Unstructured\", got \"\"")
 		assert.NotNil(t, v)
 	})
 	t.Run("MalformedWorkflowTemplate", func(t *testing.T) {
@@ -22,7 +22,7 @@ func Test_objectToWorkflowTemplate(t *testing.T) {
 			"metadata": map[string]interface{}{"namespace": "my-ns", "name": "my-name"},
 			"spec":     "ops",
 		}})
-		assert.EqualError(t, err, "malformed workflow template my-ns/my-name: cannot restore struct from: string")
+		assert.EqualError(t, err, "malformed workflow template \"my-ns/my-name\": cannot restore struct from: string")
 		if assert.NotNil(t, v) {
 			assert.Equal(t, "my-ns", v.Namespace)
 			assert.Equal(t, "my-name", v.Name)

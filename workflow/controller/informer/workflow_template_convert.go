@@ -14,11 +14,11 @@ func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, er
 	v := &wfv1.WorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {
-		return v, fmt.Errorf("malformed workflow template: expected *unstructured.Unstructured, got %s", reflect.TypeOf(object).Name())
+		return v, fmt.Errorf("malformed workflow template: expected \"*unstructured.Unstructured\", got \"%s\"", reflect.TypeOf(object).Name())
 	}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
-		return v, fmt.Errorf("malformed workflow template %s/%s: %w", un.GetNamespace(), un.GetName(), err)
+		return v, fmt.Errorf("malformed workflow template \"%s/%s\": %w", un.GetNamespace(), un.GetName(), err)
 	}
 	return v, nil
 }
