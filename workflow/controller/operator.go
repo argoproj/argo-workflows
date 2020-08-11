@@ -2170,6 +2170,7 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		key := fmt.Sprintf("%s.startedAt", prefix)
 		scope.addParamToScope(key, node.StartedAt.Time.Format(time.RFC3339))
 	}
+
 	if !node.FinishedAt.Time.IsZero() {
 		key := fmt.Sprintf("%s.finishedAt", prefix)
 		scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
