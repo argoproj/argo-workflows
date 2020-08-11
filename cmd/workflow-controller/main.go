@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/cli"
+	"github.com/argoproj/pkg/errors"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
@@ -78,7 +79,8 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			errors.CheckError(err)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
