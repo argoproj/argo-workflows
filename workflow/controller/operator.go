@@ -2741,10 +2741,9 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	if woc.wfSpec.PodDisruptionBudget == nil {
 		return nil
 	}
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
-		if err != nil {
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !retry.IsRetryableKubeAPIError(err) {
 				return false, err
