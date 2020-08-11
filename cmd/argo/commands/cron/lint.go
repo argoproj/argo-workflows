@@ -13,12 +13,29 @@ func NewLintCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "lint FILE...",
-		Short: "validate files or directories of cron workflow manifests",
+		Short: "Lint files or directories of manifests",
+		Example: `
+# Lint one or more files:
+
+argo lint file.yaml file.json
+
+# Lint a directory:
+
+argo lint examples/
+
+# Lint one or more files:
+
+argo lint file.yaml file.json
+
+# Lint from stdin:
+
+argo lint /dev/stdin < file.yaml
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			lint.Lint(ctx, apiClient, client.Namespace(), args, strict)
 		},
 	}
-	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")
 	return command
 }

@@ -60,7 +60,8 @@ func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace stri
 				return nil
 			}
 			switch filepath.Ext(info.Name()) {
-			case ".yaml", ".yml", ".json":
+			// empty string allows us to lint `/dev/stdin`
+			case ".yaml", ".yml", ".json", "":
 				data, err := ioutil.ReadFile(file)
 				if err != nil {
 					log.Errorf("%s: %s", file, err)
