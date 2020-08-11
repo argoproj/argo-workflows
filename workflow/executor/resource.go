@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -18,6 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/workflow/common"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -114,8 +118,29 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
+// signalMonitoring start the goroutine which listens for a SIGUSR2.
+// Upon receiving of the signal, We update the pod annotation and exit the process.
+func (we *WorkflowExecutor) signalMonitoring() {
+	log.Infof("Starting SIGUSR2 signal monitor")
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs, os_specific.GetOsSignal())
+	go func() {
+		for {
+			<-sigs
+			log.Infof("Received SIGUSR2 signal. Process is terminated")
+			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, "Received user signal to terminate the workflow")
+			os.Exit(130)
+		}
+	}()
+}
+
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName string) error {
+
+	// Monitor the SIGTERM
+	we.signalMonitoring()
+
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
