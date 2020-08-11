@@ -61,7 +61,7 @@ func trimStdoutLines(text string) string {
 			return strings.Join(split[i:], "\n")
 		}
 	}
-	panic(text)
+	return text
 }
 
 func newFailureText(suite, text string) failureText {
