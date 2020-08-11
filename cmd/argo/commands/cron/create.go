@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -96,15 +95,6 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
-	var cronWf wfv1.CronWorkflow
-	var jsonOpts []json.JSONOpt
-	if strict {
-		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
-	}
-	err := json.Unmarshal(wfBytes, &cronWf, jsonOpts...)
-	if err == nil {
-		return []wfv1.CronWorkflow{cronWf}
-	}
 	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs

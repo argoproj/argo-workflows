@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -79,15 +78,6 @@ func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) 
 
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml
 func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
-	var cwft wfv1.ClusterWorkflowTemplate
-	var jsonOpts []json.JSONOpt
-	if strict {
-		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
-	}
-	err := json.Unmarshal(wfBytes, &cwft, jsonOpts...)
-	if err == nil {
-		return []wfv1.ClusterWorkflowTemplate{cwft}, nil
-	}
 	yamlWfs, err := common.SplitClusterWorkflowTemplateYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs, nil
