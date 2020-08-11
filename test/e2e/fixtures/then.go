@@ -27,14 +27,17 @@ type Then struct {
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	t.t.Helper()
 	return t.expectWorkflow(t.workflowName, block)
 }
 
 func (t *Then) ExpectWorkflowName(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	t.t.Helper()
 	return t.expectWorkflow(workflowName, block)
 }
 
 func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	t.t.Helper()
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
@@ -56,6 +59,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 }
 
 func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {
+	t.t.Helper()
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
@@ -72,6 +76,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 }
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
+	t.t.Helper()
 	log.Info("Listing workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
@@ -86,6 +91,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 }
 
 func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then {
+	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -114,6 +120,7 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
+	t.t.Helper()
 	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	if t.t.Failed() {

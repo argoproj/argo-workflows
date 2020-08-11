@@ -18,11 +18,13 @@ import (
 type Given struct {
 	t                 *testing.T
 	client            v1alpha1.WorkflowInterface
+	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
 	wf                *wfv1.Workflow
+	wfeb              *wfv1.WorkflowEventBinding
 	wfTemplates       []*wfv1.WorkflowTemplate
 	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
 	cronWf            *wfv1.CronWorkflow
@@ -35,6 +37,14 @@ type Given struct {
 // 1. A file name if it starts with "@"
 // 2. Raw YAML.
 func (g *Given) Workflow(text string) *Given {
+	g.t.Helper()
+	g.wf = &wfv1.Workflow{}
+	g.readResource(text, g.wf)
+	g.checkImages(g.wf.Spec.Templates)
+	return g
+}
+
+func (g *Given) readResource(text string, v metav1.Object) {
 	g.t.Helper()
 	var file string
 	if strings.HasPrefix(text, "@") {
@@ -54,24 +64,22 @@ func (g *Given) Workflow(text string) *Given {
 		}
 		file = f.Name()
 	}
-	// read the file in
+
 	{
 		file, err := ioutil.ReadFile(file)
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		g.wf = &wfv1.Workflow{}
-		err = yaml.Unmarshal(file, g.wf)
+		err = yaml.Unmarshal(file, v)
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		g.checkImages(g.wf.Spec.Templates)
-		g.checkLabels(g.wf.ObjectMeta)
+		g.checkLabels(v)
 	}
-	return g
 }
 
 func (g *Given) checkImages(templates []wfv1.Template) {
+	g.t.Helper()
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := func(image string) bool {
@@ -91,87 +99,40 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 	}
 }
 
-func (g *Given) checkLabels(m metav1.ObjectMeta) {
+func (g *Given) checkLabels(m metav1.Object) {
+	g.t.Helper()
 	if m.GetLabels()[Label] == "" && m.GetLabels()[LabelCron] == "" {
-		g.t.Fatalf("%s%s does not have one of  {%s, %s} labels", m.Name, m.GenerateName, Label, LabelCron)
+		g.t.Fatalf("%s%s does not have one of  {%s, %s} labels", m.GetName(), m.GetGenerateName(), Label, LabelCron)
 	}
 }
 
 func (g *Given) WorkflowName(name string) *Given {
+	g.t.Helper()
 	g.workflowName = name
 	return g
 }
 
+func (g *Given) WorkflowEventBinding(text string) *Given {
+	g.t.Helper()
+	g.wfeb = &wfv1.WorkflowEventBinding{}
+	g.readResource(text, g.wfeb)
+	return g
+}
+
 func (g *Given) WorkflowTemplate(text string) *Given {
-	var file string
-	if strings.HasPrefix(text, "@") {
-		file = strings.TrimPrefix(text, "@")
-	} else {
-		f, err := ioutil.TempFile("", "argo_e2e")
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		_, err = f.Write([]byte(text))
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		err = f.Close()
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		file = f.Name()
-	}
-	// read the file in
-	{
-		file, err := ioutil.ReadFile(file)
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		wfTemplate := &wfv1.WorkflowTemplate{}
-		err = yaml.Unmarshal(file, wfTemplate)
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		g.checkImages(wfTemplate.Spec.Templates)
-		g.checkLabels(wfTemplate.ObjectMeta)
-		g.wfTemplates = append(g.wfTemplates, wfTemplate)
-	}
+	g.t.Helper()
+	wfTemplate := &wfv1.WorkflowTemplate{}
+	g.readResource(text, wfTemplate)
+	g.checkImages(wfTemplate.Spec.Templates)
+	g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	return g
 }
 
 func (g *Given) CronWorkflow(text string) *Given {
-	var file string
-	if strings.HasPrefix(text, "@") {
-		file = strings.TrimPrefix(text, "@")
-	} else {
-		f, err := ioutil.TempFile("", "argo_e2e")
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		_, err = f.Write([]byte(text))
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		err = f.Close()
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		file = f.Name()
-	}
-	// read the file in
-	{
-		file, err := ioutil.ReadFile(file)
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		g.cronWf = &wfv1.CronWorkflow{}
-		err = yaml.Unmarshal(file, g.cronWf)
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		g.checkImages(g.cronWf.Spec.WorkflowSpec.Templates)
-		g.checkLabels(g.cronWf.ObjectMeta)
-	}
+	g.t.Helper()
+	g.cronWf = &wfv1.CronWorkflow{}
+	g.readResource(text, g.cronWf)
+	g.checkImages(g.cronWf.Spec.WorkflowSpec.Templates)
 	return g
 }
 
@@ -180,6 +141,7 @@ var NoError = func(t *testing.T, output string, err error) {
 }
 
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
+	g.t.Helper()
 	output, err := Exec(name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
@@ -193,38 +155,10 @@ func (g *Given) RunCli(args []string, block func(t *testing.T, output string, er
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {
-	var file string
-	if strings.HasPrefix(text, "@") {
-		file = strings.TrimPrefix(text, "@")
-	} else {
-		f, err := ioutil.TempFile("", "argo_e2e")
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		_, err = f.Write([]byte(text))
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		err = f.Close()
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		file = f.Name()
-	}
-	// read the file in
-	{
-		file, err := ioutil.ReadFile(file)
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		cwfTemplate := &wfv1.ClusterWorkflowTemplate{}
-		err = yaml.Unmarshal(file, cwfTemplate)
-		if err != nil {
-			g.t.Fatal(err)
-		}
-		g.checkLabels(cwfTemplate.ObjectMeta)
-		g.cwfTemplates = append(g.cwfTemplates, cwfTemplate)
-	}
+	g.t.Helper()
+	cwfTemplate := &wfv1.ClusterWorkflowTemplate{}
+	g.readResource(text, cwfTemplate)
+	g.cwfTemplates = append(g.cwfTemplates, cwfTemplate)
 	return g
 }
 
@@ -232,10 +166,12 @@ func (g *Given) When() *When {
 	return &When{
 		t:                 g.t,
 		wf:                g.wf,
+		wfeb:              g.wfeb,
 		wfTemplates:       g.wfTemplates,
 		cwfTemplates:      g.cwfTemplates,
 		cronWf:            g.cronWf,
 		client:            g.client,
+		wfebClient:        g.wfebClient,
 		wfTemplateClient:  g.wfTemplateClient,
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,

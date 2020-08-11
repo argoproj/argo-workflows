@@ -33,6 +33,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/archive"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
@@ -476,8 +477,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				intOrString := intstr.Parse(fileContents)
-				output = &intOrString
+				output = intstrutil.ParsePtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -491,15 +491,13 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				intOrString := intstr.Parse(string(data))
-				output = &intOrString
+				output = intstrutil.ParsePtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
 		if output.Type == intstr.String {
-			trimmed := intstr.Parse(strings.TrimSuffix(output.String(), "\n"))
-			output = &trimmed
+			output = intstrutil.ParsePtr(strings.TrimSuffix(output.String(), "\n"))
 		}
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
