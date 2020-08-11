@@ -692,6 +692,9 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
+		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && *i < 0 {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
+		}
 	}
 	if tmpl.Parallelism != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates", tmpl.Name)
