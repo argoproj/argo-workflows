@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,11 +36,13 @@ func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace stri
 	cronWorkflowsClient := apiClient.NewCronWorkflowServiceClient()
 	workflowsClient := apiClient.NewWorkflowServiceClient()
 	workflowTemplatesClient := apiClient.NewWorkflowTemplateServiceClient()
-	lintData := func(data []byte) error {
+	// if we did not lint anything at all - that is an error
+	lintData := func(data []byte) (bool, error) {
 		objects, err := common.ParseObjects(data, strict)
 		if err != nil {
-			return err
+			return false, err
 		}
+		linted := false
 		for _, obj := range objects {
 			var err error
 			// we should prefer the object's namespace
@@ -53,32 +56,39 @@ func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace stri
 			switch v := obj.(type) {
 			case *wfv1.ClusterWorkflowTemplate:
 				if kinds["ClusterWorkflowTemplate"] {
+					linted = true
 					_, err = clusterWorkflowTemplateClient.LintClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{Template: v})
 				}
 			case *wfv1.CronWorkflow:
 				if kinds["CronWorkflow"] {
+					linted = true
 					_, err = cronWorkflowsClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: v})
 				}
 			case *wfv1.Workflow:
 				if kinds["Workflow"] {
+					linted = true
 					_, err = workflowsClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: v})
 				}
 			case *wfv1.WorkflowEventBinding:
 				// noop
 			case *wfv1.WorkflowTemplate:
 				if kinds["WorkflowTemplate"] {
+					linted = true
 					_, err = workflowTemplatesClient.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{Namespace: namespace, Template: v})
 				}
 			default:
 				// silently ignore unknown kinds
 			}
 			if err != nil {
-				return err
+				return linted, err
 			}
 		}
-		return nil
+		return linted, nil
 	}
-	invalid := false
+	// if we had any error - that is an error
+	anyErrors := false
+	// if we did not lint anything - that is an error
+	anythingLinted := false
 	for _, file := range files {
 		_ = filepath.Walk(file, func(file string, info os.FileInfo, err error) error {
 			if info.IsDir() {
@@ -90,24 +100,32 @@ func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace stri
 				data, err := ioutil.ReadFile(file)
 				if err != nil {
 					log.Errorf("%s: %s", file, err)
-					invalid = true
+					anyErrors = true
 					return nil
 				}
-				err = lintData(data)
+				linted, err := lintData(data)
 				if err != nil {
 					log.Errorf("%s: %s", file, err)
-					invalid = true
+					anyErrors = true
 					return nil
 				}
-				fmt.Printf("%s is valid\n", file)
+				if !linted {
+					fmt.Printf("%s: ignored\n", file)
+				} else {
+					anythingLinted = true
+					fmt.Printf("%s is valid\n", file)
+				}
 			default:
 				log.Warnf("%s: not .yaml, .yml, or .json", file)
 			}
 			return nil
 		})
 	}
-	if invalid {
+	if anyErrors {
 		log.Fatalf("Errors encountered in validation")
+	}
+	if !anythingLinted {
+		log.Fatalf("Error in %s: there was nothing to validate", strings.Join(files, ","))
 	}
 	fmt.Printf("Manifests validated\n")
 }

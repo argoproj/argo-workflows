@@ -574,6 +574,16 @@ spec:
 				}
 			})
 	})
+
+	s.Run("Different Kind", func() {
+		s.Given().
+			RunCli("", []string{"lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
 	s.Run("Valid", func() {
 		s.Given().
 			RunCli("", []string{"lint", "testdata/exit-1.yaml"}, func(t *testing.T, output string, err error) {
@@ -798,8 +808,8 @@ func (s *CLISuite) TestCron() {
 		s.Given().
 			RunCli("", []string{"cron", "lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
-					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+					assert.Contains(t, output, "testdata/workflow-template-nested-template.yaml: ignored")
+					assert.Contains(t, output, "Error in testdata/workflow-template-nested-template.yaml: there was nothing to validate")
 				}
 			})
 	})
@@ -808,8 +818,8 @@ func (s *CLISuite) TestCron() {
 		s.Given().
 			RunCli("", []string{"cron", "lint", "testdata"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
-					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+					assert.Contains(t, output, "testdata/workflow-template-nested-template.yaml: ignored")
+					assert.Contains(t, output, "Errors encountered in validation")
 				}
 			})
 	})
@@ -904,6 +914,14 @@ func (s *CLISuite) TestCron() {
 }
 
 func (s *CLISuite) TestClusterTemplateCommands() {
+	s.Run("Lint", func() {
+		s.Given().
+			RunCli("", []string{"cluster-template", "lint", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
 	s.Run("Create", func() {
 		s.Given().
 			RunCli("", []string{"cluster-template", "create", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
