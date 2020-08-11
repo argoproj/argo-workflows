@@ -24,7 +24,6 @@ func NewLintCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
 
 			lint := func(file string) error {
 				wfs, err := validate.ParseWfFromFile(file, strict)
@@ -35,7 +34,10 @@ func NewLintCommand() *cobra.Command {
 					return fmt.Errorf("there was nothing to validate")
 				}
 				for _, wf := range wfs {
-					_, err := serviceClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: &wf})
+					if wf.Namespace == "" {
+						wf.Namespace = client.Namespace()
+					}
+					_, err := serviceClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: wf.Namespace, Workflow: &wf})
 					if err != nil {
 						return err
 					}
