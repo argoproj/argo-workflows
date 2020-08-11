@@ -677,6 +677,45 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestParametrizableLimit() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: param-limit
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+      - name: limit
+        value: "1"
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: limit
+    retryStrategy:
+      limit: "{{inputs.parameters.limit}}"
+    container:
+      image: argoproj/argosay:v2
+      args: [exit, 1]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			if node := status.Nodes.FindByDisplayName("param-limit"); assert.NotNil(t, node) {
+				assert.Contains(t, node.Message, "No more retries left")
+			}
+			assert.Len(t, status.Nodes, 3)
+		})
+}
+
 func (s *FunctionalSuite) TestStorageQuotaLimit() {
 	// TODO Test fails due to unstable PVC creation and termination in K3S
 	// PVC will stuck in pending state for while.

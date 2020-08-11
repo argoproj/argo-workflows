@@ -1971,9 +1971,9 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 			if boundaryTemplate != nil && boundaryTemplate.Parallelism != nil {
 				activeSiblings := woc.countActiveChildren(boundaryID)
-				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *tmpl.Parallelism, boundaryID)
-				if activeSiblings >= *tmpl.Parallelism {
-					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *tmpl.Parallelism)
+				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
+				if activeSiblings >= *boundaryTemplate.Parallelism {
+					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplate.Parallelism)
 					return ErrParallelismReached
 				}
 			}
