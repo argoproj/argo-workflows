@@ -1014,7 +1014,7 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow(20 * time.Second)
 }
 
-func (s *CLIWithServerSuite) TestSynchronizationWfLevelMutex() {
+func (s *CLISuite) TestSynchronizationWfLevelMutex() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@functional/synchronization-mutex-wf-level.yaml").
@@ -1036,7 +1036,7 @@ func (s *CLIWithServerSuite) TestSynchronizationWfLevelMutex() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestTemplateLevelMutex() {
+func (s *CLISuite) TestTemplateLevelMutex() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
@@ -1046,8 +1046,11 @@ func (s *CLIWithServerSuite) TestTemplateLevelMutex() {
 		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
-		WaitForWorkflow(20 * time.Second).
-		DeleteConfigMap()
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
 }
 
 func TestCLISuite(t *testing.T) {
