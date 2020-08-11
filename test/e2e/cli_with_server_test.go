@@ -41,7 +41,7 @@ func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *CLISuite) TestAuthToken() {
-	s.Given().RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
+	s.Given().RunCli("", []string{"auth", "token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, output)
 	})
@@ -55,7 +55,7 @@ func (s *CLIWithServerSuite) TestTokenArg() {
 func (s *CLIWithServerSuite) TestVersion() {
 	s.Run("Default", func() {
 		s.Given().
-			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+			RunCli("", []string{"version"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					if assert.Len(t, lines, 17) {
@@ -84,7 +84,7 @@ func (s *CLIWithServerSuite) TestVersion() {
 	})
 	s.Run("Short", func() {
 		s.Given().
-			RunCli([]string{"version", "--short"}, func(t *testing.T, output string, err error) {
+			RunCli("", []string{"version", "--short"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					if assert.Len(t, lines, 3) {
@@ -112,7 +112,7 @@ func (s *CLIWithServerSuite) TestArchive() {
 		})
 	s.Run("List", func() {
 		s.Given().
-			RunCli([]string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
+			RunCli("", []string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					lines := strings.Split(output, "\n")
 					assert.Contains(t, lines[0], "NAMESPACE")
@@ -126,7 +126,7 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 	s.Run("Get", func() {
 		s.Given().
-			RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+			RunCli("", []string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Name:")
 					assert.Contains(t, output, "Namespace:")
@@ -141,7 +141,7 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 	s.Run("Delete", func() {
 		s.Given().
-			RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
+			RunCli("", []string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Archived workflow")
 					assert.Contains(t, output, "deleted")
@@ -159,14 +159,14 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
 		CreateConfigMap("my-config", semaphoreData).
-		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "semaphore-wf-level-1")
 			}
 		}).
 		SubmitWorkflow().
 		Wait(1*time.Second).
-		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Pending")
 		}).
 		WaitForWorkflow(30 * time.Second).
@@ -189,7 +189,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		Wait(1*time.Second).
-		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(20 * time.Second).
@@ -243,28 +243,28 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflowToStart(5*time.Second).
-		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "has not been set and does not have a default value")
 		}).
-		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow values set")
 		}).
-		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			// Cannot double-set the same parameter
 			assert.Error(t, err)
 			assert.Contains(t, output, "it was already set")
 		}).
-		RunCli([]string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve-no-vars"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"node", "set", "suspend-template", "--output-parameter", "message=\"Hello, World!\"", "--node-field-selector", "displayName=approve-no-vars"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "cannot set output parameters because node is not expecting any raw parameters")
 		}).
-		RunCli([]string{"node", "set", "suspend-template", "--message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"node", "set", "suspend-template", "--message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow values set")
 		}).
-		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow suspend-template resumed")
 		}).

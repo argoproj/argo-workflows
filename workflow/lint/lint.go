@@ -47,6 +47,9 @@ func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace stri
 			if namespace == "" {
 				namespace = defaultNamespace
 			}
+			// behaviour here:
+			// - if the kind in a workflow kind, then we either ignore (if we're only linting specifically all kinds)
+			// - otherwise we ignore the resource completely
 			switch v := obj.(type) {
 			case *wfv1.ClusterWorkflowTemplate:
 				if kinds["ClusterWorkflowTemplate"] {

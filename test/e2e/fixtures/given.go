@@ -135,14 +135,12 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
-
+func (g *Given) RunCli(stdin string, args []string, block func(t *testing.T, output string, err error), _ ...string) *Given {
 	g.t.Helper()
 	if !strings.Contains(strings.Join(args, ","), "-n") {
 		args = append([]string{"-n", Namespace}, args...)
 	}
-	output, err := runCli("../../dist/argo", args...)
-
+	output, err := runCli(stdin, "../../dist/argo", args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()

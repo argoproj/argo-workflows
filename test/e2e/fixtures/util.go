@@ -15,10 +15,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func runCli(name string, args ...string) (string, error) {
+func runCli(stdin, name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
-	log.Info(cmd.String())
+	cmd.Stdin = bytes.NewBufferString(stdin)
+	log.Infof("%s < %s", cmd.String(), stdin)
 	output, err := runWithTimeout(cmd)
 	// Command completed before timeout. Print output and error if it exists.
 	if err != nil {

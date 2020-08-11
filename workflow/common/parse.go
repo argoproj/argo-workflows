@@ -37,7 +37,7 @@ func ParseObjects(body []byte, strict bool) ([]metav1.Object, error) {
 	manifests := make([]metav1.Object, 0)
 	var opts []yaml.JSONOpt
 	if strict {
-		opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		opts = append(opts, yaml.DisallowUnknownFields)
 	}
 	for _, text := range yamlSeparator.Split(string(body), -1) {
 		if strings.TrimSpace(text) == "" {

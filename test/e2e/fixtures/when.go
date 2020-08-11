@@ -223,9 +223,9 @@ func (w *When) And(block func()) *When {
 	return w
 }
 
-func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+func (w *When) RunCli(stdin string, args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := runCli(stdin, "../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()
