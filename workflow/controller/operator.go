@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo/util/intstr"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
 	"github.com/argoproj/pkg/humanize"
@@ -25,7 +26,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -294,7 +294,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(10)
+			woc.requeue(10 * time.Second)
 			return
 		}
 		msg := "pvc create error"
@@ -516,6 +516,20 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
+
+	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
+	// cache is now invalid. It's very common that we will need to immediately re-operate on a
+	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
+	// informer's cache to catch up to the version of the workflow we just persisted. Without
+	// this sleep, the next worker to work on this workflow will very likely operate on a stale
+	// object and redo work.
+	//
+	// This line was removed in v2.9.0, but issues arose with the controller picking up outdated versions of workflows,
+	// operating on them, then attempting to update the resources on the cluster. Since the workflows were outdated,
+	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
+	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
+	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
+	time.Sleep(1 * time.Second)
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -2046,8 +2060,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 					return nil, err
 				}
 			}
-			intOrString := intstr.Parse(val)
-			param.Value = &intOrString
+			param.Value = intstr.ParsePtr(val)
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
 		}
@@ -2146,6 +2159,21 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	// in the retry group instead of the retry node itself.
 	if node.Type == wfv1.NodeTypeRetry {
 		node = getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	}
+
+	if node.ID != "" {
+		key := fmt.Sprintf("%s.id", prefix)
+		scope.addParamToScope(key, node.ID)
+	}
+
+	if !node.StartedAt.Time.IsZero() {
+		key := fmt.Sprintf("%s.startedAt", prefix)
+		scope.addParamToScope(key, node.StartedAt.Time.Format(time.RFC3339))
+	}
+
+	if !node.FinishedAt.Time.IsZero() {
+		key := fmt.Sprintf("%s.finishedAt", prefix)
+		scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
 	}
 
 	if node.PodIP != "" {
@@ -2806,10 +2834,9 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	if woc.wfSpec.PodDisruptionBudget == nil {
 		return nil
 	}
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
-		if err != nil {
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !retry.IsRetryableKubeAPIError(err) {
 				return false, err

@@ -38,6 +38,7 @@ rules:
       - argoproj.io
     resources:
       - workflows
+      - workfloweventbindings
       - workflowtemplates
       - cronworkflows
     verbs:
