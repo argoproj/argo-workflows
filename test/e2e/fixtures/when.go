@@ -197,7 +197,7 @@ func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *
 
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
-	log.Infof("Waiting for %s", humanize.Duration(timeout))
+	log.Infof("Waiting for %v", timeout)
 	time.Sleep(timeout)
 	log.Infof("Done waiting")
 	return w
