@@ -2051,6 +2051,10 @@
 </thead>
 <tbody>
 <tr>
+<td><code>steps.&lt;STEPNAME&gt;.id</code></td>
+<td>unique id of container step</td>
+</tr>
+<tr>
 <td><code>steps.&lt;STEPNAME&gt;.ip</code></td>
 <td>IP address of a previous daemon container step</td>
 </tr>
@@ -2061,6 +2065,14 @@
 <tr>
 <td><code>steps.&lt;STEPNAME&gt;.exitCode</code></td>
 <td>Exit code of any previous script or container step</td>
+</tr>
+<tr>
+<td><code>steps.&lt;STEPNAME&gt;.startedAt</code></td>
+<td>Timestamp when the step started</td>
+</tr>
+<tr>
+<td><code>steps.&lt;STEPNAME&gt;.finishedAt</code></td>
+<td>Timestamp when the step finished</td>
 </tr>
 <tr>
 <td><code>steps.&lt;STEPNAME&gt;.outputs.result</code></td>
@@ -2090,6 +2102,10 @@
 </thead>
 <tbody>
 <tr>
+<td><code>tasks.&lt;TASKNAME&gt;.id</code></td>
+<td>unique id of container task</td>
+</tr>
+<tr>
 <td><code>tasks.&lt;TASKNAME&gt;.ip</code></td>
 <td>IP address of a previous daemon container task</td>
 </tr>
@@ -2102,11 +2118,19 @@
 <td>Exit code of any previous script or container task</td>
 </tr>
 <tr>
+<td><code>tasks.&lt;TASKNAME&gt;.startedAt</code></td>
+<td>Timestamp when the task started</td>
+</tr>
+<tr>
+<td><code>tasks.&lt;TASKNAME&gt;.finishedAt</code></td>
+<td>Timestamp when the task finished</td>
+</tr>
+<tr>
 <td><code>tasks.&lt;TASKNAME&gt;.outputs.result</code></td>
 <td>Output result of any previous container or script task</td>
 </tr>
 <tr>
-<td><code>tasks.&lt;STEPNAME&gt;.outputs.parameters</code></td>
+<td><code>tasks.&lt;TASKNAME&gt;.outputs.parameters</code></td>
 <td>When the previous task uses 'withItems', this contains a JSON array of the output parameters of each invocation</td>
 </tr>
 <tr>
