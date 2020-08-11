@@ -2030,3 +2030,151 @@ func TestDagTargetTaskOnExit(t *testing.T) {
 		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
 	}
 }
+
+var testEmptyWithParamDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-hang-pcwmr
+spec:
+  arguments: {}
+  entrypoint: dag
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: scheduler
+        template: job-scheduler
+      - arguments:
+          parameters:
+          - name: job_name
+            value: '{{item.job_name}}'
+        dependencies:
+        - scheduler
+        name: children
+        template: whalesay
+        withParam: '{{tasks.scheduler.outputs.parameters.scheduled-jobs}}'
+      - arguments: {}
+        dependencies:
+        - children
+        name: postprocess
+        template: whalesay
+    inputs: {}
+    metadata: {}
+    name: dag
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - echo Decided not to schedule any jobs
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: job-scheduler
+    outputs:
+      parameters:
+      - name: scheduled-jobs
+        value: '[]'
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  finishedAt: null
+  nodes:
+    dag-hang-pcwmr:
+      children:
+      - dag-hang-pcwmr-1789179473
+      displayName: dag-hang-pcwmr
+      finishedAt: null
+      id: dag-hang-pcwmr
+      name: dag-hang-pcwmr
+      phase: Running
+      startedAt: "2020-08-11T18:19:28Z"
+      templateName: dag
+      templateScope: local/dag-hang-pcwmr
+      type: DAG
+    dag-hang-pcwmr-1415348083:
+      boundaryID: dag-hang-pcwmr
+      displayName: postprocess
+      finishedAt: "2020-08-11T18:19:40Z"
+      hostNodeName: dech117
+      id: dag-hang-pcwmr-1415348083
+      name: dag-hang-pcwmr.postprocess
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 3
+      startedAt: "2020-08-11T18:19:36Z"
+      templateName: whalesay
+      templateScope: local/dag-hang-pcwmr
+      type: Pod
+    dag-hang-pcwmr-1738428083:
+      boundaryID: dag-hang-pcwmr
+      children:
+      - dag-hang-pcwmr-1415348083
+      displayName: children
+      finishedAt: "2020-08-11T18:19:35Z"
+      id: dag-hang-pcwmr-1738428083
+      name: dag-hang-pcwmr.children
+      phase: Succeeded
+      startedAt: "2020-08-11T18:19:35Z"
+      templateName: whalesay
+      templateScope: local/dag-hang-pcwmr
+      type: TaskGroup
+    dag-hang-pcwmr-1789179473:
+      boundaryID: dag-hang-pcwmr
+      children:
+      - dag-hang-pcwmr-1738428083
+      displayName: scheduler
+      finishedAt: "2020-08-11T18:19:33Z"
+      hostNodeName: dech113
+      id: dag-hang-pcwmr-1789179473
+      name: dag-hang-pcwmr.scheduler
+      outputs:
+        exitCode: "0"
+        parameters:
+        - name: scheduled-jobs
+          value: '[]'
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 4
+        memory: 4
+      startedAt: "2020-08-11T18:19:28Z"
+      templateName: job-scheduler
+      templateScope: local/dag-hang-pcwmr
+      type: Pod
+  phase: Running
+  startedAt: "2020-08-11T18:19:28Z"
+`
+
+func TestEmptyWithParamDAG(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(testEmptyWithParamDAG)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+}
