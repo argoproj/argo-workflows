@@ -311,7 +311,7 @@ func (s *CLISuite) TestNodeSuspendResume() {
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
 		}, "suspended node", 30*time.Second).
-		RunCli("", []string{ "resume", "node-suspend", "--node-field-selector", "inputs.parameters.tag.value=suspend1-tag1"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"resume", "node-suspend", "--node-field-selector", "inputs.parameters.tag.value=suspend1-tag1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow node-suspend resumed")
 			}
@@ -500,10 +500,10 @@ spec:
     container:
       image: my-image
 `, []string{"lint", "/dev/stdin"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "/dev/stdin is valid")
-			}
-		})
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "/dev/stdin is valid")
+				}
+			})
 	})
 	s.Run("LintAllKinds", func() {
 		s.Given().
@@ -519,10 +519,10 @@ spec:
     container:
       image: my-image
 `, []string{"lint", "--all-kinds", "/dev/stdin"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "/dev/stdin is valid")
-			}
-		})
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "/dev/stdin is valid")
+				}
+			})
 	})
 	s.Run("LintFile", func() {
 		s.Given().RunCli("", []string{"lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
@@ -790,7 +790,7 @@ func (s *CLISuite) TestCron() {
 		s.Given().RunCli("", []string{"cron", "lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "cron/basic.yaml is valid")
-				assert.Contains(t, output, "Cron workflow manifests validated")
+				assert.Contains(t, output, "Manifests validated")
 			}
 		})
 	})
@@ -1042,7 +1042,6 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow(20 * time.Second)
 }
 
-
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 	s.testNeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
@@ -1058,7 +1057,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli("", []string{"stop", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf stopped")
 			}).
-			WaitForWorkflow(10 * time.Second).
+			WaitForWorkflow(10*time.Second).
 			RunCli("", []string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Stop'")
 			}).
@@ -1080,26 +1079,25 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli("", []string{"terminate", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf-1 terminated")
 			}).
-			WaitForWorkflow(10 * time.Second).
+			WaitForWorkflow(10*time.Second).
 			RunCli("", []string{"get", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
 			})
-    
 	})
 }
-        
+
 func (s *CLISuite) TestMetaDataNamespace() {
 	s.testNeedsOffloading()
 	s.Given().
-		RunCli("", []string{"cron","create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
+		RunCli("", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "default")
 		}).
-	RunCli("", []string{"cron","get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-		assert.Contains(t, output, "default")
-	}).
-	RunCli("", []string{"cron","delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-		assert.Contains(t, output, "default")
-	})
+		RunCli("", []string{"cron", "get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "default")
+		}).
+		RunCli("", []string{"cron", "delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "default")
+		})
 }
 
 func TestCLISuite(t *testing.T) {
