@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/pkg/humanize"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -198,7 +197,7 @@ func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *
 
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
-	log.Infof("Waiting for %s", humanize.Duration(timeout))
+	log.Infof("Waiting for %v", timeout)
 	time.Sleep(timeout)
 	log.Infof("Done waiting")
 	return w
@@ -225,7 +224,7 @@ func (w *When) And(block func()) *When {
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()

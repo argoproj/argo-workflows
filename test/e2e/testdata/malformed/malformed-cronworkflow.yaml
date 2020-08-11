@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: malformed
+  labels:
+    argo-e2e: malformed
+spec:
+  workflowSpec:
+    arguments:
+      parameters:
+        someParam: "Hello, world!"

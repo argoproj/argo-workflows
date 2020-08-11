@@ -96,6 +96,7 @@ func (s *E2ESuite) countWorkflows() int {
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
+
 	// delete all cron workflows
 	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	s.CheckError(err)
