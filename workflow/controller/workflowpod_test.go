@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
-
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -755,7 +753,7 @@ func TestOutOfCluster(t *testing.T) {
 
 // TestPriority verifies the ability to carry forward priorityClassName and priority.
 func TestPriority(t *testing.T) {
-	priority := intstr.FromInt(15)
+	priority := int32(15)
 	woc := newWoc()
 	woc.wfSpec.Templates[0].PriorityClassName = "foo"
 	woc.wfSpec.Templates[0].Priority = &priority

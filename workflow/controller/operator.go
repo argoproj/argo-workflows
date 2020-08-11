@@ -1943,12 +1943,8 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		// if we are about to execute a DAG/Steps template, make sure we havent already reached our limit
 		if tmpl.Parallelism != nil && node != nil {
 			templateActivePods := woc.countActivePods(node.ID)
-			tmplParallelism, err := intstr.Int64(tmpl.Parallelism)
-			if err != nil {
-				return err
-			}
-			if templateActivePods >= *tmplParallelism {
-				woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", node.ID, templateActivePods, *tmplParallelism)
+			if templateActivePods >= *tmpl.Parallelism {
+				woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", node.ID, templateActivePods, *tmpl.Parallelism)
 				return ErrParallelismReached
 			}
 		}
@@ -1975,13 +1971,9 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 			if boundaryTemplate != nil && boundaryTemplate.Parallelism != nil {
 				activeSiblings := woc.countActiveChildren(boundaryID)
-				boundaryTemplateParallelism, err := intstr.Int64(tmpl.Parallelism)
-				if err != nil {
-					return err
-				}
-				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplateParallelism, boundaryID)
-				if activeSiblings >= *boundaryTemplateParallelism {
-					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplateParallelism)
+				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *tmpl.Parallelism, boundaryID)
+				if activeSiblings >= *tmpl.Parallelism {
+					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *tmpl.Parallelism)
 					return ErrParallelismReached
 				}
 			}

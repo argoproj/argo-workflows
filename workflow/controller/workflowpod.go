@@ -640,11 +640,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	}
 	// Set priority (if specified)
 	if tmpl.Priority != nil {
-		tmplPriority, err := intstr.Int32(tmpl.Parallelism)
-		if err != nil {
-			return err
-		}
-		pod.Spec.Priority = tmplPriority
+		pod.Spec.Priority = tmpl.Priority
 	} else if wfSpec.PodPriority != nil {
 		pod.Spec.Priority = wfSpec.PodPriority
 	}

@@ -481,7 +481,7 @@ type Template struct {
 	// Parallelism limits the max total parallel pods that can execute at the same time within the
 	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
 	// pods created by those templates will not be counted towards this total.
-	Parallelism *intstr.IntOrString `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
+	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,23,opt,name=parallelism"`
 
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
@@ -498,7 +498,7 @@ type Template struct {
 	PriorityClassName string `json:"priorityClassName,omitempty" protobuf:"bytes,26,opt,name=priorityClassName"`
 
 	// Priority to apply to workflow pods.
-	Priority *intstr.IntOrString `json:"priority,omitempty" protobuf:"bytes,27,opt,name=priority"`
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,27,opt,name=priority"`
 
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,28,opt,name=serviceAccountName"`

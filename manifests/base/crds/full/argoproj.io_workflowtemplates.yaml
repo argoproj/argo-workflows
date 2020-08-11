@@ -4006,17 +4006,13 @@ spec:
                         type: string
                     type: object
                   parallelism:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    x-kubernetes-int-or-string: true
+                    format: int64
+                    type: integer
                   podSpecPatch:
                     type: string
                   priority:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    x-kubernetes-int-or-string: true
+                    format: int32
+                    type: integer
                   priorityClassName:
                     type: string
                   resource:

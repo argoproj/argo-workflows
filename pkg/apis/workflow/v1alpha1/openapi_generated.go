@@ -3447,7 +3447,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"parallelism": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 					"tolerations": {
@@ -3486,7 +3487,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"priority": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Priority to apply to workflow pods.",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"serviceAccountName": {
