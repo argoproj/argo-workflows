@@ -2797,6 +2797,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.MutexHolding": {
+      "description": "MutexHolding holds the resource that holds the mutex lock.",
       "type": "object",
       "properties": {
         "holderName": {
@@ -2810,6 +2811,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.MutexStatus": {
+      "description": "MutexStatus stores resources that holds the lock and also waits for the lock.",
       "type": "object",
       "properties": {
         "holding": {
@@ -3517,6 +3519,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.SynchronizationStatus": {
+      "description": "SynchronizationStatus stores the status of semaphore and mutex.",
       "type": "object",
       "properties": {
         "mutex": {

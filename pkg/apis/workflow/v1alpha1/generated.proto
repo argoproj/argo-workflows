@@ -522,6 +522,7 @@ message Mutex {
   optional string name = 1;
 }
 
+// MutexHolding holds the resource that holds the mutex lock.
 message MutexHolding {
   // Name of the mutex
   optional string mutex = 1;
@@ -530,6 +531,7 @@ message MutexHolding {
   optional string holderName = 2;
 }
 
+// MutexStatus stores resources that holds the lock and also waits for the lock.
 message MutexStatus {
   // Holding stores the list of resource acquired synchronization lock for workflows.
   // +listType=atomic
@@ -922,6 +924,7 @@ message Synchronization {
   optional Mutex mutex = 2;
 }
 
+// SynchronizationStatus stores the status of semaphore and mutex.
 message SynchronizationStatus {
   // Semaphore stores this workflow's Semaphore holder details
   optional SemaphoreStatus semaphore = 1;

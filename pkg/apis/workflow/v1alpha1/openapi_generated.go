@@ -1832,7 +1832,8 @@ func schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "MutexHolding holds the resource that holds the mutex lock.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"mutex": {
 						SchemaProps: spec.SchemaProps{
@@ -1858,7 +1859,8 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "MutexStatus stores resources that holds the lock and also waits for the lock.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"holding": {
 						VendorExtensible: spec.VendorExtensible{
@@ -3249,7 +3251,8 @@ func schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "SynchronizationStatus stores the status of semaphore and mutex.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"semaphore": {
 						SchemaProps: spec.SchemaProps{

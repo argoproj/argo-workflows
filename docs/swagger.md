@@ -1183,12 +1183,16 @@ Mutex holds Mutex configuration
 
 #### io.argoproj.workflow.v1alpha1.MutexHolding
 
+MutexHolding holds the resource that holds the mutex lock.
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | holderName | string | HolderName stores the current mutex holder name. | No |
 | mutex | string | Name of the mutex | No |
 
 #### io.argoproj.workflow.v1alpha1.MutexStatus
+
+MutexStatus stores resources that holds the lock and also waits for the lock.
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
@@ -1457,6 +1461,8 @@ Synchronization holds synchronization lock configuration
 | semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreRef](#io.argoproj.workflow.v1alpha1.semaphoreref) | Semaphore holds the Semaphore configuration | No |
 
 #### io.argoproj.workflow.v1alpha1.SynchronizationStatus
+
+SynchronizationStatus stores the status of semaphore and mutex.
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |

@@ -1009,6 +1009,7 @@ type SemaphoreHolding struct {
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
+// MutexHolding holds the resource that holds the mutex lock.
 type MutexHolding struct {
 	// Name of the mutex
 	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
@@ -1016,6 +1017,7 @@ type MutexHolding struct {
 	HolderName string `json:"holderName,omitempty" protobuf:"bytes,2,opt,name=holderName"`
 }
 
+// MutexStatus stores resources that holds the lock and also waits for the lock.
 type MutexStatus struct {
 	// Holding stores the list of resource acquired synchronization lock for workflows.
 	// +listType=atomic
@@ -1025,6 +1027,7 @@ type MutexStatus struct {
 	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
+// SynchronizationStatus stores the status of semaphore and mutex.
 type SynchronizationStatus struct {
 	// Semaphore stores this workflow's Semaphore holder details
 	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`

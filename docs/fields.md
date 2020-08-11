@@ -1965,7 +1965,7 @@ Outputs hold parameters, artifacts, and results from a step
 
 ## SynchronizationStatus
 
-_No description available_
+SynchronizationStatus stores the status of semaphore and mutex.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3193,7 +3193,7 @@ _No description available_
 
 ## MutexStatus
 
-_No description available_
+MutexStatus stores resources that holds the lock and also waits for the lock.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3738,7 +3738,7 @@ Sequence expands a workflow step into numeric range
 
 ## MutexHolding
 
-_No description available_
+MutexHolding holds the resource that holds the mutex lock.
 
 ### Fields
 | Field Name | Field Type | Description   |
