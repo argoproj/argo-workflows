@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -41,6 +42,7 @@ func testReport() {
 			if c.Failure.Text != "" {
 				x := newFailureText(s.Name, c.Failure.Text)
 				if x.file == "" {
+					_, _ = fmt.Fprintf(os.Stderr, "could not parse "+c.Failure.Text)
 					continue
 				}
 				// https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-error-message

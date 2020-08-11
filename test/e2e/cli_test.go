@@ -579,8 +579,8 @@ spec:
 		s.Given().
 			RunCli("", []string{"lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
-					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+					assert.Contains(t, output, "testdata/workflow-template-nested-template.yaml: ignored")
+					assert.Contains(t, output, "Error in testdata/workflow-template-nested-template.yaml: there was nothing to validate")
 				}
 			})
 	})
