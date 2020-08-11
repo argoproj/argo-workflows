@@ -1731,17 +1731,17 @@ func (in *TTLStrategy) DeepCopyInto(out *TTLStrategy) {
 	*out = *in
 	if in.SecondsAfterCompletion != nil {
 		in, out := &in.SecondsAfterCompletion, &out.SecondsAfterCompletion
-		*out = new(intstr.IntOrString)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.SecondsAfterSuccess != nil {
 		in, out := &in.SecondsAfterSuccess, &out.SecondsAfterSuccess
-		*out = new(intstr.IntOrString)
+		*out = new(int32)
 		**out = **in
 	}
 	if in.SecondsAfterFailure != nil {
 		in, out := &in.SecondsAfterFailure, &out.SecondsAfterFailure
-		*out = new(intstr.IntOrString)
+		*out = new(int32)
 		**out = **in
 	}
 	return

@@ -3203,26 +3203,27 @@ func schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref common.ReferenceCallback)
 					"secondsAfterCompletion": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecondsAfterCompletion is the number of seconds to live after completion",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"secondsAfterSuccess": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecondsAfterSuccess is the number of seconds to live after success",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"secondsAfterFailure": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SecondsAfterFailure is the number of seconds to live after failure",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
 			},
 		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
