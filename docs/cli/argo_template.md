@@ -49,6 +49,6 @@ argo template [flags]
 * [argo template create](argo_template_create.md)	 - create a workflow template
 * [argo template delete](argo_template_delete.md)	 - delete a workflow template
 * [argo template get](argo_template_get.md)	 - display details about a workflow template
-* [argo template lint](argo_template_lint.md)	 - validate a file or directory of workflow template manifests
+* [argo template lint](argo_template_lint.md)	 - Lint files or directories of manifests
 * [argo template list](argo_template_list.md)	 - list workflow templates
 

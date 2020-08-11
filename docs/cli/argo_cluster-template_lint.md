@@ -1,20 +1,42 @@
 ## argo cluster-template lint
 
-validate files or directories of cluster workflow template manifests
+Lint files or directories of manifests
 
 ### Synopsis
 
-validate files or directories of cluster workflow template manifests
+Lint files or directories of manifests
 
 ```
 argo cluster-template lint FILE... [flags]
+```
+
+### Examples
+
+```
+
+# Lint one or more files:
+
+argo lint file.yaml file.json
+
+# Lint a directory:
+
+argo lint examples/
+
+# Lint one or more files:
+
+argo lint file.yaml file.json
+
+# Lint from stdin:
+
+argo lint /dev/stdin < file.yaml
+
 ```
 
 ### Options
 
 ```
   -h, --help     help for lint
-      --strict   perform strict workflow validation (default true)
+      --strict   perform strict validation (default true)
 ```
 
 ### Options inherited from parent commands

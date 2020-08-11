@@ -53,7 +53,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 * [argo cron](argo_cron.md)	 - manage cron workflows
 * [argo delete](argo_delete.md)	 - delete workflows
 * [argo get](argo_get.md)	 - display details about a workflow
-* [argo lint](argo_lint.md)	 - validate files or directories of workflow manifests
+* [argo lint](argo_lint.md)	 - Lint files or directories of manifests
 * [argo list](argo_list.md)	 - list workflows
 * [argo logs](argo_logs.md)	 - view logs of a pod or workflow
 * [argo node](argo_node.md)	 - perform action on a node in a workflow

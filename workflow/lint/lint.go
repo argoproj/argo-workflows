@@ -18,7 +18,19 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
-func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace string, files []string, strict bool) {
+var AllKinds = map[string]bool{
+	"ClusterWorkflowTemplate": true,
+	"CronWorkflow":            true,
+	"Workflow":                true,
+	"WorkflowEventBinding":    true,
+	"WorkflowTemplate":        true,
+}
+
+func OneKind(kind string) map[string]bool {
+	return map[string]bool{kind: true}
+}
+
+func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace string, files []string, strict bool, kinds map[string]bool) {
 	clusterWorkflowTemplateClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 	cronWorkflowsClient := apiClient.NewCronWorkflowServiceClient()
 	workflowsClient := apiClient.NewWorkflowServiceClient()
@@ -37,13 +49,23 @@ func Lint(ctx context.Context, apiClient apiclient.Client, defaultNamespace stri
 			}
 			switch v := obj.(type) {
 			case *wfv1.ClusterWorkflowTemplate:
-				_, err = clusterWorkflowTemplateClient.LintClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{Template: v})
+				if kinds["ClusterWorkflowTemplate"] {
+					_, err = clusterWorkflowTemplateClient.LintClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{Template: v})
+				}
 			case *wfv1.CronWorkflow:
-				_, err = cronWorkflowsClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: v})
+				if kinds["CronWorkflow"] {
+					_, err = cronWorkflowsClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: v})
+				}
 			case *wfv1.Workflow:
-				_, err = workflowsClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: v})
+				if kinds["Workflow"] {
+					_, err = workflowsClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: v})
+				}
+			case *wfv1.WorkflowEventBinding:
+				// noop
 			case *wfv1.WorkflowTemplate:
-				_, err = workflowTemplatesClient.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{Namespace: namespace, Template: v})
+				if kinds["WorkflowTemplate"] {
+					_, err = workflowTemplatesClient.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{Namespace: namespace, Template: v})
+				}
 			default:
 				// silently ignore unknown kinds
 			}

@@ -9,7 +9,8 @@ import (
 
 func NewLintCommand() *cobra.Command {
 	var (
-		strict bool
+		strict   bool
+		allKinds bool
 	)
 	var command = &cobra.Command{
 		Use:   "lint FILE...",
@@ -33,9 +34,14 @@ argo lint /dev/stdin < file.yaml
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			lint.Lint(ctx, apiClient, client.Namespace(), args, strict)
+			kinds := lint.OneKind("Workflow")
+			if allKinds {
+				kinds = lint.AllKinds
+			}
+			lint.Lint(ctx, apiClient, client.Namespace(), args, strict, kinds)
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")
+	command.Flags().BoolVar(&allKinds, "all-kinds", false, "lint all kinds, not just workflows")
 	return command
 }

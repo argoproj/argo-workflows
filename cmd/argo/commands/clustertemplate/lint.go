@@ -33,7 +33,7 @@ argo lint /dev/stdin < file.yaml
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			lint.Lint(ctx, apiClient, "", args, strict)
+			lint.Lint(ctx, apiClient, "", args, strict, lint.OneKind("ClusterWorkflowTemplate"))
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")

@@ -49,6 +49,6 @@ argo cluster-template [flags]
 * [argo cluster-template create](argo_cluster-template_create.md)	 - create a cluster workflow template
 * [argo cluster-template delete](argo_cluster-template_delete.md)	 - delete a cluster workflow template
 * [argo cluster-template get](argo_cluster-template_get.md)	 - display details about a cluster workflow template
-* [argo cluster-template lint](argo_cluster-template_lint.md)	 - validate files or directories of cluster workflow template manifests
+* [argo cluster-template lint](argo_cluster-template_lint.md)	 - Lint files or directories of manifests
 * [argo cluster-template list](argo_cluster-template_list.md)	 - list cluster workflow templates
 
