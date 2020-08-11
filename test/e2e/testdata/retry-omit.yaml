@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   name: dag-diamond-8q7vp
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   arguments: {}
   entrypoint: diamond
