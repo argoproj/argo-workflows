@@ -658,6 +658,47 @@
         }
       }
     },
+    "/api/v1/events/{namespace}/{discriminator}": {
+      "post": {
+        "tags": [
+          "EventService"
+        ],
+        "operationId": "ReceiveEvent",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions.\nIf empty, then the event is \"broadcast\" to workflow event binding in all namespaces.",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty.\nUsed for edge-cases where the event payload alone is not provide enough information to discriminate the event.\nThis MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or\nto support webhooks on unsecured server. Instead, use access tokens.\nThis is made available as `discriminator` in the event binding selector (`/spec/event/selector)`",
+            "name": "discriminator",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "The event itself can be any data.",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EventResponse"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/info": {
       "get": {
         "tags": [
@@ -2364,6 +2405,21 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Event": {
+      "type": "object",
+      "required": [
+        "selector"
+      ],
+      "properties": {
+        "selector": {
+          "description": "Selector (https://github.com/antonmedv/expr) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == \"test\"`",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.EventResponse": {
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -3336,6 +3392,22 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Submit": {
+      "type": "object",
+      "required": [
+        "workflowTemplateRef"
+      ],
+      "properties": {
+        "arguments": {
+          "description": "Arguments extracted from the event and then set as arguments to the workflow created.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "workflowTemplateRef": {
+          "description": "WorkflowTemplateRef the workflow template to submit",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SubmitOpts": {
       "description": "SubmitOpts are workflow submission options",
       "type": "object",
@@ -3821,6 +3893,10 @@
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
+        "event": {
+          "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",
+          "type": "string"
+        },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",
           "type": "string"
@@ -3933,6 +4009,46 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse": {
       "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowEventBinding": {
+      "description": "WorkflowEventBinding is the definition of an event resource",
+      "type": "object",
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec": {
+      "type": "object",
+      "required": [
+        "event"
+      ],
+      "properties": {
+        "event": {
+          "description": "Event is the event to bind to",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Event"
+        },
+        "submit": {
+          "description": "Submit is the workflow template to submit",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Submit"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.WorkflowLintRequest": {
       "type": "object",

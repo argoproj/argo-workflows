@@ -421,7 +421,7 @@ func (s *CLISuite) TestWorkflowDeleteCompleted() {
 }
 
 func (s *CLISuite) TestWorkflowDeleteResubmitted() {
-	(s.Given().
+	s.Given().
 		Workflow("@testdata/exit-1.yaml").
 		When().
 		SubmitWorkflow().
@@ -442,7 +442,7 @@ func (s *CLISuite) TestWorkflowDeleteResubmitted() {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "deleted")
 			}
-		}))
+		})
 }
 
 func (s *CLISuite) TestWorkflowDeleteOlder() {
