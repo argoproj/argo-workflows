@@ -26,8 +26,8 @@ func Int(is *intstr.IntOrString) (*int, error) {
 
 func Int32(is *intstr.IntOrString) (*int32, error) {
 	v, err := Int(is)
-	if v == nil {
-		return nil, nil
+	if v == nil || err != nil {
+		return nil, err
 	}
 	i := int32(*v)
 	return &i, err
@@ -35,8 +35,8 @@ func Int32(is *intstr.IntOrString) (*int32, error) {
 
 func Int64(is *intstr.IntOrString) (*int64, error) {
 	v, err := Int(is)
-	if v == nil {
-		return nil, nil
+	if v == nil || err != nil {
+		return nil, err
 	}
 	i := int64(*v)
 	return &i, err
