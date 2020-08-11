@@ -300,7 +300,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 		case pod := <-wfc.gcPods:
 			parts := strings.Split(pod, "/")
 			if len(parts) != 2 {
-				log.WithFields(log.Fields{"pod": pod}).Info("Unexpected item on gcPods channel")
+				log.WithFields(log.Fields{"pod": pod}).Warn("Unexpected item on gcPods channel")
 				continue
 			}
 			namespace := parts[0]
@@ -841,12 +841,12 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithFields(log.Fields{"key": key}).Warn("Key in index is not an unstructured")
+		log.WithFields(log.Fields{"key": obj}).Warn("Key in index is not an unstructured")
 		return
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.WithFields(log.Fields{"key": key}).Warn("Invalid workflow object")
+		log.WithFields(log.Fields{"key": obj}).Warn("Invalid workflow object")
 		return
 	}
 	if wf.Status.Synchronization != nil {
