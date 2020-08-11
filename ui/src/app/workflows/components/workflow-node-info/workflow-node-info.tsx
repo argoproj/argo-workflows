@@ -282,10 +282,10 @@ export const WorkflowNodeInfo = (props: Props) => (
                         </div>
                     )
                 },
-                {
+                props.node.type === 'Pod' && {
                     title: 'EVENTS',
                     key: 'events',
-                    content: <EventsPanel namespace={props.workflow.metadata.namespace} fieldSelector={'involvedObject.kind=Pod,involvedObject.name=' + props.node.name} />
+                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.name} />
                 },
                 {
                     title: 'CONTAINERS',

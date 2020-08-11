@@ -4,6 +4,7 @@ import {uiUrl} from '../../base';
 
 import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import {ErrorNotice} from '../error-notice';
+import {ToggleButton} from '../toggle-button';
 import {parse, stringify} from './resource';
 
 require('./resource.scss');
@@ -132,9 +133,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <>
-                        <label className={`argo-button argo-button--base-o ${this.state.lang}`} style={{marginRight: '5px'}} onClick={e => this.changeLang()} key='data-type'>
-                            {this.state.lang === 'yaml' ? <i className='fa fa-check' /> : <i className='fa fa-times' />} YAML
-                        </label>
+                        <ToggleButton toggled={this.state.lang === 'yaml'} onToggle={() => this.changeLang()}>
+                            YAML
+                        </ToggleButton>
                         {this.props.upload && (
                             <label className='argo-button argo-button--base-o' key='upload-file'>
                                 <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
