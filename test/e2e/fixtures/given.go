@@ -137,7 +137,7 @@ func (g *Given) CronWorkflow(text string) *Given {
 
 func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
 
-  g.t.Helper()
+	g.t.Helper()
 	if !strings.Contains(strings.Join(args, ","), "-n") {
 		args = append([]string{"-n", Namespace}, args...)
 	}
