@@ -1,0 +1,17 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.mi {
+  padding: 1em 0;
+  &--row {
+    display: flex;
+    line-height: 2em;
+    &__label, &__data {
+      padding: 0 10px;
+    }
+    &__label {
+      font-weight: 600;
+      border-right: 2px solid $argo-color-gray-3;
+      width: 150px;
+    }
+  }
+}
