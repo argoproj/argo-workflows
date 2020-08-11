@@ -2175,10 +2175,6 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
 	}
 
-	if !node.StartedAt.Time.IsZero() && !node.FinishedAt.Time.IsZero() {
-
-	}
-
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
