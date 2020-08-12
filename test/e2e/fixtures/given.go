@@ -142,7 +142,7 @@ var NoError = func(t *testing.T, output string, err error) {
 
 func (g *Given) Exec(stdin, name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	output, err := runCli(stdin, name, args...)
+	output, err := Exec(stdin, name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()
