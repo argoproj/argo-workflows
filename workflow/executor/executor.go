@@ -39,6 +39,13 @@ import (
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
+var MainContainerStartRetry = wait.Backoff{
+	Steps:    8,
+	Duration: 1 * time.Second,
+	Factor:   1.0,
+	Jitter:   0.1,
+}
+
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
@@ -938,7 +945,18 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 		opts := metav1.ListOptions{
 			FieldSelector: fieldSelector.String(),
 		}
-		watchIf, err := podsIf.Watch(opts)
+
+		var err error
+		var watchIf watch.Interface
+
+		err = wait.ExponentialBackoff(MainContainerStartRetry, func() (bool, error) {
+			watchIf, err = podsIf.Watch(opts)
+			if err != nil {
+				log.Debugf("Failed to establish watch, retrying: %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
 		if err != nil {
 			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)
 		}
