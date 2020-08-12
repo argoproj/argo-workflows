@@ -3,6 +3,7 @@ package workflow
 // Workflow constants
 const (
 	Group                            string = "argoproj.io"
+	Version                          string = "v1alpha1"
 	WorkflowKind                     string = "Workflow"
 	WorkflowSingular                 string = "workflow"
 	WorkflowPlural                   string = "workflows"
