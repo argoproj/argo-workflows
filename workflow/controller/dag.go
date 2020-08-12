@@ -120,7 +120,7 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 // isExpandedNode returns true if this node is a result of a task expansion (i.e. withParam, withItems, etc.)
 // nodeName should be the name of the node, not the task
 func isExpandedNode(nodeName string) bool {
-	return strings.Contains("(", nodeName)
+	return strings.Contains(nodeName, "(")
 }
 
 // assessDAGPhase assesses the overall DAG status
