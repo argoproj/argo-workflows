@@ -80,13 +80,6 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.DeleteResources(Label)
 }
 
-func (s *E2ESuite) countWorkflows() int {
-	workflows, err := s.wfClient.List(metav1.ListOptions{})
-	s.CheckError(err)
-	return len(workflows.Items)
-}
-
-
 var foreground = metav1.DeletePropagationForeground
 var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
 
