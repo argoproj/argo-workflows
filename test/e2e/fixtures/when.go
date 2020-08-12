@@ -129,8 +129,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	logCtx := log.WithFields(log.Fields{"fieldSelector": fieldSelector, "condition": condition, "timeout": timeout})
-	logCtx.Info("Waiting for condition")
+	log.WithFields(log.Fields{"fieldSelector": fieldSelector}).Infof("Waiting %v for workflow %s", timeout, condition)
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -147,10 +146,9 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				logCtx.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
 				if test(wf) {
-					logCtx.Infof("Condition met after %v", time.Since(start).Truncate(time.Second))
+					log.Infof("Condition met after %v", time.Since(start).Truncate(time.Second))
 					w.workflowName = wf.Name
 					return w
 				}
