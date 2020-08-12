@@ -117,6 +117,12 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
+// isExpandedNode returns true if this node is a result of a task expansion (i.e. withParam, withItems, etc.)
+// nodeName should be the name of the node, not the task
+func isExpandedNode(nodeName string) bool {
+	return strings.Contains("(", nodeName)
+}
+
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
 
@@ -163,6 +169,19 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			// To resume the traversal, we look at the children of the last child node.
 			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
 				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
+			}
+		} else if node.Type == wfv1.NodeTypeTaskGroup {
+			// A TaskGroup node will always reflect the status of its expanded tasks (mainly it will be Succeeded if and only if all of its
+			// expanded tasks have succeeded), so each individual expanded task doesn't interest us. To resume the traversal, we look at the
+			// children of its last child node (note that this is arbitrary, since all expanded tasks will have the same children).
+			//
+			// It may be the case that the TaskGroup did not actually expand any nodes, and its children are actually normal subsequent nodes
+			// in the DAG. If a child of this TaskGroup is not an expanded node, then we can assume this is the case. In that case add all
+			// the children of the TaskGroup to the queue
+			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil && isExpandedNode(childNode.Name) {
+				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
+			} else {
+				uniqueQueue.add(generatePhaseNodes(node.Children, branchPhase)...)
 			}
 		} else {
 			uniqueQueue.add(generatePhaseNodes(node.Children, branchPhase)...)
@@ -393,7 +412,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(*newTask)
+	expandedTasks, err := dagCtx.expandTask(*newTask)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
@@ -588,7 +607,7 @@ func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 }
 
 // expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
-func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func (d *dagContext) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -607,6 +626,10 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 			return nil, err
 		}
 	} else {
+		// This task was not expanded. Ensure that this is the case
+		if isExpandedNode(d.taskNodeName(task.Name)) {
+			panic("isExpandedNode returns true when task is not expanded")
+		}
 		return []wfv1.DAGTask{task}, nil
 	}
 
@@ -620,6 +643,10 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 		newTaskName, err := processItem(fstTmpl, task.Name, i, item, &newTask)
 		if err != nil {
 			return nil, err
+		}
+		// This task was expanded. Ensure that this is the case
+		if !isExpandedNode(d.taskNodeName(newTaskName)) {
+			panic("isExpandedNode returns false when task is expanded")
 		}
 		newTask.Name = newTaskName
 		newTask.Template = task.Template
