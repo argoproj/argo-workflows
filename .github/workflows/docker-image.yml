@@ -39,7 +39,7 @@ jobs:
             docker buildx build \
               --platform="linux/amd64,linux/arm64,linux/ppc64le,linux/s390x" \
               --target $target \
-              --tag ${DOCKERIO_ORG}/${target}:${tag}-linux" .
+              --tag ${target}:${tag}-linux" .
           done
 
   # build-windows:
