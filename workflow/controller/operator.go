@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -529,7 +530,22 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
 	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
 	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
-	time.Sleep(1 * time.Second)
+	if os.Getenv("INFORMER_WRITE_BACK") == "true" {
+		woc.log.Infof("attempting informer write back")
+		un, err := wfutil.ToUnstructured(woc.wf)
+		if err != nil {
+			woc.log.Errorf("error converting workflow to unstructured: %s", err)
+			time.Sleep(1 * time.Second)
+		} else {
+			err = woc.controller.wfInformer.GetStore().Update(un)
+			if err != nil {
+				woc.log.Errorf("error writing back workflow to informer: %s", err)
+				time.Sleep(1 * time.Second)
+			}
+		}
+	} else {
+		time.Sleep(1 * time.Second)
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
