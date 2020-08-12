@@ -554,6 +554,12 @@ func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+//TODO-BALA Comment
+func (tmpl *Template) GetTimeoutDuration() *intstr.IntOrString {
+	return nil
+}
+
+
 // GetBaseTemplate returns a base template content.
 func (tmpl *Template) GetBaseTemplate() *Template {
 	baseTemplate := tmpl.DeepCopy()
@@ -810,13 +816,19 @@ type WorkflowStep struct {
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
-	MaxDuration *intstr.IntOrString `json:"maxDuration,omitempty" protobuf:"bytes,12,opt,name=maxDuration"`
+	// TODO-BALA
+	timeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,12,opt,name=timeoutDuration"`
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
 
 func (step *WorkflowStep) GetTemplateName() string {
 	return step.Template
+}
+
+//TODO-BALA Comment
+func (step *WorkflowStep) GetTimeoutDuration() *intstr.IntOrString {
+	return step.timeoutDuration
 }
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
@@ -1042,7 +1054,7 @@ type Backoff struct {
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
 	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
-	// MaxDuration is the maximum amount of time allowed for the backoff strategy
+	// TimeoutDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
@@ -1776,13 +1788,19 @@ type DAGTask struct {
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 
-	MaxDuration *intstr.IntOrString `json:"maxDuration,omitempty" protobuf:"bytes,13,opt,name=maxDuration"`
+	// TODO-BALA
+	TimeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,13,opt,name=timeoutDuration"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
 
 func (t *DAGTask) GetTemplateName() string {
 	return t.Template
+}
+
+//TODO-BALA Comment
+func (t *DAGTask) GetTimeoutDuration() *intstr.IntOrString {
+	return t.TimeoutDuration
 }
 
 func (t *DAGTask) GetTemplateRef() *TemplateRef {

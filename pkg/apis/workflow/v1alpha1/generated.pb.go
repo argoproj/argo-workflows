@@ -3816,9 +3816,9 @@ func (m *DAGTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MaxDuration != nil {
+	if m.TimeoutDuration != nil {
 		{
-			size, err := m.MaxDuration.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.TimeoutDuration.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -7657,9 +7657,9 @@ func (m *WorkflowStep) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MaxDuration != nil {
+	if m.timeoutDuration != nil {
 		{
-			size, err := m.MaxDuration.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.timeoutDuration.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -8330,8 +8330,8 @@ func (m *DAGTask) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	l = len(m.Depends)
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.MaxDuration != nil {
-		l = m.MaxDuration.Size()
+	if m.TimeoutDuration != nil {
+		l = m.TimeoutDuration.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	return n
@@ -9713,8 +9713,8 @@ func (m *WorkflowStep) Size() (n int) {
 	}
 	l = len(m.OnExit)
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.MaxDuration != nil {
-		l = m.MaxDuration.Size()
+	if m.timeoutDuration != nil {
+		l = m.timeoutDuration.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	return n
@@ -9900,7 +9900,7 @@ func (this *Backoff) String() string {
 	s := strings.Join([]string{`&Backoff{`,
 		`Duration:` + fmt.Sprintf("%v", this.Duration) + `,`,
 		`Factor:` + fmt.Sprintf("%v", this.Factor) + `,`,
-		`MaxDuration:` + fmt.Sprintf("%v", this.MaxDuration) + `,`,
+		`TimeoutDuration:` + fmt.Sprintf("%v", this.MaxDuration) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -10065,7 +10065,7 @@ func (this *DAGTask) String() string {
 		`ContinueOn:` + strings.Replace(this.ContinueOn.String(), "ContinueOn", "ContinueOn", 1) + `,`,
 		`OnExit:` + fmt.Sprintf("%v", this.OnExit) + `,`,
 		`Depends:` + fmt.Sprintf("%v", this.Depends) + `,`,
-		`MaxDuration:` + strings.Replace(fmt.Sprintf("%v", this.MaxDuration), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`TimeoutDuration:` + strings.Replace(fmt.Sprintf("%v", this.TimeoutDuration), "IntOrString", "intstr.IntOrString", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -11052,7 +11052,7 @@ func (this *WorkflowStep) String() string {
 		`When:` + fmt.Sprintf("%v", this.When) + `,`,
 		`ContinueOn:` + strings.Replace(this.ContinueOn.String(), "ContinueOn", "ContinueOn", 1) + `,`,
 		`OnExit:` + fmt.Sprintf("%v", this.OnExit) + `,`,
-		`MaxDuration:` + strings.Replace(fmt.Sprintf("%v", this.MaxDuration), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`TimeoutDuration:` + strings.Replace(fmt.Sprintf("%v", this.timeoutDuration), "IntOrString", "intstr.IntOrString", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -12541,7 +12541,7 @@ func (m *Backoff) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxDuration", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutDuration", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -14407,7 +14407,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 13:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxDuration", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutDuration", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -14434,10 +14434,10 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.MaxDuration == nil {
-				m.MaxDuration = &intstr.IntOrString{}
+			if m.TimeoutDuration == nil {
+				m.TimeoutDuration = &intstr.IntOrString{}
 			}
-			if err := m.MaxDuration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.TimeoutDuration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -26697,7 +26697,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxDuration", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutDuration", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -26724,10 +26724,10 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.MaxDuration == nil {
-				m.MaxDuration = &intstr.IntOrString{}
+			if m.timeoutDuration == nil {
+				m.timeoutDuration = &intstr.IntOrString{}
 			}
-			if err := m.MaxDuration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.timeoutDuration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -148,6 +148,14 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
+	// ExecutionDeadline will effect if the pod is in running state.
+	// Set executionDeadline as a ActiveDeadlineSeconds, if it is earlier than configure activeDeadline
+	// This will timeout the pod if Pod is in schedule phase
+	if !opts.executionDeadline.IsZero() && (activeDeadlineSeconds == nil || time.Now().Sub(opts.executionDeadline).Seconds() < float64(*activeDeadlineSeconds)) {
+		newActiveDeadlineSeconds := int64(time.Now().Sub(opts.executionDeadline).Seconds())
+		activeDeadlineSeconds = &newActiveDeadlineSeconds
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,

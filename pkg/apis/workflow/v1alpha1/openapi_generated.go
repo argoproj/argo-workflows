@@ -485,7 +485,7 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 					},
 					"maxDuration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MaxDuration is the maximum amount of time allowed for the backoff strategy",
+							Description: "TimeoutDuration is the maximum amount of time allowed for the backoff strategy",
 							Type:        []string{"string"},
 							Format:      "",
 						},

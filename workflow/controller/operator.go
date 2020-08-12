@@ -1591,6 +1591,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 	}
 
+	// Check if template exceeded its deadline
+	// If not, set it in execution deadline for pod
+	err = woc.checkTemplateDeadline(orgTmpl.GetTimeoutDuration(), node, opts)
+	if err != nil {
+		node = woc.markNodeError(nodeName, err)
+		return node, err
+	}
+
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, opts)
@@ -1662,6 +1670,30 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	return node, nil
+}
+
+//Checks the template if it exceeds its deadline
+func (woc *wfOperationCtx) checkTemplateDeadline(deadline *intstr.IntOrString, node *wfv1.NodeStatus, opts *executeTemplateOpts) error {
+	if node == nil {
+		return nil
+	}
+	if deadline != nil {
+		tmplMaxDuration, err := parseStringToDuration(deadline.StrVal)
+		if err != nil {
+			return err
+		}
+		deadline := node.StartedAt.Add(tmplMaxDuration)
+
+		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
+			return fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
+		}
+
+		// Set the executionDuration if template deadline is earlier then existing executionDeadline
+		if opts.executionDeadline.IsZero() || opts.executionDeadline.After(deadline) {
+			opts.executionDeadline = deadline
+		}
+	}
+	return nil
 }
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
