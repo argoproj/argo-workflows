@@ -559,7 +559,6 @@ func (tmpl *Template) GetTimeoutDuration() *intstr.IntOrString {
 	return nil
 }
 
-
 // GetBaseTemplate returns a base template content.
 func (tmpl *Template) GetBaseTemplate() *Template {
 	baseTemplate := tmpl.DeepCopy()
@@ -817,7 +816,7 @@ type WorkflowStep struct {
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
 	// TODO-BALA
-	timeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,12,opt,name=timeoutDuration"`
+	TimeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,12,opt,name=timeoutDuration"`
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
@@ -828,7 +827,7 @@ func (step *WorkflowStep) GetTemplateName() string {
 
 //TODO-BALA Comment
 func (step *WorkflowStep) GetTimeoutDuration() *intstr.IntOrString {
-	return step.timeoutDuration
+	return step.TimeoutDuration
 }
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
@@ -1054,7 +1053,7 @@ type Backoff struct {
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
 	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
-	// TimeoutDuration is the maximum amount of time allowed for the backoff strategy
+	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
@@ -1408,6 +1407,10 @@ func (n *NodeStatus) GetTemplateName() string {
 
 func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 	return n.TemplateRef
+}
+
+func (n *NodeStatus) GetTimeoutDuration() *intstr.IntOrString {
+	return nil
 }
 
 // IsActiveSuspendNode returns whether this node is an active suspend node

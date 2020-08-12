@@ -485,7 +485,7 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 					},
 					"maxDuration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TimeoutDuration is the maximum amount of time allowed for the backoff strategy",
+							Description: "MaxDuration is the maximum amount of time allowed for the backoff strategy",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -998,7 +998,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
-					"maxDuration": {
+					"timeoutDuration": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
@@ -4592,7 +4592,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
-					"maxDuration": {
+					"timeoutDuration": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},

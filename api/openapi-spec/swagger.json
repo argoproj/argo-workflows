@@ -2301,9 +2301,6 @@
           "description": "Depends are name of other targets which this depends on",
           "type": "string"
         },
-        "maxDuration": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
-        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -2319,6 +2316,9 @@
         "templateRef": {
           "description": "TemplateRef is the reference to the template resource to execute.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
+        "timeoutDuration": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "when": {
           "description": "When is an expression in which the task should conditionally execute",
@@ -4318,9 +4318,6 @@
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
         },
-        "maxDuration": {
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
-        },
         "name": {
           "description": "Name of the step",
           "type": "string"
@@ -4336,6 +4333,9 @@
         "templateRef": {
           "description": "TemplateRef is the reference to the template resource to execute as the step.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
+        "timeoutDuration": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "when": {
           "description": "When is an expression in which the step should conditionally execute",

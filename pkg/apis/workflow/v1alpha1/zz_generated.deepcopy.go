@@ -2323,8 +2323,8 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 		*out = new(ContinueOn)
 		**out = **in
 	}
-	if in.timeoutDuration != nil {
-		in, out := &in.timeoutDuration, &out.timeoutDuration
+	if in.TimeoutDuration != nil {
+		in, out := &in.TimeoutDuration, &out.TimeoutDuration
 		*out = new(intstr.IntOrString)
 		**out = **in
 	}
