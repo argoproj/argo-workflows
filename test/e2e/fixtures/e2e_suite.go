@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+
 	// load the azure plugin (required to authenticate against AKS clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	// load the gcp plugin (required to authenticate against GKE clusters).
@@ -23,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
@@ -85,17 +89,6 @@ var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
 
 func (s *E2ESuite) DeleteResources(label string) {
 
-	hasTestLabel := metav1.ListOptions{LabelSelector: label}
-
-	err := s.cronClient.DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
-
-	err = s.wfebClient.DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
-
-	err = s.wfClient.DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
-
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
 		archive := s.Persistence.workflowArchive
@@ -103,23 +96,46 @@ func (s *E2ESuite) DeleteResources(label string) {
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
 		s.CheckError(err)
-		for _, workflow := range workflows {
-			err := archive.DeleteWorkflow(string(workflow.UID))
+		for _, w := range workflows {
+			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
 		}
 	}
 
-	err = s.wfTemplateClient.DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
+	hasTestLabel := metav1.ListOptions{LabelSelector: label}
+	resources := []schema.GroupVersionResource{
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
+		{Version: "v1", Resource: "resourcequotas"},
+		{Version: "v1", Resource: "configmaps"},
+	}
 
-	err = s.cwfTemplateClient.DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
+	for _, r := range resources {
+		err := s.dynamicFor(r).DeleteCollection(foregroundDelete, hasTestLabel)
+		s.CheckError(err)
+	}
 
-	err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
+	for _, r := range resources {
+		for {
+			list, err := s.dynamicFor(r).List(hasTestLabel)
+			s.CheckError(err)
+			if len(list.Items) == 0 {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
 
-	err = s.KubeClient.CoreV1().ConfigMaps(Namespace).DeleteCollection(foregroundDelete, hasTestLabel)
-	s.CheckError(err)
+func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
+	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
+	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
+		return resourceInterface
+	}
+	return resourceInterface.Namespace(Namespace)
 }
 
 func (s *E2ESuite) CheckError(err error) {

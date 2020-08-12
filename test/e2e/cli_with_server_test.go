@@ -166,9 +166,9 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 			}
 		}).
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodePending
-		}, "pending", time.Second).
+		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
 		WaitForWorkflow(30 * time.Second).
 		DeleteConfigMap("my-config").
 		Then().
@@ -188,8 +188,9 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return strings.Contains(wf.Status.Message, "Waiting for")
-		}, "message is waiting for", 12*time.Second)
+			return wf.Status.Synchronization != nil && len(wf.Status.Synchronization.Semaphore.Waiting) > 0
+		}, "is waiting for semaphore", 12*time.Second).
+		WaitForWorkflow(20 * time.Second)
 }
 
 func (s *CLIWithServerSuite) TestArgoSetOutputs() {

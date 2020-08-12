@@ -14,6 +14,7 @@ const (
 	WorkflowTemplatePlural           string = "workflowtemplates"
 	WorkflowTemplateShortName        string = "wftmpl"
 	WorkflowTemplateFullName         string = WorkflowTemplatePlural + "." + Group
+	WorkflowEventBindingPlural       string = "workfloweventbindings"
 	CronWorkflowKind                 string = "CronWorkflow"
 	CronWorkflowSingular             string = "cronworkflow"
 	CronWorkflowPlural               string = "cronworkflows"
