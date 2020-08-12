@@ -28,11 +28,6 @@ jobs:
       #   env:
       #     DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
-
-          # tag=$(basename $GITHUB_REF)
-          # if [ $tag = "master" ]; then
-          #   tag="latest"
-          # fi
           tag="latest"
           targets="workflow-controller argoexec argocli"
           for target in $targets; do
