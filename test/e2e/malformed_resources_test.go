@@ -19,15 +19,6 @@ type MalformedResourcesSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *MalformedResourcesSuite) AfterTest(suiteName, testName string) {
-
-	// delete any malformed items first, as they'll break later clean-up
-	_, err := fixtures.Exec("", "kubectl", "-n", fixtures.Namespace, "delete", "workflows,workflowtemplates,clusterworkflowtemplates,cronworkflows", "-l", "argo-e2e=malformed")
-	s.CheckError(err)
-
-	s.E2ESuite.AfterTest(suiteName, testName)
-}
-
 func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 	s.Given().
 		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflow.yaml"}, fixtures.NoError).

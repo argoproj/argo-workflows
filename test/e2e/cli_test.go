@@ -596,7 +596,7 @@ spec:
 		s.Given().
 			RunCli("", []string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "expectedfailures/empty-parameter-dag.yaml: templates.abc.tasks.a templates.whalesay inputs.parameters.message was not supplied")
+					assert.Contains(t, output, "expectedfailures/empty-parameter-dag.yaml:")
 				}
 			})
 	})
