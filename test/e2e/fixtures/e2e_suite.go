@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
 	// load the azure plugin (required to authenticate against AKS clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	// load the gcp plugin (required to authenticate against GKE clusters).
@@ -18,7 +19,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
@@ -106,20 +106,6 @@ func (s *E2ESuite) DeleteResources(label string) {
 	err = s.wfebClient.DeleteCollection(nil, options)
 	s.CheckError(err)
 
-	// delete from the archive
-	{
-		if s.Persistence.IsEnabled() {
-			archive := s.Persistence.workflowArchive
-			parse, err := labels.ParseToRequirements(Label)
-			s.CheckError(err)
-			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
-			s.CheckError(err)
-			for _, workflow := range workflows {
-				err := archive.DeleteWorkflow(string(workflow.UID))
-				s.CheckError(err)
-			}
-		}
-	}
 	// delete all workflows
 	err = s.wfClient.DeleteCollection(nil, options)
 	s.CheckError(err)
@@ -136,6 +122,22 @@ func (s *E2ESuite) DeleteResources(label string) {
 	err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).DeleteCollection(nil, options)
 	s.CheckError(err)
 
+	// delete from the archive
+	{
+		if s.Persistence.IsEnabled() {
+			archive := s.Persistence.workflowArchive
+			parse, err := labels.ParseToRequirements(label)
+			s.CheckError(err)
+			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+			s.CheckError(err)
+			for _, workflow := range workflows {
+				err := archive.DeleteWorkflow(string(workflow.UID))
+				s.CheckError(err)
+			}
+		}
+	}
+
+	// TODO test to see if we can remove this line
 	time.Sleep(time.Second)
 }
 
