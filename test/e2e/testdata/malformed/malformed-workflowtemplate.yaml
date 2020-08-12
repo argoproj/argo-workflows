@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: malformed
+  labels:
+    argo-e2e: malformed
+spec:
+  arguments:
+    parameters:
+      someParam: "Hello, world!"

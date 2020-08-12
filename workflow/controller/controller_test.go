@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,7 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
@@ -135,6 +137,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:        kube,
+		dynamicInterface:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
 		wfclientset:          wfclientset,
 		completedPods:        make(chan string, 16),
 		wfInformer:           wfInformer,
