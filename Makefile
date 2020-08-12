@@ -198,6 +198,8 @@ controller: dist/workflow-controller
 dist/workflow-controller: GOARGS = GOOS= GOARCH=
 dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/workflow-controller-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/workflow-controller-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/workflow-controller: $(CONTROLLER_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
@@ -216,6 +218,8 @@ $(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argoexec-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/argoexec-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argoexec-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/argoexec-%: $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
