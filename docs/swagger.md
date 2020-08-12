@@ -272,6 +272,29 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.cronworkflowdeletedresponse) |
 
+### /api/v1/events/{namespace}
+
+#### GET
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path |  | Yes | string |
+| listOptions.labelSelector | query | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | No | string |
+| listOptions.fieldSelector | query | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | No | string |
+| listOptions.watch | query | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | No | boolean (boolean) |
+| listOptions.allowWatchBookmarks | query | allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | No | boolean (boolean) |
+| listOptions.resourceVersion | query | When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv. +optional. | No | string |
+| listOptions.timeoutSeconds | query | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | No | string (int64) |
+| listOptions.limit | query | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | No | string (int64) |
+| listOptions.continue | query | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | No | string |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response.(streaming responses) | object |
+
 ### /api/v1/events/{namespace}/{discriminator}
 
 #### POST
@@ -2151,6 +2174,49 @@ EnvVarSource represents a source for the value of an EnvVar.
 | resourceFieldRef | [io.k8s.api.core.v1.ResourceFieldSelector](#io.k8s.api.core.v1.resourcefieldselector) | Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported. | No |
 | secretKeyRef | [io.k8s.api.core.v1.SecretKeySelector](#io.k8s.api.core.v1.secretkeyselector) | Selects a key of a secret in the pod's namespace | No |
 
+#### io.k8s.api.core.v1.Event
+
+Event is a report of an event somewhere in the cluster.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| action | string | What action was taken/failed regarding to the Regarding object. | No |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#resources> | No |
+| count | integer | The number of times this event has occurred. | No |
+| eventTime | [io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime](#io.k8s.apimachinery.pkg.apis.meta.v1.microtime) | Time when this Event was first observed. | No |
+| firstTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | The time at which the event was first recorded. (Time of server receipt is in TypeMeta.) | No |
+| involvedObject | [io.k8s.api.core.v1.ObjectReference](#io.k8s.api.core.v1.objectreference) | The object that this event is about. | Yes |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
+| lastTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | The time at which the most recent occurrence of this event was recorded. | No |
+| message | string | A human-readable description of the status of this operation. | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | Standard object's metadata. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata> | Yes |
+| reason | string | This should be a short, machine understandable string that gives the reason for the transition into the object's current status. | No |
+| related | [io.k8s.api.core.v1.ObjectReference](#io.k8s.api.core.v1.objectreference) | Optional secondary object for more complex actions. | No |
+| reportingComponent | string | Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`. | No |
+| reportingInstance | string | ID of the controller instance, e.g. `kubelet-xyzf`. | No |
+| series | [io.k8s.api.core.v1.EventSeries](#io.k8s.api.core.v1.eventseries) | Data about the Event series this event represents or nil if it's a singleton Event. | No |
+| source | [io.k8s.api.core.v1.EventSource](#io.k8s.api.core.v1.eventsource) | The component reporting this event. Should be a short machine understandable string. | No |
+| type | string | Type of this event (Normal, Warning), new types could be added in the future | No |
+
+#### io.k8s.api.core.v1.EventSeries
+
+EventSeries contain information on series of events, i.e. thing that was/is happening continuously for some time.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| count | integer | Number of occurrences in this series up to the last heartbeat time | No |
+| lastObservedTime | [io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime](#io.k8s.apimachinery.pkg.apis.meta.v1.microtime) | Time of the last occurrence observed | No |
+| state | string | State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18 | No |
+
+#### io.k8s.api.core.v1.EventSource
+
+EventSource contains information for an event.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| component | string | Component from which the event is generated. | No |
+| host | string | Node name on which the event is generated. | No |
+
 #### io.k8s.api.core.v1.ExecAction
 
 ExecAction describes a "run in container" action.
@@ -2984,6 +3050,14 @@ ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the res
 | manager | string | Manager is an identifier of the workflow managing these fields. | No |
 | operation | string | Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are 'Apply' and 'Update'. | No |
 | time | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply' | No |
+
+#### io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime
+
+MicroTime is version of Time with microsecond level precision.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime | string | MicroTime is version of Time with microsecond level precision. |  |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
 

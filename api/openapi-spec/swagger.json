@@ -658,6 +658,91 @@
         }
       }
     },
+    "/api/v1/events/{namespace}": {
+      "get": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "WatchEvents",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "title": "Stream result of io.k8s.api.core.v1.Event",
+              "properties": {
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                },
+                "result": {
+                  "$ref": "#/definitions/io.k8s.api.core.v1.Event"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events/{namespace}/{discriminator}": {
       "post": {
         "tags": [
@@ -5420,6 +5505,125 @@
         }
       }
     },
+    "io.k8s.api.core.v1.Event": {
+      "description": "Event is a report of an event somewhere in the cluster.",
+      "type": "object",
+      "required": [
+        "metadata",
+        "involvedObject"
+      ],
+      "properties": {
+        "action": {
+          "description": "What action was taken/failed regarding to the Regarding object.",
+          "type": "string"
+        },
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+          "type": "string"
+        },
+        "count": {
+          "description": "The number of times this event has occurred.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "eventTime": {
+          "description": "Time when this Event was first observed.",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime"
+        },
+        "firstTimestamp": {
+          "description": "The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "involvedObject": {
+          "description": "The object that this event is about.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "lastTimestamp": {
+          "description": "The time at which the most recent occurrence of this event was recorded.",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "message": {
+          "description": "A human-readable description of the status of this operation.",
+          "type": "string"
+        },
+        "metadata": {
+          "description": "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "reason": {
+          "description": "This should be a short, machine understandable string that gives the reason for the transition into the object's current status.",
+          "type": "string"
+        },
+        "related": {
+          "description": "Optional secondary object for more complex actions.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+        },
+        "reportingComponent": {
+          "description": "Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.",
+          "type": "string"
+        },
+        "reportingInstance": {
+          "description": "ID of the controller instance, e.g. `kubelet-xyzf`.",
+          "type": "string"
+        },
+        "series": {
+          "description": "Data about the Event series this event represents or nil if it's a singleton Event.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.EventSeries"
+        },
+        "source": {
+          "description": "The component reporting this event. Should be a short machine understandable string.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.EventSource"
+        },
+        "type": {
+          "description": "Type of this event (Normal, Warning), new types could be added in the future",
+          "type": "string"
+        }
+      },
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "",
+          "kind": "Event",
+          "version": "v1"
+        }
+      ]
+    },
+    "io.k8s.api.core.v1.EventSeries": {
+      "description": "EventSeries contain information on series of events, i.e. thing that was/is happening continuously for some time.",
+      "type": "object",
+      "properties": {
+        "count": {
+          "description": "Number of occurrences in this series up to the last heartbeat time",
+          "type": "integer",
+          "format": "int32"
+        },
+        "lastObservedTime": {
+          "description": "Time of the last occurrence observed",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime"
+        },
+        "state": {
+          "description": "State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18",
+          "type": "string"
+        }
+      }
+    },
+    "io.k8s.api.core.v1.EventSource": {
+      "description": "EventSource contains information for an event.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "description": "Component from which the event is generated.",
+          "type": "string"
+        },
+        "host": {
+          "description": "Node name on which the event is generated.",
+          "type": "string"
+        }
+      }
+    },
     "io.k8s.api.core.v1.ExecAction": {
       "description": "ExecAction describes a \"run in container\" action.",
       "type": "object",
@@ -7250,6 +7454,11 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
+    },
+    "io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime": {
+      "description": "MicroTime is version of Time with microsecond level precision.",
+      "type": "string",
+      "format": "date-time"
     },
     "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
       "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects users must create.",
