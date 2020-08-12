@@ -6668,7 +6668,7 @@
 <tbody>
 <tr>
 <td align="center"><code>activeDeadlineSeconds</code></td>
-<td align="center"><code>int64</code></td>
+<td align="center"><a href="#intorstring"><code>IntOrString</code></a></td>
 <td>Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.</td>
 </tr>
 <tr>
@@ -8507,7 +8507,7 @@
 </tr>
 <tr>
 <td align="center"><code>limit</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><a href="#intorstring"><code>IntOrString</code></a></td>
 <td>Limit is the maximum number of attempts when retrying a container</td>
 </tr>
 <tr>
@@ -9881,7 +9881,7 @@
 </tr>
 <tr>
 <td align="center"><code>factor</code></td>
-<td align="center"><code>int32</code></td>
+<td align="center"><a href="#intorstring"><code>IntOrString</code></a></td>
 <td>Factor is a factor to multiply the base duration after each failed retry</td>
 </tr>
 <tr>
@@ -11019,6 +11019,19 @@
 </tr>
 </tbody>
 </table>
+<h2 id="intorstring">IntOrString<a class="headerlink" href="#intorstring" title="Permanent link">&para;</a></h2>
+<p>IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.</p>
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+<ul>
+
+    <li> <a href="https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml">timeouts-step.yaml</a>
+
+    <li> <a href="https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml">timeouts-workflow.yaml</a>
+</ul>
+</details>
+
 <h2 id="container">Container<a class="headerlink" href="#container" title="Permanent link">&para;</a></h2>
 <p>A single application container that you want to run within a pod.</p>
 <details>
@@ -11361,23 +11374,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="intorstring">IntOrString<a class="headerlink" href="#intorstring" title="Permanent link">&para;</a></h2>
-<p>IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.</p>
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-<ul>
-
-    <li> <a href="https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml">cron-backfill.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml">input-artifact-s3.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml">output-artifact-s3.yaml</a>
-
-    <li> <a href="https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml">output-parameter.yaml</a>
-</ul>
-</details>
-
 <h2 id="configmapkeyselector">ConfigMapKeySelector<a class="headerlink" href="#configmapkeyselector" title="Permanent link">&para;</a></h2>
 <p>Selects a key from a ConfigMap.</p>
 <details>
