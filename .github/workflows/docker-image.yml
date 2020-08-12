@@ -24,16 +24,16 @@ jobs:
         with:
           buildx-version: latest
           qemu-version: latest
-      - name: Build & Push Linux Docker Images
-        env:
-          DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
+      # - name: Build & Push Linux Docker Images
+      #   env:
+      #     DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
 
-          tag=$(basename $GITHUB_REF)
-          if [ $tag = "master" ]; then
-            tag="latest"
-          fi
-
+          # tag=$(basename $GITHUB_REF)
+          # if [ $tag = "master" ]; then
+          #   tag="latest"
+          # fi
+          tag="latest"
           targets="workflow-controller argoexec argocli"
           for target in $targets; do
             docker buildx build \
