@@ -135,6 +135,8 @@ func (s *E2ESuite) DeleteResources(label string) {
 	// Delete all resourcequotas
 	err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).DeleteCollection(nil, options)
 	s.CheckError(err)
+
+	time.Sleep(time.Second)
 }
 
 func (s *E2ESuite) CheckError(err error) {
