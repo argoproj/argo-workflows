@@ -24,7 +24,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
 		WorkflowName("my-wf").
 		When().
 		CreateWorkflowTemplates().
-		RunCli("", []string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
 		WaitForWorkflow(20 * time.Second).

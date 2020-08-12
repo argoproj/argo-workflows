@@ -144,7 +144,7 @@ spec:
 			When().
 			CreateCronWorkflow().
 			Then().
-			RunCli("", []string{"cron", "suspend", "test-cron-wf-basic-suspend"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"cron", "suspend", "test-cron-wf-basic-suspend"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-suspend' suspended")
 			}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
@@ -180,7 +180,7 @@ spec:
 			When().
 			CreateCronWorkflow().
 			Then().
-			RunCli("", []string{"cron", "resume", "test-cron-wf-basic-resume"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"cron", "resume", "test-cron-wf-basic-resume"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-resume' resumed")
 			}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {

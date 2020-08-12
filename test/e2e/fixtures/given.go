@@ -140,7 +140,11 @@ var NoError = func(t *testing.T, output string, err error) {
 	assert.NoError(t, err, output)
 }
 
-func (g *Given) Exec(stdin, name string, args []string, block func(t *testing.T, output string, err error)) *Given {
+func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
+	return g.ExecWithStdin("", name, args, block)
+}
+
+func (g *Given) ExecWithStdin(stdin string, name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
 	output, err := Exec(stdin, name, args...)
 	block(g.t, output, err)
@@ -150,11 +154,15 @@ func (g *Given) Exec(stdin, name string, args []string, block func(t *testing.T,
 	return g
 }
 
-func (g *Given) RunCli(stdin string, args []string, block func(t *testing.T, output string, err error)) *Given {
+func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
+	return g.RunCliWithStdin("", args, block)
+}
+
+func (g *Given) RunCliWithStdin(stdin string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	if !strings.Contains(strings.Join(args, ","), "-n") {
 		args = append([]string{"-n", Namespace}, args...)
 	}
-	return g.Exec(stdin, "../../dist/argo", append([]string{"-n", Namespace}, args...), block)
+	return g.ExecWithStdin(stdin, "../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {

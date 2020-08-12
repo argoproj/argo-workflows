@@ -21,7 +21,7 @@ type MalformedResourcesSuite struct {
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 	s.Given().
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflow.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflow.yaml"}, fixtures.NoError).
 		WorkflowName("malformed").
 		When().
 		// it is not possible to wait for this to finish, because it is malformed
@@ -35,8 +35,8 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflow() {
 
 func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 	s.Given().
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
 		When().
 		WaitForWorkflow(1*time.Minute + 15*time.Second).
 		Then().
@@ -48,9 +48,9 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 	s.Given().
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflowtemplate.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-workflow-template-ref.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-workflow-template-ref.yaml"}, fixtures.NoError).
 		When().
 		WaitForWorkflow(15 * time.Second).
 		Then().
@@ -62,8 +62,8 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 	s.Given().
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-workflow-template-ref.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-workflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-workflow-template-ref.yaml"}, fixtures.NoError).
 		When().
 		WaitForWorkflow(15 * time.Second).
 		Then().
@@ -76,9 +76,9 @@ func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplateRef() {
 
 func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 	s.Given().
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
 		When().
 		WaitForWorkflow(15 * time.Second).
 		Then().
@@ -90,8 +90,8 @@ func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplate() {
 
 func (s *MalformedResourcesSuite) TestMalformedClusterWorkflowTemplateRef() {
 	s.Given().
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
-		Exec("", "kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-clusterworkflowtemplate.yaml"}, fixtures.NoError).
+		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-workflow-with-malformed-cluster-workflow-template-ref.yaml"}, fixtures.NoError).
 		When().
 		WaitForWorkflow(15 * time.Second).
 		Then().
