@@ -1047,7 +1047,6 @@ spec:
 `
 
 func TestValidActiveDeadlineSeconds(t *testing.T) {
-	// ensure {{workflow.status}} is not available when not in exit handler
 	_, err := validate(activeDeadlineSeconds)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
