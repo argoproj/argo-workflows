@@ -967,7 +967,7 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap().
+		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -985,12 +985,11 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
-		Wait(12*time.Second).
-		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return strings.Contains(wf.Status.Message, "Waiting for")
+		}, "message is waiting for", 12*time.Second).
 		WaitForWorkflow(20 * time.Second).
-		DeleteConfigMap()
+		DeleteConfigMap("my-config")
 }
 
 func (s *CLISuite) TestRetryOmit() {
@@ -999,7 +998,11 @@ func (s *CLISuite) TestRetryOmit() {
 		Workflow("@testdata/retry-omit.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				return node.Phase == wfv1.NodeOmitted
+			})
+		}, "any node omitted", 20*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("should-not-execute")
@@ -1010,10 +1013,8 @@ func (s *CLISuite) TestRetryOmit() {
 		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "Status:              Running")
-		}).When().
-		WaitForWorkflow(20 * time.Second)
+		})
 }
-
 
 func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 	s.testNeedsOffloading()
@@ -1030,7 +1031,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"stop", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf stopped")
 			}).
-			WaitForWorkflow(10 * time.Second).
+			WaitForWorkflow(10*time.Second).
 			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Stop'")
 			}).
@@ -1052,26 +1053,26 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"terminate", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf-1 terminated")
 			}).
-			WaitForWorkflow(10 * time.Second).
+			WaitForWorkflow(10*time.Second).
 			RunCli([]string{"get", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
 			})
-    
+
 	})
 }
-        
+
 func (s *CLISuite) TestMetaDataNamespace() {
 	s.testNeedsOffloading()
 	s.Given().
-		RunCli([]string{"cron","create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "default")
 		}).
-	RunCli([]string{"cron","get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-		assert.Contains(t, output, "default")
-	}).
-	RunCli([]string{"cron","delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-		assert.Contains(t, output, "default")
-	})
+		RunCli([]string{"cron", "get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "default")
+		}).
+		RunCli([]string{"cron", "delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "default")
+		})
 }
 
 func TestCLISuite(t *testing.T) {

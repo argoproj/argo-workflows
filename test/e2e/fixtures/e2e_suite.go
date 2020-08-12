@@ -46,9 +46,6 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	hydrator          hydrator.Interface
-	// Guard-rail.
-	// The number of archived workflows. If is changes between two tests, we have a problem.
-	numWorkflows int
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -81,11 +78,6 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
-	numWorkflows := s.countWorkflows()
-	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
-		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
-	}
-	s.numWorkflows = numWorkflows
 }
 
 func (s *E2ESuite) countWorkflows() int {
@@ -94,51 +86,47 @@ func (s *E2ESuite) countWorkflows() int {
 	return len(workflows.Items)
 }
 
+
+var foreground = metav1.DeletePropagationForeground
+var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
+
 func (s *E2ESuite) DeleteResources(label string) {
 
-	options := metav1.ListOptions{LabelSelector: label}
+	hasTestLabel := metav1.ListOptions{LabelSelector: label}
 
-	// delete all cron workflows
-	err := s.cronClient.DeleteCollection(nil, options)
+	err := s.cronClient.DeleteCollection(foregroundDelete, hasTestLabel)
 	s.CheckError(err)
 
-	// delete all workflow events
-	err = s.wfebClient.DeleteCollection(nil, options)
+	err = s.wfebClient.DeleteCollection(foregroundDelete, hasTestLabel)
 	s.CheckError(err)
 
-	// delete all workflows
-	err = s.wfClient.DeleteCollection(nil, options)
+	err = s.wfClient.DeleteCollection(foregroundDelete, hasTestLabel)
 	s.CheckError(err)
 
-	// delete all workflow templates
-	err = s.wfTemplateClient.DeleteCollection(nil, options)
-	s.CheckError(err)
-
-	// delete all cluster workflow templates
-	err = s.cwfTemplateClient.DeleteCollection(nil, options)
-	s.CheckError(err)
-
-	// Delete all resourcequotas
-	err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).DeleteCollection(nil, options)
-	s.CheckError(err)
-
-	// delete from the archive
-	{
-		if s.Persistence.IsEnabled() {
-			archive := s.Persistence.workflowArchive
-			parse, err := labels.ParseToRequirements(label)
+	// delete archived workflows from the archive
+	if s.Persistence.IsEnabled() {
+		archive := s.Persistence.workflowArchive
+		parse, err := labels.ParseToRequirements(label)
+		s.CheckError(err)
+		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+		s.CheckError(err)
+		for _, workflow := range workflows {
+			err := archive.DeleteWorkflow(string(workflow.UID))
 			s.CheckError(err)
-			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
-			s.CheckError(err)
-			for _, workflow := range workflows {
-				err := archive.DeleteWorkflow(string(workflow.UID))
-				s.CheckError(err)
-			}
 		}
 	}
 
-	// TODO test to see if we can remove this line
-	time.Sleep(time.Second)
+	err = s.wfTemplateClient.DeleteCollection(foregroundDelete, hasTestLabel)
+	s.CheckError(err)
+
+	err = s.cwfTemplateClient.DeleteCollection(foregroundDelete, hasTestLabel)
+	s.CheckError(err)
+
+	err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).DeleteCollection(foregroundDelete, hasTestLabel)
+	s.CheckError(err)
+
+	err = s.KubeClient.CoreV1().ConfigMaps(Namespace).DeleteCollection(foregroundDelete, hasTestLabel)
+	s.CheckError(err)
 }
 
 func (s *E2ESuite) CheckError(err error) {
@@ -199,6 +187,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	}
 	err = file.Close()
 	s.CheckError(err)
+	s.DeleteResources(Label)
 }
 
 func (s *E2ESuite) printWorkflowDiagnostics(name string) {

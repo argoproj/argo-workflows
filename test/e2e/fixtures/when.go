@@ -6,13 +6,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -33,9 +32,6 @@ type When struct {
 	wfTemplateNames   []string
 	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
-	resourceQuota     *corev1.ResourceQuota
-	storageQuota      *corev1.ResourceQuota
-	configMap         *corev1.ConfigMap
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -234,70 +230,61 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
 	w.t.Helper()
-	//Clean if same map is already exist
-	err := w.kubeClient.CoreV1().ConfigMaps("argo").Delete(name, &metav1.DeleteOptions{})
-	if err != nil {
-		if !apierr.IsNotFound(err) {
-			panic(err)
-		}
-	}
-	obj, err := util.CreateConfigMap(w.kubeClient, "argo", name, data)
+	_, err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Create(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{Label: "true"}},
+		Data:       data,
+	})
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.configMap = obj
 	return w
 }
 
-func (w *When) DeleteConfigMap() *When {
+func (w *When) DeleteConfigMap(name string) *When {
 	w.t.Helper()
-	err := util.DeleteConfigMap(w.kubeClient, w.configMap)
-	if err != nil {
-		if !apierr.IsNotFound(err) {
-			w.t.Fatal(err)
-		}
-	}
-	w.configMap = nil
-	return w
-}
-
-func (w *When) MemoryQuota(quota string) *When {
-	w.t.Helper()
-	obj, err := util.CreateHardMemoryQuota(w.kubeClient, "argo", "memory-quota", quota)
+	err := w.kubeClient.CoreV1().ConfigMaps(Namespace).Delete(name, nil)
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.resourceQuota = obj
 	return w
 }
 
-func (w *When) StorageQuota(quota string) *When {
+func (w *When) MemoryQuota(memoryLimit string) *When {
 	w.t.Helper()
-	obj, err := util.CreateHardStorageQuota(w.kubeClient, "argo", "storage-quota", quota)
+	return w.createResourceQuota("memory-quota", corev1.ResourceList{corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit)})
+}
+
+func (w *When) StorageQuota(storageLimit string) *When {
+	w.t.Helper()
+	return w.createResourceQuota("storage-quota", corev1.ResourceList{"requests.storage": resource.MustParse(storageLimit)})
+}
+
+func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
+	w.t.Helper()
+	_, err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Create(&corev1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Labels: map[string]string{"argo-e2e": "true"}},
+		Spec:       corev1.ResourceQuotaSpec{Hard: rl},
+	})
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.storageQuota = obj
 	return w
 }
 
 func (w *When) DeleteStorageQuota() *When {
-	w.t.Helper()
-	err := util.DeleteQuota(w.kubeClient, w.storageQuota)
-	if err != nil {
-		w.t.Fatal(err)
-	}
-	w.storageQuota = nil
-	return w
+	return w.deleteResourceQuota("storage-quota")
 }
 
-func (w *When) DeleteQuota() *When {
+func (w *When) DeleteMemoryQuota() *When {
+	return w.deleteResourceQuota("memory-quota")
+}
+
+func (w *When) deleteResourceQuota(name string) *When {
 	w.t.Helper()
-	err := util.DeleteQuota(w.kubeClient, w.resourceQuota)
+	err := w.kubeClient.CoreV1().ResourceQuotas(Namespace).Delete(name, foregroundDelete)
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.resourceQuota = nil
 	return w
 }
 
