@@ -121,7 +121,7 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 
 func (t *Then) RunCli(stdin string, args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
-	output, err := runCli(stdin, "../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec(stdin, "../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	if t.t.Failed() {
 		t.t.FailNow()

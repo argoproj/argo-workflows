@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -135,17 +136,25 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-func (g *Given) RunCli(stdin string, args []string, block func(t *testing.T, output string, err error), _ ...string) *Given {
+var NoError = func(t *testing.T, output string, err error) {
+	assert.NoError(t, err, output)
+}
+
+func (g *Given) Exec(stdin, name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	if !strings.Contains(strings.Join(args, ","), "-n") {
-		args = append([]string{"-n", Namespace}, args...)
-	}
-	output, err := runCli(stdin, "../../dist/argo", args...)
+	output, err := runCli(stdin, name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()
 	}
 	return g
+}
+
+func (g *Given) RunCli(stdin string, args []string, block func(t *testing.T, output string, err error)) *Given {
+	if !strings.Contains(strings.Join(args, ","), "-n") {
+		args = append([]string{"-n", Namespace}, args...)
+	}
+	return g.Exec(stdin, "../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {

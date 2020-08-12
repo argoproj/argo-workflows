@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func runCli(stdin, name string, args ...string) (string, error) {
+func Exec(stdin, name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
 	cmd.Stdin = bytes.NewBufferString(stdin)
