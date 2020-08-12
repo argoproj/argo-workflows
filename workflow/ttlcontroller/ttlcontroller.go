@@ -192,10 +192,10 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	}
 	now := c.clock.Now()
 
-	if wf.Status.Failed() && ttlStrategy != nil && ttlStrategy.SecondsAfterFailure != nil {
+	if wf.Status.Failed() && ttlStrategy.SecondsAfterFailure != nil {
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterFailure))
 		return now.After(expiry)
-	} else if wf.Status.Successful() && ttlStrategy != nil && ttlStrategy.SecondsAfterSuccess != nil {
+	} else if wf.Status.Successful() && ttlStrategy.SecondsAfterSuccess != nil {
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*ttlStrategy.SecondsAfterSuccess))
 		return now.After(expiry)
 	} else {

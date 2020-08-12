@@ -131,7 +131,7 @@ message Backoff {
   optional string duration = 1;
 
   // Factor is a factor to multiply the base duration after each failed retry
-  optional int32 factor = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
   // MaxDuration is the maximum amount of time allowed for the backoff strategy
   optional string maxDuration = 3;
@@ -754,7 +754,7 @@ message ResourceTemplate {
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
-  optional int32 limit = 1;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
 
   // RetryPolicy is a policy of NodePhase statuses that will be retried
   optional string retryPolicy = 2;
@@ -1005,7 +1005,7 @@ message Template {
   // Optional duration in seconds relative to the StartTime that the pod may be active on a node
   // before the system actively tries to terminate the pod; value must be positive integer
   // This field is only applicable to container and script templates.
-  optional int64 activeDeadlineSeconds = 21;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 21;
 
   // RetryStrategy describes how to retry a template when it fails
   optional RetryStrategy retryStrategy = 22;
