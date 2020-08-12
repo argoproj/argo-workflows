@@ -2797,25 +2797,25 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.MutexHolding": {
-      "description": "MutexHolding holds the resource that holds the mutex lock.",
+      "description": "MutexHolding describes the mutex and the object which is holding it.",
       "type": "object",
       "properties": {
-        "holderName": {
-          "description": "HolderName stores the current mutex holder name.",
+        "holder": {
+          "description": "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow NodeID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
           "type": "string"
         },
         "mutex": {
-          "description": "Name of the mutex",
+          "description": "Reference for the mutex e.g: ${namespace}/mutex/${mutexName}",
           "type": "string"
         }
       }
     },
     "io.argoproj.workflow.v1alpha1.MutexStatus": {
-      "description": "MutexStatus stores resources that holds the lock and also waits for the lock.",
+      "description": "MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.",
       "type": "object",
       "properties": {
         "holding": {
-          "description": "Holding stores the list of resource acquired synchronization lock for workflows.",
+          "description": "Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
@@ -2823,7 +2823,7 @@
           "x-kubernetes-list-type": "atomic"
         },
         "waiting": {
-          "description": "Waiting indicates the list of current synchronization lock holders.",
+          "description": "Waiting is a list of mutexes and their respective objects this workflow is waiting for.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"

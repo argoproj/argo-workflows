@@ -1009,20 +1009,27 @@ type SemaphoreHolding struct {
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
-// MutexHolding holds the resource that holds the mutex lock.
+// MutexHolding describes the mutex and the object which is holding it.
 type MutexHolding struct {
-	// Name of the mutex
+	// Reference for the mutex
+	// e.g: ${namespace}/mutex/${mutexName}
 	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
-	// HolderName stores the current mutex holder name.
-	HolderName string `json:"holderName,omitempty" protobuf:"bytes,2,opt,name=holderName"`
+	// Holder is a reference to the object which holds the Mutex.
+	// Holding Scenario:
+	//   1. Current workflow's NodeID which is holding the lock.
+	//      e.g: ${NodeID}
+	// Waiting Scenario:
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//      e.g: ${WorkflowName}/${NodeID}
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
 }
 
-// MutexStatus stores resources that holds the lock and also waits for the lock.
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
 type MutexStatus struct {
-	// Holding stores the list of resource acquired synchronization lock for workflows.
+	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
 	// +listType=atomic
 	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders.
+	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
 	// +listType=atomic
 	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }

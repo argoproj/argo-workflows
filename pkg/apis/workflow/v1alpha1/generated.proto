@@ -522,22 +522,29 @@ message Mutex {
   optional string name = 1;
 }
 
-// MutexHolding holds the resource that holds the mutex lock.
+// MutexHolding describes the mutex and the object which is holding it.
 message MutexHolding {
-  // Name of the mutex
+  // Reference for the mutex
+  // e.g: ${namespace}/mutex/${mutexName}
   optional string mutex = 1;
 
-  // HolderName stores the current mutex holder name.
-  optional string holderName = 2;
+  // Holder is a reference to the object which holds the Mutex.
+  // Holding Scenario:
+  //   1. Current workflow's NodeID which is holding the lock.
+  //      e.g: ${NodeID}
+  // Waiting Scenario:
+  //   1. Current workflow or other workflow NodeID which is holding the lock.
+  //      e.g: ${WorkflowName}/${NodeID}
+  optional string holder = 2;
 }
 
-// MutexStatus stores resources that holds the lock and also waits for the lock.
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
 message MutexStatus {
-  // Holding stores the list of resource acquired synchronization lock for workflows.
+  // Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
   // +listType=atomic
   repeated MutexHolding holding = 1;
 
-  // Waiting indicates the list of current synchronization lock holders.
+  // Waiting is a list of mutexes and their respective objects this workflow is waiting for.
   // +listType=atomic
   repeated MutexHolding waiting = 2;
 }

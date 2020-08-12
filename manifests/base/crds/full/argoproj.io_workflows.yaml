@@ -21028,7 +21028,7 @@ spec:
                     holding:
                       items:
                         properties:
-                          holderName:
+                          holder:
                             type: string
                           mutex:
                             type: string
@@ -21038,7 +21038,7 @@ spec:
                     waiting:
                       items:
                         properties:
-                          holderName:
+                          holder:
                             type: string
                           mutex:
                             type: string

@@ -1183,21 +1183,21 @@ Mutex holds Mutex configuration
 
 #### io.argoproj.workflow.v1alpha1.MutexHolding
 
-MutexHolding holds the resource that holds the mutex lock.
+MutexHolding describes the mutex and the object which is holding it.
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| holderName | string | HolderName stores the current mutex holder name. | No |
-| mutex | string | Name of the mutex | No |
+| holder | string | Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID} | No |
+| mutex | string | Reference for the mutex e.g: ${namespace}/mutex/${mutexName} | No |
 
 #### io.argoproj.workflow.v1alpha1.MutexStatus
 
-MutexStatus stores resources that holds the lock and also waits for the lock.
+MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Holding stores the list of resource acquired synchronization lock for workflows. | No |
-| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Waiting indicates the list of current synchronization lock holders. | No |
+| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1. | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Waiting is a list of mutexes and their respective objects this workflow is waiting for. | No |
 
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 

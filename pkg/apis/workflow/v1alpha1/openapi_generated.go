@@ -1832,19 +1832,19 @@ func schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "MutexHolding holds the resource that holds the mutex lock.",
+				Description: "MutexHolding describes the mutex and the object which is holding it.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"mutex": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Name of the mutex",
+							Description: "Reference for the mutex e.g: ${namespace}/mutex/${mutexName}",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
-					"holderName": {
+					"holder": {
 						SchemaProps: spec.SchemaProps{
-							Description: "HolderName stores the current mutex holder name.",
+							Description: "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow NodeID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1859,7 +1859,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "MutexStatus stores resources that holds the lock and also waits for the lock.",
+				Description: "MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"holding": {
@@ -1869,7 +1869,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Holding stores the list of resource acquired synchronization lock for workflows.",
+							Description: "Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1887,7 +1887,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Waiting indicates the list of current synchronization lock holders.",
+							Description: "Waiting is a list of mutexes and their respective objects this workflow is waiting for.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

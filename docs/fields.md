@@ -3193,7 +3193,7 @@ _No description available_
 
 ## MutexStatus
 
-MutexStatus stores resources that holds the lock and also waits for the lock.
+MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3207,8 +3207,8 @@ MutexStatus stores resources that holds the lock and also waits for the lock.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holding`|`Array<`[`MutexHolding`](#mutexholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
-|`waiting`|`Array<`[`MutexHolding`](#mutexholding)`>`|Waiting indicates the list of current synchronization lock holders.|
+|`holding`|`Array<`[`MutexHolding`](#mutexholding)`>`|Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.|
+|`waiting`|`Array<`[`MutexHolding`](#mutexholding)`>`|Waiting is a list of mutexes and their respective objects this workflow is waiting for.|
 
 ## SemaphoreStatus
 
@@ -3738,13 +3738,13 @@ Sequence expands a workflow step into numeric range
 
 ## MutexHolding
 
-MutexHolding holds the resource that holds the mutex lock.
+MutexHolding describes the mutex and the object which is holding it.
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`holderName`|`string`|HolderName stores the current mutex holder name.|
-|`mutex`|`string`|Name of the mutex|
+|`holder`|`string`|Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow NodeID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}|
+|`mutex`|`string`|Reference for the mutex e.g: ${namespace}/mutex/${mutexName}|
 
 ## SemaphoreHolding
 
