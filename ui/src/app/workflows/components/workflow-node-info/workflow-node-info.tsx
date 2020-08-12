@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {MemoizationInfo} from '../../../shared/components/memoization-info/memoization-info';
+import {MemoizationInfo} from '../../../shared/components/memoization-info';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
