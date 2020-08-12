@@ -24,7 +24,7 @@ jobs:
         with:
           buildx-version: latest
           qemu-version: latest
-      # - name: Build & Push Linux Docker Images
+      - name: Build & Push Linux Docker Images
       #   env:
       #     DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
