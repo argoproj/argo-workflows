@@ -1038,8 +1038,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 				s := bufio.NewScanner(resp.Body)
 				for s.Scan() {
 					line := s.Text()
-					println(line)
-					if strings.Contains(line, ":) Hello Argo!") {
+					if strings.Contains(line, "WorkflowRunning") {
 						break
 					}
 				}
