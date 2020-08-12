@@ -596,7 +596,7 @@ spec:
 		s.Given().
 			RunCli("", []string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "Error in file expectedfailures/empty-parameter-dag.yaml:")
+					assert.Contains(t, output, "expectedfailures/empty-parameter-dag.yaml: templates.abc.tasks.a templates.whalesay inputs.parameters.message was not supplied")
 				}
 			})
 	})
@@ -605,8 +605,8 @@ spec:
 		s.Given().
 			RunCli("", []string{"lint", "testdata"}, func(t *testing.T, output string, err error) {
 				if assert.Error(t, err) {
-					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
-					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+					assert.Contains(t, output, "testdata/workflow-template-nested-template.yaml: ignored")
+					assert.Contains(t, output, "Errors encountered in validation")
 				}
 			})
 	})
