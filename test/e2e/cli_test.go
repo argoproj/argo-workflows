@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -1005,16 +1004,10 @@ func (s *CLIWithServerSuite) TestRetryOmit() {
 		SubmitWorkflow().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-				return node.Phase == wfv1.NodeOmitted
+				return node.DisplayName == "should-not-execute" && node.Phase == wfv1.NodeOmitted
 			})
-		}, "any node omitted", 20*time.Second).
+		}, "has node \"should-not-execute\" omitted", 20*time.Second).
 		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			node := status.Nodes.FindByDisplayName("should-not-execute")
-			if assert.NotNil(t, node) {
-				assert.Equal(t, wfv1.NodeOmitted, node.Phase)
-			}
-		}).
 		RunCli([]string{"retry", "dag-diamond-8q7vp"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "Status:              Running")
