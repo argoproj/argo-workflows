@@ -90,14 +90,14 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private saveHistory() {
-        this.url = uiUrl('workflow-templates/' + this.namespace);
+        this.url = uiUrl('workflow-templates/' + this.namespace || '');
         Utils.setCurrentNamespace(this.namespace);
     }
 
     private fetchWorkflowTemplates(namespace: string): void {
         services.workflowTemplate
             .list(namespace)
-            .then(templates => this.setState({templates}, this.saveHistory))
+            .then(templates => this.setState({namespace, templates}, this.saveHistory))
             .catch(error => this.setState({error}));
     }
 
