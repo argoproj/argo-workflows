@@ -9,6 +9,7 @@ import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {InlineTable} from "../../../shared/components/inline-table/inline-table";
 
 require('./workflow-node-info.scss');
 
@@ -68,7 +69,16 @@ export const WorkflowNodeSummary = (props: Props) => {
         },
         {
             title: 'MEMOIZATION',
-            value: <MemoizationInfo memStat={props.node.memoizationStatus} />
+            value: (
+                <InlineTable
+                    rows={[
+                        {
+                            left: <div> HELLO WORLD </div>,
+                            right: <div> foo bar </div>
+                        }
+                    ]}
+                />
+            )
         }
     ];
     if (props.node.type === 'Pod') {
