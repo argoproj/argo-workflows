@@ -12,10 +12,12 @@ import (
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/event/dispatch"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/events"
 )
 
 type Controller struct {
-	instanceIDService instanceid.Service
+	instanceIDService    instanceid.Service
+	eventRecorderManager events.EventRecorderManager
 	// a channel for operations to be executed async on
 	operationQueue chan dispatch.Operation
 	workerCount    int
@@ -23,11 +25,12 @@ type Controller struct {
 
 var _ eventpkg.EventServiceServer = &Controller{}
 
-func NewController(instanceIDService instanceid.Service, operationQueueSize, workerCount int) *Controller {
+func NewController(instanceIDService instanceid.Service, eventRecorderManager events.EventRecorderManager, operationQueueSize, workerCount int) *Controller {
 	log.WithFields(log.Fields{"workerCount": workerCount, "operationQueueSize": operationQueueSize}).Info("Creating event controller")
 
 	return &Controller{
-		instanceIDService: instanceIDService,
+		instanceIDService:    instanceIDService,
+		eventRecorderManager: eventRecorderManager,
 		//  so we can have `operationQueueSize` operations outstanding before we start putting back pressure on the senders
 		operationQueue: make(chan dispatch.Operation, operationQueueSize),
 		workerCount:    workerCount,
@@ -70,7 +73,7 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 		return nil, err
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, list.Items, req.Namespace, req.Discriminator, req.Payload)
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, err
 	}
