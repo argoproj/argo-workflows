@@ -62,16 +62,16 @@ func newGCSClientDefault() (*storage.Client, error) {
 func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
-			log.Infof("GCS Load path: %s, key: %s", path, inputArtifact.GCS.Key)
+			log.WithFields(log.Fields{"path": path, "key": inputArtifact.GCS.Key}).Info("GCS Load")
 			gcsClient, err := g.newGCSClient()
 			if err != nil {
-				log.Warnf("Failed to create new GCS client: %v", err)
+				log.WithFields(log.Fields{"error": err}).Warn("Failed to create new GCS client")
 				return false, err
 			}
 			defer gcsClient.Close()
 			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, inputArtifact.GCS.Key, path)
 			if err != nil {
-				log.Warnf("Failed to download objects from GCS: %v", err)
+				log.WithFields(log.Fields{"error": err}).Warn("Failed to download objects from GCS")
 				return false, err
 			}
 			return true, nil
@@ -153,7 +153,7 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
-			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
+			log.WithFields(log.Fields{"path": path, "key": outputArtifact.GCS.Key}).Info("GCS Save path")
 			client, err := g.newGCSClient()
 			if err != nil {
 				return false, err

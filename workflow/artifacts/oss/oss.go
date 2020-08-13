@@ -21,7 +21,7 @@ type OSSArtifactDriver struct {
 func (ossDriver *OSSArtifactDriver) newOSSClient() (*oss.Client, error) {
 	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
 	if err != nil {
-		log.Warnf("Failed to create new OSS client: %v", err)
+		log.WithFields(log.Fields{"error": err}).Info("Failed to create new OSS client")
 		return nil, err
 	}
 	return client, err
@@ -31,7 +31,7 @@ func (ossDriver *OSSArtifactDriver) newOSSClient() (*oss.Client, error) {
 func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
-			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
+			log.WithFields(log.Fields{"path": path, "key": inputArtifact.OSS.Key}).Info("OSS Load")
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
 				return false, err
@@ -55,10 +55,10 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
-			log.Infof("OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
+			log.WithFields(log.Fields{"path": path, "key": outputArtifact.OSS.Key}).Info("OSS Save")
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				log.Warnf("Failed to create new OSS client: %v", err)
+				log.WithFields(log.Fields{"error": err}).Warn("Failed to create new OSS client")
 				return false, nil
 			}
 			bucketName := outputArtifact.OSS.Bucket

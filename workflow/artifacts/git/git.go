@@ -132,7 +132,7 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 	if inputArtifact.Git.Revision != "" {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
-		log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
+		log.WithFields(log.Fields{"revision": inputArtifact.Git.Revision}).Info("Checking out revision")
 		cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
 		cmd.Dir = path
 		cmd.Env = env
@@ -140,7 +140,7 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		if err != nil {
 			return g.error(err, cmd)
 		}
-		log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
+		log.WithFields(log.Fields{"args": cmd.Args, "output": string(output)}).Info("Stdout")
 		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
 		submodulesCmd.Dir = path
 		submodulesCmd.Env = env
@@ -148,7 +148,7 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		if err != nil {
 			return g.error(err, cmd)
 		}
-		log.Infof("`%s` stdout:\n%s", cmd.Args, string(submoduleOutput))
+		log.WithFields(log.Fields{"args": cmd.Args, "output": string(submoduleOutput)}).Info("Stdout")
 	}
 	return nil
 }
@@ -159,7 +159,7 @@ func isAlreadyUpToDateErr(err error) bool {
 
 func (g *GitArtifactDriver) error(err error, cmd *exec.Cmd) error {
 	if exErr, ok := err.(*exec.ExitError); ok {
-		log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		log.WithFields(log.Fields{"args": cmd.Args, "output": string(exErr.Stderr)}).Error("Stderror")
 		return errors.New(strings.Split(string(exErr.Stderr), "\n")[0])
 	}
 	return err

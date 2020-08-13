@@ -17,10 +17,9 @@ type HTTPArtifactDriver struct{}
 func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Download the file to a local file path
 	args := []string{"-fsS", "-L", "-o", path, inputArtifact.HTTP.URL}
-	log.Info(strings.Join(append([]string{"curl"}, args...), " "))
 	cmd := exec.Command("curl", args...)
 	output, err := cmd.CombinedOutput()
-	log.Info(string(output))
+	log.WithFields(log.Fields{"cmd": strings.Join(append([]string{"curl"}, args...), " "), "output": string(output)}).Info("Get input artifact")
 	if err != nil {
 		log.WithError(err).Error()
 		if exitErr, ok := err.(*exec.ExitError); ok {
