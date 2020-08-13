@@ -968,7 +968,7 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == ""
-	    }, "Workflow is waiting for lock", 20 * time.Second).
+		}, "Workflow is waiting for lock", 20*time.Second).
 		WaitForWorkflow(30 * time.Second).
 		DeleteConfigMap().
 		Then().
@@ -988,11 +988,13 @@ func (s *CLISuite) TestTemplateLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
-		Wait(12*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeRunning
+		}, "waiting for Workflow to run", 10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		DeleteConfigMap()
 }
 
