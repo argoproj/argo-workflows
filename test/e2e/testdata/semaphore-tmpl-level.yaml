@@ -28,7 +28,7 @@ spec:
       semaphore:
         configMapKeyRef:
           name: my-config
-          key: template
+          key: my-key
     container:
       image: argoproj/argosay:v2
       args: ["sleep", "1s"]

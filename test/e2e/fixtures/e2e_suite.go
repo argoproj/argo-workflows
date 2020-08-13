@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+
 	// load the azure plugin (required to authenticate against AKS clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	// load the gcp plugin (required to authenticate against GKE clusters).
@@ -18,11 +22,11 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
@@ -46,9 +50,6 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	hydrator          hydrator.Interface
-	// Guard-rail.
-	// The number of archived workflows. If is changes between two tests, we have a problem.
-	numWorkflows int
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -81,62 +82,60 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
-	numWorkflows := s.countWorkflows()
-	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
-		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
-	}
-	s.numWorkflows = numWorkflows
 }
 
-func (s *E2ESuite) countWorkflows() int {
-	workflows, err := s.wfClient.List(metav1.ListOptions{})
-	s.CheckError(err)
-	return len(workflows.Items)
-}
+var foreground = metav1.DeletePropagationForeground
+var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
 
 func (s *E2ESuite) DeleteResources(label string) {
 
-	options := metav1.ListOptions{LabelSelector: label}
-
-	// delete all cron workflows
-	err := s.cronClient.DeleteCollection(nil, options)
-	s.CheckError(err)
-
-	// delete all workflow events
-	err = s.wfebClient.DeleteCollection(nil, options)
-	s.CheckError(err)
-
-	// delete from the archive
-	{
-		if s.Persistence.IsEnabled() {
-			archive := s.Persistence.workflowArchive
-			parse, err := labels.ParseToRequirements(Label)
+	// delete archived workflows from the archive
+	if s.Persistence.IsEnabled() {
+		archive := s.Persistence.workflowArchive
+		parse, err := labels.ParseToRequirements(label)
+		s.CheckError(err)
+		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+		s.CheckError(err)
+		for _, w := range workflows {
+			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
-			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
-			s.CheckError(err)
-			for _, workflow := range workflows {
-				err := archive.DeleteWorkflow(string(workflow.UID))
-				s.CheckError(err)
-			}
 		}
 	}
-	// delete all workflows
-	err = s.wfClient.DeleteCollection(nil, options)
-	s.CheckError(err)
 
-	// delete all workflow templates
-	err = s.wfTemplateClient.DeleteCollection(nil, options)
-	s.CheckError(err)
+	hasTestLabel := metav1.ListOptions{LabelSelector: label}
+	resources := []schema.GroupVersionResource{
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
+		{Version: "v1", Resource: "resourcequotas"},
+		{Version: "v1", Resource: "configmaps"},
+	}
 
-	// delete all cluster workflow templates
-	err = s.cwfTemplateClient.DeleteCollection(nil, options)
-	s.CheckError(err)
+	for _, r := range resources {
+		err := s.dynamicFor(r).DeleteCollection(foregroundDelete, hasTestLabel)
+		s.CheckError(err)
+	}
 
-	// Delete all resourcequotas
-	err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).DeleteCollection(nil, options)
-	s.CheckError(err)
+	for _, r := range resources {
+		for {
+			list, err := s.dynamicFor(r).List(hasTestLabel)
+			s.CheckError(err)
+			if len(list.Items) == 0 {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
 
-	time.Sleep(time.Second)
+func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
+	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
+	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
+		return resourceInterface
+	}
+	return resourceInterface.Namespace(Namespace)
 }
 
 func (s *E2ESuite) CheckError(err error) {

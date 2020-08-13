@@ -31,9 +31,12 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *CLISuite) testNeedsOffloading() {
-	skip := s.Persistence.IsEnabled() && os.Getenv("ARGO_SERVER") == ""
-	if skip {
-		s.T().Skip("test needs offloading, but not Argo Server available")
+	serverUnavailable := os.Getenv("ARGO_SERVER") == ""
+	if s.Persistence.IsEnabled() && serverUnavailable {
+		if !serverUnavailable {
+			s.T().Skip("test needs offloading, but the Argo Server is unavailable - if `testNeedsOffloading()` is the first line of your test test, you should move your test to `CliWithServerSuite`?")
+		}
+		s.T().Skip("test needs offloading, but offloading not enabled")
 	}
 }
 
@@ -278,7 +281,7 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
-func (s *CLISuite) TestWorkflowSuspendResume() {
+func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
@@ -302,7 +305,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResume() {
+func (s *CLIWithServerSuite) TestNodeSuspendResume() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
@@ -620,7 +623,7 @@ spec:
 	})
 }
 
-func (s *CLISuite) TestWorkflowRetry() {
+func (s *CLIWithServerSuite) TestWorkflowRetry() {
 	s.testNeedsOffloading()
 	var retryTime corev1.Time
 
@@ -673,7 +676,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowWait() {
+func (s *CLIWithServerSuite) TestWorkflowWait() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -687,7 +690,7 @@ func (s *CLISuite) TestWorkflowWait() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowWatch() {
+func (s *CLIWithServerSuite) TestWorkflowWatch() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -994,58 +997,17 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 	})
 }
 
-func (s *CLISuite) TestWorkflowLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"workflow": "1",
-	}
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@testdata/semaphore-wf-level.yaml").
-		When().
-		CreateConfigMap("my-config", semaphoreData).
-		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "semaphore-wf-level-1")
-			}
-		}).
-		SubmitWorkflow().
-		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
-		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *CLISuite) TestTemplateLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"template": "1",
-	}
-
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@testdata/semaphore-tmpl-level.yaml").
-		When().
-		CreateConfigMap("my-config", semaphoreData).
-		SubmitWorkflow().
-		Wait(12*time.Second).
-		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
-		WaitForWorkflow(20 * time.Second).
-		DeleteConfigMap()
-}
-
-func (s *CLISuite) TestRetryOmit() {
+func (s *CLIWithServerSuite) TestRetryOmit() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				return node.Phase == wfv1.NodeOmitted
+			})
+		}, "any node omitted", 20*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("should-not-execute")
@@ -1060,7 +1022,7 @@ func (s *CLISuite) TestRetryOmit() {
 		WaitForWorkflow(20 * time.Second)
 }
 
-func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
+func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 	s.testNeedsOffloading()
 	s.Run("ResourceTemplateStop", func() {
 		s.Given().
