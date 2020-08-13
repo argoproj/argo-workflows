@@ -302,6 +302,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             }
 
             if (children.length > 3 && !isExpanded) {
+                // Node will be collapsed
                 queue.push({
                     nodeName: children[0],
                     parent: nodeId,
@@ -322,6 +323,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     children: allNodes[children[children.length - 1]].children
                 });
             } else {
+                // Node will not be collapsed
                 children.map(child =>
                     queue.push({
                         nodeName: child,
@@ -339,16 +341,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         };
 
         const queue: PrepareNode[] = [root];
-        const considered: Set<string> = new Set<string>();
+        const consideredChildren: Set<string> = new Set<string>();
         let previousCollapsed: string = '';
 
         while (queue.length > 0) {
             const item = queue.pop();
-
-            if (considered.has(item.nodeName)) {
-                continue;
-            }
-            considered.add(item.nodeName);
 
             if (isCollapsedNode(item.nodeName)) {
                 if (item.nodeName !== previousCollapsed) {
@@ -363,6 +360,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             nodes.push(item.nodeName);
             edges.push({v: item.parent, w: item.nodeName});
 
+            // If we have already considered the children of this node, don't consider them again
+            if (consideredChildren.has(item.nodeName)) {
+                continue;
+            }
+            consideredChildren.add(item.nodeName);
+
             const node: NodeStatus = this.props.nodes[item.nodeName];
             if (!node || node.phase === NODE_PHASE.OMITTED) {
                 continue;
@@ -371,9 +374,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             pushChildren(node.id, node.children, isExpanded);
         }
 
-        const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId] && this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
+        const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({v, w: onExitHandlerNodeId}));
+            this.getOutboundNodes(this.props.workflowName).forEach(v => {
+                nodes.push(onExitHandlerNodeId.id);
+                edges.push({v, w: onExitHandlerNodeId.id});
+            });
         }
         return {nodes, edges};
     }
