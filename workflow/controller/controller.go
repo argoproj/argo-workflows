@@ -465,15 +465,15 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	err = wfc.setWorkflowDefaults(wf)
-	if err != nil {
-		log.WithFields(log.Fields{"key": wf.Name, "error": err}).Warn("Failed to apply default workflow values")
-		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-		woc.persistUpdates()
-		wfc.throttler.Remove(key)
-		return true
-	}
+	//err = wfc.setWorkflowDefaults(wf)
+	//if err != nil {
+	//	log.WithFields(log.Fields{"key": wf.Name, "error": err}).Warn("Failed to apply default workflow values")
+	//	woc := newWorkflowOperationCtx(wf, wfc)
+	//	woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+	//	woc.persistUpdates()
+	//	wfc.throttler.Remove(key)
+	//	return true
+	//}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)

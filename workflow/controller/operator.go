@@ -208,6 +208,10 @@ func (woc *wfOperationCtx) operate() {
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
+		// Validate the execution wfSpec
+		execWf := &wfv1.Workflow{Spec: *woc.wfSpec}
+		byt, _ := yaml.Marshal(execWf)
+		fmt.Println(string(byt))
 		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
 
 		if err != nil {
@@ -2651,7 +2655,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	} else {
 		clusterWorkflowTemplateGetter = &templateresolution.NullClusterWorkflowTemplateGetter{}
 	}
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.wf, woc.wf)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, &wfv1.Workflow{ObjectMeta: woc.wf.ObjectMeta, Spec: *woc.wfSpec}, woc.wf)
 
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:
@@ -2936,7 +2940,10 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 			return nil, executionParameters, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		}
-
+		err := woc.controller.setWorkflowDefaults(woc.wf)
+		if err != nil{
+			return nil, executionParameters, err
+		}
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}
 		return tmplRef, executionParameters, nil
 	}
@@ -2961,7 +2968,12 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 	// Merge the workflow spec and storedWorkflowspec.
 	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
-	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
+	err := woc.controller.setWorkflowDefaults(&targetWf)
+	if err != nil {
+		return nil, executionParameters, err
+	}
+
+	err = wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
 	if err != nil {
 		return nil, executionParameters, err
 	}
