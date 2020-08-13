@@ -196,7 +196,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	}
 	err = file.Close()
 	s.CheckError(err)
-	s.DeleteResources(Label)
 }
 
 func (s *E2ESuite) printWorkflowDiagnostics(name string) {

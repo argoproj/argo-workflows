@@ -152,28 +152,19 @@ func (s *CLIWithServerSuite) TestArchive() {
 }
 
 func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"workflow": "1",
-	}
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/semaphore-wf-level.yaml").
 		When().
-		CreateConfigMap("my-config", semaphoreData).
-		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "semaphore-wf-level-1")
-			}
-		}).
+		CreateConfigMap("my-config", map[string]string{"my-key": "1"}).
+		SubmitWorkflow().
+		WaitForWorkflowToStart(15*time.Second).
+		// the second workflow will have to wait for the first to complete
 		SubmitWorkflow().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Synchronization != nil && len(wf.Status.Synchronization.Semaphore.Waiting) > 0
-		}, "is waiting for semaphores", 15*time.Second).
-		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Pending")
-		}).
+			return wf.Status.Synchronization != nil
+		}, "is waiting on sync", 15*time.Second).
 		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -181,23 +172,17 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 }
 
 func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"template": "1",
-	}
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/semaphore-tmpl-level.yaml").
 		When().
-		CreateConfigMap("my-config", semaphoreData).
+		CreateConfigMap("my-config", map[string]string{"my-key": "1"}).
 		SubmitWorkflow().
+		// we'll have one node waiting on another
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.NodePending
-		}, "is pending", 15*time.Second).
-		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
+			return wf.Status.Synchronization != nil
+		}, "is waiting on sync", 15*time.Second).
 		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
