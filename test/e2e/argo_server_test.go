@@ -297,7 +297,7 @@ metadata:
 		Then().
 		ExpectAuditEvents(
 			func(event corev1.Event) bool {
-				return event.InvolvedObject.Name=="malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
+				return event.InvolvedObject.Name == "malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
 			},
 			func(t *testing.T, event corev1.Event) {
 				assert.Equal(t, "argo", event.InvolvedObject.Namespace)
