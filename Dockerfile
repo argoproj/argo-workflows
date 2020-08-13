@@ -65,7 +65,7 @@ RUN apt-get update && \
         /usr/share/doc-base
 
 ADD hack/recurl.sh hack/image_arch.sh .
-RUN ./image_arch.sh && ./recurl.sh /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/${IMAGE_ARCH}/kubectl
+RUN . ./image_arch.sh && ./recurl.sh /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/${IMAGE_ARCH}/kubectl
 RUN ./recurl.sh /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64
 RUN rm recurl.sh
 
@@ -74,12 +74,11 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 ####################################################################################################
 
-FROM node:14.0.0-alpine as argo-ui
+FROM node:14.0.0 as argo-ui
 
 ADD ["ui", "ui"]
 ADD ["api", "api"]
 
-RUN apk add --no-cache git python2 make g++
 RUN yarn --cwd ui install --network-timeout 1000000
 RUN yarn --cwd ui build
 
@@ -98,12 +97,12 @@ RUN git rev-parse HEAD
 
 ADD hack/image_arch.sh .
 # controller image
-RUN ./image_arch.sh && make dist/workflow-controller-linux-${IMAGE_ARCH}
-RUN ./image_arch.sh && ./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean
+RUN . ./image_arch.sh && make dist/workflow-controller-linux-${IMAGE_ARCH}
+RUN . ./image_arch.sh && ./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean
 
 # executor image
-RUN ./image_arch.sh && make dist/argoexec-linux-${IMAGE_ARCH}
-RUN ./image_arch.sh && ./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean
+RUN . ./image_arch.sh && make dist/argoexec-linux-${IMAGE_ARCH}
+RUN . ./image_arch.sh && ./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean
 
 # cli image
 RUN mkdir -p ui/dist
@@ -111,8 +110,8 @@ COPY --from=argo-ui ui/dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
-RUN ./image_arch.sh && make argo-server.crt argo-server.key dist/argo-linux-${IMAGE_ARCH}
-RUN ./image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version | grep clean
+RUN . ./image_arch.sh && make argo-server.crt argo-server.key dist/argo-linux-${IMAGE_ARCH}
+RUN . ./image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version | grep clean
 
 ####################################################################################################
 # argoexec
