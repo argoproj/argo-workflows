@@ -117,7 +117,7 @@ RUN ./image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version | grep clean
 ####################################################################################################
 # argoexec
 ####################################################################################################
-FROM argoexec-base as argoexecCreate
+FROM argoexec-base as argoexec
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-linux-* /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
