@@ -4,6 +4,6 @@ if [ "${IMAGE_OS}" = "linux" ]; then
     if [ "${IMAGE_ARCH}" = "x86_64" ]; then
         export IMAGE_ARCH=amd64;
     elif [ "${IMAGE_ARCH}" = "aarch64" ]; then
-        export IMAGE_ARCH=amd64;
+        export IMAGE_ARCH=arm64;
     fi
 fi
