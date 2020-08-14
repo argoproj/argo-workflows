@@ -3,16 +3,13 @@ package controller
 import (
 	"testing"
 
-	"github.com/argoproj/argo/workflow/controller/cache"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	apiv1 "k8s.io/api/core/v1"
-
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	intstrutil "github.com/argoproj/argo/util/intstr"
+	"github.com/argoproj/argo/workflow/controller/cache"
 )
 
 var sampleOutput string = "\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   "
@@ -70,10 +67,9 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 
 func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
-	val := intstr.Parse(MockParamValue)
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: &val,
+		Value: intstrutil.ParsePtr(MockParamValue),
 	}
 	cancel, controller := newController()
 	defer cancel()

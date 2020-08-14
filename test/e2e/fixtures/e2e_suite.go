@@ -41,6 +41,7 @@ type E2ESuite struct {
 	Persistence       *Persistence
 	RestConfig        *rest.Config
 	wfClient          v1alpha1.WorkflowInterface
+	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
@@ -58,6 +59,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	s.CheckError(err)
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
+	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
@@ -94,6 +96,7 @@ func (s *E2ESuite) countWorkflows() int {
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
+
 	// delete all cron workflows
 	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	s.CheckError(err)
@@ -187,6 +190,16 @@ func (s *E2ESuite) DeleteResources(label string) {
 				}
 			}
 		}
+	}
+
+	// delete all workflow events
+	events, err := s.wfebClient.List(metav1.ListOptions{LabelSelector: label})
+	s.CheckError(err)
+
+	for _, item := range events.Items {
+		log.WithField("template", item.Name).Debug("Deleting workflow event")
+		err = s.wfebClient.Delete(item.Name, nil)
+		s.CheckError(err)
 	}
 
 	// delete all workflow templates
@@ -351,6 +364,7 @@ func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:                 s.T(),
 		client:            s.wfClient,
+		wfebClient:        s.wfebClient,
 		wfTemplateClient:  s.wfTemplateClient,
 		cwfTemplateClient: s.cwfTemplateClient,
 		cronClient:        s.cronClient,

@@ -99,7 +99,7 @@ func getAuthHeader(md metadata.MD) string {
 		return t
 	}
 	// check the HTTP cookie
-	for _, t := range md.Get("grpcgateway-cookie") {
+	for _, t := range md.Get("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", t)
 		request := http.Request{Header: header}

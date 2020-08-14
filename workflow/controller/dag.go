@@ -232,6 +232,21 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(dagCtx, taskName)
+
+		// It is possible that target tasks are not reconsidered (i.e. executeDAGTask is not called on them) once they are
+		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
+		// calls to runOnExitNode are idempotent: it is fine if they are called more than once for the same task.
+		taskNode := dagCtx.getTaskNode(taskName)
+		if taskNode != nil && taskNode.Fulfilled() {
+			if taskNode.Completed() {
+				// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
+				// of the onExit node before continuing. That will be done in assesDAGPhase
+				_, _, err := woc.runOnExitNode(dagCtx.GetTask(taskName).OnExit, taskName, taskNode.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
+				if err != nil {
+					return node, err
+				}
+			}
+		}
 	}
 
 	// check if we are still running any tasks in this dag and return early if we do

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo/util/intstr"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
 	"github.com/argoproj/pkg/humanize"
@@ -25,7 +26,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -701,10 +701,14 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		timeToWait := baseDuration
-		if retryStrategy.Backoff.Factor > 0 {
+		retryStrategyBackoffFactor, err := intstr.Int32(retryStrategy.Backoff.Factor)
+		if err != nil {
+			return nil, false, err
+		}
+		if *retryStrategyBackoffFactor > 0 {
 			// Formula: timeToWait = duration * factor^retry_number
 			// Note that timeToWait should equal to duration for the first retry attempt.
-			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children)-1)))
+			timeToWait = baseDuration * time.Duration(math.Pow(float64(*retryStrategyBackoffFactor), float64(len(node.Children)-1)))
 		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
@@ -753,7 +757,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
-	if retryStrategy.Limit != nil && int32(len(node.Children)) > *retryStrategy.Limit {
+	limit, err := intstr.Int32(retryStrategy.Limit)
+	if err != nil {
+		return nil, false, err
+	}
+	if retryStrategy.Limit != nil && int32(len(node.Children)) > *limit {
 		woc.log.Infoln("No more retries left. Failing...")
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
@@ -2092,8 +2100,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 					return nil, err
 				}
 			}
-			intOrString := intstr.Parse(val)
-			param.Value = &intOrString
+			param.Value = intstr.ParsePtr(val)
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
 		}
@@ -2192,6 +2199,21 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	// in the retry group instead of the retry node itself.
 	if node.Type == wfv1.NodeTypeRetry {
 		node = getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
+	}
+
+	if node.ID != "" {
+		key := fmt.Sprintf("%s.id", prefix)
+		scope.addParamToScope(key, node.ID)
+	}
+
+	if !node.StartedAt.Time.IsZero() {
+		key := fmt.Sprintf("%s.startedAt", prefix)
+		scope.addParamToScope(key, node.StartedAt.Time.Format(time.RFC3339))
+	}
+
+	if !node.FinishedAt.Time.IsZero() {
+		key := fmt.Sprintf("%s.finishedAt", prefix)
+		scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
 	}
 
 	if node.PodIP != "" {
@@ -2852,10 +2874,9 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	if woc.wfSpec.PodDisruptionBudget == nil {
 		return nil
 	}
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
-		if err != nil {
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !retry.IsRetryableKubeAPIError(err) {
 				return false, err

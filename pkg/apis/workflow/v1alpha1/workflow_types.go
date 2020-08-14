@@ -473,7 +473,7 @@ type Template struct {
 	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// This field is only applicable to container and script templates.
-	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
+	ActiveDeadlineSeconds *intstr.IntOrString `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
 
 	// RetryStrategy describes how to retry a template when it fails
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,22,opt,name=retryStrategy"`
@@ -634,6 +634,9 @@ type ValueFrom struct {
 
 	// JQFilter expression against the resource object in resource templates
 	JQFilter string `json:"jqFilter,omitempty" protobuf:"bytes,3,opt,name=jqFilter"`
+
+	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
@@ -1052,7 +1055,7 @@ type Backoff struct {
 	// Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
-	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
 	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
@@ -1060,7 +1063,7 @@ type Backoff struct {
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
-	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
+	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
