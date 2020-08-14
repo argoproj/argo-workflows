@@ -18,8 +18,7 @@ export class CostOptimisationNudge extends React.Component<Props, State> {
         return (
             !this.state.closed && (
                 <Notice>
-                    <i className='fa fa-money-bill-alt status-icon--pending' /> {this.props.children}{' '}
-                    <a href='https://github.com/argoproj/argo/blob/master/docs/cost-optimisation.md'>Learn more</a>
+                    <i className='fa fa-money-bill-alt status-icon--pending' /> {this.props.children} <a href='https://argoproj.github.io/argo/cost-optimisation/'>Learn more</a>
                     <span className='fa-pull-right'>
                         <a onClick={() => this.close()}>
                             <i className='fa fa-times' />
