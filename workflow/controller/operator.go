@@ -2943,6 +2943,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		// Set the WorkflowDefaults from Configmap
 		err := woc.controller.setWorkflowDefaults(woc.wf)
 		if err != nil {
+			log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
 			return nil, executionParameters, err
 		}
 
@@ -2972,6 +2973,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
 	err := woc.controller.setWorkflowDefaults(&targetWf)
 	if err != nil {
+		log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
 		return nil, executionParameters, err
 	}
 

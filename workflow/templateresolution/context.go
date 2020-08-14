@@ -101,7 +101,7 @@ func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, cl
 
 // GetTemplateByName returns a template by name in the context.
 func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
-	ctx.log.Debugf("Getting the template by name %s", name)
+	ctx.log.Debug("Getting the template by name")
 
 	tmpl := ctx.tmplBase.GetTemplateByName(name)
 	if tmpl == nil {
