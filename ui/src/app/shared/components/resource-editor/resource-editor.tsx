@@ -165,8 +165,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private renderWarning() {
         return (
             <div style={{marginTop: '1em'}}>
-                <i className='fa fa-info-circle' /> Note:{' '}
-                {this.state.lang === 'json' ? <>Full auto-completion enabled</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
+                <i className='fa fa-info-circle' />{' '}
+                {this.state.lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
+                <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
             </div>
         );
     }
