@@ -37,7 +37,9 @@ jobs:
       - name: Install Kustomize
         if: ${{ matrix.test != 'test' }}
         run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+            cd /usr/local/bin
+            until curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" > /dev/null ; do sleep 10s ; done
+            sudo bash install_kustomize.sh
             kustomize version
       - name: Install and start K3S v1.0.1
         if: ${{ matrix.test != 'test' }}
