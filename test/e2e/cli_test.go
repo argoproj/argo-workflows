@@ -963,9 +963,6 @@ func (s *CLISuite) TestWorkflowLevelSemaphore() {
 			}
 		}).
 		SubmitWorkflow().
-		RunCli([]string{"get", "semaphore-wf-level-1"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Running")
-		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == ""
 		}, "Workflow is waiting for lock", 20*time.Second).
