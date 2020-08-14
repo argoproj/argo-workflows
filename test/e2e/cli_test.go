@@ -951,7 +951,57 @@ func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestRetryOmit() {
+func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"workflow": "1",
+	}
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-wf-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "semaphore-wf-level-1")
+			}
+		}).
+		SubmitWorkflow().
+		RunCli([]string{"get", "semaphore-wf-level-1"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Running")
+		}).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == ""
+		}, "Workflow is waiting for lock", 20*time.Second).
+		WaitForWorkflow(30 * time.Second).
+		DeleteConfigMap().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
+	semaphoreData := map[string]string{
+		"template": "1",
+	}
+
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/semaphore-tmpl-level.yaml").
+		When().
+		CreateConfigMap("my-config", semaphoreData).
+		SubmitWorkflow().
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeRunning
+		}, "waiting for Workflow to run", 10*time.Second).
+		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(30 * time.Second).
+		DeleteConfigMap()
+}
+
+func (s *CLISuite) TestRetryOmit() {
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").

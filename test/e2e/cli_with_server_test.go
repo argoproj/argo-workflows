@@ -151,44 +151,6 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@testdata/semaphore-wf-level.yaml").
-		When().
-		CreateConfigMap("my-config", map[string]string{"my-key": "1"}).
-		SubmitWorkflow().
-		WaitForWorkflowToStart(15*time.Second).
-		// the second workflow will have to wait for the first to complete
-		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Synchronization != nil
-		}, "is waiting on sync", 15*time.Second).
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@testdata/semaphore-tmpl-level.yaml").
-		When().
-		CreateConfigMap("my-config", map[string]string{"my-key": "1"}).
-		SubmitWorkflow().
-		// we'll have one node waiting on another
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Synchronization != nil
-		}, "is waiting on sync", 15*time.Second).
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *CLIWithServerSuite) TestArgoSetOutputs() {
 	s.Given().
 		Workflow(`
