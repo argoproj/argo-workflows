@@ -465,16 +465,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	//err = wfc.setWorkflowDefaults(wf)
-	//if err != nil {
-	//	log.WithFields(log.Fields{"key": wf.Name, "error": err}).Warn("Failed to apply default workflow values")
-	//	woc := newWorkflowOperationCtx(wf, wfc)
-	//	woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-	//	woc.persistUpdates()
-	//	wfc.throttler.Remove(key)
-	//	return true
-	//}
-
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
 		// can get here if we already added the completed=true label,
@@ -526,8 +516,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
-		if woc.wfSpec.PodGC != nil {
-			switch woc.wfSpec.PodGC.Strategy {
+		if woc.execWf.Spec.PodGC != nil {
+			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnWorkflowCompletion:
 				doPodGC = true
 			case wfv1.PodGCOnWorkflowSuccess:
