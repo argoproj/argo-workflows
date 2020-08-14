@@ -29,6 +29,7 @@ import (
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -114,7 +115,7 @@ func (t testEventRecorderManager) Get(string) record.EventRecorder {
 	return t.eventRecorder
 }
 
-var _ EventRecorderManager = &testEventRecorderManager{}
+var _ events.EventRecorderManager = &testEventRecorderManager{}
 
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
