@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/workflow/common"
@@ -274,6 +275,36 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
 			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyClusterWorkflowTemplate])
 		})
+}
+
+func (s *ArgoServerSuite) TestEventOnMalformedWorkflowEventBinding() {
+	s.Given().
+		WorkflowEventBinding(`
+metadata:
+  name: malformed
+  labels:
+    argo-e2e: true
+`).
+		When().
+		CreateWorkflowEventBinding().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo/").
+				WithBytes([]byte(`{}`)).
+				Expect().
+				Status(200)
+		}).
+		Then().
+		ExpectAuditEvents(
+			func(event corev1.Event) bool {
+				return event.InvolvedObject.Name == "malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
+			},
+			func(t *testing.T, event corev1.Event) {
+				assert.Equal(t, "argo", event.InvolvedObject.Namespace)
+				assert.Equal(t, "WorkflowEventBindingError", event.Reason)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", event.Message)
+			},
+		)
 }
 
 func (s *ArgoServerSuite) TestGetUserInfo() {
