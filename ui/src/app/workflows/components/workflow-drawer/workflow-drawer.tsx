@@ -58,7 +58,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                         <div className='workflow-drawer__resourcesDuration'>
                             <div className='workflow-drawer__title'>
                                 RESOURCES DURATION&nbsp;
-                                <a href='https://github.com/argoproj/argo/blob/master/docs/resource-duration.md' target='_blank'>
+                                <a href='https://argoproj.github.io/argo/resource-duration/' target='_blank'>
                                     <i className='fas fa-info-circle' />
                                 </a>
                             </div>
