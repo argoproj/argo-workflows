@@ -70,7 +70,9 @@ export const Utils = {
         return wf.status.phase === 'Running';
     },
 
-    onNamespaceChange(value: string) {},
+    onNamespaceChange(value: string) {
+        // noop
+    },
 
     setCurrentNamespace(value: string): void {
         localStorage.setItem('current_namespace', value);
