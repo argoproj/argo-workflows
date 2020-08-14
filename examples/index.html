@@ -560,6 +560,18 @@
   </li>
 
         
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../memoization/" title="Step Level Memoization" class="md-nav__link">
+      Step Level Memoization
+    </a>
+  </li>
+
+        
       </ul>
     </nav>
   </li>
@@ -754,6 +766,18 @@
         
       </ul>
     </nav>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../ide-setup/" title="IDE Set-Up" class="md-nav__link">
+      IDE Set-Up
+    </a>
   </li>
 
         
@@ -1008,13 +1032,13 @@
 
   <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-6" type="checkbox" id="nav-4-6">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-7" type="checkbox" id="nav-4-7">
     
-    <label class="md-nav__link" for="nav-4-6">
+    <label class="md-nav__link" for="nav-4-7">
       CLI Reference
     </label>
     <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
-      <label class="md-nav__title" for="nav-4-6">
+      <label class="md-nav__title" for="nav-4-7">
         CLI Reference
       </label>
       <ul class="md-nav__list" data-md-scrollfix>
@@ -1340,6 +1364,18 @@
   <li class="md-nav__item">
     <a href="../cli/argo_logs/" title="argo logs" class="md-nav__link">
       argo logs
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../cli/argo_node/" title="argo node" class="md-nav__link">
+      argo node
     </a>
   </li>
 
@@ -2541,7 +2577,7 @@ The <a href="dag-disable-failFast.yaml">FailFast</a> flag default is <code>true<
 <h2 id="artifacts">Artifacts<a class="headerlink" href="#artifacts" title="Permanent link">&para;</a></h2>
 <p><strong>Note:</strong>
 You will need to configure an artifact repository to run this example.
-<a href="https://github.com/argoproj/argo/blob/master/docs/configure-artifact-repository.md">Configuring an artifact repository here</a>.</p>
+<a href="https://argoproj.github.io/argo/configure-artifact-repository/">Configuring an artifact repository here</a>.</p>
 <p>When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.</p>
 <p>The below workflow spec consists of two steps that run in sequence. The first step named <code>generate-artifact</code> will generate an artifact using the <code>whalesay</code> template that will be consumed by the second step named <code>print-message</code> that then consumes the generated artifact.</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
@@ -3703,7 +3739,7 @@ Argo will validate and resolve only the variable that starts with Argo allowed p
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../security/" title="Security" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../ide-setup/" title="IDE Set-Up" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -3712,7 +3748,7 @@ Argo will validate and resolve only the variable that starts with Argo allowed p
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Security
+                IDE Set-Up
               </span>
             </div>
           </a>
