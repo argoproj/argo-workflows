@@ -160,7 +160,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions)
-	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.namespace)
+	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.GetManagedNamespace())
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
