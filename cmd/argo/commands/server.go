@@ -83,7 +83,7 @@ See %s`, help.ArgoSever),
 				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
 				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
 			} else {
-				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
+				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo/tls/")
 			}
 
 			modes := auth.Modes{}
@@ -92,7 +92,7 @@ See %s`, help.ArgoSever),
 				errors.CheckError(err)
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md")
+				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo/argo-server-auth-mode/")
 			}
 
 			opts := apiserver.ArgoServerOpts{

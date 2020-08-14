@@ -701,10 +701,14 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 
 		timeToWait := baseDuration
-		if retryStrategy.Backoff.Factor > 0 {
+		retryStrategyBackoffFactor, err := intstr.Int32(retryStrategy.Backoff.Factor)
+		if err != nil {
+			return nil, false, err
+		}
+		if *retryStrategyBackoffFactor > 0 {
 			// Formula: timeToWait = duration * factor^retry_number
 			// Note that timeToWait should equal to duration for the first retry attempt.
-			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children)-1)))
+			timeToWait = baseDuration * time.Duration(math.Pow(float64(*retryStrategyBackoffFactor), float64(len(node.Children)-1)))
 		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
@@ -753,7 +757,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
-	if retryStrategy.Limit != nil && int32(len(node.Children)) > *retryStrategy.Limit {
+	limit, err := intstr.Int32(retryStrategy.Limit)
+	if err != nil {
+		return nil, false, err
+	}
+	if retryStrategy.Limit != nil && int32(len(node.Children)) > *limit {
 		woc.log.Infoln("No more retries left. Failing...")
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
@@ -2161,6 +2169,21 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 		node = getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	}
 
+	if node.ID != "" {
+		key := fmt.Sprintf("%s.id", prefix)
+		scope.addParamToScope(key, node.ID)
+	}
+
+	if !node.StartedAt.Time.IsZero() {
+		key := fmt.Sprintf("%s.startedAt", prefix)
+		scope.addParamToScope(key, node.StartedAt.Time.Format(time.RFC3339))
+	}
+
+	if !node.FinishedAt.Time.IsZero() {
+		key := fmt.Sprintf("%s.finishedAt", prefix)
+		scope.addParamToScope(key, node.FinishedAt.Time.Format(time.RFC3339))
+	}
+
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
@@ -2819,10 +2842,9 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	if woc.wfSpec.PodDisruptionBudget == nil {
 		return nil
 	}
-	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
-		if err != nil {
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !retry.IsRetryableKubeAPIError(err) {
 				return false, err

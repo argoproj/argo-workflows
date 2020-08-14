@@ -1,4 +1,4 @@
-package controller
+package events
 
 import (
 	"sync"
@@ -36,7 +36,7 @@ func (m *eventRecorderManager) Get(namespace string) record.EventRecorder {
 
 }
 
-func newEventRecorderManager(kubernetes kubernetes.Interface) EventRecorderManager {
+func NewEventRecorderManager(kubernetes kubernetes.Interface) EventRecorderManager {
 	return &eventRecorderManager{
 		kubernetes:     kubernetes,
 		lock:           sync.Mutex{},

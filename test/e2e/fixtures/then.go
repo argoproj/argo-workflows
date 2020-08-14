@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -90,7 +89,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
-func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then {
+func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
 	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
@@ -107,7 +106,7 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 			if !ok {
 				t.t.Fatal("event is not an event")
 			}
-			if e.InvolvedObject.Name == t.workflowName && e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
+			if filter(*e) {
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
 				if t.t.Failed() {
@@ -121,7 +120,7 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	if t.t.Failed() {
 		t.t.FailNow()

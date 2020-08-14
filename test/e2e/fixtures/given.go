@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -135,14 +136,22 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
+var NoError = func(t *testing.T, output string, err error) {
+	assert.NoError(t, err, output)
+}
+
+func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec(name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()
 	}
 	return g
+}
+
+func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
+	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (g *Given) ClusterWorkflowTemplate(text string) *Given {

@@ -186,8 +186,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
 
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
@@ -257,8 +256,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -329,11 +327,10 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
 		Duration:    "10s",
-		Factor:      2,
+		Factor:      intstrutil.ParsePtr("2"),
 		MaxDuration: "10m",
 	}
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -385,12 +382,11 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
-		Factor:   2,
+		Factor:   intstrutil.ParsePtr("2"),
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -481,8 +477,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -2885,47 +2880,54 @@ var pdbwf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: artifact-repo-config-ref
+  name: my-pdb-wf
 spec:
-  entrypoint: whalesay
+  entrypoint: main
   poddisruptionbudget:
     minavailable: 100%
   templates:
-  - name: whalesay
+  - name: main
     container:
       image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
 `
 
 func TestPDBCreation(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.NotNil(t, pdb)
 	assert.Equal(t, pdb.Name, wf.Name)
 	woc.markWorkflowSuccess()
+	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
+}
+
+func TestPDBCreationRaceDelete(t *testing.T) {
+	wf := unmarshalWF(pdbwf)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.Nil(t, pdb)
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("my-pdb-wf", metav1.GetOptions{})
+	assert.NoError(t, err)
+	pod.Status.Phase = apiv1.PodSucceeded
+	_, err = controller.kubeclientset.CoreV1().Pods("").Update(pod)
+	assert.NoError(t, err)
+	err = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
+	assert.NoError(t, err)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 func TestStatusConditions(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
+	assert.Empty(t, woc.wf.Status.Conditions)
 	woc.markWorkflowSuccess()
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
@@ -3142,6 +3144,9 @@ func TestRetryNodeOutputs(t *testing.T) {
 	}
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
+	assert.Contains(t, scope.scope, "steps.influx.id")
+	assert.Contains(t, scope.scope, "steps.influx.startedAt")
+	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
 }
 
 var containerOutputsResult = `
@@ -4124,12 +4129,11 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
-	retryLimit := int32(2)
 	retries := wfv1.RetryStrategy{
-		Limit: &retryLimit,
+		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
 			Duration:    "0",
-			Factor:      1,
+			Factor:      intstrutil.ParsePtr("1"),
 			MaxDuration: "20",
 		},
 	}
