@@ -4614,8 +4614,6 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`scripts-bash.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-bash.yaml)
-
 - [`testvolume.yaml`](https://github.com/argoproj/argo/blob/master/examples/testvolume.yaml)
 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo/blob/master/examples/volumes-pvc.yaml)
