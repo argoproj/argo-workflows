@@ -2106,8 +2106,7 @@
         },
         "factor": {
           "description": "Factor is a factor to multiply the base duration after each failed retry",
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "maxDuration": {
           "description": "MaxDuration is the maximum amount of time allowed for the backoff strategy",
@@ -3215,8 +3214,7 @@
         },
         "limit": {
           "description": "Limit is the maximum number of attempts when retrying a container",
-          "type": "integer",
-          "format": "int32"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",
@@ -3616,8 +3614,7 @@
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
-          "type": "integer",
-          "format": "int64"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "affinity": {
           "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",

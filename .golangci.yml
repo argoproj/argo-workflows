@@ -6,6 +6,8 @@ run:
     - ui
   skip-files:
     - server/static/files.go
+  build-tags:
+    - e2e
 linters:
   enable:
     - goimports
