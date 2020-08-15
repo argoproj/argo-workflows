@@ -3,7 +3,6 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {MemoizationInfo} from '../../../shared/components/memoization-info';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
@@ -73,8 +72,16 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <InlineTable
                     rows={[
                         {
-                            left: <div> HELLO WORLD </div>,
-                            right: <div> foo bar </div>
+                            left: <div> KEY </div>,
+                            right: <div> {props.node.memoizationStatus.key} </div>
+                        },
+                        {
+                            left: <div> CACHE NAME </div>,
+                            right: <div> {props.node.memoizationStatus.cacheName} </div>
+                        },
+                        {
+                            left: <div> HIT? </div>,
+                            right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
                         }
                     ]}
                 />

@@ -13,13 +13,17 @@ interface Row {
 
 export class InlineTable extends React.Component<TableProps> {
     public render() {
-        return this.props.rows.map((row, i) => {
-            return (
-                <div key={i}>
-                    <div>{row.left}</div>
-                    <div>{row.right}</div>
-                </div>
-            );
-        });
+        return (
+            <div className='it'>
+                {this.props.rows.map((row, i) => {
+                    return (
+                        <div key={i} className='it--row'>
+                            <div className='it--col it--key'>{row.left}</div>
+                            <div className='it--col'>{row.right}</div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     }
 }
