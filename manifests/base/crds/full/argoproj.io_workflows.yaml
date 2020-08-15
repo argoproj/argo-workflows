@@ -893,8 +893,10 @@ spec:
               items:
                 properties:
                   activeDeadlineSeconds:
-                    format: int64
-                    type: integer
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    x-kubernetes-int-or-string: true
                   affinity:
                     properties:
                       nodeAffinity:
@@ -4054,14 +4056,18 @@ spec:
                           duration:
                             type: string
                           factor:
-                            format: int32
-                            type: integer
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
                           maxDuration:
                             type: string
                         type: object
                       limit:
-                        format: int32
-                        type: integer
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
                       retryPolicy:
                         type: string
                     type: object
@@ -8693,8 +8699,10 @@ spec:
               additionalProperties:
                 properties:
                   activeDeadlineSeconds:
-                    format: int64
-                    type: integer
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    x-kubernetes-int-or-string: true
                   affinity:
                     properties:
                       nodeAffinity:
@@ -11854,14 +11862,18 @@ spec:
                           duration:
                             type: string
                           factor:
-                            format: int32
-                            type: integer
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
                           maxDuration:
                             type: string
                         type: object
                       limit:
-                        format: int32
-                        type: integer
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
                       retryPolicy:
                         type: string
                     type: object
@@ -14900,8 +14912,10 @@ spec:
                   items:
                     properties:
                       activeDeadlineSeconds:
-                        format: int64
-                        type: integer
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
                       affinity:
                         properties:
                           nodeAffinity:
@@ -18061,14 +18075,18 @@ spec:
                               duration:
                                 type: string
                               factor:
-                                format: int32
-                                type: integer
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                x-kubernetes-int-or-string: true
                               maxDuration:
                                 type: string
                             type: object
                           limit:
-                            format: int32
-                            type: integer
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
                           retryPolicy:
                             type: string
                         type: object

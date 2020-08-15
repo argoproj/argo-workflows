@@ -186,8 +186,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
 
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
@@ -257,8 +256,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -329,11 +327,10 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
 		Duration:    "10s",
-		Factor:      2,
+		Factor:      intstrutil.ParsePtr("2"),
 		MaxDuration: "10m",
 	}
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -385,12 +382,11 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
-		Factor:   2,
+		Factor:   intstrutil.ParsePtr("2"),
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -481,8 +477,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -4134,12 +4129,11 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
-	retryLimit := int32(2)
 	retries := wfv1.RetryStrategy{
-		Limit: &retryLimit,
+		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
 			Duration:    "0",
-			Factor:      1,
+			Factor:      intstrutil.ParsePtr("1"),
 			MaxDuration: "20",
 		},
 	}
