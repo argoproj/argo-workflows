@@ -1,13 +1,13 @@
 import * as React from 'react';
 import {Workflow} from '../../../../models';
 
+import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Loading} from '../../../shared/components/loading';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
 import {formatDuration} from '../../../shared/duration';
 import {services} from '../../../shared/services';
 import {WorkflowFrom} from '../workflow-from';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
-import {InlineTable} from "../../../shared/components/inline-table/inline-table";
 
 require('./workflow-drawer.scss');
 
