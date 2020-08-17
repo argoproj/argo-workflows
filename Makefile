@@ -286,7 +286,7 @@ dist/install_kustomize.sh:
 /usr/local/bin/kustomize: dist/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
 	./dist/install_kustomize.sh
-	mv kustomize /usr/local/bin/
+	sudo mv kustomize /usr/local/bin/
 	kustomize version
 
 .PHONY: manifests
