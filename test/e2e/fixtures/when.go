@@ -247,6 +247,11 @@ func (w *When) DeleteConfigMap(name string) *When {
 	return w
 }
 
+func (w *When) PodQuota(podLimit string) *When {
+	w.t.Helper()
+	return w.createResourceQuota("pod-quota", corev1.ResourceList{"pods": resource.MustParse(podLimit)})
+}
+
 func (w *When) MemoryQuota(memoryLimit string) *When {
 	w.t.Helper()
 	return w.createResourceQuota("memory-quota", corev1.ResourceList{corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit)})

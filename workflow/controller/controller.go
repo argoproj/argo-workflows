@@ -49,6 +49,8 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
+const enoughTimeForInformerSync = 1 * time.Second
+
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -585,7 +587,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 	// add this change after 1s - this reduces the number of workflow reconciliations -
 	//with each reconciliation doing more work
-	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, enoughTimeForInformerSync)
 	return true
 }
 
@@ -729,7 +731,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if err != nil {
 					return
 				}
-				wfc.podQueue.Add(key)
+				wfc.podQueue.AddAfter(key, enoughTimeForInformerSync)
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -745,7 +747,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 					pod.LogChanges(oldPod, newPod)
 					return
 				}
-				wfc.podQueue.Add(key)
+				wfc.podQueue.AddAfter(key, enoughTimeForInformerSync)
 			},
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
@@ -754,7 +756,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if err != nil {
 					return
 				}
-				wfc.podQueue.Add(key)
+				wfc.podQueue.AddAfter(key, enoughTimeForInformerSync)
 			},
 		},
 	)

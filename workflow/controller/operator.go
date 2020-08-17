@@ -533,7 +533,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
 	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
 	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
-	time.Sleep(1 * time.Second)
+	time.Sleep(enoughTimeForInformerSync)
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.

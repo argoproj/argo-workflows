@@ -34,6 +34,19 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
+func (s *FunctionalSuite) TestResourceQuota() {
+	s.Given().
+		Workflow(`@testdata/two-items.yaml`).
+		When().
+		PodQuota("3").
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
