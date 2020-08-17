@@ -334,6 +334,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
+	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
+	// an `AlreadyExists` error because we won't get that error if there is not enough resources
 	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(pod.Namespace + "/" + pod.Name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)

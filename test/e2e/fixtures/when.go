@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -247,9 +248,10 @@ func (w *When) DeleteConfigMap(name string) *When {
 	return w
 }
 
-func (w *When) PodQuota(podLimit string) *When {
+func (w *When) PodsQuota(podLimit int) *When {
+	log.Infof("setting pods quota to %v", podLimit)
 	w.t.Helper()
-	return w.createResourceQuota("pod-quota", corev1.ResourceList{"pods": resource.MustParse(podLimit)})
+	return w.createResourceQuota("pod-quota", corev1.ResourceList{"pods": resource.MustParse(strconv.Itoa(podLimit))})
 }
 
 func (w *When) MemoryQuota(memoryLimit string) *When {

@@ -34,13 +34,17 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
+// in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
+// because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {
+	list, err := s.KubeClient.CoreV1().Pods(fixtures.Namespace).List(metav1.ListOptions{})
+	assert.NoError(s.T(), err)
 	s.Given().
 		Workflow(`@testdata/two-items.yaml`).
 		When().
-		PodQuota("3").
+		PodsQuota(len(list.Items) + 2).
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
