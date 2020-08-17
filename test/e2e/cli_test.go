@@ -973,7 +973,7 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 			return wf.Status.Phase == ""
 		}, "Workflow is waiting for lock", 20*time.Second).
 		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap().
+		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -998,7 +998,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 			assert.Contains(t, output, "Waiting for")
 		}).
 		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap()
+		DeleteConfigMap("my-config")
 }
 
 func (s *CLISuite) TestRetryOmit() {
