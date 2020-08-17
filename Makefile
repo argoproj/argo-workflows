@@ -415,7 +415,7 @@ test-e2e:
 test-e2e-cron:
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 7m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke:
