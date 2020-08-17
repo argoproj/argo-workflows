@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
+// Failure Mode Effect Analysis (FMEA)
 type FMEASuite struct {
 	fixtures.E2ESuite
 }
@@ -78,11 +79,19 @@ func (s *FMEASuite) TestDatabaseLost() {
 		Workflow("@testdata/ok-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "mysql"}, fixtures.NoError).
-		WaitForWorkflow(15 * time.Second).
+		Exec("kubectl", []string{"-n", "argo", "scale", "deploy/mysql", "--replicas", "0"}, fixtures.NoError).
+		WaitForWorkflow(15*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		}).
+		When().
+		Exec("kubectl", []string{"-n", "argo", "scale", "deploy/mysql", "--replicas", "1"}, fixtures.NoError).
+		Wait(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			_, err := s.Persistence.WorkflowArchive.GetWorkflow(string(metadata.UID))
+			assert.NoError(t, err)
 		})
 }
 
