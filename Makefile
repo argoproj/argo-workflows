@@ -277,8 +277,18 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
+dist/install_kustomize.sh:
+	mkdir -p dist
+	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
+
+/usr/local/bin/kustomize: dist/install_kustomize.sh
+	chmod +x ./dist/install_kustomize.sh
+	./dist/install_kustomize.sh
+	sudo mv kustomize /usr/local/bin/
+	kustomize version
+
 .PHONY: manifests
-manifests: crds
+manifests: crds /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -318,7 +328,11 @@ $(GOPATH)/bin/go-junit-report:
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
+.PHONY: test-report
+test-report: test-results/junit.xml
+	go run ./hack test-report
+
+dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
