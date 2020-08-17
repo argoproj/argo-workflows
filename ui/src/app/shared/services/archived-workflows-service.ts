@@ -30,7 +30,9 @@ export class ArchivedWorkflowsService {
         if (filter.pagination.offset) {
             queryParams.push(`listOptions.continue=${filter.pagination.offset}`);
         }
-        queryParams.push(`listOptions.limit=${filter.pagination.limit}`);
+        if (filter.pagination.limit) {
+            queryParams.push(`listOptions.limit=${filter.pagination.limit}`);
+        }
         return queryParams;
     }
 
