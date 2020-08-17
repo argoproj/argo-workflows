@@ -997,8 +997,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
-		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap("my-config")
+		WaitForWorkflow(30 * time.Second)
 }
 
 func (s *CLISuite) TestRetryOmit() {

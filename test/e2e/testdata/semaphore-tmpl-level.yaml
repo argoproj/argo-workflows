@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   name: semaphore-tmpl-level
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   entrypoint: semaphore-tmpl-level-example
   templates:
@@ -28,7 +28,7 @@ spec:
       semaphore:
         configMapKeyRef:
           name: my-config
-          key: my-key
+          key: template
     container:
       image: argoproj/argosay:v2
       args: ["sleep", "1s"]
