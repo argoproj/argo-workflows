@@ -279,11 +279,14 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
-/usr/local/bin/kustomize:
+dist/install_kustomize.sh:
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
-	sh dist/install_kustomize.sh
-	mv dist/kustomize /usr/local/bin/
+
+/usr/local/bin/kustomize: dist/install_kustomize.sh
+	chmod +x ./dist/install_kustomize.sh
+	./dist/install_kustomize.sh
+	mv kustomize /usr/local/bin/
 	kustomize version
 
 .PHONY: manifests
