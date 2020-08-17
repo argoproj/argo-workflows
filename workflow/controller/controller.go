@@ -515,8 +515,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
-		if woc.wfSpec.PodGC != nil {
-			switch woc.wfSpec.PodGC.Strategy {
+		if woc.execWf.Spec.PodGC != nil {
+			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnWorkflowCompletion:
 				doPodGC = true
 			case wfv1.PodGCOnWorkflowSuccess:

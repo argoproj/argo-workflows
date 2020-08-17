@@ -116,7 +116,7 @@ func (woc *wfOperationCtx) getVolumeDockerSock(tmpl *wfv1.Template) apiv1.Volume
 }
 
 func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
-	return woc.wfSpec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
+	return woc.execWf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
 type createWorkflowPodOpts struct {
@@ -129,7 +129,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
-	wfSpec := woc.wfSpec.DeepCopy()
+	wfSpec := woc.execWf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
 
@@ -167,7 +167,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(tmpl),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
-			ImagePullSecrets:      woc.wfSpec.ImagePullSecrets,
+			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},
 	}
 
@@ -176,16 +176,16 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
 	}
 
-	if woc.wfSpec.HostNetwork != nil {
-		pod.Spec.HostNetwork = *woc.wfSpec.HostNetwork
+	if woc.execWf.Spec.HostNetwork != nil {
+		pod.Spec.HostNetwork = *woc.execWf.Spec.HostNetwork
 	}
 
-	if woc.wfSpec.DNSPolicy != nil {
-		pod.Spec.DNSPolicy = *woc.wfSpec.DNSPolicy
+	if woc.execWf.Spec.DNSPolicy != nil {
+		pod.Spec.DNSPolicy = *woc.execWf.Spec.DNSPolicy
 	}
 
-	if woc.wfSpec.DNSConfig != nil {
-		pod.Spec.DNSConfig = woc.wfSpec.DNSConfig
+	if woc.execWf.Spec.DNSConfig != nil {
+		pod.Spec.DNSConfig = woc.execWf.Spec.DNSConfig
 	}
 
 	if woc.controller.Config.InstanceID != "" {
@@ -546,8 +546,8 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 	executorServiceAccountName := ""
 	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
 		executorServiceAccountName = tmpl.Executor.ServiceAccountName
-	} else if woc.wfSpec.Executor != nil && woc.wfSpec.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = woc.wfSpec.Executor.ServiceAccountName
+	} else if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
 		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
@@ -987,15 +987,15 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.ServiceAccountName != "" {
 		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
-	} else if woc.wfSpec.ServiceAccountName != "" {
-		pod.Spec.ServiceAccountName = woc.wfSpec.ServiceAccountName
+	} else if woc.execWf.Spec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = woc.execWf.Spec.ServiceAccountName
 	}
 
 	var automountServiceAccountToken *bool
 	if tmpl.AutomountServiceAccountToken != nil {
 		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
-	} else if woc.wfSpec.AutomountServiceAccountToken != nil {
-		automountServiceAccountToken = woc.wfSpec.AutomountServiceAccountToken
+	} else if woc.execWf.Spec.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = woc.execWf.Spec.AutomountServiceAccountToken
 	}
 	if automountServiceAccountToken != nil && !*automountServiceAccountToken {
 		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
@@ -1004,8 +1004,8 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 	executorServiceAccountName := ""
 	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
 		executorServiceAccountName = tmpl.Executor.ServiceAccountName
-	} else if woc.wfSpec.Executor != nil && woc.wfSpec.Executor.ServiceAccountName != "" {
-		executorServiceAccountName = woc.wfSpec.Executor.ServiceAccountName
+	} else if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
 		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)

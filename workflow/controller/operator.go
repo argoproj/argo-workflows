@@ -87,11 +87,14 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
-	// wfSpec holds the WorkflowSpec for use in execution.
-	// This should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
+
+	// execWf holds the Workflow for use in execution.
+	// In Normal workflow scenario: It holds copy of workflow object
+	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
+	// 'execWf.Spec' should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
-	wfSpec *wfv1.WorkflowSpec
+	execWf *wfv1.Workflow
 }
 
 var (
@@ -123,7 +126,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	woc := wfOperationCtx{
 		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
 		orig:    wf,
-		wfSpec:  &wf.Spec,
+		execWf:  wf,
 		updated: false,
 		log: log.WithFields(log.Fields{
 			"workflow":  wf.ObjectMeta.Name,
@@ -206,6 +209,7 @@ func (woc *wfOperationCtx) operate() {
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
+		// Validate the execution wfSpec
 		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
 
 		if err != nil {
@@ -228,11 +232,11 @@ func (woc *wfOperationCtx) operate() {
 			woc.requeue(time.Until(*woc.workflowDeadline))
 		}
 
-		if woc.wfSpec.Metrics != nil {
+		if woc.execWf.Spec.Metrics != nil {
 			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
 			}}
-			woc.computeMetrics(woc.wfSpec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
+			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
@@ -252,7 +256,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.log.Infof("workflow suspended")
 		return
 	}
-	if woc.wfSpec.Parallelism != nil {
+	if woc.execWf.Spec.Parallelism != nil {
 		woc.activePods = woc.countActivePods()
 	}
 
@@ -266,8 +270,8 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.setGlobalParameters(execArgs)
 
-	if woc.wfSpec.ArtifactRepositoryRef != nil {
-		repo, err := woc.getArtifactRepositoryByRef(woc.wfSpec.ArtifactRepositoryRef)
+	if woc.execWf.Spec.ArtifactRepositoryRef != nil {
+		repo, err := woc.getArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
@@ -327,7 +331,7 @@ func (woc *wfOperationCtx) operate() {
 
 	workflowStatus := node.Phase
 	var onExitNode *wfv1.NodeStatus
-	if woc.wfSpec.OnExit != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
+	if woc.execWf.Spec.OnExit != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		if workflowStatus == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
@@ -357,9 +361,9 @@ func (woc *wfOperationCtx) operate() {
 		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
 		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
-		woc.log.Infof("Running OnExit handler: %s", woc.wfSpec.OnExit)
+		woc.log.Infof("Running OnExit handler: %s", woc.execWf.Spec.OnExit)
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.ObjectMeta.Name)
-		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wfSpec.OnExit}, tmplCtx, execArgs, &executeTemplateOpts{onExitTemplate: true})
+		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.execWf.Spec.OnExit}, tmplCtx, execArgs, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.WithError(err).Error("error in exit template execution")
@@ -383,8 +387,8 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	var workflowMessage string
-	if node.FailedOrError() && woc.wfSpec.Shutdown != "" {
-		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
+	if node.FailedOrError() && woc.execWf.Spec.Shutdown != "" {
+		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
 	} else {
 		workflowMessage = node.Message
 	}
@@ -416,24 +420,24 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 	}
 
-	if woc.wfSpec.Metrics != nil {
+	if woc.execWf.Spec.Metrics != nil {
 		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}}
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
-		woc.computeMetrics(woc.wfSpec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
+		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
 	}
 }
 
 func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
-	if woc.wfSpec.ActiveDeadlineSeconds == nil {
+	if woc.execWf.Spec.ActiveDeadlineSeconds == nil {
 		return nil
 	}
 	if woc.wf.Status.StartedAt.IsZero() {
 		return nil
 	}
 	startedAt := woc.wf.Status.StartedAt.Truncate(time.Second)
-	deadline := startedAt.Add(time.Duration(*woc.wfSpec.ActiveDeadlineSeconds) * time.Second).UTC()
+	deadline := startedAt.Add(time.Duration(*woc.execWf.Spec.ActiveDeadlineSeconds) * time.Second).UTC()
 	return &deadline
 }
 
@@ -441,18 +445,18 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
-	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.wfSpec.ServiceAccountName
+	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.Format(time.RFC3339)
-	if woc.wfSpec.Priority != nil {
-		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.wfSpec.Priority))
+	if woc.execWf.Spec.Priority != nil {
+		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.execWf.Spec.Priority))
 	}
 	for char := range strftime.FormatChars {
 		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
 		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
 	}
 
-	if workflowParameters, err := json.Marshal(woc.wfSpec.Arguments.Parameters); err == nil {
+	if workflowParameters, err := json.Marshal(woc.execWf.Spec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
@@ -535,8 +539,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	if woc.wfSpec.PodGC != nil {
-		switch woc.wfSpec.PodGC.Strategy {
+	if woc.execWf.Spec.PodGC != nil {
+		switch woc.execWf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
 			for podName := range woc.succeededPods {
 				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
@@ -661,10 +665,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
-	if woc.wfSpec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+	if woc.execWf.Spec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
 		var message string
-		if woc.wfSpec.Shutdown != "" {
-			message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
+		if woc.execWf.Spec.Shutdown != "" {
+			message = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
 		} else {
 			message = fmt.Sprintf("retry exceeded workflow deadline %s", *woc.workflowDeadline)
 		}
@@ -894,12 +898,12 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 //fails any suspended and pending nodes if the workflow deadline has passed
 func (woc *wfOperationCtx) failSuspendedAndPendingNodesAfterDeadlineOrShutdown() error {
 	deadlineExceeded := woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)
-	if woc.wfSpec.Shutdown != "" || deadlineExceeded {
+	if woc.execWf.Spec.Shutdown != "" || deadlineExceeded {
 		for _, node := range woc.wf.Status.Nodes {
 			if node.IsActiveSuspendNode() || (node.Phase == wfv1.NodePending && deadlineExceeded) {
 				var message string
-				if woc.wfSpec.Shutdown != "" {
-					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
+				if woc.execWf.Spec.Shutdown != "" {
+					message = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
 				} else {
 					message = "Step exceeded its deadline"
 				}
@@ -1262,13 +1266,13 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// (e.g. passed validation, or didn't already complete)
 		return nil
 	}
-	if len(woc.wfSpec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
+	if len(woc.execWf.Spec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
 		// If we have already created the PVCs, then there is nothing to do.
 		// This will also handle the case where workflow has no volumeClaimTemplates.
 		return nil
 	}
 	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
-	for i, pvcTmpl := range woc.wfSpec.VolumeClaimTemplates {
+	for i, pvcTmpl := range woc.execWf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
 		}
@@ -1864,8 +1868,8 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
-	if woc.wfSpec.Parallelism != nil && woc.activePods >= *woc.wfSpec.Parallelism {
-		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.wfSpec.Parallelism)
+	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
+		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.execWf.Spec.Parallelism)
 		return ErrParallelismReached
 	}
 	// TODO: repeated calls to countActivePods is not optimal
@@ -2553,7 +2557,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	} else {
 		clusterWorkflowTemplateGetter = &templateresolution.NullClusterWorkflowTemplateGetter{}
 	}
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.wf, woc.wf)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.execWf, woc.wf)
 
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:
@@ -2569,7 +2573,7 @@ func (woc *wfOperationCtx) runOnExitNode(templateRef, parentDisplayName, parentN
 	if templateRef != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := common.GenerateOnExitNodeName(parentDisplayName)
-		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{
+		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})
@@ -2702,7 +2706,7 @@ func (woc *wfOperationCtx) reportMetricEmissionError(errorString string) {
 
 func (woc *wfOperationCtx) createPDBResource() error {
 
-	if woc.wfSpec.PodDisruptionBudget == nil {
+	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
 
@@ -2714,7 +2718,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		return nil
 	}
 
-	pdbSpec := *woc.wfSpec.PodDisruptionBudget
+	pdbSpec := *woc.execWf.Spec.PodDisruptionBudget
 	if pdbSpec.Selector == nil {
 		pdbSpec.Selector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
@@ -2741,7 +2745,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 }
 
 func (woc *wfOperationCtx) deletePDBResource() error {
-	if woc.wfSpec.PodDisruptionBudget == nil {
+	if woc.execWf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
@@ -2838,6 +2842,12 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 			return nil, executionParameters, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		}
+		// Set the WorkflowDefaults from Configmap
+		err := woc.controller.setWorkflowDefaults(woc.wf)
+		if err != nil {
+			log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
+			return nil, executionParameters, err
+		}
 
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}
 		return tmplRef, executionParameters, nil
@@ -2861,18 +2871,26 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 	}
 
-	// Merge the workflow spec and storedWorkflowspec.
+	//In WorkflowTemplateRef scenario, we need to merge the Workflow Default, Workflow spec and storedWorkflowspec for execWf.
 	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
-	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
+	err := woc.controller.setWorkflowDefaults(&targetWf)
+	if err != nil {
+		log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
+		return nil, executionParameters, err
+	}
+
+	err = wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
 	if err != nil {
 		return nil, executionParameters, err
 	}
-	woc.wfSpec = &targetWf.Spec
 
-	woc.volumes = woc.wfSpec.DeepCopy().Volumes
-	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(woc.wfSpec.Entrypoint)}
-	if len(woc.wfSpec.Arguments.Parameters) > 0 {
-		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.wfSpec.Arguments.Parameters)
+	// Setting the merged workflow to executable workflow
+	woc.execWf = &targetWf
+
+	woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
+	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(woc.execWf.Spec.Entrypoint)}
+	if len(woc.execWf.Spec.Arguments.Parameters) > 0 {
+		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.execWf.Spec.Arguments.Parameters)
 	}
 
 	return tmplRef, executionParameters, nil
