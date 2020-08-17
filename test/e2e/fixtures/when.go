@@ -216,14 +216,19 @@ func (w *When) And(block func()) *When {
 	return w
 }
 
-func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+func (w *When) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec(name, args...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()
 	}
 	return w
+}
+
+func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+	w.t.Helper()
+	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
@@ -270,10 +275,12 @@ func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 }
 
 func (w *When) DeleteStorageQuota() *When {
+	w.t.Helper()
 	return w.deleteResourceQuota("storage-quota")
 }
 
 func (w *When) DeleteMemoryQuota() *When {
+	w.t.Helper()
 	return w.deleteResourceQuota("memory-quota")
 }
 
