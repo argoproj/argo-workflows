@@ -14,6 +14,10 @@ import (
 func Label(ctx context.Context, obj metav1.Object) {
 	claims := auth.GetClaimSet(ctx)
 	if claims != nil {
-		labels.Label(obj, common.LabelKeyCreator, regexp.MustCompile("[^-_.a-z0-9A-Z]").ReplaceAllString(claims.Sub, "-"))
+		value := regexp.MustCompile("[^-_.a-z0-9A-Z]").ReplaceAllString(claims.Sub, "-")
+		if len(value) > 63 {
+			value = value[len(value)-63:]
+		}
+		labels.Label(obj, common.LabelKeyCreator, value)
 	}
 }
