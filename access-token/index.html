@@ -1948,8 +1948,8 @@
 
 
 <p>You now need to get a token:</p>
-<div class="codehilite"><pre><span></span><code><span class="nv">SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl -n argo get sa jenkins -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
-<span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl -n argo get secret <span class="nv">$SECRET</span> -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
+<div class="codehilite"><pre><span></span><code><span class="nv">SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl get sa jenkins -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
+<span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl get secret <span class="nv">$SECRET</span> -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
 <span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </code></pre></div>
