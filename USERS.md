@@ -54,6 +54,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
 1. [Mirantis](https://mirantis.com/)
+1. [New Relic](https://newrelic.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
@@ -77,4 +78,3 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Tulip](https://tulip.com/)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
-1. [New Relic](https://newrelic.com/)
