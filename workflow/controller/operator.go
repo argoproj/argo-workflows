@@ -2156,7 +2156,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 }
 
 func (woc *wfOperationCtx) checkForbiddenErrorAndResubmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
-	if (apierr.IsForbidden(err) || apierr.IsTooManyRequests(err)) && isResubmitAllowed(tmpl) {
+	if (apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || retry.IsResourceQuotaConflictErr(err)) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
 		woc.requeue(10 * time.Second)
 		return woc.markNodePending(nodeName, err), nil
