@@ -55,7 +55,7 @@ export class WorkflowsService {
     }
 
     public watchEvents(namespace: string, fieldSelector: string): Observable<Event> {
-        return requests.loadEventSource(`api/v1/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`).map(data => JSON.parse(data).result as Event);
+        return requests.loadEventSource(`api/v1/stream/events/${namespace}?listOptions.fieldSelector=${fieldSelector}`).map(data => JSON.parse(data).result as Event);
     }
 
     public watchFields(filter: {

@@ -1955,7 +1955,7 @@ var (
 
 	pattern_WorkflowService_WatchWorkflows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflow-events", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowService_WatchEvents_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "events", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowService_WatchEvents_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "stream", "events", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_WorkflowService_DeleteWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflows", "namespace", "name"}, "", runtime.AssumeColonVerbOpt(true)))
 
