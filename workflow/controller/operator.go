@@ -597,7 +597,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
-		if !retry.IsTransientErr(err) {
+		if err != nil && !retry.IsTransientErr(err) {
 			return nil, err
 		}
 		err = woc.controller.hydrator.Hydrate(currWf)
