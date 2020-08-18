@@ -174,6 +174,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
+        console.log(props);
         this.state = {
             ...this.getOptions(),
             expandNodes: new Set()

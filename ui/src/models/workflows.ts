@@ -42,6 +42,8 @@ export interface Artifact {
      * Path is the container path to the artifact
      */
     path?: string;
+    archiveLogs?: boolean;
+    s3: any;
 }
 
 /**
@@ -77,7 +79,7 @@ export interface Outputs {
     /**
      * ExitCode holds the exit code of a script template
      */
-    exitCode?: number;
+    exitCode?: string;
 }
 
 /**
@@ -437,12 +439,12 @@ export interface NodeStatus {
     /**
      * BoundaryID indicates the node ID of the associated template root node in which this node belongs to
      */
-    boundaryID: string;
+    boundaryID?: string;
 
     /**
      * A human readable message indicating details about why the node is in this condition.
      */
-    message: string;
+    message?: string;
 
     /**
      * Time at which this node started.
@@ -462,24 +464,24 @@ export interface NodeStatus {
     /**
      * PodIP captures the IP of the pod for daemoned steps
      */
-    podIP: string;
+    podIP?: string;
 
     /**
      * Daemoned tracks whether or not this node was daemoned and need to be terminated
      */
-    daemoned: boolean;
+    daemoned?: boolean;
 
-    retryStrategy: RetryStrategy;
+    retryStrategy?: RetryStrategy;
 
     /**
      * Outputs captures output parameter values and artifact locations
      */
-    outputs: Outputs;
+    outputs?: Outputs;
 
     /**
      * Children is a list of child node IDs
      */
-    children: string[];
+    children?: string[];
 
     /**
      * OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.
@@ -495,7 +497,7 @@ export interface NodeStatus {
      * a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
      * a template, will be a superset of the outbound nodes of its last children.
      */
-    outboundNodes: string[];
+    outboundNodes?: string[];
     /**
      * TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)
      */
@@ -503,7 +505,7 @@ export interface NodeStatus {
     /**
      * Inputs captures input parameter values and artifact locations supplied to this template invocation
      */
-    inputs: Inputs;
+    inputs?: Inputs;
 
     /**
      * TemplateRef is the reference to the template resource which this node corresponds to.
@@ -519,7 +521,7 @@ export interface NodeStatus {
     /**
      * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.
      */
-    hostNodeName: string;
+    hostNodeName?: string;
 }
 
 export interface TemplateRef {
