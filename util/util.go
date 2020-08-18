@@ -39,7 +39,7 @@ func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]
 		secret, err = secretsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !retry.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil

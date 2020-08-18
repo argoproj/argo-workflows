@@ -294,7 +294,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.createPVCs()
 	if err != nil {
-		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) {
+		if retry.IsTransientErr(err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
@@ -597,7 +597,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
-		if !retry.IsRetryableKubeAPIError(err) {
+		if !retry.IsTransientErr(err) {
 			return nil, err
 		}
 		err = woc.controller.hydrator.Hydrate(currWf)
@@ -876,7 +876,10 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					return err
 				}
 
-				if isResubmitAllowed(tmpl) {
+				// Is it possible (even likely) that the pod was manually deleted (e.g. `kubectl delete pod`) and
+				// therefore intentional. However, it the user has specified re-submit allowed, so we must not
+				// mark as error yet.
+				if tmpl.IsResubmitAllowed() {
 					// We want to resubmit. Continue and do not mark as error.
 					continue
 				}
@@ -1403,13 +1406,6 @@ func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1
 	}
 
 	return &lastChildNode
-}
-
-func isResubmitAllowed(tmpl *wfv1.Template) bool {
-	if tmpl.ResubmitPendingPods == nil {
-		return false
-	}
-	return *tmpl.ResubmitPendingPods
 }
 
 type executeTemplateOpts struct {
@@ -1990,7 +1986,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if !isResubmitAllowed(tmpl) && !node.Pending() {
+	} else if tmpl.IsResubmitAllowed() && !node.Pending() {
 		// This is not our first time executing this node.
 		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
 		// false, return.
@@ -2012,7 +2008,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	})
 
 	if err != nil {
-		return woc.checkForbiddenErrorAndResubmitAllowed(err, node.Name, tmpl)
+		return woc.requeueIfTransientErr(err, node.Name)
 	}
 
 	return node, err
@@ -2150,14 +2146,14 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 		executionDeadline:   opts.executionDeadline,
 	})
 	if err != nil {
-		return woc.checkForbiddenErrorAndResubmitAllowed(err, node.Name, tmpl)
+		return woc.requeueIfTransientErr(err, node.Name)
 	}
 	return node, err
 }
 
-func (woc *wfOperationCtx) checkForbiddenErrorAndResubmitAllowed(err error, nodeName string, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
-	if (apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || retry.IsResourceQuotaConflictErr(err)) && isResubmitAllowed(tmpl) {
-		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
+func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
+	if retry.IsTransientErr(err) {
+		// Our error was most likely caused by a lack of resources.
 		woc.requeue(10 * time.Second)
 		return woc.markNodePending(nodeName, err), nil
 	}
@@ -2431,7 +2427,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
 	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
-		return woc.checkForbiddenErrorAndResubmitAllowed(err, node.Name, tmpl)
+		return woc.requeueIfTransientErr(err, node.Name)
 	}
 
 	return node, err
@@ -2850,7 +2846,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !retry.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil

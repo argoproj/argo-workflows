@@ -20,31 +20,23 @@ var DefaultRetry = wait.Backoff{
 	Jitter:   0.1,
 }
 
-// IsRetryableKubeAPIError returns if the error is a retryable kubernetes error
-func IsRetryableKubeAPIError(err error) bool {
-	// get original error if it was wrapped
-	err = argoerrs.Cause(err)
-	if apierr.IsNotFound(err) || apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || IsResourceQuotaConflictErr(err) || apierr.IsInvalid(err) || apierr.IsMethodNotSupported(err) {
-		return false
-	}
-	return true
-}
-
-// It is possible to create a pod and it be prevented by a conflict updating the resource quota,
-// this func identifies those errors and allows us to retry muck like `Forbidden` or `TooManyRequests` errors.
-func IsResourceQuotaConflictErr(err error) bool {
-	return apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on resourcequota")
-}
-
-// IsRetryableNetworkError returns whether or not the error is a retryable network error
-func IsRetryableNetworkError(err error) bool {
+func IsTransientErr(err error) bool {
 	if err == nil {
 		return false
 	}
-	// get original error if it was wrapped
 	err = argoerrs.Cause(err)
-	errStr := err.Error()
+	return isExceededQuotaErr(err) || apierr.IsTooManyRequests(err) || isResourceQuotaConflictErr(err) || isTransientNetworkErr(err)
+}
 
+func isExceededQuotaErr(err error) bool {
+	return apierr.IsForbidden(err) && strings.Contains(err.Error(), "exceeded quota")
+}
+
+func isResourceQuotaConflictErr(err error) bool {
+	return apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on resourcequota")
+}
+
+func isTransientNetworkErr(err error) bool {
 	switch err.(type) {
 	case net.Error:
 		switch err.(type) {
@@ -53,17 +45,17 @@ func IsRetryableNetworkError(err error) bool {
 		case *url.Error:
 			// For a URL error, where it replies back "connection closed"
 			// retry again.
-			if strings.Contains(errStr, "Connection closed by foreign host") {
+			if strings.Contains(err.Error(), "Connection closed by foreign host") {
 				return true
 			}
 		default:
-			if strings.Contains(errStr, "net/http: TLS handshake timeout") {
+			if strings.Contains(err.Error(), "net/http: TLS handshake timeout") {
 				// If error is - tlsHandshakeTimeoutError, retry.
 				return true
-			} else if strings.Contains(errStr, "i/o timeout") {
+			} else if strings.Contains(err.Error(), "i/o timeout") {
 				// If error is - tcp timeoutError, retry.
 				return true
-			} else if strings.Contains(errStr, "connection timed out") {
+			} else if strings.Contains(err.Error(), "connection timed out") {
 				// If err is a net.Dial timeout, retry.
 				return true
 			}
