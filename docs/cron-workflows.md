@@ -57,7 +57,7 @@ If the `workflow-controller` crashes (and hence the `CronWorkflow` controller), 
 
 For example, if a `CronWorkflow` that runs every minute is last run at 12:05:00, and the controller crashes between 12:05:55 and 12:06:05, then the expected execution time of 12:06:00 would be missed. However, if `startingDeadlineSeconds` is set to a value greater than 65 (the amount of time passing between the last scheduled run time of 12:05:00 and the current controller restart time of 12:06:05), then a single instance of the `CronWorkflow` will be executed exactly at 12:06:05.
 
-Note that currently only a sinlge instance will be executed as a result of setting `startingDeadlineSeconds`.
+Currently only a single instance will be executed as a result of setting `startingDeadlineSeconds`.
 
 This setting can also be configured in tandem with `concurrencyPolicy` to achieve more fine-tuned control.
 
