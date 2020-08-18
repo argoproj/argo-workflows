@@ -129,7 +129,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private saveHistory() {
-        this.url = uiUrl('archived-workflows/' + this.state.namespace + '?' + this.filterParams.toString());
+        this.url = uiUrl('archived-workflows/' + (this.state.namespace || '') + '?' + this.filterParams.toString());
         Utils.setCurrentNamespace(this.state.namespace);
     }
 

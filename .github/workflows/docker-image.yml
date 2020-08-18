@@ -17,6 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      # https://github.com/marketplace/actions/docker-buildx
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v3
+        with:
+          buildx-version: latest
+          qemu-version: latest
       - name: Docker Login
         uses: Azure/docker-login@v1
         with:
@@ -26,8 +33,6 @@ jobs:
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
-          docker_org=$DOCKERIO_ORG
-
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
             tag="latest"
@@ -35,9 +40,11 @@ jobs:
 
           targets="workflow-controller argoexec argocli"
           for target in $targets; do
-            image_name="${docker_org}/${target}:${tag}-linux"
-            docker build --target $target -t $image_name .
-            docker push $image_name
+            docker buildx build \
+              --push \
+              --platform="linux/amd64,linux/arm64,linux/ppc64le,linux/s390x" \
+              --target $target \
+              --tag "${DOCKERIO_ORG}/${target}:${tag}-linux" .
           done
 
   build-windows:

@@ -1,8 +1,8 @@
 name: CI
-on: 
+on:
   push:
     branches:
-      - 'master' 
+      - 'master'
       - 'release-*'
       - '!release-2.8'
   pull_request:
