@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-yaml/yaml"
 	"io"
 	"path"
 	"path/filepath"
@@ -151,16 +152,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		} else {
 			activeDeadlineSeconds = tmplActiveDeadlineSeconds
 		}
-	}
-
-	// ExecutionDeadline will effect if the pod is in running state.
-	// Set executionDeadline as a ActiveDeadlineSeconds, if it is earlier than configure activeDeadline
-	// This will timeout the pod if Pod is in schedule phase
-	if !opts.executionDeadline.IsZero() && (activeDeadlineSeconds == nil || time.Now().Sub(opts.executionDeadline).Seconds() < float64(*activeDeadlineSeconds)) {
-
-		newActiveDeadlineSeconds := int64(opts.executionDeadline.Sub(time.Now()).Seconds())
-		log.Infof("Setting new activedeadline seconds, %d", newActiveDeadlineSeconds )
-		activeDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 
 	pod := &apiv1.Pod{
@@ -342,6 +333,21 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 		}
 	}
+
+	// ExecutionDeadline will effect if the pod is in running state.
+	// Set executionDeadline as a ActiveDeadlineSeconds, if it is earlier than configure activeDeadline
+	// This will timeout the pod if Pod is in schedule phase
+	if !opts.executionDeadline.IsZero() && (pod.Spec.ActiveDeadlineSeconds == nil || time.Now().Sub(opts.executionDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+
+		newActiveDeadlineSeconds := int64(opts.executionDeadline.Sub(time.Now()).Seconds())
+		if newActiveDeadlineSeconds <= 1 {
+			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+		}
+		log.Infof("Setting new activedeadline seconds, %d", newActiveDeadlineSeconds)
+		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+	}
+	byt, err := yaml.Marshal(pod)
+	fmt.Println(string(byt))
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

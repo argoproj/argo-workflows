@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type ResourceScope string
@@ -34,7 +33,6 @@ type WorkflowSpecHolder interface {
 type TemplateReferenceHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
-	GetTimeoutDuration() *intstr.IntOrString
 }
 
 // SubmitOpts are workflow submission options

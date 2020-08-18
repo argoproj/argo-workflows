@@ -2662,11 +2662,6 @@ spec:
                                     template:
                                       type: string
                                   type: object
-                                timeoutDuration:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
                                 when:
                                   type: string
                                 withItems:
@@ -5576,11 +5571,6 @@ spec:
                                       template:
                                         type: string
                                     type: object
-                                  timeoutDuration:
-                                    anyOf:
-                                    - type: integer
-                                    - type: string
-                                    x-kubernetes-int-or-string: true
                                   when:
                                     type: string
                                   withItems:
@@ -5654,6 +5644,11 @@ spec:
                           template:
                             type: string
                         type: object
+                      timeoutDuration:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
                       tolerations:
                         items:
                           properties:

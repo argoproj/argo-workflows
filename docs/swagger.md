@@ -972,7 +972,6 @@ DAGTask represents a node in the graph during DAG execution
 | onExit | string | OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. | No |
 | template | string | Name of template to execute | Yes |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource to execute. | No |
-| timeoutDuration | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) |  | No |
 | when | string | When is an expression in which the task should conditionally execute | No |
 | withItems | [ [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) ] | WithItems expands a task into multiple parallel tasks from the items in the list | No |
 | withParam | string | WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list. | No |
@@ -1505,6 +1504,7 @@ Template is a reusable and composable unit of execution in a workflow
 | synchronization | [io.argoproj.workflow.v1alpha1.Synchronization](#io.argoproj.workflow.v1alpha1.synchronization) | Synchronization holds synchronization lock configuration for this template | No |
 | template | string | Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used. | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used. | No |
+| timeoutDuration | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) |  | No |
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a template. | No |
 
@@ -1759,7 +1759,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 | onExit | string | OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. | No |
 | template | string | Template is the name of the template to execute as the step | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource to execute as the step. | No |
-| timeoutDuration | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) |  | No |
 | when | string | When is an expression in which the step should conditionally execute | No |
 | withItems | [ [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) ] | WithItems expands a step into multiple parallel steps from the items in the list | No |
 | withParam | string | WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list. | No |

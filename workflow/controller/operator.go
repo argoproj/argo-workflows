@@ -1601,7 +1601,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// Check if template exceeded its deadline
 	// If not, set it in execution deadline for pod
-	err = woc.checkTemplateDeadline(orgTmpl.GetTimeoutDuration(), node, opts)
+	err = woc.checkTemplateDeadline(resolvedTmpl, node, opts)
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 		return node, err
@@ -1681,12 +1681,12 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 }
 
 //Checks the template if it exceeds its deadline
-func (woc *wfOperationCtx) checkTemplateDeadline(deadline *intstr.IntOrString, node *wfv1.NodeStatus, opts *executeTemplateOpts) error {
+func (woc *wfOperationCtx) checkTemplateDeadline(tmpl *wfv1.Template, node *wfv1.NodeStatus, opts *executeTemplateOpts) error {
 	if node == nil {
 		return nil
 	}
-	if deadline != nil {
-		tmplMaxDuration, err := parseStringToDuration(deadline.StrVal)
+	if tmpl.TimeoutDuration != nil {
+		tmplMaxDuration, err := parseStringToDuration(tmpl.TimeoutDuration.StrVal)
 		if err != nil {
 			return err
 		}

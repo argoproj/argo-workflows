@@ -609,11 +609,6 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = new(ContinueOn)
 		**out = **in
 	}
-	if in.TimeoutDuration != nil {
-		in, out := &in.TimeoutDuration, &out.TimeoutDuration
-		*out = new(intstr.IntOrString)
-		**out = **in
-	}
 	return
 }
 
@@ -1939,6 +1934,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(Memoize)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.TimeoutDuration != nil {
+		in, out := &in.TimeoutDuration, &out.TimeoutDuration
+		*out = new(intstr.IntOrString)
+		**out = **in
+	}
 	return
 }
 
@@ -2446,11 +2446,6 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 	if in.ContinueOn != nil {
 		in, out := &in.ContinueOn, &out.ContinueOn
 		*out = new(ContinueOn)
-		**out = **in
-	}
-	if in.TimeoutDuration != nil {
-		in, out := &in.TimeoutDuration, &out.TimeoutDuration
-		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	return

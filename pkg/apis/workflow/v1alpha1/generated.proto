@@ -293,9 +293,6 @@ message DAGTask {
 
   // Depends are name of other targets which this depends on
   optional string depends = 12;
-
-  // TODO-BALA
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString timeoutDuration = 13;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -1070,6 +1067,9 @@ message Template {
 
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
+
+  // TODO-BALA
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString timeoutDuration = 38;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1437,9 +1437,6 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
-
-  // TODO-BALA
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString timeoutDuration = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

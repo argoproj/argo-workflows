@@ -1779,6 +1779,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
+|`timeoutDuration`|[`IntOrString`](#intorstring)|_No description available_|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -3062,7 +3063,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
-|`timeoutDuration`|[`IntOrString`](#intorstring)|_No description available_|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
 |`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a step into multiple parallel steps from the items in the list|
 |`withParam`|`string`|WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.|
@@ -3538,7 +3538,6 @@ DAGTask represents a node in the graph during DAG execution
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
-|`timeoutDuration`|[`IntOrString`](#intorstring)|_No description available_|
 |`when`|`string`|When is an expression in which the task should conditionally execute|
 |`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a task into multiple parallel tasks from the items in the list|
 |`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.|

@@ -535,6 +535,9 @@ type Template struct {
 
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
+
+	// TODO-BALA
+	TimeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,38,opt,name=timeoutDuration"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -552,11 +555,6 @@ func (tmpl *Template) GetTemplateName() string {
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
-}
-
-//TODO-BALA Comment
-func (tmpl *Template) GetTimeoutDuration() *intstr.IntOrString {
-	return nil
 }
 
 // GetBaseTemplate returns a base template content.
@@ -817,20 +815,12 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
-
-	// TODO-BALA
-	TimeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,12,opt,name=timeoutDuration"`
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
 
 func (step *WorkflowStep) GetTemplateName() string {
 	return step.Template
-}
-
-//TODO-BALA Comment
-func (step *WorkflowStep) GetTimeoutDuration() *intstr.IntOrString {
-	return step.TimeoutDuration
 }
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
@@ -1412,10 +1402,6 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 	return n.TemplateRef
 }
 
-func (n *NodeStatus) GetTimeoutDuration() *intstr.IntOrString {
-	return nil
-}
-
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
@@ -1793,20 +1779,12 @@ type DAGTask struct {
 
 	// Depends are name of other targets which this depends on
 	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
-
-	// TODO-BALA
-	TimeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,13,opt,name=timeoutDuration"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
 
 func (t *DAGTask) GetTemplateName() string {
 	return t.Template
-}
-
-//TODO-BALA Comment
-func (t *DAGTask) GetTimeoutDuration() *intstr.IntOrString {
-	return t.TimeoutDuration
 }
 
 func (t *DAGTask) GetTemplateRef() *TemplateRef {

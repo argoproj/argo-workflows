@@ -287,6 +287,8 @@ github.com/go-swagger/go-swagger v0.23.0 h1:WrzNj+tp0pK8B5K5Sf4Rab0xvrIINiX0rrgq
 github.com/go-swagger/go-swagger v0.23.0/go.mod h1:5AaV4Dx69cUjpFRTZnSHPr1Y7dKBVk6SvfIvkTEqwJs=
 github.com/go-swagger/scan-repo-boundary v0.0.0-20180623220736-973b3573c013 h1:l9rI6sNaZgNC0LnF3MiE+qTmyBA/tZAg1rtyrGbUMK0=
 github.com/go-swagger/scan-repo-boundary v0.0.0-20180623220736-973b3573c013/go.mod h1:b65mBPzqzZWxOZGxSWrqs4GInLIn+u99Q9q7p+GKni0=
+github.com/go-yaml/yaml v2.1.0+incompatible h1:RYi2hDdss1u4YE7GwixGzWwVo47T8UQwnTLB6vQiq+o=
+github.com/go-yaml/yaml v2.1.0+incompatible/go.mod h1:w2MrLa16VYP0jy6N7M5kHaCkaLENm+P+Tv+MfurjSw0=
 github.com/gobuffalo/attrs v0.0.0-20190224210810-a9411de4debd/go.mod h1:4duuawTqi2wkkpB4ePgWMaai6/Kc6WEz83bhFwpHzj0=
 github.com/gobuffalo/depgen v0.0.0-20190329151759-d478694a28d3/go.mod h1:3STtPUQYuzV0gBVOY3vy6CfMm/ljR4pABfrTeHNLHUY=
 github.com/gobuffalo/depgen v0.1.0/go.mod h1:+ifsuy7fhi15RWncXQQKjWS9JPkdah5sZvtHc2RXGlg=

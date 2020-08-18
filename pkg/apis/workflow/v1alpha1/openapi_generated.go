@@ -1004,17 +1004,12 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
-					"timeoutDuration": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
-						},
-					},
 				},
 				Required: []string{"name", "template"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
@@ -3573,6 +3568,11 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Memoize"),
 						},
 					},
+					"timeoutDuration": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -4764,16 +4764,11 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
-					"timeoutDuration": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
-						},
-					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
