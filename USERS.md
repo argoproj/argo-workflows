@@ -77,3 +77,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Tulip](https://tulip.com/)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
+1. [New Relic](https://newrelic.com/)
