@@ -16,8 +16,9 @@ import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 option go_package = "v1alpha1";
 
 // Amount represent a numeric amount.
+// +kubebuilder:validation:Type=number
 message Amount {
-  optional bytes value = 1;
+  optional string value = 1;
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -466,9 +467,8 @@ message Inputs {
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
-// +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
+// +kubebuilder:validation:Type=any
 message Item {
   optional bytes value = 1;
 }
