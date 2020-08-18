@@ -56,7 +56,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                 )}
                 {!wf.status.resourcesDuration ? null : (
                     <div className='workflow-drawer__section'>
-                        <div className='workflow-drawer__resourcesDuration'>
+                        <div>
                             <InlineTable
                                 rows={[
                                     {
@@ -72,11 +72,11 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, Workflo
                                             <div>
                                                 <div>
                                                     <span className='workflow-drawer__resourcesDuration--value'>{formatDuration(wf.status.resourcesDuration.cpu, 1)}</span>
-                                                    <span className='workflow-drawer__resourcesDuration--label'>(*1 CPU)</span>
+                                                    <span>(*1 CPU)</span>
                                                 </div>
                                                 <div>
                                                     <span className='workflow-drawer__resourcesDuration--value'>{formatDuration(wf.status.resourcesDuration.memory, 1)}</span>
-                                                    <span className='workflow-drawer__resourcesDuration--label'>(*100Mi Memory)</span>
+                                                    <span>(*100Mi Memory)</span>
                                                 </div>
                                             </div>
                                         )
