@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -12,6 +14,7 @@ import (
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -68,7 +71,7 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			kubeclientset := kubernetes.NewForConfigOrDie(config)
-			wfclientset := wfclientset.NewForConfigOrDie(config)
+			wfClientset := wfclientset.NewForConfigOrDie(config)
 
 			if !namespaced && managedNamespace != "" {
 				log.Warn("ignoring --managed-namespace because --namespaced is false")
@@ -79,12 +82,39 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfClientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			errors.CheckError(err)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
+			fmt.Println("Reading map")
+			kubeCM, err := kubeclientset.CoreV1().ConfigMaps(namespace).Get("clusterconfig", v1.GetOptions{})
+
+			if err != nil {
+				fmt.Println(err)
+			}
+			var wg sync.WaitGroup
+			for k, v := range kubeCM.Data {
+				fmt.Println(k)
+				filename := "/tmp/" + k
+				d1 := []byte(v)
+				err := ioutil.WriteFile("/tmp/"+k, d1, 0644)
+				if err != nil {
+
+				}
+				fmt.Println(filename)
+				config1, err := clientcmd.BuildConfigFromFlags("", filename)
+				kubeclientset1 := kubernetes.NewForConfigOrDie(config1)
+				wfclientset1 := wfclientset.NewForConfigOrDie(config1)
+				wfController1, err := controller.NewWorkflowController(config1, kubeclientset1, wfclientset1, "argo", managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+				errors.CheckError(err)
+				go func() {
+					wg.Add(1)
+					wfController1.Run(ctx, workflowWorkers, podWorkers)
+				}()
+			}
+			wg.Wait()
 
 			// Wait forever
 			select {}
