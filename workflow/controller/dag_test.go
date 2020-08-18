@@ -2178,3 +2178,679 @@ func TestEmptyWithParamDAG(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
+
+var testFailsWithParamDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reproduce-bug-9tpfr
+spec:
+  arguments: {}
+  entrypoint: start
+  serviceAccountName: argo-workflow
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: gen-tasks
+        template: gen-tasks
+      - arguments:
+          parameters:
+          - name: chunk
+            value: '{{item}}'
+        dependencies:
+        - gen-tasks
+        name: process-tasks
+        template: process-tasks
+        withParam: '{{tasks.gen-tasks.outputs.result}}'
+      - arguments: {}
+        dependencies:
+        - process-tasks
+        name: finish
+        template: finish
+    inputs: {}
+    metadata: {}
+    name: start
+    outputs: {}
+  - activeDeadlineSeconds: 300
+    arguments: {}
+    inputs: {}
+    metadata: {}
+    name: gen-tasks
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: 15s
+        factor: 2
+      limit: 5
+      retryPolicy: Always
+    script:
+      command:
+      - bash
+      image: python:3
+      name: ""
+      resources:
+        requests:
+          cpu: 250m
+      source: |
+        set -e
+        python3 -c 'import os, json; print(json.dumps([str(i) for i in range(10)]))'
+  - activeDeadlineSeconds: 1800
+    arguments: {}
+    inputs:
+      parameters:
+      - name: chunk
+    metadata: {}
+    name: process-tasks
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: 15s
+        factor: 2
+      limit: 2
+      retryPolicy: Always
+    script:
+      command:
+      - bash
+      image: python:3
+      name: ""
+      resources:
+        requests:
+          cpu: 100m
+      source: |
+        set -e
+        chunk="{{inputs.parameters.chunk}}"
+        if [[ $chunk == "3" ]]; then
+          echo "failed"
+          exit 1
+        fi
+        echo "process $chunk"
+  - activeDeadlineSeconds: 300
+    arguments: {}
+    inputs: {}
+    metadata: {}
+    name: finish
+    outputs: {}
+    script:
+      command:
+      - sh
+      image: busybox
+      name: ""
+      resources:
+        requests:
+          cpu: 100m
+      source: |
+        echo fin
+status:
+  nodes:
+    reproduce-bug-9tpfr:
+      children:
+      - reproduce-bug-9tpfr-1525049382
+      displayName: reproduce-bug-9tpfr
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr
+      name: reproduce-bug-9tpfr
+      outboundNodes:
+      - reproduce-bug-9tpfr-247809182
+      phase: Running
+      startedAt: "2020-08-14T03:47:23Z"
+      templateName: start
+      templateScope: local/reproduce-bug-9tpfr
+      type: DAG
+    reproduce-bug-9tpfr-247809182:
+      boundaryID: reproduce-bug-9tpfr
+      displayName: finish
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr-247809182
+      message: 'omitted: depends condition not met'
+      name: reproduce-bug-9tpfr.finish
+      phase: Omitted
+      startedAt: "2020-08-14T03:49:42Z"
+      templateName: finish
+      templateScope: local/reproduce-bug-9tpfr
+      type: Skipped
+    reproduce-bug-9tpfr-546685502:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3207714925
+      displayName: process-tasks(6:6)
+      finishedAt: "2020-08-14T03:47:37Z"
+      id: reproduce-bug-9tpfr-546685502
+      inputs:
+        parameters:
+        - name: chunk
+          value: "6"
+      name: reproduce-bug-9tpfr.process-tasks(6:6)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-585646929:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(7:7)(0)
+      finishedAt: "2020-08-14T03:47:33Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-c3910e16-nb0l
+      id: reproduce-bug-9tpfr-585646929
+      inputs:
+        parameters:
+        - name: chunk
+          value: "7"
+      name: reproduce-bug-9tpfr.process-tasks(7:7)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-600389385:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(5:5)(0)
+      finishedAt: "2020-08-14T03:47:33Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-c3910e16-nb0l
+      id: reproduce-bug-9tpfr-600389385
+      inputs:
+        parameters:
+        - name: chunk
+          value: "5"
+      name: reproduce-bug-9tpfr.process-tasks(5:5)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-850457006:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3450100829
+      displayName: process-tasks(2:2)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-850457006
+      inputs:
+        parameters:
+        - name: chunk
+          value: "2"
+      name: reproduce-bug-9tpfr.process-tasks(2:2)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-988357889:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(1:1)(0)
+      finishedAt: "2020-08-14T03:47:34Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-988357889
+      inputs:
+        parameters:
+        - name: chunk
+          value: "1"
+      name: reproduce-bug-9tpfr.process-tasks(1:1)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-1384515437:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(8:8)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-1384515437
+      inputs:
+        parameters:
+        - name: chunk
+          value: "8"
+      name: reproduce-bug-9tpfr.process-tasks(8:8)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-1525049382:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3595395365
+      displayName: gen-tasks
+      finishedAt: "2020-08-14T03:47:29Z"
+      id: reproduce-bug-9tpfr-1525049382
+      name: reproduce-bug-9tpfr.gen-tasks
+      outputs:
+        exitCode: "0"
+        result: '["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]'
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:23Z"
+      templateName: gen-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-1602779214:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3522592509
+      displayName: process-tasks(4:4)
+      finishedAt: "2020-08-14T03:47:45Z"
+      id: reproduce-bug-9tpfr-1602779214
+      inputs:
+        parameters:
+        - name: chunk
+          value: "4"
+      name: reproduce-bug-9tpfr.process-tasks(4:4)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-1670762753:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-2788826366
+      - reproduce-bug-9tpfr-3412607194
+      - reproduce-bug-9tpfr-850457006
+      - reproduce-bug-9tpfr-3505932898
+      - reproduce-bug-9tpfr-1602779214
+      - reproduce-bug-9tpfr-4143798034
+      - reproduce-bug-9tpfr-546685502
+      - reproduce-bug-9tpfr-3415721642
+      - reproduce-bug-9tpfr-3221614398
+      - reproduce-bug-9tpfr-3518128714
+      displayName: process-tasks
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr-1670762753
+      name: reproduce-bug-9tpfr.process-tasks
+      phase: Failed
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: TaskGroup
+    reproduce-bug-9tpfr-2008331609:
+      boundaryID: reproduce-bug-9tpfr
+      displayName: process-tasks(3:3)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-2008331609
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: failed with exit code 1
+      name: reproduce-bug-9tpfr.process-tasks(3:3)(0)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-2475724017:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(9:9)(0)
+      finishedAt: "2020-08-14T03:47:34Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-2475724017
+      inputs:
+        parameters:
+        - name: chunk
+          value: "9"
+      name: reproduce-bug-9tpfr.process-tasks(9:9)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-2612472988:
+      boundaryID: reproduce-bug-9tpfr
+      displayName: process-tasks(3:3)(1)
+      finishedAt: "2020-08-14T03:48:05Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-2612472988
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: failed with exit code 1
+      name: reproduce-bug-9tpfr.process-tasks(3:3)(1)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2020-08-14T03:48:00Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-2788826366:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-3662458541
+      displayName: process-tasks(0:0)
+      finishedAt: "2020-08-14T03:47:44Z"
+      id: reproduce-bug-9tpfr-2788826366
+      inputs:
+        parameters:
+        - name: chunk
+          value: "0"
+      name: reproduce-bug-9tpfr.process-tasks(0:0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3207714925:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(6:6)(0)
+      finishedAt: "2020-08-14T03:47:34Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-3207714925
+      inputs:
+        parameters:
+        - name: chunk
+          value: "6"
+      name: reproduce-bug-9tpfr.process-tasks(6:6)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 2
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3221614398:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-1384515437
+      displayName: process-tasks(8:8)
+      finishedAt: "2020-08-14T03:47:44Z"
+      id: reproduce-bug-9tpfr-3221614398
+      inputs:
+        parameters:
+        - name: chunk
+          value: "8"
+      name: reproduce-bug-9tpfr.process-tasks(8:8)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3412607194:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-988357889
+      displayName: process-tasks(1:1)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-3412607194
+      inputs:
+        parameters:
+        - name: chunk
+          value: "1"
+      name: reproduce-bug-9tpfr.process-tasks(1:1)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3415721642:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-585646929
+      displayName: process-tasks(7:7)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-3415721642
+      inputs:
+        parameters:
+        - name: chunk
+          value: "7"
+      name: reproduce-bug-9tpfr.process-tasks(7:7)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3450100829:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(2:2)(0)
+      finishedAt: "2020-08-14T03:47:33Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-3450100829
+      inputs:
+        parameters:
+        - name: chunk
+          value: "2"
+      name: reproduce-bug-9tpfr.process-tasks(2:2)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3505932898:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-2008331609
+      - reproduce-bug-9tpfr-2612472988
+      - reproduce-bug-9tpfr-4222579959
+      displayName: process-tasks(3:3)
+      finishedAt: "2020-08-14T03:49:42Z"
+      id: reproduce-bug-9tpfr-3505932898
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: No more retries left
+      name: reproduce-bug-9tpfr.process-tasks(3:3)
+      phase: Failed
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3518128714:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-2475724017
+      displayName: process-tasks(9:9)
+      finishedAt: "2020-08-14T03:47:37Z"
+      id: reproduce-bug-9tpfr-3518128714
+      inputs:
+        parameters:
+        - name: chunk
+          value: "9"
+      name: reproduce-bug-9tpfr.process-tasks(9:9)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:30Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-3522592509:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(4:4)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-3522592509
+      inputs:
+        parameters:
+        - name: chunk
+          value: "4"
+      name: reproduce-bug-9tpfr.process-tasks(4:4)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3595395365:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-1670762753
+      displayName: gen-tasks(0)
+      finishedAt: "2020-08-14T03:47:26Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-3595395365
+      name: reproduce-bug-9tpfr.gen-tasks(0)
+      outputs:
+        exitCode: "0"
+        result: '["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]'
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:47:23Z"
+      templateName: gen-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-3662458541:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(0:0)(0)
+      finishedAt: "2020-08-14T03:47:42Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-2e8afe0d-km90
+      id: reproduce-bug-9tpfr-3662458541
+      inputs:
+        parameters:
+        - name: chunk
+          value: "0"
+      name: reproduce-bug-9tpfr.process-tasks(0:0)(0)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 6
+        memory: 6
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+    reproduce-bug-9tpfr-4143798034:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-600389385
+      displayName: process-tasks(5:5)
+      finishedAt: "2020-08-14T03:47:36Z"
+      id: reproduce-bug-9tpfr-4143798034
+      inputs:
+        parameters:
+        - name: chunk
+          value: "5"
+      name: reproduce-bug-9tpfr.process-tasks(5:5)
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      startedAt: "2020-08-14T03:47:29Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Retry
+    reproduce-bug-9tpfr-4222579959:
+      boundaryID: reproduce-bug-9tpfr
+      children:
+      - reproduce-bug-9tpfr-247809182
+      displayName: process-tasks(3:3)(2)
+      finishedAt: "2020-08-14T03:48:40Z"
+      hostNodeName: gke-dotdb3-dotdb-pool-3779d805-hkcv
+      id: reproduce-bug-9tpfr-4222579959
+      inputs:
+        parameters:
+        - name: chunk
+          value: "3"
+      message: failed with exit code 1
+      name: reproduce-bug-9tpfr.process-tasks(3:3)(2)
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 1
+      startedAt: "2020-08-14T03:48:37Z"
+      templateName: process-tasks
+      templateScope: local/reproduce-bug-9tpfr
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 36
+    memory: 36
+  startedAt: "2020-08-14T03:47:23Z"
+`
+
+func TestFailsWithParamDAG(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(testFailsWithParamDAG)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+}
