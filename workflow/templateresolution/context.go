@@ -162,7 +162,7 @@ func WithTemplate(tmpl *wfv1.Template) Option {
 func mergeTemplate(tmpl *wfv1.Template, inherited *InheritedMembers) *InheritedMembers {
 	newInherited := &InheritedMembers{}
 	bytes, _ := json.Marshal(*tmpl)
-	json.Unmarshal(bytes, newInherited)
+	_ = json.Unmarshal(bytes, newInherited)
 	if inherited == nil {
 		return newInherited
 	}
@@ -222,7 +222,7 @@ func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, cl
 }
 func (ctx *Context) applyInheritedMembers(tmpl *wfv1.Template) {
 	bytes, _ := json.Marshal(*ctx.inheritedTemplate)
-	json.Unmarshal(bytes, tmpl)
+	_ = json.Unmarshal(bytes, tmpl)
 }
 
 // GetTemplateByName returns a template by name in the context.
