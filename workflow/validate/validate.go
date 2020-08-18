@@ -593,6 +593,7 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 		return fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
 
+	println(tmplStr)
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 
 		// Skip the custom variable references

@@ -380,7 +380,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
-func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
+func (p ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
 }
 
