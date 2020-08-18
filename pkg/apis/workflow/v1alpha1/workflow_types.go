@@ -386,7 +386,7 @@ func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
 
 func (b ParallelSteps) OpenAPISchemaType() []string {
 	return []string{"array"}
-	}
+}
 
 func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 

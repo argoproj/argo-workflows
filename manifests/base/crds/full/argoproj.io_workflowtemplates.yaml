@@ -2638,7 +2638,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                type: any
+                                type: object
                               type: array
                             withParam:
                               type: string
@@ -5174,7 +5174,7 @@ spec:
                     type: array
                   steps:
                     items:
-                      type: object
+                      type: array
                     type: array
                   suspend:
                     properties:

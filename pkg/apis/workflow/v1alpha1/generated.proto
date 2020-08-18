@@ -468,7 +468,7 @@ message Inputs {
 // The value of Item can be a map, string, bool, or number
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=any
+// +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
 }
@@ -659,6 +659,7 @@ message Outputs {
   optional string exitCode = 4;
 }
 
+// +kubebuilder:validation:Type=array
 message ParallelSteps {
   repeated WorkflowStep steps = 1;
 }
