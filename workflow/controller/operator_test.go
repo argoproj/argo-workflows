@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -4201,7 +4202,7 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	wf := unmarshalWF(resubmitPendingWf)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
+	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
 	nonForbiddenErr := apierr.NewBadRequest("badrequest")
 	t.Run("ForbiddenError", func(t *testing.T) {
 		node, err := woc.requeueIfTransientErr(forbiddenErr, "resubmit-pending-wf")
