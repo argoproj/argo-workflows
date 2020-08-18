@@ -183,6 +183,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .then(wfList => {
                 this.setState(
                     {
+                        namespace,
                         workflows: wfList.items || [],
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
                         selectedPhases,
@@ -265,7 +266,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private saveHistory() {
         WorkflowsList.saveOptions(this.options);
-        this.url = uiUrl('workflows/' + this.state.namespace + '?' + this.filterParams.toString());
+        this.url = uiUrl('workflows/' + this.state.namespace || '' + '?' + this.filterParams.toString());
         Utils.setCurrentNamespace(this.state.namespace);
     }
 
