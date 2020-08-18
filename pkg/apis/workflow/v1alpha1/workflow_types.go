@@ -9,13 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-openapi/spec"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	openapi "k8s.io/kube-openapi/pkg/common"
 )
 
 // TemplateType is the type of a template
@@ -386,22 +384,11 @@ func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
 }
 
-func (p ParallelSteps) OpenAPIDefinition() openapi.OpenAPIDefinition {
-	return openapi.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"array"},
-				Items: &spec.SchemaOrArray{
-					Schema: &spec.Schema{
-						SchemaProps: spec.SchemaProps{
-							Ref: spec.MustCreateRef("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep"),
-						},
-					},
-				},
-			},
-		},
+func (b ParallelSteps) OpenAPISchemaType() []string {
+	return []string{"array"}
 	}
-}
+
+func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
