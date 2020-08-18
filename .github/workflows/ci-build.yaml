@@ -34,11 +34,6 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
-      - name: Install Kustomize
-        if: ${{ matrix.test != 'test' }}
-        run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
       - name: Install and start K3S v1.0.1
         if: ${{ matrix.test != 'test' }}
         run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
@@ -82,6 +77,9 @@ jobs:
         run: |
           trap 'make test-results/junit.xml' EXIT
           make ${{ matrix.test }}
+      - name: Print test error annotations
+        if: failure()
+        run: make test-report
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1

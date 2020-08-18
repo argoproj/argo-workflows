@@ -131,7 +131,7 @@ message Backoff {
   optional string duration = 1;
 
   // Factor is a factor to multiply the base duration after each failed retry
-  optional int32 factor = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
   // MaxDuration is the maximum amount of time allowed for the backoff strategy
   optional string maxDuration = 3;
@@ -312,6 +312,11 @@ message DAGTemplate {
   // completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
   // More info and example about this feature at https://github.com/argoproj/argo/issues/1442
   optional bool failFast = 3;
+}
+
+message Event {
+  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  optional string selector = 1;
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -749,7 +754,7 @@ message ResourceTemplate {
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
-  optional int32 limit = 1;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
 
   // RetryPolicy is a policy of NodePhase statuses that will be retried
   optional string retryPolicy = 2;
@@ -837,6 +842,14 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+message Submit {
+  // WorkflowTemplateRef the workflow template to submit
+  optional WorkflowTemplateRef workflowTemplateRef = 1;
+
+  // Arguments extracted from the event and then set as arguments to the workflow created.
+  optional Arguments arguments = 2;
 }
 
 // SubmitOpts are workflow submission options
@@ -992,7 +1005,7 @@ message Template {
   // Optional duration in seconds relative to the StartTime that the pod may be active on a node
   // before the system actively tries to terminate the pod; value must be positive integer
   // This field is only applicable to container and script templates.
-  optional int64 activeDeadlineSeconds = 21;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 21;
 
   // RetryStrategy describes how to retry a template when it fails
   optional RetryStrategy retryStrategy = 22;
@@ -1094,6 +1107,9 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
+  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  optional string event = 7;
+
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
@@ -1141,6 +1157,34 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
+}
+
+// WorkflowEventBinding is the definition of an event resource
+// +genclient
+// +genclient:noStatus
+// +kubebuilder:resource:shortName=wfeb
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowEventBinding {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowEventBindingSpec spec = 2;
+}
+
+// WorkflowEventBindingList is list of event resources
+// +kubebuilder:resource:shortName=wfebs
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowEventBindingList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowEventBinding items = 2;
+}
+
+message WorkflowEventBindingSpec {
+  // Event is the event to bind to
+  optional Event event = 1;
+
+  // Submit is the workflow template to submit
+  optional Submit submit = 2;
 }
 
 // WorkflowList is list of Workflow resources

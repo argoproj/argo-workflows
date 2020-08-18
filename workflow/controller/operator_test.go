@@ -19,12 +19,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
@@ -186,8 +186,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	woc.wf.Status.Nodes[nodeID] = *node
 
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
@@ -257,8 +256,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -329,11 +327,10 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.Backoff = &wfv1.Backoff{
 		Duration:    "10s",
-		Factor:      2,
+		Factor:      intstrutil.ParsePtr("2"),
 		MaxDuration: "10m",
 	}
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
@@ -385,12 +382,11 @@ func TestProcessNodesWithRetriesWithExponentialBackoff(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	retries.Backoff = &wfv1.Backoff{
 		Duration: "5m",
-		Factor:   2,
+		Factor:   intstrutil.ParsePtr("2"),
 	}
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -481,8 +477,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	retryLimit := int32(2)
-	retries.Limit = &retryLimit
+	retries.Limit = intstrutil.ParsePtr("2")
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
 
@@ -1871,10 +1866,10 @@ func TestWorkflowSpecParam(t *testing.T) {
 func TestAddGlobalParamToScope(t *testing.T) {
 	woc := newWoc()
 	woc.globalParams = make(map[string]string)
-	testVal := intstr.Parse("test-value")
+	testVal := intstrutil.ParsePtr("test-value")
 	param := wfv1.Parameter{
 		Name:  "test-param",
-		Value: &testVal,
+		Value: testVal,
 	}
 	// Make sure if the param is not global, don't add to scope
 	woc.addParamToGlobalScope(param)
@@ -1885,16 +1880,16 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
-	assert.Equal(t, testVal, *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, testVal, woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
-	newValue := intstr.Parse("new-value")
-	param.Value = &newValue
+	newValue := intstrutil.ParsePtr("new-value")
+	param.Value = newValue
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
-	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Add a new global parameter
@@ -1902,7 +1897,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
-	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[1].Value)
+	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[1].Value)
 	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
 
 }
@@ -1976,9 +1971,8 @@ func TestExpandWithSequence(t *testing.T) {
 	var items []wfv1.Item
 	var err error
 
-	ten := intstr.Parse("10")
 	seq = wfv1.Sequence{
-		Count: &ten,
+		Count: intstrutil.ParsePtr("10"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1986,10 +1980,9 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "0", items[0].GetStrVal())
 	assert.Equal(t, "9", items[9].GetStrVal())
 
-	oneOhOne := intstr.Parse("101")
 	seq = wfv1.Sequence{
-		Start: &oneOhOne,
-		Count: &ten,
+		Start: intstrutil.ParsePtr("101"),
+		Count: intstrutil.ParsePtr("10"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -1997,11 +1990,9 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "101", items[0].GetStrVal())
 	assert.Equal(t, "110", items[9].GetStrVal())
 
-	fifty := intstr.Parse("50")
-	sixty := intstr.Parse("60")
 	seq = wfv1.Sequence{
-		Start: &fifty,
-		End:   &sixty,
+		Start: intstrutil.ParsePtr("50"),
+		End:   intstrutil.ParsePtr("60"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2010,8 +2001,8 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[10].GetStrVal())
 
 	seq = wfv1.Sequence{
-		Start: &sixty,
-		End:   &fifty,
+		Start: intstrutil.ParsePtr("60"),
+		End:   intstrutil.ParsePtr("50"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2019,29 +2010,26 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "60", items[0].GetStrVal())
 	assert.Equal(t, "50", items[10].GetStrVal())
 
-	zero := intstr.Parse("0")
 	seq = wfv1.Sequence{
-		Count: &zero,
+		Count: intstrutil.ParsePtr("0"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(items))
 
-	eight := intstr.Parse("8")
 	seq = wfv1.Sequence{
-		Start: &eight,
-		End:   &eight,
+		Start: intstrutil.ParsePtr("8"),
+		End:   intstrutil.ParsePtr("8"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(items))
 	assert.Equal(t, "8", items[0].GetStrVal())
 
-	one := intstr.Parse("1")
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
-		Count:  &ten,
-		Start:  &one,
+		Count:  intstrutil.ParsePtr("10"),
+		Start:  intstrutil.ParsePtr("1"),
 	}
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
@@ -2892,47 +2880,54 @@ var pdbwf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: artifact-repo-config-ref
+  name: my-pdb-wf
 spec:
-  entrypoint: whalesay
+  entrypoint: main
   poddisruptionbudget:
     minavailable: 100%
   templates:
-  - name: whalesay
+  - name: main
     container:
       image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
 `
 
 func TestPDBCreation(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.NotNil(t, pdb)
 	assert.Equal(t, pdb.Name, wf.Name)
 	woc.markWorkflowSuccess()
+	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
+}
+
+func TestPDBCreationRaceDelete(t *testing.T) {
+	wf := unmarshalWF(pdbwf)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.Nil(t, pdb)
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("my-pdb-wf", metav1.GetOptions{})
+	assert.NoError(t, err)
+	pod.Status.Phase = apiv1.PodSucceeded
+	_, err = controller.kubeclientset.CoreV1().Pods("").Update(pod)
+	assert.NoError(t, err)
+	err = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
+	assert.NoError(t, err)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 func TestStatusConditions(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
+	assert.Empty(t, woc.wf.Status.Conditions)
 	woc.markWorkflowSuccess()
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
@@ -3149,6 +3144,9 @@ func TestRetryNodeOutputs(t *testing.T) {
 	}
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
+	assert.Contains(t, scope.scope, "steps.influx.id")
+	assert.Contains(t, scope.scope, "steps.influx.startedAt")
+	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
 }
 
 var containerOutputsResult = `
@@ -4067,13 +4065,9 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	outputVal := intstr.Parse(sampleOutput)
 	sampleOutputs := wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
-			wfv1.Parameter{
-				Name:  "hello",
-				Value: &outputVal,
-			},
+			{Name: "hello", Value: intstrutil.ParsePtr(sampleOutput)},
 		},
 	}
 
@@ -4135,12 +4129,11 @@ func TestPropagateMaxDurationProcess(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
-	retryLimit := int32(2)
 	retries := wfv1.RetryStrategy{
-		Limit: &retryLimit,
+		Limit: intstrutil.ParsePtr("2"),
 		Backoff: &wfv1.Backoff{
 			Duration:    "0",
-			Factor:      1,
+			Factor:      intstrutil.ParsePtr("1"),
 			MaxDuration: "20",
 		},
 	}

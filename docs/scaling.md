@@ -44,7 +44,7 @@ data:
 You'll may need to pass the instance ID to the CLI:
 
 ```
-argo --instance-id i1 submit my-wf.yaml
+argo --instanceid i1 submit my-wf.yaml
 ```
 
 You do not need to have one instance ID per namespace, you could have many or few.

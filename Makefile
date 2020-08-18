@@ -96,6 +96,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
+	pkg/apiclient/event/event.swagger.json \
 	pkg/apiclient/info/info.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
@@ -278,8 +279,18 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
+dist/install_kustomize.sh:
+	mkdir -p dist
+	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
+
+/usr/local/bin/kustomize: dist/install_kustomize.sh
+	chmod +x ./dist/install_kustomize.sh
+	./dist/install_kustomize.sh
+	sudo mv kustomize /usr/local/bin/
+	kustomize version
+
 .PHONY: manifests
-manifests: crds
+manifests: crds /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -319,7 +330,11 @@ $(GOPATH)/bin/go-junit-report:
 test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
+.PHONY: test-report
+test-report: test-results/junit.xml
+	go run ./hack test-report
+
+dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
@@ -400,7 +415,7 @@ test-e2e:
 test-e2e-cron:
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 7m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke:
@@ -456,8 +471,7 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
-	mv dist/swagger.json api/openapi-spec/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 

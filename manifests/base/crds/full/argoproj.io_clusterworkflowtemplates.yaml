@@ -601,6 +601,8 @@ spec:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
+                          event:
+                            type: string
                           jqFilter:
                             type: string
                           jsonPath:
@@ -881,8 +883,10 @@ spec:
               items:
                 properties:
                   activeDeadlineSeconds:
-                    format: int64
-                    type: integer
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    x-kubernetes-int-or-string: true
                   affinity:
                     properties:
                       nodeAffinity:
@@ -1713,6 +1717,8 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                                event:
+                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -2587,6 +2593,8 @@ spec:
                                             - type: integer
                                             - type: string
                                             x-kubernetes-int-or-string: true
+                                          event:
+                                            type: string
                                           jqFilter:
                                             type: string
                                           jsonPath:
@@ -3540,6 +3548,8 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                                event:
+                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -3976,6 +3986,8 @@ spec:
                                   - type: integer
                                   - type: string
                                   x-kubernetes-int-or-string: true
+                                event:
+                                  type: string
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -4034,14 +4046,18 @@ spec:
                           duration:
                             type: string
                           factor:
-                            format: int32
-                            type: integer
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
                           maxDuration:
                             type: string
                         type: object
                       limit:
-                        format: int32
-                        type: integer
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        x-kubernetes-int-or-string: true
                       retryPolicy:
                         type: string
                     type: object
@@ -5492,6 +5508,8 @@ spec:
                                               - type: integer
                                               - type: string
                                               x-kubernetes-int-or-string: true
+                                            event:
+                                              type: string
                                             jqFilter:
                                               type: string
                                             jsonPath:

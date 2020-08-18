@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -27,14 +26,17 @@ type Then struct {
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	t.t.Helper()
 	return t.expectWorkflow(t.workflowName, block)
 }
 
 func (t *Then) ExpectWorkflowName(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	t.t.Helper()
 	return t.expectWorkflow(workflowName, block)
 }
 
 func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	t.t.Helper()
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
@@ -56,6 +58,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 }
 
 func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {
+	t.t.Helper()
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
@@ -72,6 +75,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 }
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
+	t.t.Helper()
 	log.Info("Listing workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
@@ -85,7 +89,8 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
-func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then {
+func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
+	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -101,7 +106,7 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 			if !ok {
 				t.t.Fatal("event is not an event")
 			}
-			if e.InvolvedObject.Name == t.workflowName && e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
+			if filter(*e) {
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
 				if t.t.Failed() {
@@ -114,7 +119,8 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
-	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	t.t.Helper()
+	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	if t.t.Failed() {
 		t.t.FailNow()
