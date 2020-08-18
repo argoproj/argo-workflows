@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/tools/record"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -45,9 +46,13 @@ func TestNewOperation(t *testing.T) {
 		},
 	)
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	recorder := record.NewFakeRecorder(1)
 
 	// act
-	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), []wfv1.WorkflowEventBinding{
+	operation, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), recorder, []wfv1.WorkflowEventBinding{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "malformed", Namespace: "my-ns"},
+		},
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb-1", Namespace: "my-ns"},
 			Spec: wfv1.WorkflowEventBindingSpec{
@@ -81,9 +86,9 @@ func TestNewOperation(t *testing.T) {
 			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
 			fromString := intstr.FromString(`foo`)
 			assert.Equal(t, []wfv1.Parameter{{Name: "my-param", Value: &fromString}}, wf.Spec.Arguments.Parameters)
-
 		}
 	}
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", <-recorder.Events)
 }
 
 func Test_expressionEnvironment(t *testing.T) {

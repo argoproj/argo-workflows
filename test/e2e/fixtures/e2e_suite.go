@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+
 	// load the azure plugin (required to authenticate against AKS clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	// load the gcp plugin (required to authenticate against GKE clusters).
@@ -17,13 +21,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
@@ -47,9 +50,6 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	hydrator          hydrator.Interface
-	// Guard-rail.
-	// The number of archived workflows. If is changes between two tests, we have a problem.
-	numWorkflows int
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -82,152 +82,60 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
-	numWorkflows := s.countWorkflows()
-	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
-		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
-	}
-	s.numWorkflows = numWorkflows
 }
 
-func (s *E2ESuite) countWorkflows() int {
-	workflows, err := s.wfClient.List(metav1.ListOptions{})
-	s.CheckError(err)
-	return len(workflows.Items)
-}
+var foreground = metav1.DeletePropagationForeground
+var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
 
 func (s *E2ESuite) DeleteResources(label string) {
-	// delete all cron workflows
-	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
-	s.CheckError(err)
-	for _, cronWf := range cronList.Items {
-		log.WithFields(log.Fields{"cronWorkflow": cronWf.Name}).Debug("Deleting cron workflow")
-		err = s.cronClient.Delete(cronWf.Name, nil)
-		s.CheckError(err)
-	}
 
-	// It is possible for a pod to become orphaned. This means that it's parent workflow
-	// (as set in the  "workflows.argoproj.io/workflow" label) does not exist.
-	// We need to delete orphans as well as test pods.
-	// Get a list of all workflows.
-	// if absent from this this it has been delete - so any associated pods are orphaned
-	// if in the list it is either a test wf or not
-	isTestWf := make(map[string]bool)
-	{
-		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
+	// delete archived workflows from the archive
+	if s.Persistence.IsEnabled() {
+		archive := s.Persistence.workflowArchive
+		parse, err := labels.ParseToRequirements(label)
 		s.CheckError(err)
-		for _, wf := range list.Items {
-			isTestWf[wf.Name] = false
-			if s.Persistence.IsEnabled() && wf.Status.IsOffloadNodeStatus() {
-				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
-				s.CheckError(err)
-			}
-		}
-	}
-
-	// delete from the archive
-	{
-		if s.Persistence.IsEnabled() {
-			archive := s.Persistence.workflowArchive
-			parse, err := labels.ParseToRequirements(Label)
+		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+		s.CheckError(err)
+		for _, w := range workflows {
+			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
-			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+		}
+	}
+
+	hasTestLabel := metav1.ListOptions{LabelSelector: label}
+	resources := []schema.GroupVersionResource{
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
+		{Version: "v1", Resource: "resourcequotas"},
+		{Version: "v1", Resource: "configmaps"},
+	}
+
+	for _, r := range resources {
+		err := s.dynamicFor(r).DeleteCollection(foregroundDelete, hasTestLabel)
+		s.CheckError(err)
+	}
+
+	for _, r := range resources {
+		for {
+			list, err := s.dynamicFor(r).List(hasTestLabel)
 			s.CheckError(err)
-			for _, workflow := range workflows {
-				err := archive.DeleteWorkflow(string(workflow.UID))
-				s.CheckError(err)
+			if len(list.Items) == 0 {
+				break
 			}
+			time.Sleep(time.Second)
 		}
 	}
+}
 
-	// delete all workflows
-	{
-		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: Label})
-		s.CheckError(err)
-		for _, wf := range list.Items {
-			logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
-			logCtx.Debug("Deleting workflow")
-			err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
-			if errors.IsNotFound(err) {
-				continue
-			}
-			s.CheckError(err)
-			isTestWf[wf.Name] = true
-			for {
-				_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
-				if errors.IsNotFound(err) {
-					break
-				}
-				logCtx.Debug("Waiting for workflow to be deleted")
-				time.Sleep(1 * time.Second)
-			}
-		}
+func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
+	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
+	if r.Resource == workflow.ClusterWorkflowTemplatePlural {
+		return resourceInterface
 	}
-
-	// delete workflow pods
-	{
-		podInterface := s.KubeClient.CoreV1().Pods(Namespace)
-		// it seems "argo delete" can leave pods behind
-		pods, err := podInterface.List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
-		s.CheckError(err)
-		for _, pod := range pods.Items {
-			workflow := pod.GetLabels()["workflows.argoproj.io/workflow"]
-			testPod, owned := isTestWf[workflow]
-			if testPod || !owned {
-				logCtx := log.WithFields(log.Fields{"workflow": workflow, "podName": pod.Name, "testPod": testPod, "owned": owned})
-				logCtx.Debug("Deleting pod")
-				err := podInterface.Delete(pod.Name, nil)
-				if !errors.IsNotFound(err) {
-					s.CheckError(err)
-				}
-				for {
-					_, err := podInterface.Get(pod.Name, metav1.GetOptions{})
-					if errors.IsNotFound(err) {
-						break
-					}
-					logCtx.Debug("Waiting for pod to be deleted")
-					time.Sleep(1 * time.Second)
-				}
-			}
-		}
-	}
-
-	// delete all workflow events
-	events, err := s.wfebClient.List(metav1.ListOptions{LabelSelector: label})
-	s.CheckError(err)
-
-	for _, item := range events.Items {
-		log.WithField("template", item.Name).Debug("Deleting workflow event")
-		err = s.wfebClient.Delete(item.Name, nil)
-		s.CheckError(err)
-	}
-
-	// delete all workflow templates
-	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
-	s.CheckError(err)
-
-	for _, wfTmpl := range wfTmpl.Items {
-		log.WithField("template", wfTmpl.Name).Debug("Deleting workflow template")
-		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
-		s.CheckError(err)
-	}
-
-	// delete all cluster workflow templates
-	cwfTmpl, err := s.cwfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
-	s.CheckError(err)
-	for _, cwfTmpl := range cwfTmpl.Items {
-		log.WithField("template", cwfTmpl.Name).Debug("Deleting cluster workflow template")
-		err = s.cwfTemplateClient.Delete(cwfTmpl.Name, nil)
-		s.CheckError(err)
-	}
-
-	// Delete all resourcequotas
-	rqList, err := s.KubeClient.CoreV1().ResourceQuotas(Namespace).List(metav1.ListOptions{LabelSelector: label})
-	s.CheckError(err)
-	for _, rq := range rqList.Items {
-		log.WithField("resourcequota", rq.Name).Debug("Deleting resource quota")
-		err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).Delete(rq.Name, nil)
-		s.CheckError(err)
-	}
+	return resourceInterface.Namespace(Namespace)
 }
 
 func (s *E2ESuite) CheckError(err error) {

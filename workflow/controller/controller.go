@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -33,13 +34,14 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
+	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/sync"
@@ -65,9 +67,10 @@ type WorkflowController struct {
 	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig    *rest.Config
-	kubeclientset kubernetes.Interface
-	wfclientset   wfclientset.Interface
+	restConfig       *rest.Config
+	kubeclientset    kubernetes.Interface
+	dynamicInterface dynamic.Interface
+	wfclientset      wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -85,7 +88,7 @@ type WorkflowController struct {
 	wfArchive             sqldb.WorkflowArchive
 	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
-	eventRecorderManager  EventRecorderManager
+	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.CacheFactory
 }
@@ -98,10 +101,16 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace string, managedNamespace string, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) *WorkflowController {
+func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+	dynamicInterface, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
+		dynamicInterface:           dynamicInterface,
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
@@ -112,7 +121,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
-		eventRecorderManager:       newEventRecorderManager(kubeclientset),
+		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
 
 	wfc.UpdateConfig()
@@ -125,7 +134,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	wfc.throttler.SetParallelism(wfc.getParallelism())
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
-	return &wfc
+	return &wfc, nil
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -138,7 +147,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
 	cronController.Run(ctx)
 }
 
@@ -151,7 +160,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions)
-	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
+	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
@@ -243,7 +252,7 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
-		wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
+		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
@@ -457,16 +466,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	err = wfc.setWorkflowDefaults(wf)
-	if err != nil {
-		log.WithFields(log.Fields{"key": wf.Name, "error": err}).Warn("Failed to apply default workflow values")
-		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-		woc.persistUpdates()
-		wfc.throttler.Remove(key)
-		return true
-	}
-
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
 		// can get here if we already added the completed=true label,
@@ -518,8 +517,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
-		if woc.wfSpec.PodGC != nil {
-			switch woc.wfSpec.PodGC.Strategy {
+		if woc.execWf.Spec.PodGC != nil {
+			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnWorkflowCompletion:
 				doPodGC = true
 			case wfv1.PodGCOnWorkflowSuccess:
@@ -773,14 +772,6 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 		}
 	}
 	return nil
-}
-
-func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
-	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.GetManagedNamespace())).Argoproj().V1alpha1().WorkflowTemplates()
-}
-
-func (wfc *WorkflowController) newClusterWorkflowTemplateInformer() wfextvv1alpha1.ClusterWorkflowTemplateInformer {
-	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, clusterWorkflowTemplateResyncPeriod).Argoproj().V1alpha1().ClusterWorkflowTemplates()
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {
