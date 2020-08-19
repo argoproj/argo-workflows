@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
@@ -63,6 +64,27 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <Ticker disabled={props.workflow.status && props.workflow.status.phase !== models.NODE_PHASE.RUNNING}>
                     {now => <Duration durationMs={nodeDuration(props.node, now)} />}
                 </Ticker>
+            )
+        },
+        {
+            title: 'MEMOIZATION',
+            value: (
+                <InlineTable
+                    rows={[
+                        {
+                            left: <div> KEY </div>,
+                            right: <div> {props.node.memoizationStatus.key} </div>
+                        },
+                        {
+                            left: <div> CACHE NAME </div>,
+                            right: <div> {props.node.memoizationStatus.cacheName} </div>
+                        },
+                        {
+                            left: <div> HIT? </div>,
+                            right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
+                        }
+                    ]}
+                />
             )
         }
     ];
