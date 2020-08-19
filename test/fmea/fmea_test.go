@@ -39,20 +39,6 @@ func (s *FMEASuite) resetTestSystem() {
 	assert.NoError(s.T(), err)
 }
 
-// TODO - is this a valid test?
-func (s *FMEASuite) TestCoreDNSDeleted() {
-	s.Given().
-		Workflow("@testdata/sleepy-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		Exec("kubectl", []string{"-n", "kube-system", "delete", "pod", "-l", "k8s-app=kube-dns"}, fixtures.OutputContains(`pod "coredns-`)).
-		Wait(15 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *FMEASuite) TestWorkflowControllerDeleted() {
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").

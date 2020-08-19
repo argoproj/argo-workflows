@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ["test", "test-e2e", "test-e2e-cron"]
+        test: ["test", "test-e2e", "test-fmea", "test-e2e-cron"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -51,11 +51,18 @@ jobs:
           echo "- name: fake_token_user" >> ~/.kube/config
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
+      - name: Set PROFILE
+        if: ${{ matrix.test != 'fmea' }}
+        run: |
+          echo "::set-env PROFILE=mysql"
+      - name: Set PROFILE
+        if: ${{ matrix.test != 'fmea' }}
+        run: |
+          echo "::set-env PROFILE=fmea"
       - name: Start Argo
         if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
-          PROFILE: mysql
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
@@ -67,7 +74,7 @@ jobs:
           KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
-        if: ${{ matrix.test != 'test' }}
+        if: ${{ matrix.test != 'test' && matrix.test != 'fmea' }}
         env:
           GOPATH: /home/runner/go
         run: make wait
@@ -115,8 +122,8 @@ jobs:
           echo "::add-path::/usr/local/bin"
       - name: Install Kustomize
         run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
+          cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+          kustomize version
       - name: Install protoc
         run: |
           set -eux -o pipefail
