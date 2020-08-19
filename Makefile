@@ -343,11 +343,7 @@ dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
 .PHONY: install
-ifeq ($(PROFILE),fmea)
-install: dist/$(PROFILE).yaml controller-image cli-image
-else
 install: dist/$(PROFILE).yaml
-endif
 ifeq ($(K3D),true)
 	k3d start
 endif
@@ -395,9 +391,7 @@ endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-ifneq ($(PROFILE),fmea)
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
-endif
 
 .PHONY: wait
 wait:

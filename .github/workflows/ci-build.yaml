@@ -51,18 +51,11 @@ jobs:
           echo "- name: fake_token_user" >> ~/.kube/config
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
-      - name: Set PROFILE
-        if: ${{ matrix.test != 'fmea' }}
-        run: |
-          echo "::set-env name=PROFILE::mysql"
-      - name: Set PROFILE
-        if: ${{ matrix.test == 'fmea' }}
-        run: |
-          echo "::set-env name=PROFILE::fmea"
       - name: Start Argo
         if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
+          PROFILE: mysql
           STATIC_FILES: false
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -75,7 +68,7 @@ jobs:
           KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
-        if: ${{ matrix.test != 'test' && matrix.test != 'fmea' }}
+        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
         run: make wait
