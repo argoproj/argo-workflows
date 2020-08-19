@@ -54,11 +54,11 @@ jobs:
       - name: Set PROFILE
         if: ${{ matrix.test != 'fmea' }}
         run: |
-          echo "::set-env PROFILE=mysql"
+          echo "::set-env name=PROFILE::mysql"
       - name: Set PROFILE
         if: ${{ matrix.test == 'fmea' }}
         run: |
-          echo "::set-env PROFILE=fmea"
+          echo "::set-env name=PROFILE::fmea"
       - name: Start Argo
         if: ${{ matrix.test != 'test' }}
         env:
