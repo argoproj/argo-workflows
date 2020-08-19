@@ -32,16 +32,16 @@ jobs:
       - name: Build & Push Linux Docker Images
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
+        # https://github.com/marketplace/actions/docker-buildx#build-and-push-to-dockerhub
         run: |
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
           targets="workflow-controller argoexec argocli"
           for target in $targets; do
             docker buildx build \
-              --push \
+              --output "type=image,push=true" \
               --platform="linux/amd64,linux/arm64,linux/ppc64le,linux/s390x" \
               --target $target \
               --tag "${DOCKERIO_ORG}/${target}:${tag}-linux" .
