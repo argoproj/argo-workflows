@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -252,6 +253,19 @@ func (w *When) DeleteConfigMap(name string) *When {
 	return w
 }
 
+func (w *When) PodsQuota(podLimit int) *When {
+	w.t.Helper()
+	if podLimit <= 0 {
+		list, err := w.kubeClient.CoreV1().Pods(Namespace).List(metav1.ListOptions{})
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		podLimit = len(list.Items)
+	}
+	log.Infof("setting pods quota to %v", podLimit)
+	return w.createResourceQuota("pods-quota", corev1.ResourceList{"pods": resource.MustParse(strconv.Itoa(podLimit))})
+}
+
 func (w *When) MemoryQuota(memoryLimit string) *When {
 	w.t.Helper()
 	return w.createResourceQuota("memory-quota", corev1.ResourceList{corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit)})
@@ -272,6 +286,11 @@ func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 		w.t.Fatal(err)
 	}
 	return w
+}
+
+func (w *When) DeletePodsQuota() *When {
+	w.t.Helper()
+	return w.deleteResourceQuota("pods-quota")
 }
 
 func (w *When) DeleteStorageQuota() *When {

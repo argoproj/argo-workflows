@@ -10,7 +10,6 @@ spec:
       app: mysql
   template:
     metadata:
-      name: mysql
       labels:
         app: mysql
     spec:
@@ -33,5 +32,12 @@ spec:
               command: ["mysql", "-u", "mysql", "-ppassword", "argo", "-e", "SELECT 1"]
             initialDelaySeconds: 15
             timeoutSeconds: 2
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql
+      volumes:
+        - name: mysql
+          persistentVolumeClaim:
+            claimName: mysql
       nodeSelector:
         kubernetes.io/os: linux

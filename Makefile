@@ -343,7 +343,11 @@ dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
 .PHONY: install
+ifeq ($(PROFILE),fmea)
+install: dist/$(PROFILE).yaml controller-image cli-image
+else
 install: dist/$(PROFILE).yaml
+endif
 ifeq ($(K3D),true)
 	k3d start
 endif
