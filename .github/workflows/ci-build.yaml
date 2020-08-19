@@ -56,13 +56,14 @@ jobs:
         run: |
           echo "::set-env PROFILE=mysql"
       - name: Set PROFILE
-        if: ${{ matrix.test != 'fmea' }}
+        if: ${{ matrix.test == 'fmea' }}
         run: |
           echo "::set-env PROFILE=fmea"
       - name: Start Argo
         if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
+          STATIC_FILES: false
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts

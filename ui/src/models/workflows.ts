@@ -520,6 +520,11 @@ export interface NodeStatus {
      * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.
      */
     hostNodeName: string;
+
+    /**
+     * Memoization
+     */
+    memoizationStatus: MemoizationStatus;
 }
 
 export interface TemplateRef {
@@ -775,6 +780,25 @@ export interface WorkflowStep {
      * TemplateRef is the reference to the template resource which is used as the base of this template.
      */
     templateRef?: TemplateRef;
+}
+
+/**
+ * MemoizationStatus holds information about a node with memoization enabled.
+ */
+
+export interface MemoizationStatus {
+    /**
+     * Hit is true if there was a previous cache entry and false otherwise
+     */
+    hit: boolean;
+    /**
+     * Key is the value used to query the cache for an entry
+     */
+    key: string;
+    /**
+     * Cache name stores the identifier of the cache used for this node
+     */
+    cacheName: string;
 }
 
 export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error' | 'Omitted';
