@@ -455,6 +455,7 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
+	s.T().Skip("flaky - see https://github.com/argoproj/argo/issues/2833")
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
