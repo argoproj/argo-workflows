@@ -411,6 +411,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 				Add: []apiv1.Capability{
 					// necessary to access main's root filesystem when run with a different user id
 					apiv1.Capability("SYS_PTRACE"),
+					apiv1.Capability("SYS_CHROOT"),
 				},
 			},
 		}
