@@ -876,9 +876,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					return err
 				}
 
-				// Is it possible (even likely) that the pod was manually deleted (e.g. `kubectl delete pod`) and
-				// therefore intentional. However, it the user has specified re-submit allowed, so we must not
-				// mark as error yet.
+				// The pod may have been intentionally deleted (e.g. `kubectl delete pod`).
+				// If the user has specified re-submit allowed, so we do not mark the node as error (yet).
 				if tmpl.IsResubmitPendingPods() {
 					// We want to resubmit. Continue and do not mark as error.
 					continue
