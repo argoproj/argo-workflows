@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	errors2 "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 
@@ -294,7 +295,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.createPVCs()
 	if err != nil {
-		if retry.IsTransientErr(err) {
+		if errors2.IsTransientErr(err) {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
@@ -597,7 +598,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
-		if err != nil && !retry.IsTransientErr(err) {
+		if err != nil && !errors2.IsTransientErr(err) {
 			return nil, err
 		}
 		err = woc.controller.hydrator.Hydrate(currWf)
@@ -2152,7 +2153,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 }
 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
-	if retry.IsTransientErr(err) {
+	if errors2.IsTransientErr(err) {
 		// Our error was most likely caused by a lack of resources.
 		woc.requeue(10 * time.Second)
 		return woc.markNodePending(nodeName, err), nil
@@ -2846,7 +2847,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !retry.IsTransientErr(err) {
+			if !errors2.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
