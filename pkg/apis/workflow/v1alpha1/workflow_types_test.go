@@ -92,8 +92,8 @@ func TestArtifact_GetArchive(t *testing.T) {
 }
 
 func TestTemplate_IsResubmitAllowed(t *testing.T) {
-	assert.False(t, (&Template{}).IsResubmitAllowed())
-	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitAllowed())
+	assert.False(t, (&Template{}).IsResubmitPendingPods())
+	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitPendingPods())
 }
 
 func TestNodes_FindByDisplayName(t *testing.T) {

@@ -1716,7 +1716,7 @@ func (tmpl *Template) IsLeaf() bool {
 	return false
 }
 
-func (tmpl *Template) IsResubmitAllowed() bool {
+func (tmpl *Template) IsResubmitPendingPods() bool {
 	return tmpl != nil && tmpl.ResubmitPendingPods
 }
 
