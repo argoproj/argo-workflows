@@ -5,6 +5,7 @@ kind: WorkflowTemplate
 metadata:
   name: job
 spec:
+  entrypoint: main
   arguments:
     parameters:
       - name: date
@@ -35,7 +36,6 @@ spec:
   # run daily at 2am
   schedule: "0 2 * * *"
   workflowSpec:
-    entrypoint: main
     workflowTemplateRef:
       name: job
 ---
