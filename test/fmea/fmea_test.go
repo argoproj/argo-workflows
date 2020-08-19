@@ -39,19 +39,6 @@ func (s *FMEASuite) resetTestSystem() {
 	assert.NoError(s.T(), err)
 }
 
-func (s *FMEASuite) TestWorkflowControllerDeleted() {
-	s.Given().
-		Workflow("@testdata/sleepy-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "app=workflow-controller"}, fixtures.OutputContains(`pod "workflow-controller`)).
-		WaitForWorkflow(15 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *FMEASuite) TestDeletingWorkflowPod() {
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").
