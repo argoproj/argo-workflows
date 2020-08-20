@@ -46,7 +46,7 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 }
 
 func (s *Persistence) IsEnabled() bool {
-	return s.offloadNodeStatusRepo.IsEnabled()
+	return s != nil && s.offloadNodeStatusRepo.IsEnabled()
 }
 
 func (s *Persistence) Close() {

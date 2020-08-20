@@ -25,17 +25,12 @@ func (s *FMEASuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 }
 
-func (s *FMEASuite) AfterTest(suiteName, testName string) {
-	s.resetTestSystem()
-	s.E2ESuite.AfterTest(suiteName, testName)
-}
-
 func (s *FMEASuite) resetTestSystem() {
 	_, err := fixtures.Exec("kubectl", "-n", "argo", "scale", "deploy/minio", "--replicas", "1")
 	assert.NoError(s.T(), err)
 	_, err = fixtures.Exec("kubectl", "-n", "argo", "scale", "deploy/mysql", "--replicas", "1")
 	assert.NoError(s.T(), err)
-	_, err = fixtures.Exec("kubectl", "label", "node", "--all", "fmea-")
+	_, err = fixtures.Exec("kubectl", "label", "node", "fmea-", "-l", "fmea")
 	assert.NoError(s.T(), err)
 }
 
@@ -110,6 +105,21 @@ func (s *FMEASuite) TestNoAvailableNodes() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FMEASuite) TestDeletingWorkflowNode() {
+	s.Given().
+		Workflow("@testdata/node-selector-workflow.yaml").
+		Exec("kubectl", []string{"label", "node", "k3d-k3s-default-worker-1", "fmea=true"}, fixtures.NoError).
+		When().
+		SubmitWorkflow().
+		Exec("kubectl", []string{"delete", "node", "-l", "fmea"}, fixtures.OutputContains(`node "sleepy" deleted`)).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "pod deleted", status.Message)
 		})
 }
 
