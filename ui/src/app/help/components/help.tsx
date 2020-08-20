@@ -32,25 +32,9 @@ export const Help = () => (
                 <div className='help-box'>
                     <div className='help-box__ico help-box__ico--download' />
                     <h3>Argo CLI</h3>
-                    <div className='row text-left help-box__download'>
-                        <div className='columns small-4'>
-                            <a href={`https://github.com/argoproj/argo/releases/download/${SYSTEM_INFO.version}/argo-linux-amd64`}>
-                                <i className='fab fa-linux' aria-hidden='true' /> Linux
-                            </a>
-                        </div>
-                        <div className='columns small-4'>
-                            <a href={`https://github.com/argoproj/argo/releases/download/${SYSTEM_INFO.version}/argo-darwin-amd64`}>
-                                <i className='fab fa-apple' aria-hidden='true' /> macOS
-                            </a>
-                            <br />
-                        </div>
-                        <div className='columns small-4'>
-                            <a href={`https://github.com/argoproj/argo/releases/download/${SYSTEM_INFO.version}/argo-windows-amd64`}>
-                                <i className='fab fa-windows' aria-hidden='true' /> Windows
-                            </a>
-                            <br />
-                        </div>
-                    </div>
+                    <a className='help-box__link' target='_blank' href='https://github.com/argoproj/argo/releases/latest'>
+                        Releases
+                    </a>
                 </div>
             </div>
         </div>

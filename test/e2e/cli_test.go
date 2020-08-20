@@ -966,9 +966,6 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 			}
 		}).
 		SubmitWorkflow().
-		RunCli([]string{"get", "semaphore-wf-level-1"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Running")
-		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == ""
 		}, "Workflow is waiting for lock", 20*time.Second).
@@ -1001,6 +998,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
+	s.T().Skip("flaky - see https://github.com/argoproj/argo/issues/3540")
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
