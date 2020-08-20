@@ -114,7 +114,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
+func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
@@ -122,21 +122,13 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !s.Modes[mode] {
-		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "client auth-mode is %v, but that mode is disabled", mode)
 	}
 	switch mode {
 	case Client:
-		restConfig, err := kubeconfig.GetRestConfig(authorization)
+		restConfig, wfClient, kubeClient, err := s.clientForAuthorization(authorization)
 		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
-		}
-		wfClient, err := versioned.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
-		}
-		kubeClient, err := kubernetes.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		claimSet, _ := jwt.ClaimSetFor(restConfig)
 		return wfClient, kubeClient, claimSet, nil
@@ -148,32 +140,18 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
+		// RBAC for SSO maybe disabled, in that case both `serviceAccount` and `err` will be nil
 		serviceAccount, err := s.ssoIf.GetServiceAccount(claimSet.Groups)
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account ref: %v", err)
 		} else if serviceAccount != nil {
-			serviceAccount, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccount.Name, metav1.GetOptions{})
+			authorization, err := s.authorizationForServiceAccount(serviceAccount.Name)
 			if err != nil {
-				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account: %v", err)
+				return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 			}
-			if len(serviceAccount.Secrets) == 0 {
-				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "expected at least one secret for SSO RBAC service account: %v", err)
-			}
-			secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+			_, wfClient, kubeClient, err := s.clientForAuthorization(authorization)
 			if err != nil {
-				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account secret: %v", err)
-			}
-			restConfig, err := kubeconfig.GetRestConfig("Bearer " + string(secret.Data["token"]))
-			if err != nil {
-				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to create SSO RBAC REST config: %v", err)
-			}
-			wfClient, err := versioned.NewForConfig(restConfig)
-			if err != nil {
-				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create SSO RBAC wfClientset with ClientConfig: %v", err)
-			}
-			kubeClient, err := kubernetes.NewForConfig(restConfig)
-			if err != nil {
-				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create SSO RBAC kubeClientset with ClientConfig: %v", err)
+				return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 			}
 			return wfClient, kubeClient, claimSet, nil
 		} else {
@@ -182,4 +160,35 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	default:
 		panic("this should never happen")
 	}
+}
+
+func (s *gatekeeper) authorizationForServiceAccount(serviceAccountName string) (string, error) {
+	serviceAccount, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get SSO RBAC service account: %w", err)
+	}
+	if len(serviceAccount.Secrets) == 0 {
+		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", err)
+	}
+	secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get SSO RBAC service account secret: %w", err)
+	}
+	return "Bearer " + string(secret.Data["token"]), nil
+}
+
+func (s *gatekeeper) clientForAuthorization(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error) {
+	restConfig, err := kubeconfig.GetRestConfig(authorization)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create REST config: %w", err)
+	}
+	wfClient, err := versioned.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failure to create workflow client: %w", err)
+	}
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
+	}
+	return restConfig, wfClient, kubeClient, nil
 }

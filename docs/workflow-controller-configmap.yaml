@@ -232,18 +232,24 @@ data:
       # be in the form <argo-server-root-url>/oauth2/callback. It must be
       # browser-accessible.
       redirectUrl: https://argo-server/oauth2/callback
-      # Enable RBAC. >= v2.11
+      # RBAC Config. >= v2.11
+      # By default, SSO uses the service account of the server (typically `serviceaccounts/argo-server`). Adding RBAC
+      # means that that SSO account cannot use that account anymore, they must either match a rule, or fall-back to
+      # a defined default service account. For example:
+      # * If the user is in an `admin` group - they might get `serviceaccounts/admin-user`.
+      # * If the user is authenticated, but does not match any rule, perhaps you might have `serviceaccount/basic-user`.
+      # * Finally, if the user is unauthenticated you might configure `serviceaccount/argo-server` to be read-only.
       rbac:
         # Rules in order of precedence. Maybe empty.
         rules:
         - anyOf:
-          - my-group
+          - admin
           # Use this service account if any of the groups match.
           serviceAccountRef:
-            name: my-service-account
+            name: admin-user
         # Use this default service account if none of the rules match. Typically either read-only, or no permissions at all.
         defaultServiceAccountRef:
-          name: my-default-service-account
+          name: readonly-user
     # workflowRequirements restricts the Workflows that the controller will process.
     # Current options:
     #   referenceOnly: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller

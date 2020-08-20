@@ -26,6 +26,7 @@ type Interface interface {
 	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
+	// Get the service account for the groups. This may be nil, which means that RBAC for SSO is not configured.
 	GetServiceAccount(groups []string) (*apiv1.LocalObjectReference, error)
 }
 

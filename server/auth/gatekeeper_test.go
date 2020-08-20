@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,8 @@ import (
 )
 
 func TestServer_GetWFClient(t *testing.T) {
+	_ = os.Setenv("KUBECONFIG", "/dev/null")
+	defer func() { _ = os.Unsetenv("KUBECONFIG") }()
 	wfClient := &fakewfclientset.Clientset{}
 	kubeClient := fake.NewSimpleClientset(
 		&corev1.ServiceAccount{
@@ -82,11 +85,8 @@ func TestServer_GetWFClient(t *testing.T) {
 		ssoIf.On("GetServiceAccount", []string{"my-group"}).Return(&corev1.LocalObjectReference{Name: "my-sa"}, nil)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, "my-ns")
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer id_token:"))
-			if assert.NoError(t, err) {
-				assert.NotEqual(t, wfClient, GetWfClient(ctx))
-				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-			}
+			_, err := g.Context(x("Bearer id_token:"))
+			assert.EqualError(t, err, `rpc error: code = Unauthenticated desc = failed to create REST config: invalid configuration: no configuration has been provided`)
 		}
 	})
 }
