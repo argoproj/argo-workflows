@@ -1690,20 +1690,21 @@ func (woc *wfOperationCtx) checkTemplateDeadline(tmpl *wfv1.Template, node *wfv1
 	if node == nil {
 		return nil, nil
 	}
-	var deadline time.Time
+
 
 	if tmpl.TimeoutDuration != nil {
 		tmplMaxDuration, err := parseStringToDuration(tmpl.TimeoutDuration.StrVal)
 		if err != nil {
 			return nil, err
 		}
-		deadline = node.StartedAt.Add(tmplMaxDuration)
+		deadline := node.StartedAt.Add(tmplMaxDuration)
 
 		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
 			return nil, fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
 		}
+		return &deadline, nil
 	}
-	return &deadline, nil
+	return nil, nil
 
 }
 

@@ -341,9 +341,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if err != nil {
 		return nil, err
 	}
-	if time.Now().UTC().After(*templateDeadline) {
-		return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
-	}
 
 	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
 		newActiveDeadlineSeconds := int64(time.Until(*templateDeadline).Seconds())
