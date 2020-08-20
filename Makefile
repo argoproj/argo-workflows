@@ -383,8 +383,8 @@ $(GOPATH)/bin/kubectl-autoforward:
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman $(GOPATH)/bin/kubectl-autoforward
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
-	./hack/port-forward.sh
+	kubectl wait --for=condition=Ready pod --all -l app --timeout 2m
+	kubectl autoforward &
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1 *dex' /etc/hosts
