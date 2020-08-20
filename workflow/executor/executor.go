@@ -214,6 +214,9 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			err = filepath.Walk(artPath, func(path string, f os.FileInfo, err error) error {
 				return os.Chmod(path, os.FileMode(*art.Mode))
 			})
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
 		}
 	}
 	return nil
