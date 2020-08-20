@@ -28,7 +28,6 @@ nav:
           - variables.md
       # topics that don't require kubctl or re-configuration
       - Intermediate:
-          - service-accounts.md
           - workflow-rbac.md
           - node-field-selector.md
           - workflow-templates.md
