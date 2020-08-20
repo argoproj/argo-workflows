@@ -377,8 +377,11 @@ stop:
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
+$(GOPATH)/bin/kubectl-autoforward:
+	go install github.com/alexec/kubectl-autoforward
+
 .PHONY: start
-start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
+start: status stop install controller cli executor-image $(GOPATH)/bin/goreman $(GOPATH)/bin/kubectl-autoforward
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
