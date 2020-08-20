@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"github.com/argoproj/argo/util/exec"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ type MalformedResourcesSuite struct {
 func (s *MalformedResourcesSuite) AfterTest(suiteName, testName string) {
 
 	// delete any malformed items first, as they'll break later clean-up
-	_, err := fixtures.Exec("kubectl", "-n", fixtures.Namespace, "delete", "workflows,workflowtemplates,clusterworkflowtemplates,cronworkflows", "-l", "argo-e2e=malformed")
+	_, err := exec.Exec("kubectl", "-n", fixtures.Namespace, "delete", "workflows,workflowtemplates,clusterworkflowtemplates,cronworkflows", "-l", "argo-e2e=malformed")
 	s.CheckError(err)
 
 	s.E2ESuite.AfterTest(suiteName, testName)
