@@ -5,7 +5,7 @@ on:
     tags:
       - v*
     branches:
-      - fix-build
+      - master
 
 defaults:
   run:

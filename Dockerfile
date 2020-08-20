@@ -98,11 +98,11 @@ RUN git rev-parse HEAD
 ADD hack/image_arch.sh .
 # controller image
 RUN . ./image_arch.sh && make dist/workflow-controller-linux-${IMAGE_ARCH}
-#RUN . ./image_arch.sh && ./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean
+RUN . ./image_arch.sh && ./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean
 
 # executor image
 RUN . ./image_arch.sh && make dist/argoexec-linux-${IMAGE_ARCH}
-#RUN . ./image_arch.sh && ./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean
+RUN . ./image_arch.sh && ./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean
 
 # cli image
 RUN mkdir -p ui/dist
@@ -111,7 +111,7 @@ COPY --from=argo-ui ui/dist/app ui/dist/app
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
 RUN . ./image_arch.sh && make argo-server.crt argo-server.key dist/argo-linux-${IMAGE_ARCH}
-#RUN . ./image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version | grep clean
+RUN . ./image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version | grep clean
 
 ####################################################################################################
 # argoexec
