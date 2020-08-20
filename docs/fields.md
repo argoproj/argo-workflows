@@ -357,9 +357,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml)
 
@@ -988,9 +986,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`workflow-template-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/workflow-template-ref.yaml)
 
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
@@ -1291,9 +1287,7 @@ Arguments to a template
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
@@ -1522,9 +1516,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
@@ -1905,9 +1897,7 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
@@ -1994,9 +1984,7 @@ Artifact indicates an artifact to place at a specified path
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
@@ -2385,9 +2373,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
@@ -2514,7 +2500,7 @@ Memoization
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+- [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 </details>
 
 ### Fields
@@ -2551,9 +2537,7 @@ Pod metdata
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
@@ -2962,9 +2946,7 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
@@ -3592,7 +3574,7 @@ _No description available_
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`memoize.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize.yaml)
+- [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 </details>
 
 ### Fields
@@ -3799,9 +3781,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
@@ -4937,9 +4917,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
@@ -5944,9 +5922,7 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`artifact-passing-subpath.yaml`](../examples/artifact-passing-subpath.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 

@@ -522,26 +522,6 @@ func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) commo
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"configMap": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
-						},
-					},
-				},
-				Required: []string{"configMap"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.ConfigMapKeySelector"},
-	}
-}
-
 func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
