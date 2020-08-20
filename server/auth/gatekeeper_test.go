@@ -19,6 +19,7 @@ import (
 )
 
 func TestServer_GetWFClient(t *testing.T) {
+	// prevent using local KUBECONFIG - which will fail on CI
 	_ = os.Setenv("KUBECONFIG", "/dev/null")
 	defer func() { _ = os.Unsetenv("KUBECONFIG") }()
 	wfClient := &fakewfclientset.Clientset{}
