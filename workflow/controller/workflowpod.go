@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-yaml/yaml"
 	"io"
 	"path"
 	"path/filepath"
@@ -334,20 +333,27 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
-	// ExecutionDeadline will effect if the pod is in running state.
-	// Set executionDeadline as a ActiveDeadlineSeconds, if it is earlier than configure activeDeadline
-	// This will timeout the pod if Pod is in schedule phase
-	if !opts.executionDeadline.IsZero() && (pod.Spec.ActiveDeadlineSeconds == nil || time.Now().Sub(opts.executionDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+	// Check if template exceeded its deadline
+	// If not, set it in pod active deadline.
+	// Pod will get timeout even it is in unscheduled/pending state
+	node := woc.wf.GetNodeByName(nodeName)
+	templateDeadline, err := woc.checkTemplateDeadline(tmpl, node)
+	if err != nil {
+		return nil, err
+	}
+	if time.Now().UTC().After(*templateDeadline) {
+		return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+	}
 
-		newActiveDeadlineSeconds := int64(opts.executionDeadline.Sub(time.Now()).Seconds())
+	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+		newActiveDeadlineSeconds := int64(time.Until(*templateDeadline).Seconds())
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		log.Infof("Setting new activedeadline seconds, %d", newActiveDeadlineSeconds)
+		woc.log.Debugf("Setting new activedeadlineseconds, %d", newActiveDeadlineSeconds)
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
-	byt, err := yaml.Marshal(pod)
-	fmt.Println(string(byt))
+
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

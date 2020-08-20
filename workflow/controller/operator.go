@@ -1513,6 +1513,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, ErrDeadlineExceeded
 	}
 
+	// Check the template deadline for Pending nodes
+	// This check will cover the resource forbidden, synchronization scenario,
+	// In above scenario, only Node will be created in pending state
+	_, err = woc.checkTemplateDeadline(processedTmpl, node)
+	if err != nil {
+		return node, err
+	}
+
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
 	if err := woc.checkParallelism(processedTmpl, node, opts.boundaryID); err != nil {
 		return node, err
@@ -1599,14 +1607,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 	}
 
-	// Check if template exceeded its deadline
-	// If not, set it in execution deadline for pod
-	err = woc.checkTemplateDeadline(resolvedTmpl, node, opts)
-	if err != nil {
-		node = woc.markNodeError(nodeName, err)
-		return node, err
-	}
-
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, opts)
@@ -1681,27 +1681,26 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 }
 
 //Checks the template if it exceeds its deadline
-func (woc *wfOperationCtx) checkTemplateDeadline(tmpl *wfv1.Template, node *wfv1.NodeStatus, opts *executeTemplateOpts) error {
+func (woc *wfOperationCtx) checkTemplateDeadline(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error) {
+	woc.log.Infof("Check Template deadline")
 	if node == nil {
-		return nil
+		return nil, nil
 	}
+	var deadline time.Time
+
 	if tmpl.TimeoutDuration != nil {
 		tmplMaxDuration, err := parseStringToDuration(tmpl.TimeoutDuration.StrVal)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		deadline := node.StartedAt.Add(tmplMaxDuration)
+		deadline = node.StartedAt.Add(tmplMaxDuration)
 
 		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
-			return fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
-		}
-
-		// Set the executionDuration if template deadline is earlier then existing executionDeadline
-		if opts.executionDeadline.IsZero() || opts.executionDeadline.After(deadline) {
-			opts.executionDeadline = deadline
+			return nil, fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
 		}
 	}
-	return nil
+	return &deadline, nil
+
 }
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message

@@ -1068,7 +1068,8 @@ message Template {
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
 
-  // TODO-BALA
+  // TimeoutDuration allows max duration node can be active from node StartTime.
+  // This Timeout includes node pending state also.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString timeoutDuration = 38;
 }
 

@@ -4594,3 +4594,90 @@ func Test_processItem(t *testing.T) {
 		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
 }
+
+var stepTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-step
+spec:
+  entrypoint: main
+  templates:
+  - name: main 
+    steps: 
+    - - name: step1
+        template: whalesay
+
+  - name: whalesay
+    timeoutDuration: 5s
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var dagTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-dag
+spec:
+  entrypoint: main
+  templates:
+  - name: main 
+    dag:
+      tasks:
+      - name: dag1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: deadline
+            value: 4s
+      - name: dag2
+        template: whalesay
+        arguments:
+          parameters:
+          - name: deadline
+            value: 4s
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: deadline
+    timeoutDuration: "{{inputs.parameters.deadline}}"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestTemplateTimeoutDuration(t *testing.T) {
+
+	t.Run("Step Template Deadline", func(t *testing.T) {
+		wf := unmarshalWF(stepTimeoutWf)
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+		time.Sleep(6 * time.Second)
+		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
+		woc.operate()
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("[0]").Phase)
+	})
+	t.Run("DAG Template Deadline", func(t *testing.T) {
+		wf := unmarshalWF(dagTimeoutWf)
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+		time.Sleep(6 * time.Second)
+		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
+		woc.operate()
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("dag1").Phase)
+	})
+}
