@@ -731,7 +731,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if err != nil {
 					return
 				}
-				wfc.podQueue.AddAfter(key, enoughTimeForInformerSync)
+				wfc.podQueue.Add(key)
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -747,7 +747,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 					pod.LogChanges(oldPod, newPod)
 					return
 				}
-				wfc.podQueue.AddAfter(key, enoughTimeForInformerSync)
+				wfc.podQueue.Add(key)
 			},
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
@@ -756,7 +756,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if err != nil {
 					return
 				}
-				wfc.podQueue.AddAfter(key, enoughTimeForInformerSync)
+				wfc.podQueue.Add(key)
 			},
 		},
 	)
