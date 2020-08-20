@@ -33,11 +33,19 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/archive"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
+
+var MainContainerStartRetry = wait.Backoff{
+	Steps:    8,
+	Duration: 1 * time.Second,
+	Factor:   1.0,
+	Jitter:   0.1,
+}
 
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
@@ -476,8 +484,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				intOrString := intstr.Parse(fileContents)
-				output = &intOrString
+				output = intstrutil.ParsePtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -491,15 +498,13 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				intOrString := intstr.Parse(string(data))
-				output = &intOrString
+				output = intstrutil.ParsePtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
 		if output.Type == intstr.String {
-			trimmed := intstr.Parse(strings.TrimSuffix(output.String(), "\n"))
-			output = &trimmed
+			output = intstrutil.ParsePtr(strings.TrimSuffix(output.String(), "\n"))
 		}
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
@@ -938,7 +943,18 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 		opts := metav1.ListOptions{
 			FieldSelector: fieldSelector.String(),
 		}
-		watchIf, err := podsIf.Watch(opts)
+
+		var err error
+		var watchIf watch.Interface
+
+		err = wait.ExponentialBackoff(MainContainerStartRetry, func() (bool, error) {
+			watchIf, err = podsIf.Watch(opts)
+			if err != nil {
+				log.Debugf("Failed to establish watch, retrying: %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
 		if err != nil {
 			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)
 		}

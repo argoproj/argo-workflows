@@ -272,6 +272,23 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.cronworkflowdeletedresponse) |
 
+### /api/v1/events/{namespace}/{discriminator}
+
+#### POST
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is "broadcast" to workflow event binding in all namespaces. | Yes | string |
+| discriminator | path | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)` | Yes | string |
+| body | body | The event itself can be any data. | Yes | [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [io.argoproj.workflow.v1alpha1.EventResponse](#io.argoproj.workflow.v1alpha1.eventresponse) |
+
 ### /api/v1/info
 
 #### GET
@@ -795,7 +812,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | duration | string | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") | No |
-| factor | integer | Factor is a factor to multiply the base duration after each failed retry | No |
+| factor | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Factor is a factor to multiply the base duration after each failed retry | No |
 | maxDuration | string | MaxDuration is the maximum amount of time allowed for the backoff strategy | No |
 
 #### io.argoproj.workflow.v1alpha1.Cache
@@ -969,6 +986,18 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 | failFast | boolean | This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at <https://github.com/argoproj/argo/issues/1442> | No |
 | target | string | Target are one or more names of targets to execute in a DAG | No |
 | tasks | [ [io.argoproj.workflow.v1alpha1.DAGTask](#io.argoproj.workflow.v1alpha1.dagtask) ] | Tasks are a list of DAG tasks | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Event
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| selector | string | Selector (<https://github.com/antonmedv/expr>) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"` | Yes |
+
+#### io.argoproj.workflow.v1alpha1.EventResponse
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.EventResponse | object |  |  |
 
 #### io.argoproj.workflow.v1alpha1.ExecutorConfig
 
@@ -1280,7 +1309,7 @@ RetryStrategy provides controls on how to retry a workflow step
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | backoff | [io.argoproj.workflow.v1alpha1.Backoff](#io.argoproj.workflow.v1alpha1.backoff) | Backoff is a backoff strategy | No |
-| limit | integer | Limit is the maximum number of attempts when retrying a container | No |
+| limit | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Limit is the maximum number of attempts when retrying a container | No |
 | retryPolicy | string | RetryPolicy is a policy of NodePhase statuses that will be retried | No |
 
 #### io.argoproj.workflow.v1alpha1.S3Artifact
@@ -1362,6 +1391,13 @@ Sequence expands a workflow step into numeric range
 | format | string | Format is a printf format string to format the value in the sequence | No |
 | start | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Number at which to start the sequence (default: 0) | No |
 
+#### io.argoproj.workflow.v1alpha1.Submit
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments extracted from the event and then set as arguments to the workflow created. | No |
+| workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef the workflow template to submit | Yes |
+
 #### io.argoproj.workflow.v1alpha1.SubmitOpts
 
 SubmitOpts are workflow submission options
@@ -1433,7 +1469,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| activeDeadlineSeconds | long | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
+| activeDeadlineSeconds | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
 | affinity | [io.k8s.api.core.v1.Affinity](#io.k8s.api.core.v1.affinity) | Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any) | No |
 | archiveLocation | [io.argoproj.workflow.v1alpha1.ArtifactLocation](#io.argoproj.workflow.v1alpha1.artifactlocation) | Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key. | No |
 | arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments hold arguments to the template. DEPRECATED: This field is not used. | No |
@@ -1527,6 +1563,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
@@ -1573,6 +1610,24 @@ Workflow is the definition of a workflow resource
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse | object |  |  |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBinding
+
+WorkflowEventBinding is the definition of an event resource
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) |  | Yes |
+| spec | [io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec](#io.argoproj.workflow.v1alpha1.workfloweventbindingspec) |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| event | [io.argoproj.workflow.v1alpha1.Event](#io.argoproj.workflow.v1alpha1.event) | Event is the event to bind to | Yes |
+| submit | [io.argoproj.workflow.v1alpha1.Submit](#io.argoproj.workflow.v1alpha1.submit) | Submit is the workflow template to submit | No |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowLintRequest
 

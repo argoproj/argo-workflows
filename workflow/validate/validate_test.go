@@ -35,6 +35,11 @@ func validate(yamlStr string) (*wfv1.Conditions, error) {
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 }
 
+func validateWithOptions(yamlStr string, opts ValidateOpts) (*wfv1.Conditions, error) {
+	wf := unmarshalWf(yamlStr)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, opts)
+}
+
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
 func validateWorkflowTemplate(yamlStr string) error {
@@ -1042,7 +1047,6 @@ spec:
 `
 
 func TestValidActiveDeadlineSeconds(t *testing.T) {
-	// ensure {{workflow.status}} is not available when not in exit handler
 	_, err := validate(activeDeadlineSeconds)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
@@ -2541,4 +2545,73 @@ func TestWorkflowWithWFTRefWithOverrideParam(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefOverrideParam)
 	assert.NoError(t, err)
+}
+
+var dagAndStepLevelOutputArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    outputs:
+      artifacts:
+        - name: artifact
+          from: "{{tasks.artifact-svn-retrieve.outputs.artifacts.artifact}}"
+    dag:
+      tasks:
+      - name: artifact-svn-retrieve
+        template: artifact-svn-retrieve
+      - name: step-tmpl
+        template: step
+
+  - name: step
+    outputs:
+      artifacts:
+        - name: artifact
+          from: "{{steps.artifact-svn-retrieve.outputs.artifacts.artifact}}"
+    steps:
+    - - name: artifact-svn-retrieve
+        template: artifact-svn-retrieve
+
+  - name: artifact-svn-retrieve
+    outputs:
+      artifacts:
+      - name: artifact
+        path: "/vol/hello_world.txt"
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 1; cowsay hello world | tee /vol/hello_world.txt"]
+      volumeMounts:
+      - name: vol
+        mountPath: "/vol"
+    volumes:
+    - name: vol
+      emptyDir: {}
+`
+
+func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
+	t.Run("DefaultExecutor", func(t *testing.T) {
+		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: ""})
+		assert.NoError(t, err)
+	})
+	t.Run("DockerExecutor", func(t *testing.T) {
+		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorDocker})
+		assert.NoError(t, err)
+	})
+	t.Run("PNSExecutor", func(t *testing.T) {
+		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorPNS})
+		assert.NoError(t, err)
+	})
+	t.Run("K8SExecutor", func(t *testing.T) {
+		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorK8sAPI})
+		assert.NoError(t, err)
+	})
+	t.Run("KubeletExecutor", func(t *testing.T) {
+		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorKubelet})
+		assert.NoError(t, err)
+	})
 }

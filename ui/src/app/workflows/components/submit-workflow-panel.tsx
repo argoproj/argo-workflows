@@ -78,7 +78,10 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                                 ))}
                             </>
                         ) : (
-                            <label>No parameters</label>
+                            <>
+                                <br />
+                                <label>No parameters</label>
+                            </>
                         )}
                     </div>
                     <div key='labels' style={{marginBottom: 25}}>

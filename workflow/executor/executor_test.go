@@ -6,10 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/executor/mocks"
 )
 
@@ -108,7 +108,6 @@ func TestIsBaseImagePath(t *testing.T) {
 }
 
 func TestDefaultParameters(t *testing.T) {
-	defaultValue := intstr.Parse("Default Value")
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
@@ -117,7 +116,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: &defaultValue,
+						Default: intstrutil.ParsePtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -141,7 +140,6 @@ func TestDefaultParameters(t *testing.T) {
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
-	defaultValue := intstr.Parse("")
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
@@ -150,7 +148,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: &defaultValue,
+						Default: intstrutil.ParsePtr(""),
 						Path:    "/path",
 					},
 				},
