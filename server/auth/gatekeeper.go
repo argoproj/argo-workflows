@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -41,13 +42,15 @@ type gatekeeper struct {
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 	ssoIf      sso.Interface
+	// The namespace the server is installed in.
+	namespace string
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, namespace string) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf, namespace}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -145,7 +148,37 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, claimSet, nil
+		serviceAccount, err := s.ssoIf.GetServiceAccount(claimSet.Groups)
+		if err != nil {
+			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account ref: %v", err)
+		} else if serviceAccount != nil {
+			serviceAccount, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccount.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account: %v", err)
+			}
+			if len(serviceAccount.Secrets) == 0 {
+				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "expected at least one secret for SSO RBAC service account: %v", err)
+			}
+			secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account secret: %v", err)
+			}
+			restConfig, err := kubeconfig.GetRestConfig("Bearer " + string(secret.Data["token"]))
+			if err != nil {
+				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to create SSO RBAC REST config: %v", err)
+			}
+			wfClient, err := versioned.NewForConfig(restConfig)
+			if err != nil {
+				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create SSO RBAC wfClientset with ClientConfig: %v", err)
+			}
+			kubeClient, err := kubernetes.NewForConfig(restConfig)
+			if err != nil {
+				return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create SSO RBAC kubeClientset with ClientConfig: %v", err)
+			}
+			return wfClient, kubeClient, claimSet, nil
+		} else {
+			return s.wfClient, s.kubeClient, claimSet, nil
+		}
 	default:
 		panic("this should never happen")
 	}

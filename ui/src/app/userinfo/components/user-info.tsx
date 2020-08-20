@@ -38,6 +38,7 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                             <>
                                 <p>Issuer: {this.state.userInfo.issuer || '-'}</p>
                                 <p>Subject: {this.state.userInfo.subject || '-'}</p>
+                                {this.state.userInfo.groups &&this.state.userInfo.group.length >0 &&  (<><p>Groups: </p><ul>{this.state.userInfo.groups.map(group => <li>{group}</li>)}</ul></>)}
                             </>
                         )}
                         <a className='argo-button argo-button--base-o' href={uiUrl('login')}>

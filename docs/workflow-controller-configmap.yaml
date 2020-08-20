@@ -232,7 +232,18 @@ data:
       # be in the form <argo-server-root-url>/oauth2/callback. It must be
       # browser-accessible.
       redirectUrl: https://argo-server/oauth2/callback
-
+      # Enable RBAC. >= v2.11
+      rbac:
+        # Rules in order of precedence. Maybe empty.
+        rules:
+        - anyOf:
+          - my-group
+          # Use this service account if any of the groups match.
+          serviceAccountRef:
+            name: my-service-account
+        # Use this default service account if none of the rules match. Typically either read-only, or no permissions at all.
+        defaultServiceAccountRef:
+          name: my-default-service-account
     # workflowRequirements restricts the Workflows that the controller will process.
     # Current options:
     #   referenceOnly: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller

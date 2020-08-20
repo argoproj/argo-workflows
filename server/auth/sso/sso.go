@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/rbac"
 )
 
 const Prefix = "Bearer id_token:"
@@ -25,6 +26,7 @@ type Interface interface {
 	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
+	GetServiceAccount(groups []string) (*apiv1.LocalObjectReference, error)
 }
 
 var _ Interface = &sso{}
@@ -34,9 +36,15 @@ type sso struct {
 	idTokenVerifier *oidc.IDTokenVerifier
 	baseHRef        string
 	secure          bool
+	rbacConfig      *rbac.Config
+}
+
+func (s *sso) GetServiceAccount(groups []string) (*apiv1.LocalObjectReference, error) {
+	return s.rbacConfig.GetServiceAccount(groups)
 }
 
 type Config struct {
+	RBAC         *rbac.Config            `json:"rbac,omitempty"`
 	Issuer       string                  `json:"issuer"`
 	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
@@ -115,9 +123,14 @@ func newSso(
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID},
 	}
+	// We need the 'groups' if RBAC is enabled. Not all provider support this non-standard claims,
+	// so we only do this if we really need it.
+	if c.RBAC != nil {
+		config.Scopes = append(config.Scopes, "groups")
+	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
-	return &sso{config, idTokenVerifier, baseHRef, secure}, nil
+	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID, "rbac": c.RBAC != nil}).Info("SSO configuration")
+	return &sso{config, idTokenVerifier, baseHRef, secure, c.RBAC}, nil
 }
 
 const stateCookieName = "oauthState"
