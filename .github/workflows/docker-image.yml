@@ -17,9 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # https://github.com/marketplace/actions/docker-buildx
-      - name: Set up Docker Buildx
-        uses: crazy-max/ghaction-docker-buildx@v3
       - name: Docker Login
         uses: Azure/docker-login@v1
         with:
@@ -28,8 +25,11 @@ jobs:
       - name: Build & Push Linux Docker Images
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-        # https://github.com/marketplace/actions/docker-buildx#build-and-push-to-dockerhub
         run: |
+          /usr/bin/docker pull -q multiarch/qemu-user-static:latest
+          /usr/bin/docker run --rm --privileged multiarch/qemu-user-static:latest --reset -p yes --credential yes
+          /usr/bin/docker buildx create --name builder --driver docker-container --use
+          /usr/bin/docker buildx inspect --bootstrap
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
             tag="latest"
@@ -42,6 +42,7 @@ jobs:
               --target $target \
               --tag "${DOCKERIO_ORG}/${target}:${tag}-linux" .
           done
+          /usr/bin/docker buildx rm builder
 
   build-windows:
     name: Build & Push Windows Docker Images
