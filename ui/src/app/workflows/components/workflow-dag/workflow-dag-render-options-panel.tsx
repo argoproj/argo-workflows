@@ -1,7 +1,7 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
 import {DropDown} from 'argo-ui/src/components/dropdown/dropdown';
 import {TopBarFilter} from 'argo-ui/src/index';
-import * as classNames from 'classnames';
+import classNames from 'classnames';
 import * as React from 'react';
 import {WorkflowDagRenderOptions} from './workflow-dag';
 

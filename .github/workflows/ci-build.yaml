@@ -163,10 +163,15 @@ jobs:
         with:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
-      - name: Install, build and Lint
+      - name: Install and build
         run: |
           yarn --cwd ui install
           yarn --cwd ui build
+      - name: Run tests
+        run: |
+          yarn --cwd ui test
+      - name: Lint
+        run: |
           yarn --cwd ui lint
       - name: Ensure nothing changed
         run: git diff --exit-code

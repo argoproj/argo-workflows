@@ -1,0 +1,1499 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders correctly 1`] = `
+<WorkflowDag
+  nodes={
+    Object {
+      "dag-diamond-jvlhq": Object {
+        "children": Array [
+          "dag-diamond-jvlhq-3813812925",
+        ],
+        "displayName": "dag-diamond-jvlhq",
+        "finishedAt": "2020-08-13T15:34:54Z",
+        "id": "dag-diamond-jvlhq",
+        "name": "dag-diamond-jvlhq",
+        "outboundNodes": Array [
+          "dag-diamond-jvlhq-3729924830",
+        ],
+        "phase": "Succeeded",
+        "startedAt": "2020-08-13T15:34:38Z",
+        "templateName": "diamond",
+        "templateScope": "local/dag-diamond-jvlhq",
+        "type": "DAG",
+      },
+      "dag-diamond-jvlhq-3396837735": Object {
+        "displayName": "dag-diamond-jvlhq.onExit",
+        "finishedAt": "2020-08-13T15:34:56Z",
+        "hostNodeName": "minikube",
+        "id": "dag-diamond-jvlhq-3396837735",
+        "name": "dag-diamond-jvlhq.onExit",
+        "outputs": Object {
+          "artifacts": Array [
+            Object {
+              "archiveLogs": true,
+              "name": "main-logs",
+              "s3": Object {
+                "accessKeySecret": Object {
+                  "key": "accesskey",
+                  "name": "my-minio-cred",
+                },
+                "bucket": "my-bucket",
+                "endpoint": "minio:9000",
+                "insecure": true,
+                "key": "dag-diamond-jvlhq/dag-diamond-jvlhq-3396837735/main.log",
+                "secretKeySecret": Object {
+                  "key": "secretkey",
+                  "name": "my-minio-cred",
+                },
+              },
+            },
+          ],
+          "exitCode": "0",
+        },
+        "phase": "Succeeded",
+        "resourcesDuration": Object {
+          "cpu": 1,
+          "memory": 0,
+        },
+        "startedAt": "2020-08-13T15:34:54Z",
+        "templateName": "exit",
+        "templateScope": "local/dag-diamond-jvlhq",
+        "type": "Pod",
+      },
+      "dag-diamond-jvlhq-3729924830": Object {
+        "boundaryID": "dag-diamond-jvlhq",
+        "displayName": "D",
+        "finishedAt": "2020-08-13T15:34:52Z",
+        "hostNodeName": "minikube",
+        "id": "dag-diamond-jvlhq-3729924830",
+        "inputs": Object {
+          "parameters": Array [
+            Object {
+              "name": "message",
+              "value": "D",
+            },
+          ],
+        },
+        "name": "dag-diamond-jvlhq.D",
+        "outputs": Object {
+          "artifacts": Array [
+            Object {
+              "archiveLogs": true,
+              "name": "main-logs",
+              "s3": Object {
+                "accessKeySecret": Object {
+                  "key": "accesskey",
+                  "name": "my-minio-cred",
+                },
+                "bucket": "my-bucket",
+                "endpoint": "minio:9000",
+                "insecure": true,
+                "key": "dag-diamond-jvlhq/dag-diamond-jvlhq-3729924830/main.log",
+                "secretKeySecret": Object {
+                  "key": "secretkey",
+                  "name": "my-minio-cred",
+                },
+              },
+            },
+          ],
+          "exitCode": "0",
+        },
+        "phase": "Succeeded",
+        "resourcesDuration": Object {
+          "cpu": 2,
+          "memory": 1,
+        },
+        "startedAt": "2020-08-13T15:34:49Z",
+        "templateName": "echo",
+        "templateScope": "local/dag-diamond-jvlhq",
+        "type": "Pod",
+      },
+      "dag-diamond-jvlhq-3763480068": Object {
+        "boundaryID": "dag-diamond-jvlhq",
+        "children": Array [
+          "dag-diamond-jvlhq-3729924830",
+        ],
+        "displayName": "B",
+        "finishedAt": "2020-08-13T15:34:47Z",
+        "hostNodeName": "minikube",
+        "id": "dag-diamond-jvlhq-3763480068",
+        "inputs": Object {
+          "parameters": Array [
+            Object {
+              "name": "message",
+              "value": "B",
+            },
+          ],
+        },
+        "name": "dag-diamond-jvlhq.B",
+        "outputs": Object {
+          "artifacts": Array [
+            Object {
+              "archiveLogs": true,
+              "name": "main-logs",
+              "s3": Object {
+                "accessKeySecret": Object {
+                  "key": "accesskey",
+                  "name": "my-minio-cred",
+                },
+                "bucket": "my-bucket",
+                "endpoint": "minio:9000",
+                "insecure": true,
+                "key": "dag-diamond-jvlhq/dag-diamond-jvlhq-3763480068/main.log",
+                "secretKeySecret": Object {
+                  "key": "secretkey",
+                  "name": "my-minio-cred",
+                },
+              },
+            },
+          ],
+          "exitCode": "0",
+        },
+        "phase": "Succeeded",
+        "resourcesDuration": Object {
+          "cpu": 1,
+          "memory": 0,
+        },
+        "startedAt": "2020-08-13T15:34:41Z",
+        "templateName": "echo",
+        "templateScope": "local/dag-diamond-jvlhq",
+        "type": "Pod",
+      },
+      "dag-diamond-jvlhq-3780257687": Object {
+        "boundaryID": "dag-diamond-jvlhq",
+        "children": Array [
+          "dag-diamond-jvlhq-3729924830",
+        ],
+        "displayName": "C",
+        "finishedAt": "2020-08-13T15:34:47Z",
+        "hostNodeName": "minikube",
+        "id": "dag-diamond-jvlhq-3780257687",
+        "inputs": Object {
+          "parameters": Array [
+            Object {
+              "name": "message",
+              "value": "C",
+            },
+          ],
+        },
+        "name": "dag-diamond-jvlhq.C",
+        "outputs": Object {
+          "artifacts": Array [
+            Object {
+              "archiveLogs": true,
+              "name": "main-logs",
+              "s3": Object {
+                "accessKeySecret": Object {
+                  "key": "accesskey",
+                  "name": "my-minio-cred",
+                },
+                "bucket": "my-bucket",
+                "endpoint": "minio:9000",
+                "insecure": true,
+                "key": "dag-diamond-jvlhq/dag-diamond-jvlhq-3780257687/main.log",
+                "secretKeySecret": Object {
+                  "key": "secretkey",
+                  "name": "my-minio-cred",
+                },
+              },
+            },
+          ],
+          "exitCode": "0",
+        },
+        "phase": "Succeeded",
+        "resourcesDuration": Object {
+          "cpu": 2,
+          "memory": 1,
+        },
+        "startedAt": "2020-08-13T15:34:42Z",
+        "templateName": "echo",
+        "templateScope": "local/dag-diamond-jvlhq",
+        "type": "Pod",
+      },
+      "dag-diamond-jvlhq-3813812925": Object {
+        "boundaryID": "dag-diamond-jvlhq",
+        "children": Array [
+          "dag-diamond-jvlhq-3763480068",
+          "dag-diamond-jvlhq-3780257687",
+        ],
+        "displayName": "A",
+        "finishedAt": "2020-08-13T15:34:40Z",
+        "hostNodeName": "minikube",
+        "id": "dag-diamond-jvlhq-3813812925",
+        "inputs": Object {
+          "parameters": Array [
+            Object {
+              "name": "message",
+              "value": "A",
+            },
+          ],
+        },
+        "name": "dag-diamond-jvlhq.A",
+        "outputs": Object {
+          "artifacts": Array [
+            Object {
+              "archiveLogs": true,
+              "name": "main-logs",
+              "s3": Object {
+                "accessKeySecret": Object {
+                  "key": "accesskey",
+                  "name": "my-minio-cred",
+                },
+                "bucket": "my-bucket",
+                "endpoint": "minio:9000",
+                "insecure": true,
+                "key": "dag-diamond-jvlhq/dag-diamond-jvlhq-3813812925/main.log",
+                "secretKeySecret": Object {
+                  "key": "secretkey",
+                  "name": "my-minio-cred",
+                },
+              },
+            },
+          ],
+        },
+        "phase": "Succeeded",
+        "resourcesDuration": Object {
+          "cpu": 1,
+          "memory": 0,
+        },
+        "startedAt": "2020-08-13T15:34:38Z",
+        "templateName": "echo",
+        "templateScope": "local/dag-diamond-jvlhq",
+        "type": "Pod",
+      },
+    }
+  }
+  workflowName="dag-diamond-jvlhq"
+>
+  <WorkflowDagRenderOptionsPanel
+    expandNodes={Set {}}
+    horizontal={false}
+    nodesToDisplay={
+      Array [
+        "phase:Pending",
+        "phase:Running",
+        "phase:Succeeded",
+        "phase:Skipped",
+        "phase:Failed",
+        "phase:Error",
+        "type:Pod",
+        "type:Steps",
+        "type:DAG",
+        "type:Retry",
+        "type:Skipped",
+        "type:Suspend",
+      ]
+    }
+    onChange={[Function]}
+    scale={1}
+  >
+    <div
+      className="workflow-dag-render-options-panel"
+    >
+      <DropDown
+        anchor={[Function]}
+        isMenu={true}
+      >
+        <div
+          className="argo-dropdown"
+        >
+          <div
+            className="argo-dropdown__anchor"
+            onClick={[Function]}
+          >
+            <anchor>
+              <div
+                className="top-bar__filter"
+              >
+                <i
+                  aria-hidden="true"
+                  className="argo-icon-filter"
+                />
+                <i
+                  aria-hidden="true"
+                  className="fa fa-angle-down"
+                />
+              </div>
+            </anchor>
+          </div>
+          <Portal
+            containerInfo={
+              <body>
+                <div
+                  class="argo-dropdown__content is-menu"
+                  style="top: 0px; left: 0px;"
+                >
+                  <ul>
+                    <li
+                      class=""
+                    >
+                      <span>
+                        Phase
+                      </span>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__phase:Pending"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__phase:Pending"
+                      >
+                        Pending
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__phase:Running"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__phase:Running"
+                      >
+                        Running
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__phase:Succeeded"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__phase:Succeeded"
+                      >
+                        Succeeded
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__phase:Skipped"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__phase:Skipped"
+                      >
+                        Skipped
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__phase:Failed"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__phase:Failed"
+                      >
+                        Failed
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__phase:Error"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__phase:Error"
+                      >
+                        Error
+                      </label>
+                    </li>
+                    <li
+                      class=""
+                    >
+                      <span>
+                        Type
+                      </span>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__type:Pod"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:Pod"
+                      >
+                        Pod
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__type:Steps"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:Steps"
+                      >
+                        Steps
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__type:DAG"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:DAG"
+                      >
+                        DAG
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__type:Retry"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:Retry"
+                      >
+                        Retry
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__type:Skipped"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:Skipped"
+                      >
+                        Skipped
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          checked=""
+                          id="filter__type:Suspend"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:Suspend"
+                      >
+                        Suspend
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          id="filter__type:TaskGroup"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:TaskGroup"
+                      >
+                        TaskGroup
+                      </label>
+                    </li>
+                    <li
+                      class="top-bar__filter-item"
+                    >
+                      <span
+                        class="argo-checkbox"
+                      >
+                        <input
+                          id="filter__type:StepGroup"
+                          type="checkbox"
+                        />
+                        <span>
+                          <i
+                            class="fa fa-check"
+                          />
+                        </span>
+                      </span>
+                      <label
+                        for="filter__type:StepGroup"
+                      >
+                        StepGroup
+                      </label>
+                    </li>
+                  </ul>
+                </div>
+              </body>
+            }
+          >
+            <div
+              className="argo-dropdown__content is-menu"
+              style={
+                Object {
+                  "left": 0,
+                  "top": 0,
+                }
+              }
+            >
+              <ul>
+                <li
+                  className=""
+                  key="0"
+                >
+                  <span>
+                    Phase
+                  </span>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="1"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__phase:Pending"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__phase:Pending"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__phase:Pending"
+                  >
+                    Pending
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="2"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__phase:Running"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__phase:Running"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__phase:Running"
+                  >
+                    Running
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="3"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__phase:Succeeded"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__phase:Succeeded"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__phase:Succeeded"
+                  >
+                    Succeeded
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="4"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__phase:Skipped"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__phase:Skipped"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__phase:Skipped"
+                  >
+                    Skipped
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="5"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__phase:Failed"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__phase:Failed"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__phase:Failed"
+                  >
+                    Failed
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="6"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__phase:Error"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__phase:Error"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__phase:Error"
+                  >
+                    Error
+                  </label>
+                </li>
+                <li
+                  className=""
+                  key="7"
+                >
+                  <span>
+                    Type
+                  </span>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="8"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__type:Pod"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__type:Pod"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:Pod"
+                  >
+                    Pod
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="9"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__type:Steps"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__type:Steps"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:Steps"
+                  >
+                    Steps
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="10"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__type:DAG"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__type:DAG"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:DAG"
+                  >
+                    DAG
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="11"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__type:Retry"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__type:Retry"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:Retry"
+                  >
+                    Retry
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="12"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__type:Skipped"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__type:Skipped"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:Skipped"
+                  >
+                    Skipped
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="13"
+                >
+                  <Checkbox
+                    checked={true}
+                    id="filter__type:Suspend"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={true}
+                        id="filter__type:Suspend"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:Suspend"
+                  >
+                    Suspend
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="14"
+                >
+                  <Checkbox
+                    checked={false}
+                    id="filter__type:TaskGroup"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={false}
+                        id="filter__type:TaskGroup"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:TaskGroup"
+                  >
+                    TaskGroup
+                  </label>
+                </li>
+                <li
+                  className="top-bar__filter-item"
+                  key="15"
+                >
+                  <Checkbox
+                    checked={false}
+                    id="filter__type:StepGroup"
+                    onChange={[Function]}
+                  >
+                    <span
+                      className="argo-checkbox"
+                    >
+                      <input
+                        checked={false}
+                        id="filter__type:StepGroup"
+                        onChange={[Function]}
+                        type="checkbox"
+                      />
+                      <span>
+                        <i
+                          className="fa fa-check"
+                        />
+                      </span>
+                    </span>
+                  </Checkbox>
+                  <label
+                    htmlFor="filter__type:StepGroup"
+                  >
+                    StepGroup
+                  </label>
+                </li>
+              </ul>
+            </div>
+          </Portal>
+        </div>
+      </DropDown>
+      <a
+        className=""
+        onClick={[Function]}
+        title="Horizontal layout"
+      >
+        <i
+          className="fa fa-project-diagram"
+        />
+      </a>
+      <a
+        onClick={[Function]}
+        title="Zoom into the timeline"
+      >
+        <i
+          className="fa fa-search-plus"
+        />
+      </a>
+      <a
+        onClick={[Function]}
+        title="Zoom out from the timeline"
+      >
+        <i
+          className="fa fa-search-minus"
+        />
+      </a>
+      <a
+        onClick={[Function]}
+        title="Collapse all nodes"
+      >
+        <i
+          className="fa fa-compress"
+          data-fa-transform="rotate-45"
+        />
+      </a>
+      <a
+        onClick={[Function]}
+        title="Expand all nodes"
+      >
+        <i
+          className="fa fa-expand"
+          data-fa-transform="rotate-45"
+        />
+      </a>
+    </div>
+  </WorkflowDagRenderOptionsPanel>
+  <div
+    className="workflow-dag"
+  >
+    <svg
+      style={
+        Object {
+          "height": 384,
+          "margin": 32,
+          "width": 384,
+        }
+      }
+    >
+      <defs>
+        <marker
+          id="arrow"
+          markerHeight={5.333333333333333}
+          markerWidth={5.333333333333333}
+          orient="auto-start-reverse"
+          refX={10}
+          refY={5}
+          viewBox="0 0 10 10"
+        >
+          <path
+            className="arrow"
+            d="M 0 0 L 10 5 L 0 10 z"
+          />
+        </marker>
+        <filter
+          height="200%"
+          id="shadow"
+          width="200%"
+          x="0"
+          y="0"
+        >
+          <feOffset
+            dx={0.5}
+            dy={0.5}
+            in="SourceGraphic"
+            result="offOut"
+          />
+          <feColorMatrix
+            in="offOut"
+            result="matrixOut"
+            type="matrix"
+            values="0.1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 1 0"
+          />
+          <feGaussianBlur
+            in="matrixOut"
+            result="blurOut"
+            stdDeviation={0.5}
+          />
+          <feBlend
+            in="SourceGraphic"
+            in2="blurOut"
+            mode="normal"
+          />
+        </filter>
+      </defs>
+      <g
+        transform="translate(64,32)"
+      >
+        <path
+          className="line"
+          d="M 64 16  L 64 48"
+          key="line/dag-diamond-jvlhq-dag-diamond-jvlhq-3813812925"
+          markerEnd="url(#arrow)"
+        />
+        <path
+          className="line"
+          d="M 64 80  L 128 112"
+          key="line/dag-diamond-jvlhq-3813812925-dag-diamond-jvlhq-3780257687"
+          markerEnd="url(#arrow)"
+        />
+        <path
+          className="line"
+          d="M 128 144  L 64 176"
+          key="line/dag-diamond-jvlhq-3780257687-dag-diamond-jvlhq-3729924830"
+          markerEnd="url(#arrow)"
+        />
+        <path
+          className="line"
+          d="M 64 80  L 0 112"
+          key="line/dag-diamond-jvlhq-3813812925-dag-diamond-jvlhq-3763480068"
+          markerEnd="url(#arrow)"
+        />
+        <path
+          className="line"
+          d="M 0 144  L 64 176"
+          key="line/dag-diamond-jvlhq-3763480068-dag-diamond-jvlhq-3729924830"
+          markerEnd="url(#arrow)"
+        />
+        <path
+          className="line"
+          d="M 64 208  L 64 240"
+          key="line/dag-diamond-jvlhq-3729924830-dag-diamond-jvlhq-3396837735"
+          markerEnd="url(#arrow)"
+        />
+        <g
+          className="node"
+          key="node/dag-diamond-jvlhq"
+          onClick={[Function]}
+          transform="translate(64,0)"
+        >
+          <circle
+            className="workflow-dag__node workflow-dag__node-status workflow-dag__node-status--succeeded"
+            r={16}
+          />
+          <g>
+            <g
+              color="white"
+              transform="translate(-8,-8), scale(0.032)"
+            >
+              <path
+                d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"
+                fill="currentColor"
+              />
+            </g>
+          </g>
+          <g
+            transform="translate(0,32)"
+          >
+            <text
+              className="label"
+              fontSize={12}
+            >
+              <tspan
+                dy="-0.2em"
+                x={0}
+              >
+                dag-diam
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x={0}
+              >
+                ond-jvlhq
+              </tspan>
+            </text>
+          </g>
+        </g>
+        <g
+          className="node"
+          key="node/dag-diamond-jvlhq-3813812925"
+          onClick={[Function]}
+          transform="translate(64,64)"
+        >
+          <circle
+            className="workflow-dag__node workflow-dag__node-status workflow-dag__node-status--succeeded"
+            r={16}
+          />
+          <g>
+            <g
+              color="white"
+              transform="translate(-8,-8), scale(0.032)"
+            >
+              <path
+                d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"
+                fill="currentColor"
+              />
+            </g>
+          </g>
+          <g
+            transform="translate(0,32)"
+          >
+            <text
+              className="label"
+              fontSize={12}
+            >
+              <tspan>
+                A
+              </tspan>
+            </text>
+          </g>
+        </g>
+        <g
+          className="node"
+          key="node/dag-diamond-jvlhq-3763480068"
+          onClick={[Function]}
+          transform="translate(0,128)"
+        >
+          <circle
+            className="workflow-dag__node workflow-dag__node-status workflow-dag__node-status--succeeded"
+            r={16}
+          />
+          <g>
+            <g
+              color="white"
+              transform="translate(-8,-8), scale(0.032)"
+            >
+              <path
+                d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"
+                fill="currentColor"
+              />
+            </g>
+          </g>
+          <g
+            transform="translate(0,32)"
+          >
+            <text
+              className="label"
+              fontSize={12}
+            >
+              <tspan>
+                B
+              </tspan>
+            </text>
+          </g>
+        </g>
+        <g
+          className="node"
+          key="node/dag-diamond-jvlhq-3780257687"
+          onClick={[Function]}
+          transform="translate(128,128)"
+        >
+          <circle
+            className="workflow-dag__node workflow-dag__node-status workflow-dag__node-status--succeeded"
+            r={16}
+          />
+          <g>
+            <g
+              color="white"
+              transform="translate(-8,-8), scale(0.032)"
+            >
+              <path
+                d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"
+                fill="currentColor"
+              />
+            </g>
+          </g>
+          <g
+            transform="translate(0,32)"
+          >
+            <text
+              className="label"
+              fontSize={12}
+            >
+              <tspan>
+                C
+              </tspan>
+            </text>
+          </g>
+        </g>
+        <g
+          className="node"
+          key="node/dag-diamond-jvlhq-3729924830"
+          onClick={[Function]}
+          transform="translate(64,192)"
+        >
+          <circle
+            className="workflow-dag__node workflow-dag__node-status workflow-dag__node-status--succeeded"
+            r={16}
+          />
+          <g>
+            <g
+              color="white"
+              transform="translate(-8,-8), scale(0.032)"
+            >
+              <path
+                d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"
+                fill="currentColor"
+              />
+            </g>
+          </g>
+          <g
+            transform="translate(0,32)"
+          >
+            <text
+              className="label"
+              fontSize={12}
+            >
+              <tspan>
+                D
+              </tspan>
+            </text>
+          </g>
+        </g>
+        <g
+          className="node"
+          key="node/dag-diamond-jvlhq-3396837735"
+          onClick={[Function]}
+          transform="translate(64,256)"
+        >
+          <circle
+            className="workflow-dag__node workflow-dag__node-status workflow-dag__node-status--succeeded"
+            r={16}
+          />
+          <g>
+            <g
+              color="white"
+              transform="translate(-8,-8), scale(0.032)"
+            >
+              <path
+                d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"
+                fill="currentColor"
+              />
+            </g>
+          </g>
+          <g
+            transform="translate(0,32)"
+          >
+            <text
+              className="label"
+              fontSize={12}
+            >
+              <tspan
+                dy="-0.2em"
+                x={0}
+              >
+                dag-diamond-
+              </tspan>
+              <tspan
+                dy="1.2em"
+                x={0}
+              >
+                jvlhq.onExit
+              </tspan>
+            </text>
+          </g>
+        </g>
+      </g>
+    </svg>
+  </div>
+</WorkflowDag>
+`;
