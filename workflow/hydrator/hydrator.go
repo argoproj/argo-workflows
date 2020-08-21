@@ -4,6 +4,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -51,6 +52,7 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 		return err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
+		retry.OnError()
 		offloadedNodes, err := h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return err
