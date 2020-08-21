@@ -4,6 +4,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo/persist/sqldb"
@@ -52,8 +53,11 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 		return err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		retry.OnError()
-		offloadedNodes, err := h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		var offloadedNodes wfv1.Nodes
+		err := wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
+			offloadedNodes, err = h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			return err == nil, err
+		})
 		if err != nil {
 			return err
 		}
@@ -75,7 +79,11 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		}
 	}
 	if packer.IsTooLargeError(err) || alwaysOffloadNodeStatus {
-		offloadVersion, err := h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+		var offloadVersion string
+		err := wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
+			offloadVersion, err = h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+			return err == nil, err
+		})
 		if err != nil {
 			return err
 		}
