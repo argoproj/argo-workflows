@@ -2922,6 +2922,7 @@ func TestPDBCreationRaceDelete(t *testing.T) {
 	assert.NoError(t, err)
 	err = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
 	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -3842,7 +3843,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
 
 	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
