@@ -382,7 +382,7 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 $(GOPATH)/bin/kubectl-autoforward:
-	go get github.com/alexec/kubectl-autoforward
+	go install github.com/alexec/kubectl-autoforward
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/kubectl-autoforward $(GOPATH)/bin/goreman
@@ -442,6 +442,7 @@ test-fmea:
 
 .PHONY: clean
 clean:
+	go clean
 	# Delete build files
 	rm -Rf vendor dist/* ui/dist
 

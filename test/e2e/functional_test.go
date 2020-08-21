@@ -35,20 +35,48 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
+func (s *FunctionalSuite) TestDeletingWorkflowPod() {
+	s.Given().
+		Workflow("@testdata/sleepy-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "pod deleted", status.Message)
+		})
+}
+
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
 // because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {
-	list, err := s.KubeClient.CoreV1().Pods(fixtures.Namespace).List(metav1.ListOptions{})
-	assert.NoError(s.T(), err)
 	s.Given().
 		Workflow(`@testdata/two-items.yaml`).
 		When().
-		PodsQuota(len(list.Items) + 2).
+		PodsQuota(2).
 		SubmitWorkflow().
 		WaitForWorkflow(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestExceededQuota() {
+	s.Given().
+		Workflow("@testdata/basic.yaml").
+		When().
+		PodsQuota(0).
+		SubmitWorkflow().
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				return node.Phase == wfv1.NodeError && strings.Contains(node.Message, "is forbidden: exceeded quota")
+			}))
 		})
 }
 

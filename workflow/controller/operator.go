@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -534,9 +535,13 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	if err := woc.writeBackToInformer(); err != nil {
-		woc.markWorkflowError(err, true)
-		return
+	if os.Getenv("INFORMER_WRITE_BACK") != "false" {
+		if err := woc.writeBackToInformer(); err != nil {
+			woc.markWorkflowError(err, true)
+			return
+		}
+	} else {
+		time.Sleep(enoughTimeForInformerSync)
 	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow

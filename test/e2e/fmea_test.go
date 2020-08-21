@@ -1,6 +1,6 @@
 // +build fmea
 
-package fmea
+package e2e
 
 import (
 	"strings"
@@ -20,9 +20,9 @@ type FMEASuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *FMEASuite) BeforeTest(suiteName, testName string) {
+func (s *FMEASuite) SetupSuite() {
 	s.resetTestSystem()
-	s.E2ESuite.BeforeTest(suiteName, testName)
+	s.E2ESuite.SetupSuite()
 }
 
 func (s *FMEASuite) resetTestSystem() {
@@ -44,20 +44,6 @@ func (s *FMEASuite) TestKubernetesAPIGoesByeBye() {
 		Exec("k3d", []string{"stop"}, fixtures.NoError).
 		Wait(15*time.Second).
 		Exec("k3d", []string{"start"}, fixtures.NoError).
-		WaitForWorkflow(15 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Equal(t, "pod deleted", status.Message)
-		})
-}
-
-func (s *FMEASuite) TestDeletingWorkflowPod() {
-	s.Given().
-		Workflow("@testdata/sleepy-workflow.yaml").
-		When().
-		SubmitWorkflow().
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -148,23 +134,6 @@ func (s *FMEASuite) TestDeletingWorkflowNode() {
 		})
 }
 
-func (s *FMEASuite) TestNoResourcePodsQuota() {
-	s.Given().
-		Workflow("@testdata/ok-workflow.yaml").
-		When().
-		PodsQuota(-1).
-		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-				return node.Phase == wfv1.NodeError && strings.Contains(node.Message, "is forbidden: exceeded quota")
-			}))
-		})
-}
-
-func
-TestFMEASuite(t *testing.T) {
+func TestFMEASuite(t *testing.T) {
 	suite.Run(t, new(FMEASuite))
 }
