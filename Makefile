@@ -283,11 +283,9 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
-dist/install_kustomize.sh:
+/usr/local/bin/kustomize:
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
-
-/usr/local/bin/kustomize: dist/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
 	./dist/install_kustomize.sh
 	sudo mv kustomize /usr/local/bin/
@@ -413,19 +411,19 @@ mysql-cli:
 test-e2e:
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 7m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke:
 	# Run smoke tests
 	@mkdir -p test-results
-	go test -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 # clean
 
