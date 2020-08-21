@@ -6,6 +6,7 @@ package tools
 
 import (
 	_ "bou.ke/staticfiles"
+	_ "github.com/alexec/kubectl-autoforward"
 	_ "github.com/go-swagger/go-swagger/cmd/swagger"
 	_ "github.com/gogo/protobuf/gogoproto"
 	_ "github.com/gogo/protobuf/protoc-gen-gogo"

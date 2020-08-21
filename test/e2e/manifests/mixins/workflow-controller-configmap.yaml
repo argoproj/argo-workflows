@@ -5,7 +5,7 @@ metadata:
 data:
   containerRuntimeExecutor: pns
   executor: |
-    imagePullPolicy: Never
+    imagePullPolicy: IfNotPresent
     resources:
       requests:
         cpu: 0.1

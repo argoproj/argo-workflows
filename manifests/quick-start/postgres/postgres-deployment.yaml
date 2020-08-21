@@ -10,7 +10,6 @@ spec:
       app: postgres
   template:
     metadata:
-      name: postgres
       labels:
         app: postgres
     spec:

@@ -376,16 +376,19 @@ test-images:
 
 .PHONY: stop
 stop:
-	killall argo workflow-controller pf.sh kubectl || true
+	killall argo workflow-controller kubectl || true
 
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
+$(GOPATH)/bin/kubectl-autoforward:
+	go get github.com/alexec/kubectl-autoforward
+
 .PHONY: start
-start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
+start: status stop install controller cli executor-image $(GOPATH)/bin/kubectl-autoforward $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
-	./hack/port-forward.sh
+	kubectl wait --for=condition=Ready pod --all -l app --timeout 2m
+	kubectl autoforward &
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1 *dex' /etc/hosts
@@ -415,7 +418,7 @@ mysql-cli:
 test-e2e:
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 15m -v -count 1 --tags e2e -p 1 ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
@@ -428,6 +431,12 @@ smoke:
 	# Run smoke tests
 	@mkdir -p test-results
 	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
+
+.PHONY: test-fmea
+test-fmea:
+	# Run E2E tests
+	@mkdir -p test-results
+	go test -timeout 15m -v -count 1 --tags fmea -p 1 ./test/fmea 2>&1 | tee test-results/test.out
 
 # clean
 

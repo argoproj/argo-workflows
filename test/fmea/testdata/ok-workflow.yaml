@@ -1,0 +1,12 @@
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  name: ok
+  labels:
+    argo-e2e: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

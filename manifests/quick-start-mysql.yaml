@@ -636,6 +636,55 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app: minio
+  name: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - command:
+        - minio
+        - server
+        - /data
+        env:
+        - name: MINIO_ACCESS_KEY
+          value: admin
+        - name: MINIO_SECRET_KEY
+          value: password
+        image: minio/minio:RELEASE.2019-12-17T23-16-33Z
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - mkdir
+              - -p
+              - /data/my-bucket
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: main
+        ports:
+        - containerPort: 9000
+        readinessProbe:
+          httpGet:
+            path: /minio/health/ready
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
     app: mysql
   name: mysql
 spec:
@@ -646,7 +695,6 @@ spec:
     metadata:
       labels:
         app: mysql
-      name: mysql
     spec:
       containers:
       - env:
@@ -674,8 +722,15 @@ spec:
             - SELECT 1
           initialDelaySeconds: 15
           timeoutSeconds: 2
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mysql
       nodeSelector:
         kubernetes.io/os: linux
+      volumes:
+      - name: mysql
+        persistentVolumeClaim:
+          claimName: mysql
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -706,42 +761,12 @@ spec:
       serviceAccountName: argo
 ---
 apiVersion: v1
-kind: Pod
+kind: PersistentVolumeClaim
 metadata:
-  labels:
-    app: minio
-  name: minio
+  name: mysql
 spec:
-  containers:
-  - command:
-    - minio
-    - server
-    - /data
-    env:
-    - name: MINIO_ACCESS_KEY
-      value: admin
-    - name: MINIO_SECRET_KEY
-      value: password
-    image: minio/minio:RELEASE.2019-12-17T23-16-33Z
-    lifecycle:
-      postStart:
-        exec:
-          command:
-          - mkdir
-          - -p
-          - /data/my-bucket
-    livenessProbe:
-      httpGet:
-        path: /minio/health/live
-        port: 9000
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    name: main
-    ports:
-    - containerPort: 9000
-    readinessProbe:
-      httpGet:
-        path: /minio/health/ready
-        port: 9000
-      initialDelaySeconds: 5
-      periodSeconds: 10
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

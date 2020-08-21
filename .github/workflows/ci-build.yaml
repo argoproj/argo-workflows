@@ -114,8 +114,8 @@ jobs:
           echo "::add-path::/usr/local/bin"
       - name: Install Kustomize
         run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
+          cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+          kustomize version
       - name: Install protoc
         run: |
           set -eux -o pipefail

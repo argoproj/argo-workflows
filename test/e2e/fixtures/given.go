@@ -140,6 +140,14 @@ var NoError = func(t *testing.T, output string, err error) {
 	assert.NoError(t, err, output)
 }
 
+var OutputContains = func(contains string) func(t *testing.T, output string, err error) {
+	return func(t *testing.T, output string, err error) {
+		if assert.NoError(t, err, output) {
+			assert.Contains(t, output, contains)
+		}
+	}
+}
+
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
 	output, err := Exec(name, args...)
@@ -151,6 +159,7 @@ func (g *Given) Exec(name string, args []string, block func(t *testing.T, output
 }
 
 func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
+	g.t.Helper()
 	return g.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 

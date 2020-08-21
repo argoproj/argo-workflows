@@ -62,13 +62,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(s.KubeClient)
-	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
-}
-
-func (s *E2ESuite) TearDownSuite() {
-	s.Persistence.Close()
 }
 
 func (s *E2ESuite) BeforeTest(suiteName, testName string) {
@@ -82,6 +76,8 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
+	s.Persistence = newPersistence(s.KubeClient)
+	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 }
 
 var foreground = metav1.DeletePropagationForeground
@@ -91,7 +87,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
-		archive := s.Persistence.workflowArchive
+		archive := s.Persistence.WorkflowArchive
 		parse, err := labels.ParseToRequirements(label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
@@ -189,6 +185,7 @@ func (s *E2ESuite) Run(name string, subtest func()) {
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
+	s.Persistence.Close()
 	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
 	s.CheckError(err)
 	for _, wf := range wfs.Items {
