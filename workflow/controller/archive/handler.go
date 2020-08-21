@@ -41,7 +41,10 @@ func (h handler) OnDelete(obj interface{}) {
 
 func (h handler) archive(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
-	if !ok && un.GetLabels()[common.LabelKeyArchiveStatus] != "Pending" {
+	if !ok {
+		return
+	}
+	if un.GetLabels()[common.LabelKeyArchiveStatus] != "Pending" {
 		return
 	}
 	logCtx := log.WithFields(log.Fields{"namespace": un.GetNamespace(), "name": un.GetName()})
