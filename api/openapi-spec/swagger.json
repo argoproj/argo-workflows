@@ -1931,6 +1931,10 @@
           "description": "Raw contains raw artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
         },
+        "recurseMode": {
+          "description": "If mode is set, apply the permission recursively into the artifact if it is a folder",
+          "type": "boolean"
+        },
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"

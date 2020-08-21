@@ -2027,6 +2027,7 @@ Artifact indicates an artifact to place at a specified path
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`path`|`string`|Path is the container path to the artifact|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
+|`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 
 ## Parameter

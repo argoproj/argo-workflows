@@ -220,6 +220,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "int32",
 						},
 					},
+					"recurseMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If mode is set, apply the permission recursively into the artifact if it is a folder",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"from": {
 						SchemaProps: spec.SchemaProps{
 							Description: "From allows an artifact to reference an artifact from a previous step",

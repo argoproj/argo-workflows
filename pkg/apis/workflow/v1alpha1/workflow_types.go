@@ -660,21 +660,24 @@ type Artifact struct {
 	// set when loading input artifacts.
 	Mode *int32 `json:"mode,omitempty" protobuf:"varint,3,opt,name=mode"`
 
+	// If mode is set, apply the permission recursively into the artifact if it is a folder
+	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,4,opt,name=recurseMode"`
+
 	// From allows an artifact to reference an artifact from a previous step
-	From string `json:"from,omitempty" protobuf:"bytes,4,opt,name=from"`
+	From string `json:"from,omitempty" protobuf:"bytes,5,opt,name=from"`
 
 	// ArtifactLocation contains the location of the artifact
-	ArtifactLocation `json:",inline" protobuf:"bytes,5,opt,name=artifactLocation"`
+	ArtifactLocation `json:",inline" protobuf:"bytes,6,opt,name=artifactLocation"`
 
 	// GlobalName exports an output artifact to the global scope, making it available as
 	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
-	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,6,opt,name=globalName"`
+	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,7,opt,name=globalName"`
 
 	// Archive controls how the artifact will be saved to the artifact repository.
-	Archive *ArchiveStrategy `json:"archive,omitempty" protobuf:"bytes,7,opt,name=archive"`
+	Archive *ArchiveStrategy `json:"archive,omitempty" protobuf:"bytes,8,opt,name=archive"`
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
-	Optional bool `json:"optional,omitempty" protobuf:"varint,8,opt,name=optional"`
+	Optional bool `json:"optional,omitempty" protobuf:"varint,9,opt,name=optional"`
 }
 
 // PodGC describes how to delete completed pods as they complete
