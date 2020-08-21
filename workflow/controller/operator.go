@@ -394,12 +394,6 @@ func (woc *wfOperationCtx) operate() {
 		workflowMessage = node.Message
 	}
 
-	// Release all acquired lock for completed workflow
-	if woc.controller.syncManager.ReleaseAll(woc.wf) {
-		woc.log.Info("Released all acquired locks")
-		woc.updated = true
-	}
-
 	// If we get here, the workflow completed, all PVCs were deleted successfully, and
 	// exit handlers were executed. We now need to infer the workflow phase from the
 	// node phase.
@@ -498,6 +492,13 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+
+	// Release all acquired lock for completed workflow
+	if woc.controller.syncManager.ReleaseAll(woc.wf) {
+		woc.log.Info("Released all acquired locks")
+		woc.updated = true
+	}
+
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
@@ -566,7 +567,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 func (woc *wfOperationCtx) writeBackToInformer() error {
 	un, err := wfutil.ToUnstructured(woc.wf)
 	if err != nil {
-		return fmt.Errorf("failed to conver workflow to unstructured: %w", err)
+		return fmt.Errorf("failed to convert workflow to unstructured: %w", err)
 	}
 	err = woc.controller.wfInformer.GetStore().Update(un)
 	if err != nil {
@@ -590,6 +591,10 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
+	// if this condition is true, then this func will always error
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		panic("cannot re-apply update with unequal original and modified resource versions")
+	}
 	err := woc.controller.hydrator.Hydrate(woc.orig)
 	if err != nil {
 		return nil, err
@@ -1690,6 +1695,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted bool, message ...string) {
 	if woc.wf.Status.Phase != phase {
+		if woc.wf.Status.Phase.Fulfilled() {
+			panic(fmt.Sprintf("workflow \"%s/%s\" is already fulfilled", woc.wf.Namespace, woc.wf.Name))
+		}
 		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
 		woc.wf.Status.Phase = phase
@@ -1885,6 +1893,10 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
 	}
 	if node.Phase != phase {
+		if node.Phase.Fulfilled() {
+			// this should not happen - but does - added logging to highlight potential bugs
+			woc.log.Errorf("node %s phase %s -> %s: is already fulfilled", node.Name, node.Phase, phase)
+		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true

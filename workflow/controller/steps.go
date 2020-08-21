@@ -281,7 +281,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
-	woc.log.Infof("Step group node %v successful", node)
+	woc.log.Infof("Step group node %v successful", node.ID)
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 

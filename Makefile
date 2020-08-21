@@ -56,7 +56,7 @@ AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
-UPPERIO_DB_DEBUG      := 1
+UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
