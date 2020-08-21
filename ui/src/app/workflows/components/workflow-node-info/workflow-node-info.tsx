@@ -70,20 +70,24 @@ export const WorkflowNodeSummary = (props: Props) => {
             title: 'MEMOIZATION',
             value: (
                 <InlineTable
-                    rows={[
-                        {
-                            left: <div> KEY </div>,
-                            right: <div> {props.node.memoizationStatus.key} </div>
-                        },
-                        {
-                            left: <div> CACHE NAME </div>,
-                            right: <div> {props.node.memoizationStatus.cacheName} </div>
-                        },
-                        {
-                            left: <div> HIT? </div>,
-                            right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
-                        }
-                    ]}
+                    rows={
+                        props.node.memoizationStatus
+                            ? [
+                                  {
+                                      left: <div> KEY </div>,
+                                      right: <div> {props.node.memoizationStatus.key} </div>
+                                  },
+                                  {
+                                      left: <div> CACHE NAME </div>,
+                                      right: <div> {props.node.memoizationStatus.cacheName} </div>
+                                  },
+                                  {
+                                      left: <div> HIT? </div>,
+                                      right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
+                                  }
+                              ]
+                            : [{left: <div> N/A </div>, right: null}]
+                    }
                 />
             )
         }
