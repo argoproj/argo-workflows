@@ -6,9 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
-
-	"github.com/robfig/cron/v3"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
@@ -92,7 +89,7 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
 	}
 
-	next, err := getNextRuntime(wf)
+	next, err := wf.GetNextRuntime()
 	if err == nil {
 		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next))
 	}
@@ -117,16 +114,4 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 		}
 	}
 	return out
-}
-
-func getNextRuntime(cwf *wfv1.CronWorkflow) (time.Time, error) {
-	cronScheduleString := cwf.Spec.Schedule
-	if cwf.Spec.Timezone != "" {
-		cronScheduleString = "CRON_TZ=" + cwf.Spec.Timezone + " " + cronScheduleString
-	}
-	cronSchedule, err := cron.ParseStandard(cronScheduleString)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return cronSchedule.Next(time.Now()), nil
 }

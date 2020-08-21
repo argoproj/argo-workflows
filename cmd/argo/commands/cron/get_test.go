@@ -68,9 +68,9 @@ func TestNextRuntime(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
 	if assert.NoError(t, err) {
-		next, err := getNextRuntime(&cronWf)
+		next, err := cronWf.GetNextRuntime()
 		if assert.NoError(t, err) {
-			assert.Less(t, next.Unix(), time.Now().Add(1 * time.Minute).Unix())
+			assert.Less(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 			assert.Greater(t, next.Unix(), time.Now().Unix())
 		}
 	}

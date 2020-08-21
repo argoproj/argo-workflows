@@ -81,7 +81,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 			cleanLastScheduledTime = "N/A"
 		}
 		var cleanNextScheduledTime string
-		if next, err := getNextRuntime(&wf); err == nil {
+		if next, err := wf.GetNextRuntime(); err == nil {
 			cleanNextScheduledTime = humanize.RelativeDurationShort(next, time.Now())
 		} else {
 			cleanNextScheduledTime = "N/A"
