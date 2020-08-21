@@ -72,6 +72,8 @@ github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuy
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
+github.com/alexec/kubectl-autoforward v0.0.0-20200817163532-9805004f01b9 h1:WoWbmcuIOlDuHMPsgIzJAUfqY6O3IBSXlfFamClrATQ=
+github.com/alexec/kubectl-autoforward v0.0.0-20200817163532-9805004f01b9/go.mod h1:GaOLwIw9/NUCA3YJ2Ztf+AAvlb0i6toBibWl0paaBvw=
 github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible h1:ZDgadcjGIrbHMBLSqQVHkMOdNd/jF6bsSRJd/Ysxlos=
 github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible/go.mod h1:T/Aws4fEfogEE9v+HPhhw+CntffsBHJ8nXQCwKr0/g8=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=

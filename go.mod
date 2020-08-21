@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
+	github.com/alexec/kubectl-autoforward v0.0.0-20200817163532-9805004f01b9
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.2
 	github.com/argoproj/pkg v0.1.0
@@ -29,7 +30,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1

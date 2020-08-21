@@ -378,7 +378,7 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 $(GOPATH)/bin/kubectl-autoforward:
-	go install github.com/alexec/kubectl-autoforward
+	go get github.com/alexec/kubectl-autoforward
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/kubectl-autoforward $(GOPATH)/bin/goreman
