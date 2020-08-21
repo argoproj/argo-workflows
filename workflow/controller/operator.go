@@ -96,7 +96,8 @@ type wfOperationCtx struct {
 	// 'execWf.Spec' should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
-	execWf *wfv1.Workflow
+	execWf           *wfv1.Workflow
+	updatesPersisted bool
 }
 
 var (
@@ -122,13 +123,10 @@ type failedNodeStatus struct {
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
-	// NEVER modify objects from the store. It's a read-only, local cache.
-	// You can use DeepCopy() to make a deep copy of original object and modify this copy
-	// Or create a copy manually for better performance
 	woc := wfOperationCtx{
-		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
+		wf:      wf.DeepCopy(),
 		orig:    wf,
-		execWf:  wf,
+		execWf:  wf.DeepCopy(),
 		updated: false,
 		log: log.WithFields(log.Fields{
 			"workflow":  wf.ObjectMeta.Name,
@@ -395,6 +393,12 @@ func (woc *wfOperationCtx) operate() {
 		workflowMessage = node.Message
 	}
 
+	// Release all acquired lock for completed workflow
+	if woc.controller.syncManager.ReleaseAll(woc.wf) {
+		woc.log.Info("Released all acquired locks")
+		woc.updated = true
+	}
+
 	// If we get here, the workflow completed, all PVCs were deleted successfully, and
 	// exit handlers were executed. We now need to infer the workflow phase from the
 	// node phase.
@@ -482,6 +486,12 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
+	if woc.updatesPersisted {
+		// You MUST not call `persistUpdates` twice:
+		// * Fails the `reapplyUpdate` pre-condition - it can never recover.
+		// * It will double the number of Kubernetes API requests.
+		panic("workflow updates must not be persisted more than once")
+	}
 	if !woc.updated {
 		return
 	}
@@ -515,25 +525,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
+	woc.updatesPersisted = true
+
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
 	}
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	//
-	// This line was removed in v2.9.0, but issues arose with the controller picking up outdated versions of workflows,
-	// operating on them, then attempting to update the resources on the cluster. Since the workflows were outdated,
-	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
-	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
-	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
-	time.Sleep(enoughTimeForInformerSync)
+	if err := woc.writeBackToInformer(); err != nil {
+		woc.markWorkflowError(err, true)
+		return
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -560,6 +563,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 }
 
+func (woc *wfOperationCtx) writeBackToInformer() error {
+	un, err := wfutil.ToUnstructured(woc.wf)
+	if err != nil {
+		return fmt.Errorf("failed to conver workflow to unstructured: %w", err)
+	}
+	err = woc.controller.wfInformer.GetStore().Update(un)
+	if err != nil {
+		return fmt.Errorf("failed to update informer store: %w", err)
+	}
+	return nil
+}
+
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
 // See https://github.com/argoproj/argo/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.WorkflowInterface, err error) {
@@ -575,6 +590,11 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		// if these have the same version, then the patch we create will also have resource version in it,
+		// and will therefore the patch will fail with conflict again
+		panic("cannot re-apply update with unequal original and updated resource versions")
+	}
 	err := woc.controller.hydrator.Hydrate(woc.orig)
 	if err != nil {
 		return nil, err
@@ -597,7 +617,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
-		if err != nil && !errorsutil.IsTransientErr(err) {
+		if err != nil {
 			return nil, err
 		}
 		err = woc.controller.hydrator.Hydrate(currWf)

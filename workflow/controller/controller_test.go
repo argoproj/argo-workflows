@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
@@ -32,6 +33,7 @@ import (
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
+	syncmocks "github.com/argoproj/argo/workflow/sync/mocks"
 )
 
 var helloWorldWf = `
@@ -133,6 +135,8 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		panic("Timed out waiting for caches to sync")
 	}
 	kube := fake.NewSimpleClientset()
+	syncManager := &syncmocks.Manager{}
+	syncManager.On("ReleaseAll", mock.Anything).Return(false)
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
@@ -152,6 +156,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
+		syncManager:          syncManager,
 	}
 	controller.podInformer = controller.newPodInformer()
 	return cancel, controller

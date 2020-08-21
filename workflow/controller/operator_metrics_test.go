@@ -53,10 +53,12 @@ func TestBasicMetric(t *testing.T) {
 	woc.operate()
 
 	// Schedule first pod and mark completed
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	makePodsPhaseAll(t, apiv1.PodSucceeded, controller.kubeclientset, wf.ObjectMeta.Namespace)
 
 	// Process first metrics
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
@@ -109,10 +111,12 @@ func TestCounterMetric(t *testing.T) {
 	woc.operate()
 
 	// Schedule first pod and mark completed
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	makePodsPhaseAll(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
 
 	// Process first metrics
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
@@ -294,6 +298,7 @@ func TestRetryStrategyMetric(t *testing.T) {
 	podNode := woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"]
 	podNode.Phase = v1alpha1.NodeSucceeded
 	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	metricErrorDesc = wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()

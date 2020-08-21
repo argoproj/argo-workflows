@@ -88,7 +88,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	syncManager           *sync.SyncManager
+	syncManager           sync.Manager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
@@ -225,7 +225,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
-		wfc.wfQueue.AddAfter(key, 0)
+		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
 	})
 
 	labelSelector := v1Label.NewSelector()
@@ -507,14 +507,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 	startTime := time.Now()
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
-	if woc.wf.Status.Fulfilled() {
-		// Release all acquired lock for completed workflow
-		if wfc.syncManager.ReleaseAll(woc.wf) {
-			log.WithFields(log.Fields{"key": wf.Name}).Info("Released all acquired locks")
-			woc.updated = true
-			woc.persistUpdates()
-		}
 
+	if woc.wf.Status.Fulfilled() {
 		wfc.throttler.Remove(key)
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.

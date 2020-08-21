@@ -2710,6 +2710,7 @@ func TestStepsOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -2757,6 +2758,7 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
