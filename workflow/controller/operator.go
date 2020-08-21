@@ -126,9 +126,9 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	woc := wfOperationCtx{
-		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
+		wf:      wf.DeepCopy(),
 		orig:    wf,
-		execWf:  wf,
+		execWf:  wf.DeepCopy(),
 		updated: false,
 		log: log.WithFields(log.Fields{
 			"workflow":  wf.ObjectMeta.Name,
@@ -579,6 +579,9 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	if err != nil {
 		return nil, err
 	}
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		log.Fatalf("resource versions do not match \"%s\" %s != %s", woc.orig.Name, woc.orig.ResourceVersion, woc.wf.ResourceVersion)
+	}
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {
@@ -617,6 +620,10 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 		if err != nil {
 			return nil, err
 		}
+		// seems we need this to make sure we don't just get another conflict
+		// TODO determine how we get into the situation where `woc.orig` and `woc.wf` do not have
+		// the same `resourceVersion`
+		newWf.ResourceVersion = currWf.ResourceVersion
 		err = woc.controller.hydrator.Dehydrate(&newWf)
 		if err != nil {
 			return nil, err
