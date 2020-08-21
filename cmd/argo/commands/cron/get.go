@@ -88,6 +88,12 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 	if wf.Status.LastScheduledTime != nil {
 		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
 	}
+
+	next, err := wf.GetNextRuntime()
+	if err == nil {
+		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next))
+	}
+
 	if len(wf.Status.Active) > 0 {
 		var activeWfNames []string
 		for _, activeWf := range wf.Status.Active {
