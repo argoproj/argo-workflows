@@ -30,3 +30,4 @@ git-ask-pass.sh
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 /site/
 /node_modules/
+/.brew_home

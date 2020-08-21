@@ -9,7 +9,7 @@ CRD URLs:
 * [ClusterWorkflowTemplate](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_clusterworkflowtemplates.yaml)
 * [WorkflowTemplate](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_workflowtemplates.yaml)
 * [CronWorkflow](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_cronworkflows.yaml)
-* [Workflow](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_clusterworkflowtemplates.yaml) 
+* [Workflow](https://raw.githubusercontent.com/argoproj/argo/master/manifests/base/crds/full/argoproj.io_workflows.yaml) 
 
 ### IntelliJ
 
