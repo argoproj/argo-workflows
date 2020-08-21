@@ -52,24 +52,24 @@ message Artifact {
   // set when loading input artifacts.
   optional int32 mode = 3;
 
-  // If mode is set, apply the permission recursively into the artifact if it is a folder
-  optional bool recurseMode = 4;
-
   // From allows an artifact to reference an artifact from a previous step
-  optional string from = 5;
+  optional string from = 4;
 
   // ArtifactLocation contains the location of the artifact
-  optional ArtifactLocation artifactLocation = 6;
+  optional ArtifactLocation artifactLocation = 5;
 
   // GlobalName exports an output artifact to the global scope, making it available as
   // '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
-  optional string globalName = 7;
+  optional string globalName = 6;
 
   // Archive controls how the artifact will be saved to the artifact repository.
-  optional ArchiveStrategy archive = 8;
+  optional ArchiveStrategy archive = 7;
 
   // Make Artifacts optional, if Artifacts doesn't generate or exist
-  optional bool optional = 9;
+  optional bool optional = 8;
+
+  // If mode is set, apply the permission recursively into the artifact if it is a folder
+  optional bool recurseMode = 9;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
