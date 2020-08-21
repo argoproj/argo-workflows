@@ -81,6 +81,11 @@ jobs:
       - name: Print test error annotations
         if: failure()
         run: make test-report
+      - name: Upload test report
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.test }}
+          path: test-results/test-report.html
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1
