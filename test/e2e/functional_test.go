@@ -342,10 +342,7 @@ spec:
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
-			return wfv1.NodePending == a.Phase &&
-				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
-				wfv1.NodePending == b.Phase &&
-				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
+			return wfv1.NodePending == a.Phase && wfv1.NodePending == b.Phase
 		}, "pods pending", 30*time.Second).
 		DeleteMemoryQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
