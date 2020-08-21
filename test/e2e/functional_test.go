@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -389,7 +390,10 @@ spec:
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
-			return wfv1.NodePending == a.Phase && wfv1.NodePending == b.Phase
+			return wfv1.NodePending == a.Phase &&
+				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
+				wfv1.NodePending == b.Phase &&
+				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
 		}, "pods pending", 30*time.Second).
 		DeleteMemoryQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
