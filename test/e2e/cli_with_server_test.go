@@ -107,7 +107,6 @@ func (s *CLIWithServerSuite) TestArchive() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
-		WaitForWorkflowToBeArchived(5 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID

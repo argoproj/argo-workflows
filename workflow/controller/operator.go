@@ -1730,8 +1730,13 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 
 			if woc.controller.isArchivable(woc.wf) {
-				woc.wf.Labels[common.LabelKeyArchiveStatus] = "Pending"
-				woc.log.Infof("Labelled workflow as pending archiving")
+				err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+					err := woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
+					return err == nil, err
+				})
+				if err != nil {
+					woc.log.WithField("err", err).Error("Failed to archive workflow")
+				}
 			} else {
 				woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
 			}

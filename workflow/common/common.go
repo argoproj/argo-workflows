@@ -69,9 +69,6 @@ const (
 	LabelKeyWorkflowEventBinding = workflow.WorkflowFullName + "/workflow-event-binding"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
 	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
-	// LabelKeyArchiveStatus is a label applied to workflows to indicate its status
-	// Pending/Succeeded
-	LabelKeyArchiveStatus = workflow.WorkflowFullName + "/archive-status"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 

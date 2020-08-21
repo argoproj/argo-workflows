@@ -37,7 +37,6 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/controller/archive"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
@@ -688,7 +687,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			}
 		},
 	})
-	wfc.wfInformer.AddEventHandler(archive.NewHandler(wfc.hydrator, wfc.wfArchive, wfc.wfclientset))
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {

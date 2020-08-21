@@ -451,7 +451,9 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2"
+            "image": "argoproj/argosay:v2",
+            "command": ["sh"],
+            "args": ["-c", "sleep 1"]
           }
         }
       ],
@@ -497,7 +499,10 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2"
+            "image": "argoproj/argosay:v2",
+            "imagePullPolicy": "IfNotPresent",
+            "command": ["sh"],
+            "args": ["-c", "sleep 1"]
           }
         }
       ],
@@ -523,8 +528,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.Given().
 			WorkflowName("test-wf-good").
 			When().
-			WaitForWorkflow(30 * time.Second).
-			WaitForWorkflowToBeArchived(5 * time.Second)
+			WaitForWorkflow(30 * time.Second)
 
 		// Test delete workflow with bad token
 		s.bearerToken = badToken
@@ -961,7 +965,6 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
-		WaitForWorkflowToBeArchived(5 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -1115,8 +1118,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second).
-		WaitForWorkflowToBeArchived(5 * time.Second)
+		WaitForWorkflow(20 * time.Second)
 
 	for _, tt := range []struct {
 		name     string
