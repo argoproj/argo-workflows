@@ -381,7 +381,7 @@ $(GOPATH)/bin/kubectl-autoforward:
 	go install github.com/alexec/kubectl-autoforward
 
 .PHONY: start
-start: status stop install controller cli executor-image $(GOPATH)/bin/goreman $(GOPATH)/bin/kubectl-autoforward
+start: status stop install controller cli executor-image $(GOPATH)/bin/kubectl-autoforward $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 	kubectl wait --for=condition=Ready pod --all -l app --timeout 2m
 	kubectl autoforward &

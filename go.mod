@@ -7,6 +7,7 @@ require (
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
+	github.com/alexec/kubectl-autoforward v0.0.0-20200817163532-9805004f01b9 // indirect
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.2
 	github.com/argoproj/pkg v0.1.0
@@ -29,7 +30,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1
@@ -67,12 +67,12 @@ require (
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	k8s.io/api v0.17.8
-	k8s.io/apimachinery v0.17.8
-	k8s.io/client-go v0.17.8
+	k8s.io/api v0.18.8
+	k8s.io/apimachinery v0.18.8
+	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/code-generator v0.17.5
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	k8s.io/utils v0.0.0-20200327001022-6496210b90e8
+	k8s.io/utils v0.0.0-20200815180417-3bc9d57fc792
 	sigs.k8s.io/controller-tools v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 	upper.io/db.v3 v3.6.3+incompatible
