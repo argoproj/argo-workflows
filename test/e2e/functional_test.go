@@ -613,16 +613,15 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
-		When().
-		CreateWorkflowTemplates()
-	s.Given().
 		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
 		When().
+		CreateWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Empty(t, status.Message)
 		})
 }
 
