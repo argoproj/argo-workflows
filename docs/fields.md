@@ -1803,7 +1803,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
-|`timeoutDuration`|[`IntOrString`](#intorstring)|Max duration allows for the node execution from node StartTime. This duration includes node pending state also.|
+|`timeoutDuration`|[`IntOrString`](#intorstring)|Max duration allows for the node execution from node StartTime. This duration includes node pending state also. This duration will not be applied on Step and DAG type Templates|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 

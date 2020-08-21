@@ -4632,13 +4632,13 @@ spec:
         arguments:
           parameters:
           - name: deadline
-            value: 4s
+            value: 3s
       - name: dag2
         template: whalesay
         arguments:
           parameters:
           - name: deadline
-            value: 4s
+            value: 3s
   - name: whalesay
     inputs:
       parameters:
@@ -4678,6 +4678,6 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		woc.operate()
 		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("dag1").Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 }

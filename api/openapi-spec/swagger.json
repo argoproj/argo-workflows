@@ -3691,7 +3691,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
         "timeoutDuration": {
-          "description": "Max duration allows for the node execution from node StartTime. This duration includes node pending state also.",
+          "description": "Max duration allows for the node execution from node StartTime. This duration includes node pending state also. This duration will not be applied on Step and DAG type Templates",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "tolerations": {

@@ -3570,7 +3570,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"timeoutDuration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Max duration allows for the node execution from node StartTime. This duration includes node pending state also.",
+							Description: "Max duration allows for the node execution from node StartTime. This duration includes node pending state also. This duration will not be applied on Step and DAG type Templates",
 							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
 						},
 					},
