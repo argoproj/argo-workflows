@@ -76,15 +76,6 @@ jobs:
         env:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
-      - name: Make test report
-        if: failure()
-        run: make test-results/test-report.html
-      - name: Upload test report
-        if: failure()
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ matrix.test }}
-          path: test-results/test-report.html
       - name: Print test error annotations
         if: failure()
         run: make test-report
