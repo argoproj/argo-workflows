@@ -26,12 +26,30 @@ func (s *FMEASuite) BeforeTest(suiteName, testName string) {
 }
 
 func (s *FMEASuite) resetTestSystem() {
-	_, err := fixtures.Exec("kubectl", "-n", "argo", "scale", "deploy/minio", "--replicas", "1")
+	_, err := fixtures.Exec("k3d", "start")
+	assert.NoError(s.T(), err)
+	_, err = fixtures.Exec("kubectl", "-n", "argo", "scale", "deploy/minio", "--replicas", "1")
 	assert.NoError(s.T(), err)
 	_, err = fixtures.Exec("kubectl", "-n", "argo", "scale", "deploy/mysql", "--replicas", "1")
 	assert.NoError(s.T(), err)
 	_, err = fixtures.Exec("kubectl", "label", "node", "fmea-", "-l", "fmea")
 	assert.NoError(s.T(), err)
+}
+
+func (s *FMEASuite) TestKubernetesAPIGoesByeBye() {
+	s.Given().
+		Workflow("@testdata/sleepy-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		Exec("k3d", []string{"stop"}, fixtures.NoError).
+		Wait(15*time.Second).
+		Exec("k3d", []string{"start"}, fixtures.NoError).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "pod deleted", status.Message)
+		})
 }
 
 func (s *FMEASuite) TestDeletingWorkflowPod() {
@@ -110,11 +128,18 @@ func (s *FMEASuite) TestNoAvailableNodes() {
 
 func (s *FMEASuite) TestDeletingWorkflowNode() {
 	s.Given().
+		// label existing nodes
+		Exec("kubectl", []string{"label", "node", "--all", "fmea=false"}, fixtures.NoError).
+		Exec("k3d", []string{"add-node"}, fixtures.NoError).
+		Exec("sleep", []string{"5s"}, fixtures.NoError).
+		// label the new node so we can select it
+		Exec("kubectl", []string{"label", "node", "-l", "!fmea", "fmea=true"}, fixtures.NoError).
 		Workflow("@testdata/node-selector-workflow.yaml").
-		Exec("kubectl", []string{"label", "node", "k3d-k3s-default-worker-1", "fmea=true"}, fixtures.NoError).
 		When().
+		Wait(5*time.Second).
 		SubmitWorkflow().
-		Exec("kubectl", []string{"delete", "node", "-l", "fmea"}, fixtures.OutputContains(`node "sleepy" deleted`)).
+		WaitForWorkflowToStart(5*time.Second).
+		Exec("kubectl", []string{"delete", "node", "-l", "fmea=true"}, fixtures.NoError).
 		WaitForWorkflow(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -139,6 +164,7 @@ func (s *FMEASuite) TestNoResourcePodsQuota() {
 		})
 }
 
-func TestFMEASuite(t *testing.T) {
+func
+TestFMEASuite(t *testing.T) {
 	suite.Run(t, new(FMEASuite))
 }

@@ -12,3 +12,6 @@ spec:
         fmea: "true"
       container:
         image: argoproj/argosay:v2
+        args:
+          - sleep
+          - 5s
