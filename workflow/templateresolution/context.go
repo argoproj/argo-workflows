@@ -3,6 +3,8 @@ package templateresolution
 import (
 	"encoding/json"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -86,49 +88,49 @@ type Context struct {
 type InheritedMembers struct {
 	// NodeSelector is a selector to schedule this step of the workflow to be
 	// run on the selected node(s). Overrides the selector set at the workflow level.
-	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,7,opt,name=nodeSelector"`
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// Affinity sets the pod's scheduling constraints
 	// Overrides the affinity set at the workflow level (if any)
-	Affinity *apiv1.Affinity `json:"affinity,omitempty" protobuf:"bytes,8,opt,name=affinity"`
+	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Volumes []apiv1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,17,opt,name=volumes"`
+	Volumes []apiv1.Volume `json:"volumes,omitempty"`
 
 	// InitContainers is a list of containers which run before the main container.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	InitContainers []wfv1.UserContainer `json:"initContainers,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,18,opt,name=initContainers"`
+	InitContainers []wfv1.UserContainer `json:"initContainers,omitempty"`
 
 	// Sidecars is a list of containers which run alongside the main container
 	// Sidecars are automatically killed when the main container completes
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Sidecars []wfv1.UserContainer `json:"sidecars,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,19,opt,name=sidecars"`
+	Sidecars []wfv1.UserContainer `json:"sidecars,omitempty"`
 
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
 	// artifact repository location configured in the controller, appended with the
 	// <workflowname>/<nodename> in the key.
-	ArchiveLocation *wfv1.ArtifactLocation `json:"archiveLocation,omitempty" protobuf:"bytes,20,opt,name=archiveLocation"`
+	ArchiveLocation *wfv1.ArtifactLocation `json:"archiveLocation,omitempty"`
 
 	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// This field is only applicable to container and script templates.
-	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
+	ActiveDeadlineSeconds *intstr.IntOrString `json:"activeDeadlineSeconds,omitempty"`
 
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
 	// +patchMergeKey=key
-	Tolerations []apiv1.Toleration `json:"tolerations,omitempty" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,24,opt,name=tolerations"`
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
 
 	// If specified, the pod will be dispatched by specified scheduler.
 	// Or it will be dispatched by workflow scope scheduler if specified.
 	// If neither specified, the pod will be dispatched by default scheduler.
 	// +optional
-	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,25,opt,name=schedulerName"`
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 // NewContext returns new Context.
@@ -160,6 +162,7 @@ func WithTemplate(tmpl *wfv1.Template) Option {
 }
 
 func mergeTemplate(tmpl *wfv1.Template, inherited *InheritedMembers) *InheritedMembers {
+	tmpl = tmpl.DeepCopy()
 	newInherited := &InheritedMembers{}
 	bytes, _ := json.Marshal(*tmpl)
 	_ = json.Unmarshal(bytes, newInherited)
