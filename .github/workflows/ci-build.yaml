@@ -75,17 +75,19 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: |
-          trap 'make test-results/junit.xml' EXIT
-          make ${{ matrix.test }}
-      - name: Print test error annotations
+        run: make ${{ matrix.test }}
+      - name: Make test report
         if: failure()
-        run: make test-report
+        run: make test-results/test-report.html
       - name: Upload test report
+        if: failure()
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}
           path: test-results/test-report.html
+      - name: Print test error annotations
+        if: failure()
+        run: make test-report
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1
