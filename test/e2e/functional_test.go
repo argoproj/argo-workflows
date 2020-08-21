@@ -330,7 +330,7 @@ spec:
 				wfv1.NodePending == b.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
 		}, "pods pending", 30*time.Second).
-		DeleteQuota().
+		DeleteMemoryQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
@@ -381,7 +381,7 @@ spec:
 				wfv1.NodePending == b.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
 		}, "pods pending", 30*time.Second).
-		DeleteQuota().
+		DeleteMemoryQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
@@ -438,6 +438,7 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
+	s.T().Skip("flaky - see https://github.com/argoproj/argo/issues/2833")
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
@@ -715,7 +716,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10 * time.Second).
+		WaitForWorkflow(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)

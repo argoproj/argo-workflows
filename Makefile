@@ -43,7 +43,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 
 # perform static compilation
 STATIC_BUILD          ?= true
-CI                    ?= false
+STATIC_FILES          ?= true
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
@@ -51,7 +51,7 @@ AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
 endif
-ifeq ($(CI),true)
+ifeq ($(STATIC_FILES),false)
 AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
@@ -66,7 +66,7 @@ ifeq ($(PROFILE),postgres)
 ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
-ifeq ($(CI),true)
+ifeq ($(STATIC_FILES),false)
 TEST_OPTS := -coverprofile=coverage.out
 else
 TEST_OPTS :=
@@ -140,7 +140,7 @@ cli: dist/argo argo-server.crt argo-server.key
 ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
 	@mkdir -p ui/node_modules
-ifeq ($(CI),false)
+ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui install
 endif
 	@mkdir -p ui/dist
@@ -149,7 +149,7 @@ endif
 ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
-ifeq ($(CI),false)
+ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui build
 else
 	echo "Built without static files" > ui/dist/app/index.html
@@ -198,6 +198,8 @@ controller: dist/workflow-controller
 dist/workflow-controller: GOARGS = GOOS= GOARCH=
 dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/workflow-controller-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/workflow-controller-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/workflow-controller: $(CONTROLLER_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
@@ -216,6 +218,8 @@ $(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argoexec-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/argoexec-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argoexec-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/argoexec-%: $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
@@ -279,8 +283,18 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
+dist/install_kustomize.sh:
+	mkdir -p dist
+	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
+
+/usr/local/bin/kustomize: dist/install_kustomize.sh
+	chmod +x ./dist/install_kustomize.sh
+	./dist/install_kustomize.sh
+	sudo mv kustomize /usr/local/bin/
+	kustomize version
+
 .PHONY: manifests
-manifests: crds
+manifests: crds /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -300,7 +314,7 @@ lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Lint Go files
 	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
-ifeq ($(CI),false)
+ifeq ($(STATIC_FILES),true)
 	yarn --cwd ui lint
 endif
 
@@ -324,7 +338,7 @@ test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 test-report: test-results/junit.xml
 	go run ./hack test-report
 
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS)
+dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
@@ -405,7 +419,7 @@ test-e2e:
 test-e2e-cron:
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 5m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 7m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke:
