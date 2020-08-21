@@ -451,9 +451,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "command": ["sh"],
-            "args": ["-c", "sleep 1"]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
@@ -499,10 +497,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "imagePullPolicy": "IfNotPresent",
-            "command": ["sh"],
-            "args": ["-c", "sleep 1"]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
@@ -528,7 +523,8 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.Given().
 			WorkflowName("test-wf-good").
 			When().
-			WaitForWorkflow(30 * time.Second)
+			WaitForWorkflow(30 * time.Second).
+			WaitForWorkflowToBeArchived(5 * time.Second)
 
 		// Test delete workflow with bad token
 		s.bearerToken = badToken
@@ -1095,9 +1091,7 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
@@ -1117,12 +1111,11 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second)
+		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflowToBeArchived(5 * time.Second)
 
 	for _, tt := range []struct {
 		name     string
