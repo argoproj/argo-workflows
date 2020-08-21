@@ -212,7 +212,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.InternalWrapError(err)
 			}
 
-			if art.RecurseMode == true {
+			if art.RecurseMode {
 				err = filepath.Walk(artPath, func(path string, f os.FileInfo, err error) error {
 					return os.Chmod(path, os.FileMode(*art.Mode))
 				})
