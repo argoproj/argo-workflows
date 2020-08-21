@@ -89,10 +89,14 @@ function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[])
 }
 
 function getNextScheduledTime(schedule: string, tz: string): string {
-    let out = "";
+    let out = '';
     try {
-        out = parser.parseExpression(schedule, {tz}).next().toString();
+        out = parser
+            .parseExpression(schedule, {tz})
+            .next()
+            .toISOString();
     } catch (e) {
+        // Do nothing
     }
     return out;
 }
