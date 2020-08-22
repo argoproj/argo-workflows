@@ -12,7 +12,7 @@ import (
 type Persistence struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	WorkflowArchive       sqldb.WorkflowArchive
+	workflowArchive       sqldb.WorkflowArchive
 }
 
 func newPersistence(kubeClient kubernetes.Interface) *Persistence {
@@ -41,12 +41,12 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
 		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}
 	} else {
-		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: sqldb.NullWorkflowArchive}
+		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, workflowArchive: sqldb.NullWorkflowArchive}
 	}
 }
 
 func (s *Persistence) IsEnabled() bool {
-	return s != nil && s.offloadNodeStatusRepo.IsEnabled()
+	return s.offloadNodeStatusRepo.IsEnabled()
 }
 
 func (s *Persistence) Close() {

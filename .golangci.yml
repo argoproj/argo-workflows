@@ -7,7 +7,7 @@ run:
   skip-files:
     - server/static/files.go
   build-tags:
-    - e2eF
+    - e2e
 linters:
   enable:
     - goimports

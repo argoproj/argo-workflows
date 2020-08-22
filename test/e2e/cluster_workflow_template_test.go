@@ -74,10 +74,6 @@ spec:
 
 }
 
-func (s *CLIWithServerSuite) TestMetaDataNamespace() {
-	s.T().Skip("`serviceaccount/argo-server` does not have permission to run this test")
-}
-
 func TestClusterWorkflowTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ClusterWorkflowTemplateSuite))
 }

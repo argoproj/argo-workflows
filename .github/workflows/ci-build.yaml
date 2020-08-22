@@ -75,7 +75,9 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make ${{ matrix.test }}
+        run: |
+          trap 'make test-results/junit.xml' EXIT
+          make ${{ matrix.test }}
       - name: Print test error annotations
         if: failure()
         run: make test-report
@@ -114,8 +116,8 @@ jobs:
           echo "::add-path::/usr/local/bin"
       - name: Install Kustomize
         run: |
-          cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-          kustomize version
+            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+            kustomize version
       - name: Install protoc
         run: |
           set -eux -o pipefail
