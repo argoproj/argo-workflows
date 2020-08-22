@@ -20,7 +20,7 @@ info() {
     echo '[INFO] ' "$@"
 }
 
-pf MinIO pod/minio 9000
+pf MinIO svc/minio 9000
 
 dex=$(kubectl -n argo get pod -l app=dex -o name)
 if [[ "$dex" != "" ]]; then
@@ -34,7 +34,7 @@ fi
 
 mysql=$(kubectl -n argo get pod -l app=mysql -o name)
 if [[ "$mysql" != "" ]]; then
-  pf MySQL "$mysql" 3306
+  pf MySQL svc/mysql 3306
 fi
 
 if [[ "$(kubectl -n argo get pod -l app=argo-server -o name)" != "" ]]; then
