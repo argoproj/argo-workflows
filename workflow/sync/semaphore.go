@@ -22,7 +22,7 @@ type Semaphore struct {
 	log               *log.Entry
 }
 
-func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore {
+func NewSemaphore(name string, limit int, callbackFunc func(string), lockType LockType) *Semaphore {
 	return &Semaphore{
 		name:              name,
 		limit:             limit,
@@ -33,7 +33,7 @@ func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore 
 		lock:              &sync.Mutex{},
 		releaseNotifyFunc: callbackFunc,
 		log: log.WithFields(log.Fields{
-			"semaphore": name,
+			string(lockType): name,
 		}),
 	}
 }
