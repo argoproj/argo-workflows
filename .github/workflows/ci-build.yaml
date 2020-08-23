@@ -114,6 +114,8 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
+      - name: Download Go modules
+        run: go mod download
       - name: Install protoc
         run: |
           set -eux -o pipefail
