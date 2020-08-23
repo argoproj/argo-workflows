@@ -88,7 +88,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	syncManager           sync.Manager
+	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector

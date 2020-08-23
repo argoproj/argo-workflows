@@ -16,21 +16,12 @@ import (
 type ReleaseNotifyCallbackFunc func(string)
 type SyncLimitConfigFunc func(string) (int, error)
 
-type Manager interface {
-	Initialize(list *wfv1.WorkflowList)
-	TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) (bool, bool, string, error)
-	Release(wf *wfv1.Workflow, nodeName, namespace string, syncRef *wfv1.Synchronization)
-	ReleaseAll(wf *wfv1.Workflow) bool
-}
-
-type manager struct {
+type SyncManager struct {
 	syncLockMap         map[string]Synchronization
 	lock                *sync.Mutex
 	releaseNotifyFunc   ReleaseNotifyCallbackFunc
 	syncLimitConfigFunc SyncLimitConfigFunc
 }
-
-var _ Manager = &manager{}
 
 type LockName struct {
 	Namespace    string
@@ -66,8 +57,8 @@ const (
 	LockTypeMutex     LockType = "mutex"
 )
 
-func NewLockManager(getSyncLimitConfigFunc func(string) (int, error), callbackFunc func(string)) *manager {
-	return &manager{
+func NewLockManager(getSyncLimitConfigFunc func(string) (int, error), callbackFunc func(string)) *SyncManager {
+	return &SyncManager{
 		syncLockMap:         make(map[string]Synchronization),
 		lock:                &sync.Mutex{},
 		releaseNotifyFunc:   callbackFunc,
@@ -75,7 +66,7 @@ func NewLockManager(getSyncLimitConfigFunc func(string) (int, error), callbackFu
 	}
 }
 
-func (cm *manager) Initialize(wfList *wfv1.WorkflowList) {
+func (cm *SyncManager) Initialize(wfList *wfv1.WorkflowList) {
 
 	for _, wf := range wfList.Items {
 		if wf.Status.Synchronization == nil {
@@ -122,14 +113,14 @@ func (cm *manager) Initialize(wfList *wfv1.WorkflowList) {
 	log.Infof("SyncManager initialized successfully")
 }
 
-func (cm *manager) getCurrentLockHolders(lockName string) []string {
+func (cm *SyncManager) getCurrentLockHolders(lockName string) []string {
 	if concurrency, ok := cm.syncLockMap[lockName]; ok {
 		return concurrency.getCurrentHolders()
 	}
 	return nil
 }
 
-func (cm *manager) initializeSemaphore(semaphoreName string) (Synchronization, error) {
+func (cm *SyncManager) initializeSemaphore(semaphoreName string) (Synchronization, error) {
 	limit, err := cm.syncLimitConfigFunc(semaphoreName)
 	if err != nil {
 		return nil, err
@@ -137,11 +128,11 @@ func (cm *manager) initializeSemaphore(semaphoreName string) (Synchronization, e
 	return NewSemaphore(semaphoreName, limit, cm.releaseNotifyFunc, LockTypeSemaphore), nil
 }
 
-func (cm *manager) initializeMutex(mutexName string) (Synchronization, error) {
+func (cm *SyncManager) initializeMutex(mutexName string) (Synchronization, error) {
 	return NewMutex(mutexName, cm.releaseNotifyFunc), nil
 }
 
-func (cm *manager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, int, error) {
+func (cm *SyncManager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, int, error) {
 	limit, err := cm.syncLimitConfigFunc(semaphore.getName())
 	if err != nil {
 		return false, semaphore.getLimit(), err
@@ -149,7 +140,7 @@ func (cm *manager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, int,
 	return semaphore.getLimit() != limit, limit, nil
 }
 
-func (cm *manager) checkAndUpdateSemaphoreSize(semaphore Synchronization) error {
+func (cm *SyncManager) checkAndUpdateSemaphoreSize(semaphore Synchronization) error {
 	changed, newLimit, err := cm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
 		return err
@@ -162,7 +153,7 @@ func (cm *manager) checkAndUpdateSemaphoreSize(semaphore Synchronization) error 
 
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
-func (cm *manager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
+func (cm *SyncManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -231,7 +222,7 @@ func (cm *manager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32
 	return false, updated, msg, nil
 }
 
-func (cm *manager) Release(wf *wfv1.Workflow, nodeName, namespace string, syncRef *wfv1.Synchronization) {
+func (cm *SyncManager) Release(wf *wfv1.Workflow, nodeName, namespace string, syncRef *wfv1.Synchronization) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -258,7 +249,7 @@ func (cm *manager) Release(wf *wfv1.Workflow, nodeName, namespace string, syncRe
 	}
 }
 
-func (cm *manager) ReleaseAll(wf *wfv1.Workflow) bool {
+func (cm *SyncManager) ReleaseAll(wf *wfv1.Workflow) bool {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -299,7 +290,7 @@ func (cm *manager) ReleaseAll(wf *wfv1.Workflow) bool {
 }
 
 // updateSemaphoreStatus updates the semaphore holding and waiting details
-func (cm *manager) updateSemaphoreStatus(holderKey, lockKey string, lockAction LockAction, wf *wfv1.Workflow) bool {
+func (cm *SyncManager) updateSemaphoreStatus(holderKey, lockKey string, lockAction LockAction, wf *wfv1.Workflow) bool {
 	if wf.Status.Synchronization == nil || wf.Status.Synchronization.Semaphore == nil {
 		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Semaphore: &wfv1.SemaphoreStatus{}}
 	}
@@ -347,7 +338,7 @@ func (cm *manager) updateSemaphoreStatus(holderKey, lockKey string, lockAction L
 }
 
 // updateMutexStatus updates the mutex holding and waiting details
-func (cm *manager) updateMutexStatus(holderKey, lockKey string, lockAction LockAction, wf *wfv1.Workflow) bool {
+func (cm *SyncManager) updateMutexStatus(holderKey, lockKey string, lockAction LockAction, wf *wfv1.Workflow) bool {
 	if wf.Status.Synchronization == nil || wf.Status.Synchronization.Mutex == nil {
 		wf.Status.Synchronization = &wfv1.SynchronizationStatus{Mutex: &wfv1.MutexStatus{}}
 	}
@@ -398,7 +389,7 @@ func (cm *manager) updateMutexStatus(holderKey, lockKey string, lockAction LockA
 
 // updateConcurrencyStatus updates the synchronization status update
 // It return the status of workflow updated or not.
-func (cm *manager) updateConcurrencyStatus(holderKey, lockKey string, lockType LockType, lockAction LockAction, wf *wfv1.Workflow) bool {
+func (cm *SyncManager) updateConcurrencyStatus(holderKey, lockKey string, lockType LockType, lockAction LockAction, wf *wfv1.Workflow) bool {
 
 	if lockType == LockTypeSemaphore {
 		return cm.updateSemaphoreStatus(holderKey, lockKey, lockAction, wf)

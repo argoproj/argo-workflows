@@ -493,13 +493,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
-
-	// Release all acquired lock for completed workflow
-	if woc.controller.syncManager.ReleaseAll(woc.wf) {
-		woc.log.Info("Released all acquired locks")
-		woc.updated = true
-	}
-
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
