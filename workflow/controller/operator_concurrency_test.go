@@ -123,7 +123,6 @@ func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 }
 
 func TestSemaphoreTmplLevel(t *testing.T) {
-	t.Skip("https://github.com/argoproj/argo/pull/3846")
 	_, controller := newController()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
@@ -178,10 +177,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
-		if assert.NotNil(t, woc.wf.Status.Synchronization) {
-			assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-			assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
-		}
+		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
@@ -194,7 +190,6 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreScriptTmplLevel(t *testing.T) {
-	t.Skip("https://github.com/argoproj/argo/pull/3846")
 	_, controller := newController()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
@@ -248,10 +243,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
-		if assert.NotNil(t, woc.wf.Status.Synchronization) {
-			assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-			assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
-		}
+		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
@@ -264,7 +256,6 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreResourceTmplLevel(t *testing.T) {
-	t.Skip("https://github.com/argoproj/argo/pull/3846")
 	_, controller := newController()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
@@ -320,10 +311,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
-		if assert.NotNil(t, woc.wf.Status.Synchronization) {
-			assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
-			assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
-		}
+		assert.Nil(t, woc.wf.Status.Synchronization)
 
 		// Try to acquired the lock
 		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
