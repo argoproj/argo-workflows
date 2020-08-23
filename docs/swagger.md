@@ -1082,12 +1082,6 @@ Histogram is a Histogram prometheus metric
 | buckets | [ [io.argoproj.workflow.v1alpha1.Amount](#io.argoproj.workflow.v1alpha1.amount) ] | Buckets is a list of bucket divisors for the histogram | Yes |
 | value | string | Value is the value of the metric | Yes |
 
-#### io.argoproj.workflow.v1alpha1.HolderNames
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| name | [ string ] | Name stores the name of the resource holding lock | No |
-
 #### io.argoproj.workflow.v1alpha1.InfoResponse
 
 | Name | Type | Description | Required |
@@ -1178,6 +1172,32 @@ Metrics are a list of metrics emitted from a Workflow/Template
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | prometheus | [ [io.argoproj.workflow.v1alpha1.Prometheus](#io.argoproj.workflow.v1alpha1.prometheus) ] | Prometheus is a list of prometheus metrics to be emitted | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Mutex
+
+Mutex holds Mutex configuration
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | name of the mutex | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexHolding
+
+MutexHolding describes the mutex and the object which is holding it.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holder | string | Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID} | No |
+| mutex | string | Reference for the mutex e.g: ${namespace}/mutex/${mutexName} | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexStatus
+
+MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1. | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Waiting is a list of mutexes and their respective objects this workflow is waiting for. | No |
 
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 
@@ -1378,7 +1398,7 @@ SemaphoreRef is a reference of Semaphore
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | holding | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Holding stores the list of resource acquired synchronization lock for workflows. | No |
-| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders. | No |
 
 #### io.argoproj.workflow.v1alpha1.Sequence
 
@@ -1437,13 +1457,17 @@ Synchronization holds synchronization lock configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| mutex | [io.argoproj.workflow.v1alpha1.Mutex](#io.argoproj.workflow.v1alpha1.mutex) | Mutex holds the Mutex lock details | No |
 | semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreRef](#io.argoproj.workflow.v1alpha1.semaphoreref) | Semaphore holds the Semaphore configuration | No |
 
 #### io.argoproj.workflow.v1alpha1.SynchronizationStatus
 
+SynchronizationStatus stores the status of semaphore and mutex.
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | SemaphoreHolders stores this workflow's Semaphore holder details | No |
+| mutex | [io.argoproj.workflow.v1alpha1.MutexStatus](#io.argoproj.workflow.v1alpha1.mutexstatus) | Mutex stores this workflow's mutex holder details | No |
+| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | Semaphore stores this workflow's Semaphore holder details | No |
 
 #### io.argoproj.workflow.v1alpha1.TTLStrategy
 
