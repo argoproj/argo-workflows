@@ -175,12 +175,14 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		}
 
 		// Release the lock
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
 
 		// Try to acquired the lock
+		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate()
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
@@ -241,12 +243,14 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		}
 
 		// Release the lock
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
 
 		// Try to acquired the lock
+		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate()
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
@@ -308,12 +312,14 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		}
 
 		// Release the lock
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
 		assert.NotNil(t, woc.wf.Status.Synchronization)
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, 0, len(woc.wf.Status.Synchronization.Semaphore.Holding[0].Holders))
 
 		// Try to acquired the lock
+		woc_two = newWorkflowOperationCtx(woc_two.wf, controller)
 		woc_two.operate()
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
 		assert.NotNil(t, woc_two.wf.Status.Synchronization.Semaphore)
