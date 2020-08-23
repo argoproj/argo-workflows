@@ -114,10 +114,6 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
-      - name: Install Kustomize
-        run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
       - name: Install protoc
         run: |
           set -eux -o pipefail
@@ -130,9 +126,11 @@ jobs:
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           rm -f $PROTOC_ZIP
           ls /usr/local/include/google/protobuf/
+      - name: Install `swagger-markdown`
+        run: |
+          sudo chmod a+rw /usr/local/bin
+          make /usr/local/bin/swagger-markdown
       - name: Make codegen
-        env:
-          GOPATH: /home/runner/go
         run: |
           git fetch --tags
           make codegen
