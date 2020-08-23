@@ -3121,13 +3121,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ioargoprojworkflowv1alpha1holdernames" title="io.argoproj.workflow.v1alpha1.HolderNames" class="md-nav__link">
-    io.argoproj.workflow.v1alpha1.HolderNames
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1inforesponse" title="io.argoproj.workflow.v1alpha1.InfoResponse" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.InfoResponse
   </a>
@@ -3200,6 +3193,27 @@
           <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1metrics" title="io.argoproj.workflow.v1alpha1.Metrics" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.Metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1mutex" title="io.argoproj.workflow.v1alpha1.Mutex" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.Mutex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1mutexholding" title="io.argoproj.workflow.v1alpha1.MutexHolding" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.MutexHolding
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1mutexstatus" title="io.argoproj.workflow.v1alpha1.MutexStatus" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.MutexStatus
   </a>
   
 </li>
@@ -6539,13 +6553,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ioargoprojworkflowv1alpha1holdernames" title="io.argoproj.workflow.v1alpha1.HolderNames" class="md-nav__link">
-    io.argoproj.workflow.v1alpha1.HolderNames
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1inforesponse" title="io.argoproj.workflow.v1alpha1.InfoResponse" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.InfoResponse
   </a>
@@ -6618,6 +6625,27 @@
           <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1metrics" title="io.argoproj.workflow.v1alpha1.Metrics" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.Metrics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1mutex" title="io.argoproj.workflow.v1alpha1.Mutex" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.Mutex
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1mutexholding" title="io.argoproj.workflow.v1alpha1.MutexHolding" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.MutexHolding
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1mutexstatus" title="io.argoproj.workflow.v1alpha1.MutexStatus" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.MutexStatus
   </a>
   
 </li>
@@ -11551,25 +11579,6 @@
 </tr>
 </tbody>
 </table>
-<h4 id="ioargoprojworkflowv1alpha1holdernames">io.argoproj.workflow.v1alpha1.HolderNames<a class="headerlink" href="#ioargoprojworkflowv1alpha1holdernames" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>name</td>
-<td>[ string ]</td>
-<td>Name stores the name of the resource holding lock</td>
-<td>No</td>
-</tr>
-</tbody>
-</table>
 <h4 id="ioargoprojworkflowv1alpha1inforesponse">io.argoproj.workflow.v1alpha1.InfoResponse<a class="headerlink" href="#ioargoprojworkflowv1alpha1inforesponse" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
@@ -11849,6 +11858,78 @@
 <td>[ <a href="#io.argoproj.workflow.v1alpha1.prometheus">io.argoproj.workflow.v1alpha1.Prometheus</a> ]</td>
 <td>Prometheus is a list of prometheus metrics to be emitted</td>
 <td>Yes</td>
+</tr>
+</tbody>
+</table>
+<h4 id="ioargoprojworkflowv1alpha1mutex">io.argoproj.workflow.v1alpha1.Mutex<a class="headerlink" href="#ioargoprojworkflowv1alpha1mutex" title="Permanent link">&para;</a></h4>
+<p>Mutex holds Mutex configuration</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>name of the mutex</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<h4 id="ioargoprojworkflowv1alpha1mutexholding">io.argoproj.workflow.v1alpha1.MutexHolding<a class="headerlink" href="#ioargoprojworkflowv1alpha1mutexholding" title="Permanent link">&para;</a></h4>
+<p>MutexHolding describes the mutex and the object which is holding it.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>holder</td>
+<td>string</td>
+<td>Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID}</td>
+<td>No</td>
+</tr>
+<tr>
+<td>mutex</td>
+<td>string</td>
+<td>Reference for the mutex e.g: ${namespace}/mutex/${mutexName}</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<h4 id="ioargoprojworkflowv1alpha1mutexstatus">io.argoproj.workflow.v1alpha1.MutexStatus<a class="headerlink" href="#ioargoprojworkflowv1alpha1mutexstatus" title="Permanent link">&para;</a></h4>
+<p>MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>holding</td>
+<td>[ <a href="#io.argoproj.workflow.v1alpha1.mutexholding">io.argoproj.workflow.v1alpha1.MutexHolding</a> ]</td>
+<td>Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.</td>
+<td>No</td>
+</tr>
+<tr>
+<td>waiting</td>
+<td>[ <a href="#io.argoproj.workflow.v1alpha1.mutexholding">io.argoproj.workflow.v1alpha1.MutexHolding</a> ]</td>
+<td>Waiting is a list of mutexes and their respective objects this workflow is waiting for.</td>
+<td>No</td>
 </tr>
 </tbody>
 </table>
@@ -12638,7 +12719,7 @@
 <tr>
 <td>waiting</td>
 <td>[ <a href="#io.argoproj.workflow.v1alpha1.semaphoreholding">io.argoproj.workflow.v1alpha1.SemaphoreHolding</a> ]</td>
-<td>Waiting indicates the list of current synchronization lock holders</td>
+<td>Waiting indicates the list of current synchronization lock holders.</td>
 <td>No</td>
 </tr>
 </tbody>
@@ -12833,6 +12914,12 @@
 </thead>
 <tbody>
 <tr>
+<td>mutex</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.mutex">io.argoproj.workflow.v1alpha1.Mutex</a></td>
+<td>Mutex holds the Mutex lock details</td>
+<td>No</td>
+</tr>
+<tr>
 <td>semaphore</td>
 <td><a href="#io.argoproj.workflow.v1alpha1.semaphoreref">io.argoproj.workflow.v1alpha1.SemaphoreRef</a></td>
 <td>Semaphore holds the Semaphore configuration</td>
@@ -12841,6 +12928,7 @@
 </tbody>
 </table>
 <h4 id="ioargoprojworkflowv1alpha1synchronizationstatus">io.argoproj.workflow.v1alpha1.SynchronizationStatus<a class="headerlink" href="#ioargoprojworkflowv1alpha1synchronizationstatus" title="Permanent link">&para;</a></h4>
+<p>SynchronizationStatus stores the status of semaphore and mutex.</p>
 <table>
 <thead>
 <tr>
@@ -12852,9 +12940,15 @@
 </thead>
 <tbody>
 <tr>
+<td>mutex</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.mutexstatus">io.argoproj.workflow.v1alpha1.MutexStatus</a></td>
+<td>Mutex stores this workflow's mutex holder details</td>
+<td>No</td>
+</tr>
+<tr>
 <td>semaphore</td>
 <td><a href="#io.argoproj.workflow.v1alpha1.semaphorestatus">io.argoproj.workflow.v1alpha1.SemaphoreStatus</a></td>
-<td>SemaphoreHolders stores this workflow's Semaphore holder details</td>
+<td>Semaphore stores this workflow's Semaphore holder details</td>
 <td>No</td>
 </tr>
 </tbody>
