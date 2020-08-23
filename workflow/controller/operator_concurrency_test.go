@@ -242,7 +242,6 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		woc.operate()
 		assert.Nil(t, woc.wf.Status.Synchronization)
 
-
 		// Try to acquired the lock
 		woc_two.operate()
 		assert.NotNil(t, woc_two.wf.Status.Synchronization)
