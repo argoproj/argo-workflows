@@ -337,8 +337,8 @@ test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 test-report: test-results/junit.xml test-results/test-report.html
 	go run ./hack test-report
 
-test-results/test-report.html: test-results/junit.xml ./node_modules/.bin/xunit-viewer
-	./node_modules/.bin/xunit-viewer -r test-results/junit.xml -o test-results/test-report.html
+test-results/test-report.html: test-results/junit.xml /use/local/bin/xunit-viewer
+	/use/local/bin/xunit-viewer -r test-results/junit.xml -o test-results/test-report.html
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -482,16 +482,14 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
-./node_modules/.bin/swagger-markdown:
-	npm init -y
-	npm install swagger-markdown
+/use/local/bin/swagger-markdown:
+	npm install -g swagger-markdown
 
-./node_modules/.bin/xunit-viewer:
-	npm init -y
-	npm install xunit-viewer
+/use/local/bin/xunit-viewer:
+	npm install -g xunit-viewer
 
-docs/swagger.md: api/openapi-spec/swagger.json ./node_modules/.bin/swagger-markdown
-	./node_modules/.bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
+docs/swagger.md: api/openapi-spec/swagger.json /use/local/bin/swagger-markdown
+	/use/local/bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
