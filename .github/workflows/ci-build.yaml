@@ -128,7 +128,7 @@ jobs:
           ls /usr/local/include/google/protobuf/
       - name: Install `swagger-markdown`
         run: |
-          sudo chmod a+rw /usr/local/bin
+          sudo chmod a+rw /usr/local/bin /usr/local/lib
           make /usr/local/bin/swagger-markdown
       - name: Make codegen
         run: |
