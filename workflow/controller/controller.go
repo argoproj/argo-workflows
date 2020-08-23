@@ -585,7 +585,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 	// add this change after 1s - this reduces the number of workflow reconciliations -
 	//with each reconciliation doing more work
-	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, enoughTimeForInformerSync)
 	return true
 }
 

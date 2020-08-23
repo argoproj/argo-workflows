@@ -3024,6 +3024,7 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
