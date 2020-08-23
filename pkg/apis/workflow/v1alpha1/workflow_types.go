@@ -860,12 +860,20 @@ type TemplateRef struct {
 type Synchronization struct {
 	// Semaphore holds the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex holds the Mutex lock details
+	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+}
+
+// Mutex holds Mutex configuration
+type Mutex struct {
+	// name of the mutex
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -989,7 +997,7 @@ type WorkflowStatus struct {
 type SemaphoreStatus struct {
 	// Holding stores the list of resource acquired synchronization lock for workflows.
 	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders
+	// Waiting indicates the list of current synchronization lock holders.
 	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
@@ -1001,20 +1009,37 @@ type SemaphoreHolding struct {
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
-type WaitingStatus struct {
-	// Holders stores the list of current holder names
-	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
+// MutexHolding describes the mutex and the object which is holding it.
+type MutexHolding struct {
+	// Reference for the mutex
+	// e.g: ${namespace}/mutex/${mutexName}
+	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	// Holder is a reference to the object which holds the Mutex.
+	// Holding Scenario:
+	//   1. Current workflow's NodeID which is holding the lock.
+	//      e.g: ${NodeID}
+	// Waiting Scenario:
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//      e.g: ${WorkflowName}/${NodeID}
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
 }
 
-type HolderNames struct {
-	// Name stores the name of the resource holding lock
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+type MutexStatus struct {
+	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
 	// +listType=atomic
-	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+	// +listType=atomic
+	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
+// SynchronizationStatus stores the status of semaphore and mutex.
 type SynchronizationStatus struct {
-	// SemaphoreHolders stores this workflow's Semaphore holder details
+	// Semaphore stores this workflow's Semaphore holder details
 	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex stores this workflow's mutex holder details
+	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
