@@ -2709,6 +2709,7 @@ func TestStepsOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
