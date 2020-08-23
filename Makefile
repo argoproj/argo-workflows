@@ -334,11 +334,8 @@ test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 .PHONY: test-report
-test-report: test-results/junit.xml test-results/test-report.html
+test-report: test-results/junit.xml
 	go run ./hack test-report
-
-test-results/test-report.html: test-results/junit.xml /use/local/bin/xunit-viewer
-	/use/local/bin/xunit-viewer -r test-results/junit.xml -o test-results/test-report.html
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -482,14 +479,11 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
-/use/local/bin/swagger-markdown:
+/usr/local/bin/swagger-markdown:
 	npm install -g swagger-markdown
 
-/use/local/bin/xunit-viewer:
-	npm install -g xunit-viewer
-
-docs/swagger.md: api/openapi-spec/swagger.json /use/local/bin/swagger-markdown
-	/use/local/bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
+docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
+	swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
