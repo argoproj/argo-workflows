@@ -13,10 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo/util/intstr"
-	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-
 	"github.com/argoproj/pkg/humanize"
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -38,15 +36,15 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
+	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
-
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -482,6 +480,13 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
+	// You MUST not call `persistUpdates` twice:
+	// * Fails the `reapplyUpdate` pre-condition - it can never recover.
+	// * It will double the number of Kubernetes API requests.
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		panic("cannot re-apply update with unequal original and modified resource versions")
+	}
+
 	if !woc.updated {
 		return
 	}
@@ -575,6 +580,10 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
+	// if this condition is true, then this func will always error
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		panic("cannot re-apply update with unequal original and modified resource versions")
+	}
 	err := woc.controller.hydrator.Hydrate(woc.orig)
 	if err != nil {
 		return nil, err
@@ -597,7 +606,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, no
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
-		if !retry.IsRetryableKubeAPIError(err) {
+		if err != nil {
 			return nil, err
 		}
 		err = woc.controller.hydrator.Hydrate(currWf)
@@ -1680,6 +1689,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted bool, message ...string) {
 	if woc.wf.Status.Phase != phase {
+		if woc.wf.Status.Phase.Fulfilled() {
+			panic(fmt.Sprintf("workflow \"%s/%s\" is already fulfilled", woc.wf.Namespace, woc.wf.Name))
+		}
 		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
 		woc.wf.Status.Phase = phase
@@ -1875,6 +1887,10 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
 	}
 	if node.Phase != phase {
+		if node.Phase.Fulfilled() {
+			// this should not happen - but does - added logging to highlight potential bugs
+			woc.log.Errorf("node %s phase %s -> %s: is already fulfilled", node.Name, node.Phase, phase)
+		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true

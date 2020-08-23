@@ -2709,6 +2709,7 @@ func TestStepsOnExit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -2756,6 +2757,7 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
@@ -2792,6 +2794,8 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -2917,6 +2921,7 @@ func TestPDBCreationRaceDelete(t *testing.T) {
 	assert.NoError(t, err)
 	err = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Delete(woc.wf.Name, nil)
 	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -2986,6 +2991,8 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
@@ -3004,6 +3011,7 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
@@ -3024,6 +3032,7 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
@@ -3827,6 +3836,7 @@ func TestValidReferenceMode(t *testing.T) {
 
 	// Change stored Workflow Spec
 	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
@@ -3838,6 +3848,7 @@ func TestValidReferenceMode(t *testing.T) {
 
 	// Change stored Workflow Spec
 	woc.wf.Status.StoredWorkflowSpec.Entrypoint = "different"
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
@@ -4303,6 +4314,7 @@ spec:
 	}
 
 	// reconcille
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -4552,6 +4564,7 @@ func TestFailSuspendedAndPendingNodesAfterDeadline(t *testing.T) {
 	})
 	time.Sleep(3 * time.Second)
 	t.Run("After Deadline", func(t *testing.T) {
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		for _, node := range woc.wf.Status.Nodes {
