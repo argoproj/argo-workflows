@@ -1117,7 +1117,7 @@ func (s *CLISuite) TestMetaDataNamespace() {
 			assert.Contains(t, output, "default")
 		}).
 		Exec("../../dist/argo", []string{"cron", "delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-		assert.Contains(t, output, "default")
+			assert.Contains(t, output, "default")
 		})
 }
 
