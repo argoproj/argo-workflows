@@ -159,6 +159,23 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
+func (s *E2ESuite) Run(name string, subtest func()) {
+	// This add demarcation to the logs making it easier to differentiate the output of different tests.
+	longName := s.T().Name() + "/" + name
+	println("=== RUN: " + longName)
+	defer func() {
+		if s.T().Failed() {
+			println("=== FAIL: " + longName)
+			s.T().FailNow()
+		} else if s.T().Skipped() {
+			println("=== SKIP: " + longName)
+		} else {
+			println("=== PASS: " + longName)
+		}
+	}()
+	s.Suite.Run(name, subtest)
+}
+
 func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:                 s.T(),
