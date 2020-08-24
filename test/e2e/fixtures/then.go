@@ -77,12 +77,12 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	t.t.Helper()
-	log.Info("Listing workflows")
+	println("Listing workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	log.Info("Checking expectation")
+	println("Checking expectation")
 	block(t.t, wfList)
 	if t.t.Failed() {
 		t.t.FailNow()
