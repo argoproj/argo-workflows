@@ -133,6 +133,8 @@ jobs:
           sudo chmod a+rw /usr/local/bin /usr/local/lib /usr/local/lib/node_modules
           make /usr/local/bin/swagger-markdown
       - name: Make codegen
+        env:
+          GOPATH: /home/runner/go
         run: |
           git fetch --tags
           make codegen
