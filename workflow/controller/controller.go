@@ -506,12 +506,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
-		// Release all acquired lock for completed workflow
-		if wfc.syncManager.ReleaseAll(woc.wf) {
-			log.WithFields(log.Fields{"key": wf.Name}).Info("Released all acquired locks")
-			woc.updated = true
-			woc.persistUpdates()
-		}
 
 		wfc.throttler.Remove(key)
 
