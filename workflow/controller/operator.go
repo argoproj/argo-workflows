@@ -494,6 +494,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.log.Warnf("Failed to dehydrate: %v", err)
 		woc.markWorkflowError(err, true)
 	}
+
+	// Release all acquired lock for completed workflow
+	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Fulfilled() {
+		if woc.controller.syncManager.ReleaseAll(woc.wf) {
+			log.WithFields(log.Fields{"key": woc.wf.Name}).Info("Released all acquired locks")
+		}
+	}
+
 	wf, err := wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
