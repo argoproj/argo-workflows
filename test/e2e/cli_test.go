@@ -1108,7 +1108,6 @@ func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 }
 
 func (s *CLISuite) TestMetaDataNamespace() {
-	s.testNeedsOffloading()
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {

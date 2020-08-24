@@ -238,6 +238,10 @@ spec:
 		})
 }
 
+func (s *CLIWithServerSuite) TestMetaDataNamespace() {
+    s.T().SkipNow()
+}
+
 func TestCLIWithServerSuite(t *testing.T) {
 	suite.Run(t, new(CLIWithServerSuite))
 }
