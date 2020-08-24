@@ -1110,14 +1110,18 @@ func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 func (s *CLISuite) TestMetaDataNamespace() {
 	s.testNeedsOffloading()
 	s.Given().
-		RunCli([]string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
+		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
 			assert.Contains(t, output, "default")
+			}
 		}).
-		RunCli([]string{"cron", "get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+		Exec("../../dist/argo", []string{"cron", "get", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
 			assert.Contains(t, output, "default")
+			}
 		}).
-		RunCli([]string{"cron", "delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "default")
+		Exec("../../dist/argo", []string{"cron", "delete", "test-cron-wf-basic", "-n", "default"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
 		})
 }
 
