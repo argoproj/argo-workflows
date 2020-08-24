@@ -67,12 +67,6 @@ ifeq ($(PROFILE),postgres)
 ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
-ifeq ($(STATIC_FILES),false)
-TEST_OPTS := -coverprofile=coverage.out
-else
-TEST_OPTS :=
-endif
-
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
@@ -320,22 +314,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	@mkdir -p test-results
-	go test -v $(TEST_OPTS) ./... 2>&1 | tee test-results/test.out
-
-test-results/test-report.json: test-results/test.out
-	cat test-results/test.out | go tool test2json > test-results/test-report.json
-
-$(GOPATH)/bin/go-junit-report:
-	go get github.com/jstemmer/go-junit-report
-
-# note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
-	cat test-results/test.out | go-junit-report > test-results/junit.xml
-
-.PHONY: test-report
-test-report: test-results/junit.xml
-	go run ./hack test-report
+	go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -410,29 +389,22 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	# Run E2E tests
-	@mkdir -p test-results
-	go test -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
+	go test -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	# Run E2E tests
-	@mkdir -p test-results
-	go test -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
-	# Run smoke tests
-	@mkdir -p test-results
-	go test -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 # clean
 
 .PHONY: clean
 clean:
 	go clean
-	# Delete build files
-	rm -Rf vendor dist/* ui/dist
+	rm -Rf test-results node_modules vendor dist/* ui/dist
 
 # swagger
 
