@@ -75,24 +75,13 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: |
-          trap 'make test-results/junit.xml' EXIT
-          make ${{ matrix.test }}
-      - name: Print test error annotations
-        if: failure()
-        run: make test-report
-      - name: Upload test results
-        if: failure()
+        run: make ${{ matrix.test }}
+      - name: Upload logs
+        if: ${{ matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron' }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}
-          path: test-results
-      - name: Upload diagnostics
-        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ matrix.test }}-diagnostics
-          path: /tmp/log/argo-e2e
+          name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
+          path: /tmp/log/argo-e2e/argo.log
 
   codegen:
     name: Codegen
@@ -114,10 +103,6 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
-      - name: Install Kustomize
-        run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
       - name: Install protoc
         run: |
           set -eux -o pipefail
@@ -130,9 +115,14 @@ jobs:
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           rm -f $PROTOC_ZIP
           ls /usr/local/include/google/protobuf/
+      - name: Install `swagger-markdown`
+        run: |
+          sudo chmod a+rw /usr/local/bin /usr/local/lib /usr/local/lib/node_modules
+          make /usr/local/bin/swagger-markdown
       - name: Make codegen
         env:
           GOPATH: /home/runner/go
+          STATIC_FILES: false
         run: |
           git fetch --tags
           make codegen

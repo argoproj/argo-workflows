@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -40,7 +40,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
-	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": workflowName}).Info("Checking expectation")
+	println("Checking expectation")
 	wf, err := t.client.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -62,7 +62,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
-	log.WithFields(log.Fields{"cronWorkflow": t.cronWorkflowName}).Info("Checking cron expectation")
+	println("Checking cron expectation")
 	cronWf, err := t.cronClient.Get(t.cronWorkflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -76,17 +76,23 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	t.t.Helper()
-	log.Info("Listing workflows")
+	println("Listing workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	log.Info("Checking expectation")
+	println("Checking expectation")
 	block(t.t, wfList)
 	if t.t.Failed() {
 		t.t.FailNow()
 	}
 	return t
+}
+
+var HasInvolvedObject = func(kind string, uid types.UID) func(event apiv1.Event) bool {
+	return func(e apiv1.Event) bool {
+		return e.InvolvedObject.Kind == kind && e.InvolvedObject.UID == uid
+	}
 }
 
 func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
@@ -95,7 +101,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	for len(blocks) > 0 {
 		select {
@@ -106,7 +112,9 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 			if !ok {
 				t.t.Fatal("event is not an event")
 			}
-			if filter(*e) {
+			filtered := filter(*e)
+			println("reason:", e.Reason, "involvedObject:", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, "filtered:", filtered)
+			if filtered {
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
 				if t.t.Failed() {

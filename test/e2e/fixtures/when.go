@@ -1,10 +1,10 @@
 package fixtures
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,14 +39,13 @@ func (w *When) SubmitWorkflow() *When {
 	if w.wf == nil {
 		w.t.Fatal("No workflow to submit")
 	}
-	log.WithFields(log.Fields{"workflow": w.wf.Name}).Info("Submitting workflow")
+	println("Submitting workflow", w.wf.Name)
 	wf, err := w.client.Create(w.wf)
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
 		w.workflowName = wf.Name
 	}
-	log.WithFields(log.Fields{"workflow": wf.Name, "uid": wf.UID}).Info("Workflow submitted")
 	return w
 }
 
@@ -55,7 +54,7 @@ func (w *When) CreateWorkflowEventBinding() *When {
 	if w.wfeb == nil {
 		w.t.Fatal("No workflow event to create")
 	}
-	log.WithField("event", w.wfeb.Name).Info("Creating workflow event")
+	println("Creating workflow event binding")
 	_, err := w.wfebClient.Create(w.wfeb)
 	if err != nil {
 		w.t.Fatal(err)
@@ -69,14 +68,13 @@ func (w *When) CreateWorkflowTemplates() *When {
 		w.t.Fatal("No workflow templates to create")
 	}
 	for _, wfTmpl := range w.wfTemplates {
-		log.WithField("template", wfTmpl.Name).Info("Creating workflow template")
+		println("Creating workflow template", wfTmpl.Name)
 		wfTmpl, err := w.wfTemplateClient.Create(wfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
 			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
-		log.WithField("template", wfTmpl.Name).Info("Workflow template created")
 	}
 	return w
 }
@@ -87,14 +85,13 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 		w.t.Fatal("No cluster workflow templates to create")
 	}
 	for _, cwfTmpl := range w.cwfTemplates {
-		log.WithField("template", cwfTmpl.Name).Info("Creating cluster workflow template")
+		println("Creating cluster workflow template", cwfTmpl.Name)
 		wfTmpl, err := w.cwfTemplateClient.Create(cwfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
 			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
-		log.WithField("template", wfTmpl.Name).Info("Cluster Workflow template created")
 	}
 	return w
 }
@@ -104,14 +101,13 @@ func (w *When) CreateCronWorkflow() *When {
 	if w.cronWf == nil {
 		w.t.Fatal("No cron workflow to create")
 	}
-	log.WithField("cronWorkflow", w.cronWf.Name).Info("Creating cron workflow")
+	println("Creating cron workflow", w.cronWf.Name)
 	cronWf, err := w.cronClient.Create(w.cronWf)
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
 		w.cronWorkflowName = cronWf.Name
 	}
-	log.WithField("uid", cronWf.UID).Info("Cron workflow created")
 	return w
 }
 
@@ -129,7 +125,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	log.WithFields(log.Fields{"fieldSelector": fieldSelector}).Infof("Waiting %v for workflow %s", timeout, condition)
+	println("Waiting", timeout.String(), "for workflow", fieldSelector, condition)
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -148,7 +144,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 			if ok {
 				w.hydrateWorkflow(wf)
 				if test(wf) {
-					log.Infof("Condition met after %v", time.Since(start).Truncate(time.Second))
+					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.workflowName = wf.Name
 					return w
 				}
@@ -191,15 +187,15 @@ func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *
 
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
-	log.Infof("Waiting for %v", timeout)
+	println("Waiting for", timeout)
 	time.Sleep(timeout)
-	log.Infof("Done waiting")
+	println("Done waiting")
 	return w
 }
 
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
-	log.WithField("workflow", w.workflowName).Info("Deleting")
+	println("Deleting", w.workflowName)
 	err := w.client.Delete(w.workflowName, nil)
 	if err != nil {
 		w.t.Fatal(err)
@@ -216,14 +212,19 @@ func (w *When) And(block func()) *When {
 	return w
 }
 
-func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+func (w *When) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec(name, args...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()
 	}
 	return w
+}
+
+func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+	w.t.Helper()
+	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
@@ -245,6 +246,17 @@ func (w *When) DeleteConfigMap(name string) *When {
 		w.t.Fatal(err)
 	}
 	return w
+}
+
+func (w *When) PodsQuota(podLimit int) *When {
+	w.t.Helper()
+	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	podLimit += len(list.Items)
+	println("setting pods quota to", podLimit)
+	return w.createResourceQuota("pods-quota", corev1.ResourceList{"pods": resource.MustParse(strconv.Itoa(podLimit))})
 }
 
 func (w *When) MemoryQuota(memoryLimit string) *When {
@@ -269,11 +281,18 @@ func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 	return w
 }
 
+func (w *When) DeletePodsQuota() *When {
+	w.t.Helper()
+	return w.deleteResourceQuota("pods-quota")
+}
+
 func (w *When) DeleteStorageQuota() *When {
+	w.t.Helper()
 	return w.deleteResourceQuota("storage-quota")
 }
 
 func (w *When) DeleteMemoryQuota() *When {
+	w.t.Helper()
 	return w.deleteResourceQuota("memory-quota")
 }
 
