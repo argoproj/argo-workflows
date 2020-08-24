@@ -18,7 +18,7 @@ import (
 func Exec(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
-	log.Info(cmd.String())
+	log.Debug(cmd.String())
 	output, err := runWithTimeout(cmd)
 	// Command completed before timeout. Print output and error if it exists.
 	if err != nil {
