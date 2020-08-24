@@ -18,4 +18,4 @@ spec:
     - name: sleep
       container:
         image: argoproj/argosay:v2
-        args: ["sleep", "10s"]
+        args: ["sleep", "3s"]
