@@ -122,6 +122,7 @@ jobs:
       - name: Make codegen
         env:
           GOPATH: /home/runner/go
+          STATIC_FILES: false
         run: |
           git fetch --tags
           make codegen
