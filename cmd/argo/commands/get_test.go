@@ -2,7 +2,10 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 
@@ -407,7 +410,40 @@ func TestIndexOrdering(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Contains(t, printWorkflowHelper(&wf, getFlags{}), `
    ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s
-   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
+   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s
    ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
 	}
+}
+
+
+func TestGetCommand(t *testing.T) {
+	getOutput:=`Name:                hello-world
+Namespace:           default
+ServiceAccount:      default
+Status:              Succeeded
+Conditions:          
+ Completed           True
+Created:             Wed Jun 24 15:53:35 -0700 (2 months ago)
+Started:             Wed Jun 24 15:53:35 -0700 (2 months ago)
+Finished:            Wed Jun 24 15:53:41 -0700 (2 months ago)
+Duration:            6 seconds
+ResourcesDuration:   3s*(1 cpu),0s*(100Mi memory)
+`
+	var wf wfv1.Workflow
+	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
+	assert.NoError(t, err)
+	client := mocks.Client{}
+	wfClient := mocks.WorkflowServiceClient{}
+	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
+	client.On("NewWorkflowServiceClient").Return(&wfClient)
+	CLIOpt.client = &client
+	CLIOpt.ctx = context.TODO()
+	getCommand := NewGetCommand()
+	getCommand.SetArgs([]string{"hello-world"})
+	execFunc := func() {
+		err := getCommand.Execute()
+		assert.NoError(t, err)
+	}
+	output := CaptureOutput(execFunc)
+	assert.Equal(t,  getOutput, output)
 }
