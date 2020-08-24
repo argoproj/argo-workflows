@@ -76,7 +76,7 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
       - name: Upload logs
-        if: ${{ matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron' }}
+        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
@@ -127,8 +127,7 @@ jobs:
       - name: Make lint
         env:
           GOPATH: /home/runner/go
-        run: |
-          make lint
+        run: make lint STATIC_FILES=false
       - name: Ensure nothing changed
         run: git diff --exit-code
 
