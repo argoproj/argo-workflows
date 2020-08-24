@@ -12,7 +12,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var wfWithError =`
+var wfWithError = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -78,7 +78,7 @@ func TestNewRetryCommand(t *testing.T) {
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(wfWithError), &wf)
 	assert.NoError(t, err)
-	wfClient.On("RetryWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything ).Return(&wf, nil)
+	wfClient.On("RetryWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	CLIOpt.client = &client
 	CLIOpt.ctx = context.TODO()

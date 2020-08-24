@@ -111,6 +111,6 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 		}},
 	}}, nil)
 
-	workflows, err := listWorkflows(context.Background(), c, flags)
+	workflows, err := listWorkflows(context.Background(), &c, flags)
 	return workflows, err
 }

@@ -11,12 +11,11 @@ import (
 	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
-
 func TestNewDeleteCommand(t *testing.T) {
 	client := mocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	wfDeleteRsp := wfapi.WorkflowDeleteResponse{}
-	wfClient.On("DeleteWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything ).Return(&wfDeleteRsp, nil)
+	wfClient.On("DeleteWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfDeleteRsp, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	CLIOpt.client = &client
 	CLIOpt.ctx = context.TODO()
@@ -30,4 +29,3 @@ func TestNewDeleteCommand(t *testing.T) {
 	assert.Contains(t, output, "deleted")
 	assert.Contains(t, output, "hello-world")
 }
-

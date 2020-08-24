@@ -1,15 +1,15 @@
 package commands
 
 import (
-"context"
-"testing"
+	"context"
+	"testing"
 
-"github.com/stretchr/testify/assert"
-"github.com/stretchr/testify/mock"
-"sigs.k8s.io/yaml"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"sigs.k8s.io/yaml"
 
-"github.com/argoproj/argo/pkg/apiclient/mocks"
-wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func TestNewTerminateCommand(t *testing.T) {

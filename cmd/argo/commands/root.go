@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/pkg/cli"
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
 	"github.com/argoproj/argo/pkg/apiclient"
-	"github.com/argoproj/pkg/cli"
 
 	"github.com/argoproj/argo/cmd/argo/commands/auth"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
