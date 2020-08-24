@@ -125,7 +125,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	println("Waiting", timeout, "for workflow", condition, fieldSelector)
+	println("Waiting", timeout.String(), "for workflow", fieldSelector, condition)
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -144,7 +144,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 			if ok {
 				w.hydrateWorkflow(wf)
 				if test(wf) {
-					println("Condition met after ", time.Since(start).Truncate(time.Second))
+					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.workflowName = wf.Name
 					return w
 				}

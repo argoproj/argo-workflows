@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,7 +40,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
-	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": workflowName}).Info("Checking expectation")
+	println("Checking expectation")
 	wf, err := t.client.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -63,7 +62,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
-	log.WithFields(log.Fields{"cronWorkflow": t.cronWorkflowName}).Info("Checking cron expectation")
+	println("Checking cron expectation")
 	cronWf, err := t.cronClient.Get(t.cronWorkflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -114,7 +113,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 				t.t.Fatal("event is not an event")
 			}
 			filtered := filter(*e)
-			log.WithFields(log.Fields{"reason": e.Reason, "involvedObject": e.InvolvedObject.Kind + "/" + e.InvolvedObject.Name, "filtered": filtered}).Debug("event")
+			println("reason:", e.Reason, "involvedObject:", e.InvolvedObject.Kind + "/" + e.InvolvedObject.Name, "filtered:", filtered)
 			if filtered {
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
