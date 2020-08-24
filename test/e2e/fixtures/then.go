@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -89,13 +90,19 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
+var HasInvolvedObject = func(kind string, uid types.UID) func(event apiv1.Event) bool {
+	return func(e apiv1.Event) bool {
+		return e.InvolvedObject.Kind == kind && e.InvolvedObject.UID == uid
+	}
+}
+
 func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
 	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 	for len(blocks) > 0 {
 		select {
@@ -106,7 +113,9 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 			if !ok {
 				t.t.Fatal("event is not an event")
 			}
-			if filter(*e) {
+			filtered := filter(*e)
+			log.WithFields(log.Fields{"reason": e.Reason, "involvedObject": e.InvolvedObject.Kind + "/" + e.InvolvedObject.Name, "filtered": filtered}).Debug("event")
+			if filtered {
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
 				if t.t.Failed() {

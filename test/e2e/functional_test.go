@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -28,6 +29,35 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestDeletingWorkflowPod() {
+	s.Given().
+		Workflow("@testdata/sleepy-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, "pod deleted", status.Message)
+		})
+}
+
+// in this test we create a pod quota, and then  we create a workflow that needs one more pod than the quota allows
+// because we run them in parallel, the first node will run to completion, and then the second one
+func (s *FunctionalSuite) TestResourceQuota() {
+	s.Given().
+		Workflow(`@testdata/two-items.yaml`).
+		When().
+		PodsQuota(2).
+		SubmitWorkflow().
+		WaitForWorkflow(15 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -184,21 +214,23 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
+	var uid types.UID
 	s.Given().
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(30*time.Second).
 		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		}).
 		ExpectAuditEvents(
-			func(event corev1.Event) bool {
-				return strings.HasPrefix(event.InvolvedObject.Name, "failed-step-event-") && event.InvolvedObject.Kind == workflow.WorkflowKind
-			},
+			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			func(t *testing.T, e corev1.Event) {
 				assert.Equal(t, "WorkflowRunning", e.Reason)
 			},
 			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, e.Reason, "WorkflowNodeFailed")
+				assert.Equal(t, "WorkflowNodeFailed", e.Reason)
 				assert.Contains(t, e.Message, "Failed node failed-step-event-")
 				assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
 				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
@@ -212,16 +244,18 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
+	var uid types.UID
 	s.Given().
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(60*time.Second).
 		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		}).
 		ExpectAuditEvents(
-			func(event corev1.Event) bool {
-				return strings.HasPrefix(event.InvolvedObject.Name, "success-event-") && event.InvolvedObject.Kind == workflow.WorkflowKind
-			},
+			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			func(t *testing.T, e corev1.Event) {
 				assert.Equal(t, "WorkflowRunning", e.Reason)
 			},
@@ -240,16 +274,18 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 
 func (s *FunctionalSuite) TestEventOnPVCFail() {
 	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
+	var uid types.UID
 	s.Given().
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(120*time.Second).
 		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		}).
 		ExpectAuditEvents(
-			func(event corev1.Event) bool {
-				return strings.HasPrefix(event.InvolvedObject.Name, "volumes-pvc-fail-event-") && event.InvolvedObject.Kind == workflow.WorkflowKind
-			},
+			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
 			func(t *testing.T, e corev1.Event) {
 				assert.Equal(t, "WorkflowRunning", e.Reason)
 			},
@@ -599,16 +635,15 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
-		When().
-		CreateWorkflowTemplates()
-	s.Given().
 		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
 		When().
+		CreateWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Empty(t, status.Message)
 		})
 }
 

@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -216,14 +217,19 @@ func (w *When) And(block func()) *When {
 	return w
 }
 
-func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+func (w *When) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec(name, args...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()
 	}
 	return w
+}
+
+func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+	w.t.Helper()
+	return w.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...), block)
 }
 
 func (w *When) CreateConfigMap(name string, data map[string]string) *When {
@@ -245,6 +251,17 @@ func (w *When) DeleteConfigMap(name string) *When {
 		w.t.Fatal(err)
 	}
 	return w
+}
+
+func (w *When) PodsQuota(podLimit int) *When {
+	w.t.Helper()
+	list, err := w.kubeClient.CoreV1().Pods(Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	podLimit += len(list.Items)
+	log.Infof("setting pods quota to %v", podLimit)
+	return w.createResourceQuota("pods-quota", corev1.ResourceList{"pods": resource.MustParse(strconv.Itoa(podLimit))})
 }
 
 func (w *When) MemoryQuota(memoryLimit string) *When {
@@ -269,11 +286,18 @@ func (w *When) createResourceQuota(name string, rl corev1.ResourceList) *When {
 	return w
 }
 
+func (w *When) DeletePodsQuota() *When {
+	w.t.Helper()
+	return w.deleteResourceQuota("pods-quota")
+}
+
 func (w *When) DeleteStorageQuota() *When {
+	w.t.Helper()
 	return w.deleteResourceQuota("storage-quota")
 }
 
 func (w *When) DeleteMemoryQuota() *When {
+	w.t.Helper()
 	return w.deleteResourceQuota("memory-quota")
 }
 
