@@ -113,7 +113,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 				t.t.Fatal("event is not an event")
 			}
 			filtered := filter(*e)
-			println("reason:", e.Reason, "involvedObject:", e.InvolvedObject.Kind + "/" + e.InvolvedObject.Name, "filtered:", filtered)
+			println("reason:", e.Reason, "involvedObject:", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, "filtered:", filtered)
 			if filtered {
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
