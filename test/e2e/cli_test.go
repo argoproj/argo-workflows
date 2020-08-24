@@ -998,6 +998,7 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
+	s.T().Skip("flaky - see https://github.com/argoproj/argo/issues/3540")
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
@@ -1020,6 +1021,45 @@ func (s *CLISuite) TestRetryOmit() {
 			assert.Contains(t, output, "Status:              Running")
 		}).When().
 		WaitForWorkflow(20 * time.Second)
+}
+
+func (s *CLISuite) TestSynchronizationWfLevelMutex() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@functional/synchronization-mutex-wf-level.yaml").
+		When().
+		RunCli([]string{"submit", "functional/synchronization-mutex-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "synchronization-wf-level-mutex")
+			}
+		}).
+		SubmitWorkflow().
+		Wait(1*time.Second).
+		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Pending")
+		}).
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *CLISuite) TestTemplateLevelMutex() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@functional/synchronization-mutex-tmpl-level.yaml").
+		When().
+		SubmitWorkflow().
+		Wait(3*time.Second).
+		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
+			assert.Contains(t, output, "Waiting for")
+		}).
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
 }
 
 func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {

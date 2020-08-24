@@ -5,7 +5,7 @@ Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows 
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
 Currently, the following organizations are **officially** using Argo Workflows:
-
+1. [23mofang](https://www.23mofang.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
@@ -54,6 +54,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
 1. [Mirantis](https://mirantis.com/)
+1. [New Relic](https://newrelic.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)

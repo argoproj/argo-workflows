@@ -445,12 +445,6 @@ message Histogram {
   repeated Amount buckets = 4;
 }
 
-message HolderNames {
-  // Name stores the name of the resource holding lock
-  // +listType=atomic
-  repeated string name = 1;
-}
-
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
@@ -520,6 +514,39 @@ message MetricLabel {
 message Metrics {
   // Prometheus is a list of prometheus metrics to be emitted
   repeated Prometheus prometheus = 1;
+}
+
+// Mutex holds Mutex configuration
+message Mutex {
+  // name of the mutex
+  optional string name = 1;
+}
+
+// MutexHolding describes the mutex and the object which is holding it.
+message MutexHolding {
+  // Reference for the mutex
+  // e.g: ${namespace}/mutex/${mutexName}
+  optional string mutex = 1;
+
+  // Holder is a reference to the object which holds the Mutex.
+  // Holding Scenario:
+  //   1. Current workflow's NodeID which is holding the lock.
+  //      e.g: ${NodeID}
+  // Waiting Scenario:
+  //   1. Current workflow or other workflow NodeID which is holding the lock.
+  //      e.g: ${WorkflowName}/${NodeID}
+  optional string holder = 2;
+}
+
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+message MutexStatus {
+  // Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
+  // +listType=atomic
+  repeated MutexHolding holding = 1;
+
+  // Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+  // +listType=atomic
+  repeated MutexHolding waiting = 2;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -826,7 +853,7 @@ message SemaphoreStatus {
   // Holding stores the list of resource acquired synchronization lock for workflows.
   repeated SemaphoreHolding holding = 1;
 
-  // Waiting indicates the list of current synchronization lock holders
+  // Waiting indicates the list of current synchronization lock holders.
   repeated SemaphoreHolding waiting = 2;
 }
 
@@ -900,11 +927,18 @@ message SuspendTemplate {
 message Synchronization {
   // Semaphore holds the Semaphore configuration
   optional SemaphoreRef semaphore = 1;
+
+  // Mutex holds the Mutex lock details
+  optional Mutex mutex = 2;
 }
 
+// SynchronizationStatus stores the status of semaphore and mutex.
 message SynchronizationStatus {
-  // SemaphoreHolders stores this workflow's Semaphore holder details
+  // Semaphore stores this workflow's Semaphore holder details
   optional SemaphoreStatus semaphore = 1;
+
+  // Mutex stores this workflow's mutex holder details
+  optional MutexStatus mutex = 2;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
@@ -1138,11 +1172,6 @@ message Version {
   optional string compiler = 7;
 
   optional string platform = 8;
-}
-
-message WaitingStatus {
-  // Holders stores the list of current holder names
-  optional HolderNames holders = 1;
 }
 
 // Workflow is the definition of a workflow resource
