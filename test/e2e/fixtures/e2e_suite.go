@@ -31,9 +31,6 @@ import (
 const Namespace = "argo"
 const Label = "argo-e2e"
 
-// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
-const LabelCron = Label + "-cron"
-
 type E2ESuite struct {
 	suite.Suite
 	Persistence       *Persistence
@@ -67,18 +64,17 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(string, string) {
-	s.DeleteResources(Label)
+	s.DeleteResources()
 }
 
 var foreground = metav1.DeletePropagationForeground
 var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
 
-func (s *E2ESuite) DeleteResources(label string) {
-
+func (s *E2ESuite) DeleteResources() {
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
 		archive := s.Persistence.workflowArchive
-		parse, err := labels.ParseToRequirements(label)
+		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
 		s.CheckError(err)
@@ -88,7 +84,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 		}
 	}
 
-	hasTestLabel := metav1.ListOptions{LabelSelector: label}
+	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
@@ -111,7 +107,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 			if len(list.Items) == 0 {
 				break
 			}
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
