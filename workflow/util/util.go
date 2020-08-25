@@ -582,6 +582,9 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.ObjectMeta.Annotations[key] = val
 	}
 
+	// Setting OwnerReference from original Workflow
+	newWF.OwnerReferences = append(newWF.OwnerReferences, wf.OwnerReferences...)
+
 	if !memoized {
 		return &newWF, nil
 	}

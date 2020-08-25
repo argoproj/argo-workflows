@@ -687,10 +687,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "imagePullPolicy": "IfNotPresent",
-            "command": ["sh"],
-            "args": ["-c", "sleep 10"]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
@@ -793,7 +790,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200)
 
 		// sleep in a test is bad practice
-		time.Sleep(2 * time.Second)
+		time.Sleep(3 * time.Second)
 
 		s.e().GET("/api/v1/workflows/argo/test").
 			Expect().
@@ -960,6 +957,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -967,22 +965,23 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		WaitForWorkflow(20 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
 			uid = metadata.UID
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/basic/basic/main-logs").
+		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-logs").
 			Expect().
 			Status(200).
 			Body().
 			Contains(":) Hello Argo!")
 	})
 	s.Run("GetArtifactByUID", func() {
-		s.e().DELETE("/api/v1/workflows/argo/basic").
+		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200)
 
-		s.e().GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
 			Expect().
 			Status(200).
 			Body().
@@ -994,7 +993,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		token := s.bearerToken
 		defer func() { s.bearerToken = token }()
 		s.bearerToken = ""
-		s.e().GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
@@ -1004,17 +1003,21 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
-
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(10 * time.Second)
+		WaitForWorkflowToStart(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		})
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func() {
 		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
@@ -1080,7 +1083,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	// then,  lets check the logs
 	s.Run("PodLogs", func() {
 		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/basic/log?logOptions.container=main&logOptions.tailLines=3", nil)
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+"/"+name+"/log?logOptions.container=main&logOptions.tailLines=3", nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
