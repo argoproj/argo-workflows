@@ -4634,7 +4634,7 @@ func TestStorageQuota(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
-	assert.Contains(t, woc.wf.Status.Message, "Wait	ing for a PVC to be created.")
+	assert.Contains(t, woc.wf.Status.Message, "Waiting for a PVC to be created.")
 
 	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierr.NewBadRequest("BadRequest")
