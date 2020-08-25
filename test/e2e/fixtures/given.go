@@ -101,8 +101,8 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 
 func (g *Given) checkLabels(m metav1.Object) {
 	g.t.Helper()
-	if m.GetLabels()[Label] == "" && m.GetLabels()[LabelCron] == "" {
-		g.t.Fatalf("%s%s does not have one of  {%s, %s} labels", m.GetName(), m.GetGenerateName(), Label, LabelCron)
+	if m.GetLabels()[Label] == "" {
+		g.t.Fatalf("%s%s does not have %s label", m.GetName(), m.GetGenerateName(), Label)
 	}
 }
 
@@ -138,6 +138,14 @@ func (g *Given) CronWorkflow(text string) *Given {
 
 var NoError = func(t *testing.T, output string, err error) {
 	assert.NoError(t, err, output)
+}
+
+var OutputContains = func(contains string) func(t *testing.T, output string, err error) {
+	return func(t *testing.T, output string, err error) {
+		if assert.NoError(t, err, output) {
+			assert.Contains(t, output, contains)
+		}
+	}
 }
 
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
