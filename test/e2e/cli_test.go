@@ -649,14 +649,18 @@ func (s *CLISuite) TestWorkflowTerminate() {
 
 func (s *CLIWithServerSuite) TestWorkflowWait() {
 	s.testNeedsOffloading()
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		Given().
-		RunCli([]string{"wait", "basic"}, func(t *testing.T, output string, err error) {
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		}).
+		RunCli([]string{"wait", name}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "basic Succeeded")
+				assert.Regexp(t, "basic-.* Succeeded", output)
 			}
 		})
 }
@@ -667,10 +671,10 @@ func (s *CLIWithServerSuite) TestWorkflowWatch() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		Given().
-		RunCli([]string{"watch", "basic"}, func(t *testing.T, output string, err error) {
+		Then().
+		RunCli([]string{"watch", "@latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Name: ")
 			}
 		})
 }

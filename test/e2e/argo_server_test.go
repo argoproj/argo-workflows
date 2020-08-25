@@ -687,10 +687,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "imagePullPolicy": "IfNotPresent",
-            "command": ["sh"],
-            "args": ["-c", "sleep 10"]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
@@ -973,7 +970,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/basic/" + name + "/main-logs").
+		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-logs").
 			Expect().
 			Status(200).
 			Body().
@@ -1058,7 +1055,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	// then,  lets check the logs
 	s.Run("PodLogs", func() {
 		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/"+name+"/log?logOptions.container=main&logOptions.tailLines=3", nil)
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+"/"+name+"/log?logOptions.container=main&logOptions.tailLines=3", nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
