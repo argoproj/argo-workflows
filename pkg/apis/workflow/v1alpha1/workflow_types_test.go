@@ -152,6 +152,15 @@ func TestNodes_GetResourcesDuration(t *testing.T) {
 	}.GetResourcesDuration())
 }
 
+func TestNodes_GetResourcesDurationByNodeType(t *testing.T) {
+	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesDurationByNodeType(NodeTypePod))
+	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 4}, Nodes{
+		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}, Type: NodeTypeDAG},
+		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}, Type: NodeTypePod},
+		"biz": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 3}, Type: NodeTypeDAG},
+	}.GetResourcesDurationByNodeType(NodeTypeDAG))
+}
+
 func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
 	wfCond := Conditions{Condition{Type: ConditionTypeCompleted, Message: "Hello"}}
 	wfCond.UpsertConditionMessage(Condition{Type: ConditionTypeCompleted, Message: "world!"})

@@ -1360,9 +1360,24 @@ type NodeStatus struct {
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
 }
 
+// GetResourcesDuration aggregates resources duration at the workflow level
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
+		i = i.Add(status.ResourcesDuration)
+	}
+	return i
+}
+
+// GetResourcesDurationByNodeType aggregates resources duration by the given
+// type: DAG, StepGroup, etc.
+func (n Nodes) GetResourcesDurationByNodeType(nodeType NodeType) ResourcesDuration {
+	i := ResourcesDuration{}
+	for _, status := range n {
+		if status.Type != nodeType {
+			continue
+		}
+
 		i = i.Add(status.ResourcesDuration)
 	}
 	return i
