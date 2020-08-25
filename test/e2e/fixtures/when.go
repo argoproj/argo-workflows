@@ -39,7 +39,7 @@ func (w *When) SubmitWorkflow() *When {
 	if w.wf == nil {
 		w.t.Fatal("No workflow to submit")
 	}
-	println("Submitting workflow", w.wf.Name)
+	println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
 	wf, err := w.client.Create(w.wf)
 	if err != nil {
 		w.t.Fatal(err)
