@@ -652,7 +652,7 @@ spec:
         factor: 1
         maxDuration: "10"
     container:
-      image: python:alpine3.6
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["sleep $(( {{retries}} * 40 )); exit 1"]
 

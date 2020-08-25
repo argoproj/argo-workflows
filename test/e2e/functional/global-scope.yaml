@@ -55,9 +55,8 @@ spec:
         parameters:
           - name: parameter
       container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["echo '{{inputs.parameters.parameter}}' > /tmp/hello_world.txt"]
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.parameter}}", "/tmp/hello_world.txt"]
       outputs:
         parameters:
           - name: parameter
@@ -79,6 +78,5 @@ spec:
 
     - name: global-parameter-consumption
       container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["echo {{workflow.outputs.parameters.global-parameter}}"]
+        image: argoproj/argosay:v2
+        args: ["echo", "{{workflow.outputs.parameters.global-parameter}}"]

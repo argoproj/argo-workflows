@@ -346,7 +346,6 @@ func (s *CLISuite) TestWorkflowDeleteByName() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
 		RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Workflow 'basic' deleted")
@@ -369,7 +368,6 @@ func (s *CLISuite) TestWorkflowDeleteNothing() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
 		RunCli([]string{"delete"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.NotContains(t, output, "deleted")
@@ -392,7 +390,6 @@ func (s *CLISuite) TestWorkflowDeleteAll() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
 		Given().
 		RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -473,7 +470,6 @@ func (s *CLISuite) TestWorkflowDeleteByPrefix() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
 		Given().
 		RunCli([]string{"delete", "--prefix", "missing-prefix", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
