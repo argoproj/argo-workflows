@@ -74,30 +74,6 @@ Or
     make start COMPONENTS=argo-server
     
 To find the command arguments you need to use, you’ll have to look at the `start` target in the `Makefile`.`
-
-### Running Sonar Locally
-
-This can only be done if you have already created a pull request.
-
-Install the scanner:
-
-```
-brew install sonar-scanner
-```
-
-Run the tests:
-
-```
-make test CI=true
-make test-reports/test-report.out
-```
-
-Perform a scan:
-
-```
-# the key is PR number (e.g. "2666"), the branch is the CI branch, e.g. "pull/2666"
-SONAR_TOKEN=... sonar-scanner -Dsonar.pullrequest.key=... -Dsonar.pullrequest.branch=... 
-```
  
 ## Clean
 
