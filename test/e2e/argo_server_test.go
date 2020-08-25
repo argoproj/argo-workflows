@@ -1099,11 +1099,11 @@ spec:
     - name: run-archie
       container:
         image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow(20*time.Second).
+		WaitForWorkflowToBeArchived().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -1121,11 +1121,11 @@ spec:
     - name: run-betty
       container:
         image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second)
+		WaitForWorkflow(20*time.Second).
+		WaitForWorkflowToBeArchived()
 
 	for _, tt := range []struct {
 		name     string

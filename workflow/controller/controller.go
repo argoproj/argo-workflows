@@ -497,6 +497,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 			return true
 		}
 		woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Archived"
+		woc.updated = true
 		woc.persistUpdates()
 		return true
 	}

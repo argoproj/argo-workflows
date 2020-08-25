@@ -12,6 +12,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -176,6 +177,13 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
 		return !wf.Status.FinishedAt.IsZero()
 	}, "to finish", timeout)
+}
+
+func (w *When) WaitForWorkflowToBeArchived() *When {
+	w.t.Helper()
+	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
+		return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"
+	}, "to be archived", 15*time.Second)
 }
 
 func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *When {
