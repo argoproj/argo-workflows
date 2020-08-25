@@ -1055,7 +1055,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	// then,  lets see what events we got
 	s.Run("WatchEvents", func() {
 		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name=basic", nil)
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
