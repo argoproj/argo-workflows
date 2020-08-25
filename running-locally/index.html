@@ -1768,19 +1768,6 @@
     Debugging
   </a>
   
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#running-sonar-locally" title="Running Sonar Locally" class="md-nav__link">
-    Running Sonar Locally
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1953,19 +1940,6 @@
     Debugging
   </a>
   
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#running-sonar-locally" title="Running Sonar Locally" class="md-nav__link">
-    Running Sonar Locally
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2070,25 +2044,6 @@
 
 
 <p>To find the command arguments you need to use, you’ll have to look at the <code>start</code> target in the <code>Makefile</code>.`</p>
-<h3 id="running-sonar-locally">Running Sonar Locally<a class="headerlink" href="#running-sonar-locally" title="Permanent link">&para;</a></h3>
-<p>This can only be done if you have already created a pull request.</p>
-<p>Install the scanner:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">brew install sonar-scanner</span>
-</code></pre></div>
-
-
-<p>Run the tests:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make test CI=true</span>
-<span class="err">make test-reports/test-report.out</span>
-</code></pre></div>
-
-
-<p>Perform a scan:</p>
-<div class="codehilite"><pre><span></span><code><span class="err"># the key is PR number (e.g. &quot;2666&quot;), the branch is the CI branch, e.g. &quot;pull/2666&quot;</span>
-<span class="err">SONAR_TOKEN=... sonar-scanner -Dsonar.pullrequest.key=... -Dsonar.pullrequest.branch=... </span>
-</code></pre></div>
-
-
 <h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>
 <p>To clean-up everything:</p>
 <div class="codehilite"><pre><span></span><code><span class="err">make clean</span>
