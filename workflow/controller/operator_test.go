@@ -4623,25 +4623,24 @@ spec:
 
 func TestStorageQuota(t *testing.T) {
 	wf := unmarshalWF(wfWithPVC)
-	kubeClient := &fake.Clientset{}
 
 	cancel, controller := newController(wf)
 	defer cancel()
 
-	controller.kubeclientset = kubeClient
-
-	kubeClient.BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
+	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
 	})
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "Wait	ing for a PVC to be created.")
 
-	kubeClient.BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
+	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierr.NewBadRequest("BadRequest")
 	})
 
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
 }
