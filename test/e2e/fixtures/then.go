@@ -40,7 +40,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
-	println("Checking expectation")
+	println("Checking expectation", workflowName)
 	wf, err := t.client.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -112,9 +112,8 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 			if !ok {
 				t.t.Fatal("event is not an event")
 			}
-			filtered := filter(*e)
-			println("reason:", e.Reason, "involvedObject:", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, "filtered:", filtered)
-			if filtered {
+			if filter(*e) {
+				println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
 				if t.t.Failed() {
