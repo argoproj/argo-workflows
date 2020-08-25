@@ -40,6 +40,7 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow(15 * time.Second).
 		Then().
