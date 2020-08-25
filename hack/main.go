@@ -18,8 +18,6 @@ func main() {
 		secondarySwaggerGen()
 	case "parseexamples":
 		parseExamples()
-	case "test-report":
-		testReport()
 	default:
 		panic(os.Args[1])
 	}
