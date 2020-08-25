@@ -59,7 +59,7 @@ func (s *CLISuite) TestSubmitDryRun() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic.yaml", "--dry-run", "-o", "yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "name: basic")
+				assert.Contains(t, output, "generateName: basic")
 				// dry-run should never get a UID
 				assert.NotContains(t, output, "uid:")
 			}
@@ -103,18 +103,23 @@ func (s *CLISuite) TestTokenArg() {
 }
 
 func (s *CLISuite) TestLogs() {
+	var name string
 	s.Given().
 		Workflow(`@smoke/basic.yaml`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflowToStart(5*time.Second).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Nodes.FindByDisplayName("basic") != nil
-		}, "pod running", 10*time.Second)
+			return wf.Status.Nodes.FindByDisplayName(wf.Name) != nil
+		}, "pod running", 10*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		})
 
 	s.Run("FollowWorkflowLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "--follow"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Argo!")
 				}
@@ -122,7 +127,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("FollowPodLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "basic", "--follow"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, name, "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Argo!")
 				}
@@ -130,7 +135,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("ContainerLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "basic", "-c", "wait"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, name, "-c", "wait"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Executor")
 				}
@@ -138,7 +143,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("Since", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "--since=1s"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, "--since=1s"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.NotContains(t, output, ":) Hello Argo!")
 				}
@@ -146,7 +151,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("SinceTime", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.NotContains(t, output, ":) Hello Argo!")
 				}
@@ -154,7 +159,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("TailLines", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "--tail=0"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, "--tail=0"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.NotContains(t, output, ":) Hello Argo!")
 				}
@@ -162,11 +167,10 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("CompletedWorkflow", func() {
 		s.Given().
-			WorkflowName("basic").
 			When().
 			WaitForWorkflow(10*time.Second).
 			Then().
-			RunCli([]string{"logs", "basic", "--tail=10"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, "--tail=10"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Argo!")
 				}
@@ -216,7 +220,7 @@ func (s *CLISuite) TestLogProblems() {
 
 func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
-		s.Given().RunCli([]string{"submit", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"submit", "testdata/basic-workflow.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -342,13 +346,18 @@ func (s *CLIWithServerSuite) TestNodeSuspendResume() {
 }
 
 func (s *CLISuite) TestWorkflowDeleteByName() {
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		}).
+		RunCli([]string{"delete", name}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Workflow 'basic' deleted")
+				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
 			}
 		})
 }
@@ -393,7 +402,7 @@ func (s *CLISuite) TestWorkflowDeleteAll() {
 		Given().
 		RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Workflow 'basic' deleted")
+				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
 			}
 		})
 }
@@ -622,14 +631,18 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 }
 
 func (s *CLISuite) TestWorkflowTerminate() {
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		Given().
-		RunCli([]string{"terminate", "basic"}, func(t *testing.T, output string, err error) {
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		}).
+		RunCli([]string{"terminate", name}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow basic terminated")
+				assert.Regexp(t, "workflow basic-.* terminated", output)
 			}
 		})
 }
