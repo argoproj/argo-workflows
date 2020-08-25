@@ -81,6 +81,20 @@ func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
 	return r0, r1
 }
 
+// IsEnabled provides a mock function with given fields:
+func (_m *WorkflowArchive) IsEnabled() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // ListWorkflows provides a mock function with given fields: namespace, minStartAt, maxStartAt, labelRequirements, limit, offset
 func (_m *WorkflowArchive) ListWorkflows(namespace string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (v1alpha1.Workflows, error) {
 	ret := _m.Called(namespace, minStartAt, maxStartAt, labelRequirements, limit, offset)

@@ -14,6 +14,10 @@ var NullWorkflowArchive WorkflowArchive = &nullWorkflowArchive{}
 type nullWorkflowArchive struct {
 }
 
+func (r *nullWorkflowArchive) IsEnabled() bool {
+	return false
+}
+
 func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
 	return nil
 }

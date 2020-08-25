@@ -433,9 +433,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
+	logCtx := log.WithFields(log.Fields{"key": key})
+
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
+		logCtx.WithError(err).Error("Failed to get workflow from informer")
 		return true
 	}
 	if !exists {
@@ -447,18 +449,18 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// workflow manifests that are unable to unmarshal to workflow objects
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithFields(log.Fields{"key": key}).Warn("Index is not an unstructured")
+		logCtx.Warn("Index is not an unstructured")
 		return true
 	}
 
 	if key, ok = wfc.throttler.Next(key); !ok {
-		log.WithFields(log.Fields{"key": key}).Warn("Workflow processing has been postponed due to max parallelism limit")
+		logCtx.Warn("Workflow processing has been postponed due to max parallelism limit")
 		return true
 	}
 
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
+		logCtx.WithError(err).Warn("Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		woc.persistUpdates()
@@ -466,7 +468,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
+	pendingArchiving := wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+
+	if wf.Labels[common.LabelKeyCompleted] == "true" && !pendingArchiving {
+		log.Info("workflow is completed and does not need archiving")
 		wfc.throttler.Remove(key)
 		// can get here if we already added the completed=true label,
 		// but we are still draining the controller's workflow workqueue
@@ -477,10 +482,22 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
-		woc.log.Errorf("hydration failed: %v", err)
+		logCtx.WithError(err).Error("hydration failed")
 		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
+		return true
+	}
+
+	if pendingArchiving {
+		logCtx.Info("archiving workflow")
+		err := wfc.wfArchive.ArchiveWorkflow(woc.wf)
+		if err != nil {
+			logCtx.WithError(err).Error("failed to archive workflow")
+			return true
+		}
+		woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Archived"
+		woc.persistUpdates()
 		return true
 	}
 
@@ -488,7 +505,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		priority, creationTime := getWfPriority(woc.wf)
 		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Synchronization)
 		if err != nil {
-			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
+			logCtx.WithError(err).Warn("Failed to acquire the lock")
 			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			woc.persistUpdates()
 			wfc.throttler.Remove(key)
@@ -496,7 +513,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		}
 		woc.updated = wfUpdate
 		if !acquired {
-			log.WithFields(log.Fields{"key": key, "message": msg}).Warn("Workflow processing has been postponed due to concurrency limit")
+			logCtx.WithField("message", msg).Warn("Workflow processing has been postponed due to concurrency limit")
 			woc.persistUpdates()
 			return true
 		}
@@ -658,6 +675,25 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 						wfc.throttler.Remove(key)
 					}
 				},
+			},
+		},
+	)
+	enqueueWorkflowForArchiving := func(obj interface{}) {
+		if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
+			log.WithField("key", key).Info("queuing workflow for archiving")
+			wfc.wfQueue.AddAfter(key, 10*time.Second)
+		}
+	}
+	wfc.wfInformer.AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				un, ok := obj.(*unstructured.Unstructured)
+				return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc:    enqueueWorkflowForArchiving,
+				UpdateFunc: func(_, obj interface{}) { enqueueWorkflowForArchiving(obj) },
+				DeleteFunc: enqueueWorkflowForArchiving,
 			},
 		},
 	)

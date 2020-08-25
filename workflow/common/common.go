@@ -57,6 +57,11 @@ const (
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
+	// LabelKeyWorkflowArchivingStatus indicates if a workflow needs archiving or not:
+	// * `` - does not need archiving ... yet
+	// * `Pending` - pending archiving
+	// * `Archived` - has been archived
+	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
 	// LabelKeyPreviousWorkflowName is a label applied to resubmitted workflows
