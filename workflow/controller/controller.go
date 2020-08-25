@@ -642,7 +642,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				return !common.UnstructuredHasCompletedLabel(obj)
+				un, ok := obj.(*unstructured.Unstructured)
+				return ok && (un.GetLabels()[common.LabelKeyCompleted] != "true" || un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending")
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
@@ -676,25 +677,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 						wfc.throttler.Remove(key)
 					}
 				},
-			},
-		},
-	)
-	enqueueWorkflowForArchiving := func(obj interface{}) {
-		if key, err := cache.MetaNamespaceKeyFunc(obj); err == nil {
-			log.WithField("key", key).Info("queuing workflow for archiving")
-			wfc.wfQueue.AddAfter(key, 10*time.Second)
-		}
-	}
-	wfc.wfInformer.AddEventHandler(
-		cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
-				un, ok := obj.(*unstructured.Unstructured)
-				return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
-			},
-			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc:    enqueueWorkflowForArchiving,
-				UpdateFunc: func(_, obj interface{}) { enqueueWorkflowForArchiving(obj) },
-				DeleteFunc: enqueueWorkflowForArchiving,
 			},
 		},
 	)
