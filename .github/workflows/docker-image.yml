@@ -42,7 +42,8 @@ jobs:
               --output "type=image,push=true" \
               --platform="linux/amd64,linux/arm64" \
               --target $target \
-              --tag "${DOCKERIO_ORG}/${target}:${tag}-linux" .
+              --tag "${DOCKERIO_ORG}/${target}:${tag}-linux" \
+              --tag "${DOCKERIO_ORG}/${target}:${tag}" .
           done
           /usr/bin/docker buildx rm builder
 
@@ -98,15 +99,11 @@ jobs:
             tag="latest"
           fi
 
-          targets="workflow-controller argoexec argocli"
+          targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 
-            if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux ${image_name}-windows
-            else
-              docker manifest create $image_name ${image_name}-linux
-            fi
+            docker manifest create $image_name -a ${image_name}-windows
 
             docker manifest push $image_name
           done
