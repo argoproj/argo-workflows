@@ -963,6 +963,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflowToBeArchived().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
