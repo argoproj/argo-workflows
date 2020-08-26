@@ -139,6 +139,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             .then(list => {
                 this.setState(
                     {
+                        error: null,
                         namespace,
                         workflows: list.items || [],
                         selectedPhases,
