@@ -8,7 +8,7 @@ import (
 func MustUnmarshallYAML(text string, v interface{}) {
 	err := yaml.UnmarshalStrict([]byte(text), v)
 	if err != nil {
-		log.Warn("invalid YAML: %w", err)
+		log.Warnf("invalid YAML: %v", err)
 		err = yaml.Unmarshal([]byte(text), v)
 	}
 	if err != nil {
