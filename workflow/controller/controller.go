@@ -49,6 +49,8 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
+const enoughTimeForInformerSync = 1 * time.Second
+
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
@@ -223,7 +225,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
-		wfc.wfQueue.AddAfter(key, 0)
+		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
 	})
 
 	labelSelector := v1Label.NewSelector()
@@ -579,7 +581,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 	// add this change after 1s - this reduces the number of workflow reconciliations -
 	//with each reconciliation doing more work
-	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, enoughTimeForInformerSync)
 	return true
 }
 
