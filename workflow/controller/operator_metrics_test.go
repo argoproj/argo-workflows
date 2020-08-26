@@ -271,21 +271,14 @@ spec:
     name: whalesay-template
     outputs: {}
     retryStrategy:
-      limit: 2
-status:
-  phase: Running
-  startedAt: "2020-07-14T16:26:21Z"
+      limit: 2"
 `
 
 func TestRetryStrategyMetric(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(testRetryStrategyMetric)
-	_, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate()
 
 	// Ensure no metrics have been emitted yet
@@ -302,17 +295,17 @@ func TestRetryStrategyMetric(t *testing.T) {
 	woc.operate()
 
 	metricErrorDesc = wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+	if assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc)) {
+		metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+		metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+		assert.NoError(t, err)
+		assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
 
-	metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	metricErrorCounter = controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-	metricErrorCounterString, err = getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
-
+		metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
+		assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+		metricErrorCounter = controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+		metricErrorCounterString, err = getMetricStringValue(metricErrorCounter)
+		assert.NoError(t, err)
+		assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+	}
 }

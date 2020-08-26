@@ -3308,10 +3308,9 @@ status:
       children:
       - global-outputs-bg7gl-2228002836
       displayName: '[0]'
-      finishedAt: "2020-04-24T15:55:18Z"
       id: global-outputs-bg7gl-1831647575
       name: global-outputs-bg7gl[0]
-      phase: Succeeded
+      phase: Running
       startedAt: "2020-04-24T15:55:11Z"
       templateName: generate-globals
       templateScope: local/global-outputs-bg7gl
@@ -3335,10 +3334,9 @@ status:
       children:
       - global-outputs-bg7gl-1290716463
       displayName: '[0]'
-      finishedAt: "2020-04-24T15:55:18Z"
       id: global-outputs-bg7gl-3089902334
       name: global-outputs-bg7gl[0].generate[0]
-      phase: Succeeded
+      phase: Running
       startedAt: "2020-04-24T15:55:11Z"
       templateName: nested-global-output-generation
       templateScope: local/global-outputs-bg7gl
@@ -3347,27 +3345,21 @@ status:
 `
 
 func TestNestedStepGroupGlobalParams(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
-	// operate the workflow. it should create a pod.
 	wf := unmarshalWF(nestedStepGroupGlobalParams)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("generate")
-	if assert.NotNil(t, node) {
+	if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.Len(t, node.Outputs.Parameters, 1) {
 		assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
 		assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
 		assert.Equal(t, "hello world", node.Outputs.Parameters[0].Value.String())
+		assert.Equal(t, "hello world", woc.wf.Status.Outputs.Parameters[0].Value.String())
+		assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
 	}
-
-	assert.Equal(t, "hello world", woc.wf.Status.Outputs.Parameters[0].Value.String())
-	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
 }
 
 var globalVariablePlaceholders = `

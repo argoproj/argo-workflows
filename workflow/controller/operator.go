@@ -483,15 +483,14 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
+	if !woc.updated {
+		return
+	}
 	// You MUST not call `persistUpdates` twice:
 	// * Fails the `reapplyUpdate` pre-condition - it can never recover.
 	// * It will double the number of Kubernetes API requests.
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
-		panic("cannot re-apply update with unequal original and modified resource versions")
-	}
-
-	if !woc.updated {
-		return
+		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
@@ -600,7 +599,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
 	// if this condition is true, then this func will always error
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
-		panic("cannot re-apply update with unequal original and modified resource versions")
+		woc.log.Panic("cannot re-apply update with mismatched resource versions")
 	}
 	err := woc.controller.hydrator.Hydrate(woc.orig)
 	if err != nil {
@@ -1906,8 +1905,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled() {
-			// this should not happen - but does - added logging to highlight potential bugs
-			woc.log.Errorf("node %s phase %s -> %s: is already fulfilled", node.Name, node.Phase, phase)
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).Error("node is already fulfilled")
 		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
