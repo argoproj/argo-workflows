@@ -1,11 +1,14 @@
+import {NodeType} from '../../../../../models';
+
 interface CollapsedNode {
     kind: string;
     parent: string;
     message: string;
+    type: NodeType;
 }
 
-export function getCollapsedNodeName(parent: string, message: string): string {
-    return JSON.stringify({kind: 'collapsed', parent, message} as CollapsedNode);
+export function getCollapsedNodeName(parent: string, message: string, type: NodeType): string {
+    return JSON.stringify({kind: 'collapsed', parent, message, type} as CollapsedNode);
 }
 
 export function isCollapsedNode(id: string): boolean {
@@ -22,4 +25,8 @@ export function getNodeParent(id: string): string {
 
 export function getMessage(id: string): string {
     return (JSON.parse(id) as CollapsedNode).message;
+}
+
+export function getType(id: string): NodeType {
+    return (JSON.parse(id) as CollapsedNode).type;
 }
