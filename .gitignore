@@ -14,6 +14,7 @@ git-ask-pass.sh
 /coverage.out
 .envrc
 /.vendor-new
+/kustomize
 /workflow-controller
 /.scannerwork/
 /test-results/
@@ -29,5 +30,4 @@ git-ask-pass.sh
 /pkg/apiclient/workflowarchive/workflow-archive.swagger.json
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 /site/
-/node_modules/
 /.brew_home

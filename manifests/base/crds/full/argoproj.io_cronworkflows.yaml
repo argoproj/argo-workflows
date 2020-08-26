@@ -885,6 +885,11 @@ spec:
                   type: boolean
                 synchronization:
                   properties:
+                    mutex:
+                      properties:
+                        name:
+                          type: string
+                      type: object
                     semaphore:
                       properties:
                         configMapKeyRef:
@@ -5616,6 +5621,11 @@ spec:
                         type: object
                       synchronization:
                         properties:
+                          mutex:
+                            properties:
+                              name:
+                                type: string
+                            type: object
                           semaphore:
                             properties:
                               configMapKeyRef:
