@@ -153,6 +153,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
+	controller.podInformer = controller.newPodInformer()
 	return cancel, controller
 }
 
