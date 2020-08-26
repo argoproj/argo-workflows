@@ -2076,6 +2076,7 @@ Artifact indicates an artifact to place at a specified path
 |`path`|`string`|Path is the container path to the artifact|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
+|`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
 
 ## Parameter
 

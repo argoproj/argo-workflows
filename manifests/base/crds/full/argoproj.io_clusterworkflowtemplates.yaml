@@ -573,6 +573,8 @@ spec:
                         - key
                         - secretKeySecret
                         type: object
+                      subPath:
+                        type: string
                     required:
                     - name
                     type: object
@@ -1694,6 +1696,8 @@ spec:
                               - key
                               - secretKeySecret
                               type: object
+                            subPath:
+                              type: string
                           required:
                           - name
                           type: object
@@ -2570,6 +2574,8 @@ spec:
                                         - key
                                         - secretKeySecret
                                         type: object
+                                      subPath:
+                                        type: string
                                     required:
                                     - name
                                     type: object
@@ -3525,6 +3531,8 @@ spec:
                               - key
                               - secretKeySecret
                               type: object
+                            subPath:
+                              type: string
                           required:
                           - name
                           type: object
@@ -3961,6 +3969,8 @@ spec:
                               - key
                               - secretKeySecret
                               type: object
+                            subPath:
+                              type: string
                           required:
                           - name
                           type: object
@@ -5485,6 +5495,8 @@ spec:
                                           - key
                                           - secretKeySecret
                                           type: object
+                                        subPath:
+                                          type: string
                                       required:
                                       - name
                                       type: object

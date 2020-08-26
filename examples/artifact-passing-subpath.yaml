@@ -23,7 +23,8 @@ spec:
         arguments:
           artifacts:
           - name: message
-            from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}/hello_world.txt"
+            from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+            subPath: hello_world.txt
 
   - name: whalesay
     container:

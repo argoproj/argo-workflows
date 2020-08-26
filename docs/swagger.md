@@ -771,6 +771,7 @@ Artifact indicates an artifact to place at a specified path
 | path | string | Path is the container path to the artifact | No |
 | raw | [io.argoproj.workflow.v1alpha1.RawArtifact](#io.argoproj.workflow.v1alpha1.rawartifact) | Raw contains raw artifact location details | No |
 | s3 | [io.argoproj.workflow.v1alpha1.S3Artifact](#io.argoproj.workflow.v1alpha1.s3artifact) | S3 contains S3 artifact location details | No |
+| subPath | string | SubPath allows an artifact to be sourced from a subpath within the specified source | No |
 
 #### io.argoproj.workflow.v1alpha1.ArtifactLocation
 

@@ -71,11 +71,9 @@ func (s *wfScope) resolveParameter(v string) (string, error) {
 	return valStr, nil
 }
 
-func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
+func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, error) {
 
-	artRef := strings.SplitN(v, "/", 2)
-
-	val, err := s.resolveVar(artRef[0])
+	val, err := s.resolveVar(v)
 
 	if err != nil {
 		return nil, err
@@ -85,9 +83,9 @@ func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
 	}
 
-	if len(artRef) == 2 {
-		fstTmpl := fasttemplate.New(artRef[1], "{{", "}}")
-		subPath, err := common.Replace(fstTmpl, s.getParameters(), true)
+	if subPath != "" {
+		fstTmpl := fasttemplate.New(subPath, "{{", "}}")
+		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters(), true)
 		if err != nil {
 			return nil, err
 		}
@@ -95,29 +93,43 @@ func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 		// Copy resolved artifact pointer before adding subpath
 		copyArt := valArt.DeepCopy()
 
-		if copyArt.S3 != nil {
-			copyArt.S3.Key = path.Join(copyArt.S3.Key, subPath)
+		locationType, err := copyArt.ArtifactLocation.GetType()
+
+		if err != nil {
+			return nil, err
 		}
 
-		if copyArt.Artifactory != nil {
+		switch locationType {
+		case wfv1.ArtifactLocationS3:
+			copyArt.S3.Key = path.Join(copyArt.S3.Key, resolvedSubPath)
+
+		case wfv1.ArtifactLocationHDFS:
+			copyArt.HDFS.Path = path.Join(copyArt.HDFS.Path, resolvedSubPath)
+
+		case wfv1.ArtifactLocationOSS:
+			copyArt.OSS.Key = path.Join(copyArt.OSS.Key, resolvedSubPath)
+
+		case wfv1.ArtifactLocationGCS:
+			copyArt.GCS.Key = path.Join(copyArt.GCS.Key, resolvedSubPath)
+
+		case wfv1.ArtifactLocationArtifactory:
 			u, err := url.Parse(copyArt.Artifactory.URL)
 			if err != nil {
 				return nil, err
 			}
-			u.Path = path.Join(u.Path, subPath)
+			u.Path = path.Join(u.Path, resolvedSubPath)
 			copyArt.Artifactory.URL = u.String()
-		}
 
-		if copyArt.GCS != nil {
-			copyArt.GCS.Key = path.Join(copyArt.GCS.Key, subPath)
-		}
+		case wfv1.ArtifactLocationHTTP:
+			u, err := url.Parse(copyArt.HTTP.URL)
+			if err != nil {
+				return nil, err
+			}
+			u.Path = path.Join(u.Path, resolvedSubPath)
+			copyArt.HTTP.URL = u.String()
 
-		if copyArt.HDFS != nil {
-			copyArt.HDFS.Path = path.Join(copyArt.HDFS.Path, subPath)
-		}
-
-		if copyArt.OSS != nil {
-			copyArt.OSS.Key = path.Join(copyArt.OSS.Key, subPath)
+		default:
+			return nil, errors.Errorf(errors.CodeBadRequest, "Artifact location of type {{%s}} does not support SubPath resolution", locationType)
 		}
 
 		return copyArt, nil
