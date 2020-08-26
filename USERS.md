@@ -27,6 +27,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [CoreWeave Cloud](https://www.coreweave.com)
 1. [Cruise](https://getcruise.com/)
 1. [CyberAgent](https://www.cyberagent.co.jp/en/)
+1. [Cyndx](https://cyndx.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Datadog](https://www.datadoghq.com/)
 1. [DataStax](https://www.datastax.com/)
