@@ -22,7 +22,7 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in an error being thrown
-	resolvedArtifact, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "some/subkey")
+	_, err = scope.resolveArtifact("{{steps.test.outputs.artifacts.art}}", "some/subkey")
 	assert.Error(t, err)
 }
 
@@ -230,12 +230,12 @@ func TestSubPathResolution(t *testing.T) {
 	})
 	t.Run("HTTP Artifact SubPath Resolution", func(t *testing.T) {
 		artifactSubPathResolution(t, HTTPArtifact, HTTPArtifactWithSubpath)
-  })
-  
-  t.Run("Git Artifact SubPath Unsupported Resolution", func(t *testing.T) {
-    unsupportedArtifactSubPathResolution(t, GitArtifact)
-  })
-  t.Run("Raw Artifact SubPath Unsupported Resolution", func(t *testing.T) {
-    unsupportedArtifactSubPathResolution(t, RawArtifact)
-  })
+	})
+
+	t.Run("Git Artifact SubPath Unsupported Resolution", func(t *testing.T) {
+		unsupportedArtifactSubPathResolution(t, GitArtifact)
+	})
+	t.Run("Raw Artifact SubPath Unsupported Resolution", func(t *testing.T) {
+		unsupportedArtifactSubPathResolution(t, RawArtifact)
+	})
 }
