@@ -1707,7 +1707,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted bool, message ...string) {
 	if woc.wf.Status.Phase != phase {
 		if woc.wf.Status.Phase.Fulfilled() {
-			panic(fmt.Sprintf("workflow \"%s/%s\" is already fulfilled", woc.wf.Namespace, woc.wf.Name))
+			woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
+				Panic("workflow is already fulfilled")
 		}
 		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
@@ -1905,7 +1906,8 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	if node.Phase != phase {
 		if node.Phase.Fulfilled() {
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).Error("node is already fulfilled")
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
+				Error("node is already fulfilled")
 		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
