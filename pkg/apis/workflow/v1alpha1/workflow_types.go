@@ -701,6 +701,21 @@ type TarStrategy struct {
 // save/load the directory appropriately.
 type NoneStrategy struct{}
 
+// ArtifactLocationType is the type of artifact location
+type ArtifactLocationType string
+
+// ArtifactLocationType
+const (
+	ArtifactLocationS3          ArtifactLocationType = "S3"
+	ArtifactLocationGit         ArtifactLocationType = "Git"
+	ArtifactLocationHTTP        ArtifactLocationType = "HTTP"
+	ArtifactLocationArtifactory ArtifactLocationType = "Artifactory"
+	ArtifactLocationHDFS        ArtifactLocationType = "HDFS"
+	ArtifactLocationRaw         ArtifactLocationType = "Raw"
+	ArtifactLocationOSS         ArtifactLocationType = "OSS"
+	ArtifactLocationGCS         ArtifactLocationType = "GCS"
+)
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -744,6 +759,47 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
 		a.GCS.HasLocation()
+}
+
+func (a *ArtifactLocation) GetType() (ArtifactLocationType, error) {
+	if !a.HasLocation() {
+		return "", fmt.Errorf("Artifact has no location")
+	}
+
+	if a.S3 != nil {
+		return ArtifactLocationS3, nil
+	}
+
+	if a.Git != nil {
+		return ArtifactLocationGit, nil
+	}
+
+	if a.HTTP != nil {
+		return ArtifactLocationHTTP, nil
+	}
+
+	if a.Artifactory != nil {
+		return ArtifactLocationArtifactory, nil
+	}
+
+	if a.HDFS != nil {
+		return ArtifactLocationHDFS, nil
+	}
+
+	if a.Raw != nil {
+		return ArtifactLocationRaw, nil
+	}
+
+	if a.OSS != nil {
+		return ArtifactLocationOSS, nil
+	}
+
+	if a.GCS != nil {
+		return ArtifactLocationGCS, nil
+	}
+
+	return "", fmt.Errorf("Artifact location type not recognized")
+
 }
 
 type ArtifactRepositoryRef struct {
