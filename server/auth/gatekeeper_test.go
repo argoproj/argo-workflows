@@ -67,7 +67,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&jws.ClaimSet{Sub: "my-sub"}, nil)
-		ssoIf.On("GetServiceAccount", mock.Anything).Return(nil, nil)
+		ssoIf.On("IsRBACEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, "my-ns")
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:"))
@@ -83,11 +83,11 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("SSO+RBAC", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&jws.ClaimSet{Groups: []string{"my-group"}}, nil)
-		ssoIf.On("GetServiceAccount", []string{"my-group"}).Return(&corev1.LocalObjectReference{Name: "my-sa"}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, "my-ns")
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer id_token:"))
-			assert.EqualError(t, err, `rpc error: code = Unauthenticated desc = failed to create REST config: invalid configuration: no configuration has been provided`)
+			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
 		}
 	})
 }

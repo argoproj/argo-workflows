@@ -2,14 +2,20 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
 
+	"github.com/antonmedv/expr"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -19,6 +25,7 @@ import (
 	"github.com/argoproj/argo/server/auth/jwt"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type ContextKey string
@@ -140,20 +147,13 @@ func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kuber
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		// RBAC for SSO maybe disabled, in that case both `serviceAccount` and `err` will be nil
-		serviceAccount, err := s.ssoIf.GetServiceAccount(claimSet.Groups)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to get SSO RBAC service account ref: %v", err)
-		} else if serviceAccount != nil {
-			authorization, err := s.authorizationForServiceAccount(serviceAccount.Name)
+		if s.ssoIf.IsRBACEnabled() {
+			v, k, err := s.rbacAuthorization(md, claimSet)
 			if err != nil {
-				return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
+				log.WithError(err).Error("failed to perform RBAC authorization")
+				return nil, nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
-			_, wfClient, kubeClient, err := s.clientForAuthorization(authorization)
-			if err != nil {
-				return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
-			}
-			return wfClient, kubeClient, claimSet, nil
+			return v, k, claimSet, nil
 		} else {
 			return s.wfClient, s.kubeClient, claimSet, nil
 		}
@@ -162,17 +162,75 @@ func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kuber
 	}
 }
 
+func (s *gatekeeper) rbacAuthorization(md metadata.MD, claimSet *jws.ClaimSet) (versioned.Interface, kubernetes.Interface, error) {
+	namespaces := append(md.Get("namespace"), s.namespace)
+	if len(namespaces) == 0 {
+		return nil, nil, fmt.Errorf("no namespaces")
+	}
+	namespace := namespaces[0]
+	list, err := s.kubeClient.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
+	}
+	var serviceAccounts []corev1.ServiceAccount
+	for _, serviceAccount := range list.Items {
+		_, ok := serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence]
+		if !ok {
+			continue
+		}
+		serviceAccounts = append(serviceAccounts, serviceAccount)
+	}
+	precedence := func(serviceAccount corev1.ServiceAccount) int {
+		i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
+		return i
+	}
+	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[j]) > precedence(serviceAccounts[i]) })
+	for _, serviceAccount := range serviceAccounts {
+		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
+		data, err := json.Marshal(claimSet)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to marshall JSON for rule: %w", err)
+		}
+		v := make(map[string]interface{})
+		err = json.Unmarshal(data, &v)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to un-marshall JSON for rule: %w", err)
+		}
+		result, err := expr.Eval(rule, v)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to evaluate rule: %w", err)
+		}
+		allow, ok := result.(bool)
+		if !ok {
+			return nil, nil, fmt.Errorf("failed to evaluate rule: not a boolean")
+		}
+		if !allow {
+			continue
+		}
+		authorization, err := s.authorizationForServiceAccount(serviceAccount.Name)
+		if err != nil {
+			return nil, nil, err
+		}
+		_, wfClient, kubeClient, err := s.clientForAuthorization(authorization)
+		if err != nil {
+			return nil, nil, err
+		}
+		return wfClient, kubeClient, nil
+	}
+	return nil, nil, fmt.Errorf("no service account rule matches")
+}
+
 func (s *gatekeeper) authorizationForServiceAccount(serviceAccountName string) (string, error) {
 	serviceAccount, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccountName, metav1.GetOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed to get SSO RBAC service account: %w", err)
+		return "", fmt.Errorf("failed to get service account: %w", err)
 	}
 	if len(serviceAccount.Secrets) == 0 {
 		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", err)
 	}
 	secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
 	if err != nil {
-		return "", fmt.Errorf("failed to get SSO RBAC service account secret: %w", err)
+		return "", fmt.Errorf("failed to get service account secret: %w", err)
 	}
 	return "Bearer " + string(secret.Data["token"]), nil
 }

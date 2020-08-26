@@ -88,7 +88,7 @@ func TestArtifactServer_GetArtifactWithoutInstanceID(t *testing.T) {
 func TestArtifactServer_GetArtifactByUID(t *testing.T) {
 	s := newServer()
 	r := &http.Request{}
-	r.URL = mustParse("/artifacts/my-uuid/my-node/my-artifact")
+	r.URL = mustParse("/artifacts/my-ns/my-uuid/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
 	s.GetArtifactByUID(w, r)
 	assert.Equal(t, 500, w.StatusCode)

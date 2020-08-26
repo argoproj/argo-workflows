@@ -42,7 +42,7 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
     public componentDidMount(): void {
         services.clusterWorkflowTemplate
             .get(this.name)
-            .then(template => this.setState({template}))
+            .then(template => this.setState({error: null,template}))
             .then(() => services.info.getInfo())
             .then(info => this.setState({namespace: info.managedNamespace || Utils.getCurrentNamespace() || 'default'}))
             .catch(error => this.setState({error}));

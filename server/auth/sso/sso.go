@@ -26,8 +26,7 @@ type Interface interface {
 	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
-	// Get the service account for the groups. This may be nil, which means that RBAC for SSO is not configured.
-	GetServiceAccount(groups []string) (*apiv1.LocalObjectReference, error)
+	IsRBACEnabled() bool
 }
 
 var _ Interface = &sso{}
@@ -40,8 +39,8 @@ type sso struct {
 	rbacConfig      *rbac.Config
 }
 
-func (s *sso) GetServiceAccount(groups []string) (*apiv1.LocalObjectReference, error) {
-	return s.rbacConfig.GetServiceAccount(groups)
+func (s *sso) IsRBACEnabled() bool {
+	return s.rbacConfig != nil
 }
 
 type Config struct {

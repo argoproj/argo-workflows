@@ -35,6 +35,10 @@ const (
 	// AnnotationKeyNodeName is the node's type
 	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
 
+	// AnnotationKeyRBACRule is a rule to match the claims
+	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
+	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
+
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
 	AnnotationKeyNodeMessage = workflow.WorkflowFullName + "/node-message"

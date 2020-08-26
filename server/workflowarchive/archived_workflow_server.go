@@ -49,16 +49,14 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
 
-	namespace := ""
+	namespace := req.Namespace
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
 	for _, selector := range strings.Split(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
 		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
-			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
-		} else if strings.HasPrefix(selector, "spec.startedAt>") {
+		if strings.HasPrefix(selector, "spec.startedAt>") {
 			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
 			if err != nil {
 				return nil, err
@@ -120,6 +118,9 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
+	if wf.Namespace != req.Namespace {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
 	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
@@ -134,6 +135,9 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
 	if err != nil {
 		return nil, err
+	}
+	if wf.Namespace != req.Namespace {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	allowed, err := auth.CanI(ctx, "delete", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {

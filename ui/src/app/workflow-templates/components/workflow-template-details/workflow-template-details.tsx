@@ -44,7 +44,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     public componentDidMount(): void {
         services.workflowTemplate
             .get(this.name, this.namespace)
-            .then(template => this.setState({template}))
+            .then(template => this.setState({error: null,template}))
             .catch(error => this.setState({error}));
     }
 

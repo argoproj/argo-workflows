@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="argo-server" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="argo" />
+    <working_directory value="$PROJECT_DIR$" />
+    <useCustomBuildTags value="true" />
+    <parameters value="-v server --auth-mode sso" />
+    <kind value="PACKAGE" />
+    <filePath value="$PROJECT_DIR$/cmd/argo/main.go" />
+    <package value="github.com/argoproj/argo/cmd/argo" />
+    <directory value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>

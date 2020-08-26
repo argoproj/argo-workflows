@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -64,7 +65,7 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	wfClientSet      *versioned.Clientset
-	authenticator    auth.Gatekeeper
+	gatekeeper       auth.Gatekeeper
 	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
@@ -116,7 +117,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		managedNamespace: opts.ManagedNamespace,
 		wfClientSet:      opts.WfClientSet,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    gatekeeper,
+		gatekeeper:       gatekeeper,
 		oAuth2Service:    ssoIf,
 		configController: configController,
 		stopCh:           make(chan struct{}),
@@ -158,7 +159,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.kubeClientset)
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
+	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
@@ -217,13 +218,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			as.authenticator.UnaryServerInterceptor(),
+			as.gatekeeper.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
-			as.authenticator.StreamServerInterceptor(),
+			as.gatekeeper.StreamServerInterceptor(),
 		)),
 	}
 
@@ -281,9 +282,31 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
-	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
+	namespaceInterceptor := func(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+		return func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Path
+			for _, prefix := range []string{
+				"/api/v1/archived-workflows/",
+				"/api/v1/cron-workflows/",
+				"/api/v1/events/",
+				"/api/v1/workflow-events/",
+				"/api/v1/workflow-templates/",
+				"/api/v1/workflows/",
+				"/artifacts/",
+				"/artifacts-by-uid/",
+			} {
+				if strings.HasPrefix(path, prefix) {
+					r.Header.Set("namespace", strings.SplitN(strings.TrimPrefix(path, prefix), "/", 2)[0])
+					break
+				}
+			}
+			next(w, r)
+		}
+	}
+
+	mux.HandleFunc("/api/", namespaceInterceptor(func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) }))
+	mux.HandleFunc("/artifacts/", namespaceInterceptor(artifactServer.GetArtifact))
+	mux.HandleFunc("/artifacts-by-uid/", namespaceInterceptor(artifactServer.GetArtifactByUID))
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
