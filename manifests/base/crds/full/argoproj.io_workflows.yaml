@@ -876,6 +876,11 @@ spec:
               type: boolean
             synchronization:
               properties:
+                mutex:
+                  properties:
+                    name:
+                      type: string
+                  type: object
                 semaphore:
                   properties:
                     configMapKeyRef:
@@ -5617,6 +5622,11 @@ spec:
                     type: object
                   synchronization:
                     properties:
+                      mutex:
+                        properties:
+                          name:
+                            type: string
+                        type: object
                       semaphore:
                         properties:
                           configMapKeyRef:
@@ -13439,6 +13449,11 @@ spec:
                     type: object
                   synchronization:
                     properties:
+                      mutex:
+                        properties:
+                          name:
+                            type: string
+                        type: object
                       semaphore:
                         properties:
                           configMapKeyRef:
@@ -14923,6 +14938,11 @@ spec:
                   type: boolean
                 synchronization:
                   properties:
+                    mutex:
+                      properties:
+                        name:
+                          type: string
+                      type: object
                     semaphore:
                       properties:
                         configMapKeyRef:
@@ -19664,6 +19684,11 @@ spec:
                         type: object
                       synchronization:
                         properties:
+                          mutex:
+                            properties:
+                              name:
+                                type: string
+                            type: object
                           semaphore:
                             properties:
                               configMapKeyRef:
@@ -21056,6 +21081,29 @@ spec:
               type: object
             synchronization:
               properties:
+                mutex:
+                  properties:
+                    holding:
+                      items:
+                        properties:
+                          holder:
+                            type: string
+                          mutex:
+                            type: string
+                        type: object
+                      type: array
+                      x-kubernetes-list-type: atomic
+                    waiting:
+                      items:
+                        properties:
+                          holder:
+                            type: string
+                          mutex:
+                            type: string
+                        type: object
+                      type: array
+                      x-kubernetes-list-type: atomic
+                  type: object
                 semaphore:
                   properties:
                     holding:
