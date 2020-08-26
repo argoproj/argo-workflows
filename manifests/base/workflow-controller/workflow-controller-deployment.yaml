@@ -2,14 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: workflow-controller
+  labels:
+    app: workflow-controller
+    version: latest
 spec:
   selector:
     matchLabels:
       app: workflow-controller
+      version: latest
   template:
     metadata:
       labels:
         app: workflow-controller
+        version: latest
     spec:
       serviceAccountName: argo
       containers:

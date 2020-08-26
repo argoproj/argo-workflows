@@ -2,14 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: argo-server
+  labels:
+    app: argo-server
+    version: latest
 spec:
   selector:
     matchLabels:
       app: argo-server
+      version: latest
   template:
     metadata:
       labels:
         app: argo-server
+        version: latest
     spec:
       serviceAccountName: argo-server
       containers:
