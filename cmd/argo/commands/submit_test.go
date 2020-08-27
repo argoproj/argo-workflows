@@ -13,7 +13,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -34,7 +35,7 @@ spec:
 `
 
 func TestSubmitFromResource(t *testing.T) {
-	client := mocks.Client{}
+	client := clientmocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("SubmitWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
@@ -47,7 +48,7 @@ func TestSubmitFromResource(t *testing.T) {
 }
 
 func TestSubmitWorkflows(t *testing.T) {
-	client := mocks.Client{}
+	client := clientmocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	var wf wfv1.Workflow
 	wfClient.On("CreateWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)

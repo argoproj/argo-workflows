@@ -8,7 +8,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -73,7 +74,7 @@ status:
 `
 
 func TestNewRetryCommand(t *testing.T) {
-	client := mocks.Client{}
+	client := clientmocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(wfWithError), &wf)

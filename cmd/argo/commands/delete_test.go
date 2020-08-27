@@ -7,12 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 )
 
 func TestNewDeleteCommand(t *testing.T) {
-	client := mocks.Client{}
+	client := clientmocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	wfDeleteRsp := wfapi.WorkflowDeleteResponse{}
 	wfClient.On("DeleteWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfDeleteRsp, nil)

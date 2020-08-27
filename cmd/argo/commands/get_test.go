@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
-	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
 
@@ -14,8 +12,11 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -415,9 +416,8 @@ func TestIndexOrdering(t *testing.T) {
 	}
 }
 
-
 func TestGetCommand(t *testing.T) {
-	getOutput:=`Name:                hello-world
+	getOutput := `Name:                hello-world
 Namespace:           default
 ServiceAccount:      default
 Status:              Succeeded
@@ -432,7 +432,7 @@ ResourcesDuration:   3s*(1 cpu),0s*(100Mi memory)
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
 	assert.NoError(t, err)
-	client := mocks.Client{}
+	client := clientmocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
@@ -445,5 +445,5 @@ ResourcesDuration:   3s*(1 cpu),0s*(100Mi memory)
 		assert.NoError(t, err)
 	}
 	output := CaptureOutput(execFunc)
-	assert.Equal(t,  getOutput, output)
+	assert.Equal(t, getOutput, output)
 }

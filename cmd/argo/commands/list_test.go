@@ -12,13 +12,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apiclient/mocks"
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func TestNewListCommand(t *testing.T) {
-	client := mocks.Client{}
+	client := clientmocks.Client{}
 	wfClient := mocks.WorkflowServiceClient{}
 	var wfList wfv1.WorkflowList
 	var wf, wf1 wfv1.Workflow
