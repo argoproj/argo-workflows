@@ -97,7 +97,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     private fetchWorkflowTemplates(namespace: string): void {
         services.workflowTemplate
             .list(namespace)
-            .then(templates => this.setState({error: null,namespace, templates}, this.saveHistory))
+            .then(templates => this.setState({namespace, templates}, this.saveHistory))
             .catch(error => this.setState({error}));
     }
 

@@ -183,7 +183,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .then(wfList => {
                 this.setState(
                     {
-                        error: null,
                         namespace,
                         workflows: wfList.items || [],
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
@@ -223,7 +222,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     .filter(item => item.updated)
                     .map(item => item.workflows)
                     .subscribe(
-                        workflows => this.setState({error: null,workflows}),
+                        workflows => this.setState({workflows}),
                         error => this.setState({error})
                     );
             })

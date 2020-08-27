@@ -139,7 +139,6 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             .then(list => {
                 this.setState(
                     {
-                        error: null,
                         namespace,
                         workflows: list.items || [],
                         selectedPhases,
@@ -160,10 +159,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private renderWorkflows() {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error}/>;
+            return <ErrorNotice error={this.state.error} />;
         }
         if (!this.state.workflows) {
-            return <Loading/>;
+            return <Loading />;
         }
         const learnMore = <a href='https://argoproj.github.io/argo/workflow-archive/'>Learn more</a>;
         if (this.state.workflows.length === 0) {
@@ -179,7 +178,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             <>
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
-                        <div className='columns small-1'/>
+                        <div className='columns small-1' />
                         <div className='columns small-3'>NAME</div>
                         <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>STARTED</div>
@@ -187,18 +186,17 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <div className='columns small-2'>DURATION</div>
                     </div>
                     {this.state.workflows.map(w => (
-                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`}
-                              to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
+                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
                             <div className='columns small-1'>
-                                <PhaseIcon value={w.status.phase}/>
+                                <PhaseIcon value={w.status.phase} />
                             </div>
                             <div className='columns small-3'>{w.metadata.name}</div>
                             <div className='columns small-2'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>
-                                <Timestamp date={w.status.startedAt}/>
+                                <Timestamp date={w.status.startedAt} />
                             </div>
                             <div className='columns small-2'>
-                                <Timestamp date={w.status.finishedAt}/>
+                                <Timestamp date={w.status.finishedAt} />
                             </div>
                             <div className='columns small-2'>{formatDuration(wfDuration(w.status))}</div>
                         </Link>
@@ -211,8 +209,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     pagination={this.state.pagination}
                 />
                 <p>
-                    <i className='fa fa-info-circle'/> Records are created in the archive when a workflow
-                    completes. {learnMore}.
+                    <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.
                 </p>
             </>
         );

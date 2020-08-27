@@ -21,7 +21,7 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
     public componentDidMount() {
         services.info
             .getUserInfo()
-            .then(userInfo => this.setState({error: null,userInfo}))
+            .then(userInfo => this.setState({userInfo}))
             .catch(error => this.setState({error}));
     }
 
