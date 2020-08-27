@@ -669,10 +669,15 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 		if !ok {
 			return
 		}
-		logCtx := log.WithFields(log.Fields{"namespace": un.GetNamespace(), "workflow": un.GetName()})
+		logCtx := log.WithFields(log.Fields{"namespace": un.GetNamespace(), "workflow": un.GetName(), "uid": un.GetUID()})
 		wf, err := util.FromUnstructured(un)
 		if err != nil {
 			logCtx.WithError(err).Error("failed to convert to workflow from unstructured")
+			return
+		}
+		err = wfc.hydrator.Hydrate(wf)
+		if err != nil {
+			logCtx.WithError(err).Error("failed to hydrate workflow")
 			return
 		}
 		logCtx.Info("archiving workflow")
