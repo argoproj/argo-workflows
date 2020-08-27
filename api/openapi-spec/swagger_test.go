@@ -65,6 +65,15 @@ func TestSwagger(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Amount"].(obj)
 		assert.Equal(t, "number", definition["type"])
 	})
+	t.Run("io.argoproj.workflow.v1alpha1.Item", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.Item"].(obj)
+		assert.ElementsMatch(t, []string{"boolean", "number", "object", "string"}, definition["type"])
+	})
+	t.Run("io.argoproj.workflow.v1alpha1.ParallelSteps", func(t *testing.T) {
+		definition := definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"].(obj)
+		assert.Equal(t, "array", definition["type"])
+		assert.Equal(t, obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"}, definition["items"])
+	})
 	// this test makes sure we deal with `inline`
 	t.Run("io.argoproj.workflow.v1alpha1.UserContainer", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.UserContainer"].(obj)
