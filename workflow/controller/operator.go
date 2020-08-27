@@ -3049,12 +3049,12 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 func (woc *wfOperationCtx) sumTemplateResourcesDuration(tmplCtx *templateresolution.Context, tmplRefHolder wfv1.TemplateReferenceHolder) error {
 	_, template, _, err := tmplCtx.ResolveTemplate(tmplRefHolder)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	podList, err := woc.getAllTemplatePods(template)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	durationSum := wfv1.ResourcesDuration{}
