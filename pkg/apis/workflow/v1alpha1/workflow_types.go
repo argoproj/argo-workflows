@@ -536,6 +536,9 @@ type Template struct {
 
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
+
+	// ResourcesDuration is the total used by the template
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -1364,20 +1367,6 @@ type NodeStatus struct {
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
-		i = i.Add(status.ResourcesDuration)
-	}
-	return i
-}
-
-// GetResourcesDurationByNodeType aggregates resources duration by the given
-// type: DAG, StepGroup, etc.
-func (n Nodes) GetResourcesDurationByNodeType(nodeType NodeType) ResourcesDuration {
-	i := ResourcesDuration{}
-	for _, status := range n {
-		if status.Type != nodeType {
-			continue
-		}
-
 		i = i.Add(status.ResourcesDuration)
 	}
 	return i

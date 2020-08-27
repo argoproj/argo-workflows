@@ -421,6 +421,13 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 	}
 
+	err = woc.sumTemplateResourcesDuration(tmplCtx, execTmplRef)
+	if err != nil {
+		msg := "failed to aggregate template resources duration"
+		woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Errorf(msg)
+		return
+	}
+
 	if woc.execWf.Spec.Metrics != nil {
 		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
@@ -1003,6 +1010,43 @@ func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
 	}
 	return podList, nil
 }
+
+// getAllTemplatePods returns all pods for a given template
+func (woc *wfOperationCtx) getAllTemplatePods(tmpl *wfv1.Template) (*apiv1.PodList, error) {
+	wfPods, err := woc.getAllWorkflowPods()
+	if err != nil {
+		return nil, err
+	}
+
+	tmplPods := wfPods.DeepCopy()
+	tmplPods.Items = []apiv1.Pod{}
+
+	for _, pod := range wfPods.Items {
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			continue
+		}
+
+		var parsedTmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &parsedTmpl)
+		if err != nil {
+			return nil, err
+		}
+
+		if parsedTmpl.Name != tmpl.Name {
+			continue
+		}
+
+		if parsedTmpl.GetType() != tmpl.GetType() {
+			continue
+		}
+
+		tmplPods.Items = append(tmplPods.Items, pod)
+	}
+
+	return tmplPods, nil
+}
+
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
 	if err != nil {
@@ -3000,4 +3044,26 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	return tmplRef, executionParameters, nil
+}
+
+func (woc *wfOperationCtx) sumTemplateResourcesDuration(tmplCtx *templateresolution.Context, tmplRefHolder wfv1.TemplateReferenceHolder) error {
+	_, template, _, err := tmplCtx.ResolveTemplate(tmplRefHolder)
+	if err != nil {
+		return nil
+	}
+
+	podList, err := woc.getAllTemplatePods(template)
+	if err != nil {
+		return nil
+	}
+
+	durationSum := wfv1.ResourcesDuration{}
+	for _, pod := range podList.Items {
+		duration := resource.DurationForPod(&pod)
+		durationSum.Add(duration)
+	}
+
+	template.ResourcesDuration = durationSum
+
+	return nil
 }
