@@ -73,12 +73,11 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	path := strings.SplitN(r.URL.Path, "/", 7)
+	path := strings.SplitN(r.URL.Path, "/", 6)
 
-	namespace := path[2]
-	uid := path[3]
-	nodeId := path[4]
-	artifactName := path[5]
+	uid := path[2]
+	nodeId := path[3]
+	artifactName := path[4]
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
@@ -87,10 +86,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.serverInternalError(err, w)
 		return
 	}
-	if wf.Namespace != namespace {
-		a.serverInternalError(err, w)
-		return
-	}
+
 	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
 	if err != nil {
 		a.serverInternalError(err, w)

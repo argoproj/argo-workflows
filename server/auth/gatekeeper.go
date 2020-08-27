@@ -148,7 +148,7 @@ func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kuber
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		if s.ssoIf.IsRBACEnabled() {
-			v, k, err := s.rbacAuthorization(md, claimSet)
+			v, k, err := s.rbacAuthorization(claimSet)
 			if err != nil {
 				log.WithError(err).Error("failed to perform RBAC authorization")
 				return nil, nil, nil, status.Error(codes.PermissionDenied, "not allowed")
@@ -162,13 +162,8 @@ func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kuber
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(md metadata.MD, claimSet *jws.ClaimSet) (versioned.Interface, kubernetes.Interface, error) {
-	namespaces := append(md.Get("namespace"), s.namespace)
-	if len(namespaces) == 0 {
-		return nil, nil, fmt.Errorf("no namespaces")
-	}
-	namespace := namespaces[0]
-	list, err := s.kubeClient.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{})
+func (s *gatekeeper) rbacAuthorization(claimSet *jws.ClaimSet) (versioned.Interface, kubernetes.Interface, error) {
+	list, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
 	}

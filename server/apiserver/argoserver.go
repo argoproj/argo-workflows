@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -282,31 +281,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
-	namespaceInterceptor := func(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-		return func(w http.ResponseWriter, r *http.Request) {
-			path := r.URL.Path
-			for _, prefix := range []string{
-				"/api/v1/archived-workflows/",
-				"/api/v1/cron-workflows/",
-				"/api/v1/events/",
-				"/api/v1/workflow-events/",
-				"/api/v1/workflow-templates/",
-				"/api/v1/workflows/",
-				"/artifacts/",
-				"/artifacts-by-uid/",
-			} {
-				if strings.HasPrefix(path, prefix) {
-					r.Header.Set("namespace", strings.SplitN(strings.TrimPrefix(path, prefix), "/", 2)[0])
-					break
-				}
-			}
-			next(w, r)
-		}
-	}
-
-	mux.HandleFunc("/api/", namespaceInterceptor(func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) }))
-	mux.HandleFunc("/artifacts/", namespaceInterceptor(artifactServer.GetArtifact))
-	mux.HandleFunc("/artifacts-by-uid/", namespaceInterceptor(artifactServer.GetArtifactByUID))
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { webhookInterceptor(w, r, gwmux) })
+	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
+	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
