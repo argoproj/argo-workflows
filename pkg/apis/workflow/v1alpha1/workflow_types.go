@@ -538,7 +538,7 @@ type Template struct {
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
 
 	// ResourcesDuration is the total used by the template
-	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,38,opt,name=resourcesDuration"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder

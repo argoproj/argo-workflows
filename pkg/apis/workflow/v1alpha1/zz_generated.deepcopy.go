@@ -1969,6 +1969,13 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(Memoize)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ResourcesDuration != nil {
+		in, out := &in.ResourcesDuration, &out.ResourcesDuration
+		*out = make(ResourcesDuration, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

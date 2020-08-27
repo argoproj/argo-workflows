@@ -1105,6 +1105,9 @@ message Template {
 
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
+
+  // ResourcesDuration is the total used by the template
+  map<string, int64> resourcesDuration = 38;
 }
 
 // TemplateRef is a reference of template resource.
