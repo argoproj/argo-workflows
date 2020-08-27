@@ -4044,6 +4044,11 @@ spec:
                     required:
                     - action
                     type: object
+                  resourcesDuration:
+                    additionalProperties:
+                      format: int64
+                      type: integer
+                    type: object
                   resubmitPendingPods:
                     type: boolean
                   retryStrategy:
@@ -11464,6 +11469,11 @@ spec:
                     required:
                     - action
                     type: object
+                  resourcesDuration:
+                    additionalProperties:
+                      format: int64
+                      type: integer
+                    type: object
                   resubmitPendingPods:
                     type: boolean
                   retryStrategy:
@@ -17285,6 +17295,11 @@ spec:
                             type: string
                         required:
                         - action
+                        type: object
+                      resourcesDuration:
+                        additionalProperties:
+                          format: int64
+                          type: integer
                         type: object
                       resubmitPendingPods:
                         type: boolean
