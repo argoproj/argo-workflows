@@ -664,46 +664,53 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
-	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{FilterFunc: func(obj interface{}) bool {
+	archiveWorkflow := func(obj interface{}) {
 		un, ok := obj.(*unstructured.Unstructured)
-		return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
-	}, Handler: cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			un, ok := obj.(*unstructured.Unstructured)
-			if !ok {
-				return
-			}
-			logCtx := log.WithFields(log.Fields{"namespace": un.GetNamespace(), "workflow": un.GetName()})
-			wf, err := util.FromUnstructured(un)
-			if err != nil {
-				logCtx.WithError(err).Error("failed to convert to workflow from unstructured")
-				return
-			}
-			logCtx.Info("archiving workflow")
-			err = wfc.wfArchive.ArchiveWorkflow(wf)
-			if err != nil {
-				logCtx.WithError(err).Error("failed to archive workflow")
-				return
-			}
-			data, err := json.Marshal(map[string]interface{}{
-				"metadata": metav1.ObjectMeta{
-					Labels: map[string]string{
-						common.LabelKeyWorkflowArchivingStatus: "Archived",
-					},
+		if !ok {
+			return
+		}
+		logCtx := log.WithFields(log.Fields{"namespace": un.GetNamespace(), "workflow": un.GetName()})
+		wf, err := util.FromUnstructured(un)
+		if err != nil {
+			logCtx.WithError(err).Error("failed to convert to workflow from unstructured")
+			return
+		}
+		logCtx.Info("archiving workflow")
+		err = wfc.wfArchive.ArchiveWorkflow(wf)
+		if err != nil {
+			logCtx.WithError(err).Error("failed to archive workflow")
+			return
+		}
+		data, err := json.Marshal(map[string]interface{}{
+			"metadata": metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyWorkflowArchivingStatus: "Archived",
 				},
-			})
-			if err != nil {
-				logCtx.WithError(err).Error("failed to marshal patch")
-				return
-			}
-			_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
-			if err != nil {
-				logCtx.WithError(err).Error("failed to archive workflow")
-				return
-			}
+			},
+		})
+		if err != nil {
+			logCtx.WithError(err).Error("failed to marshal patch")
+			return
+		}
+		_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
+		if err != nil {
+			logCtx.WithError(err).Error("failed to archive workflow")
+			return
+		}
+	}
+	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			un, ok := obj.(*unstructured.Unstructured)
+			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: archiveWorkflow,
+			UpdateFunc: func(S, obj interface{}) {
+				archiveWorkflow(obj)
+			},
 		},
 	},
-	})
+	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
