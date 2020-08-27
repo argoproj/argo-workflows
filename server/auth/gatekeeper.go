@@ -174,7 +174,7 @@ func (s *gatekeeper) rbacAuthorization(md metadata.MD, claimSet *jws.ClaimSet) (
 	}
 	var serviceAccounts []corev1.ServiceAccount
 	for _, serviceAccount := range list.Items {
-		_, ok := serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence]
+		_, ok := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
 		if !ok {
 			continue
 		}
