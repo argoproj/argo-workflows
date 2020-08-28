@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: two-items
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: task
+            template: sleep
+            withItems:
+              - "1"
+              - "2"
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "3s"]
