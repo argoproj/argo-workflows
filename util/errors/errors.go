@@ -35,9 +35,7 @@ func isTransientNetworkErr(err error) bool {
 		case *url.Error:
 			// For a URL error, where it replies back "connection closed"
 			// retry again.
-			if strings.Contains(err.Error(), "Connection closed by foreign host") {
-				return true
-			}
+			return strings.Contains(err.Error(), "Connection closed by foreign host")
 		default:
 			if strings.Contains(err.Error(), "net/http: TLS handshake timeout") {
 				// If error is - tlsHandshakeTimeoutError, retry.

@@ -23,7 +23,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
