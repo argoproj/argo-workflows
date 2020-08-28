@@ -890,9 +890,7 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
@@ -912,9 +910,7 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second)
