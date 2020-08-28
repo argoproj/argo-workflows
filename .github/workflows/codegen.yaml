@@ -1,0 +1,60 @@
+name: CodeGen
+on:
+  push:
+    branches:
+      - 'master'
+      - 'release-*'
+      - '!release-2.8'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  codegen:
+    name: Codegen
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Restore go build cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+      - name: Setup Golang
+        uses: actions/setup-go@v1
+        with:
+          go-version: '1.13.12'
+      - name: Add bins to PATH
+        run: |
+          echo "::add-path::/home/runner/go/bin"
+          echo "::add-path::/usr/local/bin"
+      - name: Install protoc
+        run: |
+          set -eux -o pipefail
+          PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
+          curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
+          sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+          sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+          sudo chmod +x /usr/local/bin/protoc
+          sudo find /usr/local/include -type f | xargs sudo chmod a+r
+          sudo find /usr/local/include -type d | xargs sudo chmod a+rx
+          rm -f $PROTOC_ZIP
+          ls /usr/local/include/google/protobuf/
+      - name: Install `swagger-markdown`
+        run: |
+          sudo chmod a+rw /usr/local/bin /usr/local/lib /usr/local/lib/node_modules
+          make /usr/local/bin/swagger-markdown
+      - name: Make codegen
+        env:
+          GOPATH: /home/runner/go
+        run: |
+          git fetch --tags
+          make codegen STATIC_FILES=false
+      - name: Make lint
+        env:
+          GOPATH: /home/runner/go
+        run: make lint STATIC_FILES=false
+      - name: Ensure nothing changed
+        run: git diff --exit-code

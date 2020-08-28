@@ -1,0 +1,34 @@
+name: UI
+on:
+  push:
+    branches:
+      - 'master'
+      - 'release-*'
+      - '!release-2.8'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  ui:
+    name: UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '14'
+      - name: Restore node dependency cache
+        uses: actions/cache@v1
+        with:
+          path: ui/node_modules
+          key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
+      - name: Install, build and Lint
+        run: |
+          yarn --cwd ui install
+          yarn --cwd ui build
+          yarn --cwd ui lint
+      - name: Ensure nothing changed
+        run: git diff --exit-code
