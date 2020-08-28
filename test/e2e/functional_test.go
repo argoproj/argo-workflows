@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -333,7 +332,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-limited-1
+  generateName: pending-retry-workflow-
   labels:
     argo-e2e: true
 spec:
@@ -362,10 +361,7 @@ spec:
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
-			return wfv1.NodePending == a.Phase &&
-				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
-				wfv1.NodePending == b.Phase &&
-				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
+			return wfv1.NodePending == a.Phase && wfv1.NodePending == b.Phase
 		}, "pods pending", 30*time.Second).
 		DeleteMemoryQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
@@ -382,7 +378,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflowWithRetryStrategy() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-limited-2
+  generateName: pending-retry-workflow-with-retry-strategy-
   labels:
     argo-e2e: true
 spec:
@@ -413,10 +409,7 @@ spec:
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
-			return wfv1.NodePending == a.Phase &&
-				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
-				wfv1.NodePending == b.Phase &&
-				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
+			return wfv1.NodePending == a.Phase && wfv1.NodePending == b.Phase
 		}, "pods pending", 30*time.Second).
 		DeleteMemoryQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
