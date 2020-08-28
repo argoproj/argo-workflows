@@ -21,8 +21,8 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -357,7 +357,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
-		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || retry.IsResourceQuotaConflictErr(err) {
+		if errorsutil.IsTransientErr(err) {
 			return nil, err
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
