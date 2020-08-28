@@ -93,10 +93,10 @@ func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, err
 		// Copy resolved artifact pointer before adding subpath
 		copyArt := valArt.DeepCopy()
 
-		locationType, err := copyArt.ArtifactLocation.GetType()
+		locationType := copyArt.ArtifactLocation.GetType()
 
-		if err != nil {
-			return nil, err
+		if locationType == "" {
+			return nil, errors.Errorf(errors.CodeBadRequest, "No artifact location found for reference: {{%s}}", v)
 		}
 
 		switch locationType {

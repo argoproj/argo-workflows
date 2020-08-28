@@ -765,44 +765,44 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.GCS.HasLocation()
 }
 
-func (a *ArtifactLocation) GetType() (ArtifactLocationType, error) {
+func (a *ArtifactLocation) GetType() ArtifactLocationType {
 	if !a.HasLocation() {
-		return "", fmt.Errorf("Artifact has no location")
+		return ""
 	}
 
 	if a.S3 != nil {
-		return ArtifactLocationS3, nil
+		return ArtifactLocationS3
 	}
 
 	if a.Git != nil {
-		return ArtifactLocationGit, nil
+		return ArtifactLocationGit
 	}
 
 	if a.HTTP != nil {
-		return ArtifactLocationHTTP, nil
+		return ArtifactLocationHTTP
 	}
 
 	if a.Artifactory != nil {
-		return ArtifactLocationArtifactory, nil
+		return ArtifactLocationArtifactory
 	}
 
 	if a.HDFS != nil {
-		return ArtifactLocationHDFS, nil
+		return ArtifactLocationHDFS
 	}
 
 	if a.Raw != nil {
-		return ArtifactLocationRaw, nil
+		return ArtifactLocationRaw
 	}
 
 	if a.OSS != nil {
-		return ArtifactLocationOSS, nil
+		return ArtifactLocationOSS
 	}
 
 	if a.GCS != nil {
-		return ArtifactLocationGCS, nil
+		return ArtifactLocationGCS
 	}
 
-	return "", fmt.Errorf("Artifact location type not recognized")
+	return ""
 
 }
 
