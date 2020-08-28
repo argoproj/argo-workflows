@@ -24,10 +24,16 @@ var DefaultRetry = wait.Backoff{
 func IsRetryableKubeAPIError(err error) bool {
 	// get original error if it was wrapped
 	err = argoerrs.Cause(err)
-	if apierr.IsNotFound(err) || apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || apierr.IsInvalid(err) || apierr.IsMethodNotSupported(err) {
+	if apierr.IsNotFound(err) || apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || IsResourceQuotaConflictErr(err) || apierr.IsInvalid(err) || apierr.IsMethodNotSupported(err) {
 		return false
 	}
 	return true
+}
+
+// It is possible to create a pod and it be prevented by a conflict updating the resource quota,
+// this func identifies those errors and allows us to retry muck like `Forbidden` or `TooManyRequests` errors.
+func IsResourceQuotaConflictErr(err error) bool {
+	return apierr.IsConflict(err) && strings.Contains(err.Error(), "Operation cannot be fulfilled on resourcequota")
 }
 
 // IsRetryableNetworkError returns whether or not the error is a retryable network error

@@ -15,12 +15,14 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/intstr"
+	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -332,15 +334,30 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 		}
 	}
+
+	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
+	// an `AlreadyExists` error because we won't get that error if there is not enough resources
+	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(pod.Namespace + "/" + pod.Name))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
+	}
+	if exists {
+		existing, ok := obj.(*apiv1.Pod)
+		if ok {
+			woc.log.WithField("podPhase", existing.Status.Phase).Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+			return existing, nil
+		}
+	}
+
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+			woc.log.Infof("Failed pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
-		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) {
+		if apierr.IsForbidden(err) || apierr.IsTooManyRequests(err) || retry.IsResourceQuotaConflictErr(err) {
 			return nil, err
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
