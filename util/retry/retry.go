@@ -20,6 +20,14 @@ var DefaultRetry = wait.Backoff{
 	Jitter:   0.1,
 }
 
+// ExecutorRetry is a retry backoff settings for WorkflowExecutor
+var ExecutorRetry = wait.Backoff{
+	Steps:    8,
+	Duration: 1 * time.Second,
+	Factor:   1.0,
+	Jitter:   0.1,
+}
+
 // IsRetryableKubeAPIError returns if the error is a retryable kubernetes error
 func IsRetryableKubeAPIError(err error) bool {
 	// get original error if it was wrapped
