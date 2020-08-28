@@ -1189,6 +1189,9 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
+		if ctr.State.Waiting != nil {
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+		}
 		if ctr.State.Terminated == nil {
 			// We should never get here
 			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
@@ -1209,6 +1212,9 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	}
 	failMessages := make(map[string]string)
 	for _, ctr := range pod.Status.ContainerStatuses {
+		if ctr.State.Waiting != nil {
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+		}
 		if ctr.State.Terminated == nil {
 			// We should never get here
 			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
