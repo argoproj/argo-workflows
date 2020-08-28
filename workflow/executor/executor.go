@@ -40,11 +40,6 @@ import (
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
-const (
-	// This directory temporarily stores the tarballs of the artifacts before uploading
-	tempOutArtDir = "/tmp/argo/outputs/artifacts"
-)
-
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
 var ExecutorRetry = wait.Backoff{
 	Steps:    8,
@@ -52,6 +47,11 @@ var ExecutorRetry = wait.Backoff{
 	Factor:   1.0,
 	Jitter:   0.1,
 }
+
+const (
+	// This directory temporarily stores the tarballs of the artifacts before uploading
+	tempOutArtDir = "/tmp/argo/outputs/artifacts"
+)
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
