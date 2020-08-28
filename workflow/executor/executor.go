@@ -45,6 +45,14 @@ const (
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
+// ExecutorRetry is a retry backoff settings for WorkflowExecutor
+var ExecutorRetry = wait.Backoff{
+	Steps:    8,
+	Duration: 1 * time.Second,
+	Factor:   1.0,
+	Jitter:   0.1,
+}
+
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName            string
