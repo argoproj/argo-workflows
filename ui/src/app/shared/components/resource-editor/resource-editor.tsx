@@ -91,7 +91,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     public handleFiles(files: FileList) {
         files[0]
             .text()
-            .then(value => this.setState({value: stringify(parse(value), this.state.lang)}))
+            .then(value => this.setState({error: null, value: stringify(parse(value), this.state.lang)}))
             .catch(error => this.setState(error));
     }
 
@@ -157,7 +157,10 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            this.props.onSubmit(parse(this.state.value)).catch(error => this.setState({error}));
+            this.props
+                .onSubmit(parse(this.state.value))
+                .then(() => this.setState({error: null}))
+                .catch(error => this.setState({error}));
         } catch (error) {
             this.setState({error});
         }
