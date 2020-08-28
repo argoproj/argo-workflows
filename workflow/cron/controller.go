@@ -153,7 +153,7 @@ func (cc *Controller) processNextCronItem() bool {
 	cronWf := &v1alpha1.CronWorkflow{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, cronWf)
 	if err != nil {
-		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "MalformedResource", err.Error())
+		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
 		logCtx.WithError(err).Error("malformed cron workflow: could not convert from unstructured")
 		return true
 	}
