@@ -49,8 +49,6 @@ import (
 	"github.com/argoproj/argo/workflow/validate"
 )
 
-const enoughTimeForInformerSync = 1 * time.Second
-
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
 	// wf is the workflow object. It should not be used in execution logic. woc.wfSpec should be used instead
