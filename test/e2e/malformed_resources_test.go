@@ -51,7 +51,7 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 			func(t *testing.T, event corev1.Event) {
 				assert.Equal(t, corev1.EventTypeWarning, event.Type)
 				assert.Equal(t, "MalformedResource", event.Reason)
-				assert.Equal(t, "\"cannot restore slice from map", event.Message)
+				assert.Equal(t, "cannot restore slice from map", event.Message)
 			},
 		)
 }
