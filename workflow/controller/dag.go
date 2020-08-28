@@ -314,6 +314,14 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Fulfilled() {
+		// Collect the completed leaf task metrics
+		tmpl := woc.wf.GetTemplateByName(task.Template)
+		if tmpl != nil {
+			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
+				localScope, realTimeScope := woc.prepareMetricScope(node)
+				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			}
+		}
 		if node.Completed() {
 			// Run the node's onExit node, if any.
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
