@@ -8,8 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/workflow/common"
@@ -38,12 +40,20 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 		Exec("kubectl", []string{"apply", "-f", "testdata/malformed/malformed-cronworkflow.yaml"}, fixtures.NoError).
 		Exec("kubectl", []string{"apply", "-f", "testdata/wellformed/wellformed-cronworkflow.yaml"}, fixtures.NoError).
 		When().
-		WaitForWorkflow(1*time.Minute + 15*time.Second).
+		WaitForWorkflow(1*time.Minute+15*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, "wellformed", metadata.Labels[common.LabelKeyCronWorkflow])
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
+		}).
+		ExpectAuditEvents(
+			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
+			func(t *testing.T, event corev1.Event) {
+				assert.Equal(t, corev1.EventTypeWarning, event.Type)
+				assert.Equal(t, "MalformedResource", event.Reason)
+				assert.Equal(t, "\"cannot restore slice from map", event.Message)
+			},
+		)
 }
 
 func (s *MalformedResourcesSuite) TestMalformedWorkflowTemplate() {
