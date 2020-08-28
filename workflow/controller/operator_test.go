@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -4208,16 +4209,16 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	wf := unmarshalWF(resubmitPendingWf)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
+	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
 	nonForbiddenErr := apierr.NewBadRequest("badrequest")
 	t.Run("ForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResubmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.requeueIfTransientErr(forbiddenErr, "resubmit-pending-wf")
 		assert.NotNil(t, node)
 		assert.NoError(t, err)
 		assert.Equal(t, wfv1.NodePending, node.Phase)
 	})
 	t.Run("NonForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResubmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.requeueIfTransientErr(nonForbiddenErr, "resubmit-pending-wf")
 		assert.Error(t, err)
 		assert.Nil(t, node)
 	})
@@ -4633,7 +4634,7 @@ func TestStorageQuota(t *testing.T) {
 	defer cancel()
 
 	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		return true, nil, apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
+		return true, nil, apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
 	})
 
 	woc := newWorkflowOperationCtx(wf, controller)
