@@ -22,6 +22,9 @@ var ioTimeoutErr net.Error = netError("i/o timeout")
 var connectionTimedout net.Error = netError("connection timed out")
 
 func TestIsTransientErr(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		assert.False(t, IsTransientErr(nil))
+	})
 	t.Run("ResourceQuotaConflictErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{}, "", nil)))
 		assert.True(t, IsTransientErr(apierr.NewConflict(schema.GroupResource{Group: "v1", Resource: "resourcequotas"}, "", nil)))
@@ -42,17 +45,17 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("UnknownNetworkError", func(t *testing.T) {
 		assert.True(t, IsTransientErr(net.UnknownNetworkError("")))
 	})
-	t.Run("ConnectionClosed", func(t *testing.T) {
+	t.Run("ConnectionClosedErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(&url.Error{Err: errors.New("")}))
 		assert.True(t, IsTransientErr(&url.Error{Err: errors.New("Connection closed by foreign host")}))
 	})
 	t.Run("TLSHandshakeTimeout", func(t *testing.T) {
-		assert.False(t, IsTransientErr(tlsHandshakeTimeoutErr))
+		assert.True(t, IsTransientErr(tlsHandshakeTimeoutErr))
 	})
 	t.Run("IOHandshakeTimeout", func(t *testing.T) {
-		assert.False(t, IsTransientErr(ioTimeoutErr))
+		assert.True(t, IsTransientErr(ioTimeoutErr))
 	})
 	t.Run("ConnectionTimeout", func(t *testing.T) {
-		assert.False(t, IsTransientErr(connectionTimedout))
+		assert.True(t, IsTransientErr(connectionTimedout))
 	})
 }
