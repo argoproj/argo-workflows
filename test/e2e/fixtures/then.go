@@ -141,7 +141,7 @@ func (t *Then) ExpectWorkflowTemplates(block func(t *testing.T, templates []wfv1
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	block(t.t, wf.Templates)
+	block(t.t, wf.Spec.Templates)
 	if t.t.Failed() {
 		t.t.FailNow()
 	}
