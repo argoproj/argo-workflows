@@ -874,7 +874,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
 			}
 			<-parallelPodNum
-		}(pod)
+		}(&pod)
 	}
 
 	wg.Wait()
