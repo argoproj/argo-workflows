@@ -38,6 +38,7 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
@@ -93,6 +94,7 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.CacheFactory
+	keyLock               sync.KeyLock
 }
 
 const (
@@ -124,6 +126,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		gcPods:                     make(chan string, 512),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
+		keyLock:                    sync.NewKeyLock(),
 	}
 
 	wfc.UpdateConfig()
@@ -435,6 +438,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
+	if os.Getenv("KEY_LOCK") == "true" {
+		wfc.keyLock.Lock(key.(string))
+		defer wfc.keyLock.Unlock(key.(string))
+	}
+
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
@@ -717,7 +725,9 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+		indexes.WorkflowIndex: indexes.WorkflowIndexFunc,
+	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
