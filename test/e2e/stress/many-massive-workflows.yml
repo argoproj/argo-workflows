@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: many-large-workflows
+spec:
+  entrypoint: main
+  podGC:
+    strategy: OnPodCompletion
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: create-workflow
+            template: create-workflow
+            withSequence:
+              count: 20
+    - name: create-workflow
+      resource:
+        action: create
+        setOwnerReference: true
+        successCondition: status.phase = Succeeded
+        failureCondition: status.phase in (Failed, Error)
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: large-workflow-
+          spec:
+            entrypoint: main
+            podGC:
+              strategy: OnPodCompletion
+            templates:
+              - name: main
+                dag:
+                  tasks:
+                    - name: create-pod
+                      template: create-pod
+                      withSequence:
+                        count: 20
+              - name: create-pod
+                container:
+                  image: argoproj/argosay:v2
