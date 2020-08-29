@@ -421,7 +421,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 	}
 
-	err = woc.sumTemplateResourcesDuration(tmplCtx, execTmplRef)
+	err = woc.maybeSumTemplateResourcesDuration(tmplCtx, execTmplRef)
 	if err != nil {
 		msg := "failed to aggregate template resources duration"
 		woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Errorf(msg)
@@ -3046,10 +3046,18 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	return tmplRef, executionParameters, nil
 }
 
-func (woc *wfOperationCtx) sumTemplateResourcesDuration(tmplCtx *templateresolution.Context, tmplRefHolder wfv1.TemplateReferenceHolder) error {
+// sum the resources duration from all pods associated with DAG or steps
+// templates
+func (woc *wfOperationCtx) maybeSumTemplateResourcesDuration(tmplCtx *templateresolution.Context, tmplRefHolder wfv1.TemplateReferenceHolder) error {
 	_, template, _, err := tmplCtx.ResolveTemplate(tmplRefHolder)
 	if err != nil {
 		return err
+	}
+
+	// only sum duration for dag and steps
+	templateType := template.GetType()
+	if templateType != wfv1.TemplateTypeDAG && templateType != wfv1.TemplateTypeSteps {
+		return nil
 	}
 
 	podList, err := woc.getAllTemplatePods(template)
