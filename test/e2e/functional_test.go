@@ -807,7 +807,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		ExpectWorkflowTemplates(func(t *testing.T, templates *wfv1.Templates) {
+		ExpectWorkflowTemplates(func(t *testing.T, templates []wfv1.Template) {
 			for _, template := range templates {
 				if template.Name != "dag" {
 					continue
