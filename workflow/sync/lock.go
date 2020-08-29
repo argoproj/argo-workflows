@@ -26,7 +26,7 @@ func (l *keyLock) Lock(key string) {
 func (l *keyLock) Unlock(key string) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	l.locks[key].Lock()
+	l.locks[key].Unlock()
 }
 
 func NewKeyLock() KeyLock {

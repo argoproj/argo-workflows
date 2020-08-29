@@ -438,10 +438,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	if os.Getenv("KEY_LOCK") == "true" {
-		wfc.keyLock.Lock(key.(string))
-		defer wfc.keyLock.Unlock(key.(string))
-	}
+	wfc.keyLock.Lock(key.(string))
+	defer wfc.keyLock.Unlock(key.(string))
 
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {

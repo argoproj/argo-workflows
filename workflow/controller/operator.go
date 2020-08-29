@@ -874,7 +874,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
 			}
 			<-parallelPodNum
-		}(&pod)
+		}(pod)
 	}
 
 	wg.Wait()
@@ -1010,35 +1010,22 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getAllWorkflowPods() ([]apiv1.Pod, error) {
-	if os.Getenv("INDEXED_PODS") == "true" {
-		objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowKey(woc.wf.Namespace, woc.wf.Name))
-		if err != nil {
-			return nil, err
-		}
-		pods := make([]apiv1.Pod, len(objs))
-		for i, obj := range objs {
-			var ok bool
-			pod, ok := obj.(*apiv1.Pod)
-			if !ok {
-				return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
-			}
-			pods[i] = *pod
-		}
-		return pods, nil
-	}
-
-	options := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s",
-			common.LabelKeyWorkflow,
-			woc.wf.ObjectMeta.Name),
-	}
-	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
+	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowKey(woc.wf.Namespace, woc.wf.Name))
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
-	return podList.Items, nil
+	pods := make([]*apiv1.Pod, len(objs))
+	for i, obj := range objs {
+		var ok bool
+		pods[i], ok = obj.(*apiv1.Pod)
+		if !ok {
+			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
+		}
+	}
+	return pods, nil
 }
+
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
 	if err != nil {
