@@ -131,6 +131,23 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 	return t
 }
 
+func (t *Then) ExpectWorkflowTemplates(block func(t *testing.T, templates []wfv1.Template)) *Then {
+	t.t.Helper()
+	if t.workflowName == "" {
+		t.t.Fatal("No workflow to test")
+	}
+	println("Checking expectation", t.workflowName)
+	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	block(t.t, wf.Templates)
+	if t.t.Failed() {
+		t.t.FailNow()
+	}
+	return t
+}
+
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
 	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)

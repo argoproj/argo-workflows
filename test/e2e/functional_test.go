@@ -778,6 +778,46 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		})
 }
 
+func (s *FunctionalSuite) TestDAGResourcesDuration() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-resources-duration
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: dag
+  templates:
+  - name: cowsay
+    resubmitPendingPods: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
+  - name: dag
+    dag:
+      tasks:
+      - name: a
+        template: cowsay
+      - name: b
+        template: cowsay
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflowTemplates(func(t *testing.T, templates *wfv1.Templates) {
+			for _, template := range templates {
+				if template.Name != "dag" {
+					continue
+				}
+
+				assert.NotEmpty(t, template.ResourcesDuration)
+			}
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
