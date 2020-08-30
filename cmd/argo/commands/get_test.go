@@ -421,13 +421,6 @@ func TestGetCommand(t *testing.T) {
 Namespace:           default
 ServiceAccount:      default
 Status:              Succeeded
-Conditions:          
- Completed           True
-Created:             Wed Jun 24 15:53:35 -0700 (2 months ago)
-Started:             Wed Jun 24 15:53:35 -0700 (2 months ago)
-Finished:            Wed Jun 24 15:53:41 -0700 (2 months ago)
-Duration:            6 seconds
-ResourcesDuration:   3s*(1 cpu),0s*(100Mi memory)
 `
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
@@ -445,5 +438,5 @@ ResourcesDuration:   3s*(1 cpu),0s*(100Mi memory)
 		assert.NoError(t, err)
 	}
 	output := CaptureOutput(execFunc)
-	assert.Equal(t, getOutput, output)
+	assert.Contains(t, output, getOutput)
 }

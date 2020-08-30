@@ -48,6 +48,8 @@ Workflow is the definition of a workflow resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
@@ -370,6 +372,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -707,6 +711,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
@@ -1005,6 +1011,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -1456,6 +1464,8 @@ Metrics are a list of metrics emitted from a Workflow/Template
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
@@ -1550,6 +1560,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -1916,6 +1928,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`fun-with-gifs.yaml`](https://github.com/argoproj/argo/blob/master/examples/fun-with-gifs.yaml)
@@ -2089,6 +2103,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
@@ -2219,6 +2235,8 @@ Prometheus is a prometheus metric to be emitted
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
@@ -2304,6 +2322,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
@@ -2594,6 +2614,8 @@ Pod metdata
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -3439,6 +3461,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
@@ -3487,6 +3511,8 @@ Counter is a Counter prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
@@ -3502,6 +3528,8 @@ Gauge is a Gauge prometheus metric
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
@@ -3520,6 +3548,8 @@ Histogram is a Histogram prometheus metric
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
@@ -3536,6 +3566,8 @@ MetricLabel is a single label for a prometheus metric
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -3565,6 +3597,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
@@ -3804,6 +3838,8 @@ Amount represent a numeric amount.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 </details>
 
@@ -3861,6 +3897,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -4371,6 +4409,8 @@ A single application container that you want to run within a pod.
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo/blob/master/examples/continue-on-fail.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
@@ -5004,6 +5044,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](https://github.com/argoproj/argo/blob/master/examples/daemon-nginx.yaml)
@@ -5634,6 +5676,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
+
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
 - [`global-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/global-outputs.yaml)
@@ -6008,6 +6052,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-workflow.yaml)
+
+- [`custom-metrics-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics-dag.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
 
