@@ -109,9 +109,9 @@ func TestSingleDependency(t *testing.T) {
 		woc.operate()
 		// Mark the status of the pod according to the test
 		if _, ok := statusMap[status]; ok {
-			makePodsPhase(t, statusMap[status], controller.kubeclientset, wf.ObjectMeta.Namespace)
+			makePodsPhase(woc, statusMap[status])
 		} else {
-			makePodsPhase(t, v1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
+			makePodsPhase(woc, v1.PodPending)
 		}
 
 		woc = newWorkflowOperationCtx(woc.wf, controller)

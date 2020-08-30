@@ -166,13 +166,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		}
 
 		// Updating Pod state
-		podList, err := controller.kubeclientset.CoreV1().Pods("default").List(metav1.ListOptions{})
-		assert.NoError(t, err)
-		for _, pod := range podList.Items {
-			pod.Status.Phase = v1.PodFailed
-			_, err := controller.kubeclientset.CoreV1().Pods("default").Update(&pod)
-			assert.NoError(t, err)
-		}
+		makePodsPhase(woc, v1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -232,13 +226,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 		// Updating Pod state
-		podList, err := controller.kubeclientset.CoreV1().Pods("default").List(metav1.ListOptions{})
-		assert.NoError(t, err)
-		for _, pod := range podList.Items {
-			pod.Status.Phase = v1.PodFailed
-			_, err := controller.kubeclientset.CoreV1().Pods("default").Update(&pod)
-			assert.NoError(t, err)
-		}
+		makePodsPhase(woc, v1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -299,13 +287,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		}
 
 		// Updating Pod state
-		podList, err := controller.kubeclientset.CoreV1().Pods("default").List(metav1.ListOptions{})
-		assert.NoError(t, err)
-		for _, pod := range podList.Items {
-			pod.Status.Phase = v1.PodFailed
-			_, err := controller.kubeclientset.CoreV1().Pods("default").Update(&pod)
-			assert.NoError(t, err)
-		}
+		makePodsPhase(woc, v1.PodFailed)
 
 		// Release the lock
 		woc = newWorkflowOperationCtx(woc.wf, controller)

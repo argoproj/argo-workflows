@@ -55,7 +55,7 @@ func TestBasicMetric(t *testing.T) {
 	// Schedule first pod and mark completed
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
-	makePodsPhaseAll(t, apiv1.PodSucceeded, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(woc, apiv1.PodSucceeded)
 
 	// Process first metrics
 	woc = newWorkflowOperationCtx(woc.wf, controller)
@@ -113,7 +113,7 @@ func TestCounterMetric(t *testing.T) {
 	// Schedule first pod and mark completed
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
-	makePodsPhaseAll(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(woc, apiv1.PodFailed)
 
 	// Process first metrics
 	woc = newWorkflowOperationCtx(woc.wf, controller)
