@@ -965,13 +965,13 @@ func TestWorkflowStepRetry(t *testing.T) {
 	woc.operate()
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(pods.Items))
-	assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
-	assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
+	if assert.Equal(t, 3, len(pods.Items)) {
+		assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
+		assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
 
-	//verify that after the cowsay failure pod failed, we are retrying cowsay success
-	assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
-
+		//verify that after the cowsay failure pod failed, we are retrying cowsay success
+		assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
+	}
 }
 
 var workflowParallelismLimit = `
