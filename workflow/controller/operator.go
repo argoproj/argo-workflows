@@ -110,6 +110,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime = 10 * time.Second
+const defaultRequeueTime = maxOperationTime
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -299,7 +300,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(10 * time.Second)
+			woc.requeue(defaultRequeueTime)
 			return
 		}
 		msg := "pvc create error"
@@ -1538,7 +1539,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		woc.requeue(0)
+		woc.requeue(defaultRequeueTime)
 		return node, ErrDeadlineExceeded
 	}
 
@@ -2194,7 +2195,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
 	if errorsutil.IsTransientErr(err) {
 		// Our error was most likely caused by a lack of resources.
-		woc.requeue(10 * time.Second)
+		woc.requeue(defaultRequeueTime)
 		return woc.markNodePending(nodeName, err), nil
 	}
 	return nil, err
