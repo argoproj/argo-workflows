@@ -23,9 +23,16 @@ spec:
         tasks:
           - name: create-workflow
             template: create-workflow
+            arguments:
+              parameters:
+                - name: i
+                  value: "{{item}}"
             withSequence:
               count: "{{workflow.parameters.x}}"
     - name: create-workflow
+      inputs:
+        parameters:
+          - name: i
       resource:
         action: create
         setOwnerReference: true
@@ -36,7 +43,7 @@ spec:
           apiVersion: argoproj.io/v1alpha1
           kind: Workflow
           metadata:
-            generateName: large-workflow-
+            name: "large-workflow-{{workflow.parameters.x}}x{{workflow.parameters.y}}-{{inputs.parameters.i}}"
             labels:
               stress: "true"
           spec:
