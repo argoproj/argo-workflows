@@ -118,6 +118,13 @@ type Condition func(wf *wfv1.Workflow) bool
 var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
 var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.FinishedAt.IsZero() }
 
+// Wait for a workflow to meet a condition:
+// Options:
+// * `time.Duration` - change the timeout - 30s by default
+// * `string` - either:
+//    * the workflow's name (not spaces)
+//    * or a new message (if it contain spaces) - default "to finish"
+// * `Condition` - a condition - `ToFinish` by default
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout

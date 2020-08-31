@@ -215,7 +215,7 @@ spec:
 			assert.Error(t, err)
 			assert.Contains(t, output, "cannot set output parameters because node is not expecting any raw parameters")
 		}).
-		RunCli([]string{"node", "set", "suspend-template", "--message", "Condition message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"node", "set", "suspend-template", "--message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow values set")
 		}).
@@ -233,7 +233,7 @@ spec:
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
 			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Condition message", nodeStatus.Message)
+				assert.Equal(t, "Test message", nodeStatus.Message)
 			}
 		})
 }
