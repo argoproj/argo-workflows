@@ -231,11 +231,16 @@ func TestChmod(t *testing.T) {
 	for _, test := range tests {
 		// Setup directory and file for testing
 		err := os.Mkdir(TmpDirName, os.FileMode(0644))
+		assert.NoError(t, err)
+
 		newFile, err := os.Create(TmpFileName)
+		assert.NoError(t, err)
+
 		err = newFile.Chmod(os.FileMode(0644))
 		assert.NoError(t, err)
 
-		chmod(TmpDirName, test.mode, test.recurse)
+		err = chmod(TmpDirName, test.mode, test.recurse)
+		assert.NoError(t, err)
 
 		for _, permission := range test.permissions {
 			fi, err := os.Stat(permission.path)
