@@ -1,7 +1,11 @@
 package controller
 
 import (
+	"net/url"
+	"path"
 	"strings"
+
+	"github.com/valyala/fasttemplate"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -67,8 +71,10 @@ func (s *wfScope) resolveParameter(v string) (string, error) {
 	return valStr, nil
 }
 
-func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
+func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, error) {
+
 	val, err := s.resolveVar(v)
+
 	if err != nil {
 		return nil, err
 	}
@@ -76,5 +82,58 @@ func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 	if !ok {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
 	}
+
+	if subPath != "" {
+		fstTmpl := fasttemplate.New(subPath, "{{", "}}")
+		resolvedSubPath, err := common.Replace(fstTmpl, s.getParameters(), true)
+		if err != nil {
+			return nil, err
+		}
+
+		// Copy resolved artifact pointer before adding subpath
+		copyArt := valArt.DeepCopy()
+
+		locationType := copyArt.ArtifactLocation.GetType()
+
+		if locationType == "" {
+			return nil, errors.Errorf(errors.CodeBadRequest, "No artifact location found for reference: {{%s}}", v)
+		}
+
+		switch locationType {
+		case wfv1.ArtifactLocationS3:
+			copyArt.S3.Key = path.Join(copyArt.S3.Key, resolvedSubPath)
+
+		case wfv1.ArtifactLocationHDFS:
+			copyArt.HDFS.Path = path.Join(copyArt.HDFS.Path, resolvedSubPath)
+
+		case wfv1.ArtifactLocationOSS:
+			copyArt.OSS.Key = path.Join(copyArt.OSS.Key, resolvedSubPath)
+
+		case wfv1.ArtifactLocationGCS:
+			copyArt.GCS.Key = path.Join(copyArt.GCS.Key, resolvedSubPath)
+
+		case wfv1.ArtifactLocationArtifactory:
+			u, err := url.Parse(copyArt.Artifactory.URL)
+			if err != nil {
+				return nil, err
+			}
+			u.Path = path.Join(u.Path, resolvedSubPath)
+			copyArt.Artifactory.URL = u.String()
+
+		case wfv1.ArtifactLocationHTTP:
+			u, err := url.Parse(copyArt.HTTP.URL)
+			if err != nil {
+				return nil, err
+			}
+			u.Path = path.Join(u.Path, resolvedSubPath)
+			copyArt.HTTP.URL = u.String()
+
+		default:
+			return nil, errors.Errorf(errors.CodeBadRequest, "Artifact location of type {{%s}} does not support SubPath resolution", locationType)
+		}
+
+		return copyArt, nil
+	}
+
 	return &valArt, nil
 }

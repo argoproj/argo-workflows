@@ -68,6 +68,9 @@ message Artifact {
 
   // Make Artifacts optional, if Artifacts doesn't generate or exist
   optional bool optional = 8;
+
+  // SubPath allows an artifact to be sourced from a subpath within the specified source
+  optional string subPath = 9;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
