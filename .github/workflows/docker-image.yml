@@ -109,13 +109,13 @@ jobs:
             image_name="${docker_org}/${target}:${tag}"
 
             docker buildx build \
-              --load \
+              --push \
               --platform="linux/arm64" \
               --target ${target} \
               --tag "${image_name}-linux-arm64" .
 
             docker buildx build \
-              --load \
+              --push \
               --platform="linux/amd64" \
               --target ${target} \
               --tag "${image_name}-linux-amd64" .
