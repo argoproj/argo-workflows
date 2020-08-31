@@ -1,7 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: many-large-workflows
+  name: many-massive-workflows
+  labels:
+    stress: "true"
 spec:
   entrypoint: main
   podGC:
@@ -32,6 +34,8 @@ spec:
           kind: Workflow
           metadata:
             generateName: large-workflow-
+            labels:
+              stress: "true"
           spec:
             entrypoint: main
             podGC:

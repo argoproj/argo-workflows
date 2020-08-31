@@ -399,6 +399,14 @@ test-e2e-cron:
 smoke:
 	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
+.PHONY: stress
+stress:
+	kubectl delete wf -l stress
+	$(MAKE) start &
+	$(MAKE) wait
+	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
+	argo submit --from workflowtemplates/many-massive-workflows -p x=1 -p y=1
+
 # clean
 
 .PHONY: clean
