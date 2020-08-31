@@ -65,58 +65,6 @@ func (s *FunctionalSuite) TestResourceQuota() {
 		})
 }
 
-// Test setting input artifact permission mode with and without the "recurseMode" boolean toggle
-func (s *FunctionalSuite) TestRecursiveArtifactMode() {
-	// Note: the "recurseMode" key is only used if it is set at the template input level rather than task
-	// argument. This behaviour is confirmed by the "artifact-mode-recurse-argument" step which shows
-	// that despite setting "recurseMode" to "true" in the task arguments the mode of the contents of
-	// the "message" artifact folder are not changed to "777".
-	s.Given().
-		Workflow(`@testdata/artifact-mode-recursive.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			nodeStatus := status.Nodes.FindByDisplayName("artifact-mode-recurse")
-			if assert.NotNil(t, nodeStatus) {
-				for _, param := range nodeStatus.Outputs.Parameters {
-					if param.Name == "folder-mode" {
-						assert.Equal(t, "777", param.Value.String())
-					}
-					if param.Name == "file-mode" {
-						assert.Equal(t, "777", param.Value.String())
-					}
-				}
-			}
-
-			nodeStatus = status.Nodes.FindByDisplayName("artifact-mode-recurse-argument")
-			if assert.NotNil(t, nodeStatus) {
-				for _, param := range nodeStatus.Outputs.Parameters {
-					if param.Name == "folder-mode" {
-						assert.Equal(t, "755", param.Value.String())
-					}
-					if param.Name == "file-mode" {
-						assert.NotEqual(t, "777", param.Value.String())
-					}
-				}
-			}
-
-			nodeStatus = status.Nodes.FindByDisplayName("artifact-mode")
-			if assert.NotNil(t, nodeStatus) {
-				for _, param := range nodeStatus.Outputs.Parameters {
-					if param.Name == "folder-mode" {
-						assert.Equal(t, "755", param.Value.String())
-					}
-					if param.Name == "file-mode" {
-						assert.NotEqual(t, "777", param.Value.String())
-					}
-				}
-			}
-		})
-}
-
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
