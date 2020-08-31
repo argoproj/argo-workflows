@@ -235,6 +235,9 @@ func TestChmod(t *testing.T) {
 		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
 		assert.NoError(t, err)
 
+		// TearDown test by removing directory and file
+		defer os.RemoveAll(tempDir)
+
 		// Run chmod function
 		err = chmod(tempDir, test.mode, test.recurse)
 		assert.NoError(t, err)
@@ -248,12 +251,6 @@ func TestChmod(t *testing.T) {
 		filePermission, err := os.Stat(tempFile.Name())
 		assert.NoError(t, err)
 		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
-
-		fmt.Printf("FILE NAME: %s\n", tempFile.Name())
-
-		// TearDown test by removing directory and file
-		err = os.RemoveAll(tempDir)
-		assert.NoError(t, err)
 	}
 
 }
