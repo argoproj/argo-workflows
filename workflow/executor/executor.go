@@ -33,6 +33,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/archive"
+	errorsutil "github.com/argoproj/argo/util/errors"
 	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
@@ -620,7 +621,7 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 		pod, err = podsIf.Get(we.PodName, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
@@ -647,7 +648,7 @@ func (we *WorkflowExecutor) GetConfigMapKey(name, key string) (string, error) {
 		configmap, err = configmapsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get configmap '%s': %v", name, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
@@ -682,7 +683,7 @@ func (we *WorkflowExecutor) GetSecrets(namespace, name, key string) ([]byte, err
 		secret, err = secretsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil

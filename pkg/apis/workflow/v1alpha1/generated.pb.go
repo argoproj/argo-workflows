@@ -6646,18 +6646,16 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x9a
 	}
-	if m.ResubmitPendingPods != nil {
-		i--
-		if *m.ResubmitPendingPods {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x2
-		i--
-		dAtA[i] = 0x90
+	i--
+	if m.ResubmitPendingPods {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0x90
 	if m.Executor != nil {
 		{
 			size, err := m.Executor.MarshalToSizedBuffer(dAtA[:i])
@@ -9868,9 +9866,7 @@ func (m *Template) Size() (n int) {
 		l = m.Executor.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.ResubmitPendingPods != nil {
-		n += 3
-	}
+	n += 3
 	if m.Metrics != nil {
 		l = m.Metrics.Size()
 		n += 2 + l + sovGenerated(uint64(l))
@@ -11413,7 +11409,7 @@ func (this *Template) String() string {
 		`PodSpecPatch:` + fmt.Sprintf("%v", this.PodSpecPatch) + `,`,
 		`AutomountServiceAccountToken:` + valueToStringGenerated(this.AutomountServiceAccountToken) + `,`,
 		`Executor:` + strings.Replace(this.Executor.String(), "ExecutorConfig", "ExecutorConfig", 1) + `,`,
-		`ResubmitPendingPods:` + valueToStringGenerated(this.ResubmitPendingPods) + `,`,
+		`ResubmitPendingPods:` + fmt.Sprintf("%v", this.ResubmitPendingPods) + `,`,
 		`Metrics:` + strings.Replace(this.Metrics.String(), "Metrics", "Metrics", 1) + `,`,
 		`Synchronization:` + strings.Replace(this.Synchronization.String(), "Synchronization", "Synchronization", 1) + `,`,
 		`Memoize:` + strings.Replace(this.Memoize.String(), "Memoize", "Memoize", 1) + `,`,
@@ -24192,8 +24188,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.ResubmitPendingPods = &b
+			m.ResubmitPendingPods = bool(v != 0)
 		case 35:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Metrics", wireType)
