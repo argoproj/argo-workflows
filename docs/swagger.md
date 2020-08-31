@@ -272,6 +272,23 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.cronworkflowdeletedresponse) |
 
+### /api/v1/events/{namespace}/{discriminator}
+
+#### POST
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is "broadcast" to workflow event binding in all namespaces. | Yes | string |
+| discriminator | path | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)` | Yes | string |
+| body | body | The event itself can be any data. | Yes | [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [io.argoproj.workflow.v1alpha1.EventResponse](#io.argoproj.workflow.v1alpha1.eventresponse) |
+
 ### /api/v1/info
 
 #### GET
@@ -795,7 +812,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | duration | string | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") | No |
-| factor | integer | Factor is a factor to multiply the base duration after each failed retry | No |
+| factor | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Factor is a factor to multiply the base duration after each failed retry | No |
 | maxDuration | string | MaxDuration is the maximum amount of time allowed for the backoff strategy | No |
 
 #### io.argoproj.workflow.v1alpha1.Cache
@@ -970,6 +987,18 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 | target | string | Target are one or more names of targets to execute in a DAG | No |
 | tasks | [ [io.argoproj.workflow.v1alpha1.DAGTask](#io.argoproj.workflow.v1alpha1.dagtask) ] | Tasks are a list of DAG tasks | Yes |
 
+#### io.argoproj.workflow.v1alpha1.Event
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| selector | string | Selector (<https://github.com/antonmedv/expr>) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"` | Yes |
+
+#### io.argoproj.workflow.v1alpha1.EventResponse
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.EventResponse | object |  |  |
+
 #### io.argoproj.workflow.v1alpha1.ExecutorConfig
 
 ExecutorConfig holds configurations of an executor container.
@@ -1053,12 +1082,6 @@ Histogram is a Histogram prometheus metric
 | buckets | [ [io.argoproj.workflow.v1alpha1.Amount](#io.argoproj.workflow.v1alpha1.amount) ] | Buckets is a list of bucket divisors for the histogram | Yes |
 | value | string | Value is the value of the metric | Yes |
 
-#### io.argoproj.workflow.v1alpha1.HolderNames
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| name | [ string ] | Name stores the name of the resource holding lock | No |
-
 #### io.argoproj.workflow.v1alpha1.InfoResponse
 
 | Name | Type | Description | Required |
@@ -1081,7 +1104,7 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.argoproj.workflow.v1alpha1.Item |  | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
+| io.argoproj.workflow.v1alpha1.Item | boolean,number,string,object | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
 
 #### io.argoproj.workflow.v1alpha1.Link
 
@@ -1149,6 +1172,32 @@ Metrics are a list of metrics emitted from a Workflow/Template
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | prometheus | [ [io.argoproj.workflow.v1alpha1.Prometheus](#io.argoproj.workflow.v1alpha1.prometheus) ] | Prometheus is a list of prometheus metrics to be emitted | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Mutex
+
+Mutex holds Mutex configuration
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | name of the mutex | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexHolding
+
+MutexHolding describes the mutex and the object which is holding it.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holder | string | Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID} | No |
+| mutex | string | Reference for the mutex e.g: ${namespace}/mutex/${mutexName} | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexStatus
+
+MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1. | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Waiting is a list of mutexes and their respective objects this workflow is waiting for. | No |
 
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 
@@ -1280,7 +1329,7 @@ RetryStrategy provides controls on how to retry a workflow step
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | backoff | [io.argoproj.workflow.v1alpha1.Backoff](#io.argoproj.workflow.v1alpha1.backoff) | Backoff is a backoff strategy | No |
-| limit | integer | Limit is the maximum number of attempts when retrying a container | No |
+| limit | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Limit is the maximum number of attempts when retrying a container | No |
 | retryPolicy | string | RetryPolicy is a policy of NodePhase statuses that will be retried | No |
 
 #### io.argoproj.workflow.v1alpha1.S3Artifact
@@ -1349,7 +1398,7 @@ SemaphoreRef is a reference of Semaphore
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | holding | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Holding stores the list of resource acquired synchronization lock for workflows. | No |
-| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders. | No |
 
 #### io.argoproj.workflow.v1alpha1.Sequence
 
@@ -1361,6 +1410,13 @@ Sequence expands a workflow step into numeric range
 | end | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Number at which to end the sequence (default: 0). Not to be used with Count | No |
 | format | string | Format is a printf format string to format the value in the sequence | No |
 | start | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Number at which to start the sequence (default: 0) | No |
+
+#### io.argoproj.workflow.v1alpha1.Submit
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments extracted from the event and then set as arguments to the workflow created. | No |
+| workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef the workflow template to submit | Yes |
 
 #### io.argoproj.workflow.v1alpha1.SubmitOpts
 
@@ -1401,13 +1457,17 @@ Synchronization holds synchronization lock configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| mutex | [io.argoproj.workflow.v1alpha1.Mutex](#io.argoproj.workflow.v1alpha1.mutex) | Mutex holds the Mutex lock details | No |
 | semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreRef](#io.argoproj.workflow.v1alpha1.semaphoreref) | Semaphore holds the Semaphore configuration | No |
 
 #### io.argoproj.workflow.v1alpha1.SynchronizationStatus
 
+SynchronizationStatus stores the status of semaphore and mutex.
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | SemaphoreHolders stores this workflow's Semaphore holder details | No |
+| mutex | [io.argoproj.workflow.v1alpha1.MutexStatus](#io.argoproj.workflow.v1alpha1.mutexstatus) | Mutex stores this workflow's mutex holder details | No |
+| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | Semaphore stores this workflow's Semaphore holder details | No |
 
 #### io.argoproj.workflow.v1alpha1.TTLStrategy
 
@@ -1433,7 +1493,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| activeDeadlineSeconds | long | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
+| activeDeadlineSeconds | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
 | affinity | [io.k8s.api.core.v1.Affinity](#io.k8s.api.core.v1.affinity) | Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any) | No |
 | archiveLocation | [io.argoproj.workflow.v1alpha1.ArtifactLocation](#io.argoproj.workflow.v1alpha1.artifactlocation) | Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key. | No |
 | arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments hold arguments to the template. DEPRECATED: This field is not used. | No |
@@ -1527,6 +1587,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
@@ -1573,6 +1634,24 @@ Workflow is the definition of a workflow resource
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse | object |  |  |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBinding
+
+WorkflowEventBinding is the definition of an event resource
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) |  | Yes |
+| spec | [io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec](#io.argoproj.workflow.v1alpha1.workfloweventbindingspec) |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| event | [io.argoproj.workflow.v1alpha1.Event](#io.argoproj.workflow.v1alpha1.event) | Event is the event to bind to | Yes |
+| submit | [io.argoproj.workflow.v1alpha1.Submit](#io.argoproj.workflow.v1alpha1.submit) | Submit is the workflow template to submit | No |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowLintRequest
 

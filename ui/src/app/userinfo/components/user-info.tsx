@@ -4,6 +4,7 @@ import {RouteComponentProps} from 'react-router-dom';
 import {GetUserInfoResponse} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
+import {ErrorNotice} from '../../shared/components/error-notice';
 import {services} from '../../shared/services';
 
 interface State {
@@ -20,17 +21,15 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
     public componentDidMount() {
         services.info
             .getUserInfo()
-            .then(userInfo => this.setState({userInfo}))
+            .then(userInfo => this.setState({error: null, userInfo}))
             .catch(error => this.setState({error}));
     }
 
     public render() {
-        if (this.state.error) {
-            throw this.state.error;
-        }
         return (
             <Page title='User Info' toolbar={{breadcrumbs: [{title: 'User Info'}]}}>
                 <div className='argo-container'>
+                    {this.state.error && <ErrorNotice error={this.state.error} />}
                     <div className='white-box'>
                         <h3>
                             <i className='fa fa-user-alt' /> User Info

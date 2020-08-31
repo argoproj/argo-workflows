@@ -14,6 +14,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +42,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
@@ -193,6 +195,21 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 	return wf, err
 }
 
+func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, includeDryRun bool) {
+	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
+	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
+	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
+	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
+	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
+
+	if includeDryRun {
+		command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
+		command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
+	}
+}
+
 // Apply the Submit options into workflow object
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts == nil {
@@ -226,8 +243,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			intOrString := intstr.Parse(parts[1])
-			param := wfv1.Parameter{Name: parts[0], Value: &intOrString}
+			param := wfv1.Parameter{Name: parts[0], Value: intstrutil.ParsePtr(parts[1])}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -261,8 +277,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				intOrString := intstr.Parse(value)
-				param := wfv1.Parameter{Name: k, Value: &intOrString}
+				param := wfv1.Parameter{Name: k, Value: intstrutil.ParsePtr(value)}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
@@ -566,6 +581,9 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	for key, val := range wf.ObjectMeta.Annotations {
 		newWF.ObjectMeta.Annotations[key] = val
 	}
+
+	// Setting OwnerReference from original Workflow
+	newWF.OwnerReferences = append(newWF.OwnerReferences, wf.OwnerReferences...)
 
 	if !memoized {
 		return &newWF, nil

@@ -15,7 +15,7 @@ interface Props<T> {
     value: T;
     readonly?: boolean;
     editing?: boolean;
-    onSubmit?: (value: T) => void;
+    onSubmit?: (value: T) => Promise<any>;
 }
 
 interface State {
@@ -29,7 +29,11 @@ const LOCAL_STORAGE_KEY = 'ResourceEditorLang';
 
 export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private set lang(lang: string) {
-        this.setState({lang, value: stringify(parse(this.state.value), lang)});
+        try {
+            this.setState({lang, error: null, value: stringify(parse(this.state.value), lang)});
+        } catch (error) {
+            this.setState({error});
+        }
     }
 
     private static saveLang(newLang: string) {
@@ -86,7 +90,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     public handleFiles(files: FileList) {
         files[0]
             .text()
-            .then(value => this.setState({value: stringify(parse(value), this.state.lang)}))
+            .then(value => this.setState({error: null, value: stringify(parse(value), this.state.lang)}))
             .catch(error => this.setState(error));
     }
 
@@ -152,8 +156,10 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            this.props.onSubmit(parse(this.state.value));
-            this.setState({editing: false});
+            this.props
+                .onSubmit(parse(this.state.value))
+                .then(() => this.setState({error: null}))
+                .catch(error => this.setState({error}));
         } catch (error) {
             this.setState({error});
         }
@@ -162,8 +168,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private renderWarning() {
         return (
             <div style={{marginTop: '1em'}}>
-                <i className='fa fa-info-circle' /> Note:{' '}
-                {this.state.lang === 'json' ? <>Full auto-completion enabled</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
+                <i className='fa fa-info-circle' />{' '}
+                {this.state.lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
+                <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
             </div>
         );
     }

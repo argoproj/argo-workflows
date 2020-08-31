@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -15,8 +15,8 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
 	woc.operate()
-	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
-	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.wfSpec.Entrypoint)
+	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
+	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
@@ -29,11 +29,10 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: intstrutil.ParsePtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -50,11 +49,10 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: intstrutil.ParsePtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)

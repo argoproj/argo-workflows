@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
@@ -490,11 +490,10 @@ func TestApplySubmitOpts(t *testing.T) {
 		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
 	})
 	t.Run("Parameters", func(t *testing.T) {
-		intOrString := intstr.Parse("0")
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: &intOrString}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: intstrutil.ParsePtr("0")}},
 				},
 			},
 		}
@@ -536,6 +535,12 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 					common.LabelKeyPhase:                   "1",
 					common.LabelKeyCompleted:               "1",
 				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
 			},
 		}
 		wf, err := FormulateResubmitWorkflow(wf, false)
@@ -548,6 +553,9 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
+			assert.Equal(t, 1, len(wf.OwnerReferences))
+			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
+			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
 		}
 	})
 

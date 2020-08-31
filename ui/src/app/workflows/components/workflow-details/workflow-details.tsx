@@ -11,6 +11,7 @@ import {services} from '../../../shared/services';
 
 import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
@@ -30,8 +31,9 @@ function parseSidePanelParam(param: string) {
 }
 
 interface WorkflowDetailsState {
-    workflow: Workflow;
-    links: Link[];
+    workflow?: Workflow;
+    links?: Link[];
+    error?: Error;
 }
 
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, WorkflowDetailsState> {
@@ -57,10 +59,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {
-            workflow: null,
-            links: null
-        };
+        this.state = {};
     }
 
     public componentDidMount() {
@@ -103,7 +102,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     title: 'Workflows',
                                     path: uiUrl('workflows')
                                 },
-                                {title: this.props.match.params.name}
+                                {title: this.props.match.params.namespace + '/' + this.props.match.params.name}
                             ],
                             actionMenu: {
                                 items: this.getItems(workflowPhase, ctx)
@@ -279,6 +278,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private renderSummaryTab() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
         if (!this.state.workflow) {
             return <Loading />;
         }
@@ -314,17 +316,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             this.changesSubscription = services.workflows
                 .watch({name, namespace})
                 .map(changeEvent => changeEvent.object)
-                .catch((error, caught) => {
-                    return caught;
-                })
-                .subscribe(workflow => {
-                    this.setState({workflow});
-                });
-        } catch (e) {
-            this.appContext.apis.notifications.show({
-                content: 'Unable to load workflow',
-                type: NotificationType.Error
-            });
+                .subscribe(
+                    workflow => this.setState({workflow, error: null}),
+                    error => this.setState({error})
+                );
+        } catch (error) {
+            this.setState({error});
         }
     }
 

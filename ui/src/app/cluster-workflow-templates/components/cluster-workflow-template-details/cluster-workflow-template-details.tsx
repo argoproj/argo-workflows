@@ -5,9 +5,11 @@ import {RouteComponentProps} from 'react-router';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
+import {Utils} from '../../../shared/utils';
 import {SubmitWorkflowPanel} from '../../../workflows/components/submit-workflow-panel';
 import {ClusterWorkflowTemplateSummaryPanel} from '../cluster-workflow-template-summary-panel';
 
@@ -38,20 +40,15 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
     }
 
     public componentDidMount(): void {
-        services.info
-            .getInfo()
-            .then(info => this.setState({namespace: info.managedNamespace || 'default'}))
-            .catch(error => this.setState(error));
         services.clusterWorkflowTemplate
             .get(this.name)
-            .then(template => this.setState({template}))
+            .then(template => this.setState({error: null, template}))
+            .then(() => services.info.getInfo())
+            .then(info => this.setState({namespace: info.managedNamespace || Utils.getCurrentNamespace() || 'default'}))
             .catch(error => this.setState({error}));
     }
 
     public render() {
-        if (this.state.error !== undefined) {
-            throw this.state.error;
-        }
         return (
             <Consumer>
                 {ctx => (
@@ -102,10 +99,13 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
     }
 
     private renderClusterWorkflowTemplate() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} />;
+        }
         if (!this.state.template) {
             return <Loading />;
         }
-        return <ClusterWorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} onError={error => this.setState({error})} />;
+        return <ClusterWorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} />;
     }
 
     private deleteClusterWorkflowTemplate() {

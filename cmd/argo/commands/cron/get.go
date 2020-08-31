@@ -88,6 +88,12 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 	if wf.Status.LastScheduledTime != nil {
 		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
 	}
+
+	next, err := wf.GetNextRuntime()
+	if err == nil {
+		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next))
+	}
+
 	if len(wf.Status.Active) > 0 {
 		var activeWfNames []string
 		for _, activeWf := range wf.Status.Active {
@@ -97,6 +103,15 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 	}
 	if len(wf.Status.Conditions) > 0 {
 		out += wf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
+	}
+	if len(wf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
+		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")
+		for _, param := range wf.Spec.WorkflowSpec.Arguments.Parameters {
+			if param.Value == nil {
+				continue
+			}
+			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", *param.Value)
+		}
 	}
 	return out
 }
