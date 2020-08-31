@@ -110,15 +110,15 @@ jobs:
 
             docker buildx build \
               --load \
-              --platform="linux/amd64" \
-              --target $target \
-              --tag "${image_name}-linux-amd64" .
+              --platform="linux/arm64" \
+              --target ${target} \
+              --tag "${image_name}-linux-arm64" .
 
             docker buildx build \
               --load \
-              --platform="linux/arm64" \
-              --target $target \
-              --tag "${image_name}-linux-arm64" .
+              --platform="linux/amd64" \
+              --target ${target} \
+              --tag "${image_name}-linux-amd64" .
 
             docker manifest create $image_name ${image_name}-windows ${image_name}-linux-arm64 ${image_name}-linux-amd64
 
