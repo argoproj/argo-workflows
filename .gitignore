@@ -14,6 +14,7 @@ git-ask-pass.sh
 /coverage.out
 .envrc
 /.vendor-new
+/kustomize
 /workflow-controller
 /.scannerwork/
 /test-results/

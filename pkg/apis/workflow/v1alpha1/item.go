@@ -20,11 +20,10 @@ const (
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
-// +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
+// +kubebuilder:validation:Type=object
 type Item struct {
-	Value json.RawMessage `json:"value" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
+	Value json.RawMessage `json:"-" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
 }
 
 func ParseItem(s string) (Item, error) {
@@ -90,7 +89,8 @@ func (i *Item) DeepCopyInto(out *Item) {
 }
 
 func (i Item) OpenAPISchemaType() []string {
-	return []string{}
+	// this list should also contain `array`, but that requires `items` and that did not appear to be easy
+	return []string{"boolean", "number", "string", "object"}
 }
 
 func (i Item) OpenAPISchemaFormat() string { return "" }
