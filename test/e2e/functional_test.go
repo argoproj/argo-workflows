@@ -818,6 +818,46 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestStepsResourcesDuration() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-resources-duration
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: steps
+  templates:
+  - name: cowsay
+    resubmitPendingPods: true
+    container:
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
+  - name: steps
+    steps:
+      - - name: step1
+          template: cowsay
+      - - name: step2
+          template: cowsay
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflowTemplates(func(t *testing.T, templates []wfv1.Template) {
+			for _, template := range templates {
+				if template.Name != "steps" {
+					assert.Empty(t, template.ResourcesDuration)
+					continue
+				}
+
+				assert.NotEmpty(t, template.ResourcesDuration)
+			}
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }

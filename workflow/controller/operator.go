@@ -3115,8 +3115,28 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 	}
 
 	if templateType == wfv1.TemplateTypeSteps {
-		// loop children and recurse
-		// append results to template
+		durationSum := wfv1.ResourcesDuration{}
+
+		for i, stepGroup := range template.Steps {
+			sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
+
+			for _, step := range stepGroup.Steps {
+				childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+				childNode := woc.wf.GetNodeByName(childNodeName)
+				childTemplate := woc.wf.GetTemplateByName(childNode.TemplateName)
+
+				duration, err := woc.getNodeResourcesDurationFromPods(childNode.Name, podList, tmplCtx, childTemplate)
+				if err != nil {
+					return nil, err
+				}
+
+				if duration != nil {
+					durationSum.Add(*duration)
+				}
+			}
+		}
+
+		return &durationSum, nil
 	}
 
 	return nil, fmt.Errorf("unsupported template type")
