@@ -421,7 +421,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 	}
 
-	err = woc.maybeSumTemplateResourcesDuration(tmplCtx, execTmplRef)
+	err = woc.maybeSumTemplateResourcesDuration(node.Name, tmplCtx, execTmplRef)
 	if err != nil {
 		msg := "failed to aggregate template resources duration"
 		woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Errorf(msg)
@@ -1011,33 +1011,14 @@ func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
 	return podList, nil
 }
 
-// getAllTemplatePods returns all pods for a given template
-func (woc *wfOperationCtx) getAllTemplatePods(tmpl *wfv1.Template) (*apiv1.PodList, error) {
-	wfPods, err := woc.getAllWorkflowPods()
-	if err != nil {
-		return nil, err
-	}
-
-	tmplPods := wfPods.DeepCopy()
+func filterPodsByNode(podList *apiv1.PodList, nodeName string) (*apiv1.PodList, error) {
+	tmplPods := podList.DeepCopy()
 	tmplPods.Items = []apiv1.Pod{}
 
-	for _, pod := range wfPods.Items {
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			continue
-		}
+	for _, pod := range podList.Items {
+		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 
-		var parsedTmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &parsedTmpl)
-		if err != nil {
-			return nil, err
-		}
-
-		if parsedTmpl.Name != tmpl.Name {
-			continue
-		}
-
-		if parsedTmpl.GetType() != tmpl.GetType() {
+		if nodeName != nodeNameForPod {
 			continue
 		}
 
@@ -3048,7 +3029,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 // sum the resources duration from all pods associated with DAG or steps
 // templates
-func (woc *wfOperationCtx) maybeSumTemplateResourcesDuration(tmplCtx *templateresolution.Context, tmplRefHolder wfv1.TemplateReferenceHolder) error {
+func (woc *wfOperationCtx) maybeSumTemplateResourcesDuration(nodeName string, tmplCtx *templateresolution.Context, tmplRefHolder wfv1.TemplateReferenceHolder) error {
 	_, template, _, err := tmplCtx.ResolveTemplate(tmplRefHolder)
 	if err != nil {
 		return err
@@ -3060,18 +3041,91 @@ func (woc *wfOperationCtx) maybeSumTemplateResourcesDuration(tmplCtx *templatere
 		return nil
 	}
 
-	podList, err := woc.getAllTemplatePods(template)
+	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
 		return err
 	}
 
-	durationSum := wfv1.ResourcesDuration{}
-	for _, pod := range podList.Items {
-		duration := resource.DurationForPod(&pod)
-		durationSum.Add(duration)
+	duration, err := woc.getNodeResourcesDurationFromPods(nodeName, podList, tmplCtx, template)
+	if err != nil {
+		return err
 	}
 
-	template.ResourcesDuration = durationSum
+	for i, t := range woc.wf.Spec.Templates {
+		if t.Name == template.Name {
+			woc.wf.Spec.Templates[i].ResourcesDuration = *duration
+		}
+	}
 
 	return nil
+}
+
+func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, podList *apiv1.PodList, tmplCtx *templateresolution.Context, template *wfv1.Template) (*wfv1.ResourcesDuration, error) {
+	if template.IsLeaf() {
+		templatePods, err := filterPodsByNode(podList, nodeName)
+		if err != nil {
+			return nil, err
+		}
+
+		durationSum := wfv1.ResourcesDuration{}
+		for _, pod := range templatePods.Items {
+			duration := resource.DurationForPod(&pod)
+			durationSum.Add(duration)
+		}
+
+		return &durationSum, nil
+	}
+
+	templateType := template.GetType()
+	if templateType == wfv1.TemplateTypeDAG {
+		// loop children and recurse
+		node := woc.wf.GetNodeByName(nodeName)
+
+		dagCtx := &dagContext{
+			boundaryName: node.Name,
+			boundaryID:   node.ID,
+			tasks:        template.DAG.Tasks,
+			visited:      make(map[string]bool),
+			tmpl:         template,
+			wf:           woc.wf,
+			tmplCtx:      tmplCtx,
+			// onExitTemplate: opts.onExitTemplate,
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+		}
+
+		// Identify our target tasks. If user did not specify any, then we choose all tasks which have
+		// no dependants.
+		var targetTasks []string
+		if template.DAG.Target == "" {
+			targetTasks = dagCtx.findLeafTaskNames(template.DAG.Tasks)
+		} else {
+			targetTasks = strings.Split(template.DAG.Target, " ")
+		}
+
+		durationSum := wfv1.ResourcesDuration{}
+		for _, taskName := range targetTasks {
+			taskNode := dagCtx.getTaskNode(taskName)
+
+			childTemplate := woc.wf.GetTemplateByName(taskNode.TemplateName)
+
+			duration, err := woc.getNodeResourcesDurationFromPods(taskNode.Name, podList, tmplCtx, childTemplate)
+			if err != nil {
+				return nil, err
+			}
+
+			durationSum.Add(*duration)
+		}
+
+		template.ResourcesDuration = durationSum
+
+		return &durationSum, nil
+	}
+
+	if templateType == wfv1.TemplateTypeSteps {
+		// loop children and recurse
+		// append results to template
+	}
+
+	return nil, fmt.Errorf("unsupported template type")
 }
