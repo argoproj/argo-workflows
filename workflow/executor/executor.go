@@ -41,7 +41,8 @@ import (
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
-var MainContainerStartRetry = wait.Backoff{
+// ExecutorRetry is a retry backoff settings for WorkflowExecutor
+var ExecutorRetry = wait.Backoff{
 	Steps:    8,
 	Duration: 1 * time.Second,
 	Factor:   1.0,
@@ -618,7 +619,7 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
 	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
 		pod, err = podsIf.Get(we.PodName, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
@@ -937,7 +938,7 @@ func (we *WorkflowExecutor) Wait() error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
 		err = we.RuntimeExecutor.Wait(mainContainerID)
 		if err != nil {
 			log.Warnf("Failed to wait for container id '%s': %v", mainContainerID, err)
@@ -964,7 +965,7 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 		var err error
 		var watchIf watch.Interface
 
-		err = wait.ExponentialBackoff(MainContainerStartRetry, func() (bool, error) {
+		err = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
 			watchIf, err = podsIf.Watch(opts)
 			if err != nil {
 				log.Debugf("Failed to establish watch, retrying: %v", err)
