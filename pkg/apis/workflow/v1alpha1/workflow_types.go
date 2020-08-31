@@ -718,6 +718,7 @@ const (
 	ArtifactLocationRaw         ArtifactLocationType = "Raw"
 	ArtifactLocationOSS         ArtifactLocationType = "OSS"
 	ArtifactLocationGCS         ArtifactLocationType = "GCS"
+	ArtifactLocationUnknown     ArtifactLocationType = ""
 )
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -766,9 +767,6 @@ func (a *ArtifactLocation) HasLocation() bool {
 }
 
 func (a *ArtifactLocation) GetType() ArtifactLocationType {
-	if !a.HasLocation() {
-		return ""
-	}
 
 	if a.S3 != nil {
 		return ArtifactLocationS3
@@ -802,7 +800,7 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 		return ArtifactLocationGCS
 	}
 
-	return ""
+	return ArtifactLocationUnknown
 
 }
 
