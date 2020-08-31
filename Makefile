@@ -136,7 +136,7 @@ ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
 	@mkdir -p ui/node_modules
 ifeq ($(STATIC_FILES),true)
-	yarn --cwd ui install
+	JOBS=max yarn --cwd ui install
 endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
@@ -145,7 +145,7 @@ ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(STATIC_FILES),true)
-	yarn --cwd ui build
+	JOBS=max yarn --cwd ui build
 else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
