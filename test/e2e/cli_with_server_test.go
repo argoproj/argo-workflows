@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -14,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 type CLIWithServerSuite struct {
@@ -106,7 +106,7 @@ func (s *CLIWithServerSuite) TestArchive() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -197,7 +197,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflow(fixtures.ToStart).
 		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "has not been set and does not have a default value")
@@ -215,7 +215,7 @@ spec:
 			assert.Error(t, err)
 			assert.Contains(t, output, "cannot set output parameters because node is not expecting any raw parameters")
 		}).
-		RunCli([]string{"node", "set", "suspend-template", "--message", "Test message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"node", "set", "suspend-template", "--message", "Condition message", "--node-field-selector", "displayName=approve"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow values set")
 		}).
@@ -223,7 +223,7 @@ spec:
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow suspend-template resumed")
 		}).
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -233,7 +233,7 @@ spec:
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
 			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Test message", nodeStatus.Message)
+				assert.Equal(t, "Condition message", nodeStatus.Message)
 			}
 		})
 }
