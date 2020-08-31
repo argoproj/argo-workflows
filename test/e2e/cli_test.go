@@ -1011,7 +1011,6 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
-	s.T().Skip("flaky - see https://github.com/argoproj/argo/issues/3540")
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
