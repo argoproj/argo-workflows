@@ -3051,11 +3051,7 @@ func (woc *wfOperationCtx) maybeSumTemplateResourcesDuration(nodeName string, tm
 		return err
 	}
 
-	for i, t := range woc.wf.Spec.Templates {
-		if t.Name == template.Name {
-			woc.wf.Spec.Templates[i].ResourcesDuration = *duration
-		}
-	}
+	woc.markTemplateResourcesDuration(template.Name, duration)
 
 	return nil
 }
@@ -3076,9 +3072,9 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 		return &durationSum, nil
 	}
 
+	// loop children and recurse for DAG and Steps
 	templateType := template.GetType()
 	if templateType == wfv1.TemplateTypeDAG {
-		// loop children and recurse
 		node := woc.wf.GetNodeByName(nodeName)
 
 		dagCtx := &dagContext{
@@ -3089,19 +3085,11 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 			tmpl:         template,
 			wf:           woc.wf,
 			tmplCtx:      tmplCtx,
-			// onExitTemplate: opts.onExitTemplate,
 			dependencies: make(map[string][]string),
 			dependsLogic: make(map[string]string),
 		}
 
-		// Identify our target tasks. If user did not specify any, then we choose all tasks which have
-		// no dependants.
-		var targetTasks []string
-		if template.DAG.Target == "" {
-			targetTasks = dagCtx.findLeafTaskNames(template.DAG.Tasks)
-		} else {
-			targetTasks = strings.Split(template.DAG.Target, " ")
-		}
+		targetTasks := dagCtx.getTargetTasks(template)
 
 		durationSum := wfv1.ResourcesDuration{}
 		for _, taskName := range targetTasks {
@@ -3128,4 +3116,12 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 	}
 
 	return nil, fmt.Errorf("unsupported template type")
+}
+
+func (woc *wfOperationCtx) markTemplateResourcesDuration(templateName string, duration *wfv1.ResourcesDuration) {
+	for i, t := range woc.wf.Spec.Templates {
+		if t.Name == templateName {
+			woc.wf.Spec.Templates[i].ResourcesDuration = *duration
+		}
+	}
 }

@@ -217,14 +217,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		dependsLogic:   make(map[string]string),
 	}
 
-	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
-	// no dependants.
-	var targetTasks []string
-	if tmpl.DAG.Target == "" {
-		targetTasks = dagCtx.findLeafTaskNames(tmpl.DAG.Tasks)
-	} else {
-		targetTasks = strings.Split(tmpl.DAG.Target, " ")
-	}
+	targetTasks := dagCtx.getTargetTasks(tmpl)
 
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
@@ -681,4 +674,16 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 	}
 
 	return execute, true, nil
+}
+
+// Identify our target tasks. If user did not specify any, then we choose all tasks which have no dependants.
+func (dagCtx *dagContext) getTargetTasks(template *wfv1.Template) []string {
+	var targetTasks []string
+	if template.DAG.Target == "" {
+		targetTasks = dagCtx.findLeafTaskNames(template.DAG.Tasks)
+	} else {
+		targetTasks = strings.Split(template.DAG.Target, " ")
+	}
+
+	return targetTasks
 }

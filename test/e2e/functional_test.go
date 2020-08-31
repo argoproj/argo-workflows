@@ -788,14 +788,14 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  entrypoint: schwingschwing
+  entrypoint: dag
   templates:
   - name: cowsay
     resubmitPendingPods: true
     container:
       image: argoproj/argosay:v2
       args: ["echo", "a"]
-  - name: schwingschwing
+  - name: dag
     dag:
       tasks:
       - name: dagtask1
@@ -809,7 +809,7 @@ spec:
 		Then().
 		ExpectWorkflowTemplates(func(t *testing.T, templates []wfv1.Template) {
 			for _, template := range templates {
-				if template.Name != "schwingschwing" {
+				if template.Name != "dag" {
 					continue
 				}
 
