@@ -323,9 +323,9 @@ func (s *CLIWithServerSuite) TestNodeSuspendResume() {
 				assert.Contains(t, output, "workflow node-suspend resumed")
 			}
 		}).
-		WaitForWorkflow(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node").
+		}), "suspended node").
 		RunCli([]string{"stop", "node-suspend", "--node-field-selector", "inputs.parameters.tag.value=suspend2-tag1", "--message", "because"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow node-suspend stopped")
@@ -607,10 +607,10 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 				assert.Contains(t, output, "workflow retry-test terminated")
 			}
 		}).
-		WaitForWorkflow(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			retryTime = wf.Status.FinishedAt
 			return wf.Status.Phase == wfv1.NodeFailed
-		}, "terminated", 20*time.Second).
+		}), "is terminated", 20*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
