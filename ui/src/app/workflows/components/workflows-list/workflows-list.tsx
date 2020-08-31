@@ -418,7 +418,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 </React.Fragment>
                             )}
                             onSelect={val => {
-                                ctx.navigation.goto(`./${val}`);
+                                ctx.navigation.goto(uiUrl(`workflows/${val}`));
                             }}
                             onChange={e => {
                                 ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
