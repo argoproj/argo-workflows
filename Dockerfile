@@ -110,7 +110,7 @@ COPY --from=argo-ui ui/dist/app ui/dist/app
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
 RUN . hack/image_arch.sh && make argo-server.crt argo-server.key dist/argo-linux-${IMAGE_ARCH}
-RUN . hack/image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version | grep clean
+RUN . hack/image_arch.sh && ./dist/argo-linux-${IMAGE_ARCH} version 2>&1 | grep clean
 
 ####################################################################################################
 # argoexec
