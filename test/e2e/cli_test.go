@@ -1021,6 +1021,7 @@ func (s *CLISuite) TestRetryOmit() {
 				return node.Phase == wfv1.NodeOmitted
 			})
 		}, "any node omitted", 20*time.Second).
+		WaitForWorkflow(10*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("should-not-execute")
