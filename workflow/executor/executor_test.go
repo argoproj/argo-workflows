@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -193,4 +194,58 @@ func TestIsTarball(t *testing.T) {
 		}
 		assert.Equal(t, test.isTarball, ok, test.path)
 	}
+}
+
+func TestChmod(t *testing.T) {
+	TmpDirName := "testdata/tmpdir"
+	TmpFileName := "testdata/tmpdir/tmpfile"
+
+	type perm struct {
+		path       string
+		modeString string
+	}
+
+	tests := []struct {
+		mode        int32
+		recurse     bool
+		permissions []perm
+	}{
+		{
+			0777,
+			false,
+			[]perm{
+				{TmpDirName, "drwxrwxrwx"},
+				{TmpFileName, "-rw-r--r--"},
+			},
+		},
+		{
+			0777,
+			true,
+			[]perm{
+				{TmpDirName, "drwxrwxrwx"},
+				{TmpFileName, "-rwxrwxrwx"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		// Setup directory and file for testing
+		err := os.Mkdir(TmpDirName, os.FileMode(0644))
+		newFile, err := os.Create(TmpFileName)
+		err = newFile.Chmod(os.FileMode(0644))
+		assert.NoError(t, err)
+
+		chmod(TmpDirName, test.mode, test.recurse)
+
+		for _, permission := range test.permissions {
+			fi, err := os.Stat(permission.path)
+			assert.NoError(t, err)
+			assert.Equal(t, fi.Mode().String(), permission.modeString)
+		}
+
+		// TearDown test by removing directory and file
+		err = os.RemoveAll(TmpDirName)
+		assert.NoError(t, err)
+	}
+
 }

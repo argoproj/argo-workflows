@@ -207,19 +207,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Successfully download file: %s", artPath)
 		if art.Mode != nil {
-			err = os.Chmod(artPath, os.FileMode(*art.Mode))
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-
-			if art.RecurseMode {
-				err = filepath.Walk(artPath, func(path string, f os.FileInfo, err error) error {
-					return os.Chmod(path, os.FileMode(*art.Mode))
-				})
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			}
+			chmod(artPath, *art.Mode, art.RecurseMode)
 		}
 	}
 	return nil
@@ -897,6 +885,24 @@ func untar(tarPath string, destPath string) error {
 			return errors.InternalWrapError(err)
 		}
 	}
+	return nil
+}
+
+func chmod(artPath string, mode int32, recurse bool) error {
+	err := os.Chmod(artPath, os.FileMode(mode))
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+
+	if recurse {
+		err = filepath.Walk(artPath, func(path string, f os.FileInfo, err error) error {
+			return os.Chmod(path, os.FileMode(mode))
+		})
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	}
+
 	return nil
 }
 
