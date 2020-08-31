@@ -91,6 +91,11 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
+func TestTemplate_IsResubmitAllowed(t *testing.T) {
+	assert.False(t, (&Template{}).IsResubmitPendingPods())
+	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitPendingPods())
+}
+
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
@@ -190,7 +195,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			{Key: "hello", Value: "World"},
 		},
 		Histogram: &Histogram{
-			Buckets: []Amount{NewAmount("10"), NewAmount("20"), NewAmount("30")},
+			Buckets: []Amount{{"10"}, {"20"}, {"30"}},
 		},
 	}
 	stableDesc := metric.GetDesc()
