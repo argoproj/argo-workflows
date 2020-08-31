@@ -405,7 +405,7 @@ stress:
 	$(MAKE) start &
 	$(MAKE) wait
 	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
-	argo submit --from workflowtemplates/many-massive-workflows -p x=1 -p y=1
+	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(X)
 
 # clean
 
