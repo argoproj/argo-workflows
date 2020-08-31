@@ -3094,15 +3094,19 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 		durationSum := wfv1.ResourcesDuration{}
 		for _, taskName := range targetTasks {
 			taskNode := dagCtx.getTaskNode(taskName)
-
 			childTemplate := woc.wf.GetTemplateByName(taskNode.TemplateName)
+			if childTemplate == nil {
+				continue
+			}
 
 			duration, err := woc.getNodeResourcesDurationFromPods(taskNode.Name, podList, tmplCtx, childTemplate)
 			if err != nil {
 				return nil, err
 			}
 
-			durationSum.Add(*duration)
+			if duration != nil {
+				durationSum.Add(*duration)
+			}
 		}
 
 		template.ResourcesDuration = durationSum
