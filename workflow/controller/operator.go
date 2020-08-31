@@ -3046,12 +3046,10 @@ func (woc *wfOperationCtx) maybeSumTemplateResourcesDuration(nodeName string, tm
 		return err
 	}
 
-	duration, err := woc.getNodeResourcesDurationFromPods(nodeName, podList, tmplCtx, template)
+	_, err = woc.getNodeResourcesDurationFromPods(nodeName, podList, tmplCtx, template)
 	if err != nil {
 		return err
 	}
-
-	woc.markTemplateResourcesDuration(template.Name, duration)
 
 	return nil
 }
@@ -3109,7 +3107,7 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 			}
 		}
 
-		template.ResourcesDuration = durationSum
+		woc.markTemplateResourcesDuration(template.Name, &durationSum)
 
 		return &durationSum, nil
 	}
@@ -3146,6 +3144,8 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 				}
 			}
 		}
+
+		woc.markTemplateResourcesDuration(template.Name, &durationSum)
 
 		return &durationSum, nil
 	}

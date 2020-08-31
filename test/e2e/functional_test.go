@@ -810,6 +810,7 @@ spec:
 		ExpectWorkflowTemplates(func(t *testing.T, templates []wfv1.Template) {
 			for _, template := range templates {
 				if template.Name != "dag" {
+					assert.Empty(t, template.ResourcesDuration)
 					continue
 				}
 
