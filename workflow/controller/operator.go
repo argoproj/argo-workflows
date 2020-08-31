@@ -3118,11 +3118,18 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 		durationSum := wfv1.ResourcesDuration{}
 
 		for i, stepGroup := range template.Steps {
-			sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
+			sgNodeName := getStepGroupNodeName(nodeName, i)
 
 			for _, step := range stepGroup.Steps {
-				childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+				childNodeName := getStepGroupStepName(sgNodeName, step.Name)
 				childNode := woc.wf.GetNodeByName(childNodeName)
+				if childNode == nil {
+					continue
+				}
+
+				if childNode.TemplateName == "" {
+					continue
+				}
 
 				childTemplate := woc.wf.GetTemplateByName(childNode.TemplateName)
 				if childTemplate == nil {
