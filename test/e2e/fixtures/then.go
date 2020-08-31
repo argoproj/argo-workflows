@@ -107,7 +107,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(defaultTimeout)
 	defer ticker.Stop()
 	for len(blocks) > 0 {
 		select {
