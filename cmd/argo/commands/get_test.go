@@ -2,17 +2,82 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
-	"text/tabwriter"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"text/tabwriter"
+
 	"sigs.k8s.io/yaml"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
+
+var wfWithStatus = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-24T22:53:35Z"
+  generation: 6
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: hello-world
+  namespace: default
+  resourceVersion: "1110858"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-2xg9p
+  uid: 8c25e2e7-6b35-4a49-a667-87b4cd1afa3c
+spec:
+  arguments: {}
+  entrypoint: whalesay
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-06-24T22:53:41Z"
+  nodes:
+    hello-world-2xg9p:
+      displayName: hello-world-2xg9p
+      finishedAt: "2020-06-24T22:53:39Z"
+      id: hello-world-2xg9p
+      name: hello-world-2xg9p
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 0
+      startedAt: "2020-06-24T22:53:35Z"
+      templateName: whalesay
+      templateScope: local/hello-world-2xg9p
+      type: Pod
+  phase: Succeeded
+  resourcesDuration:
+    cpu: 3
+    memory: 0
+  startedAt: "2020-06-24T22:53:35Z"
+`
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
 	var result bytes.Buffer
@@ -349,4 +414,29 @@ func TestIndexOrdering(t *testing.T) {
    ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
    ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
 	}
+}
+
+func TestGetCommand(t *testing.T) {
+	getOutput := `Name:                hello-world
+Namespace:           default
+ServiceAccount:      default
+Status:              Succeeded
+`
+	var wf wfv1.Workflow
+	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
+	assert.NoError(t, err)
+	client := clientmocks.Client{}
+	wfClient := mocks.WorkflowServiceClient{}
+	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
+	client.On("NewWorkflowServiceClient").Return(&wfClient)
+	CLIOpt.client = &client
+	CLIOpt.ctx = context.TODO()
+	getCommand := NewGetCommand()
+	getCommand.SetArgs([]string{"hello-world"})
+	execFunc := func() {
+		err := getCommand.Execute()
+		assert.NoError(t, err)
+	}
+	output := CaptureOutput(execFunc)
+	assert.Contains(t, output, getOutput)
 }

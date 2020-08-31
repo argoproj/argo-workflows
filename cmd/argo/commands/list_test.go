@@ -10,11 +10,38 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowmocks "github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
+	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
+
+func TestNewListCommand(t *testing.T) {
+	client := clientmocks.Client{}
+	wfClient := mocks.WorkflowServiceClient{}
+	var wfList wfv1.WorkflowList
+	var wf, wf1 wfv1.Workflow
+	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
+	assert.NoError(t, err)
+	err = yaml.Unmarshal([]byte(workflow), &wf1)
+	assert.NoError(t, err)
+	wfList.Items = wfv1.Workflows{wf, wf1}
+	wfClient.On("ListWorkflows", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfList, nil)
+	client.On("NewWorkflowServiceClient").Return(&wfClient)
+	CLIOpt.client = &client
+	CLIOpt.ctx = context.TODO()
+	listCommand := NewListCommand()
+	execFunc := func() {
+		err := listCommand.Execute()
+		assert.NoError(t, err)
+	}
+	output := CaptureOutput(execFunc)
+	assert.Contains(t, output, "NAME")
+	assert.Contains(t, output, "hello-world")
+	assert.Contains(t, output, "Succeeded")
+}
 
 func Test_listWorkflows(t *testing.T) {
 	t.Run("Nothing", func(t *testing.T) {
@@ -74,8 +101,8 @@ func Test_listWorkflows(t *testing.T) {
 }
 
 func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
-	c := &workflowmocks.WorkflowServiceClient{}
-	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
+	c := mocks.WorkflowServiceClient{}
+	c.On("ListWorkflows", mock.Anything, &wfapi.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
 		{ObjectMeta: metav1.ObjectMeta{
@@ -84,6 +111,7 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 			Labels:            map[string]string{common.LabelKeyPreviousWorkflowName: "foo-"},
 		}},
 	}}, nil)
-	workflows, err := listWorkflows(context.Background(), c, flags)
+
+	workflows, err := listWorkflows(context.Background(), &c, flags)
 	return workflows, err
 }

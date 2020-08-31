@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/argoproj/pkg/cli"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
+	"github.com/argoproj/argo/pkg/apiclient"
 
 	"github.com/argoproj/argo/cmd/argo/commands/auth"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
@@ -24,6 +26,13 @@ const (
 	CLIName = "argo"
 )
 
+type CLIOpts struct {
+	ctx    context.Context
+	client apiclient.Client
+}
+
+var CLIOpt CLIOpts
+
 // NewCommand returns a new instance of an argo command
 func NewCommand() *cobra.Command {
 	var command = &cobra.Command{
@@ -34,7 +43,7 @@ func NewCommand() *cobra.Command {
 			cmd.HelpFunc()(cmd, args)
 		},
 	}
-
+	CLIOpt.ctx, CLIOpt.client = client.NewAPIClient()
 	command.AddCommand(NewCompletionCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
