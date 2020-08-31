@@ -382,7 +382,7 @@ wait:
 .PHONY: postgres-cli
 postgres-cli:
 	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
-
+/
 .PHONY: mysql-cli
 mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
@@ -402,10 +402,9 @@ smoke:
 .PHONY: stress
 stress: cli
 	kubectl delete wf -l stress
-	$(MAKE) start LOG_LEVEL=warning &
-	$(MAKE) wait
 	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
-	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(X) --watch
+	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(X)
+	$(MAKE) start LOG_LEVEL=warning 
 
 # clean
 

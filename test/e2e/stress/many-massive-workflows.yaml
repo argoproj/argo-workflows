@@ -36,9 +36,6 @@ spec:
       resource:
         action: create
         setOwnerReference: true
-        # why `Running` not `Succeeded`, because we can afford to have pods waiting around
-        successCondition: status.phase = Running
-        failureCondition: status.phase in (Failed, Error)
         manifest: |
           apiVersion: argoproj.io/v1alpha1
           kind: Workflow
