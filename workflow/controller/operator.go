@@ -1454,12 +1454,6 @@ type executeTemplateOpts struct {
 // boundary this node belongs to.
 func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
-	start := time.Now()
-	defer func() {
-		if time.Now().After(start.Add(5 * time.Second)) {
-			woc.log.WithField("nodeName", nodeName).Warn("long template execution")
-		}
-	}()
 
 	node := woc.wf.GetNodeByName(nodeName)
 
