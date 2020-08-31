@@ -134,7 +134,7 @@ jobs:
   ui:
     name: UI
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
