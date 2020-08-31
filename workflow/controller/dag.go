@@ -434,11 +434,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		// Finally execute the template
 		_, err = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 		if err != nil {
-			if err == ErrDeadlineExceeded {
-				woc.requeue(defaultRequeueTime)
+			switch err {
+			case ErrDeadlineExceeded, ErrParallelismReached:
 				return
-			} else {
-				woc.log.WithError(err).Warn("failed to executed expanded task")
+			default:
+				woc.log.WithField("taskName", t.Name).WithError(err).Warn("failed to execute expanded task")
+				woc.markNodePhase(t.Name, wfv1.NodeError, "failed to execute expanded task: "+err.Error())
 			}
 		}
 	}
