@@ -30,6 +30,7 @@ import (
 
 const Namespace = "argo"
 const Label = "argo-e2e"
+const defaultTimeout = 30 * time.Second
 
 type E2ESuite struct {
 	suite.Suite

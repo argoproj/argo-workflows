@@ -108,10 +108,10 @@ func (s *CLISuite) TestLogs() {
 		Workflow(`@smoke/basic.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(5*time.Second).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Nodes.FindByDisplayName(wf.Name) != nil
-		}, "pod running", 10*time.Second).
+		}), "pod running", 10*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -168,7 +168,7 @@ func (s *CLISuite) TestLogs() {
 	s.Run("CompletedWorkflow", func() {
 		s.Given().
 			When().
-			WaitForWorkflow(10*time.Second).
+			WaitForWorkflow().
 			Then().
 			RunCli([]string{"logs", name, "--tail=10"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -185,7 +185,7 @@ func (s *CLISuite) TestLogProblems() {
 		Workflow(`@testdata/log-problems.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflow(fixtures.ToStart).
 		Then().
 		// logs should come in order
 		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
@@ -202,7 +202,7 @@ func (s *CLISuite) TestLogProblems() {
 		}).
 		When().
 		// Next check that all log entries and received and in the correct order.
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow().
 		Then().
 		RunCli([]string{"logs", "log-problems"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -237,7 +237,7 @@ func (s *CLISuite) TestRoot() {
 				Workflow("@smoke/basic-generate-name.yaml").
 				When().
 				SubmitWorkflow().
-				WaitForWorkflow(20 * time.Second)
+				WaitForWorkflow()
 		}
 		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -277,7 +277,7 @@ func (s *CLISuite) TestRoot() {
 				}
 				createdWorkflowName = res[1]
 			}).
-			WaitForWorkflowName(createdWorkflowName, 30*time.Second).
+			WaitForWorkflow(createdWorkflowName).
 			Then().
 			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -291,7 +291,7 @@ func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(10*time.Second).
+		WaitForWorkflow(fixtures.ToStart).
 		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow sleep-3s suspended")
@@ -302,7 +302,7 @@ func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
 				assert.Contains(t, output, "workflow sleep-3s resumed")
 			}
 		}).
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -315,25 +315,25 @@ func (s *CLIWithServerSuite) TestNodeSuspendResume() {
 		Workflow("@testdata/node-suspend.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 30*time.Second).
+		}), "suspended node").
 		RunCli([]string{"resume", "node-suspend", "--node-field-selector", "inputs.parameters.tag.value=suspend1-tag1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow node-suspend resumed")
 			}
 		}).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 10*time.Second).
+		}), "suspended node").
 		RunCli([]string{"stop", "node-suspend", "--node-field-selector", "inputs.parameters.tag.value=suspend2-tag1", "--message", "because"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow node-suspend stopped")
 			}
 		}).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeFailed
-		}, "suspended node", 10*time.Second).
+		}), "suspended node").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			if assert.Equal(t, wfv1.NodeFailed, status.Phase) {
@@ -420,7 +420,7 @@ func (s *CLISuite) TestWorkflowDeleteCompleted() {
 			}
 		}).
 		When().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow().
 		Given().
 		RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -434,7 +434,7 @@ func (s *CLISuite) TestWorkflowDeleteResubmitted() {
 		Workflow("@testdata/exit-1.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow().
 		Given().
 		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -459,7 +459,7 @@ func (s *CLISuite) TestWorkflowDeleteOlder() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow().
 		Given().
 		RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -598,28 +598,28 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 		Workflow("@testdata/retry-test.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(5*time.Second).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 30*time.Second).
+		}), "suspended node").
 		RunCli([]string{"terminate", "retry-test"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow retry-test terminated")
 			}
 		}).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			retryTime = wf.Status.FinishedAt
 			return wf.Status.Phase == wfv1.NodeFailed
-		}, "terminated", 20*time.Second).
+		}), "is terminated", 20*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 			}
 		}).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 20*time.Second).
+		}), "suspended node").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
@@ -740,7 +740,7 @@ func (s *CLISuite) TestTemplate() {
 		s.Given().
 			WorkflowName(workflowName).
 			When().
-			WaitForWorkflow(30*time.Second).
+			WaitForWorkflow().
 			RunCli([]string{"get", workflowName}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, workflowName)
@@ -760,7 +760,7 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		Workflow("@testdata/exit-1.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow().
 		Given().
 		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -979,10 +979,10 @@ func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
 			}
 		}).
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == ""
-		}, "Workflow is waiting for lock", 20*time.Second).
-		WaitForWorkflow(30 * time.Second).
+		}), "Workflow is waiting for lock").
+		WaitForWorkflow().
 		DeleteConfigMap("my-config").
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -1001,13 +1001,13 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 		When().
 		CreateConfigMap("my-config", semaphoreData).
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeRunning
-		}, "waiting for Workflow to run", 10*time.Second).
+		}), "waiting for Workflow to run", 10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
-		WaitForWorkflow(30 * time.Second)
+		WaitForWorkflow()
 }
 
 func (s *CLISuite) TestRetryOmit() {
@@ -1016,11 +1016,11 @@ func (s *CLISuite) TestRetryOmit() {
 		Workflow("@testdata/retry-omit.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				return node.Phase == wfv1.NodeOmitted
 			})
-		}, "any node omitted", 20*time.Second).
+		}), "any node omitted").
 		WaitForWorkflow(10*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -1033,7 +1033,7 @@ func (s *CLISuite) TestRetryOmit() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "Status:              Running")
 		}).When().
-		WaitForWorkflow(20 * time.Second)
+		WaitForWorkflow()
 }
 
 func (s *CLISuite) TestSynchronizationWfLevelMutex() {
@@ -1051,7 +1051,7 @@ func (s *CLISuite) TestSynchronizationWfLevelMutex() {
 		RunCli([]string{"get", "synchronization-wf-level-mutex"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Pending")
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -1068,7 +1068,7 @@ func (s *CLISuite) TestTemplateLevelMutex() {
 		RunCli([]string{"get", "synchronization-tmpl-level-mutex"}, func(t *testing.T, output string, err error) {
 			assert.Contains(t, output, "Waiting for")
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -1090,7 +1090,7 @@ func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"stop", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf stopped")
 			}).
-			WaitForWorkflow(10*time.Second).
+			WaitForWorkflow().
 			RunCli([]string{"get", "resource-tmpl-wf"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Stop'")
 			}).
@@ -1112,7 +1112,7 @@ func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"terminate", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "workflow resource-tmpl-wf-1 terminated")
 			}).
-			WaitForWorkflow(10*time.Second).
+			WaitForWorkflow().
 			RunCli([]string{"get", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Stopped with strategy 'Terminate'")
 			})
