@@ -3123,7 +3123,11 @@ func (woc *wfOperationCtx) getNodeResourcesDurationFromPods(nodeName string, pod
 			for _, step := range stepGroup.Steps {
 				childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 				childNode := woc.wf.GetNodeByName(childNodeName)
+
 				childTemplate := woc.wf.GetTemplateByName(childNode.TemplateName)
+				if childTemplate == nil {
+					continue
+				}
 
 				duration, err := woc.getNodeResourcesDurationFromPods(childNode.Name, podList, tmplCtx, childTemplate)
 				if err != nil {
