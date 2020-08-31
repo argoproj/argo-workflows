@@ -79,8 +79,8 @@ FROM node:14.0.0 as argo-ui
 ADD ["ui", "ui"]
 ADD ["api", "api"]
 
-RUN yarn --cwd ui install --network-timeout 1000000
-RUN yarn --cwd ui build
+RUN JOBS=max yarn --cwd ui install --network-timeout 1000000
+RUN JOBS=max yarn --cwd ui build
 
 ####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
