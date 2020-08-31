@@ -400,7 +400,7 @@ smoke:
 	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: stress
-stress:
+stress: cli
 	kubectl delete wf -l stress
 	$(MAKE) start &
 	$(MAKE) wait
