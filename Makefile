@@ -402,11 +402,11 @@ smoke:
 .PHONY: destress
 destress: cli
 	kubectl delete wf -l stress
+
 .PHONY: stress
 stress: destress cli
 	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
-	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$()
-	$(MAKE) start LOG_LEVEL=warning
+	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(Y)
 
 # clean
 
