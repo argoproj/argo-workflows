@@ -1,11 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+kind: WorkflowTemplate
 metadata:
   name: many-large-workflows
 spec:
   entrypoint: main
   podGC:
     strategy: OnPodCompletion
+  arguments:
+    parameters:
+      - name: "x"
+        value: 1
+      - name: "y"
+        value: 1
   templates:
     - name: main
       dag:
@@ -13,12 +19,13 @@ spec:
           - name: create-workflow
             template: create-workflow
             withSequence:
-              count: 20
+              count: "{{workflow.parameters.x}}"
     - name: create-workflow
       resource:
         action: create
         setOwnerReference: true
-        successCondition: status.phase = Succeeded
+        # why `Running` not `Succeeded`, because we can afford to have pods waiting around
+        successCondition: status.phase = Running
         failureCondition: status.phase in (Failed, Error)
         manifest: |
           apiVersion: argoproj.io/v1alpha1
@@ -29,6 +36,8 @@ spec:
             entrypoint: main
             podGC:
               strategy: OnPodCompletion
+            ttlStrategy:
+              secondsAfterCompletion: 60
             templates:
               - name: main
                 dag:
@@ -36,7 +45,7 @@ spec:
                     - name: create-pod
                       template: create-pod
                       withSequence:
-                        count: 20
+                        count: "{{workflow.parameters.y}}"
               - name: create-pod
                 container:
                   image: argoproj/argosay:v2
