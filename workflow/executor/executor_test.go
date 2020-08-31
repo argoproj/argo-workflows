@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -197,59 +198,61 @@ func TestIsTarball(t *testing.T) {
 }
 
 func TestChmod(t *testing.T) {
-	TmpDirName := "testdata/tmpdir"
-	TmpFileName := "testdata/tmpdir/tmpfile"
 
 	type perm struct {
-		path       string
-		modeString string
+		dir  string
+		file string
 	}
 
 	tests := []struct {
 		mode        int32
 		recurse     bool
-		permissions []perm
+		permissions perm
 	}{
 		{
 			0777,
 			false,
-			[]perm{
-				{TmpDirName, "drwxrwxrwx"},
-				{TmpFileName, "-rw-r--r--"},
+			perm{
+				"drwxrwxrwx",
+				"-rw-------",
 			},
 		},
 		{
 			0777,
 			true,
-			[]perm{
-				{TmpDirName, "drwxrwxrwx"},
-				{TmpFileName, "-rwxrwxrwx"},
+			perm{
+				"drwxrwxrwx",
+				"-rwxrwxrwx",
 			},
 		},
 	}
 
 	for _, test := range tests {
 		// Setup directory and file for testing
-		err := os.Mkdir(TmpDirName, os.FileMode(0644))
+		tempDir, err := ioutil.TempDir("testdata", "chmod-dir-test")
 		assert.NoError(t, err)
 
-		newFile, err := os.Create(TmpFileName)
+		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
 		assert.NoError(t, err)
 
-		err = newFile.Chmod(os.FileMode(0644))
+		// Run chmod function
+		err = chmod(tempDir, test.mode, test.recurse)
 		assert.NoError(t, err)
 
-		err = chmod(TmpDirName, test.mode, test.recurse)
+		// Check directory mode if set
+		dirPermission, err := os.Stat(tempDir)
 		assert.NoError(t, err)
+		assert.Equal(t, dirPermission.Mode().String(), test.permissions.dir)
 
-		for _, permission := range test.permissions {
-			fi, err := os.Stat(permission.path)
-			assert.NoError(t, err)
-			assert.Equal(t, fi.Mode().String(), permission.modeString)
-		}
+		// Check file mode mode if set
+		filePermission, err := os.Stat(tempFile.Name())
+		assert.NoError(t, err)
+		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
+
+		fmt.Printf("FILE NAME: %s\n", tempFile.Name())
 
 		// TearDown test by removing directory and file
-		err = os.RemoveAll(TmpDirName)
+		err = os.RemoveAll(tempDir)
 		assert.NoError(t, err)
 	}
 
