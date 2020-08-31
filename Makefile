@@ -399,9 +399,11 @@ test-e2e-cron:
 smoke:
 	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
-.PHONY: stress
-stress: cli
+.PHONY: destress
+destress: cli
 	kubectl delete wf -l stress
+.PHONY: stress
+stress: destress cli
 	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
 	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(X)
 	$(MAKE) start LOG_LEVEL=warning
