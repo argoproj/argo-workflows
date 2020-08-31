@@ -20,6 +20,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -208,6 +209,15 @@ func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
 	return test.LoadClusterWorkflowTemplateFromBytes([]byte(yamlStr))
+}
+
+func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
+	var artifact wfv1.Artifact
+	err := yaml.Unmarshal([]byte(yamlStr), &artifact)
+	if err != nil {
+		panic(err)
+	}
+	return &artifact
 }
 
 type with func(pod *apiv1.Pod)
