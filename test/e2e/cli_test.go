@@ -1011,7 +1011,6 @@ func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
 }
 
 func (s *CLISuite) TestRetryOmit() {
-	s.T().Skip("flaky - see https://github.com/argoproj/argo/issues/3540")
 	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/retry-omit.yaml").
@@ -1022,6 +1021,7 @@ func (s *CLISuite) TestRetryOmit() {
 				return node.Phase == wfv1.NodeOmitted
 			})
 		}), "any node omitted").
+		WaitForWorkflow(10*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			node := status.Nodes.FindByDisplayName("should-not-execute")
