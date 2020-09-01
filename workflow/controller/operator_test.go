@@ -4615,7 +4615,7 @@ spec:
         template: whalesay
 
   - name: whalesay
-    timeoutDuration: 5s
+    timeout: 5s
     container:
       image: docker/whalesay:latest
       command: [cowsay]
@@ -4649,7 +4649,7 @@ spec:
     inputs:
       parameters:
       - name: deadline
-    timeoutDuration: "{{inputs.parameters.deadline}}"
+    timeout: "{{inputs.parameters.deadline}}"
     container:
       image: docker/whalesay:latest
       command: [cowsay]

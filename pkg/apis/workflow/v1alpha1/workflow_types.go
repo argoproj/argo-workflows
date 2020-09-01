@@ -537,9 +537,9 @@ type Template struct {
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
 
-	// TimoutDuration allows to set the total node execution timeout duration counting from the node's start time.
+	// Timout allows to set the total node execution timeout duration counting from the node's start time.
 	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
-	TimeoutDuration *intstr.IntOrString `json:"timeoutDuration,omitempty" protobuf:"bytes,38,opt,name=timeoutDuration"`
+	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder

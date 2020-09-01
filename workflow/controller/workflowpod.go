@@ -337,7 +337,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
 	node := woc.wf.GetNodeByName(nodeName)
-	templateDeadline, err := woc.checkTemplateTimeoutDuration(tmpl, node)
+	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
 	if err != nil {
 		return nil, err
 	}

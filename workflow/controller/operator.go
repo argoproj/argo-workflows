@@ -1522,7 +1522,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check the template deadline for Pending nodes
 	// This check will cover the resource forbidden, synchronization scenario,
 	// In above scenario, only Node will be created in pending state
-	_, err = woc.checkTemplateTimeoutDuration(processedTmpl, node)
+	_, err = woc.checkTemplateTimeout(processedTmpl, node)
 	if err != nil {
 		woc.log.Warnf("Template %s exceeded its deadline", processedTmpl.Name)
 		return woc.markNodePhase(nodeName, wfv1.NodeFailed, err.Error()), err
@@ -1688,13 +1688,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 }
 
 // Checks if the template has exceeded its deadline
-func (woc *wfOperationCtx) checkTemplateTimeoutDuration(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error) {
+func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error) {
 	if node == nil {
 		return nil, nil
 	}
 
-	if tmpl.TimeoutDuration != nil {
-		tmplMaxDuration, err := parseStringToDuration(tmpl.TimeoutDuration.String())
+	if tmpl.Timeout != "" {
+		tmplMaxDuration, err := parseStringToDuration(tmpl.Timeout)
 		if err != nil {
 			return nil, err
 		}
