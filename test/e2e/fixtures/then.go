@@ -95,13 +95,19 @@ var HasInvolvedObject = func(kind string, uid types.UID) func(event apiv1.Event)
 	}
 }
 
+var HasInvolvedObjectWithName = func(kind string, name string) func(event apiv1.Event) bool {
+	return func(e apiv1.Event) bool {
+		return e.InvolvedObject.Kind == kind && e.InvolvedObject.Name == name
+	}
+}
+
 func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
 	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(defaultTimeout)
 	defer ticker.Stop()
 	for len(blocks) > 0 {
 		select {

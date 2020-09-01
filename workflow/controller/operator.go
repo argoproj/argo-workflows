@@ -1190,6 +1190,12 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
+		// Virtual Kubelet environment will not set the terminate on waiting container
+		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
+		if ctr.State.Waiting != nil {
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+		}
 		if ctr.State.Terminated == nil {
 			// We should never get here
 			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
@@ -1210,6 +1216,13 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	}
 	failMessages := make(map[string]string)
 	for _, ctr := range pod.Status.ContainerStatuses {
+		// Virtual Kubelet environment will not set the terminate on waiting container
+		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
+
+		if ctr.State.Waiting != nil {
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+		}
 		if ctr.State.Terminated == nil {
 			// We should never get here
 			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
@@ -2088,7 +2101,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	if len(tmpl.Outputs.Artifacts) > 0 {
 		outputs.Artifacts = make([]wfv1.Artifact, 0)
 		for _, art := range tmpl.Outputs.Artifacts {
-			resolvedArt, err := scope.resolveArtifact(art.From)
+			resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
 			if err != nil {
 				// If the artifact was not found and is optional, don't mark an error
 				if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
