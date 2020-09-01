@@ -554,11 +554,9 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 	defer wfc.podQueue.Done(key)
 
-	logCtx := log.WithFields(log.Fields{"key": key})
-
 	obj, exists, err := wfc.podInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
-		logCtx.WithError(err).Error("Failed to get pod from informer index")
+		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get pod from informer index")
 		return true
 	}
 	if !exists {
@@ -569,17 +567,17 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		logCtx.Warn("Key in index is not a pod")
+		log.WithFields(log.Fields{"key": key}).Warn("Key in index is not a pod")
 		return true
 	}
 	if pod.Labels == nil {
-		logCtx.Warn("Pod did not have labels")
+		log.WithFields(log.Fields{"key": key}).Warn("Pod did not have labels")
 		return true
 	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		logCtx.Warn("Watch returned pod unrelated to any workflow")
+		log.WithFields(log.Fields{"key": pod.ObjectMeta.Name}).Warn("Watch returned pod unrelated to any workflow")
 		return true
 	}
 	// add this change after 1s - this reduces the number of workflow reconciliations -
