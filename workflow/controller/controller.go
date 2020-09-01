@@ -37,6 +37,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
+	syncutil "github.com/argoproj/argo/util/sync"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/informer"
@@ -85,6 +86,7 @@ type WorkflowController struct {
 	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
+	workflowKeyLock       syncutil.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
@@ -123,6 +125,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		workflowKeyLock:            syncutil.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
@@ -446,6 +449,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// or was deleted, but the work queue still had an entry for it.
 		return true
 	}
+
+	wfc.workflowKeyLock.Lock(key.(string))
+	defer wfc.workflowKeyLock.Lock(key.(string))
+
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects
 	un, ok := obj.(*unstructured.Unstructured)
@@ -664,54 +671,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
-	archiveWorkflow := func(obj interface{}) {
-		un, ok := obj.(*unstructured.Unstructured)
-		if !ok {
-			return
-		}
-		logCtx := log.WithFields(log.Fields{"namespace": un.GetNamespace(), "workflow": un.GetName(), "uid": un.GetUID()})
-		wf, err := util.FromUnstructured(un)
-		if err != nil {
-			logCtx.WithError(err).Error("failed to convert to workflow from unstructured")
-			return
-		}
-		err = wfc.hydrator.Hydrate(wf)
-		if err != nil {
-			logCtx.WithError(err).Error("failed to hydrate workflow")
-			return
-		}
-		logCtx.Info("archiving workflow")
-		err = wfc.wfArchive.ArchiveWorkflow(wf)
-		if err != nil {
-			logCtx.WithError(err).Error("failed to archive workflow")
-			return
-		}
-		data, err := json.Marshal(map[string]interface{}{
-			"metadata": metav1.ObjectMeta{
-				Labels: map[string]string{
-					common.LabelKeyWorkflowArchivingStatus: "Archived",
-				},
-			},
-		})
-		if err != nil {
-			logCtx.WithError(err).Error("failed to marshal patch")
-			return
-		}
-		_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
-		if err != nil {
-			logCtx.WithError(err).Error("failed to archive workflow")
-			return
-		}
-	}
 	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			un, ok := obj.(*unstructured.Unstructured)
+			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
 			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: archiveWorkflow,
-			UpdateFunc: func(S, obj interface{}) {
-				archiveWorkflow(obj)
+			AddFunc: wfc.archiveWorkflow,
+			UpdateFunc: func(_, obj interface{}) {
+				wfc.archiveWorkflow(obj)
 			},
 		},
 	},
@@ -736,6 +705,55 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			}
 		},
 	})
+}
+
+func (wfc *WorkflowController) archiveWorkflow(obj interface{}) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		log.Error("failed to get key for object")
+		return
+	}
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Lock(key)
+	err = wfc.archiveWorkflowAux(obj)
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("failed to archive workflow")
+	}
+}
+
+func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
+	}
+	err = wfc.hydrator.Hydrate(wf)
+	if err != nil {
+		return fmt.Errorf("failed to hydrate workflow: %w", err)
+	}
+	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info("archiving workflow")
+	err = wfc.wfArchive.ArchiveWorkflow(wf)
+	if err != nil {
+		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+	data, err := json.Marshal(map[string]interface{}{
+		"metadata": metav1.ObjectMeta{
+			Labels: map[string]string{
+				common.LabelKeyWorkflowArchivingStatus: "Archived",
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
+	if err != nil {
+		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {

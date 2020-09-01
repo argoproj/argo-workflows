@@ -534,6 +534,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 					common.LabelKeyCreator:                 "1",
 					common.LabelKeyPhase:                   "1",
 					common.LabelKeyCompleted:               "1",
+					common.LabelKeyWorkflowArchivingStatus: "1",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -552,6 +553,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
 			assert.Equal(t, 1, len(wf.OwnerReferences))
 			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
