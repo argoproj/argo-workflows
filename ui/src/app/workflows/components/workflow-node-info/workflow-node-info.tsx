@@ -9,6 +9,7 @@ import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {EventsPanel} from '../events-panel';
 
 require('./workflow-node-info.scss');
 
@@ -306,6 +307,11 @@ export const WorkflowNodeInfo = (props: Props) => (
                             {props.node.inputs && <WorkflowNodeInputs inputs={props.node.inputs} />}
                         </div>
                     )
+                },
+                props.node.type === 'Pod' && {
+                    title: 'EVENTS',
+                    key: 'events',
+                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.name} />
                 },
                 {
                     title: 'CONTAINERS',
