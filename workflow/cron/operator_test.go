@@ -174,6 +174,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
 		wfLister:    &fakeLister{},
+		origCronWf:  cronWf.DeepCopy(),
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
 		metrics:     testMetrics,
@@ -230,6 +231,7 @@ func TestSpecError(t *testing.T) {
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
 		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
 		wfLister:    &fakeLister{},
+		origCronWf:  cronWf.DeepCopy(),
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
 		metrics:     testMetrics,
@@ -265,7 +267,7 @@ func TestReapplyUpdate(t *testing.T) {
 	}
 
 	cronWf.Spec.Schedule = "1 * * * *"
-	err := woc.reapplyUpdate()
+	_, err := woc.reapplyUpdate()
 	if assert.NoError(t, err) {
 		updatedCronWf, err := woc.cronWfIf.Get("my-wf", v1.GetOptions{})
 		if assert.NoError(t, err) {

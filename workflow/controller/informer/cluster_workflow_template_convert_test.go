@@ -14,7 +14,7 @@ import (
 func Test_objectToClusterWorkflowTemplate(t *testing.T) {
 	t.Run("NotUnstructured", func(t *testing.T) {
 		v, err := objectToClusterWorkflowTemplate(&corev1.Status{})
-		assert.EqualError(t, err, "malformed cluster workflow template: expected \"*unstructured.Unstructured\", got \"\"")
+		assert.EqualError(t, err, "malformed cluster workflow template: expected \"*unstructured.Unstructured\", got \"*v1.Status\"")
 		assert.NotNil(t, v)
 	})
 	t.Run("MalformedClusterWorkflowTemplate", func(t *testing.T) {

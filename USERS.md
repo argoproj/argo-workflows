@@ -33,6 +33,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [EBSCO Information Services](https://www.ebsco.com/)
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
+1. [Fynd Trak](https://trak.fynd.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
 1. [Gladly](https://gladly.com/)
