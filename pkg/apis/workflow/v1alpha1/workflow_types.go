@@ -338,8 +338,9 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
+// +kubebuilder:validation:Type=array
 type ParallelSteps struct {
-	Steps []WorkflowStep `json:"steps,omitempty" protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -379,7 +380,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
-func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
+func (p ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
 }
 
@@ -525,7 +526,7 @@ type Template struct {
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
 	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
+	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
@@ -675,6 +676,9 @@ type Artifact struct {
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty" protobuf:"varint,8,opt,name=optional"`
+
+	// SubPath allows an artifact to be sourced from a subpath within the specified source
+	SubPath string `json:"subPath,omitempty" protobuf:"bytes,9,opt,name=subPath"`
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -700,6 +704,22 @@ type TarStrategy struct {
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 type NoneStrategy struct{}
+
+// ArtifactLocationType is the type of artifact location
+type ArtifactLocationType string
+
+// ArtifactLocationType
+const (
+	ArtifactLocationS3          ArtifactLocationType = "S3"
+	ArtifactLocationGit         ArtifactLocationType = "Git"
+	ArtifactLocationHTTP        ArtifactLocationType = "HTTP"
+	ArtifactLocationArtifactory ArtifactLocationType = "Artifactory"
+	ArtifactLocationHDFS        ArtifactLocationType = "HDFS"
+	ArtifactLocationRaw         ArtifactLocationType = "Raw"
+	ArtifactLocationOSS         ArtifactLocationType = "OSS"
+	ArtifactLocationGCS         ArtifactLocationType = "GCS"
+	ArtifactLocationUnknown     ArtifactLocationType = ""
+)
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
@@ -744,6 +764,44 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
 		a.GCS.HasLocation()
+}
+
+func (a *ArtifactLocation) GetType() ArtifactLocationType {
+
+	if a.S3 != nil {
+		return ArtifactLocationS3
+	}
+
+	if a.Git != nil {
+		return ArtifactLocationGit
+	}
+
+	if a.HTTP != nil {
+		return ArtifactLocationHTTP
+	}
+
+	if a.Artifactory != nil {
+		return ArtifactLocationArtifactory
+	}
+
+	if a.HDFS != nil {
+		return ArtifactLocationHDFS
+	}
+
+	if a.Raw != nil {
+		return ArtifactLocationRaw
+	}
+
+	if a.OSS != nil {
+		return ArtifactLocationOSS
+	}
+
+	if a.GCS != nil {
+		return ArtifactLocationGCS
+	}
+
+	return ArtifactLocationUnknown
+
 }
 
 type ArtifactRepositoryRef struct {
@@ -1739,6 +1797,10 @@ func (tmpl *Template) IsLeaf() bool {
 		return true
 	}
 	return false
+}
+
+func (tmpl *Template) IsResubmitPendingPods() bool {
+	return tmpl != nil && tmpl.ResubmitPendingPods
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

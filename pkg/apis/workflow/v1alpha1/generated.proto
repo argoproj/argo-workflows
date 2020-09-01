@@ -16,8 +16,9 @@ import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 option go_package = "v1alpha1";
 
 // Amount represent a numeric amount.
+// +kubebuilder:validation:Type=number
 message Amount {
-  optional bytes value = 1;
+  optional string value = 1;
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -67,6 +68,9 @@ message Artifact {
 
   // Make Artifacts optional, if Artifacts doesn't generate or exist
   optional bool optional = 8;
+
+  // SubPath allows an artifact to be sourced from a subpath within the specified source
+  optional string subPath = 9;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -460,9 +464,8 @@ message Inputs {
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
-// +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
+// +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
 }
@@ -686,6 +689,7 @@ message Outputs {
   optional string exitCode = 4;
 }
 
+// +kubebuilder:validation:Type=array
 message ParallelSteps {
   repeated WorkflowStep steps = 1;
 }
