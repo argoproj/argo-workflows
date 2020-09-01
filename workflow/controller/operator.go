@@ -1689,7 +1689,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 // Checks if the template has exceeded its deadline
 func (woc *wfOperationCtx) checkTemplateTimeoutDuration(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error) {
-	woc.log.Debugf("Check Template deadline")
 	if node == nil {
 		return nil, nil
 	}
