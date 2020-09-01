@@ -1056,6 +1056,34 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		}
 	})
 
+	// then,  lets see what events we got
+	s.Run("WatchEvents", func() {
+		t := s.T()
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := httpClient.Do(req)
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+				s := bufio.NewScanner(resp.Body)
+				for s.Scan() {
+					line := s.Text()
+					if strings.Contains(line, "WorkflowRunning") {
+						break
+					}
+				}
+			}
+		}
+	})
+
 	// then,  lets check the logs
 	s.Run("PodLogs", func() {
 		t := s.T()
