@@ -816,9 +816,9 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeFailed
-		}, "Waiting for timeout", 30*time.Second)
+		}), "Waiting for timeout", 30*time.Second)
 }
 
 func (s *FunctionalSuite) TestTemplateLevelTimeoutWithForbidden() {
@@ -864,9 +864,9 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeFailed
-		}, "Waiting for timeout", 30*time.Second).
+		}), "Waiting for timeout", 30*time.Second).
 		DeleteMemoryQuota()
 }
 

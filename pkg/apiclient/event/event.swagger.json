@@ -65,7 +65,7 @@
           "format": "byte"
         }
       },
-      "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
+      "description": "+protobuf.options.(gogoproto.goproto_stringer)=false\n+kubebuilder:validation:Type=object",
       "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number"
     }
   }
