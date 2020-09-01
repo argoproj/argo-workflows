@@ -150,7 +150,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 

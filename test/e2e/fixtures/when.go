@@ -1,7 +1,9 @@
 package fixtures
 
 import (
+	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -112,12 +114,42 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condition string, duration time.Duration) *When {
-	w.t.Helper()
-	return w.waitForWorkflow(w.workflowName, test, condition, duration)
-}
+type Condition func(wf *wfv1.Workflow) bool
 
-func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
+var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
+var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.FinishedAt.IsZero() }
+var ToBeArchived Condition = func(wf *wfv1.Workflow) bool {return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"}
+
+// Wait for a workflow to meet a condition:
+// Options:
+// * `time.Duration` - change the timeout - 30s by default
+// * `string` - either:
+//    * the workflow's name (not spaces)
+//    * or a new message (if it contain spaces) - default "to finish"
+// * `Condition` - a condition - `ToFinish` by default
+func (w *When) WaitForWorkflow(options ...interface{}) *When {
+	w.t.Helper()
+	timeout := defaultTimeout
+	workflowName := w.workflowName
+	condition := ToFinish
+	message := "to finish"
+	for _, opt := range options {
+		switch v := opt.(type) {
+		case time.Duration:
+			timeout = v
+		case string:
+			if strings.Contains(v, " ") {
+				message = v
+			} else {
+				workflowName = v
+			}
+		case Condition:
+			condition = v
+		default:
+			w.t.Fatal("unknown option type: " + reflect.TypeOf(opt).String())
+		}
+	}
+
 	w.t.Helper()
 	start := time.Now()
 
@@ -126,7 +158,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	println("Waiting", timeout.String(), "for workflow", fieldSelector, condition)
+	println("Waiting", timeout.String(), "for workflow", fieldSelector, message)
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -144,7 +176,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
 				w.hydrateWorkflow(wf)
-				if test(wf) {
+				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.workflowName = wf.Name
 					return w
@@ -153,7 +185,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 				w.t.Fatal("not ok")
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, condition)
+			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, message)
 		}
 	}
 }
@@ -164,33 +196,6 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	if err != nil {
 		w.t.Fatal(err)
 	}
-}
-func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
-	w.t.Helper()
-	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
-		return !wf.Status.StartedAt.IsZero()
-	}, "to start", timeout)
-}
-
-func (w *When) WaitForWorkflow(timeout time.Duration) *When {
-	w.t.Helper()
-	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
-		return !wf.Status.FinishedAt.IsZero()
-	}, "to finish", timeout)
-}
-
-func (w *When) WaitForWorkflowToBeArchived() *When {
-	w.t.Helper()
-	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
-		return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"
-	}, "to be archived", 15*time.Second)
-}
-
-func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *When {
-	w.t.Helper()
-	return w.waitForWorkflow(workflowName, func(wf *wfv1.Workflow) bool {
-		return !wf.Status.FinishedAt.IsZero()
-	}, "to finish", timeout)
 }
 
 func (w *When) Wait(timeout time.Duration) *When {
