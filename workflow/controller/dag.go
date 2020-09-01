@@ -315,7 +315,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Fulfilled() {
 		// Collect the completed task metrics
-		tmpl := woc.wf.GetTemplateByName(task.Template)
+		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
 		if tmpl != nil && tmpl.Metrics != nil {
 			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
 				localScope, realTimeScope := woc.prepareMetricScope(node)
