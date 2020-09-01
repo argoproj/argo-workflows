@@ -45,7 +45,7 @@ func TestNewOperation(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimSetKey, jws.ClaimSet{"sub": "my-sub"})
 	recorder := record.NewFakeRecorder(1)
 
 	// act

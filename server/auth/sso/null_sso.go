@@ -16,7 +16,7 @@ func (n nullService) IsRBACEnabled() bool {
 	return false
 }
 
-func (n nullService) Authorize(context.Context, string) (*jws.ClaimSet, error) {
+func (n nullService) Authorize(context.Context, string) (jws.ClaimSet, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

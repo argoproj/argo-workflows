@@ -23,7 +23,7 @@ import (
 const Prefix = "Bearer id_token:"
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
+	Authorize(ctx context.Context, authorization string) (jws.ClaimSet, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
@@ -40,15 +40,17 @@ type sso struct {
 }
 
 func (s *sso) IsRBACEnabled() bool {
-	return s.rbacConfig != nil
+	return s.rbacConfig.IsEnabled()
 }
 
 type Config struct {
-	RBAC         *rbac.Config            `json:"rbac,omitempty"`
 	Issuer       string                  `json:"issuer"`
 	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
+	RBAC         *rbac.Config            `json:"rbac,omitempty"`
+	// additional scopes (on top of "openid")
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 // Abtsract methods of oidc.Provider that our code uses into an interface. That
@@ -121,12 +123,7 @@ func newSso(
 		ClientSecret: string(clientSecret),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID},
-	}
-	// We need the 'groups' if RBAC is enabled. Not all provider support this non-standard claims,
-	// so we only do this if we really need it.
-	if c.RBAC != nil {
-		config.Scopes = append(config.Scopes, "groups")
+		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
 	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID, "rbac": c.RBAC != nil}).Info("SSO configuration")
@@ -181,8 +178,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
 		return
 	}
-	c := &jws.ClaimSet{}
-	if err := idToken.Claims(c); err != nil {
+	c := jws.ClaimSet{}
+	if err := idToken.Claims(&c); err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
@@ -207,7 +204,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
+func (s *sso) Authorize(ctx context.Context, authorization string) (jws.ClaimSet, error) {
 	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decompress token %v", err)
@@ -216,8 +213,8 @@ func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSe
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify id_token %v", err)
 	}
-	c := &jws.ClaimSet{}
-	if err := idToken.Claims(c); err != nil {
+	c := jws.ClaimSet{}
+	if err := idToken.Claims(&c); err != nil {
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
 	return c, nil

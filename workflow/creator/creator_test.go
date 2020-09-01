@@ -21,14 +21,14 @@ func TestLabel(t *testing.T) {
 	})
 	t.Run("NotEmpty", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"}), wf)
+		Label(context.WithValue(context.TODO(), auth.ClaimSetKey, jws.ClaimSet{"sub": "my-sub"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("TooLong", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimSetKey, &jws.ClaimSet{Sub: strings.Repeat("x", 63) + "y"}), wf)
+		Label(context.WithValue(context.TODO(), auth.ClaimSetKey, jws.ClaimSet{"sub": strings.Repeat("x", 63) + "y"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator])
 		}

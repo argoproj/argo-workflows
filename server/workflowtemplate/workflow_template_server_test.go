@@ -166,7 +166,7 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 	testutil.MustUnmarshallJSON(wftStr3, &wftObj2)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimSetKey, jws.ClaimSet{"sub": "my-sub"})
 	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 

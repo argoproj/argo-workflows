@@ -148,7 +148,7 @@ func init() {
 func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimSetKey, jws.ClaimSet{"sub": "my-sub"})
 	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 

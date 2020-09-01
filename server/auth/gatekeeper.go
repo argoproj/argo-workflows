@@ -98,8 +98,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaimSet(ctx context.Context) *jws.ClaimSet {
-	config, _ := ctx.Value(ClaimSetKey).(*jws.ClaimSet)
+func GetClaimSet(ctx context.Context) jws.ClaimSet {
+	config, _ := ctx.Value(ClaimSetKey).(jws.ClaimSet)
 	return config
 }
 
@@ -121,7 +121,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
+func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, jws.ClaimSet, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
@@ -162,7 +162,7 @@ func (s *gatekeeper) getClients(ctx context.Context) (versioned.Interface, kuber
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(claimSet *jws.ClaimSet) (versioned.Interface, kubernetes.Interface, error) {
+func (s *gatekeeper) rbacAuthorization(claimSet jws.ClaimSet) (versioned.Interface, kubernetes.Interface, error) {
 	list, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)

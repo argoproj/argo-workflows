@@ -22,8 +22,8 @@ func TestClaimSetFor(t *testing.T) {
 	t.Run("Basic", func(t *testing.T) {
 		claimSet, err := ClaimSetFor(&rest.Config{Username: "my-username"})
 		if assert.NoError(t, err) {
-			assert.Empty(t, claimSet.Iss)
-			assert.Equal(t, "my-username", claimSet.Sub)
+			assert.Empty(t, claimSet.Iss())
+			assert.Equal(t, "my-username", claimSet.Sub())
 		}
 	})
 	t.Run("BadBearerToken", func(t *testing.T) {
@@ -33,8 +33,8 @@ func TestClaimSetFor(t *testing.T) {
 	t.Run("BearerToken", func(t *testing.T) {
 		claimSet, err := ClaimSetFor(&rest.Config{BearerToken: token})
 		if assert.NoError(t, err) {
-			assert.Empty(t, claimSet.Iss)
-			assert.Equal(t, "1234567890", claimSet.Sub)
+			assert.Empty(t, claimSet.Iss())
+			assert.Equal(t, "1234567890", claimSet.Sub())
 		}
 	})
 
@@ -48,8 +48,8 @@ func TestClaimSetFor(t *testing.T) {
 	t.Run("BearerTokenFile", func(t *testing.T) {
 		claimSet, err := ClaimSetFor(&rest.Config{BearerTokenFile: tmp.Name()})
 		if assert.NoError(t, err) {
-			assert.Empty(t, claimSet.Iss)
-			assert.Equal(t, "1234567890", claimSet.Sub)
+			assert.Empty(t, claimSet.Iss())
+			assert.Equal(t, "1234567890", claimSet.Sub())
 		}
 	})
 }
