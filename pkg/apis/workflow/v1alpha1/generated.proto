@@ -69,11 +69,11 @@ message Artifact {
   // Make Artifacts optional, if Artifacts doesn't generate or exist
   optional bool optional = 8;
 
-  // SubPath allows an artifact to be sourced from a subpath within the specified source
-  optional string subPath = 9;
-
   // If mode is set, apply the permission recursively into the artifact if it is a folder
-  optional bool recurseMode = 10;
+  optional bool recurseMode = 9;
+
+  // SubPath allows an artifact to be sourced from a subpath within the specified source
+  optional string subPath = 10;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.

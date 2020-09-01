@@ -677,11 +677,11 @@ type Artifact struct {
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty" protobuf:"varint,8,opt,name=optional"`
 
-	// SubPath allows an artifact to be sourced from a subpath within the specified source
-	SubPath string `json:"subPath,omitempty" protobuf:"bytes,9,opt,name=subPath"`
-
 	// If mode is set, apply the permission recursively into the artifact if it is a folder
-	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
+	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,9,opt,name=recurseMode"`
+
+	// SubPath allows an artifact to be sourced from a subpath within the specified source
+	SubPath string `json:"subPath,omitempty" protobuf:"bytes,10,opt,name=subPath"`
 }
 
 // PodGC describes how to delete completed pods as they complete
