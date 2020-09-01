@@ -584,7 +584,7 @@ func (s *CLISuite) TestWorkflowLint() {
 	// All files in this directory are Workflows, expect success
 	s.Run("AllWorkflows", func() {
 		s.Given().
-			RunCli([]string{"lint", "stress"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"lint", "stress/pod-limits.yaml"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 			})
 	})
