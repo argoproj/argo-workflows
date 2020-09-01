@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
+	testutil "github.com/argoproj/argo/test/util"
 	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/cache"
@@ -4645,4 +4646,136 @@ func TestStorageQuota(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
+}
+
+var podWithFailed = `
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    creationTimestamp: '2020-08-27T18:14:19Z'
+  name: hello-world-lbgpt-2607732259
+  namespace: argo
+spec:
+  containers:
+  - command:
+    - argoexec
+    - wait
+    env:
+    - name: ARGO_POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    image: argoproj/argoexec:v2.9.5
+    imagePullPolicy: IfNotPresent
+    name: wait
+    resources: {}
+    terminationMessagePath: "/dev/termination-log"
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: "/argo/podmetadata"
+      name: podmetadata
+    - mountPath: "/var/run/docker.sock"
+      name: docker-sock
+      readOnly: true
+    - mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+      name: default-token-rc4ml
+      readOnly: true
+  - args:
+    - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)
+    command:
+    - python
+    - "-c"
+    image: python:alpine3.6
+    imagePullPolicy: IfNotPresent
+    name: main
+    resources: {}
+    terminationMessagePath: "/dev/termination-log"
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
+      name: default-token-rc4ml
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: docker-desktop
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - downwardAPI:
+      defaultMode: 420
+      items:
+      - fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.annotations
+        path: annotations
+    name: podmetadata
+  - hostPath:
+      path: "/var/run/docker.sock"
+      type: Socket
+    name: docker-sock
+  - name: default-token-rc4ml
+    secret:
+      defaultMode: 420
+      secretName: default-token-rc4ml
+status:
+  conditions:
+  - lastProbeTime: 
+    lastTransitionTime: '2020-08-27T18:14:19Z'
+    status: 'True'
+    type: PodScheduled
+  containerStatuses:
+  - containerID: docker://502dda61a8f05e08d10cffc972d2fb9226e82af7daaacff98e84727bb96f11e6
+    image: python:alpine3.6
+    imageID: docker-pullable://python@sha256:766a961bf699491995cc29e20958ef11fd63741ff41dcc70ec34355b39d52971
+    lastState:
+      waiting: {}
+    name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      waiting: {}
+  - containerID: docker://d31f0d56f29b6962ef1493b2df6b7cdb54d48d8b8fa95d7e9c98ddc56f857b35
+    image: argoproj/argoexec:v2.9.5
+    imageID: docker-pullable://argoproj/argoexec@sha256:989114232892e051c25be323af626149452578d3ebbdc3e9ec7205bba3918d48
+    lastState:
+      waiting: {}
+    name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      waiting: {}
+  hostIP: 192.168.65.3
+  phase: Failed
+  podIP: 10.1.28.244
+  podIPs:
+  - ip: 10.1.28.244
+  qosClass: BestEffort
+  startTime: '2020-08-27T18:14:19Z'
+`
+
+func TestPodFailureWithContainerWaitingState(t *testing.T) {
+	var pod apiv1.Pod
+	testutil.MustUnmarshallYAML(podWithFailed, &pod)
+	assert.NotNil(t, pod)
+	nodeStatus, msg := inferFailedReason(&pod)
+	assert.Equal(t, wfv1.NodeError, nodeStatus)
+	assert.Contains(t, msg, "Pod failed before")
 }
