@@ -333,11 +333,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
-	// Check if template exceeded its deadline
-	// If not, set it in pod active deadline.
-	// Pod will get timeout even it is in unscheduled/pending state
+	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
 	node := woc.wf.GetNodeByName(nodeName)
-	templateDeadline, err := woc.checkTemplateDeadline(tmpl, node)
+	templateDeadline, err := woc.checkTemplateTimeoutDuration(tmpl, node)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +345,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if newActiveDeadlineSeconds <= 1 {
 			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
 		}
-		woc.log.Debugf("Setting new activedeadlineseconds, %d", newActiveDeadlineSeconds)
+		woc.log.Debugf("Setting new activeDeadlineSeconds %d for pod %s due to templateDeadline", newActiveDeadlineSeconds)
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 	}
 

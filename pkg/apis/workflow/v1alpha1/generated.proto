@@ -1068,9 +1068,8 @@ message Template {
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
 
-  // Max duration allows for the node execution from node StartTime.
-  // This duration includes node pending state also.
-  // This duration will not be applied on Step and DAG type Templates
+  // TimoutDuration allows to set the total node execution timeout duration counting from the node's start time.
+  // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
   optional k8s.io.apimachinery.pkg.util.intstr.IntOrString timeoutDuration = 38;
 }
 
