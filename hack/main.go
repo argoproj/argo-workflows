@@ -20,8 +20,6 @@ func main() {
 		parseExamples()
 	case "test-report":
 		testReport()
-	case "ui-test-gen":
-		Gen(os.Args[2], os.Args[3:]...)
 	default:
 		panic(os.Args[1])
 	}

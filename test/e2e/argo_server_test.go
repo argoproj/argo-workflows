@@ -5,7 +5,6 @@ package e2e
 import (
 	"bufio"
 	"crypto/tls"
-	"github.com/argoproj/argo/util/exec"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -343,7 +342,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Create RBAC Role
 	var roleName string
 	s.Run("LoadRoleYaml", func() {
-		obj, err := exec.LoadObject("@testdata/argo-server-test-role.yaml")
+		obj, err := fixtures.LoadObject("@testdata/argo-server-test-role.yaml")
 		assert.NoError(s.T(), err)
 		role, _ := obj.(*rbacv1.Role)
 		roleName = role.Name

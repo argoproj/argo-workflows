@@ -1,7 +1,6 @@
 package fixtures
 
 import (
-	"github.com/argoproj/argo/util/exec"
 	"testing"
 	"time"
 
@@ -225,7 +224,7 @@ func (w *When) And(block func()) *When {
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
 	w.t.Helper()
-	output, err := exec.Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
 	if w.t.Failed() {
 		w.t.FailNow()

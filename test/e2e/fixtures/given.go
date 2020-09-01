@@ -1,7 +1,6 @@
 package fixtures
 
 import (
-	"github.com/argoproj/argo/util/exec"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -143,7 +142,7 @@ var NoError = func(t *testing.T, output string, err error) {
 
 func (g *Given) Exec(name string, args []string, block func(t *testing.T, output string, err error)) *Given {
 	g.t.Helper()
-	output, err := exec.Exec(name, args...)
+	output, err := Exec(name, args...)
 	block(g.t, output, err)
 	if g.t.Failed() {
 		g.t.FailNow()
