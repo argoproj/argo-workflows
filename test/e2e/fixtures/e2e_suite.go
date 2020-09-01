@@ -1,9 +1,7 @@
 package fixtures
 
 import (
-	"bufio"
 	"encoding/base64"
-	"os"
 	"strings"
 	"time"
 
@@ -18,13 +16,10 @@ import (
 	// load the oidc plugin (required to authenticate with OpenID Connect).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -35,9 +30,7 @@ import (
 
 const Namespace = "argo"
 const Label = "argo-e2e"
-
-// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
-const LabelCron = Label + "-cron"
+const defaultTimeout = 30 * time.Second
 
 type E2ESuite struct {
 	suite.Suite
@@ -71,28 +64,18 @@ func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 }
 
-func (s *E2ESuite) BeforeTest(suiteName, testName string) {
-	dir := "/tmp/log/argo-e2e"
-	err := os.MkdirAll(dir, 0777)
-	s.CheckError(err)
-	name := dir + "/" + suiteName + "-" + testName + ".log"
-	f, err := os.Create(name)
-	s.CheckError(err)
-	err = file.setFile(f)
-	s.CheckError(err)
-	log.Infof("logging debug diagnostics to file://%s", name)
-	s.DeleteResources(Label)
+func (s *E2ESuite) BeforeTest(string, string) {
+	s.DeleteResources()
 }
 
 var foreground = metav1.DeletePropagationForeground
 var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
 
-func (s *E2ESuite) DeleteResources(label string) {
-
+func (s *E2ESuite) DeleteResources() {
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
 		archive := s.Persistence.workflowArchive
-		parse, err := labels.ParseToRequirements(label)
+		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
 		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
 		s.CheckError(err)
@@ -102,7 +85,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 		}
 	}
 
-	hasTestLabel := metav1.ListOptions{LabelSelector: label}
+	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
 	resources := []schema.GroupVersionResource{
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
 		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
@@ -125,10 +108,12 @@ func (s *E2ESuite) DeleteResources(label string) {
 			if len(list.Items) == 0 {
 				break
 			}
-			time.Sleep(time.Second)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
+
+func (s *E2ESuite) AfterTest(_, _ string) {}
 
 func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
 	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)
@@ -169,102 +154,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 		}
 	}
 	return "", nil
-}
-
-func (s *E2ESuite) Run(name string, subtest func()) {
-	// This add demarcation to the logs making it easier to differentiate the output of different tests.
-	longName := s.T().Name() + "/" + name
-	log.Debug("=== RUN " + longName)
-	defer func() {
-		if s.T().Failed() {
-			log.Debug("=== FAIL " + longName)
-			s.T().FailNow()
-		} else if s.T().Skipped() {
-			log.Debug("=== SKIP " + longName)
-		} else {
-			log.Debug("=== PASS " + longName)
-		}
-	}()
-	s.Suite.Run(name, subtest)
-}
-
-func (s *E2ESuite) AfterTest(_, _ string) {
-	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
-	s.CheckError(err)
-	for _, wf := range wfs.Items {
-		s.printWorkflowDiagnostics(wf.GetName())
-	}
-	err = file.Close()
-	s.CheckError(err)
-}
-
-func (s *E2ESuite) printWorkflowDiagnostics(name string) {
-	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": name})
-	// print logs
-	wf, err := s.wfClient.Get(name, metav1.GetOptions{})
-	s.CheckError(err)
-	err = s.hydrator.Hydrate(wf)
-	s.CheckError(err)
-	if wf.Status.IsOffloadNodeStatus() {
-		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
-		s.CheckError(err)
-		wf.Status.Nodes = offloaded
-	}
-	logCtx.Debug("Workflow metadata:")
-	s.printJSON(wf.ObjectMeta)
-	logCtx.Debug("Workflow status:")
-	s.printJSON(wf.Status)
-	for _, node := range wf.Status.Nodes {
-		if node.Type != "Pod" {
-			continue
-		}
-		logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName})
-		s.printPodDiagnostics(logCtx, wf.Namespace, node.ID)
-	}
-}
-
-func (s *E2ESuite) printJSON(obj interface{}) {
-	// print status
-	bytes, err := yaml.Marshal(obj)
-	s.CheckError(err)
-	log.Debug("---")
-	for _, line := range strings.Split(string(bytes), "\n") {
-		log.Debug("  " + line)
-	}
-	log.Debug("---")
-}
-
-func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
-	logCtx = logCtx.WithFields(log.Fields{"pod": podName})
-	pod, err := s.KubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
-	if err != nil {
-		logCtx.Error("Cannot get pod")
-		return
-	}
-	logCtx.Debug("Pod manifest:")
-	s.printJSON(pod)
-	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
-	logCtx.WithField("numContainers", len(containers)).Debug()
-	for _, container := range containers {
-		logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image, "pod": pod.Name})
-		s.printPodLogs(logCtx, pod.Namespace, pod.Name, container.Name)
-	}
-}
-
-func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container string) {
-	stream, err := s.KubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
-	if err != nil {
-		logCtx.WithField("err", err).Error("Cannot get logs")
-		return
-	}
-	defer func() { _ = stream.Close() }()
-	logCtx.Debug("Container logs:")
-	scanner := bufio.NewScanner(stream)
-	log.Debug("---")
-	for scanner.Scan() {
-		log.Debug("  " + scanner.Text())
-	}
-	log.Debug("---")
 }
 
 func (s *E2ESuite) Given() *Given {

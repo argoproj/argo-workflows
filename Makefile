@@ -56,6 +56,7 @@ AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
+UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
 
 ALWAYS_OFFLOAD_NODE_STATUS := false
@@ -64,12 +65,6 @@ ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 ifeq ($(PROFILE),postgres)
 ALWAYS_OFFLOAD_NODE_STATUS := true
-endif
-
-ifeq ($(STATIC_FILES),false)
-TEST_OPTS := -coverprofile=coverage.out
-else
-TEST_OPTS :=
 endif
 
 override LDFLAGS += \
@@ -141,7 +136,7 @@ ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
 	@mkdir -p ui/node_modules
 ifeq ($(STATIC_FILES),true)
-	yarn --cwd ui install
+	JOBS=max yarn --cwd ui install
 endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
@@ -150,7 +145,7 @@ ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(STATIC_FILES),true)
-	yarn --cwd ui build
+	JOBS=max yarn --cwd ui build
 else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
@@ -283,11 +278,9 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
-dist/install_kustomize.sh:
+/usr/local/bin/kustomize:
 	mkdir -p dist
 	./hack/recurl.sh dist/install_kustomize.sh https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh
-
-/usr/local/bin/kustomize: dist/install_kustomize.sh
 	chmod +x ./dist/install_kustomize.sh
 	./dist/install_kustomize.sh
 	sudo mv kustomize /usr/local/bin/
@@ -321,22 +314,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	@mkdir -p test-results
-	go test -v $(TEST_OPTS) ./... 2>&1 | tee test-results/test.out
-
-test-results/test-report.json: test-results/test.out
-	cat test-results/test.out | go tool test2json > test-results/test-report.json
-
-$(GOPATH)/bin/go-junit-report:
-	go get github.com/jstemmer/go-junit-report
-
-# note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
-	cat test-results/test.out | go-junit-report > test-results/junit.xml
-
-.PHONY: test-report
-test-report: test-results/junit.xml
-	go run ./hack test-report
+	go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -374,7 +352,7 @@ test-images:
 
 .PHONY: stop
 stop:
-	killall argo workflow-controller pf.sh kubectl || true
+	killall argo workflow-controller kubectl || true
 
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
@@ -391,7 +369,7 @@ endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
 .PHONY: wait
 wait:
@@ -411,28 +389,22 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	# Run E2E tests
-	@mkdir -p test-results
-	go test -timeout 15m -v -count 1 --tags e2e -p 1 --short ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	# Run E2E tests
-	@mkdir -p test-results
-	go test -timeout 7m -v -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
-	# Run smoke tests
-	@mkdir -p test-results
-	go test -timeout 1m -v -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 # clean
 
 .PHONY: clean
 clean:
-	# Delete build files
-	rm -Rf vendor dist/* ui/dist
+	go clean
+	rm -Rf test-results node_modules vendor dist/* ui/dist
 
 # swagger
 
@@ -479,13 +451,11 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+/usr/local/bin/swagger-markdown:
+	npm install -g swagger-markdown
 
-./node_modules/.bin/swagger-markdown:
-	npm init -y
-	npm install swagger-markdown
-
-docs/swagger.md: api/openapi-spec/swagger.json ./node_modules/.bin/swagger-markdown
-	./node_modules/.bin/swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
+docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
+	swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs

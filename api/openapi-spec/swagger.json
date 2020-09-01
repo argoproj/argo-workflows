@@ -1934,6 +1934,10 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        },
+        "subPath": {
+          "description": "SubPath allows an artifact to be sourced from a subpath within the specified source",
+          "type": "string"
         }
       }
     },
@@ -2612,19 +2616,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.HolderNames": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "Name stores the name of the resource holding lock",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "x-kubernetes-list-type": "atomic"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
@@ -2664,7 +2655,13 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
+      "type": [
+        "boolean",
+        "number",
+        "string",
+        "object"
+      ]
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -2795,6 +2792,52 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Prometheus"
           }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Mutex": {
+      "description": "Mutex holds Mutex configuration",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "name of the mutex",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MutexHolding": {
+      "description": "MutexHolding describes the mutex and the object which is holding it.",
+      "type": "object",
+      "properties": {
+        "holder": {
+          "description": "Holder is a reference to the object which holds the Mutex. Holding Scenario:\n  1. Current workflow's NodeID which is holding the lock.\n     e.g: ${NodeID}\nWaiting Scenario:\n  1. Current workflow or other workflow NodeID which is holding the lock.\n     e.g: ${WorkflowName}/${NodeID}",
+          "type": "string"
+        },
+        "mutex": {
+          "description": "Reference for the mutex e.g: ${namespace}/mutex/${mutexName}",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MutexStatus": {
+      "description": "MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.",
+      "type": "object",
+      "properties": {
+        "holding": {
+          "description": "Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
+          },
+          "x-kubernetes-list-type": "atomic"
+        },
+        "waiting": {
+          "description": "Waiting is a list of mutexes and their respective objects this workflow is waiting for.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexHolding"
+          },
+          "x-kubernetes-list-type": "atomic"
         }
       }
     },
@@ -3360,7 +3403,7 @@
           }
         },
         "waiting": {
-          "description": "Waiting indicates the list of current synchronization lock holders",
+          "description": "Waiting indicates the list of current synchronization lock holders.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreHolding"
@@ -3473,6 +3516,10 @@
       "description": "Synchronization holds synchronization lock configuration",
       "type": "object",
       "properties": {
+        "mutex": {
+          "description": "Mutex holds the Mutex lock details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Mutex"
+        },
         "semaphore": {
           "description": "Semaphore holds the Semaphore configuration",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreRef"
@@ -3480,10 +3527,15 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.SynchronizationStatus": {
+      "description": "SynchronizationStatus stores the status of semaphore and mutex.",
       "type": "object",
       "properties": {
+        "mutex": {
+          "description": "Mutex stores this workflow's mutex holder details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MutexStatus"
+        },
         "semaphore": {
-          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
+          "description": "Semaphore stores this workflow's Semaphore holder details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreStatus"
         }
       }
