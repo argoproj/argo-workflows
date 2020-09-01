@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -14,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 type CLIWithServerSuite struct {
@@ -106,7 +106,7 @@ func (s *CLIWithServerSuite) TestArchive() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -149,52 +149,6 @@ func (s *CLIWithServerSuite) TestArchive() {
 				}
 			})
 	})
-}
-
-func (s *CLIWithServerSuite) TestWorkflowLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"workflow": "1",
-	}
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@testdata/semaphore-wf-level.yaml").
-		When().
-		CreateConfigMap("my-config", semaphoreData).
-		RunCli([]string{"submit", "testdata/semaphore-wf-level-1.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "semaphore-wf-level-1")
-			}
-		}).
-		SubmitWorkflow().
-		Wait(1*time.Second).
-		RunCli([]string{"get", "semaphore-wf-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Pending")
-		}).
-		WaitForWorkflow(30 * time.Second).
-		DeleteConfigMap().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *CLIWithServerSuite) TestTemplateLevelSemaphore() {
-	semaphoreData := map[string]string{
-		"template": "1",
-	}
-
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@testdata/semaphore-tmpl-level.yaml").
-		When().
-		CreateConfigMap("my-config", semaphoreData).
-		SubmitWorkflow().
-		Wait(1*time.Second).
-		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Waiting for")
-		}).
-		WaitForWorkflow(20 * time.Second).
-		DeleteConfigMap()
 }
 
 func (s *CLIWithServerSuite) TestArgoSetOutputs() {
@@ -243,7 +197,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflow(fixtures.ToStart).
 		RunCli([]string{"resume", "suspend-template"}, func(t *testing.T, output string, err error) {
 			assert.Error(t, err)
 			assert.Contains(t, output, "has not been set and does not have a default value")
@@ -269,7 +223,7 @@ spec:
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow suspend-template resumed")
 		}).
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)

@@ -200,7 +200,7 @@ data:
       #     key: password
 
     # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
-    # See more: docs/default-workflow-specs.yaml
+    # See more: docs/default-workflow-specs.md
     workflowDefaults:
       metadata:
         annotations:
@@ -214,7 +214,7 @@ data:
 
     # SSO Configuration for the Argo server.
     # You must also start argo server with `--auth-mode sso`.
-    # https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md
+    # https://argoproj.github.io/argo/argo-server-auth-mode/
     sso:
       # This is the root URL of the OIDC provider (required).
       issuer: https://issuer.root.url/

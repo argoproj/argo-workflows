@@ -20,6 +20,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -29,6 +30,7 @@ import (
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -114,7 +116,7 @@ func (t testEventRecorderManager) Get(string) record.EventRecorder {
 	return t.eventRecorder
 }
 
-var _ EventRecorderManager = &testEventRecorderManager{}
+var _ events.EventRecorderManager = &testEventRecorderManager{}
 
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
@@ -152,6 +154,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
+	controller.podInformer = controller.newPodInformer()
 	return cancel, controller
 }
 
@@ -205,6 +208,15 @@ func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
 	return test.LoadClusterWorkflowTemplateFromBytes([]byte(yamlStr))
+}
+
+func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
+	var artifact wfv1.Artifact
+	err := yaml.Unmarshal([]byte(yamlStr), &artifact)
+	if err != nil {
+		panic(err)
+	}
+	return &artifact
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
@@ -386,7 +398,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {

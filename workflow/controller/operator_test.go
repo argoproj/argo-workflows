@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -18,7 +19,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/fake"
+	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -2756,6 +2761,7 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
@@ -4201,16 +4207,16 @@ func TestCheckForbiddenErrorAndResbmitAllowed(t *testing.T) {
 	wf := unmarshalWF(resubmitPendingWf)
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", nil)
+	forbiddenErr := apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
 	nonForbiddenErr := apierr.NewBadRequest("badrequest")
 	t.Run("ForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResubmitAllowed(forbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.requeueIfTransientErr(forbiddenErr, "resubmit-pending-wf")
 		assert.NotNil(t, node)
 		assert.NoError(t, err)
 		assert.Equal(t, wfv1.NodePending, node.Phase)
 	})
 	t.Run("NonForbiddenError", func(t *testing.T) {
-		node, err := woc.checkForbiddenErrorAndResubmitAllowed(nonForbiddenErr, "resubmit-pending-wf", &wf.Spec.Templates[0])
+		node, err := woc.requeueIfTransientErr(nonForbiddenErr, "resubmit-pending-wf")
 		assert.Error(t, err)
 		assert.Nil(t, node)
 	})
@@ -4593,4 +4599,50 @@ func Test_processItem(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, `task-name(0:json:{"number":2,"string":"foo","list":[0,"1"]},list:[0,"1"],number:2,string:foo)`, newTaskName)
 	}
+}
+
+var wfWithPVC = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: storage-quota-limit
+spec:
+  entrypoint: wait
+  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
+    - metadata:
+        name: workdir1                     # name of volume claim
+      spec:
+        accessModes: [ "ReadWriteMany" ]
+        resources:
+          requests:
+            storage: 10Gi
+  templates:
+  - name: wait
+    script:
+      image: argoproj/argosay:v2
+      args: [echo, ":) Hello Argo!"]
+`
+
+func TestStorageQuota(t *testing.T) {
+	wf := unmarshalWF(wfWithPVC)
+
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierr.NewForbidden(schema.GroupResource{Group: "test", Resource: "test1"}, "test", errors.New("exceeded quota"))
+	})
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "Waiting for a PVC to be created.")
+
+	controller.kubeclientset.(*fake.Clientset).BatchV1().(*batchfake.FakeBatchV1).Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierr.NewBadRequest("BadRequest")
+	})
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
 }

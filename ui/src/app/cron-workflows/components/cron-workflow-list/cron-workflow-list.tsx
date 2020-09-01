@@ -92,14 +92,14 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private saveHistory() {
-        this.url = uiUrl('cron-workflows/' + this.state.namespace);
+        this.url = uiUrl('cron-workflows/' + this.state.namespace || '');
         Utils.setCurrentNamespace(this.state.namespace);
     }
 
     private fetchCronWorkflows(namespace: string): void {
         services.cronWorkflows
             .list(namespace)
-            .then(cronWorkflows => this.setState({namespace, cronWorkflows}, this.saveHistory))
+            .then(cronWorkflows => this.setState({error: null, namespace, cronWorkflows}, this.saveHistory))
             .catch(error => this.setState({error}));
     }
 
@@ -110,7 +110,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         if (!this.state.cronWorkflows) {
             return <Loading />;
         }
-        const learnMore = <a href='https://github.com/argoproj/argo/blob/master/docs/cron-workflows.md'>Learn more</a>;
+        const learnMore = <a href='https://argoproj.github.io/argo/cron-workflows/'>Learn more</a>;
         if (this.state.cronWorkflows.length === 0) {
             return (
                 <ZeroState title='No cron workflows'>

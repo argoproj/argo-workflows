@@ -183,6 +183,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .then(wfList => {
                 this.setState(
                     {
+                        error: null,
+                        namespace,
                         workflows: wfList.items || [],
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
                         selectedPhases,
@@ -221,7 +223,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     .filter(item => item.updated)
                     .map(item => item.workflows)
                     .subscribe(
-                        workflows => this.setState({workflows}),
+                        workflows => this.setState({error: null, workflows}),
                         error => this.setState({error})
                     );
             })
@@ -265,7 +267,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private saveHistory() {
         WorkflowsList.saveOptions(this.options);
-        this.url = uiUrl('workflows/' + this.state.namespace + '?' + this.filterParams.toString());
+        this.url = uiUrl('workflows/' + this.state.namespace || '' + '?' + this.filterParams.toString());
         Utils.setCurrentNamespace(this.state.namespace);
     }
 
@@ -412,7 +414,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 </React.Fragment>
                             )}
                             onSelect={val => {
-                                ctx.navigation.goto(`./${val}`);
+                                ctx.navigation.goto(uiUrl(`workflows/${val}`));
                             }}
                             onChange={e => {
                                 ctx.navigation.goto('.', {search: e.target.value}, {replace: true});

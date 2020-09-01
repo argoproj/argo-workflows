@@ -78,7 +78,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
     private fetchClusterWorkflowTemplates(): void {
         services.clusterWorkflowTemplate
             .list()
-            .then(templates => this.setState({templates}))
+            .then(templates => this.setState({error: null, templates}))
             .catch(error => this.setState({error}));
     }
 
@@ -89,7 +89,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
         if (!this.state.templates) {
             return <Loading />;
         }
-        const learnMore = <a href='https://github.com/argoproj/argo/blob/master/docs/cluster-workflow-templates.md'>Learn more</a>;
+        const learnMore = <a href='https://argoproj.github.io/argo/cluster-workflow-templates/'>Learn more</a>;
         if (this.state.templates.length === 0) {
             return (
                 <ZeroState title='No cluster workflow templates'>

@@ -9,6 +9,7 @@ import {services} from '../../shared/services';
 import {WorkflowLink} from '../../workflows/components/workflow-link';
 
 const jsonMergePatch = require('json-merge-patch');
+const parser = require('cron-parser');
 
 interface Props {
     cronWorkflow: CronWorkflow;
@@ -34,6 +35,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
     const statusAttributes = [
         {title: 'Active', value: props.cronWorkflow.status.active ? getCronWorkflowActiveWorkflowList(props.cronWorkflow.status.active) : <i>No Workflows Active</i>},
         {title: 'Last Scheduled Time', value: props.cronWorkflow.status.lastScheduledTime},
+        {title: 'Next Scheduled Time', value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone)},
         {title: 'Conditions', value: <ConditionsPanel conditions={props.cronWorkflow.status.conditions} />}
     ];
     return (
@@ -84,4 +86,17 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
 
 function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]) {
     return active.reverse().map(activeWf => <WorkflowLink key={activeWf.uid} namespace={activeWf.namespace} name={activeWf.name} />);
+}
+
+function getNextScheduledTime(schedule: string, tz: string): string {
+    let out = '';
+    try {
+        out = parser
+            .parseExpression(schedule, {tz})
+            .next()
+            .toISOString();
+    } catch (e) {
+        // Do nothing
+    }
+    return out;
 }

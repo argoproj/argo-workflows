@@ -439,6 +439,36 @@ func (_m *WorkflowServiceClient) TerminateWorkflow(ctx context.Context, in *work
 	return r0, r1
 }
 
+// WatchEvents provides a mock function with given fields: ctx, in, opts
+func (_m *WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchEventsClient, error) {
+	_va := make([]interface{}, len(opts))
+	for _i := range opts {
+		_va[_i] = opts[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, in)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 workflow.WorkflowService_WatchEventsClient
+	if rf, ok := ret.Get(0).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) workflow.WorkflowService_WatchEventsClient); ok {
+		r0 = rf(ctx, in, opts...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(workflow.WorkflowService_WatchEventsClient)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) error); ok {
+		r1 = rf(ctx, in, opts...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // WatchWorkflows provides a mock function with given fields: ctx, in, opts
 func (_m *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error) {
 	_va := make([]interface{}, len(opts))

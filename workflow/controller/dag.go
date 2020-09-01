@@ -158,12 +158,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			}
 		}
 
-		if node.Type == wfv1.NodeTypeRetry || node.Type == wfv1.NodeTypeTaskGroup {
+		if node.Type == wfv1.NodeTypeRetry {
 			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 			// To resume the traversal, we look at the children of the last child node.
-			// A TaskGroup node will always reflect the status of its expanded tasks (mainly it will be Succeeded if and only if all of its
-			// expanded tasks have succeeded), so each individual expanded task doesn't interest us. To resume the traversal, we look at the
-			// children of its last child node (note that this is arbitrary, since all expanded tasks will have the same children).
 			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
 				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
 			}
@@ -555,7 +552,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		if art.From == "" {
 			continue
 		}
-		resolvedArt, err := scope.resolveArtifact(art.From)
+		resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
 		if err != nil {
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)

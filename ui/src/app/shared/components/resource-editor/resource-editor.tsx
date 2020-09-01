@@ -4,6 +4,7 @@ import {uiUrl} from '../../base';
 
 import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import {ErrorNotice} from '../error-notice';
+import {ToggleButton} from '../toggle-button';
 import {parse, stringify} from './resource';
 
 require('./resource.scss');
@@ -90,7 +91,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     public handleFiles(files: FileList) {
         files[0]
             .text()
-            .then(value => this.setState({value: stringify(parse(value), this.state.lang)}))
+            .then(value => this.setState({error: null, value: stringify(parse(value), this.state.lang)}))
             .catch(error => this.setState(error));
     }
 
@@ -132,9 +133,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <>
-                        <label className={`argo-button argo-button--base-o ${this.state.lang}`} style={{marginRight: '5px'}} onClick={e => this.changeLang()} key='data-type'>
-                            {this.state.lang === 'yaml' ? <i className='fa fa-check' /> : <i className='fa fa-times' />} YAML
-                        </label>
+                        <ToggleButton toggled={this.state.lang === 'yaml'} onToggle={() => this.changeLang()}>
+                            YAML
+                        </ToggleButton>
                         {this.props.upload && (
                             <label className='argo-button argo-button--base-o' key='upload-file'>
                                 <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
@@ -156,7 +157,10 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            this.props.onSubmit(parse(this.state.value)).catch(error => this.setState({error}));
+            this.props
+                .onSubmit(parse(this.state.value))
+                .then(() => this.setState({error: null}))
+                .catch(error => this.setState({error}));
         } catch (error) {
             this.setState({error});
         }
@@ -165,8 +169,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private renderWarning() {
         return (
             <div style={{marginTop: '1em'}}>
-                <i className='fa fa-info-circle' /> Note:{' '}
-                {this.state.lang === 'json' ? <>Full auto-completion enabled</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}
+                <i className='fa fa-info-circle' />{' '}
+                {this.state.lang === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
+                <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
             </div>
         );
     }

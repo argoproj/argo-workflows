@@ -5,7 +5,7 @@ import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
-import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
+import {getCollapsedNodeName, getMessage, getNodeParent, getType, isCollapsedNode} from './graph/collapsible-node';
 import {Edge, Graph} from './graph/graph';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
@@ -220,7 +220,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 if (isCollapsedNode(nodeId)) {
                                     phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
                                     label = getMessage(nodeId);
-                                    hidden = this.hiddenNode(getNodeParent(nodeId));
+                                    hidden = this.hiddenNode(nodeId);
                                 } else {
                                     const node = this.props.nodes[nodeId];
                                     phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
@@ -313,7 +313,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     .map(v => [v])
                     .reduce((a, b) => a.concat(b), []);
                 queue.push({
-                    nodeName: getCollapsedNodeName(nodeId, children.length - 2 + ' hidden nodes'),
+                    nodeName: getCollapsedNodeName(nodeId, children.length - 2 + ' hidden nodes', allNodes[children[0]].type),
                     parent: nodeId,
                     children: newChildren
                 });
@@ -496,7 +496,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private hiddenNode(id: string): boolean {
         if (isCollapsedNode(id)) {
-            return false;
+            return !this.state.nodesToDisplay.includes('type:' + getType(id));
         }
 
         const node = this.props.nodes[id];

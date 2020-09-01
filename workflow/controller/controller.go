@@ -41,12 +41,15 @@ import (
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
+	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )
+
+const enoughTimeForInformerSync = 1 * time.Second
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -87,7 +90,7 @@ type WorkflowController struct {
 	wfArchive             sqldb.WorkflowArchive
 	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
-	eventRecorderManager  EventRecorderManager
+	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.CacheFactory
 }
@@ -120,7 +123,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
-		eventRecorderManager:       newEventRecorderManager(kubeclientset),
+		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
 
 	wfc.UpdateConfig()
@@ -146,7 +149,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.dynamicInterface, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics, wfc.eventRecorderManager)
 	cronController.Run(ctx)
 }
 
@@ -159,7 +162,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions)
-	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.namespace)
+	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
@@ -222,7 +225,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 	}
 
 	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
-		wfc.wfQueue.AddAfter(key, 0)
+		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
 	})
 
 	labelSelector := v1Label.NewSelector()
@@ -465,16 +468,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	err = wfc.setWorkflowDefaults(wf)
-	if err != nil {
-		log.WithFields(log.Fields{"key": wf.Name, "error": err}).Warn("Failed to apply default workflow values")
-		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-		woc.persistUpdates()
-		wfc.throttler.Remove(key)
-		return true
-	}
-
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
 		// can get here if we already added the completed=true label,
@@ -515,19 +508,13 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
-		// Release all acquired lock for completed workflow
-		if wfc.syncManager.ReleaseAll(woc.wf) {
-			log.WithFields(log.Fields{"key": wf.Name}).Info("Released all acquired locks")
-			woc.updated = true
-			woc.persistUpdates()
-		}
 
 		wfc.throttler.Remove(key)
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
-		if woc.wfSpec.PodGC != nil {
-			switch woc.wfSpec.PodGC.Strategy {
+		if woc.execWf.Spec.PodGC != nil {
+			switch woc.execWf.Spec.PodGC.Strategy {
 			case wfv1.PodGCOnWorkflowCompletion:
 				doPodGC = true
 			case wfv1.PodGCOnWorkflowSuccess:
@@ -594,7 +581,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 	// add this change after 1s - this reduces the number of workflow reconciliations -
 	//with each reconciliation doing more work
-	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, enoughTimeForInformerSync)
 	return true
 }
 

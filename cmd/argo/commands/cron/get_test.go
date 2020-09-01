@@ -2,6 +2,7 @@ package cron
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/yaml"
@@ -60,5 +61,17 @@ func TestPrintCronWorkflow(t *testing.T) {
 	if assert.NoError(t, err) {
 		out := getCronWorkflowGet(&cronWf)
 		assert.Contains(t, out, expectedOut)
+	}
+}
+
+func TestNextRuntime(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
+	if assert.NoError(t, err) {
+		next, err := cronWf.GetNextRuntime()
+		if assert.NoError(t, err) {
+			assert.Less(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+			assert.Greater(t, next.Unix(), time.Now().Unix())
+		}
 	}
 }

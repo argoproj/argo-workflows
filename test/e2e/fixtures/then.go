@@ -4,12 +4,11 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -41,7 +40,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
-	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": workflowName}).Info("Checking expectation")
+	println("Checking expectation", workflowName)
 	wf, err := t.client.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -63,7 +62,7 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
-	log.WithFields(log.Fields{"cronWorkflow": t.cronWorkflowName}).Info("Checking cron expectation")
+	println("Checking cron expectation")
 	cronWf, err := t.cronClient.Get(t.cronWorkflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
@@ -77,12 +76,12 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 
 func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	t.t.Helper()
-	log.Info("Listing workflows")
+	println("Listing workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	log.Info("Checking expectation")
+	println("Checking expectation")
 	block(t.t, wfList)
 	if t.t.Failed() {
 		t.t.FailNow()
@@ -90,13 +89,25 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
-func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then {
+var HasInvolvedObject = func(kind string, uid types.UID) func(event apiv1.Event) bool {
+	return func(e apiv1.Event) bool {
+		return e.InvolvedObject.Kind == kind && e.InvolvedObject.UID == uid
+	}
+}
+
+var HasInvolvedObjectWithName = func(kind string, name string) func(event apiv1.Event) bool {
+	return func(e apiv1.Event) bool {
+		return e.InvolvedObject.Kind == kind && e.InvolvedObject.Name == name
+	}
+}
+
+func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
 	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(defaultTimeout)
 	defer ticker.Stop()
 	for len(blocks) > 0 {
 		select {
@@ -107,7 +118,8 @@ func (t *Then) ExpectAuditEvents(blocks ...func(*testing.T, apiv1.Event)) *Then 
 			if !ok {
 				t.t.Fatal("event is not an event")
 			}
-			if e.InvolvedObject.Name == t.workflowName && e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
+			if filter(*e) {
+				println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
 				blocks[0](t.t, *e)
 				blocks = blocks[1:]
 				if t.t.Failed() {
