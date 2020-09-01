@@ -182,16 +182,7 @@ func (s *gatekeeper) rbacAuthorization(claimSet jws.ClaimSet) (versioned.Interfa
 	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[j]) > precedence(serviceAccounts[i]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
-		data, err := json.Marshal(claimSet)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to marshall JSON for rule: %w", err)
-		}
-		v := make(map[string]interface{})
-		err = json.Unmarshal(data, &v)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to un-marshall JSON for rule: %w", err)
-		}
-		result, err := expr.Eval(rule, v)
+		result, err := expr.Eval(rule, claimSet)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to evaluate rule: %w", err)
 		}
