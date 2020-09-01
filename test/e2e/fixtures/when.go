@@ -118,7 +118,7 @@ type Condition func(wf *wfv1.Workflow) bool
 
 var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
 var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.FinishedAt.IsZero() }
-var ToBeArchived Condition = func(wf *wfv1.Workflow) bool {return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived"}
+var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
 
 // Wait for a workflow to meet a condition:
 // Options:
