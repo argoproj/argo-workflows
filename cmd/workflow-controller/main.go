@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -87,10 +85,6 @@ func NewRootCommand() *cobra.Command {
 			defer cancel()
 
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
-
-			// https://blog.golang.org/pprof
-			// go tool pprof http://localhost:6060/debug/pprof/profile
-			_ = http.ListenAndServe(":6060", nil)
 
 			// Wait forever
 			select {}

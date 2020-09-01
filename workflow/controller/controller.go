@@ -94,7 +94,6 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.CacheFactory
-	keyLock               sync.KeyLock
 }
 
 const (
@@ -126,7 +125,6 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		gcPods:                     make(chan string, 512),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
-		keyLock:                    sync.NewKeyLock(),
 	}
 
 	wfc.UpdateConfig()
@@ -437,9 +435,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return false
 	}
 	defer wfc.wfQueue.Done(key)
-
-	wfc.keyLock.Lock(key.(string))
-	defer wfc.keyLock.Unlock(key.(string))
 
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {

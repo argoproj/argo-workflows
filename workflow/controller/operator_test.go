@@ -2706,24 +2706,18 @@ spec:
 `
 
 func TestStepsOnExit(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
-	// Test list expansion
 	wf := unmarshalWF(stepsOnExit)
-	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	cancel, controller := newController(wf)
+	defer cancel()
 
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+	makePodsPhase(woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
 	onExitNodeIsPresent := false
-	for _, node := range wf.Status.Nodes {
+	for _, node := range woc.wf.Status.Nodes {
 		if strings.Contains(node.Name, "onExit") {
 			onExitNodeIsPresent = true
 			break
@@ -3001,23 +2995,18 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
 func TestPodSpecLogForFailedPods(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	assert.NotNil(t, controller)
-	controller.Config.PodSpecLogStrategy.FailedPod = true
 	wf := unmarshalWF(helloWorldWf)
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
+	controller.Config.PodSpecLogStrategy.FailedPod = true
 	woc := newWorkflowOperationCtx(wf, controller)
-	assert.NotNil(t, woc)
 	woc.operate()
+	makePodsPhase(woc, apiv1.PodFailed)
 	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
-
 }
 
 //  TestPodSpecLogForAllPods tests  PodSpec logging configuration
