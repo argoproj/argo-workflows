@@ -4246,8 +4246,6 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 <br>
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
-
-- [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 </details>
 
 ### Fields
