@@ -8,36 +8,42 @@ type KeyLock interface {
 }
 
 type keyLock struct {
-	lock  *sync.RWMutex
+	guard sync.RWMutex
 	locks map[string]*sync.Mutex
-}
-
-func (l *keyLock) Lock(key string) {
-	l.lock.RLock()
-	lock, ok := l.locks[key]
-	l.lock.RUnlock()
-	if !ok {
-		lock = &sync.Mutex{}
-		l.lock.Lock()
-		l.locks[key] = lock
-		l.lock.Unlock()
-	}
-	lock.Lock()
-}
-
-func (l *keyLock) Unlock(key string) {
-	l.lock.RLock()
-	lock := l.locks[key]
-	l.lock.RUnlock()
-	lock.Unlock()
-	l.lock.Lock()
-	delete(l.locks, key)
-	l.lock.Unlock()
 }
 
 func NewKeyLock() KeyLock {
 	return &keyLock{
-		lock:  &sync.RWMutex{},
-		locks: make(map[string]*sync.Mutex),
+		guard: sync.RWMutex{},
+		locks: map[string]*sync.Mutex{},
 	}
+}
+
+func (l *keyLock) getLock(key string) *sync.Mutex {
+	l.guard.RLock()
+	if lock, ok := l.locks[key]; ok {
+		l.guard.RUnlock()
+		return lock
+	}
+
+	l.guard.RUnlock()
+	l.guard.Lock()
+
+	if lock, ok := l.locks[key]; ok {
+		l.guard.Unlock()
+		return lock
+	}
+
+	lock := &sync.Mutex{}
+	l.locks[key] = lock
+	l.guard.Unlock()
+	return lock
+}
+
+func (l *keyLock) Lock(key string) {
+	l.getLock(key).Lock()
+}
+
+func (l *keyLock) Unlock(key string) {
+	l.getLock(key).Unlock()
 }
