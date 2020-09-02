@@ -485,6 +485,16 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 		return nil, err
 	}
+	if resolvedTmpl.Timeout != "" {
+		switch resolvedTmpl.GetType() {
+		case wfv1.TemplateTypeSteps, wfv1.TemplateTypeDAG, wfv1.TemplateTypeSuspend:
+			return nil, fmt.Errorf("%s template doesn't support timeout field.", resolvedTmpl.GetType())
+		}
+		_, err := time.ParseDuration(resolvedTmpl.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("%s has invalid timeout format. %v", resolvedTmpl.Name, err)
+		}
+	}
 
 	// Validate retryStrategy
 	if resolvedTmpl.RetryStrategy != nil {

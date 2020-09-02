@@ -4686,6 +4686,35 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
+	t.Run("Invalid timeout format", func(t *testing.T) {
+		wf := unmarshalWF(stepTimeoutWf)
+		tmpl := wf.Spec.Templates[1]
+		tmpl.Timeout = "23"
+		wf.Spec.Templates[1] = tmpl
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		jsonByte, err := json.Marshal(woc.wf)
+		assert.NoError(t, err)
+		assert.Contains(t, string(jsonByte), "invalid timeout format")
+	})
+
+	t.Run("Invalid timeout in step", func(t *testing.T) {
+		wf := unmarshalWF(stepTimeoutWf)
+		tmpl := wf.Spec.Templates[0]
+		tmpl.Timeout = "23"
+		wf.Spec.Templates[0] = tmpl
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		jsonByte, err := json.Marshal(woc.wf)
+		assert.NoError(t, err)
+		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
+	})
 }
 
 var wfWithPVC = `

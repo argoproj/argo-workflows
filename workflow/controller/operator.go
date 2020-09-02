@@ -1694,12 +1694,12 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 	}
 
 	if tmpl.Timeout != "" {
-		tmplMaxDuration, err := parseStringToDuration(tmpl.Timeout)
+		tmplTimeout, err := time.ParseDuration(tmpl.Timeout)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid timeout format. %v", err)
 		}
 
-		deadline := node.StartedAt.Add(tmplMaxDuration)
+		deadline := node.StartedAt.Add(tmplTimeout)
 
 		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
 			return nil, fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
