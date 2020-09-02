@@ -185,6 +185,10 @@ data:
         passwordSecret:
           name: argo-postgres-config
           key: password
+        ssl: true
+        # sslMode must be one of: disable, require, verify-ca, verify-full
+        # you can find more information about those ssl options here: https://godoc.org/github.com/lib/pq 
+        sslMode: require
 
       # Optional config for mysql:
       # mysql:
