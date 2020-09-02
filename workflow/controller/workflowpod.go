@@ -363,7 +363,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			woc.log.WithField("podPhase", existing.Status.Phase).Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return existing, nil
 		}
-
 	}
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)

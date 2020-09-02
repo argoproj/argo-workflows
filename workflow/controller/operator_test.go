@@ -4732,5 +4732,4 @@ func TestStorageQuota(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Contains(t, woc.wf.Status.Message, "BadRequest")
-
 }
