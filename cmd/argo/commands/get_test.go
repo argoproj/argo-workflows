@@ -2,18 +2,16 @@ package commands
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"testing"
 	"time"
 
 	"text/tabwriter"
 
-	"sigs.k8s.io/yaml"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
@@ -429,8 +427,7 @@ Status:              Succeeded
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
 	getCommand := NewGetCommand()
 	getCommand.SetArgs([]string{"hello-world"})
 	execFunc := func() {

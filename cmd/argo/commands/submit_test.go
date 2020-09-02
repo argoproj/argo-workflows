@@ -1,12 +1,8 @@
 package commands
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,10 +35,9 @@ func TestSubmitFromResource(t *testing.T) {
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("SubmitWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfv1.Workflow{}, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
 	output := CaptureOutput(func() {
-		submitWorkflowFromResource(CLIOpt.ctx, &wfClient, "default", "workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{})
+		submitWorkflowFromResource(context.TODO(), &wfClient, "default", "workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{})
 	})
 	assert.Contains(t, output, "Created:")
 }
@@ -53,30 +48,16 @@ func TestSubmitWorkflows(t *testing.T) {
 	var wf wfv1.Workflow
 	wfClient.On("CreateWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
 
 	err := yaml.Unmarshal([]byte(workflow), &wf)
 	assert.NoError(t, err)
 	workflows := []wfv1.Workflow{wf}
 	output := CaptureOutput(func() {
-		submitWorkflows(CLIOpt.ctx, &wfClient, "default", workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{})
+		submitWorkflows(context.TODO(), &wfClient, "default", workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{})
 	})
 	fmt.Println(output)
 	assert.Contains(t, output, "Created:")
 }
 
-func CaptureOutput(f func()) string {
-	rescueStdout := os.Stdout
-	rescueStderr := os.Stderr
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	f()
-	w.Close()
-	out, _ := ioutil.ReadAll(r)
-	os.Stdout = rescueStdout
-	os.Stderr = rescueStderr
-	return string(out) + buf.String()
-}
+

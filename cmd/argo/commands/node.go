@@ -69,7 +69,7 @@ func NewNodeCommand() *cobra.Command {
 				outputParameters = string(res)
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

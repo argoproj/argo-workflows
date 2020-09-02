@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,8 +80,7 @@ func TestNewRetryCommand(t *testing.T) {
 	assert.NoError(t, err)
 	wfClient.On("RetryWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
 	retryCommand := NewRetryCommand()
 	retryCommand.SetArgs([]string{"hello-world]"})
 	execFunc := func() {

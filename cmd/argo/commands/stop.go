@@ -34,7 +34,7 @@ func NewStopCommand() *cobra.Command {
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

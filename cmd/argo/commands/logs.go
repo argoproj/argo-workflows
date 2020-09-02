@@ -88,7 +88,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			// set-up
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

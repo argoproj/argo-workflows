@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,8 +20,7 @@ func TestNewTerminateCommand(t *testing.T) {
 	assert.NoError(t, err)
 	wfClient.On("TerminateWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
 	terminateCommand := NewTerminateCommand()
 	terminateCommand.SetArgs([]string{"hello-world-2xg9p"})
 	execFunc := func() {

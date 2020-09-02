@@ -30,8 +30,7 @@ func TestNewListCommand(t *testing.T) {
 	wfList.Items = wfv1.Workflows{wf, wf1}
 	wfClient.On("ListWorkflows", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfList, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
 	listCommand := NewListCommand()
 	execFunc := func() {
 		err := listCommand.Execute()

@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apiclient"
 	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	cmdutil "github.com/argoproj/argo/util/cmd"
@@ -19,7 +18,7 @@ func NewVersionCommand() *cobra.Command {
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.PrintVersion(CLIName, argo.GetVersion(), short)
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := CreateNewAPIClient()
 			serviceClient, err := apiClient.NewInfoServiceClient()
 			if err == apiclient.NoArgoServerErr {
 				return

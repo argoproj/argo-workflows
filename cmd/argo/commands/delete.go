@@ -34,7 +34,7 @@ func NewDeleteCommand() *cobra.Command {
   argo delete @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			apiClient := CLIOpt.client
+			ctx, apiClient := CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
 			if !allNamespaces {
@@ -46,13 +46,13 @@ func NewDeleteCommand() *cobra.Command {
 				})
 			}
 			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "" {
-				listed, err := listWorkflows(CLIOpt.ctx, serviceClient, flags)
+				listed, err := listWorkflows(ctx, serviceClient, flags)
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)
 			}
 			for _, wf := range workflows {
 				if !dryRun {
-					_, err := serviceClient.DeleteWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
+					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
 					if err != nil && status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue

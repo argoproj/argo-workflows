@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,8 +17,8 @@ func TestNewDeleteCommand(t *testing.T) {
 	wfDeleteRsp := wfapi.WorkflowDeleteResponse{}
 	wfClient.On("DeleteWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfDeleteRsp, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	CLIOpt.client = &client
-	CLIOpt.ctx = context.TODO()
+	APIClient = &client
+
 	deleteCommand := NewDeleteCommand()
 	deleteCommand.SetArgs([]string{"hello-world"})
 	execFunc := func() {

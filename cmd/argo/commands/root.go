@@ -26,12 +26,17 @@ const (
 	CLIName = "argo"
 )
 
-type CLIOpts struct {
-	ctx    context.Context
-	client apiclient.Client
-}
 
-var CLIOpt CLIOpts
+//  To set Mock client in Unit test
+var APIClient apiclient.Client
+
+func CreateNewAPIClient() (context.Context, apiclient.Client){
+	if APIClient == nil {
+		return client.NewAPIClient()
+	}
+	// Unittest scenario
+	return context.TODO(), APIClient
+}
 
 // NewCommand returns a new instance of an argo command
 func NewCommand() *cobra.Command {
@@ -43,7 +48,6 @@ func NewCommand() *cobra.Command {
 			cmd.HelpFunc()(cmd, args)
 		},
 	}
-	CLIOpt.ctx, CLIOpt.client = client.NewAPIClient()
 	command.AddCommand(NewCompletionCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
