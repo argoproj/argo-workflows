@@ -451,7 +451,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	wfc.workflowKeyLock.Lock(key.(string))
-	defer wfc.workflowKeyLock.Lock(key.(string))
+	defer wfc.workflowKeyLock.Unlock(key.(string))
 
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects
@@ -714,7 +714,7 @@ func (wfc *WorkflowController) archiveWorkflow(obj interface{}) {
 		return
 	}
 	wfc.workflowKeyLock.Lock(key)
-	defer wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
 	err = wfc.archiveWorkflowAux(obj)
 	if err != nil {
 		log.WithField("key", key).WithError(err).Error("failed to archive workflow")

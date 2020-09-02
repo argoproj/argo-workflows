@@ -8,31 +8,36 @@ type KeyLock interface {
 }
 
 type keyLock struct {
-	lock  *sync.Mutex
+	lock  *sync.RWMutex
 	locks map[string]*sync.Mutex
 }
 
 func (l *keyLock) Lock(key string) {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.lock.RLock()
 	lock, ok := l.locks[key]
+	l.lock.RUnlock()
 	if !ok {
-		l.locks[key] = &sync.Mutex{}
-		lock = l.locks[key]
+		lock = &sync.Mutex{}
+		l.lock.Lock()
+		l.locks[key] = lock
+		l.lock.Unlock()
 	}
 	lock.Lock()
 }
 
 func (l *keyLock) Unlock(key string) {
+	l.lock.RLock()
+	lock := l.locks[key]
+	l.lock.RUnlock()
+	lock.Unlock()
 	l.lock.Lock()
-	defer l.lock.Unlock()
-	l.locks[key].Lock()
 	delete(l.locks, key)
+	l.lock.Unlock()
 }
 
 func NewKeyLock() KeyLock {
 	return &keyLock{
-		lock:  &sync.Mutex{},
+		lock:  &sync.RWMutex{},
 		locks: make(map[string]*sync.Mutex),
 	}
 }
