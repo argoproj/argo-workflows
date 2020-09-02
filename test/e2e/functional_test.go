@@ -806,7 +806,7 @@ spec:
           parameters: [{name: message, value: "15s"}]
 
   - name: whalesay
-    timeoutDuration: "{{inputs.parameters.message}}"
+    timeout: "{{inputs.parameters.message}}"
     inputs:
       parameters:
       - name: message
@@ -853,7 +853,7 @@ spec:
     resources:
       limits:
         memory: 145M
-    timeoutDuration: "{{inputs.parameters.message}}"
+    timeout: "{{inputs.parameters.message}}"
     inputs:
       parameters:
       - name: message
