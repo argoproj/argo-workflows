@@ -526,7 +526,7 @@ export interface NodeStatus {
     /**
      * Memoization
      */
-    memoizationStatus: MemoizationStatus;
+    memoizationStatus?: MemoizationStatus;
 }
 
 export interface TemplateRef {
