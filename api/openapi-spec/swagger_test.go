@@ -67,7 +67,7 @@ func TestSwagger(t *testing.T) {
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.Item", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Item"].(obj)
-		assert.ElementsMatch(t, []string{"boolean", "number", "object", "string"}, definition["type"])
+		assert.Empty(t, definition["type"])
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.ParallelSteps", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"].(obj)
