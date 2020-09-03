@@ -4602,6 +4602,122 @@ func Test_processItem(t *testing.T) {
 	}
 }
 
+var stepTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-step
+spec:
+  entrypoint: main
+  templates:
+  - name: main 
+    steps: 
+    - - name: step1
+        template: whalesay
+
+  - name: whalesay
+    timeout: 5s
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var dagTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-dag
+spec:
+  entrypoint: main
+  templates:
+  - name: main 
+    dag:
+      tasks:
+      - name: dag1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: deadline
+            value: 3s
+      - name: dag2
+        template: whalesay
+        arguments:
+          parameters:
+          - name: deadline
+            value: 3s
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: deadline
+    timeout: "{{inputs.parameters.deadline}}"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestTemplateTimeoutDuration(t *testing.T) {
+
+	t.Run("Step Template Deadline", func(t *testing.T) {
+		wf := unmarshalWF(stepTimeoutWf)
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+		time.Sleep(6 * time.Second)
+		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
+		woc.operate()
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("[0]").Phase)
+	})
+	t.Run("DAG Template Deadline", func(t *testing.T) {
+		wf := unmarshalWF(dagTimeoutWf)
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+		time.Sleep(6 * time.Second)
+		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
+		woc.operate()
+
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+	})
+	t.Run("Invalid timeout format", func(t *testing.T) {
+		wf := unmarshalWF(stepTimeoutWf)
+		tmpl := wf.Spec.Templates[1]
+		tmpl.Timeout = "23"
+		wf.Spec.Templates[1] = tmpl
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		jsonByte, err := json.Marshal(woc.wf)
+		assert.NoError(t, err)
+		assert.Contains(t, string(jsonByte), "has invalid duration format in timeout")
+	})
+
+	t.Run("Invalid timeout in step", func(t *testing.T) {
+		wf := unmarshalWF(stepTimeoutWf)
+		tmpl := wf.Spec.Templates[0]
+		tmpl.Timeout = "23"
+		wf.Spec.Templates[0] = tmpl
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		jsonByte, err := json.Marshal(woc.wf)
+		assert.NoError(t, err)
+		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
+	})
+}
+
 var wfWithPVC = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
