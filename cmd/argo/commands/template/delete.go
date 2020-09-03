@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
+
 	"github.com/argoproj/pkg/errors"
 
 	"github.com/spf13/cobra"
@@ -32,7 +34,7 @@ func NewDeleteCommand() *cobra.Command {
 }
 
 func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClient()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 	namespace := client.Namespace()
 	var delWFTmplNames []string

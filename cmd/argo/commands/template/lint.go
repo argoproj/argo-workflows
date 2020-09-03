@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
@@ -38,7 +39,7 @@ func NewLintCommand() *cobra.Command {
 func ServerSideLint(args []string, strict bool) error {
 	validateDir := cmdutil.MustIsDir(args[0])
 
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClient()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 
 	invalid := false

@@ -10,6 +10,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -27,7 +28,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {

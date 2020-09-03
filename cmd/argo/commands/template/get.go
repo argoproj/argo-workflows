@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -24,7 +25,7 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
