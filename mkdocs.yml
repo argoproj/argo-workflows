@@ -139,7 +139,7 @@ nav:
       - static-code-analysis.md
       - releasing.md
   - Releases ⧉: https://github.com/argoproj/argo/releases
-  - Roadmap ⧉: https://github.com/argoproj/argo/milestones
+  - Roadmap: roadmap.md
   - Blog ⧉: https://blog.argoproj.io/
   - Slack ⧉: https://argoproj.github.io/community/join-slack
   - Twitter ⧉: https://twitter.com/argoproj
