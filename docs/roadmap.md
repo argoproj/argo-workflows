@@ -25,7 +25,7 @@ Enable more ways to lock workflows when waiting on resources with the existing s
 
 Introduce task level priorities to enable fine-tuning of the order of nodes within an workflow execution graph.
 
-## Reporting
+## Metrics & Reporting
 
 Make it easier to understand how long and how much resource workflows use by supporting [automatic duration prediction](https://github.com/argoproj/argo/issues/2717) for newly started workflows and [historical workflow reports](https://github.com/argoproj/argo/issues/3557).
 
