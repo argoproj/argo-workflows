@@ -390,6 +390,18 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 
+	if newTmpl.Timeout != "" {
+		if !newTmpl.IsLeaf() {
+			return fmt.Errorf("%s template doesn't support timeout field.", newTmpl.GetType())
+		}
+		// Check timeout should not be a whole number
+		_, err := strconv.Atoi(newTmpl.Timeout)
+		if err == nil {
+			return fmt.Errorf("%s has invalid duration format in timeout.", newTmpl.Name)
+		}
+
+	}
+
 	tmplID := getTemplateID(tmpl)
 	_, ok := ctx.results[tmplID]
 	if ok {
