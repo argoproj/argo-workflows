@@ -48,7 +48,7 @@ spec:
             podGC:
               strategy: OnPodCompletion
             ttlStrategy:
-              secondsAfterSuccess: 10
+              secondsAfterCompletion: 60
             templates:
               - name: main
                 dag:
