@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -41,7 +42,7 @@ func NewWatchCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			watchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)

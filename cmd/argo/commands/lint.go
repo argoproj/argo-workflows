@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -22,7 +23,7 @@ func NewLintCommand() *cobra.Command {
 		Use:   "lint FILE...",
 		Short: "validate files or directories of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 
 			lint := func(file string) error {

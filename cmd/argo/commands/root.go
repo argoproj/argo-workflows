@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/argoproj/pkg/cli"
@@ -9,34 +8,19 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
-	"github.com/argoproj/argo/pkg/apiclient"
-
-	"github.com/argoproj/argo/cmd/argo/commands/auth"
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	"github.com/argoproj/argo/util/help"
-
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
+	"github.com/argoproj/argo/cmd/argo/commands/auth"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
+	"github.com/argoproj/argo/util/help"
 )
 
 const (
 	// CLIName is the name of the CLI
 	CLIName = "argo"
 )
-
-
-//  To set Mock client in Unit test
-var APIClient apiclient.Client
-
-func CreateNewAPIClient() (context.Context, apiclient.Client){
-	if APIClient == nil {
-		return client.NewAPIClient()
-	}
-	// Unittest scenario
-	return context.TODO(), APIClient
-}
 
 // NewCommand returns a new instance of an argo command
 func NewCommand() *cobra.Command {

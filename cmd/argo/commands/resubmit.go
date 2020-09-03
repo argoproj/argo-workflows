@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
@@ -42,7 +43,7 @@ func NewResubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &priority
 			}
 
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

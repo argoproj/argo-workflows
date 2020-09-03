@@ -7,8 +7,8 @@ import (
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -45,7 +45,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := commands.CreateNewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClient()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)

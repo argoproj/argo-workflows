@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
+	"github.com/argoproj/argo/cmd/argo/commands/test"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -22,14 +24,14 @@ func TestLintCommand(t *testing.T) {
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("LintWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	APIClient = &client
+	cmdcommon.APIClient = &client
 	lintCommand := NewLintCommand()
 	lintCommand.SetArgs([]string{"wf.yaml"})
 	execFunc := func() {
 		err := lintCommand.Execute()
 		assert.NoError(t, err)
 	}
-	output := CaptureOutput(execFunc)
+	output := test.CaptureOutput(execFunc)
 	assert.Contains(t, output, "wf.yaml is valid\nWorkflow manifests validated\n")
 	err = os.Remove("wf.yaml")
 	assert.NoError(t, err)

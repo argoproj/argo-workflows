@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -70,7 +71,7 @@ func NewSubmitCommand() *cobra.Command {
 				logrus.Warn("--status should only be used with --watch")
 			}
 
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			if from != "" {

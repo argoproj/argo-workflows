@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
@@ -49,7 +50,7 @@ func NewRetryCommand() *cobra.Command {
   argo retry @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

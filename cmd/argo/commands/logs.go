@@ -15,6 +15,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
@@ -88,7 +89,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			// set-up
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
@@ -102,7 +103,7 @@ func NewLogsCommand() *cobra.Command {
 	command.Flags().StringVar(&sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().Int64Var(&tailLines, "tail", -1, "If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime")
 	command.Flags().BoolVar(&logOptions.Timestamps, "timestamps", false, "Include timestamps on each line in the log output")
-	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().BoolVar(&cmdcommon.NoColor, "no-color", false, "Disable colorized output")
 	return command
 }
 
@@ -123,6 +124,6 @@ func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceC
 			return
 		}
 		errors.CheckError(err)
-		fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
+		fmt.Println(cmdcommon.ANSIFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), cmdcommon.ANSIColorCode(event.PodName)))
 	}
 }

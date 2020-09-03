@@ -13,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/cmd/argo/commands/common"
+	"github.com/argoproj/argo/cmd/argo/commands/test"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -115,18 +117,18 @@ func TestPrintNode(t *testing.T) {
 		Message:     nodeMessage,
 	}
 	node.HostNodeName = kubernetesNodeName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", common.JobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
 
 	// Compatibility test
 	getArgs.status = "Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", common.JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.status = ""
 	getArgs.nodeFieldSelectorString = "phase=Running"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", common.JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.nodeFieldSelectorString = "phase!=foobar"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", common.JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.nodeFieldSelectorString = "phase!=Running"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
@@ -145,22 +147,22 @@ func TestPrintNode(t *testing.T) {
 	}
 
 	node.TemplateName = nodeTemplateName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", common.JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", common.NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage, ""), node, nodePrefix, getArgs)
 
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", common.NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, nodePrefix, getArgs)
 
 	getArgs.output = "wide"
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", common.NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, nodePrefix, getArgs)
 
 	node.Type = wfv1.NodeTypePod
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", common.JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, nodePrefix, getArgs)
 
 	getArgs.status = "foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
@@ -427,13 +429,13 @@ Status:              Succeeded
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	APIClient = &client
+	common.APIClient = &client
 	getCommand := NewGetCommand()
 	getCommand.SetArgs([]string{"hello-world"})
 	execFunc := func() {
 		err := getCommand.Execute()
 		assert.NoError(t, err)
 	}
-	output := CaptureOutput(execFunc)
+	output := test.CaptureOutput(execFunc)
 	assert.Contains(t, output, getOutput)
 }

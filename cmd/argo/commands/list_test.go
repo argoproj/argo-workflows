@@ -5,17 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/workflow/common"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
+	"github.com/argoproj/argo/cmd/argo/commands/test"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 func TestNewListCommand(t *testing.T) {
@@ -30,13 +31,13 @@ func TestNewListCommand(t *testing.T) {
 	wfList.Items = wfv1.Workflows{wf, wf1}
 	wfClient.On("ListWorkflows", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfList, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	APIClient = &client
+	cmdcommon.APIClient = &client
 	listCommand := NewListCommand()
 	execFunc := func() {
 		err := listCommand.Execute()
 		assert.NoError(t, err)
 	}
-	output := CaptureOutput(execFunc)
+	output := test.CaptureOutput(execFunc)
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "hello-world")
 	assert.Contains(t, output, "Succeeded")

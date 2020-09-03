@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argoutil "github.com/argoproj/argo/util"
@@ -72,7 +73,7 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
@@ -87,7 +88,7 @@ func NewGetCommand() *cobra.Command {
 	}
 
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
-	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().BoolVar(&cmdcommon.NoColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
@@ -129,7 +130,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		out += fmt.Sprintf(fmtStr, "Message:", wf.Status.Message)
 	}
 	if len(wf.Status.Conditions) > 0 {
-		out += wf.Status.Conditions.DisplayString(fmtStr, workflowConditionIconMap)
+		out += wf.Status.Conditions.DisplayString(fmtStr, cmdcommon.WorkflowConditionIconMap)
 	}
 	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
@@ -184,9 +185,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		out += "\n"
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
-			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", cmdcommon.ANSIFormat("STEP", cmdcommon.FgDefault))
 		} else {
-			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", cmdcommon.ANSIFormat("STEP", cmdcommon.FgDefault))
 		}
 
 		// Convert Nodes to Render Trees
@@ -482,9 +483,9 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
+	nodeName := fmt.Sprintf("%s %s", cmdcommon.JobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
-		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
+		nodeName = fmt.Sprintf("%s %s", cmdcommon.NodeTypeIconMap[node.Type], node.DisplayName)
 	}
 	templateName := ""
 	if node.TemplateRef != nil {

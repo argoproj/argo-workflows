@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+
 	"log"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
@@ -69,7 +71,7 @@ func NewNodeCommand() *cobra.Command {
 				outputParameters = string(res)
 			}
 
-			ctx, apiClient := CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
