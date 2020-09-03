@@ -25,6 +25,10 @@ Enable more ways to lock workflows when waiting on resources with the existing s
 
 Introduce task level priorities to enable fine-tuning of the order of nodes within an workflow execution graph.
 
+### Artifact Management Enhancements
+
+Improve the handling of artifacts loaded from AWS, GCS, Artifactory et al.  For example, [features to support `artifactRepositoryRef`](https://github.com/argoproj/argo/issues/3307), or [automatically creating buckets](https://github.com/argoproj/argo/issues/3586).
+
 ## Metrics & Reporting
 
 Make it easier to understand how long and how much resource workflows use by supporting [automatic duration prediction](https://github.com/argoproj/argo/issues/2717) for newly started workflows and [historical workflow reports](https://github.com/argoproj/argo/issues/3557).
@@ -49,5 +53,12 @@ Improve integration with Argo Events to enable users to trigger workflows in mor
 
 Support and help build out [the workflow template catalog](https://argoproj-labs.github.io/argo-workflows-catalog/), a library of reusable templates for common workflow tasks.
 
+## Use Case Specific Enhancements
 
+We're looking for partners and contributors to help design and develop changes to specifically help the following use cases:
+
+* MLOps
+* AIOps
+* Data/Batch Processing
+* CI/CD Pipelines
 
