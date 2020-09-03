@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -831,7 +832,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithFields(log.Fields{"key": obj}).Warn("Key in index is not an unstructured")
+		log.WithFields(log.Fields{"key": obj}).Warn("Key in index is not an unstructured: %v", reflect.TypeOf(obj).String())
 		return
 	}
 	wf, err := util.FromUnstructured(un)
