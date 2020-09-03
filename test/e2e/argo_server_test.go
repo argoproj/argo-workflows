@@ -528,7 +528,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.Given().
 			WorkflowName("test-wf-good").
 			When().
-			WaitForWorkflow(fixtures.ToBeArchived)
+			WaitForWorkflow()
 
 		// Test delete workflow with bad token
 		s.bearerToken = badToken

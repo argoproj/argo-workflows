@@ -751,6 +751,11 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 	}
 	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
 	if err != nil {
+		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually
+		// been deleted, so it's not a problem to get a `IsNotFound` error
+		if apierr.IsNotFound(err) {
+			return nil
+		}
 		return fmt.Errorf("failed to archive workflow: %w", err)
 	}
 	return nil
