@@ -777,6 +777,98 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		})
 }
 
+func (s *FunctionalSuite) TestTemplateLevelTimeout() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-tmpl-timeout
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "5s"}]
+      - name: hello2a
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "10s"}]
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "15s"}]
+
+  - name: whalesay
+    timeout: "{{inputs.parameters.message}}"
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 30s]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeFailed
+		}), "Waiting for timeout", 30*time.Second)
+}
+
+func (s *FunctionalSuite) TestTemplateLevelTimeoutWithForbidden() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-tmpl-timeout
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "5s"}]
+      - name: hello2a
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "10s"}]
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "15s"}]
+
+  - name: whalesay
+    resubmitPendingPods: true
+    resources:
+      limits:
+        memory: 145M
+    timeout: "{{inputs.parameters.message}}"
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 30s]
+`).
+		When().
+		MemoryQuota("130M").
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeFailed
+		}), "Waiting for timeout", 30*time.Second).
+		DeleteMemoryQuota()
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
