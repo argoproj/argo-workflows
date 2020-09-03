@@ -392,7 +392,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 
 	if newTmpl.Timeout != "" {
 		if !newTmpl.IsLeaf() {
-			return  fmt.Errorf("%s template doesn't support timeout field.", newTmpl.GetType())
+			return fmt.Errorf("%s template doesn't support timeout field.", newTmpl.GetType())
 		}
 		// Check timeout should not be a whole number
 		_, err := strconv.Atoi(newTmpl.Timeout)
