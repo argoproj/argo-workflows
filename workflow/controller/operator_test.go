@@ -4682,7 +4682,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		time.Sleep(6 * time.Second)
 		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
 		woc.operate()
-		woc.operate()
+
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
@@ -4698,7 +4698,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		jsonByte, err := json.Marshal(woc.wf)
 		assert.NoError(t, err)
-		assert.Contains(t, string(jsonByte), "invalid timeout format")
+		assert.Contains(t, string(jsonByte), "has invalid duration format in timeout")
 	})
 
 	t.Run("Invalid timeout in step", func(t *testing.T) {
