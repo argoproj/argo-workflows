@@ -4669,9 +4669,8 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		time.Sleep(6 * time.Second)
 		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
 		woc.operate()
-		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("[0]").Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
 		wf := unmarshalWF(dagTimeoutWf)
