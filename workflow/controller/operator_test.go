@@ -4696,7 +4696,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 		jsonByte, err := json.Marshal(woc.wf)
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "has invalid duration format in timeout")
