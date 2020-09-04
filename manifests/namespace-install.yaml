@@ -251,6 +251,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  verbs:
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - get
