@@ -80,8 +80,6 @@ const (
 // VolumeGCStrategy is the strategy to use when deleting volumes from completed workflows
 type VolumeGCStrategy string
 
-// VolumeGCStrategy
-
 const (
 	VolumeGCOnCompletion VolumeGCStrategy = "OnWorkflowCompletion"
 	VolumeGCOnSuccess    VolumeGCStrategy = "OnWorkflowSuccess"
