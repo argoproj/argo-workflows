@@ -4661,8 +4661,8 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		makePodsPhase(woc, apiv1.PodPending)
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
 		wf := unmarshalWF(stepTimeoutWf)
