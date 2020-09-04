@@ -1381,18 +1381,10 @@ func (woc *wfOperationCtx) createPVCs() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) getVolumeGcStrategy() wfv1.VolumeGCStrategy {
-	// If no volumeGC strategy was provided, we default to the equivalent of "OnSuccess"
-	// to match the existing behavior for back-compat
-	if woc.wf.Spec.VolumeGC == nil {
-		return wfv1.VolumeGCOnSuccess
-	}
-
-	return woc.wf.Spec.VolumeGC.Strategy
-}
-
 func (woc *wfOperationCtx) deletePVCs() error {
-	switch woc.getVolumeGcStrategy() {
+	gcStrategy := woc.wf.Spec.GetVolumeGC().GetStrategy()
+
+	switch gcStrategy {
 	case wfv1.VolumeGCOnSuccess:
 		if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
 			// Skip deleting PVCs to reuse them for retried failed/error workflows.
