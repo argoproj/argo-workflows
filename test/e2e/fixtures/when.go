@@ -125,6 +125,7 @@ var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.Started
 var ToBeDone Condition = func(wf *wfv1.Workflow) bool {
 	return ToBeCompleted(wf) && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending"
 }
+
 var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
 
 // Wait for a workflow to meet a condition:
@@ -157,7 +158,6 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		}
 	}
 
-	w.t.Helper()
 	start := time.Now()
 
 	fieldSelector := ""
@@ -181,6 +181,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		select {
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
+			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {

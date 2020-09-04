@@ -127,7 +127,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 		}
 	}
 	sort.Slice(events, func(i, j int) bool {
-		return events[i].CreationTimestamp.Time.Before(events[j].CreationTimestamp.Time)
+		return events[i].LastTimestamp.Time.Before(events[j].LastTimestamp.Time)
 	})
 	for i, e := range events {
 		println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)

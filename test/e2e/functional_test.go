@@ -39,7 +39,7 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow().
 		Then().
@@ -357,7 +357,7 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
@@ -405,7 +405,7 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
@@ -472,7 +472,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
@@ -497,7 +497,7 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate terminated")
@@ -765,7 +765,7 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		When().
 		StorageQuota("5Mi").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
 		}), "PVC pending").
