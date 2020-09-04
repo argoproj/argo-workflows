@@ -831,6 +831,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
+				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
+					woc.onNodeComplete(&node)
+				}
 			}
 			if node.Succeeded() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
@@ -1936,6 +1939,8 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
+	}
+	if !woc.orig.Status.Nodes[node.ID].Fulfilled() && node.Fulfilled() {
 		woc.onNodeComplete(node)
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
