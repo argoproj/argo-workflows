@@ -311,3 +311,121 @@ func TestRetryStrategyMetric(t *testing.T) {
 	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
 
 }
+
+var dagTmplMetrics = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-nl9bj
+spec:
+  arguments: {}
+  entrypoint: steps
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: random-int-dag
+        template: random-int
+      - arguments: {}
+        name: flakey-dag
+        template: flakey
+
+    name: steps
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - help: Value of the int emitted by random-int at step level
+        histogram:
+          buckets:
+          - 2.01
+          - 4.01
+          - 6.01
+          - 8.01
+          - 10.01
+          value: 5
+        name: random_int_step_histogram_dag
+      - gauge:
+          realtime: true
+          value: '{{duration}}'
+        help: Duration gauge by name
+        labels:
+        - key: name
+          value: random-int
+        name: duration_gauge_dag
+    name: random-int
+    outputs:
+      parameters:
+      - globalName: rand-int-value
+        name: rand-int-value
+        valueFrom:
+          path: /tmp/rand_int.txt
+  - arguments: {}
+    container:
+      args:
+      - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)
+      command:
+      - python
+      - -c
+      image: python:alpine3.6
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: Count of step execution by result status
+        labels:
+        - key: name
+          value: flakey
+        - key: status
+          value: Failed
+        name: result_counter_dag
+    name: flakey
+    outputs: {}
+`
+
+func TestDAGTmplMetrics(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(dagTmplMetrics)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	makePodsPhase(t, apiv1.PodSucceeded, controller.kubeclientset, wf.Namespace)
+	woc.operate()
+	tmpl := woc.wf.GetTemplateByName("random-int")
+	assert.NotNil(t, tmpl)
+	metricDesc := tmpl.Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metricHistogram := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Histogram)
+	metricHistogramString, err := getMetricStringValue(metricHistogram)
+	assert.NoError(t, err)
+	assert.Contains(t, metricHistogramString, `histogram:<sample_count:1 sample_sum:5`)
+
+	tmpl = woc.wf.GetTemplateByName("flakey")
+	assert.NotNil(t, tmpl)
+	metricDesc = tmpl.Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metricCounter := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Counter)
+	metricCounterString, err := getMetricStringValue(metricCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricCounterString, `counter:<value:1 > `)
+}
