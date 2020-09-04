@@ -4671,7 +4671,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		woc.operate()
 		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("[0]").Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("[0]").Phase)
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
 		wf := unmarshalWF(dagTimeoutWf)
@@ -4684,8 +4684,8 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
 		woc.operate()
 
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
 		wf := unmarshalWF(stepTimeoutWf)
@@ -4696,7 +4696,7 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 		jsonByte, err := json.Marshal(woc.wf)
 		assert.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "has invalid duration format in timeout")
