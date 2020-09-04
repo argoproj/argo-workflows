@@ -405,7 +405,7 @@ func TestDAGTmplMetrics(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
-	makePodsPhase(t, apiv1.PodSucceeded, controller.kubeclientset, wf.Namespace)
+	makePodsPhase(woc, apiv1.PodSucceeded)
 	woc.operate()
 	tmpl := woc.wf.GetTemplateByName("random-int")
 	assert.NotNil(t, tmpl)

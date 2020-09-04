@@ -438,9 +438,6 @@ func TestIsArchivable(t *testing.T) {
 func TestReleaseAllWorkflowLocks(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	t.Run("nilObject", func(t *testing.T) {
-		controller.releaseAllWorkflowLocks(nil)
-	})
 	t.Run("unStructuredObject", func(t *testing.T) {
 		un := &unstructured.Unstructured{}
 		controller.releaseAllWorkflowLocks(un)

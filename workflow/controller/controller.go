@@ -830,14 +830,16 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 }
 
 func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
+	key, _ := cache.MetaNamespaceKeyFunc(obj) // should not error
+	logCtx := log.WithField("key", key)
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.WithFields(log.Fields{"key": obj}).Warn("Key in index is not an unstructured: %v", reflect.TypeOf(obj).String())
+		logCtx.Warnf("Key in index is not an unstructured: %s", reflect.TypeOf(obj).String())
 		return
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.WithFields(log.Fields{"key": obj}).Warn("Invalid workflow object")
+		logCtx.Warn("Invalid workflow object")
 		return
 	}
 	if wf.Status.Synchronization != nil {
