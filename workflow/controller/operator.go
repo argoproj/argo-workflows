@@ -1952,7 +1952,6 @@ func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
 		return
 	}
 	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
-	log.Debug("sending node completion audit event " + message)
 	if node.Message != "" {
 		message = message + ": " + node.Message
 	}

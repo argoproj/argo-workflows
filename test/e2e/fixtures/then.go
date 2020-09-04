@@ -1,6 +1,8 @@
 package fixtures
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -109,23 +111,29 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 	}
 	ticker := time.NewTicker(defaultTimeout)
 	defer ticker.Stop()
-	for len(blocks) > 0 {
+	var events []apiv1.Event
+	for len(blocks) > len(events) {
 		select {
 		case <-ticker.C:
 			t.t.Fatal("timeout waiting for events")
 		case event := <-eventList.ResultChan():
 			e, ok := event.Object.(*apiv1.Event)
 			if !ok {
-				t.t.Fatal("event is not an event")
+				t.t.Fatalf("event is not an event: %v", reflect.TypeOf(e).String())
 			}
 			if filter(*e) {
-				println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
-				blocks[0](t.t, *e)
-				blocks = blocks[1:]
-				if t.t.Failed() {
-					t.t.FailNow()
-				}
+				events = append(events, *e)
 			}
+		}
+	}
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].CreationTimestamp.Time.Before(events[j].CreationTimestamp.Time)
+	})
+	for i, e := range events {
+		println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
+		blocks[i](t.t, e)
+		if t.t.Failed() {
+			t.t.FailNow()
 		}
 	}
 	return t
