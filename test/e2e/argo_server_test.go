@@ -298,11 +298,11 @@ metadata:
 		ExpectAuditEvents(
 			func(event corev1.Event) bool {
 				return event.InvolvedObject.Name == "malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
-			},
-			func(t *testing.T, event corev1.Event) {
-				assert.Equal(t, "argo", event.InvolvedObject.Namespace)
-				assert.Equal(t, "WorkflowEventBindingError", event.Reason)
-				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", event.Message)
+			}, 1,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
+				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", e[0].Message)
 			},
 		)
 }

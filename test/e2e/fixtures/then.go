@@ -2,7 +2,6 @@ package fixtures
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 	"time"
 
@@ -103,7 +102,7 @@ var HasInvolvedObjectWithName = func(kind string, name string) func(event apiv1.
 	}
 }
 
-func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
+func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, block func(*testing.T, []apiv1.Event)) *Then {
 	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
@@ -112,7 +111,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 	ticker := time.NewTicker(defaultTimeout)
 	defer ticker.Stop()
 	var events []apiv1.Event
-	for len(blocks) > len(events) {
+	for num > len(events) {
 		select {
 		case <-ticker.C:
 			t.t.Fatal("timeout waiting for events")
@@ -122,19 +121,14 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 				t.t.Fatalf("event is not an event: %v", reflect.TypeOf(e).String())
 			}
 			if filter(*e) {
+				println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
 				events = append(events, *e)
 			}
 		}
 	}
-	sort.Slice(events, func(i, j int) bool {
-		return events[i].LastTimestamp.Time.Before(events[j].LastTimestamp.Time)
-	})
-	for i, e := range events {
-		println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
-		blocks[i](t.t, e)
-		if t.t.Failed() {
-			t.t.FailNow()
-		}
+	block(t.t, events)
+	if t.t.Failed() {
+		t.t.FailNow()
 	}
 	return t
 }

@@ -48,10 +48,11 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObjectWithName(workflow.CronWorkflowKind, "malformed"),
-			func(t *testing.T, event corev1.Event) {
-				assert.Equal(t, corev1.EventTypeWarning, event.Type)
-				assert.Equal(t, "Malformed", event.Reason)
-				assert.Equal(t, "cannot restore slice from map", event.Message)
+			1,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
+				assert.Equal(t, "Malformed", e[0].Reason)
+				assert.Equal(t, "cannot restore slice from map", e[0].Message)
 			},
 		)
 }
