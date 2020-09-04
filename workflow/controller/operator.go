@@ -104,7 +104,7 @@ var (
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
 	// ErrTimeout indicates a specific template timed out
-	ErrTimeout            = errors.New(errors.CodeTimeout, "timeout")
+	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
