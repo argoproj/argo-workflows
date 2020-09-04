@@ -333,6 +333,17 @@ type WorkflowSpec struct {
 	VolumeGC *VolumeGC `json:"volumeGC,omitempty" protobuf:"bytes,36,opt,name=volumeGC,casttype=VolumeGC"`
 }
 
+// GetVolumeGC returns the VolumeGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetVolumeGC() *VolumeGC {
+	// If no volumeGC strategy was provided, we default to the equivalent of "OnSuccess"
+	// to match the existing behavior for back-compat
+	if wfs.VolumeGC == nil {
+		return &VolumeGC{Strategy: VolumeGCOnSuccess}
+	}
+
+	return wfs.VolumeGC
+}
+
 type ShutdownStrategy string
 
 const (
@@ -711,6 +722,11 @@ type PodGC struct {
 type VolumeGC struct {
 	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy VolumeGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeGCStrategy"`
+}
+
+// GetStrategy returns the VolumeGCStrategy to use for the workflow
+func (vgc VolumeGC) GetStrategy() VolumeGCStrategy {
+	return vgc.Strategy
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts

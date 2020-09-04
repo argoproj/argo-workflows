@@ -1402,8 +1402,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	case wfv1.VolumeGCOnCompletion:
 		break
 	default:
-		woc.log.Errorf("unknown volume gc strategy: %s", woc.getVolumeGcStrategy())
-		return nil
+		return fmt.Errorf("unknown volume gc strategy: %s", gcStrategy)
 	}
 
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
