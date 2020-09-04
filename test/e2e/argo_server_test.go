@@ -151,7 +151,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
 			assert.Equal(t, "github-webhook", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
@@ -223,7 +223,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
 			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
@@ -270,7 +270,7 @@ spec:
 				Expect().
 				Status(200)
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
 			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyClusterWorkflowTemplate])
@@ -528,7 +528,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.Given().
 			WorkflowName("test-wf-good").
 			When().
-			WaitForWorkflow(30 * time.Second)
+			WaitForWorkflow()
 
 		// Test delete workflow with bad token
 		s.bearerToken = badToken
@@ -706,7 +706,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Given().
 		When().
-		WaitForWorkflowToStart(20 * time.Second)
+		WaitForWorkflow(fixtures.ToStart)
 
 	s.Run("List", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
@@ -966,7 +966,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1012,7 +1012,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(10 * time.Second).
+		WaitForWorkflow(fixtures.ToStart).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1049,6 +1049,34 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 						assert.Contains(t, line, `"nodes":`)
 					}
 					if strings.Contains(line, "Succeeded") {
+						break
+					}
+				}
+			}
+		}
+	})
+
+	// then,  lets see what events we got
+	s.Run("WatchEvents", func() {
+		t := s.T()
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := httpClient.Do(req)
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+				s := bufio.NewScanner(resp.Body)
+				for s.Scan() {
+					line := s.Text()
+					if strings.Contains(line, "WorkflowRunning") {
 						break
 					}
 				}
@@ -1105,7 +1133,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -1125,7 +1153,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second)
+		WaitForWorkflow()
 
 	for _, tt := range []struct {
 		name     string

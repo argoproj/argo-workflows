@@ -314,6 +314,14 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Fulfilled() {
+		// Collect the completed task metrics
+		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
+		if tmpl != nil && tmpl.Metrics != nil {
+			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
+				localScope, realTimeScope := woc.prepareMetricScope(node)
+				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			}
+		}
 		if node.Completed() {
 			// Run the node's onExit node, if any.
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
@@ -552,7 +560,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		if art.From == "" {
 			continue
 		}
-		resolvedArt, err := scope.resolveArtifact(art.From)
+		resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
 		if err != nil {
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)

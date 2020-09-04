@@ -29,6 +29,12 @@ rules:
       - watch
       - delete
   - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - watch
+  - apiGroups:
       - argoproj.io
     resources:
       - workflows

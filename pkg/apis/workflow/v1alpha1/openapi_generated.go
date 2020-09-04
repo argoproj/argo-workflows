@@ -303,6 +303,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SubPath allows an artifact to be sourced from a subpath within the specified source",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -3647,6 +3654,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "Memoize allows templates to use outputs generated from already executed templates",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Memoize"),
+						},
+					},
+					"timeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
