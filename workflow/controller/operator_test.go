@@ -4684,8 +4684,8 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
 		woc.operate()
 
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
 		wf := unmarshalWF(stepTimeoutWf)
