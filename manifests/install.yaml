@@ -341,6 +341,15 @@ rules:
   - events
   verbs:
   - watch
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - serviceaccounts
+  verbs:
+  - get
 - apiGroups:
   - argoproj.io
   resources:
