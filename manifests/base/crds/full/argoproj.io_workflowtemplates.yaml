@@ -582,26 +582,17 @@ spec:
                   items:
                     properties:
                       default:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        x-kubernetes-int-or-string: true
+                        type: string
                       globalName:
                         type: string
                       name:
                         type: string
                       value:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        x-kubernetes-int-or-string: true
+                        type: string
                       valueFrom:
                         properties:
                           default:
-                            anyOf:
-                            - type: integer
-                            - type: string
-                            x-kubernetes-int-or-string: true
+                            type: string
                           event:
                             type: string
                           jqFilter:
@@ -1699,26 +1690,17 @@ spec:
                         items:
                           properties:
                             default:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -2577,26 +2559,17 @@ spec:
                                   items:
                                     properties:
                                       default:
-                                        anyOf:
-                                        - type: integer
-                                        - type: string
-                                        x-kubernetes-int-or-string: true
+                                        type: string
                                       globalName:
                                         type: string
                                       name:
                                         type: string
                                       value:
-                                        anyOf:
-                                        - type: integer
-                                        - type: string
-                                        x-kubernetes-int-or-string: true
+                                        type: string
                                       valueFrom:
                                         properties:
                                           default:
-                                            anyOf:
-                                            - type: integer
-                                            - type: string
-                                            x-kubernetes-int-or-string: true
+                                            type: string
                                           event:
                                             type: string
                                           jqFilter:
@@ -3528,26 +3501,17 @@ spec:
                         items:
                           properties:
                             default:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -3962,26 +3926,17 @@ spec:
                         items:
                           properties:
                             default:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
