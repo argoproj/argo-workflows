@@ -92,7 +92,8 @@ var (
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	return &wfv1.Parameter{Name: name, Value: intstr.ParsePtr(placeholderGenerator.NextPlaceholder())}
+	s := placeholderGenerator.NextPlaceholder()
+	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -160,7 +161,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				ctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
 			} else {
 				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
