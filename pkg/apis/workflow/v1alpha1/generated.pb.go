@@ -6610,6 +6610,13 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.Timeout)
+	copy(dAtA[i:], m.Timeout)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Timeout)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0xb2
 	if m.Memoize != nil {
 		{
 			size, err := m.Memoize.MarshalToSizedBuffer(dAtA[:i])
@@ -9887,6 +9894,8 @@ func (m *Template) Size() (n int) {
 		l = m.Memoize.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
+	l = len(m.Timeout)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -11422,6 +11431,7 @@ func (this *Template) String() string {
 		`Metrics:` + strings.Replace(this.Metrics.String(), "Metrics", "Metrics", 1) + `,`,
 		`Synchronization:` + strings.Replace(this.Synchronization.String(), "Synchronization", "Synchronization", 1) + `,`,
 		`Memoize:` + strings.Replace(this.Memoize.String(), "Memoize", "Memoize", 1) + `,`,
+		`Timeout:` + fmt.Sprintf("%v", this.Timeout) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -24337,6 +24347,38 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if err := m.Memoize.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 38:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timeout", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Timeout = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

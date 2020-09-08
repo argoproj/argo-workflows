@@ -1108,6 +1108,10 @@ message Template {
 
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
+
+  // Timout allows to set the total node execution timeout duration counting from the node's start time.
+  // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
+  optional string timeout = 38;
 }
 
 // TemplateRef is a reference of template resource.

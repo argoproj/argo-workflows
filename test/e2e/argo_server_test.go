@@ -793,8 +793,10 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Expect().
 			Status(200)
 
-		// sleep in a test is bad practice
-		time.Sleep(3 * time.Second)
+		s.Given().
+			WorkflowName(name).
+			When().
+			WaitForWorkflow()
 
 		s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().

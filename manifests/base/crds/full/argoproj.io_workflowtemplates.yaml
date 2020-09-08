@@ -5241,6 +5241,8 @@ spec:
                       template:
                         type: string
                     type: object
+                  timeout:
+                    type: string
                   tolerations:
                     items:
                       properties:

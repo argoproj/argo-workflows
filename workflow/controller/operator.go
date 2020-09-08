@@ -1190,6 +1190,12 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
+		// Virtual Kubelet environment will not set the terminate on waiting container
+		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
+		if ctr.State.Waiting != nil {
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+		}
 		if ctr.State.Terminated == nil {
 			// We should never get here
 			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
@@ -1210,6 +1216,13 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	}
 	failMessages := make(map[string]string)
 	for _, ctr := range pod.Status.ContainerStatuses {
+		// Virtual Kubelet environment will not set the terminate on waiting container
+		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
+
+		if ctr.State.Waiting != nil {
+			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
+		}
 		if ctr.State.Terminated == nil {
 			// We should never get here
 			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
@@ -1519,6 +1532,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, ErrDeadlineExceeded
 	}
 
+	// Check the template deadline for Pending nodes
+	// This check will cover the resource forbidden, synchronization scenario,
+	// In above scenario, only Node will be created in pending state
+	_, err = woc.checkTemplateTimeout(processedTmpl, node)
+	if err != nil {
+		woc.log.Warnf("Template %s exceeded its deadline", processedTmpl.Name)
+		return woc.markNodePhase(nodeName, wfv1.NodeFailed, err.Error()), err
+	}
+
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
 	if err := woc.checkParallelism(processedTmpl, node, opts.boundaryID); err != nil {
 		return node, err
@@ -1676,6 +1698,29 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	return node, nil
+}
+
+// Checks if the template has exceeded its deadline
+func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error) {
+	if node == nil {
+		return nil, nil
+	}
+
+	if tmpl.Timeout != "" {
+		tmplTimeout, err := time.ParseDuration(tmpl.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid timeout format. %v", err)
+		}
+
+		deadline := node.StartedAt.Add(tmplTimeout)
+
+		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
+			return nil, fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
+		}
+		return &deadline, nil
+	}
+
+	return nil, nil
 }
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message

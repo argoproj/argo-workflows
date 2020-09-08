@@ -1129,7 +1129,7 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.argoproj.workflow.v1alpha1.Item | boolean,number,string,object | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
+| io.argoproj.workflow.v1alpha1.Item |  | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
 
 #### io.argoproj.workflow.v1alpha1.Link
 
@@ -1553,6 +1553,7 @@ Template is a reusable and composable unit of execution in a workflow
 | synchronization | [io.argoproj.workflow.v1alpha1.Synchronization](#io.argoproj.workflow.v1alpha1.synchronization) | Synchronization holds synchronization lock configuration for this template | No |
 | template | string | Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used. | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used. | No |
+| timeout | string | Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. | No |
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a template. | No |
 
