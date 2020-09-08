@@ -793,6 +793,7 @@ Artifact indicates an artifact to place at a specified path
 | oss | [io.argoproj.workflow.v1alpha1.OSSArtifact](#io.argoproj.workflow.v1alpha1.ossartifact) | OSS contains OSS artifact location details | No |
 | path | string | Path is the container path to the artifact | No |
 | raw | [io.argoproj.workflow.v1alpha1.RawArtifact](#io.argoproj.workflow.v1alpha1.rawartifact) | Raw contains raw artifact location details | No |
+| recurseMode | boolean | If mode is set, apply the permission recursively into the artifact if it is a folder | No |
 | s3 | [io.argoproj.workflow.v1alpha1.S3Artifact](#io.argoproj.workflow.v1alpha1.s3artifact) | S3 contains S3 artifact location details | No |
 | subPath | string | SubPath allows an artifact to be sourced from a subpath within the specified source | No |
 
