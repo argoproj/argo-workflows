@@ -4404,6 +4404,10 @@
           "type": "integer",
           "format": "int32"
         },
+        "resubmitPendingPods": {
+          "description": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
+          "type": "boolean"
+        },
         "schedulerName": {
           "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
           "type": "string"
@@ -4854,6 +4858,10 @@
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
           "type": "integer",
           "format": "int32"
+        },
+        "resubmitPendingPods": {
+          "description": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
+          "type": "boolean"
         },
         "schedulerName": {
           "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",

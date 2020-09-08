@@ -49,6 +49,37 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		})
 }
 
+func (s *FunctionalSuite) TestResubmitPendingPods() {
+	s.Given().
+		Workflow(`
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  name: sleepy
+  labels:
+    argo-e2e: "true"
+spec:
+  resubmitPendingPods: true
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - sleep
+          - 10s
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow", "--wait=false"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 // in this test we create a poi quota, and then  we create a workflow that needs one more pod than the quota allows
 // because we run them in parallel, the first node will run to completion, and then the second one
 func (s *FunctionalSuite) TestResourceQuota() {

@@ -809,6 +809,8 @@ spec:
             priority:
               format: int32
               type: integer
+            resubmitPendingPods:
+              type: boolean
             schedulerName:
               type: string
             securityContext:
@@ -14055,6 +14057,8 @@ spec:
                 priority:
                   format: int32
                   type: integer
+                resubmitPendingPods:
+                  type: boolean
                 schedulerName:
                   type: string
                 securityContext:

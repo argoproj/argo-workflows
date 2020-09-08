@@ -873,6 +873,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
+			phase := wfv1.NodeError
 			if node.Pending() {
 				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 				if err != nil {
@@ -885,9 +886,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 				// The pod may have been intentionally deleted (e.g. `kubectl delete pod`).
 				// If the user has specified re-submit allowed, so we do not mark the node as error (yet).
-				if tmpl.IsResubmitPendingPods() {
+				if woc.execWf.Spec.ResubmitPendingPods || tmpl.IsResubmitPendingPods() {
 					// We want to resubmit. Continue and do not mark as error.
-					continue
+					phase = node.Phase
 				}
 				if tmpl.Synchronization != nil {
 					// Wait to acquire the lock
@@ -896,7 +897,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 
 			node.Message = "pod deleted"
-			node.Phase = wfv1.NodeError
+			node.Phase = phase
 			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
 			// See processNodeRetries for more details.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}

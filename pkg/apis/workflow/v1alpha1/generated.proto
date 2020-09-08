@@ -1387,6 +1387,9 @@ message WorkflowSpec {
 
   // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
+
+  // ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+  optional bool resubmitPendingPods = 36;
 }
 
 // WorkflowStatus contains overall status information about a workflow

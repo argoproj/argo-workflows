@@ -1760,6 +1760,7 @@ WorkflowSpec is the specification of a Workflow.
 | podPriorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
 | priority | integer | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | No |
+| resubmitPendingPods | boolean | ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission | No |
 | schedulerName | string | Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified. | No |
 | securityContext | [io.k8s.api.core.v1.PodSecurityContext](#io.k8s.api.core.v1.podsecuritycontext) | SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field. | No |
 | serviceAccountName | string | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. | No |
@@ -1918,6 +1919,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | podPriorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
 | priority | integer | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | No |
+| resubmitPendingPods | boolean | ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission | No |
 | schedulerName | string | Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified. | No |
 | securityContext | [io.k8s.api.core.v1.PodSecurityContext](#io.k8s.api.core.v1.podsecuritycontext) | SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field. | No |
 | serviceAccountName | string | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. | No |

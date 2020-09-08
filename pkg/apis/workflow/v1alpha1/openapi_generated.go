@@ -4605,6 +4605,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
+					"resubmitPendingPods": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -5273,6 +5280,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "Synchronization holds synchronization lock configuration for this Workflow",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
+						},
+					},
+					"resubmitPendingPods": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"workflowMetadata": {

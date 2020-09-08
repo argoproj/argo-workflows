@@ -318,6 +318,9 @@ type WorkflowSpec struct {
 
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
+
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,36,opt,name=resubmitPendingPods"`
 }
 
 type ShutdownStrategy string
