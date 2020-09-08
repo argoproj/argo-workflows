@@ -299,6 +299,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
 
         const allNodes = this.props.nodes;
+        const getChildren = (nodeId: string): string[] => {
+            if (!allNodes[nodeId] || !allNodes[nodeId].children) {
+                return [];
+            }
+            return allNodes[nodeId].children;
+        };
         const pushChildren = (nodeId: string, children: string[], isExpanded: boolean): void => {
             if (!children) {
                 return;
@@ -309,7 +315,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 queue.push({
                     nodeName: children[0],
                     parent: nodeId,
-                    children: allNodes[children[0]].children
+                    children: getChildren(children[0])
                 });
                 const newChildren: string[] = children
                     .slice(1, children.length - 1)
@@ -323,7 +329,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 queue.push({
                     nodeName: children[children.length - 1],
                     parent: nodeId,
-                    children: allNodes[children[children.length - 1]].children
+                    children: getChildren(children[children.length - 1])
                 });
             } else {
                 // Node will not be collapsed
@@ -331,7 +337,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     queue.push({
                         nodeName: child,
                         parent: nodeId,
-                        children: allNodes[child].children
+                        children: getChildren(child)
                     })
                 );
             }
@@ -340,7 +346,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const root: PrepareNode = {
             nodeName: this.props.workflowName,
             parent: '',
-            children: this.props.nodes[this.props.workflowName].children
+            children: getChildren(this.props.workflowName)
         };
 
         const queue: PrepareNode[] = [root];
