@@ -683,6 +683,9 @@ type Artifact struct {
 
 	// SubPath allows an artifact to be sourced from a subpath within the specified source
 	SubPath string `json:"subPath,omitempty" protobuf:"bytes,9,opt,name=subPath"`
+
+	// If mode is set, apply the permission recursively into the artifact if it is a folder
+	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
 }
 
 // PodGC describes how to delete completed pods as they complete
