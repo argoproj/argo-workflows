@@ -1,9 +1,9 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
 import {DropDown} from 'argo-ui/src/components/dropdown/dropdown';
-import {TopBarFilter} from 'argo-ui/src/index';
+import {Select, TopBarFilter} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {WorkflowDagRenderOptions} from './workflow-dag';
+import {RenderingMode, WorkflowDagRenderOptions} from './workflow-dag';
 
 export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRenderOptions & {onChange: (changed: WorkflowDagRenderOptions) => void}> {
     private get workflowDagRenderOptions() {
@@ -74,6 +74,16 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                         ))}
                     </ul>
                 </DropDown>
+                <Select
+                    value={this.props.renderingMode}
+                    options={['Auto', 'Fast', 'Nice']}
+                    onChange={selected =>
+                        this.props.onChange({
+                            ...this.workflowDagRenderOptions,
+                            renderingMode: selected.title as RenderingMode
+                        })
+                    }
+                />
                 <a
                     className={classNames({active: this.props.horizontal})}
                     onClick={() =>

@@ -1,4 +1,5 @@
 import * as classNames from 'classnames';
+import * as dagre from 'dagre';
 import * as React from 'react';
 
 import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
@@ -9,11 +10,14 @@ import {getCollapsedNodeName, getMessage, getNodeParent, getType, isCollapsedNod
 import {Edge, Graph} from './graph/graph';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
+export type RenderingMode = 'Auto' | 'Fast' | 'Nice';
+
 export interface WorkflowDagRenderOptions {
     horizontal: boolean;
     scale: number;
     nodesToDisplay: string[];
     expandNodes: Set<string>;
+    renderingMode: RenderingMode;
 }
 
 export interface WorkflowDagProps {
@@ -185,7 +189,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return <Loading />;
         }
         const {nodes, edges} = this.prepareGraph();
-        this.layoutGraph(nodes, edges);
+        if (this.state.renderingMode === 'Fast' || (this.state.renderingMode === 'Auto' && nodes.length > 200)) {
+            this.layoutGraphFast(nodes, edges);
+        } else {
+            this.layoutGraphNice(nodes, edges);
+        }
 
         return (
             <>
@@ -281,7 +289,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 'type:Retry',
                 'type:Skipped',
                 'type:Suspend'
-            ]
+            ],
+            renderingMode: 'Auto'
         } as WorkflowDagRenderOptions;
     }
 
@@ -390,7 +399,56 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return {nodes, edges};
     }
 
-    private layoutGraph(nodes: string[], edges: Edge[]) {
+    private layoutGraphNice(nodes: string[], edges: Edge[]) {
+        const graph = new dagre.graphlib.Graph();
+
+        graph.setGraph({
+            edgesep: 20 / this.scale,
+            nodesep: 50 / this.scale,
+            rankdir: this.state.horizontal ? 'LR' : 'TB',
+            ranksep: 50 / this.scale
+        });
+
+        graph.setDefaultEdgeLabel(() => ({}));
+
+        nodes.forEach(node => {
+            graph.setNode(node, {label: node, width: this.nodeSize, height: this.nodeSize});
+        });
+        edges.forEach(edge => {
+            if (edge.v && edge.w) {
+                graph.setEdge(edge.v, edge.w);
+            }
+        });
+        dagre.layout(graph);
+
+        const size = this.getGraphSize(graph.nodes().map(id => graph.node(id)));
+        this.graph = {
+            width: size.width,
+            height: size.height,
+            nodes: new Map<string, {x: number; y: number}>(),
+            edges: []
+        };
+
+        graph.nodes().map(id => {
+            const node = graph.node(id);
+            this.graph.nodes.set(node.label, {x: node.x, y: node.y});
+        });
+        graph.edges().map(edge => {
+            this.graph.edges.push(this.generateEdge(edge));
+        });
+    }
+
+    private getGraphSize(nodes: dagre.Node[]): {width: number; height: number} {
+        let width = 0;
+        let height = 0;
+        nodes.forEach(node => {
+            width = Math.max(node.x + node.width / 2, width);
+            height = Math.max(node.y + node.height / 2, height);
+        });
+        return {width, height};
+    }
+
+    private layoutGraphFast(nodes: string[], edges: Edge[]) {
         const hash = {scale: this.scale, nodeCount: nodes.length, nodesToDisplay: this.state.nodesToDisplay};
         // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
         if (this.hash === hash) {
@@ -433,26 +491,28 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 });
             });
         });
+        this.graph.edges = edges.filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w)).map(e => this.generateEdge(e));
+    }
+
+    private generateEdge(edge: Edge) {
         // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
         const h = this.state.horizontal ? this.nodeSize / 2 : 0;
         const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
-        this.graph.edges = edges
-            .filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w))
-            .map(e => ({
-                v: e.v,
-                w: e.w,
-                points: [
-                    {
-                        // for hidden nodes, we want to size them zero
-                        x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
-                        y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
-                    },
-                    {
-                        x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
-                        y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
-                    }
-                ]
-            }));
+        return {
+            v: edge.v,
+            w: edge.w,
+            points: [
+                {
+                    // for hidden nodes, we want to size them zero
+                    x: this.graph.nodes.get(edge.v).x + (this.hiddenNode(edge.v) ? 0 : h),
+                    y: this.graph.nodes.get(edge.v).y + (this.hiddenNode(edge.v) ? 0 : v)
+                },
+                {
+                    x: this.graph.nodes.get(edge.w).x - (this.hiddenNode(edge.w) ? 0 : h),
+                    y: this.graph.nodes.get(edge.w).y - (this.hiddenNode(edge.w) ? 0 : v)
+                }
+            ]
+        };
     }
 
     private selectNode(nodeId: string) {
