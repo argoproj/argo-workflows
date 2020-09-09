@@ -70,7 +70,7 @@ func TestNextRuntime(t *testing.T) {
 	if assert.NoError(t, err) {
 		next, err := cronWf.GetNextRuntime()
 		if assert.NoError(t, err) {
-			assert.Less(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
+			assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 			assert.Greater(t, next.Unix(), time.Now().Unix())
 		}
 	}
