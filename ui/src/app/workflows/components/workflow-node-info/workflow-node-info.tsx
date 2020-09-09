@@ -120,7 +120,11 @@ export const WorkflowNodeSummary = (props: Props) => {
                         .map(link => (
                             <a
                                 className='argo-button argo-button--base-o'
-                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id).replace('${status.startedAt}', props.workflow.status.startedAt).replace('${status.finishedAt}', props.workflow.status.finishedAt)}>
+                                href={link.url
+                                    .replace('${metadata.namespace}', props.workflow.metadata.namespace)
+                                    .replace('${metadata.name}', props.node.id)
+                                    .replace('${status.startedAt}', props.workflow.status.startedAt)
+                                    .replace('${status.finishedAt}', props.workflow.status.finishedAt)}>
                                 <i className='fa fa-link' /> {link.name}
                             </a>
                         ))}
