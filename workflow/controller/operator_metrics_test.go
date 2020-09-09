@@ -429,3 +429,56 @@ func TestDAGTmplMetrics(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, metricCounterString, `counter:<value:1 > `)
 }
+
+var testRealtimeWorkflowMetricWithGlobalParameters = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-foobar
+  labels:
+    testLabel: foobar
+spec:
+  arguments:
+    parameters:
+      - name: testParam
+        value: foo
+  entrypoint: whalesay
+  metrics:
+    prometheus:
+      - name: intuit_data_persistplat_dppselfservice_workflow_test_duration
+        help: Duration of workflow
+        labels:
+          - key: workflowName
+            value: "{{workflow.name}}"
+          - key: label
+            value: "{{workflow.labels.testLabel}}"
+        gauge:
+          realtime: true
+          value: "{{workflow.duration}}"
+  templates:
+    - name: whalesay
+      resubmitPendingPods: true
+      container:
+        image: docker/whalesay
+        command: [ cowsay ]
+        args: [ "hello world" ]
+`
+
+func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	metricErrorDesc := wf.Spec.Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
+	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
+}
