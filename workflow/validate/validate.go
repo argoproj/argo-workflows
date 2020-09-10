@@ -263,6 +263,10 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Labels:      wftmpl.ObjectMeta.Labels,
+			Annotations: wftmpl.ObjectMeta.Annotations,
+		},
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
@@ -271,6 +275,10 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
 func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Labels:      cwftmpl.ObjectMeta.Labels,
+			Annotations: cwftmpl.ObjectMeta.Annotations,
+		},
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
