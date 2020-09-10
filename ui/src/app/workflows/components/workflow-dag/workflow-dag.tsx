@@ -10,14 +10,12 @@ import {getCollapsedNodeName, getMessage, getNodeParent, getType, isCollapsedNod
 import {Edge, Graph} from './graph/graph';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
-export type RenderingMode = 'Auto' | 'Fast' | 'Nice';
-
 export interface WorkflowDagRenderOptions {
     horizontal: boolean;
     scale: number;
     nodesToDisplay: string[];
     expandNodes: Set<string>;
-    renderingMode: RenderingMode;
+    useFastRendering: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -189,7 +187,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return <Loading />;
         }
         const {nodes, edges} = this.prepareGraph();
-        if (this.state.renderingMode === 'Fast' || (this.state.renderingMode === 'Auto' && nodes.length > 200)) {
+        if (this.state.useFastRendering) {
             this.layoutGraphFast(nodes, edges);
         } else {
             this.layoutGraphNice(nodes, edges);
@@ -290,7 +288,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 'type:Skipped',
                 'type:Suspend'
             ],
-            renderingMode: 'Auto'
+            useFastRendering: false
         } as WorkflowDagRenderOptions;
     }
 
@@ -421,7 +419,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         });
         dagre.layout(graph);
 
-        const size = this.getGraphSize(graph.nodes().map(id => graph.node(id)));
+        const size = this.getGraphSize(graph.nodes().map((id: string) => graph.node(id)));
         this.graph = {
             width: size.width,
             height: size.height,
@@ -429,11 +427,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             edges: []
         };
 
-        graph.nodes().map(id => {
+        graph.nodes().map((id: string) => {
             const node = graph.node(id);
             this.graph.nodes.set(node.label, {x: node.x, y: node.y});
         });
-        graph.edges().map(edge => {
+        graph.edges().map((edge: Edge) => {
             this.graph.edges.push(this.generateEdge(edge));
         });
     }

@@ -1,9 +1,9 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
 import {DropDown} from 'argo-ui/src/components/dropdown/dropdown';
-import {Select, TopBarFilter} from 'argo-ui/src/index';
+import {TopBarFilter} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {RenderingMode, WorkflowDagRenderOptions} from './workflow-dag';
+import {WorkflowDagRenderOptions} from './workflow-dag';
 
 export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRenderOptions & {onChange: (changed: WorkflowDagRenderOptions) => void}> {
     private get workflowDagRenderOptions() {
@@ -74,16 +74,6 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                         ))}
                     </ul>
                 </DropDown>
-                <Select
-                    value={this.props.renderingMode}
-                    options={['Auto', 'Fast', 'Nice']}
-                    onChange={selected =>
-                        this.props.onChange({
-                            ...this.workflowDagRenderOptions,
-                            renderingMode: selected.title as RenderingMode
-                        })
-                    }
-                />
                 <a
                     className={classNames({active: this.props.horizontal})}
                     onClick={() =>
@@ -134,6 +124,17 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                     }
                     title='Expand all nodes'>
                     <i className='fa fa-expand' data-fa-transform='rotate-45' />
+                </a>
+                <a
+                    className={classNames({active: this.props.useFastRendering})}
+                    onClick={() =>
+                        this.props.onChange({
+                            ...this.workflowDagRenderOptions,
+                            useFastRendering: !this.props.useFastRendering
+                        })
+                    }
+                    title='Use a faster, but less pretty, renderer to display the Workflow'>
+                    <i className='fa fa-bolt' />
                 </a>
             </div>
         );
