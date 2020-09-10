@@ -2764,7 +2764,7 @@
           "type": "string"
         },
         "url": {
-          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
+          "description": "The URL. May contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\" and \"${status.finishedAt}\".",
           "type": "string"
         }
       },

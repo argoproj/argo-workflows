@@ -12,28 +12,23 @@ spec:
       - name: A
         template: echo
         arguments:
-          parameters: [{name: message, value: "20s"}]
+          parameters: [{name: timeout, value: "20s"}]
       - name: B
         dependencies: [A]
         template: echo
         arguments:
-          parameters: [{name: message, value: "10s"}]
+          parameters: [{name: timeout, value: "10s"}]
       - name: C
         dependencies: [A]
         template: echo
         arguments:
-          parameters: [{name: message, value: "20s"}]
-      - name: D
-        dependencies: [B, C]
-        template: echo
-        arguments:
-          parameters: [{name: message, value: "30s"}]
+          parameters: [{name: timeout, value: "20s"}]
 
   - name: echo
-    timeoutDuration: "{{inputs.parameters.message}}"
+    timeout: "{{inputs.parameters.timeout}}"
     inputs:
       parameters:
-      - name: message
+      - name: timeout
     container:
       image: alpine:3.7
-      command: [sleep, "10s"]
+      command: [sleep, "15s"]
