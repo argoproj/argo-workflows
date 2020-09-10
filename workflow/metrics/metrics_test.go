@@ -104,12 +104,12 @@ func TestMetrics(t *testing.T) {
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
-	err = m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
+	err = m.UpsertCustomMetric("metric", newCounter("test", "test", nil), false, "")
 	if assert.NoError(t, err) {
 		assert.NotNil(t, m.GetCustomMetric("metric"))
 	}
 
-	err = m.UpsertCustomMetric("metric2", newCounter("test", "new test", nil))
+	err = m.UpsertCustomMetric("metric2", newCounter("test", "new test", nil), false, "")
 	assert.Error(t, err)
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
@@ -121,7 +121,7 @@ func TestMetrics(t *testing.T) {
 		},
 	})
 	if assert.NoError(t, err) {
-		err = m.UpsertCustomMetric("asdf", badMetric)
+		err = m.UpsertCustomMetric("asdf", badMetric, false, "")
 		assert.Error(t, err)
 	}
 }
@@ -141,7 +141,7 @@ func TestMetricGC(t *testing.T) {
 	m := New(config, config)
 	assert.Len(t, m.customMetrics, 0)
 
-	err := m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
+	err := m.UpsertCustomMetric("metric", newCounter("test", "test", nil), false, "")
 	if assert.NoError(t, err) {
 		assert.Len(t, m.customMetrics, 1)
 	}
