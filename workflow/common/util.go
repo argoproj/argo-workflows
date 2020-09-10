@@ -288,6 +288,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		if argArt != nil {
 			argArt.Path = inArt.Path
 			argArt.Mode = inArt.Mode
+			argArt.RecurseMode = inArt.RecurseMode
 			newInputArtifacts[i] = *argArt
 		} else {
 			newInputArtifacts[i] = inArt

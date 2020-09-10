@@ -71,6 +71,9 @@ message Artifact {
 
   // SubPath allows an artifact to be sourced from a subpath within the specified source
   optional string subPath = 9;
+
+  // If mode is set, apply the permission recursively into the artifact if it is a folder
+  optional bool recurseMode = 10;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -480,7 +483,7 @@ message Link {
   // Either "workflow" or "pod"
   optional string scope = 2;
 
-  // The URL. May contain "${metadata.namespace}" and "${metadata.name}".
+  // The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}".
   optional string url = 3;
 }
 

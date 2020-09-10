@@ -2,6 +2,8 @@ package executor
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -193,4 +195,62 @@ func TestIsTarball(t *testing.T) {
 		}
 		assert.Equal(t, test.isTarball, ok, test.path)
 	}
+}
+
+func TestChmod(t *testing.T) {
+
+	type perm struct {
+		dir  string
+		file string
+	}
+
+	tests := []struct {
+		mode        int32
+		recurse     bool
+		permissions perm
+	}{
+		{
+			0777,
+			false,
+			perm{
+				"drwxrwxrwx",
+				"-rw-------",
+			},
+		},
+		{
+			0777,
+			true,
+			perm{
+				"drwxrwxrwx",
+				"-rwxrwxrwx",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		// Setup directory and file for testing
+		tempDir, err := ioutil.TempDir("testdata", "chmod-dir-test")
+		assert.NoError(t, err)
+
+		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
+		assert.NoError(t, err)
+
+		// TearDown test by removing directory and file
+		defer os.RemoveAll(tempDir)
+
+		// Run chmod function
+		err = chmod(tempDir, test.mode, test.recurse)
+		assert.NoError(t, err)
+
+		// Check directory mode if set
+		dirPermission, err := os.Stat(tempDir)
+		assert.NoError(t, err)
+		assert.Equal(t, dirPermission.Mode().String(), test.permissions.dir)
+
+		// Check file mode mode if set
+		filePermission, err := os.Stat(tempFile.Name())
+		assert.NoError(t, err)
+		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
+	}
+
 }
