@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -43,12 +42,14 @@ func NewServerCommand() *cobra.Command {
 		Short: "Start the Argo Server",
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoSever),
-		Run: func(c *cobra.Command, args []string) {
+		RunE: func(c *cobra.Command, args []string) error {
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
 			config, err := client.GetConfig().ClientConfig()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			config.Burst = 30
 			config.QPS = 20.0
 
@@ -79,7 +80,9 @@ See %s`, help.ArgoSever),
 			var tlsConfig *tls.Config
 			if secure {
 				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
 				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
 			} else {
@@ -89,7 +92,9 @@ See %s`, help.ArgoSever),
 			modes := auth.Modes{}
 			for _, mode := range authModes {
 				err := modes.Add(mode)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
 				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo/argo-server-auth-mode/")
@@ -120,8 +125,11 @@ See %s`, help.ArgoSever),
 				}
 			}
 			server, err := apiserver.NewArgoServer(opts)
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			server.Run(ctx, port, browserOpenFunc)
+			return nil
 		},
 	}
 

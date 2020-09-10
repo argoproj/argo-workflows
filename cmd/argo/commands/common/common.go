@@ -22,6 +22,7 @@ var (
 	WorkflowConditionIconMap map[wfv1.ConditionType]string
 	NoColor                  bool
 )
+var MissingArgumentsError = fmt.Errorf("missing required argument")
 
 func init() {
 	cobra.OnInitialize(initializeSession)

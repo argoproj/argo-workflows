@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -36,11 +34,11 @@ func NewWaitCommand() *cobra.Command {
 
   argo wait @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-			waitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)
+			return waitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)
 		},
 	}
 	command.Flags().BoolVar(&ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")
@@ -48,7 +46,7 @@ func NewWaitCommand() *cobra.Command {
 }
 
 // waitWorkflows waits for the given workflowNames.
-func waitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) {
+func waitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) error {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
 
@@ -60,13 +58,10 @@ func waitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			}
 			wg.Done()
 		}(name)
-
 	}
 	wg.Wait()
 
-	if !wfSuccessStatus {
-		os.Exit(1)
-	}
+	return nil
 }
 
 func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
@@ -83,7 +78,7 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 		if status.Code(err) == codes.NotFound && ignoreNotFound {
 			return true
 		}
-		errors.CheckError(err)
+		log.Errorf("failed to watch workflow. %v", err)
 		return false
 	}
 	for {
@@ -91,10 +86,15 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 		if err == io.EOF {
 			log.Debug("Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
-			errors.CheckError(err)
+			if err != nil {
+				log.Errorf("re-establishing workflow watch. %v", err)
+			}
 			continue
 		}
-		errors.CheckError(err)
+		if err != nil {
+			log.Errorf("failed to watch workflow. %v", err)
+			return false
+		}
 		if event == nil {
 			continue
 		}

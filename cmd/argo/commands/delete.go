@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,7 +33,7 @@ func NewDeleteCommand() *cobra.Command {
 
   argo delete @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
@@ -48,7 +47,9 @@ func NewDeleteCommand() *cobra.Command {
 			}
 			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "" {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				workflows = append(workflows, listed...)
 			}
 			for _, wf := range workflows {
@@ -58,12 +59,15 @@ func NewDeleteCommand() *cobra.Command {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
 					}
-					errors.CheckError(err)
+					if err != nil {
+						return err
+					}
 					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 				} else {
 					fmt.Printf("Workflow '%s' deleted (dry-run)\n", wf.Name)
 				}
 			}
+			return nil
 		},
 	}
 

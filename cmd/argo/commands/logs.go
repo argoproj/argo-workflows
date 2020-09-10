@@ -4,11 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
-	"os"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +49,7 @@ func NewLogsCommand() *cobra.Command {
 # Print the logs of the latest workflow:
   argo logs @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// parse all the args
 			workflow := ""
@@ -66,11 +63,11 @@ func NewLogsCommand() *cobra.Command {
 				podName = args[1]
 			default:
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 
 			if since > 0 && sinceTime != "" {
-				log.Fatal("--since-time and --since cannot be used together")
+				return fmt.Errorf("--since-time and --since cannot be used together")
 			}
 
 			if since > 0 {
@@ -79,7 +76,9 @@ func NewLogsCommand() *cobra.Command {
 
 			if sinceTime != "" {
 				parsedTime, err := time.Parse(time.RFC3339, sinceTime)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				sinceTime := metav1.NewTime(parsedTime)
 				logOptions.SinceTime = &sinceTime
 			}
@@ -93,7 +92,7 @@ func NewLogsCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			logWorkflow(ctx, serviceClient, namespace, workflow, podName, logOptions)
+			return logWorkflow(ctx, serviceClient, namespace, workflow, podName, logOptions)
 		},
 	}
 	command.Flags().StringVarP(&logOptions.Container, "container", "c", "main", "Print the logs of this container")
@@ -107,7 +106,7 @@ func NewLogsCommand() *cobra.Command {
 	return command
 }
 
-func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName string, logOptions *corev1.PodLogOptions) {
+func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName string, logOptions *corev1.PodLogOptions) error {
 	// logs
 	stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
 		Name:       workflow,
@@ -115,15 +114,20 @@ func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceC
 		PodName:    podName,
 		LogOptions: logOptions,
 	})
-	errors.CheckError(err)
+	if err != nil {
+		return err
+	}
 
 	// loop on log lines
 	for {
 		event, err := stream.Recv()
 		if err == io.EOF {
-			return
+			return nil
 		}
-		errors.CheckError(err)
+		if err != nil {
+			return err
+		}
 		fmt.Println(cmdcommon.ANSIFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), cmdcommon.ANSIColorCode(event.PodName)))
 	}
+	return nil
 }

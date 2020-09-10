@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -38,7 +37,7 @@ func NewResubmitCommand() *cobra.Command {
 
   argo resubmit @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
 			}
@@ -53,10 +52,13 @@ func NewResubmitCommand() *cobra.Command {
 					Name:      name,
 					Memoized:  memoized,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				printWorkflow(created, getFlags{output: cliSubmitOpts.output})
 				waitWatchOrLog(ctx, serviceClient, namespace, []string{created.Name}, cliSubmitOpts)
 			}
+			return nil
 		},
 	}
 

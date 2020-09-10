@@ -1,9 +1,9 @@
 package commands
 
 import (
+	"fmt"
 	"log"
-
-	"github.com/argoproj/pkg/errors"
+	
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -49,14 +49,14 @@ func NewRetryCommand() *cobra.Command {
 
   argo retry @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
 			selector, err := fields.ParseSelector(retryOps.nodeFieldSelector)
 			if err != nil {
-				log.Fatalf("Unable to parse node field selector '%s': %s", retryOps.nodeFieldSelector, err)
+				return fmt.Errorf("unable to parse node field selector '%s': %s", retryOps.nodeFieldSelector, err)
 			}
 
 			for _, name := range args {
@@ -67,12 +67,12 @@ func NewRetryCommand() *cobra.Command {
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
-					errors.CheckError(err)
-					return
+					return err
 				}
 				printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
 				waitWatchOrLog(ctx, serviceClient, namespace, []string{name}, cliSubmitOpts)
 			}
+			return nil
 		},
 	}
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")

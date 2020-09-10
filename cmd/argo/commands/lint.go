@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -22,7 +21,7 @@ func NewLintCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "lint FILE...",
 		Short: "validate files or directories of workflow manifests",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 
@@ -50,7 +49,9 @@ func NewLintCommand() *cobra.Command {
 			invalid := false
 			for _, file := range args {
 				stat, err := os.Stat(file)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				if stat.IsDir() {
 					_ = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 						// If there was an error with the walk, return
@@ -79,9 +80,10 @@ func NewLintCommand() *cobra.Command {
 				}
 			}
 			if invalid {
-				log.Fatalf("Errors encountered in validation")
+				return fmt.Errorf("errors encountered in validation")
 			}
 			fmt.Printf("Workflow manifests validated\n")
+			return nil
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")

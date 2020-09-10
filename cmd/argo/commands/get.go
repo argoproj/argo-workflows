@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,10 +66,10 @@ func NewGetCommand() *cobra.Command {
 # Get the latest workflow:
   argo get @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
@@ -81,9 +79,12 @@ func NewGetCommand() *cobra.Command {
 					Name:      name,
 					Namespace: namespace,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				printWorkflow(wf, getArgs)
 			}
+			return nil
 		},
 	}
 
@@ -98,7 +99,7 @@ func statusToNodeFieldSelector(status string) string {
 	return fmt.Sprintf("phase=%s", status)
 }
 
-func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
+func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) error {
 	switch getArgs.output {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -111,8 +112,9 @@ func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
 	case "wide", "":
 		fmt.Print(printWorkflowHelper(wf, getArgs))
 	default:
-		log.Fatalf("Unknown output format: %s", getArgs.output)
+		return fmt.Errorf("unknown output format: %s", getArgs.output)
 	}
+	return nil
 }
 
 func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {

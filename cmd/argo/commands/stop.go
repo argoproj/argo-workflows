@@ -2,9 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -33,7 +31,7 @@ func NewStopCommand() *cobra.Command {
 # Stop the latest workflow:
   argo stop @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
@@ -41,7 +39,7 @@ func NewStopCommand() *cobra.Command {
 
 			selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 			if err != nil {
-				log.Fatalf("Unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
+				return fmt.Errorf("unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
 			}
 
 			for _, name := range args {
@@ -51,9 +49,12 @@ func NewStopCommand() *cobra.Command {
 					NodeFieldSelector: selector.String(),
 					Message:           stopArgs.message,
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				fmt.Printf("workflow %s stopped\n", wf.Name)
 			}
+			return nil
 		},
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
