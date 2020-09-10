@@ -190,7 +190,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         if (this.state.useFastRendering) {
             this.layoutGraphFast(nodes, edges);
         } else {
-            this.layoutGraphNice(nodes, edges);
+            this.layoutGraphPretty(nodes, edges);
         }
 
         return (
@@ -397,7 +397,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return {nodes, edges};
     }
 
-    private layoutGraphNice(nodes: string[], edges: Edge[]) {
+    private layoutGraphPretty(nodes: string[], edges: Edge[]) {
         const graph = new dagre.graphlib.Graph();
 
         graph.setGraph({
