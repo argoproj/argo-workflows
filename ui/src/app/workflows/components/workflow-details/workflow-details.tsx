@@ -337,7 +337,11 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private openLink(link: Link) {
-        const url = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
+        const url = link.url
+            .replace('${metadata.namespace}', this.state.workflow.metadata.namespace)
+            .replace('${metadata.name}', this.state.workflow.metadata.name)
+            .replace('${status.startedAt}', this.state.workflow.status.startedAt)
+            .replace('${status.finishedAt}', this.state.workflow.status.finishedAt);
         if ((window.event as MouseEvent).ctrlKey) {
             window.open(url, '_blank');
         } else {
