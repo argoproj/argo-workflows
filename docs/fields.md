@@ -1866,7 +1866,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`priority`|`int32`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
-|~`resubmitPendingPods`~|~`boolean`~|~ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission~ DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
 |`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.|
 |`script`|[`ScriptTemplate`](#scripttemplate)|Script runs a portion of code against an interpreter|

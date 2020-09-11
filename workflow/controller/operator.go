@@ -876,25 +876,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
 			if node.Pending() {
-				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
-				if err != nil {
-					return err
-				}
-				_, tmpl, _, err := tmplCtx.ResolveTemplate(&node)
-				if err != nil {
-					return err
-				}
-
-				// The pod may have been intentionally deleted (e.g. `kubectl delete pod`).
-				// If the user has specified re-submit allowed, so we do not mark the node as error (yet).
-				if tmpl.IsResubmitPendingPods() {
-					// We want to resubmit. Continue and do not mark as error.
-					continue
-				}
-				if tmpl.Synchronization != nil {
-					// Wait to acquire the lock
-					continue
-				}
+				continue
 			}
 
 			node.Message = "pod deleted"
@@ -2046,11 +2028,6 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if tmpl.IsResubmitPendingPods() && !node.Pending() {
-		// This is not our first time executing this node.
-		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
-		// false, return.
-		return node, nil
 	}
 
 	// Check if the output of this container is referenced elsewhere in the Workflow. If so, make sure to include it during

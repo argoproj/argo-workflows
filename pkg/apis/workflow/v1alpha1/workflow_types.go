@@ -528,10 +528,6 @@ type Template struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
-	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	// DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy.
-	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
-
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
@@ -1808,10 +1804,6 @@ func (tmpl *Template) IsLeaf() bool {
 		return true
 	}
 	return false
-}
-
-func (tmpl *Template) IsResubmitPendingPods() bool {
-	return tmpl != nil && tmpl.ResubmitPendingPods
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

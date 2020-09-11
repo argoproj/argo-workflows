@@ -3638,13 +3638,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"resubmitPendingPods": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"metrics": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Metrics are a list of metrics emitted from this template",

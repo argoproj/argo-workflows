@@ -1541,7 +1541,6 @@ Template is a reusable and composable unit of execution in a workflow
 | priority | integer | Priority to apply to workflow pods. | No |
 | priorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | resource | [io.argoproj.workflow.v1alpha1.ResourceTemplate](#io.argoproj.workflow.v1alpha1.resourcetemplate) | Resource template subtype which can run k8s resources | No |
-| resubmitPendingPods | boolean | ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy. | No |
 | retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy describes how to retry a template when it fails | No |
 | schedulerName | string | If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler. | No |
 | script | [io.argoproj.workflow.v1alpha1.ScriptTemplate](#io.argoproj.workflow.v1alpha1.scripttemplate) | Script runs a portion of code against an interpreter | No |

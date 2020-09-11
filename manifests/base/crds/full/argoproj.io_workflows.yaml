@@ -4076,8 +4076,6 @@ spec:
                     required:
                     - action
                     type: object
-                  resubmitPendingPods:
-                    type: boolean
                   retryStrategy:
                     properties:
                       backoff:
@@ -11512,8 +11510,6 @@ spec:
                     required:
                     - action
                     type: object
-                  resubmitPendingPods:
-                    type: boolean
                   retryStrategy:
                     properties:
                       backoff:
@@ -17368,8 +17364,6 @@ spec:
                         required:
                         - action
                         type: object
-                      resubmitPendingPods:
-                        type: boolean
                       retryStrategy:
                         properties:
                           backoff:
