@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -19,15 +21,14 @@ func NewVersionCommand() *cobra.Command {
 		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.PrintVersion(CLIName, argo.GetVersion(), short)
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
-			serviceClient, err := apiClient.NewInfoServiceClient()
-			if err == apiclient.NoArgoServerErr {
-				return
+			if _, ok := os.LookupEnv("ARGO_SERVER"); ok {
+				ctx, apiClient := cmdcommon.CreateNewAPIClient()
+				serviceClient, err := apiClient.NewInfoServiceClient()
+				errors.CheckError(err)
+				serverVersion, err := serviceClient.GetVersion(ctx, &infopkg.GetVersionRequest{})
+				errors.CheckError(err)
+				cmdutil.PrintVersion("argo-server", *serverVersion, short)
 			}
-			errors.CheckError(err)
-			serverVersion, err := serviceClient.GetVersion(ctx, &infopkg.GetVersionRequest{})
-			errors.CheckError(err)
-			cmdutil.PrintVersion("argo-server", *serverVersion, short)
 		},
 	}
 	cmd.Flags().BoolVar(&short, "short", false, "print just the version number")

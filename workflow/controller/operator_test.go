@@ -129,12 +129,15 @@ func TestGlobalParams(t *testing.T) {
 		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
 	}
 	assert.Contains(t, woc.globalParams, "workflow.duration")
-	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
 	assert.Contains(t, woc.globalParams, "workflow.name")
 	assert.Contains(t, woc.globalParams, "workflow.namespace")
 	assert.Contains(t, woc.globalParams, "workflow.parameters")
 	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
 	assert.Contains(t, woc.globalParams, "workflow.uid")
+
+	// Ensure that the phase label is included after the first operation
+	woc.operate()
+	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
 }
 
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
@@ -4669,9 +4672,8 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		time.Sleep(6 * time.Second)
 		makePodsPhase(t, apiv1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
 		woc.operate()
-		woc.operate()
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("[0]").Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
 	})
 	t.Run("DAG Template Deadline", func(t *testing.T) {
 		wf := unmarshalWF(dagTimeoutWf)

@@ -1,7 +1,7 @@
 # Roadmap
 ## SDKs
 
-Build on the [Java SDK](https://github.com/argoproj-labs/argo-java-client) by stabilising the code base. Continue to improve the stability of SDKs, for example correcting bugs in OpenAPI specifications.
+Build on the [Java SDK](https://github.com/argoproj-labs/argo-client-java) by stabilising the code base. Continue to improve the stability of SDKs, for example correcting bugs in OpenAPI specifications.
 
 ## More Ways to Trigger Workflows
 

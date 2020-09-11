@@ -20,10 +20,10 @@ data:
   links: |
     - name: Example Workflow Link
       scope: workflow
-      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
     - name: Example Pod Link
       scope: pod
-      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

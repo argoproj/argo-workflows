@@ -793,6 +793,7 @@ Artifact indicates an artifact to place at a specified path
 | oss | [io.argoproj.workflow.v1alpha1.OSSArtifact](#io.argoproj.workflow.v1alpha1.ossartifact) | OSS contains OSS artifact location details | No |
 | path | string | Path is the container path to the artifact | No |
 | raw | [io.argoproj.workflow.v1alpha1.RawArtifact](#io.argoproj.workflow.v1alpha1.rawartifact) | Raw contains raw artifact location details | No |
+| recurseMode | boolean | If mode is set, apply the permission recursively into the artifact if it is a folder | No |
 | s3 | [io.argoproj.workflow.v1alpha1.S3Artifact](#io.argoproj.workflow.v1alpha1.s3artifact) | S3 contains S3 artifact location details | No |
 | subPath | string | SubPath allows an artifact to be sourced from a subpath within the specified source | No |
 
@@ -1128,7 +1129,7 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.argoproj.workflow.v1alpha1.Item | boolean,number,string,object | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
+| io.argoproj.workflow.v1alpha1.Item |  | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
 
 #### io.argoproj.workflow.v1alpha1.Link
 
@@ -1138,7 +1139,7 @@ A link to another app.
 | ---- | ---- | ----------- | -------- |
 | name | string | The name of the link, E.g. "Workflow Logs" or "Pod Logs" | Yes |
 | scope | string | Either "workflow" or "pod" | Yes |
-| url | string | The URL. May contain "${metadata.namespace}" and "${metadata.name}". | Yes |
+| url | string | The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}". | Yes |
 
 #### io.argoproj.workflow.v1alpha1.LintCronWorkflowRequest
 

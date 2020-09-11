@@ -56,7 +56,7 @@ See %s`, help.ArgoSever),
 			namespace := client.Namespace()
 
 			kubeConfig := kubernetes.NewForConfigOrDie(config)
-			wflientset := wfclientset.NewForConfigOrDie(config)
+			wfClientSet := wfclientset.NewForConfigOrDie(config)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -105,7 +105,7 @@ See %s`, help.ArgoSever),
 				TLSConfig:               tlsConfig,
 				HSTS:                    htst,
 				Namespace:               namespace,
-				WfClientSet:             wflientset,
+				WfClientSet:             wfClientSet,
 				KubeClientset:           kubeConfig,
 				RestConfig:              config,
 				AuthModes:               modes,
