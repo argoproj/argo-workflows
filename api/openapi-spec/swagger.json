@@ -3770,7 +3770,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
         },
         "resubmitPendingPods": {
-          "description": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
+          "description": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy.",
           "type": "boolean"
         },
         "retryStrategy": {
@@ -4402,9 +4402,9 @@
           "type": "integer",
           "format": "int32"
         },
-        "resubmitPendingPods": {
-          "description": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
-          "type": "boolean"
+        "retryStrategy": {
+          "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy"
         },
         "schedulerName": {
           "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
@@ -4857,9 +4857,9 @@
           "type": "integer",
           "format": "int32"
         },
-        "resubmitPendingPods": {
-          "description": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission",
-          "type": "boolean"
+        "retryStrategy": {
+          "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy"
         },
         "schedulerName": {
           "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",

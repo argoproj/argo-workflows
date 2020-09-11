@@ -319,8 +319,8 @@ type WorkflowSpec struct {
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 
-	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,36,opt,name=resubmitPendingPods"`
+	// RetryStrategy for all templates in the workflow.
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,36,opt,name=retryStrategy"`
 }
 
 type ShutdownStrategy string
@@ -529,6 +529,7 @@ type Template struct {
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
 	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	// DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy.
 	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 
 	// Metrics are a list of metrics emitted from this template

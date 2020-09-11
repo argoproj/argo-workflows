@@ -116,6 +116,11 @@ func (w *When) CreateCronWorkflow() *When {
 type Condition func(wf *wfv1.Workflow) bool
 
 var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
+var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
+	return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.Phase == wfv1.NodeRunning
+	})
+}
 var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.FinishedAt.IsZero() }
 
 // Wait for a workflow to meet a condition:

@@ -49,17 +49,19 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		})
 }
 
-func (s *FunctionalSuite) TestResubmitPendingPods() {
+func (s *FunctionalSuite) TestRetryStrategy() {
 	s.Given().
 		Workflow(`
 kind: Workflow
 apiVersion: argoproj.io/v1alpha1
 metadata:
-  name: sleepy
+  name: retry-strategy
   labels:
     argo-e2e: "true"
 spec:
-  resubmitPendingPods: true
+  retryStrategy: 
+    retryPolicy: OnError
+    limit: 1
   entrypoint: main
   templates:
     - name: main
@@ -71,12 +73,15 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow", "--wait=false"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
+		// ToStart and ToBeRunning exercise different code paths, in the real-world it is more likely that we'll
+		// have a problem with deleted running pods.
+		WaitForWorkflow(fixtures.ToBeRunning).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Len(t, status.Nodes, 3)
 		})
 }
 

@@ -864,8 +864,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
-	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
-	// the node with Error.
+	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
+	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
 		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
@@ -875,7 +875,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			phase := wfv1.NodeError
 			if node.Pending() {
 				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
 				if err != nil {
@@ -888,9 +887,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 				// The pod may have been intentionally deleted (e.g. `kubectl delete pod`).
 				// If the user has specified re-submit allowed, so we do not mark the node as error (yet).
-				if woc.execWf.Spec.ResubmitPendingPods || tmpl.IsResubmitPendingPods() {
+				if tmpl.IsResubmitPendingPods() {
 					// We want to resubmit. Continue and do not mark as error.
-					phase = node.Phase
+					continue
 				}
 				if tmpl.Synchronization != nil {
 					// Wait to acquire the lock
@@ -899,7 +898,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 
 			node.Message = "pod deleted"
-			node.Phase = phase
+			node.Phase = wfv1.NodeError
 			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
 			// See processNodeRetries for more details.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
@@ -1463,7 +1462,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
-	if resolvedTmpl.IsPodType() && resolvedTmpl.RetryStrategy == nil {
+	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 
@@ -1575,14 +1574,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
 	retryNodeName := ""
-	if processedTmpl.RetryStrategy != nil {
+	if woc.retryStrategy(processedTmpl) != nil {
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 		}
-		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy, opts)
+		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		} else if !continueExecution {
@@ -1656,9 +1655,10 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
-		if processedTmpl.RetryStrategy == nil ||
-			(processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
+		retryStrategy := woc.retryStrategy(processedTmpl)
+		if retryStrategy == nil ||
+			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
 			return node, err
 		}
 	}
@@ -3048,4 +3048,11 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	return tmplRef, executionParameters, nil
+}
+
+func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrategy {
+	if tmpl != nil && tmpl.RetryStrategy != nil {
+		return tmpl.RetryStrategy
+	}
+	return woc.execWf.Spec.RetryStrategy
 }

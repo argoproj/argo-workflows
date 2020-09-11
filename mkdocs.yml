@@ -43,6 +43,7 @@ nav:
           - synchronization.md
           - workflow-of-workflows.md
           - memoization.md
+          - tolerating-pod-deletion.md
       # all other topics, including API access
       - Advanced:
           - workflow-requirements.md

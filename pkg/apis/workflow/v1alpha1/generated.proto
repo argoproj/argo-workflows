@@ -1098,6 +1098,7 @@ message Template {
   optional string podSpecPatch = 31;
 
   // ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+  // DEPRECATED: You can achieve the same outcomes, and more, using RetryStrategy.
   optional bool resubmitPendingPods = 34;
 
   // Metrics are a list of metrics emitted from this template
@@ -1391,8 +1392,8 @@ message WorkflowSpec {
   // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
 
-  // ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-  optional bool resubmitPendingPods = 36;
+  // RetryStrategy for all templates in the workflow.
+  optional RetryStrategy retryStrategy = 36;
 }
 
 // WorkflowStatus contains overall status information about a workflow
