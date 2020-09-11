@@ -160,6 +160,7 @@ rules:
   verbs:
   - create
   - delete
+  - get
 - apiGroups:
   - argoproj.io
   resources:
