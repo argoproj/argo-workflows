@@ -9,24 +9,24 @@ spec:
   - name: hello-hello-hello
     steps:
     - - name: hello1
+        continueOn:
+          error: true
         template: whalesay
         arguments:
-          parameters: [{name: message, value: "5s"}]
-      - name: hello2a
+          parameters: [{name: timeout, value: "10s"}]
+      - name: hello2
+        continueOn:
+          failed: true
         template: whalesay
         arguments:
-          parameters: [{name: message, value: "10s"}]
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "15s"}]
+          parameters: [{name: timeout, value: "10s"}]
 
   - name: whalesay
-    timeoutDuration: "{{inputs.parameters.message}}"
+    timeout: "{{inputs.parameters.timeout}}"
     inputs:
       parameters:
-      - name: message
+      - name: timeout
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["sleep 30"]
+      args: ["sleep 30s"]

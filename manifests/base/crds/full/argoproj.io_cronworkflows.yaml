@@ -549,6 +549,8 @@ spec:
                             required:
                             - data
                             type: object
+                          recurseMode:
+                            type: boolean
                           s3:
                             properties:
                               accessKeySecret:
@@ -1668,6 +1670,8 @@ spec:
                                   required:
                                   - data
                                   type: object
+                                recurseMode:
+                                  type: boolean
                                 s3:
                                   properties:
                                     accessKeySecret:
@@ -2546,6 +2550,8 @@ spec:
                                             required:
                                             - data
                                             type: object
+                                          recurseMode:
+                                            type: boolean
                                           s3:
                                             properties:
                                               accessKeySecret:
@@ -3497,6 +3503,8 @@ spec:
                                   required:
                                   - data
                                   type: object
+                                recurseMode:
+                                  type: boolean
                                 s3:
                                   properties:
                                     accessKeySecret:
@@ -3929,6 +3937,8 @@ spec:
                                   required:
                                   - data
                                   type: object
+                                recurseMode:
+                                  type: boolean
                                 s3:
                                   properties:
                                     accessKeySecret:

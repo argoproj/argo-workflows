@@ -103,6 +103,8 @@ var (
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	// ErrTimeout indicates a specific template timed out
+	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -195,6 +197,8 @@ func (woc *wfOperationCtx) operate() {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
+	woc.setGlobalParameters(execArgs)
+
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
@@ -268,8 +272,6 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 		return
 	}
-
-	woc.setGlobalParameters(execArgs)
 
 	if woc.execWf.Spec.ArtifactRepositoryRef != nil {
 		repo, err := woc.getArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef)
@@ -1716,7 +1718,7 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 		deadline := node.StartedAt.Add(tmplTimeout)
 
 		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
-			return nil, fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
+			return nil, ErrTimeout
 		}
 		return &deadline, nil
 	}
