@@ -1139,7 +1139,7 @@ A link to another app.
 | ---- | ---- | ----------- | -------- |
 | name | string | The name of the link, E.g. "Workflow Logs" or "Pod Logs" | Yes |
 | scope | string | Either "workflow" or "pod" | Yes |
-| url | string | The URL. May contain "${metadata.namespace}" and "${metadata.name}". | Yes |
+| url | string | The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}". | Yes |
 
 #### io.argoproj.workflow.v1alpha1.LintCronWorkflowRequest
 

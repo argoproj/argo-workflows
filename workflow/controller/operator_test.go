@@ -4897,3 +4897,79 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
 }
+
+var wfRetryWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation
+spec:
+  entrypoint: parameter-aggregation
+  templates:
+  - name: parameter-aggregation
+    steps:
+    - - name: divide-by-2
+        template: divide-by-2
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item}}"
+        withItems: [1,2,3]
+    # Finally, print all numbers processed in the previous step
+    - - name: print
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{steps.divide-by-2.outputs.result}}"
+
+  # divide-by-2 divides a number in half
+  - name: divide-by-2
+    retryStrategy: 
+        limit: 2
+        backoff: 
+            duration: "1"
+            factor: 2
+    inputs:
+      parameters:
+      - name: num
+    script:
+      image: alpine:latest
+      command: [sh, -x]
+      source: |
+        #!/bin/sh
+        echo $(({{inputs.parameters.num}}/2))
+  # whalesay prints a number using whalesay
+  - name: whalesay
+    retryStrategy: 
+        limit: 2
+        backoff: 
+            duration: "1"
+            factor: 2
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestWFWithRetryAndWithParam(t *testing.T) {
+	t.Run("IncludeScriptOutputInRetryAndWithParam", func(t *testing.T) {
+		wf := unmarshalWF(wfRetryWithParam)
+		cancel, controller := newController(wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+		assert.NoError(t, err)
+		assert.True(t, len(pods.Items) > 0)
+		for _, pod := range pods.Items {
+			podbyte, err := json.Marshal(pod)
+			assert.NoError(t, err)
+			assert.Contains(t, string(podbyte), "includeScriptOutput")
+		}
+	})
+}
