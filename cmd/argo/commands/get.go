@@ -82,7 +82,10 @@ func NewGetCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				printWorkflow(wf, getArgs)
+				err = printWorkflow(wf, getArgs)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},

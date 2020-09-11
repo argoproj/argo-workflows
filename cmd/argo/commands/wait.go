@@ -48,14 +48,10 @@ func NewWaitCommand() *cobra.Command {
 // waitWorkflows waits for the given workflowNames.
 func waitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) error {
 	var wg sync.WaitGroup
-	wfSuccessStatus := true
-
 	for _, name := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			if !waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet) {
-				wfSuccessStatus = false
-			}
+			waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet)
 			wg.Done()
 		}(name)
 	}

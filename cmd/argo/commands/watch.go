@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +36,7 @@ func NewWatchCommand() *cobra.Command {
 
   argo watch @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
@@ -45,7 +44,7 @@ func NewWatchCommand() *cobra.Command {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-			watchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
+			return watchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
 		},
 	}
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
@@ -66,7 +65,7 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	if err != nil {
 		return err
 	}
-	
+
 	wfChan := make(chan *wfv1.Workflow)
 	go func() {
 		for {
@@ -74,10 +73,16 @@ func watchWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 			if err == io.EOF {
 				log.Debug("Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
-				errors.CheckError(err)
+				if err != nil {
+					log.Errorf("failed to watch workflow. %v", err)
+					return
+				}
 				continue
 			}
-			errors.CheckError(err)
+			if err != nil {
+				log.Errorf("failed to watch workflow. %v", err)
+				return
+			}
 			if event == nil {
 				continue
 			}

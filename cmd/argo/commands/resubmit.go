@@ -55,8 +55,14 @@ func NewResubmitCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				printWorkflow(created, getFlags{output: cliSubmitOpts.output})
-				waitWatchOrLog(ctx, serviceClient, namespace, []string{created.Name}, cliSubmitOpts)
+				err = printWorkflow(created, getFlags{output: cliSubmitOpts.output})
+				if err != nil {
+					return err
+				}
+				err = waitWatchOrLog(ctx, serviceClient, namespace, []string{created.Name}, cliSubmitOpts)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},

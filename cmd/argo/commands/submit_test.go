@@ -39,7 +39,7 @@ func TestSubmitFromResource(t *testing.T) {
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	cmdcommon.APIClient = &client
 	output := test.CaptureOutput(func() {
-		submitWorkflowFromResource(context.TODO(), &wfClient, "default", "workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{})
+		_ = submitWorkflowFromResource(context.TODO(), &wfClient, "default", "workflowtemplate/test", &wfv1.SubmitOpts{}, &cliSubmitOpts{})
 	})
 	assert.Contains(t, output, "Created:")
 }
@@ -56,7 +56,7 @@ func TestSubmitWorkflows(t *testing.T) {
 	assert.NoError(t, err)
 	workflows := []wfv1.Workflow{wf}
 	output := test.CaptureOutput(func() {
-		submitWorkflows(context.TODO(), &wfClient, "default", workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{})
+		_ = submitWorkflows(context.TODO(), &wfClient, "default", workflows, &wfv1.SubmitOpts{}, &cliSubmitOpts{})
 	})
 	fmt.Println(output)
 	assert.Contains(t, output, "Created:")

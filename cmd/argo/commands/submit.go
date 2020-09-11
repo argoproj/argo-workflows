@@ -82,7 +82,6 @@ func NewSubmitCommand() *cobra.Command {
 			} else {
 				return submitWorkflowsFromFile(ctx, serviceClient, namespace, args, &submitOpts, &cliSubmitOpts)
 			}
-			return nil
 		},
 	}
 	util.PopulateSubmitOpts(command, &submitOpts, true)
@@ -197,7 +196,10 @@ func submitWorkflowFromResource(ctx context.Context, serviceClient workflowpkg.W
 
 func submitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) error {
 
-	validateOptions(workflows, submitOpts, cliOpts)
+	err := validateOptions(workflows, submitOpts, cliOpts)
+	if err != nil {
+		return err
+	}
 
 	if len(workflows) == 0 {
 		log.Println("No Workflow found in given files")
@@ -261,11 +263,14 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) ([]wfv1.Workflow, error) {
 func waitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, cliSubmitOpts cliSubmitOpts) error {
 	if cliSubmitOpts.log {
 		for _, workflow := range workflowNames {
-			logWorkflow(ctx, serviceClient, namespace, workflow, "", &corev1.PodLogOptions{
+			err := logWorkflow(ctx, serviceClient, namespace, workflow, "", &corev1.PodLogOptions{
 				Container: "main",
 				Follow:    true,
 				Previous:  false,
 			})
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if cliSubmitOpts.wait {

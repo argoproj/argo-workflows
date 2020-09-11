@@ -3,12 +3,10 @@ package commands
 import (
 	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo"
 	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
-	"github.com/argoproj/argo/pkg/apiclient"
 	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 )
@@ -19,16 +17,21 @@ func NewVersionCommand() *cobra.Command {
 	cmd := cobra.Command{
 		Use:   "version",
 		Short: "Print version information",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cmdutil.PrintVersion(CLIName, argo.GetVersion(), short)
 			if _, ok := os.LookupEnv("ARGO_SERVER"); ok {
 				ctx, apiClient := cmdcommon.CreateNewAPIClient()
 				serviceClient, err := apiClient.NewInfoServiceClient()
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				serverVersion, err := serviceClient.GetVersion(ctx, &infopkg.GetVersionRequest{})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				cmdutil.PrintVersion("argo-server", *serverVersion, short)
 			}
+			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&short, "short", false, "print just the version number")

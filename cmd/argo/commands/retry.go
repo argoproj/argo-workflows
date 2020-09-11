@@ -2,8 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"log"
-	
+
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -69,8 +68,15 @@ func NewRetryCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
-				waitWatchOrLog(ctx, serviceClient, namespace, []string{name}, cliSubmitOpts)
+				err = printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
+				if err != nil {
+					return err
+				}
+				err = waitWatchOrLog(ctx, serviceClient, namespace, []string{name}, cliSubmitOpts)
+				if err != nil {
+					return err
+				}
+
 			}
 			return nil
 		},

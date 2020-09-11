@@ -129,5 +129,4 @@ func logWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceC
 		}
 		fmt.Println(cmdcommon.ANSIFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), cmdcommon.ANSIColorCode(event.PodName)))
 	}
-	return nil
 }
