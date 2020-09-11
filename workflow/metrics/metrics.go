@@ -186,7 +186,7 @@ func (m *Metrics) GetCustomMetric(key string) prometheus.Metric {
 	return m.customMetrics[key].metric
 }
 
-func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric, isRealtime bool, ownerKey string) error {
+func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prometheus.Metric, realtime bool) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -201,10 +201,12 @@ func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric, is
 		m.metricNameHelps[name] = help
 	}
 	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
-	if isRealtime {
-		log.Infof("Adding child realtime metric '%s' to UID '%s'", key, ownerKey)
+
+	// If this is a realtime metric, track it
+	if realtime {
 		m.workflows[ownerKey] = append(m.workflows[ownerKey], key)
 	}
+
 	return nil
 }
 
