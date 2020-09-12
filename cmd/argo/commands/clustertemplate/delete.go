@@ -20,8 +20,8 @@ func NewDeleteCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "delete WORKFLOW_TEMPLATE",
 		Short: "delete a cluster workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
-			apiServerDeleteClusterWorkflowTemplates(all, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return apiServerDeleteClusterWorkflowTemplates(all, args)
 		},
 	}
 
@@ -29,7 +29,7 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) {
+func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) error {
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 	var delWFTmplNames []string

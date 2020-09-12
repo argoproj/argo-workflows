@@ -1,13 +1,13 @@
 package clustertemplate
 
 import (
+	"fmt"
 	"log"
-	"os"
 
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -26,13 +26,13 @@ func NewCreateCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cluster workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 
-			createClusterWorkflowTemplates(args, &cliCreateOpts)
+			return createClusterWorkflowTemplates(args, &cliCreateOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -40,30 +40,30 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
+func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) error {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClient()
 	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var clusterWorkflowTemplates []wfv1.ClusterWorkflowTemplate
 	for _, body := range fileContents {
 		cwftmpls, err := unmarshalClusterWorkflowTemplates(body, cliOpts.strict)
 		if err != nil {
-			log.Fatalf("Failed to parse cluster workflow template: %v", err)
+			return err
 		}
 		clusterWorkflowTemplates = append(clusterWorkflowTemplates, cwftmpls...)
 	}
 
 	if len(clusterWorkflowTemplates) == 0 {
 		log.Println("No cluster workflow template found in given files")
-		os.Exit(1)
+		return nil
 	}
 
 	for _, wftmpl := range clusterWorkflowTemplates {
@@ -71,10 +71,14 @@ func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) 
 			Template: &wftmpl,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
+			return fmt.Errorf("Failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
 		}
-		printClusterWorkflowTemplate(created, cliOpts.output)
+		err = printClusterWorkflowTemplate(created, cliOpts.output)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml

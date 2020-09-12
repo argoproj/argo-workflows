@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -13,12 +14,13 @@ func NewTokenCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "token",
 		Short: "Print the auth token",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 0 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 			fmt.Println(client.GetAuthString())
+			return nil
 		},
 	}
 }

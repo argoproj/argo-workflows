@@ -23,7 +23,7 @@ func NewGetCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "get CLUSTER WORKFLOW_TEMPLATE...",
 		Short: "display details about a cluster workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 			for _, name := range args {
@@ -31,9 +31,12 @@ func NewGetCommand() *cobra.Command {
 					Name: name,
 				})
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
-				printClusterWorkflowTemplate(wftmpl, output)
+				err = printClusterWorkflowTemplate(wftmpl, output)
+				if err != nil {
+					return err
+				}
 			}
 		},
 	}
@@ -42,7 +45,7 @@ func NewGetCommand() *cobra.Command {
 	return command
 }
 
-func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt string) {
+func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt string) error {
 	switch outFmt {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -55,8 +58,9 @@ func printClusterWorkflowTemplate(wf *wfv1.ClusterWorkflowTemplate, outFmt strin
 	case "wide", "":
 		printClusterWorkflowTemplateHelper(wf)
 	default:
-		log.Fatalf("Unknown output format: %s", outFmt)
+		return fmt.Errorf("Unknown output format: %s", outFmt)
 	}
+	return nil
 }
 
 func printClusterWorkflowTemplateHelper(wf *wfv1.ClusterWorkflowTemplate) {
