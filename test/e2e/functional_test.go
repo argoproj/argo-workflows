@@ -44,8 +44,7 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Contains(t, status.Message, "pod deleted")
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 
