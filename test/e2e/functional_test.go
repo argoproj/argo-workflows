@@ -375,7 +375,6 @@ spec:
   entrypoint: dag
   templates:
   - name: cowsay
-    resubmitPendingPods: true
     container:
       image: argoproj/argosay:v2
       args: ["echo", "a"]
@@ -421,7 +420,6 @@ spec:
   entrypoint: dag
   templates:
   - name: cowsay
-    resubmitPendingPods: true
     retryStrategy:
       limit: 1
     container:
@@ -884,7 +882,6 @@ spec:
           parameters: [{name: message, value: "15s"}]
 
   - name: whalesay
-    resubmitPendingPods: true
     resources:
       limits:
         memory: 145M

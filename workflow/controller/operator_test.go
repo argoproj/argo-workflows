@@ -4177,7 +4177,6 @@ spec:
     metadata: {}
     name: resubmit-pending
     outputs: {}
-    resubmitPendingPods: true
     script:
       command:
       - bash
@@ -4506,7 +4505,6 @@ spec:
         requests:
           memory: 1Gi
     name: whalesay
-    resubmitPendingPods: true
 status:
   finishedAt: null
   nodes:

@@ -2627,7 +2627,6 @@ spec:
   entrypoint: whalesay
   templates:
     - name: whalesay
-      resubmitPendingPods: true
       container:
         image: docker/whalesay
       metrics:
