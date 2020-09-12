@@ -24,7 +24,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -34,7 +33,6 @@ import (
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/archive"
 	errorsutil "github.com/argoproj/argo/util/errors"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
@@ -472,19 +470,19 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output *intstr.IntOrString
+		var output string
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				output = intstrutil.ParsePtr(fileContents)
+				output = fileContents
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -493,20 +491,18 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				output = intstrutil.ParsePtr(string(data))
+				output = string(data)
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		if output.Type == intstr.String {
-			output = intstrutil.ParsePtr(strings.TrimSuffix(output.String(), "\n"))
-		}
-		we.Template.Outputs.Parameters[i].Value = output
+		output = strings.TrimSuffix(output, "\n")
+		we.Template.Outputs.Parameters[i].Value = &output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
