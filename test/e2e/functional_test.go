@@ -34,53 +34,57 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
-func (s *FunctionalSuite) TestDeletingWorkflowPod() {
+// when you delete a pending pod,
+// then the pod is re- created automatically
+func (s *FunctionalSuite) TestDeletingPendingPod() {
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Len(t, status.Nodes, 1)
 		})
 }
 
-func (s *FunctionalSuite) TestRetryStrategy() {
+// where you delete a running pod,
+// then the workflow is errored
+func (s *FunctionalSuite) TestDeletingRunningPod() {
 	s.Given().
-		Workflow(`
-kind: Workflow
-apiVersion: argoproj.io/v1alpha1
-metadata:
-  name: retry-strategy
-  labels:
-    argo-e2e: "true"
-spec:
-  retryStrategy: 
-    retryPolicy: OnError
-    limit: 1
-  entrypoint: main
-  templates:
-    - name: main
-      container:
-        image: argoproj/argosay:v2
-        args:
-          - sleep
-          - 10s
-`).
+		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		// ToStart and ToBeRunning exercise different code paths, in the real-world it is more likely that we'll
-		// have a problem with deleted running pods.
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Len(t, status.Nodes, 1)
+			if assert.Contains(t, status.Nodes, "sleepy") {
+				assert.Equal(t, "pod deleted during operation", status.Nodes["sleepy"].Message)
+			}
+		})
+}
+
+// where you delete a running pod, and you have retry on error,
+// then the node is retried
+func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
+	s.Given().
+		Workflow("@testdata/sleepy-retry-on-error-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Len(t, status.Nodes, 3)
+			assert.Len(t, status.Nodes, 2)
 		})
 }
 
