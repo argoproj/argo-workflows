@@ -37,10 +37,6 @@ spec:
         templateRef:
           name: workflow-template-inner-dag
           template: inner-diamond
-        arguments:
-          parameters:
-          - name: message
-            value: C
       - name: D
         dependencies: [B, C]
         templateRef:

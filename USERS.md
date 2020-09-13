@@ -5,7 +5,7 @@ Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows 
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
 Currently, the following organizations are **officially** using Argo Workflows:
-
+1. [23mofang](https://www.23mofang.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
@@ -33,6 +33,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [EBSCO Information Services](https://www.ebsco.com/)
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
+1. [Fynd Trak](https://trak.fynd.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [GitHub](https://github.com/)
 1. [Gladly](https://gladly.com/)
@@ -48,12 +49,15 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [InVision](https://www.invisionapp.com/)
 1. [İşbank](https://www.isbank.com.tr/en)
 1. [Karius](https://www.kariusdx.com/)
+1. [Kasa](https://www.kasa.co.kr/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
 1. [Mirantis](https://mirantis.com/)
+1. [New Relic](https://newrelic.com/)
+1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
@@ -71,6 +75,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [SegmentStream](https://segmentstream.com)
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Sohu](https://www.sohu.com/)
+1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)

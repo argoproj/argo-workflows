@@ -15,7 +15,6 @@ import (
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -23,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -92,8 +92,8 @@ var (
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	intOrString := intstr.Parse(placeholderGenerator.NextPlaceholder())
-	return &wfv1.Parameter{Name: name, Value: &intOrString}
+	s := placeholderGenerator.NextPlaceholder()
+	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -161,7 +161,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				ctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
 			} else {
 				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
@@ -264,6 +264,10 @@ func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Labels:      wftmpl.ObjectMeta.Labels,
+			Annotations: wftmpl.ObjectMeta.Annotations,
+		},
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
@@ -272,6 +276,10 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
 func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Labels:      cwftmpl.ObjectMeta.Labels,
+			Annotations: cwftmpl.ObjectMeta.Annotations,
+		},
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
@@ -389,6 +397,18 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
+	}
+
+	if newTmpl.Timeout != "" {
+		if !newTmpl.IsLeaf() {
+			return fmt.Errorf("%s template doesn't support timeout field.", newTmpl.GetType())
+		}
+		// Check timeout should not be a whole number
+		_, err := strconv.Atoi(newTmpl.Timeout)
+		if err == nil {
+			return fmt.Errorf("%s has invalid duration format in timeout.", newTmpl.Name)
+		}
+
 	}
 
 	tmplID := getTemplateID(tmpl)
@@ -690,8 +710,11 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if *tmpl.ActiveDeadlineSeconds <= 0 {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0", tmpl.Name)
+		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
+		}
+		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && *i < 0 {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}
 	if tmpl.Parallelism != nil {

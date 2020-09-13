@@ -3,16 +3,12 @@ package controller
 import (
 	"testing"
 
-	"github.com/argoproj/argo/workflow/controller/cache"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	apiv1 "k8s.io/api/core/v1"
-
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/controller/cache"
 )
 
 var sampleOutput string = "\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   "
@@ -53,7 +49,7 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.Len(t, outputs.Parameters, 1) {
 		assert.Equal(t, "hello", outputs.Parameters[0].Name)
-		assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.StrVal)
+		assert.Equal(t, sampleOutput, *outputs.Parameters[0].Value)
 	}
 }
 
@@ -70,10 +66,9 @@ func TestConfigMapCacheLoadMiss(t *testing.T) {
 
 func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
-	val := intstr.Parse(MockParamValue)
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: &val,
+		Value: &MockParamValue,
 	}
 	cancel, controller := newController()
 	defer cancel()

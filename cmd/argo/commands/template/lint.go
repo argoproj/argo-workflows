@@ -40,7 +40,6 @@ func ServerSideLint(args []string, strict bool) error {
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-	namespace := client.Namespace()
 
 	invalid := false
 	if validateDir {
@@ -67,7 +66,10 @@ func ServerSideLint(args []string, strict bool) error {
 				invalid = true
 			}
 			for _, wfTmpl := range wfTmpls {
-				err := ServerLintValidation(ctx, serviceClient, wfTmpl, namespace)
+				if wfTmpl.Namespace == "" {
+					wfTmpl.Namespace = client.Namespace()
+				}
+				err := ServerLintValidation(ctx, serviceClient, wfTmpl, wfTmpl.Namespace)
 				if err != nil {
 					log.Error(err)
 					invalid = true
@@ -84,7 +86,10 @@ func ServerSideLint(args []string, strict bool) error {
 				invalid = true
 			}
 			for _, wfTmpl := range wfTmpls {
-				err := ServerLintValidation(ctx, serviceClient, wfTmpl, namespace)
+				if wfTmpl.Namespace == "" {
+					wfTmpl.Namespace = client.Namespace()
+				}
+				err := ServerLintValidation(ctx, serviceClient, wfTmpl, wfTmpl.Namespace)
 				if err != nil {
 					log.Error(err)
 					invalid = true

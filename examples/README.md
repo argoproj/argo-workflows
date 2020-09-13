@@ -317,7 +317,7 @@ The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `
 
 **Note:**
 You will need to configure an artifact repository to run this example.
-[Configuring an artifact repository here](https://github.com/argoproj/argo/blob/master/docs/configure-artifact-repository.md).
+[Configuring an artifact repository here](https://argoproj.github.io/argo/configure-artifact-repository/).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
@@ -1196,7 +1196,7 @@ spec:
 
   - name: delay
     suspend:
-      duration: 20    # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+      duration: "20"    # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
 
   - name: whalesay
     container:

@@ -86,9 +86,26 @@ func TestArtifactLocation_HasLocation(t *testing.T) {
 	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key", GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).HasLocation())
 }
 
+func TestArtifactLocation_GetType(t *testing.T) {
+	assert.Equal(t, ArtifactLocationUnknown, (&ArtifactLocation{}).GetType())
+	assert.Equal(t, ArtifactLocationS3, (&ArtifactLocation{S3: &S3Artifact{Key: "my-key", S3Bucket: S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"}}}).GetType())
+	assert.Equal(t, ArtifactLocationGit, (&ArtifactLocation{Git: &GitArtifact{Repo: "my-repo"}}).GetType())
+	assert.Equal(t, ArtifactLocationHTTP, (&ArtifactLocation{HTTP: &HTTPArtifact{URL: "my-url"}}).GetType())
+	assert.Equal(t, ArtifactLocationArtifactory, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "my-url"}}).GetType())
+	assert.Equal(t, ArtifactLocationRaw, (&ArtifactLocation{Raw: &RawArtifact{Data: "my-data"}}).GetType())
+	assert.Equal(t, ArtifactLocationHDFS, (&ArtifactLocation{HDFS: &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}}).GetType())
+	assert.Equal(t, ArtifactLocationOSS, (&ArtifactLocation{OSS: &OSSArtifact{Key: "my-key", OSSBucket: OSSBucket{Endpoint: "my-endpoint", Bucket: "my-bucket"}}}).GetType())
+	assert.Equal(t, ArtifactLocationGCS, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key", GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).GetType())
+}
+
 func TestArtifact_GetArchive(t *testing.T) {
 	assert.NotNil(t, (&Artifact{}).GetArchive())
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
+}
+
+func TestTemplate_IsResubmitAllowed(t *testing.T) {
+	assert.False(t, (&Template{}).IsResubmitPendingPods())
+	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitPendingPods())
 }
 
 func TestNodes_FindByDisplayName(t *testing.T) {
@@ -190,7 +207,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			{Key: "hello", Value: "World"},
 		},
 		Histogram: &Histogram{
-			Buckets: []Amount{NewAmount("10"), NewAmount("20"), NewAmount("30")},
+			Buckets: []Amount{{"10"}, {"20"}, {"30"}},
 		},
 	}
 	stableDesc := metric.GetDesc()

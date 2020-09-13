@@ -236,6 +236,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
+			case ErrTimeout:
+				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
@@ -387,7 +389,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			if art.From == "" {
 				continue
 			}
-			resolvedArt, err := scope.resolveArtifact(art.From)
+			resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
 			if err != nil {
 				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
@@ -493,7 +495,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	if node.Inputs != nil {
 		for _, param := range node.Inputs.Parameters {
 			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			localScope[key] = param.Value.String()
+			localScope[key] = *param.Value
 		}
 	}
 
@@ -503,7 +505,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		}
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
-			localScope[key] = param.Value.String()
+			localScope[key] = *param.Value
 		}
 	}
 

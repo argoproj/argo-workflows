@@ -24,6 +24,8 @@ type TemplateHolder interface {
 
 // WorkflowSpecHolder is an object that holds a WorkflowSpec; e.g., WorkflowTemplate, and ClusterWorkflowTemplate
 type WorkflowSpecHolder interface {
+	metav1.Object
+	GetWorkflowMetadata() *metav1.ObjectMeta
 	GetWorkflowSpec() *WorkflowSpec
 }
 

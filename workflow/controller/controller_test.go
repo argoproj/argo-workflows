@@ -7,6 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/stretchr/testify/assert"
@@ -19,14 +20,17 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -112,7 +116,7 @@ func (t testEventRecorderManager) Get(string) record.EventRecorder {
 	return t.eventRecorder
 }
 
-var _ EventRecorderManager = &testEventRecorderManager{}
+var _ events.EventRecorderManager = &testEventRecorderManager{}
 
 func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
@@ -135,6 +139,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:        kube,
+		dynamicInterface:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
 		wfclientset:          wfclientset,
 		completedPods:        make(chan string, 16),
 		wfInformer:           wfInformer,
@@ -149,6 +154,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
+	controller.podInformer = controller.newPodInformer()
 	return cancel, controller
 }
 
@@ -202,6 +208,15 @@ func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
 
 func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
 	return test.LoadClusterWorkflowTemplateFromBytes([]byte(yamlStr))
+}
+
+func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
+	var artifact wfv1.Artifact
+	err := yaml.Unmarshal([]byte(yamlStr), &artifact)
+	if err != nil {
+		panic(err)
+	}
+	return &artifact
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
@@ -383,7 +398,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 		wf: wf}
 	_, _, err := woc.loadExecutionSpec()
 	assert.NoError(t, err)
-	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
+	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 }
 
 func TestIsArchivable(t *testing.T) {

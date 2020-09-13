@@ -272,6 +272,23 @@ Argo
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse](#io.argoproj.workflow.v1alpha1.cronworkflowdeletedresponse) |
 
+### /api/v1/events/{namespace}/{discriminator}
+
+#### POST
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path | The namespace for the io.argoproj.workflow.v1alpha1. This can be empty if the client has cluster scoped permissions. If empty, then the event is "broadcast" to workflow event binding in all namespaces. | Yes | string |
+| discriminator | path | Optional discriminator for the io.argoproj.workflow.v1alpha1. This should almost always be empty. Used for edge-cases where the event payload alone is not provide enough information to discriminate the event. This MUST NOT be used as security mechanism, e.g. to allow two clients to use the same access token, or to support webhooks on unsecured server. Instead, use access tokens. This is made available as `discriminator` in the event binding selector (`/spec/event/selector)` | Yes | string |
+| body | body | The event itself can be any data. | Yes | [io.argoproj.workflow.v1alpha1.Item](#io.argoproj.workflow.v1alpha1.item) |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response. | [io.argoproj.workflow.v1alpha1.EventResponse](#io.argoproj.workflow.v1alpha1.eventresponse) |
+
 ### /api/v1/info
 
 #### GET
@@ -280,6 +297,29 @@ Argo
 | Code | Description | Schema |
 | ---- | ----------- | ------ |
 | 200 | A successful response. | [io.argoproj.workflow.v1alpha1.InfoResponse](#io.argoproj.workflow.v1alpha1.inforesponse) |
+
+### /api/v1/stream/events/{namespace}
+
+#### GET
+##### Parameters
+
+| Name | Located in | Description | Required | Schema |
+| ---- | ---------- | ----------- | -------- | ---- |
+| namespace | path |  | Yes | string |
+| listOptions.labelSelector | query | A selector to restrict the list of returned objects by their labels. Defaults to everything. +optional. | No | string |
+| listOptions.fieldSelector | query | A selector to restrict the list of returned objects by their fields. Defaults to everything. +optional. | No | string |
+| listOptions.watch | query | Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion. +optional. | No | boolean (boolean) |
+| listOptions.allowWatchBookmarks | query | allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored. If the feature gate WatchBookmarks is not enabled in apiserver, this field is ignored. +optional. | No | boolean (boolean) |
+| listOptions.resourceVersion | query | When specified with a watch call, shows changes that occur after that particular version of a resource. Defaults to changes from the beginning of history. When specified for list: - if unset, then the result is returned from remote storage based on quorum-read flag; - if it's 0, then we simply return what we currently have in cache, no guarantee; - if set to non zero, then the result is at least as fresh as given rv. +optional. | No | string |
+| listOptions.timeoutSeconds | query | Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity. +optional. | No | string (int64) |
+| listOptions.limit | query | limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.  The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned. | No | string (int64) |
+| listOptions.continue | query | The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".  This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications. | No | string |
+
+##### Responses
+
+| Code | Description | Schema |
+| ---- | ----------- | ------ |
+| 200 | A successful response.(streaming responses) | object |
 
 ### /api/v1/userinfo
 
@@ -753,7 +793,9 @@ Artifact indicates an artifact to place at a specified path
 | oss | [io.argoproj.workflow.v1alpha1.OSSArtifact](#io.argoproj.workflow.v1alpha1.ossartifact) | OSS contains OSS artifact location details | No |
 | path | string | Path is the container path to the artifact | No |
 | raw | [io.argoproj.workflow.v1alpha1.RawArtifact](#io.argoproj.workflow.v1alpha1.rawartifact) | Raw contains raw artifact location details | No |
+| recurseMode | boolean | If mode is set, apply the permission recursively into the artifact if it is a folder | No |
 | s3 | [io.argoproj.workflow.v1alpha1.S3Artifact](#io.argoproj.workflow.v1alpha1.s3artifact) | S3 contains S3 artifact location details | No |
+| subPath | string | SubPath allows an artifact to be sourced from a subpath within the specified source | No |
 
 #### io.argoproj.workflow.v1alpha1.ArtifactLocation
 
@@ -795,7 +837,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | duration | string | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") | No |
-| factor | integer | Factor is a factor to multiply the base duration after each failed retry | No |
+| factor | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Factor is a factor to multiply the base duration after each failed retry | No |
 | maxDuration | string | MaxDuration is the maximum amount of time allowed for the backoff strategy | No |
 
 #### io.argoproj.workflow.v1alpha1.Cache
@@ -970,6 +1012,18 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 | target | string | Target are one or more names of targets to execute in a DAG | No |
 | tasks | [ [io.argoproj.workflow.v1alpha1.DAGTask](#io.argoproj.workflow.v1alpha1.dagtask) ] | Tasks are a list of DAG tasks | Yes |
 
+#### io.argoproj.workflow.v1alpha1.Event
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| selector | string | Selector (<https://github.com/antonmedv/expr>) that we must must match the io.argoproj.workflow.v1alpha1. E.g. `payload.message == "test"` | Yes |
+
+#### io.argoproj.workflow.v1alpha1.EventResponse
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.EventResponse | object |  |  |
+
 #### io.argoproj.workflow.v1alpha1.ExecutorConfig
 
 ExecutorConfig holds configurations of an executor container.
@@ -1053,12 +1107,6 @@ Histogram is a Histogram prometheus metric
 | buckets | [ [io.argoproj.workflow.v1alpha1.Amount](#io.argoproj.workflow.v1alpha1.amount) ] | Buckets is a list of bucket divisors for the histogram | Yes |
 | value | string | Value is the value of the metric | Yes |
 
-#### io.argoproj.workflow.v1alpha1.HolderNames
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| name | [ string ] | Name stores the name of the resource holding lock | No |
-
 #### io.argoproj.workflow.v1alpha1.InfoResponse
 
 | Name | Type | Description | Required |
@@ -1091,7 +1139,7 @@ A link to another app.
 | ---- | ---- | ----------- | -------- |
 | name | string | The name of the link, E.g. "Workflow Logs" or "Pod Logs" | Yes |
 | scope | string | Either "workflow" or "pod" | Yes |
-| url | string | The URL. May contain "${metadata.namespace}" and "${metadata.name}". | Yes |
+| url | string | The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}". | Yes |
 
 #### io.argoproj.workflow.v1alpha1.LintCronWorkflowRequest
 
@@ -1149,6 +1197,32 @@ Metrics are a list of metrics emitted from a Workflow/Template
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | prometheus | [ [io.argoproj.workflow.v1alpha1.Prometheus](#io.argoproj.workflow.v1alpha1.prometheus) ] | Prometheus is a list of prometheus metrics to be emitted | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Mutex
+
+Mutex holds Mutex configuration
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | name of the mutex | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexHolding
+
+MutexHolding describes the mutex and the object which is holding it.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holder | string | Holder is a reference to the object which holds the Mutex. Holding Scenario:   1. Current workflow's NodeID which is holding the lock.      e.g: ${NodeID} Waiting Scenario:   1. Current workflow or other workflow NodeID which is holding the lock.      e.g: ${WorkflowName}/${NodeID} | No |
+| mutex | string | Reference for the mutex e.g: ${namespace}/mutex/${mutexName} | No |
+
+#### io.argoproj.workflow.v1alpha1.MutexStatus
+
+MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| holding | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1. | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.MutexHolding](#io.argoproj.workflow.v1alpha1.mutexholding) ] | Waiting is a list of mutexes and their respective objects this workflow is waiting for. | No |
 
 #### io.argoproj.workflow.v1alpha1.NodeStatus
 
@@ -1223,10 +1297,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default is the default value to use for an input parameter if a value was not supplied | No |
+| default | string | Default is the default value to use for an input parameter if a value was not supplied | No |
 | globalName | string | GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters | No |
 | name | string | Name is the parameter name | Yes |
-| value | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
+| value | string | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
 | valueFrom | [io.argoproj.workflow.v1alpha1.ValueFrom](#io.argoproj.workflow.v1alpha1.valuefrom) | ValueFrom is the source for the output parameter's value | No |
 
 #### io.argoproj.workflow.v1alpha1.PodGC
@@ -1280,7 +1354,7 @@ RetryStrategy provides controls on how to retry a workflow step
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | backoff | [io.argoproj.workflow.v1alpha1.Backoff](#io.argoproj.workflow.v1alpha1.backoff) | Backoff is a backoff strategy | No |
-| limit | integer | Limit is the maximum number of attempts when retrying a container | No |
+| limit | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Limit is the maximum number of attempts when retrying a container | No |
 | retryPolicy | string | RetryPolicy is a policy of NodePhase statuses that will be retried | No |
 
 #### io.argoproj.workflow.v1alpha1.S3Artifact
@@ -1349,7 +1423,7 @@ SemaphoreRef is a reference of Semaphore
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | holding | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Holding stores the list of resource acquired synchronization lock for workflows. | No |
-| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders | No |
+| waiting | [ [io.argoproj.workflow.v1alpha1.SemaphoreHolding](#io.argoproj.workflow.v1alpha1.semaphoreholding) ] | Waiting indicates the list of current synchronization lock holders. | No |
 
 #### io.argoproj.workflow.v1alpha1.Sequence
 
@@ -1361,6 +1435,13 @@ Sequence expands a workflow step into numeric range
 | end | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Number at which to end the sequence (default: 0). Not to be used with Count | No |
 | format | string | Format is a printf format string to format the value in the sequence | No |
 | start | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Number at which to start the sequence (default: 0) | No |
+
+#### io.argoproj.workflow.v1alpha1.Submit
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments extracted from the event and then set as arguments to the workflow created. | No |
+| workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef the workflow template to submit | Yes |
 
 #### io.argoproj.workflow.v1alpha1.SubmitOpts
 
@@ -1401,13 +1482,17 @@ Synchronization holds synchronization lock configuration
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| mutex | [io.argoproj.workflow.v1alpha1.Mutex](#io.argoproj.workflow.v1alpha1.mutex) | Mutex holds the Mutex lock details | No |
 | semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreRef](#io.argoproj.workflow.v1alpha1.semaphoreref) | Semaphore holds the Semaphore configuration | No |
 
 #### io.argoproj.workflow.v1alpha1.SynchronizationStatus
 
+SynchronizationStatus stores the status of semaphore and mutex.
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | SemaphoreHolders stores this workflow's Semaphore holder details | No |
+| mutex | [io.argoproj.workflow.v1alpha1.MutexStatus](#io.argoproj.workflow.v1alpha1.mutexstatus) | Mutex stores this workflow's mutex holder details | No |
+| semaphore | [io.argoproj.workflow.v1alpha1.SemaphoreStatus](#io.argoproj.workflow.v1alpha1.semaphorestatus) | Semaphore stores this workflow's Semaphore holder details | No |
 
 #### io.argoproj.workflow.v1alpha1.TTLStrategy
 
@@ -1433,7 +1518,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| activeDeadlineSeconds | long | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
+| activeDeadlineSeconds | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates. | No |
 | affinity | [io.k8s.api.core.v1.Affinity](#io.k8s.api.core.v1.affinity) | Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any) | No |
 | archiveLocation | [io.argoproj.workflow.v1alpha1.ArtifactLocation](#io.argoproj.workflow.v1alpha1.artifactlocation) | Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key. | No |
 | arguments | [io.argoproj.workflow.v1alpha1.Arguments](#io.argoproj.workflow.v1alpha1.arguments) | Arguments hold arguments to the template. DEPRECATED: This field is not used. | No |
@@ -1468,6 +1553,7 @@ Template is a reusable and composable unit of execution in a workflow
 | synchronization | [io.argoproj.workflow.v1alpha1.Synchronization](#io.argoproj.workflow.v1alpha1.synchronization) | Synchronization holds synchronization lock configuration for this template | No |
 | template | string | Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used. | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used. | No |
+| timeout | string | Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. | No |
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a template. | No |
 
@@ -1526,7 +1612,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| default | string | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
 | parameter | string | Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}') | No |
@@ -1573,6 +1660,24 @@ Workflow is the definition of a workflow resource
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | io.argoproj.workflow.v1alpha1.WorkflowDeleteResponse | object |  |  |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBinding
+
+WorkflowEventBinding is the definition of an event resource
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) |  | Yes |
+| spec | [io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec](#io.argoproj.workflow.v1alpha1.workfloweventbindingspec) |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.WorkflowEventBindingSpec
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| event | [io.argoproj.workflow.v1alpha1.Event](#io.argoproj.workflow.v1alpha1.event) | Event is the event to bind to | Yes |
+| submit | [io.argoproj.workflow.v1alpha1.Submit](#io.argoproj.workflow.v1alpha1.submit) | Submit is the workflow template to submit | No |
 
 #### io.argoproj.workflow.v1alpha1.WorkflowLintRequest
 
@@ -2095,6 +2200,49 @@ EnvVarSource represents a source for the value of an EnvVar.
 | fieldRef | [io.k8s.api.core.v1.ObjectFieldSelector](#io.k8s.api.core.v1.objectfieldselector) | Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP. | No |
 | resourceFieldRef | [io.k8s.api.core.v1.ResourceFieldSelector](#io.k8s.api.core.v1.resourcefieldselector) | Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported. | No |
 | secretKeyRef | [io.k8s.api.core.v1.SecretKeySelector](#io.k8s.api.core.v1.secretkeyselector) | Selects a key of a secret in the pod's namespace | No |
+
+#### io.k8s.api.core.v1.Event
+
+Event is a report of an event somewhere in the cluster.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| action | string | What action was taken/failed regarding to the Regarding object. | No |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#resources> | No |
+| count | integer | The number of times this event has occurred. | No |
+| eventTime | [io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime](#io.k8s.apimachinery.pkg.apis.meta.v1.microtime) | Time when this Event was first observed. | No |
+| firstTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | The time at which the event was first recorded. (Time of server receipt is in TypeMeta.) | No |
+| involvedObject | [io.k8s.api.core.v1.ObjectReference](#io.k8s.api.core.v1.objectreference) | The object that this event is about. | Yes |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
+| lastTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | The time at which the most recent occurrence of this event was recorded. | No |
+| message | string | A human-readable description of the status of this operation. | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | Standard object's metadata. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata> | Yes |
+| reason | string | This should be a short, machine understandable string that gives the reason for the transition into the object's current status. | No |
+| related | [io.k8s.api.core.v1.ObjectReference](#io.k8s.api.core.v1.objectreference) | Optional secondary object for more complex actions. | No |
+| reportingComponent | string | Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`. | No |
+| reportingInstance | string | ID of the controller instance, e.g. `kubelet-xyzf`. | No |
+| series | [io.k8s.api.core.v1.EventSeries](#io.k8s.api.core.v1.eventseries) | Data about the Event series this event represents or nil if it's a singleton Event. | No |
+| source | [io.k8s.api.core.v1.EventSource](#io.k8s.api.core.v1.eventsource) | The component reporting this event. Should be a short machine understandable string. | No |
+| type | string | Type of this event (Normal, Warning), new types could be added in the future | No |
+
+#### io.k8s.api.core.v1.EventSeries
+
+EventSeries contain information on series of events, i.e. thing that was/is happening continuously for some time.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| count | integer | Number of occurrences in this series up to the last heartbeat time | No |
+| lastObservedTime | [io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime](#io.k8s.apimachinery.pkg.apis.meta.v1.microtime) | Time of the last occurrence observed | No |
+| state | string | State of this Series: Ongoing or Finished Deprecated. Planned removal for 1.18 | No |
+
+#### io.k8s.api.core.v1.EventSource
+
+EventSource contains information for an event.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| component | string | Component from which the event is generated. | No |
+| host | string | Node name on which the event is generated. | No |
 
 #### io.k8s.api.core.v1.ExecAction
 
@@ -2929,6 +3077,14 @@ ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the res
 | manager | string | Manager is an identifier of the workflow managing these fields. | No |
 | operation | string | Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are 'Apply' and 'Update'. | No |
 | time | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply' | No |
+
+#### io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime
+
+MicroTime is version of Time with microsecond level precision.
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime | string | MicroTime is version of Time with microsecond level precision. |  |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
 

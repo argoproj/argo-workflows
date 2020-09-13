@@ -25,15 +25,17 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes         []string
-		configMap         string
-		port              int
-		baseHRef          string
-		secure            bool
-		htst              bool
-		namespaced        bool   // --namespaced
-		managedNamespace  string // --managed-namespace
-		enableOpenBrowser bool
+		authModes               []string
+		configMap               string
+		port                    int
+		baseHRef                string
+		secure                  bool
+		htst                    bool
+		namespaced              bool   // --namespaced
+		managedNamespace        string // --managed-namespace
+		enableOpenBrowser       bool
+		eventOperationQueueSize int
+		eventWorkerCount        int
 	)
 
 	var command = cobra.Command{
@@ -53,7 +55,7 @@ See %s`, help.ArgoSever),
 			namespace := client.Namespace()
 
 			kubeConfig := kubernetes.NewForConfigOrDie(config)
-			wflientset := wfclientset.NewForConfigOrDie(config)
+			wfClientSet := wfclientset.NewForConfigOrDie(config)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -81,7 +83,7 @@ See %s`, help.ArgoSever),
 				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
 				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
 			} else {
-				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
+				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://argoproj.github.io/argo/tls/")
 			}
 
 			modes := auth.Modes{}
@@ -90,20 +92,22 @@ See %s`, help.ArgoSever),
 				errors.CheckError(err)
 			}
 			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md")
+				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://argoproj.github.io/argo/argo-server-auth-mode/")
 			}
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:         baseHRef,
-				TLSConfig:        tlsConfig,
-				HSTS:             htst,
-				Namespace:        namespace,
-				WfClientSet:      wflientset,
-				KubeClientset:    kubeConfig,
-				RestConfig:       config,
-				AuthModes:        modes,
-				ManagedNamespace: managedNamespace,
-				ConfigName:       configMap,
+				BaseHRef:                baseHRef,
+				TLSConfig:               tlsConfig,
+				HSTS:                    htst,
+				Namespace:               namespace,
+				WfClientSet:             wfClientSet,
+				KubeClientset:           kubeConfig,
+				RestConfig:              config,
+				AuthModes:               modes,
+				ManagedNamespace:        managedNamespace,
+				ConfigName:              configMap,
+				EventOperationQueueSize: eventOperationQueueSize,
+				EventWorkerCount:        eventWorkerCount,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -135,5 +139,7 @@ See %s`, help.ArgoSever),
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
+	command.Flags().IntVar(&eventOperationQueueSize, "event-operation-queue-size", 16, "how many events operations that can be queued at once")
+	command.Flags().IntVar(&eventWorkerCount, "event-worker-count", 4, "how many event workers to run")
 	return &command
 }

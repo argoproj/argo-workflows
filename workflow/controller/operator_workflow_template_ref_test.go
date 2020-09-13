@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
@@ -15,8 +15,8 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
 	woc.operate()
-	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
-	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.wfSpec.Entrypoint)
+	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
+	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
@@ -29,11 +29,10 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: pointer.StringPtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -50,11 +49,10 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: pointer.StringPtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -132,8 +130,8 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
-		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
+		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
+		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
 	})
 }
 

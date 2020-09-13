@@ -106,7 +106,7 @@ Update `service/argo-server` spec with `type: LoadBalancer`:
   type: LoadBalancer
 ```
 
-Add `BASH_HREF` as environment variable to `deployment/argo-server` :
+Add `BASE_HREF` as environment variable to `deployment/argo-server` :
 
 
 ```yaml

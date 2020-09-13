@@ -338,8 +338,9 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
+// +kubebuilder:validation:Type=array
 type ParallelSteps struct {
-	Steps []WorkflowStep `json:"steps,omitempty" protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -379,7 +380,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
-func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
+func (p ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
 }
 
@@ -473,7 +474,7 @@ type Template struct {
 	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// This field is only applicable to container and script templates.
-	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
+	ActiveDeadlineSeconds *intstr.IntOrString `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,21,opt,name=activeDeadlineSeconds"`
 
 	// RetryStrategy describes how to retry a template when it fails
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,22,opt,name=retryStrategy"`
@@ -525,7 +526,7 @@ type Template struct {
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
 	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
+	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
@@ -535,6 +536,10 @@ type Template struct {
 
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
+
+	// Timout allows to set the total node execution timeout duration counting from the node's start time.
+	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
+	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -605,11 +610,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *string `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -630,6 +635,9 @@ type ValueFrom struct {
 	// JQFilter expression against the resource object in resource templates
 	JQFilter string `json:"jqFilter,omitempty" protobuf:"bytes,3,opt,name=jqFilter"`
 
+	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
+
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
@@ -638,7 +646,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -672,6 +680,12 @@ type Artifact struct {
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty" protobuf:"varint,8,opt,name=optional"`
+
+	// SubPath allows an artifact to be sourced from a subpath within the specified source
+	SubPath string `json:"subPath,omitempty" protobuf:"bytes,9,opt,name=subPath"`
+
+	// If mode is set, apply the permission recursively into the artifact if it is a folder
+	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -697,6 +711,22 @@ type TarStrategy struct {
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 type NoneStrategy struct{}
+
+// ArtifactLocationType is the type of artifact location
+type ArtifactLocationType string
+
+// ArtifactLocationType
+const (
+	ArtifactLocationS3          ArtifactLocationType = "S3"
+	ArtifactLocationGit         ArtifactLocationType = "Git"
+	ArtifactLocationHTTP        ArtifactLocationType = "HTTP"
+	ArtifactLocationArtifactory ArtifactLocationType = "Artifactory"
+	ArtifactLocationHDFS        ArtifactLocationType = "HDFS"
+	ArtifactLocationRaw         ArtifactLocationType = "Raw"
+	ArtifactLocationOSS         ArtifactLocationType = "OSS"
+	ArtifactLocationGCS         ArtifactLocationType = "GCS"
+	ArtifactLocationUnknown     ArtifactLocationType = ""
+)
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
@@ -741,6 +771,44 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
 		a.GCS.HasLocation()
+}
+
+func (a *ArtifactLocation) GetType() ArtifactLocationType {
+
+	if a.S3 != nil {
+		return ArtifactLocationS3
+	}
+
+	if a.Git != nil {
+		return ArtifactLocationGit
+	}
+
+	if a.HTTP != nil {
+		return ArtifactLocationHTTP
+	}
+
+	if a.Artifactory != nil {
+		return ArtifactLocationArtifactory
+	}
+
+	if a.HDFS != nil {
+		return ArtifactLocationHDFS
+	}
+
+	if a.Raw != nil {
+		return ArtifactLocationRaw
+	}
+
+	if a.OSS != nil {
+		return ArtifactLocationOSS
+	}
+
+	if a.GCS != nil {
+		return ArtifactLocationGCS
+	}
+
+	return ArtifactLocationUnknown
+
 }
 
 type ArtifactRepositoryRef struct {
@@ -857,12 +925,20 @@ type TemplateRef struct {
 type Synchronization struct {
 	// Semaphore holds the Semaphore configuration
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex holds the Mutex lock details
+	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
+}
+
+// Mutex holds Mutex configuration
+type Mutex struct {
+	// name of the mutex
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -986,7 +1062,7 @@ type WorkflowStatus struct {
 type SemaphoreStatus struct {
 	// Holding stores the list of resource acquired synchronization lock for workflows.
 	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders
+	// Waiting indicates the list of current synchronization lock holders.
 	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
@@ -998,20 +1074,37 @@ type SemaphoreHolding struct {
 	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
 }
 
-type WaitingStatus struct {
-	// Holders stores the list of current holder names
-	Holders HolderNames `json:"holders,omitempty" protobuf:"bytes,1,opt,name=holders"`
+// MutexHolding describes the mutex and the object which is holding it.
+type MutexHolding struct {
+	// Reference for the mutex
+	// e.g: ${namespace}/mutex/${mutexName}
+	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	// Holder is a reference to the object which holds the Mutex.
+	// Holding Scenario:
+	//   1. Current workflow's NodeID which is holding the lock.
+	//      e.g: ${NodeID}
+	// Waiting Scenario:
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//      e.g: ${WorkflowName}/${NodeID}
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
 }
 
-type HolderNames struct {
-	// Name stores the name of the resource holding lock
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+type MutexStatus struct {
+	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
 	// +listType=atomic
-	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+	// +listType=atomic
+	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
 }
 
+// SynchronizationStatus stores the status of semaphore and mutex.
 type SynchronizationStatus struct {
-	// SemaphoreHolders stores this workflow's Semaphore holder details
+	// Semaphore stores this workflow's Semaphore holder details
 	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex stores this workflow's mutex holder details
+	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1039,7 +1132,7 @@ type Backoff struct {
 	// Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
 	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
 	// Factor is a factor to multiply the base duration after each failed retry
-	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	Factor *intstr.IntOrString `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
 	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
@@ -1047,7 +1140,7 @@ type Backoff struct {
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
-	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
+	Limit *intstr.IntOrString `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryPolicy is a policy of NodePhase statuses that will be retried
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
@@ -1711,6 +1804,10 @@ func (tmpl *Template) IsLeaf() bool {
 		return true
 	}
 	return false
+}
+
+func (tmpl *Template) IsResubmitPendingPods() bool {
+	return tmpl != nil && tmpl.ResubmitPendingPods
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

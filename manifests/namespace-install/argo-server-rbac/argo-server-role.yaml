@@ -31,13 +31,23 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - events
+    verbs:
+      - watch
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
       - secrets
+      - serviceaccounts
     verbs:
       - get
   - apiGroups:
       - argoproj.io
     resources:
       - workflows
+      - workfloweventbindings
       - workflowtemplates
       - cronworkflows
     verbs:

@@ -24,7 +24,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -33,11 +32,20 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/archive"
+	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
+
+// ExecutorRetry is a retry backoff settings for WorkflowExecutor
+var ExecutorRetry = wait.Backoff{
+	Steps:    8,
+	Duration: 1 * time.Second,
+	Factor:   1.0,
+	Jitter:   0.1,
+}
 
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
@@ -199,10 +207,8 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Successfully download file: %s", artPath)
 		if art.Mode != nil {
-			err = os.Chmod(artPath, os.FileMode(*art.Mode))
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
+			err = chmod(artPath, *art.Mode, art.RecurseMode)
+			return err
 		}
 	}
 	return nil
@@ -464,20 +470,19 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output *intstr.IntOrString
+		var output string
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				intOrString := intstr.Parse(fileContents)
-				output = &intOrString
+				output = fileContents
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -486,22 +491,18 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				intOrString := intstr.Parse(string(data))
-				output = &intOrString
+				output = string(data)
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		if output.Type == intstr.String {
-			trimmed := intstr.Parse(strings.TrimSuffix(output.String(), "\n"))
-			output = &trimmed
-		}
-		we.Template.Outputs.Parameters[i].Value = output
+		output = strings.TrimSuffix(output, "\n")
+		we.Template.Outputs.Parameters[i].Value = &output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
@@ -614,11 +615,11 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
 	var err error
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
 		pod, err = podsIf.Get(we.PodName, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
@@ -645,7 +646,7 @@ func (we *WorkflowExecutor) GetConfigMapKey(name, key string) (string, error) {
 		configmap, err = configmapsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get configmap '%s': %v", name, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
@@ -680,7 +681,7 @@ func (we *WorkflowExecutor) GetSecrets(namespace, name, key string) ([]byte, err
 		secret, err = secretsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
@@ -886,6 +887,24 @@ func untar(tarPath string, destPath string) error {
 	return nil
 }
 
+func chmod(artPath string, mode int32, recurse bool) error {
+	err := os.Chmod(artPath, os.FileMode(mode))
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+
+	if recurse {
+		err = filepath.Walk(artPath, func(path string, f os.FileInfo, err error) error {
+			return os.Chmod(path, os.FileMode(mode))
+		})
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	}
+
+	return nil
+}
+
 // containerID is a convenience function to strip the 'docker://', 'containerd://' from k8s ContainerID string
 func containerID(ctrID string) string {
 	schemeIndex := strings.Index(ctrID, "://")
@@ -915,7 +934,7 @@ func (we *WorkflowExecutor) Wait() error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
 		err = we.RuntimeExecutor.Wait(mainContainerID)
 		if err != nil {
 			log.Warnf("Failed to wait for container id '%s': %v", mainContainerID, err)
@@ -938,7 +957,18 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 		opts := metav1.ListOptions{
 			FieldSelector: fieldSelector.String(),
 		}
-		watchIf, err := podsIf.Watch(opts)
+
+		var err error
+		var watchIf watch.Interface
+
+		err = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
+			watchIf, err = podsIf.Watch(opts)
+			if err != nil {
+				log.Debugf("Failed to establish watch, retrying: %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
 		if err != nil {
 			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)
 		}

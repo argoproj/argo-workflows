@@ -1,8 +1,8 @@
 name: CI
-on: 
+on:
   push:
     branches:
-      - 'master' 
+      - 'master'
       - 'release-*'
       - '!release-2.8'
   pull_request:
@@ -34,11 +34,6 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
-      - name: Install Kustomize
-        if: ${{ matrix.test != 'test' }}
-        run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
       - name: Install and start K3S v1.0.1
         if: ${{ matrix.test != 'test' }}
         run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
@@ -69,8 +64,8 @@ jobs:
           mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
         env:
@@ -79,21 +74,13 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: |
-          trap 'make test-results/junit.xml' EXIT
-          make ${{ matrix.test }}
-      - name: Upload test results
-        if: failure()
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ matrix.test }}
-          path: test-results
-      - name: Upload diagnostics
+        run: make ${{ matrix.test }}
+      - name: Upload logs
         if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
         uses: actions/upload-artifact@v1
         with:
-          name: ${{ matrix.test }}-diagnostics
-          path: /tmp/log/argo-e2e
+          name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
+          path: /tmp/log/argo-e2e/argo.log
 
   codegen:
     name: Codegen
@@ -115,10 +102,6 @@ jobs:
         run: |
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
-      - name: Install Kustomize
-        run: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
       - name: Install protoc
         run: |
           set -eux -o pipefail
@@ -131,24 +114,27 @@ jobs:
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           rm -f $PROTOC_ZIP
           ls /usr/local/include/google/protobuf/
+      - name: Install `swagger-markdown`
+        run: |
+          sudo chmod a+rw /usr/local/bin /usr/local/lib /usr/local/lib/node_modules
+          make /usr/local/bin/swagger-markdown
       - name: Make codegen
         env:
           GOPATH: /home/runner/go
         run: |
           git fetch --tags
-          make codegen
+          make codegen STATIC_FILES=false
       - name: Make lint
         env:
           GOPATH: /home/runner/go
-        run: |
-          make lint
+        run: make lint STATIC_FILES=false
       - name: Ensure nothing changed
         run: git diff --exit-code
 
   ui:
     name: UI
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

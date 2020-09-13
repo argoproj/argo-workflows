@@ -5,6 +5,7 @@ package e2e
 import (
 	"bufio"
 	"crypto/tls"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
@@ -19,8 +20,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -87,7 +90,7 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("workflow")
 		json.
 			Path("$.links[0].url").
-			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
+			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}")
 	})
 }
 
@@ -100,6 +103,208 @@ func (s *ArgoServerSuite) TestVersion() {
 			Path("$.version").
 			NotNull()
 	})
+}
+
+func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
+	s.bearerToken = ""
+
+	data, err := ioutil.ReadFile("testdata/github-webhook-payload.json")
+	assert.NoError(s.T(), err)
+
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: github-webhook
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  templates:
+    - name: main
+      container:
+         image: argoproj/argosay:v2
+`).
+		WorkflowEventBinding(`
+metadata:
+  name: github-webhook
+  labels:
+    argo-e2e: true
+spec:
+  event:
+    selector: metadata["x-github-event"] == ["push"]
+  submit:
+    workflowTemplateRef:
+      name: github-webhook
+`).
+		When().
+		CreateWorkflowTemplates().
+		CreateWorkflowEventBinding().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo/").
+				WithHeader("X-Github-Event", "push").
+				WithHeader("X-Hub-Signature", "sha1=c09e61386e81c2669e015049350500448148205c").
+				WithBytes(data).
+				Expect().
+				Status(200)
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
+			assert.Equal(t, "github-webhook", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
+		})
+}
+
+func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromEvent() {
+	s.Given().
+		WorkflowTemplate(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  arguments:
+    parameters:
+      - name: salutation
+        value: "hello"
+  templates:
+    - name: main
+      steps:
+      - - name: a
+          template: argosay
+          arguments:
+            parameters:
+            - name: salutation
+              value: "{{workflow.parameters.salutation}}"
+            - name: appellation
+              value: "{{workflow.parameters.appellation}}"
+
+    - name: argosay
+      inputs:
+        parameters:
+          - name: salutation
+          - name: appellation
+      container:
+         image: argoproj/argosay:v2
+         args: [echo, "{{inputs.parameters.salutation}} {{inputs.parameters.appellation}}"]
+`).
+		WorkflowEventBinding(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  event:
+    selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
+  submit:
+    workflowTemplateRef:
+      name: event-consumer
+    arguments:
+      parameters:
+        - name: appellation
+          valueFrom:
+            event: payload.appellation
+`).
+		When().
+		CreateWorkflowEventBinding().
+		CreateWorkflowTemplates().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo/").
+				WithHeader("X-Argo-E2E", "true").
+				WithBytes([]byte(`{"appellation": "Mr Chips"}`)).
+				Expect().
+				Status(200)
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
+			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyWorkflowTemplate])
+		})
+}
+
+func (s *ArgoServerSuite) TestSubmitClusterWorkflowTemplateFromEvent() {
+	s.Given().
+		ClusterWorkflowTemplate(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  workflowMetadata:
+    labels:
+      argo-e2e: "true"
+  templates:
+    - name: main
+      container:
+         image: argoproj/argosay:v2
+`).
+		WorkflowEventBinding(`
+metadata:
+  name: event-consumer
+  labels:
+    argo-e2e: true
+spec:
+  event:
+    selector: true
+  submit:
+    workflowTemplateRef:
+      name: event-consumer
+      clusterScope: true
+`).
+		When().
+		CreateWorkflowEventBinding().
+		CreateClusterWorkflowTemplates().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo/").
+				WithBytes([]byte(`{}`)).
+				Expect().
+				Status(200)
+		}).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, _ *wfv1.WorkflowStatus) {
+			assert.Equal(t, "event-consumer", metadata.GetLabels()[common.LabelKeyClusterWorkflowTemplate])
+		})
+}
+
+func (s *ArgoServerSuite) TestEventOnMalformedWorkflowEventBinding() {
+	s.Given().
+		WorkflowEventBinding(`
+metadata:
+  name: malformed
+  labels:
+    argo-e2e: true
+`).
+		When().
+		CreateWorkflowEventBinding().
+		And(func() {
+			s.e().
+				POST("/api/v1/events/argo/").
+				WithBytes([]byte(`{}`)).
+				Expect().
+				Status(200)
+		}).
+		Then().
+		ExpectAuditEvents(
+			func(event corev1.Event) bool {
+				return event.InvolvedObject.Name == "malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
+			},
+			func(t *testing.T, event corev1.Event) {
+				assert.Equal(t, "argo", event.InvolvedObject.Namespace)
+				assert.Equal(t, "WorkflowEventBindingError", event.Reason)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", event.Message)
+			},
+		)
 }
 
 func (s *ArgoServerSuite) TestGetUserInfo() {
@@ -323,7 +528,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		s.Given().
 			WorkflowName("test-wf-good").
 			When().
-			WaitForWorkflow(30 * time.Second)
+			WaitForWorkflow()
 
 		// Test delete workflow with bad token
 		s.bearerToken = badToken
@@ -466,13 +671,13 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
-
+	var name string
 	s.Run("Create", func() {
-		s.e().POST("/api/v1/workflows/argo").
+		name = s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
-      "name": "test",
+      "generateName": "test-",
       "labels": {
          "argo-e2e": "subject"
       }
@@ -482,10 +687,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "imagePullPolicy": "IfNotPresent",
-            "command": ["sh"],
-            "args": ["-c", "sleep 10"]
+            "image": "argoproj/argosay:v2"
           }
         }
       ],
@@ -494,15 +696,19 @@ func (s *ArgoServerSuite) TestWorkflowService() {
   }
 }`)).
 			Expect().
-			Status(200)
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			NotNull().
+			String().
+			Raw()
 	})
 
-	s.Run("List", func() {
-		s.Given().
-			WorkflowName("test").
-			When().
-			WaitForWorkflowToStart(20 * time.Second)
+	s.Given().
+		When().
+		WaitForWorkflow(fixtures.ToStart)
 
+	s.Run("List", func() {
 		j := s.e().GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
@@ -535,7 +741,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Get", func() {
-		j := s.e().GET("/api/v1/workflows/argo/test").
+		j := s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200).
 			JSON()
@@ -547,7 +753,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("GetWithFields", func() {
-		j := s.e().GET("/api/v1/workflows/argo/test").
+		j := s.e().GET("/api/v1/workflows/argo/"+name).
 			WithQuery("fields", "status.phase").
 			Expect().
 			Status(200).
@@ -556,11 +762,11 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Suspend", func() {
-		s.e().PUT("/api/v1/workflows/argo/test/suspend").
+		s.e().PUT("/api/v1/workflows/argo/" + name + "/suspend").
 			Expect().
 			Status(200)
 
-		s.e().GET("/api/v1/workflows/argo/test").
+		s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200).
 			JSON().
@@ -569,11 +775,11 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Resume", func() {
-		s.e().PUT("/api/v1/workflows/argo/test/resume").
+		s.e().PUT("/api/v1/workflows/argo/" + name + "/resume").
 			Expect().
 			Status(200)
 
-		s.e().GET("/api/v1/workflows/argo/test").
+		s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200).
 			JSON().
@@ -583,14 +789,16 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Terminate", func() {
-		s.e().PUT("/api/v1/workflows/argo/test/terminate").
+		s.e().PUT("/api/v1/workflows/argo/" + name + "/terminate").
 			Expect().
 			Status(200)
 
-		// sleep in a test is bad practice
-		time.Sleep(2 * time.Second)
+		s.Given().
+			WorkflowName(name).
+			When().
+			WaitForWorkflow()
 
-		s.e().GET("/api/v1/workflows/argo/test").
+		s.e().GET("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200).
 			JSON().
@@ -599,7 +807,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Resubmit", func() {
-		s.e().PUT("/api/v1/workflows/argo/test/resubmit").
+		s.e().PUT("/api/v1/workflows/argo/" + name + "/resubmit").
 			WithBytes([]byte(`{"memoized": true}`)).
 			Expect().
 			Status(200).
@@ -609,7 +817,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("Delete", func() {
-		s.e().DELETE("/api/v1/workflows/argo/test").
+		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200)
 		s.e().DELETE("/api/v1/workflows/argo/not-found").
@@ -755,29 +963,31 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
 			uid = metadata.UID
 		})
 
 	s.Run("GetArtifact", func() {
-		s.e().GET("/artifacts/argo/basic/basic/main-logs").
+		s.e().GET("/artifacts/argo/" + name + "/" + name + "/main-logs").
 			Expect().
 			Status(200).
 			Body().
 			Contains(":) Hello Argo!")
 	})
 	s.Run("GetArtifactByUID", func() {
-		s.e().DELETE("/api/v1/workflows/argo/basic").
+		s.e().DELETE("/api/v1/workflows/argo/" + name).
 			Expect().
 			Status(200)
 
-		s.e().GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
 			Expect().
 			Status(200).
 			Body().
@@ -789,7 +999,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		token := s.bearerToken
 		defer func() { s.bearerToken = token }()
 		s.bearerToken = ""
-		s.e().GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
+		s.e().GET("/artifacts-by-uid/{uid}/{name}/main-logs", uid, name).
 			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
@@ -799,17 +1009,21 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
-
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowToStart(10 * time.Second)
+		WaitForWorkflow(fixtures.ToStart).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		})
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func() {
 		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name="+name, nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
@@ -844,10 +1058,38 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		}
 	})
 
+	// then,  lets see what events we got
+	s.Run("WatchEvents", func() {
+		t := s.T()
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/stream/events/argo?listOptions.fieldSelector=involvedObject.kind=Workflow,involvedObject.name="+name, nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := httpClient.Do(req)
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+				s := bufio.NewScanner(resp.Body)
+				for s.Scan() {
+					line := s.Text()
+					if strings.Contains(line, "WorkflowRunning") {
+						break
+					}
+				}
+			}
+		}
+	})
+
 	// then,  lets check the logs
 	s.Run("PodLogs", func() {
 		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/basic/log?logOptions.container=main&logOptions.tailLines=3", nil)
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+"/"+name+"/log?logOptions.container=main&logOptions.tailLines=3", nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
@@ -890,12 +1132,10 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -912,12 +1152,10 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
-        imagePullPolicy: IfNotPresent`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20 * time.Second)
+		WaitForWorkflow()
 
 	for _, tt := range []struct {
 		name     string

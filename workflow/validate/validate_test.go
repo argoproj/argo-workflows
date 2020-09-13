@@ -1047,7 +1047,6 @@ spec:
 `
 
 func TestValidActiveDeadlineSeconds(t *testing.T) {
-	// ensure {{workflow.status}} is not available when not in exit handler
 	_, err := validate(activeDeadlineSeconds)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
@@ -2615,4 +2614,35 @@ func TestDagAndStepLevelOutputArtifactsForDiffExecutor(t *testing.T) {
 		_, err := validateWithOptions(dagAndStepLevelOutputArtifacts, ValidateOpts{ContainerRuntimeExecutor: common.ContainerRuntimeExecutorKubelet})
 		assert.NoError(t, err)
 	})
+}
+
+var testWorkflowTemplateLabels = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-foobar-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      resubmitPendingPods: true
+      container:
+        image: docker/whalesay
+      metrics:
+        prometheus:
+          - name: intuit_data_persistplat_dppselfservice_workflow_test_duration
+            help: Duration of workflow
+            labels:
+              - key: label
+                value: "{{workflow.labels.testLabel}}"
+            gauge:
+              realtime: true
+              value: "{{duration}}"
+`
+
+func TestWorkflowTemplateLabels(t *testing.T) {
+	err := validateWorkflowTemplate(testWorkflowTemplateLabels)
+	assert.NoError(t, err)
 }

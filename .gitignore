@@ -14,6 +14,7 @@ git-ask-pass.sh
 /coverage.out
 .envrc
 /.vendor-new
+/kustomize
 /workflow-controller
 /.scannerwork/
 /test-results/
@@ -23,10 +24,10 @@ git-ask-pass.sh
 /pkg/apiclient/_.secondary.swagger.json
 /pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json
 /pkg/apiclient/cronworkflow/cron-workflow.swagger.json
+/pkg/apiclient/event/event.swagger.json
 /pkg/apiclient/info/info.swagger.json
 /pkg/apiclient/workflow/workflow.swagger.json
 /pkg/apiclient/workflowarchive/workflow-archive.swagger.json
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 /site/
-/node_modules/
-/package-lock.json
+/.brew_home

@@ -16,8 +16,9 @@ import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 option go_package = "v1alpha1";
 
 // Amount represent a numeric amount.
+// +kubebuilder:validation:Type=number
 message Amount {
-  optional bytes value = 1;
+  optional string value = 1;
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -67,6 +68,12 @@ message Artifact {
 
   // Make Artifacts optional, if Artifacts doesn't generate or exist
   optional bool optional = 8;
+
+  // SubPath allows an artifact to be sourced from a subpath within the specified source
+  optional string subPath = 9;
+
+  // If mode is set, apply the permission recursively into the artifact if it is a folder
+  optional bool recurseMode = 10;
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -131,7 +138,7 @@ message Backoff {
   optional string duration = 1;
 
   // Factor is a factor to multiply the base duration after each failed retry
-  optional int32 factor = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
   // MaxDuration is the maximum amount of time allowed for the backoff strategy
   optional string maxDuration = 3;
@@ -314,6 +321,11 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
+message Event {
+  // Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
+  optional string selector = 1;
+}
+
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -439,12 +451,6 @@ message Histogram {
   repeated Amount buckets = 4;
 }
 
-message HolderNames {
-  // Name stores the name of the resource holding lock
-  // +listType=atomic
-  repeated string name = 1;
-}
-
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
@@ -461,9 +467,8 @@ message Inputs {
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
-// +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +k8s:openapi-gen=true
+// +kubebuilder:validation:Type=object
 message Item {
   optional bytes value = 1;
 }
@@ -478,7 +483,7 @@ message Link {
   // Either "workflow" or "pod"
   optional string scope = 2;
 
-  // The URL. May contain "${metadata.namespace}" and "${metadata.name}".
+  // The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}".
   optional string url = 3;
 }
 
@@ -515,6 +520,39 @@ message MetricLabel {
 message Metrics {
   // Prometheus is a list of prometheus metrics to be emitted
   repeated Prometheus prometheus = 1;
+}
+
+// Mutex holds Mutex configuration
+message Mutex {
+  // name of the mutex
+  optional string name = 1;
+}
+
+// MutexHolding describes the mutex and the object which is holding it.
+message MutexHolding {
+  // Reference for the mutex
+  // e.g: ${namespace}/mutex/${mutexName}
+  optional string mutex = 1;
+
+  // Holder is a reference to the object which holds the Mutex.
+  // Holding Scenario:
+  //   1. Current workflow's NodeID which is holding the lock.
+  //      e.g: ${NodeID}
+  // Waiting Scenario:
+  //   1. Current workflow or other workflow NodeID which is holding the lock.
+  //      e.g: ${WorkflowName}/${NodeID}
+  optional string holder = 2;
+}
+
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+message MutexStatus {
+  // Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
+  // +listType=atomic
+  repeated MutexHolding holding = 1;
+
+  // Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+  // +listType=atomic
+  repeated MutexHolding waiting = 2;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -654,6 +692,7 @@ message Outputs {
   optional string exitCode = 4;
 }
 
+// +kubebuilder:validation:Type=array
 message ParallelSteps {
   repeated WorkflowStep steps = 1;
 }
@@ -664,11 +703,11 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 2;
+  optional string default = 2;
 
   // Value is the literal value to use for the parameter.
   // If specified in the context of an input parameter, the value takes precedence over any passed values
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString value = 3;
+  optional string value = 3;
 
   // ValueFrom is the source for the output parameter's value
   optional ValueFrom valueFrom = 4;
@@ -749,7 +788,7 @@ message ResourceTemplate {
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
-  optional int32 limit = 1;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
 
   // RetryPolicy is a policy of NodePhase statuses that will be retried
   optional string retryPolicy = 2;
@@ -820,7 +859,7 @@ message SemaphoreStatus {
   // Holding stores the list of resource acquired synchronization lock for workflows.
   repeated SemaphoreHolding holding = 1;
 
-  // Waiting indicates the list of current synchronization lock holders
+  // Waiting indicates the list of current synchronization lock holders.
   repeated SemaphoreHolding waiting = 2;
 }
 
@@ -837,6 +876,14 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+message Submit {
+  // WorkflowTemplateRef the workflow template to submit
+  optional WorkflowTemplateRef workflowTemplateRef = 1;
+
+  // Arguments extracted from the event and then set as arguments to the workflow created.
+  optional Arguments arguments = 2;
 }
 
 // SubmitOpts are workflow submission options
@@ -886,11 +933,18 @@ message SuspendTemplate {
 message Synchronization {
   // Semaphore holds the Semaphore configuration
   optional SemaphoreRef semaphore = 1;
+
+  // Mutex holds the Mutex lock details
+  optional Mutex mutex = 2;
 }
 
+// SynchronizationStatus stores the status of semaphore and mutex.
 message SynchronizationStatus {
-  // SemaphoreHolders stores this workflow's Semaphore holder details
+  // Semaphore stores this workflow's Semaphore holder details
   optional SemaphoreStatus semaphore = 1;
+
+  // Mutex stores this workflow's mutex holder details
+  optional MutexStatus mutex = 2;
 }
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
@@ -992,7 +1046,7 @@ message Template {
   // Optional duration in seconds relative to the StartTime that the pod may be active on a node
   // before the system actively tries to terminate the pod; value must be positive integer
   // This field is only applicable to container and script templates.
-  optional int64 activeDeadlineSeconds = 21;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 21;
 
   // RetryStrategy describes how to retry a template when it fails
   optional RetryStrategy retryStrategy = 22;
@@ -1054,6 +1108,10 @@ message Template {
 
   // Memoize allows templates to use outputs generated from already executed templates
   optional Memoize memoize = 37;
+
+  // Timout allows to set the total node execution timeout duration counting from the node's start time.
+  // This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
+  optional string timeout = 38;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1094,6 +1152,9 @@ message ValueFrom {
   // JQFilter expression against the resource object in resource templates
   optional string jqFilter = 3;
 
+  // Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
+  optional string event = 7;
+
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
@@ -1102,7 +1163,7 @@ message ValueFrom {
   optional SuppliedValueFrom supplied = 6;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
+  optional string default = 5;
 }
 
 message Version {
@@ -1123,11 +1184,6 @@ message Version {
   optional string platform = 8;
 }
 
-message WaitingStatus {
-  // Holders stores the list of current holder names
-  optional HolderNames holders = 1;
-}
-
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -1141,6 +1197,34 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
+}
+
+// WorkflowEventBinding is the definition of an event resource
+// +genclient
+// +genclient:noStatus
+// +kubebuilder:resource:shortName=wfeb
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowEventBinding {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowEventBindingSpec spec = 2;
+}
+
+// WorkflowEventBindingList is list of event resources
+// +kubebuilder:resource:shortName=wfebs
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowEventBindingList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowEventBinding items = 2;
+}
+
+message WorkflowEventBindingSpec {
+  // Event is the event to bind to
+  optional Event event = 1;
+
+  // Submit is the workflow template to submit
+  optional Submit submit = 2;
 }
 
 // WorkflowList is list of Workflow resources

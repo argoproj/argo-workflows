@@ -158,12 +158,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			}
 		}
 
-		if node.Type == wfv1.NodeTypeRetry || node.Type == wfv1.NodeTypeTaskGroup {
+		if node.Type == wfv1.NodeTypeRetry {
 			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 			// To resume the traversal, we look at the children of the last child node.
-			// A TaskGroup node will always reflect the status of its expanded tasks (mainly it will be Succeeded if and only if all of its
-			// expanded tasks have succeeded), so each individual expanded task doesn't interest us. To resume the traversal, we look at the
-			// children of its last child node (note that this is arbitrary, since all expanded tasks will have the same children).
 			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
 				uniqueQueue.add(generatePhaseNodes(childNode.Children, branchPhase)...)
 			}
@@ -232,6 +229,21 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	// kick off execution of each target task asynchronously
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(dagCtx, taskName)
+
+		// It is possible that target tasks are not reconsidered (i.e. executeDAGTask is not called on them) once they are
+		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
+		// calls to runOnExitNode are idempotent: it is fine if they are called more than once for the same task.
+		taskNode := dagCtx.getTaskNode(taskName)
+		if taskNode != nil && taskNode.Fulfilled() {
+			if taskNode.Completed() {
+				// Run the node's onExit node, if any. Since this is a target task, we don't need to consider the status
+				// of the onExit node before continuing. That will be done in assesDAGPhase
+				_, _, err := woc.runOnExitNode(dagCtx.GetTask(taskName).OnExit, taskName, taskNode.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
+				if err != nil {
+					return node, err
+				}
+			}
+		}
 	}
 
 	// check if we are still running any tasks in this dag and return early if we do
@@ -302,6 +314,14 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Fulfilled() {
+		// Collect the completed task metrics
+		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
+		if tmpl != nil && tmpl.Metrics != nil {
+			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
+				localScope, realTimeScope := woc.prepareMetricScope(node)
+				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			}
+		}
 		if node.Completed() {
 			// Run the node's onExit node, if any.
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
@@ -420,7 +440,21 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		node, err = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		if err != nil {
+			switch err {
+			case ErrDeadlineExceeded:
+				return
+			case ErrParallelismReached:
+			case ErrTimeout:
+				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
+				return
+			default:
+				woc.log.Infof("DAG %s deemed errored due to task %s error: %s", node.ID, taskNodeName, err.Error())
+				_ = woc.markNodePhase(taskNodeName, wfv1.NodeError, fmt.Sprintf("task '%s' errored", taskNodeName))
+				return
+			}
+		}
 	}
 
 	if taskGroupNode != nil {
@@ -540,7 +574,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		if art.From == "" {
 			continue
 		}
-		resolvedArt, err := scope.resolveArtifact(art.From)
+		resolvedArt, err := scope.resolveArtifact(art.From, art.SubPath)
 		if err != nil {
 			if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
 				woc.log.Warnf("Optional artifact '%s' was not found; it won't be available as an input", art.Name)

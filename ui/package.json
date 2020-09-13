@@ -15,6 +15,7 @@
         "chart.js": "^2.9.3",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.2.5",
+        "cron-parser": "^2.16.3",
         "formik": "^2.1.2",
         "history": "^4.7.2",
         "js-yaml": "^3.13.1",

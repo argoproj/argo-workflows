@@ -3,11 +3,13 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
+import {EventsPanel} from '../events-panel';
 
 require('./workflow-node-info.scss');
 
@@ -64,6 +66,31 @@ export const WorkflowNodeSummary = (props: Props) => {
                     {now => <Duration durationMs={nodeDuration(props.node, now)} />}
                 </Ticker>
             )
+        },
+        {
+            title: 'MEMOIZATION',
+            value: (
+                <InlineTable
+                    rows={
+                        props.node.memoizationStatus
+                            ? [
+                                  {
+                                      left: <div> KEY </div>,
+                                      right: <div> {props.node.memoizationStatus.key} </div>
+                                  },
+                                  {
+                                      left: <div> CACHE NAME </div>,
+                                      right: <div> {props.node.memoizationStatus.cacheName} </div>
+                                  },
+                                  {
+                                      left: <div> HIT? </div>,
+                                      right: <div> {props.node.memoizationStatus.hit ? 'YES' : 'NO'} </div>
+                                  }
+                              ]
+                            : [{left: <div> N/A </div>, right: null}]
+                    }
+                />
+            )
         }
     ];
     if (props.node.type === 'Pod') {
@@ -93,7 +120,11 @@ export const WorkflowNodeSummary = (props: Props) => {
                         .map(link => (
                             <a
                                 className='argo-button argo-button--base-o'
-                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
+                                href={link.url
+                                    .replace('${metadata.namespace}', props.workflow.metadata.namespace)
+                                    .replace('${metadata.name}', props.node.id)
+                                    .replace('${status.startedAt}', props.node.startedAt)
+                                    .replace('${status.finishedAt}', props.node.finishedAt)}>
                                 <i className='fa fa-link' /> {link.name}
                             </a>
                         ))}
@@ -280,6 +311,11 @@ export const WorkflowNodeInfo = (props: Props) => (
                             {props.node.inputs && <WorkflowNodeInputs inputs={props.node.inputs} />}
                         </div>
                     )
+                },
+                props.node.type === 'Pod' && {
+                    title: 'EVENTS',
+                    key: 'events',
+                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.name} />
                 },
                 {
                     title: 'CONTAINERS',

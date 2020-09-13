@@ -11,11 +11,13 @@ import {services} from '../../../shared/services';
 
 import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import * as Operations from '../../../shared/workflow-operations-map';
 import {WorkflowOperationAction, WorkflowOperationName, WorkflowOperations} from '../../../shared/workflow-operations-map';
+import {EventsPanel} from '../events-panel';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowResourcePanel} from './workflow-resource-panel';
 
@@ -30,8 +32,9 @@ function parseSidePanelParam(param: string) {
 }
 
 interface WorkflowDetailsState {
-    workflow: Workflow;
-    links: Link[];
+    workflow?: Workflow;
+    links?: Link[];
+    error?: Error;
 }
 
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, WorkflowDetailsState> {
@@ -57,10 +60,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {
-            workflow: null,
-            links: null
-        };
+        this.state = {};
     }
 
     public componentDidMount() {
@@ -103,7 +103,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     title: 'Workflows',
                                     path: uiUrl('workflows')
                                 },
-                                {title: this.props.match.params.name}
+                                {title: this.props.match.params.namespace + '/' + this.props.match.params.name}
                             ],
                             actionMenu: {
                                 items: this.getItems(workflowPhase, ctx)
@@ -115,6 +115,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                         {this.state.workflow && this.state.workflow.status.conditions && hasWarningConditionBadge(this.state.workflow.status.conditions) && (
                                             <span className='badge' />
                                         )}
+                                    </a>
+                                    <a className={classNames({active: this.selectedTabKey === 'events'})} onClick={() => this.selectTab('events')}>
+                                        <i className='fa argo-icon-notification' />
                                     </a>
                                     <a className={classNames({active: this.selectedTabKey === 'timeline'})} onClick={() => this.selectTab('timeline')}>
                                         <i className='fa argo-icon-timeline' />
@@ -137,14 +140,17 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                                     selectedNodeId={this.selectedNodeId}
                                                     nodeClicked={nodeId => this.selectNode(nodeId)}
                                                 />
-                                            )) || (
-                                                <WorkflowTimeline
-                                                    workflow={this.state.workflow}
-                                                    selectedNodeId={this.selectedNodeId}
-                                                    nodeClicked={node => this.selectNode(node.id)}
-                                                    ref={timeline => (this.timelineComponent = timeline)}
-                                                />
-                                            )}
+                                            )) ||
+                                                (this.selectedTabKey && (
+                                                    <EventsPanel namespace={this.state.workflow.metadata.namespace} kind='Workflow' name={this.state.workflow.metadata.name} />
+                                                )) || (
+                                                    <WorkflowTimeline
+                                                        workflow={this.state.workflow}
+                                                        selectedNodeId={this.selectedNodeId}
+                                                        nodeClicked={node => this.selectNode(node.id)}
+                                                        ref={timeline => (this.timelineComponent = timeline)}
+                                                    />
+                                                )}
                                         </div>
                                         <div className='workflow-details__step-info'>
                                             <button className='workflow-details__step-info-close' onClick={() => this.removeNodeSelection()}>
@@ -279,6 +285,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private renderSummaryTab() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
         if (!this.state.workflow) {
             return <Loading />;
         }
@@ -314,17 +323,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             this.changesSubscription = services.workflows
                 .watch({name, namespace})
                 .map(changeEvent => changeEvent.object)
-                .catch((error, caught) => {
-                    return caught;
-                })
-                .subscribe(workflow => {
-                    this.setState({workflow});
-                });
-        } catch (e) {
-            this.appContext.apis.notifications.show({
-                content: 'Unable to load workflow',
-                type: NotificationType.Error
-            });
+                .subscribe(
+                    workflow => this.setState({workflow, error: null}),
+                    error => this.setState({error})
+                );
+        } catch (error) {
+            this.setState({error});
         }
     }
 
@@ -333,7 +337,11 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private openLink(link: Link) {
-        const url = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
+        const url = link.url
+            .replace('${metadata.namespace}', this.state.workflow.metadata.namespace)
+            .replace('${metadata.name}', this.state.workflow.metadata.name)
+            .replace('${status.startedAt}', this.state.workflow.status.startedAt)
+            .replace('${status.finishedAt}', this.state.workflow.status.finishedAt);
         if ((window.event as MouseEvent).ctrlKey) {
             window.open(url, '_blank');
         } else {

@@ -1,12 +1,13 @@
 import {createBrowserHistory} from 'history';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
-import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
+import {Redirect, Route, Router, Switch} from 'react-router';
 
 import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
 import {uiUrl} from './shared/base';
 import {ContextApis, Provider} from './shared/context';
 
+import {NotificationType} from 'argo-ui/src/index';
 import {Version} from '../models';
 import apidocs from './apidocs';
 import archivedWorkflows from './archived-workflows';
@@ -17,6 +18,7 @@ import login from './login';
 import reports from './reports';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
+import {Utils} from './shared/utils';
 import userinfo from './userinfo';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
@@ -24,29 +26,14 @@ import workflows from './workflows';
 const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
-
-const cronWorkflowUrl = uiUrl('cron-workflows');
-const archivedWorkflowUrl = uiUrl('archived-workflows');
+const cronWorkflowsUrl = uiUrl('cron-workflows');
+const archivedWorkflowsUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
 const reportsUrl = uiUrl('reports');
-const routes: {
-    [path: string]: {component: React.ComponentType<RouteComponentProps<any>>};
-} = {
-    [workflowsUrl]: {component: workflows.component},
-    [workflowTemplatesUrl]: {component: workflowTemplates.component},
-    [clusterWorkflowTemplatesUrl]: {component: clusterWorkflowTemplates.component},
-    [cronWorkflowUrl]: {component: cronWorkflows.component},
-    [archivedWorkflowUrl]: {component: archivedWorkflows.component},
-    [reportsUrl]: {component: reports.component},
-    [helpUrl]: {component: help.component},
-    [apiDocsUrl]: {component: apidocs.component},
-    [userInfoUrl]: {component: userinfo.component},
-    [loginUrl]: {component: login.component}
-};
 
 export const history = createBrowserHistory();
 
@@ -68,12 +55,12 @@ const navItems = [
     },
     {
         title: 'Cron Workflows',
-        path: cronWorkflowUrl,
+        path: cronWorkflowsUrl,
         iconClassName: 'fa fa-clock'
     },
     {
         title: 'Archived Workflows',
-        path: archivedWorkflowUrl,
+        path: archivedWorkflowsUrl,
         iconClassName: 'fa fa-archive'
     },
     {
@@ -98,7 +85,7 @@ const navItems = [
     }
 ];
 
-export class App extends React.Component<{}, {version?: Version; popupProps: PopupProps}> {
+export class App extends React.Component<{}, {version?: Version; popupProps: PopupProps; namespace?: string}> {
     public static childContextTypes = {
         history: PropTypes.object,
         apis: PropTypes.object
@@ -114,11 +101,24 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
         this.popupManager = new PopupManager();
         this.notificationsManager = new NotificationsManager();
         this.navigationManager = new NavigationManager(history);
+        Utils.onNamespaceChange = namespace => {
+            this.setState({namespace});
+        };
     }
 
     public componentDidMount() {
         this.popupManager.popupProps.subscribe(popupProps => this.setState({popupProps}));
-        services.info.getVersion().then(version => this.setState({version}));
+        services.info
+            .getVersion()
+            .then(version => this.setState({version}))
+            .then(() => services.info.getInfo())
+            .then(info => this.setState({namespace: info.managedNamespace || Utils.getCurrentNamespace() || ''}))
+            .catch(error => {
+                this.notificationsManager.show({
+                    content: 'Failed to load ' + error,
+                    type: NotificationType.Error
+                });
+            });
     }
 
     public render() {
@@ -132,22 +132,68 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
             <Provider value={providerContext}>
                 {this.state.popupProps && <Popup {...this.state.popupProps} />}
                 <Router history={history}>
-                    <Switch>
-                        <Redirect exact={true} path={uiUrl('')} to={workflowsUrl} />
-                        <Redirect from={timelineUrl} to={uiUrl('workflows')} />
+                    <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
+                        <Notifications notifications={this.notificationsManager.notifications} />
                         <ErrorBoundary>
-                            <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
-                                <Notifications notifications={this.notificationsManager.notifications} />
-                                {Object.keys(routes).map(path => {
-                                    const route = routes[path];
-                                    return <Route key={path} path={path} component={route.component} />;
-                                })}
-                            </Layout>
+                            <Switch>
+                                <Route exact={true} strict={true} path={uiUrl('')}>
+                                    <Redirect to={workflowsUrl} />
+                                </Route>
+                                <Route exact={true} strict={true} path={timelineUrl}>
+                                    <Redirect to={workflowsUrl} />
+                                </Route>
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={workflowsUrl}>
+                                        <Redirect to={this.workflowsUrl} />
+                                    </Route>
+                                )}
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={workflowTemplatesUrl}>
+                                        <Redirect to={this.workflowTemplatesUrl} />
+                                    </Route>
+                                )}
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={cronWorkflowsUrl}>
+                                        <Redirect to={this.cronWorkflowsUrl} />
+                                    </Route>
+                                )}
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={archivedWorkflowsUrl}>
+                                        <Redirect to={this.archivedWorkflowsUrl} />
+                                    </Route>
+                                )}
+                                <Route path={workflowsUrl} component={workflows.component} />
+                                <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
+                                <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
+                                <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
+                                <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
+                                <Route path={reportsUrl} component={reports.component} />
+                                <Route exact={true} strict={true} path={helpUrl} component={help.component} />
+                                <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
+                                <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
+                                <Route exact={true} strict={true} path={loginUrl} component={login.component} />
+                            </Switch>
                         </ErrorBoundary>
-                    </Switch>
+                    </Layout>
                 </Router>
             </Provider>
         );
+    }
+
+    private get archivedWorkflowsUrl() {
+        return archivedWorkflowsUrl + '/' + this.state.namespace || '';
+    }
+
+    private get cronWorkflowsUrl() {
+        return cronWorkflowsUrl + '/' + this.state.namespace || '';
+    }
+
+    private get workflowTemplatesUrl() {
+        return workflowTemplatesUrl + '/' + this.state.namespace || '';
+    }
+
+    private get workflowsUrl() {
+        return workflowsUrl + '/' + this.state.namespace || '';
     }
 
     public getChildContext() {
