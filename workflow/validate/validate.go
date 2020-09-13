@@ -15,7 +15,6 @@ import (
 	"github.com/valyala/fasttemplate"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -23,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -89,28 +89,11 @@ var (
 	placeholderGenerator = common.NewPlaceholderGenerator()
 )
 
-// Allowed WfSpec fields if workflow referred WorkflowTemplate reference.
-var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
-	"Entrypoint":            true,
-	"Suspend":               true,
-	"ActiveDeadlineSeconds": true,
-	"Priority":              true,
-	"Arguments":             true,
-	"WorkflowTemplateRef":   true,
-	"TTLStrategy":           true,
-	"Parallelism":           true,
-	"Volumes":               true,
-	"VolumeClaimTemplates":  true,
-	"NodeSelector":          true,
-	"PodGC":                 true,
-	"ServiceAccountName":    true,
-}
-
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	intOrString := intstr.Parse(placeholderGenerator.NextPlaceholder())
-	return &wfv1.Parameter{Name: name, Value: &intOrString}
+	s := placeholderGenerator.NextPlaceholder()
+	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -134,7 +117,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	hasWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
 
 	if hasWorkflowTemplateRef {
-		err := ValidateWorkflowSpecFields(wf.Spec, wfTmplRefAllowedWfSpecValidFields)
+		err := ValidateWorkflowTemplateRefFields(wf.Spec)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +161,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				ctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
 			} else {
 				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
@@ -271,17 +254,9 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	return wfConditions, nil
 }
 
-func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) error {
-	val := reflect.ValueOf(v)
-
-	for i := 0; i < val.NumField(); i++ {
-		// Lookup the validate tag
-		field := val.Type().Field(i)
-		fieldVal := val.Field(i).IsZero()
-		_, ok := validFieldMap[field.Name]
-		if !ok && !fieldVal {
-			return errors.Errorf(errors.CodeBadRequest, "%s is invalid field in spec if workflow referred WorkflowTemplate reference", field.Name)
-		}
+func ValidateWorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
+	if len(wfSpec.Templates) > 0 {
+		return errors.Errorf(errors.CodeBadRequest, "Templates is invalid field in spec if workflow referred WorkflowTemplate reference")
 	}
 	return nil
 }
@@ -289,6 +264,10 @@ func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) er
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Labels:      wftmpl.ObjectMeta.Labels,
+			Annotations: wftmpl.ObjectMeta.Annotations,
+		},
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
@@ -297,6 +276,10 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
 func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
+		ObjectMeta: v1.ObjectMeta{
+			Labels:      cwftmpl.ObjectMeta.Labels,
+			Annotations: cwftmpl.ObjectMeta.Annotations,
+		},
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
@@ -414,6 +397,18 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
+	}
+
+	if newTmpl.Timeout != "" {
+		if !newTmpl.IsLeaf() {
+			return fmt.Errorf("%s template doesn't support timeout field.", newTmpl.GetType())
+		}
+		// Check timeout should not be a whole number
+		_, err := strconv.Atoi(newTmpl.Timeout)
+		if err == nil {
+			return fmt.Errorf("%s has invalid duration format in timeout.", newTmpl.Name)
+		}
+
 	}
 
 	tmplID := getTemplateID(tmpl)
@@ -614,7 +609,10 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
 	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
-	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
+	fstTmpl, err := fasttemplate.NewTemplate(tmplStr, "{{", "}}")
+	if err != nil {
+		return fmt.Errorf("unable to parse argo varaible: %w", err)
+	}
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 
@@ -712,8 +710,11 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if *tmpl.ActiveDeadlineSeconds <= 0 {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0", tmpl.Name)
+		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
+		}
+		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && *i < 0 {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}
 	if tmpl.Parallelism != nil {
@@ -1002,6 +1003,10 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 
 // validateBaseImageOutputs detects if the template contains an valid output from base image layer
 func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error {
+	// This validation is not applicable for DAG and Step Template types
+	if tmpl.GetType() == wfv1.TemplateTypeDAG || tmpl.GetType() == wfv1.TemplateTypeSteps {
+		return nil
+	}
 	switch ctx.ContainerRuntimeExecutor {
 	case "", common.ContainerRuntimeExecutorDocker:
 		// docker executor supports all modes of artifact outputs

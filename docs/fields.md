@@ -16,6 +16,8 @@ Workflow is the definition of a workflow resource
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -75,6 +77,8 @@ Workflow is the definition of a workflow resource
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -224,11 +228,17 @@ Workflow is the definition of a workflow resource
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -331,6 +341,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -394,6 +406,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -543,11 +557,17 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -664,6 +684,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -727,6 +749,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -876,11 +900,17 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -959,6 +989,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -1022,6 +1054,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -1171,11 +1205,17 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -1268,6 +1308,8 @@ Arguments to a template
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -1305,6 +1347,8 @@ Arguments to a template
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -1378,9 +1422,13 @@ Arguments to a template
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -1471,6 +1519,10 @@ Synchronization holds synchronization lock configuration
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
+
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
 - [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
@@ -1479,6 +1531,7 @@ Synchronization holds synchronization lock configuration
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`mutex`|[`Mutex`](#mutex)|Mutex holds the Mutex lock details|
 |`semaphore`|[`SemaphoreRef`](#semaphoreref)|Semaphore holds the Semaphore configuration|
 
 ## Template
@@ -1496,6 +1549,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
@@ -1556,6 +1611,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -1705,11 +1762,17 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -1745,7 +1808,7 @@ Template is a reusable and composable unit of execution in a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
+|`activeDeadlineSeconds`|[`IntOrString`](#intorstring)|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.|
@@ -1780,6 +1843,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
+|`timeout`|`string`|Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -1881,6 +1945,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -1940,11 +2006,15 @@ Outputs hold parameters, artifacts, and results from a step
 
 ## SynchronizationStatus
 
-_No description available_
+SynchronizationStatus stores the status of semaphore and mutex.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -1954,7 +2024,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
+|`mutex`|[`MutexStatus`](#mutexstatus)|Mutex stores this workflow's mutex holder details|
+|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|Semaphore stores this workflow's Semaphore holder details|
 
 ## Artifact
 
@@ -1967,6 +2038,8 @@ Artifact indicates an artifact to place at a specified path
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-artifacts.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
@@ -2029,7 +2102,9 @@ Artifact indicates an artifact to place at a specified path
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`path`|`string`|Path is the container path to the artifact|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
+|`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
+|`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
 
 ## Parameter
 
@@ -2076,6 +2151,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -2149,9 +2226,13 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -2173,10 +2254,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|[`IntOrString`](#intorstring)|Default is the default value to use for an input parameter if a value was not supplied|
+|`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|[`IntOrString`](#intorstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -2200,6 +2281,24 @@ Prometheus is a prometheus metric to be emitted
 |`labels`|`Array<`[`MetricLabel`](#metriclabel)`>`|Labels is a list of metric labels|
 |`name`|`string`|Name is the name of the metric|
 |`when`|`string`|When is a conditional statement that decides when to emit the metric|
+
+## Mutex
+
+Mutex holds Mutex configuration
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|name of the mutex|
 
 ## SemaphoreRef
 
@@ -2274,6 +2373,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
 
@@ -2351,6 +2452,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -2382,6 +2485,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -2459,6 +2564,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
@@ -2508,6 +2615,8 @@ Pod metdata
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
@@ -2572,6 +2681,8 @@ Pod metdata
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -2721,11 +2832,17 @@ Pod metdata
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -2841,7 +2958,7 @@ RetryStrategy provides controls on how to retry a workflow step
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
-|`limit`|`int32`|Limit is the maximum number of attempts when retrying a container|
+|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## ScriptTemplate
@@ -2921,6 +3038,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 <br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
@@ -3026,11 +3145,15 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -3135,6 +3258,25 @@ _No description available_
 |`hit`|`boolean`|_No description available_|
 |`key`|`string`|_No description available_|
 
+## MutexStatus
+
+MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holding`|`Array<`[`MutexHolding`](#mutexholding)`>`|Holding is a list of mutexes and their respective objects that are held by mutex lock for this io.argoproj.workflow.v1alpha1.|
+|`waiting`|`Array<`[`MutexHolding`](#mutexholding)`>`|Waiting is a list of mutexes and their respective objects this workflow is waiting for.|
+
 ## SemaphoreStatus
 
 _No description available_
@@ -3152,7 +3294,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`holding`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Holding stores the list of resource acquired synchronization lock for workflows.|
-|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders|
+|`waiting`|`Array<`[`SemaphoreHolding`](#semaphoreholding)`>`|Waiting indicates the list of current synchronization lock holders.|
 
 ## ArchiveStrategy
 
@@ -3163,6 +3305,8 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 <br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
@@ -3396,7 +3540,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3510,6 +3655,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
@@ -3574,7 +3721,7 @@ Backoff is a backoff strategy to use within retryStrategy
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
-|`factor`|`int32`|Factor is a factor to multiply the base duration after each failed retry|
+|`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
 |`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
 
 ## ContinueOn
@@ -3594,6 +3741,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 </details>
 
 ### Fields
@@ -3660,6 +3809,16 @@ Sequence expands a workflow step into numeric range
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|[`IntOrString`](#intorstring)|Number at which to start the sequence (default: 0)|
 
+## MutexHolding
+
+MutexHolding describes the mutex and the object which is holding it.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holder`|`string`|Holder is a reference to the object which holds the Mutex. Holding Scenario:  1. Current workflow's NodeID which is holding the lock.     e.g: ${NodeID}Waiting Scenario:  1. Current workflow or other workflow NodeID which is holding the lock.     e.g: ${WorkflowName}/${NodeID}|
+|`mutex`|`string`|Reference for the mutex e.g: ${namespace}/mutex/${mutexName}|
+
 ## SemaphoreHolding
 
 _No description available_
@@ -3679,6 +3838,8 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 <br>
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
@@ -3739,6 +3900,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
@@ -3803,6 +3966,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -3952,11 +4117,17 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -4229,6 +4400,19 @@ ObjectReference contains enough information to let you inspect or modify the ref
 |`resourceVersion`|`string`|Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency|
 |`uid`|`string`|UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids|
 
+## IntOrString
+
+IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
+</details>
+
 ## Container
 
 A single application container that you want to run within a pod.
@@ -4244,6 +4428,8 @@ A single application container that you want to run within a pod.
 - [`arguments-parameters.yaml`](https://github.com/argoproj/argo/blob/master/examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
@@ -4296,6 +4482,8 @@ A single application container that you want to run within a pod.
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -4427,11 +4615,17 @@ A single application container that you want to run within a pod.
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -4478,23 +4672,6 @@ A single application container that you want to run within a pod.
 |`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container. This is a beta feature.|
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
-
-## IntOrString
-
-IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
-
-- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
-
-- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
-
-- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
-</details>
 
 ## ConfigMapKeySelector
 
@@ -4878,6 +5055,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -4941,6 +5120,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -5090,11 +5271,17 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 
@@ -5879,6 +6066,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`artifact-disable-archive.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-disable-archive.yaml)
 
+- [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
+
 - [`artifact-passing.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
@@ -5942,6 +6131,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -6091,11 +6282,17 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
 
 - [`suspend-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template.yaml)
+
+- [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-tmpl-level.yaml)
+
+- [`synchronization-mutex-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-mutex-wf-level.yaml)
 
 - [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
 

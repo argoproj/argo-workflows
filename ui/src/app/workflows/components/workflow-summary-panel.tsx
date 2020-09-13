@@ -1,14 +1,20 @@
 import {Ticker} from 'argo-ui';
 import * as React from 'react';
 
+import {labels, NODE_PHASE, Workflow} from '../../../models';
 import {NODE_PHASE, Workflow} from '../../../models';
+import {uiUrl} from '../../shared/base';
 import {uiUrl} from '../../shared/base';
 import {DurationPanel} from '../../shared/components/duration';
 import {Phase} from '../../shared/components/phase';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
+import {Consumer} from '../../shared/context';
+import {formatDuration, wfDuration} from '../../shared/duration';
 import {wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
+import {WorkflowFrom} from './workflow-from';
+import {WorkflowLabels} from './workflow-labels/workflow-labels';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
@@ -18,6 +24,20 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Message', value: props.workflow.status.message},
                 {title: 'Name', value: props.workflow.metadata.name},
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
+                {title: 'From', value: <WorkflowFrom namespace={props.workflow.metadata.namespace} labels={props.workflow.metadata.labels} />},
+                {
+                    title: 'Labels',
+                    value: (
+                        <Consumer>
+                            {ctx => (
+                                <WorkflowLabels
+                                    workflow={props.workflow}
+                                    onChange={(key, value) => ctx.navigation.goto(uiUrl(`workflows/${props.workflow.metadata.namespace}?label=${key}=${value}`))}
+                                />
+                            )}
+                        </Consumer>
+                    )
+                },
                 {title: 'Started', value: <Timestamp date={props.workflow.status.startedAt} />},
                 {title: 'Finished ', value: <Timestamp date={props.workflow.status.finishedAt} />},
                 {
@@ -31,40 +51,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                     )
                 }
             ];
-            const workflowTemplate = props.workflow.metadata.labels['workflows.argoproj.io/workflow-template'];
-            if (workflowTemplate) {
-                attributes.push({
-                    title: 'Workflow Template',
-                    value: (
-                        <a key='workflow-template' href={uiUrl('workflow-templates/' + props.workflow.metadata.namespace + '/' + workflowTemplate)}>
-                            {workflowTemplate}
-                        </a>
-                    )
-                });
-            }
-            const clusterWorkflowTemplate = props.workflow.metadata.labels['workflows.argoproj.io/cluster-workflow-template'];
-            if (clusterWorkflowTemplate) {
-                attributes.push({
-                    title: 'Cluster Workflow Template',
-                    value: (
-                        <a key='cluster-workflow-template' href={uiUrl('cluster-workflow-templates/' + clusterWorkflowTemplate)}>
-                            {clusterWorkflowTemplate}
-                        </a>
-                    )
-                });
-            }
-            const cronWorkflow = props.workflow.metadata.labels['workflows.argoproj.io/cron-workflow'];
-            if (cronWorkflow) {
-                attributes.push({
-                    title: 'Cron Workflow',
-                    value: (
-                        <a key='cron-workflows' href={uiUrl('cron-workflows/' + props.workflow.metadata.namespace + '/' + cronWorkflow)}>
-                            {cronWorkflow}
-                        </a>
-                    )
-                });
-            }
-            const creator = props.workflow.metadata.labels['workflows.argoproj.io/creator'];
+            const creator = props.workflow.metadata.labels[labels.creator];
             if (creator) {
                 attributes.push({title: 'Creator', value: creator});
             }

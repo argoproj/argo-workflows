@@ -7,6 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
@@ -142,11 +144,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
-		wfName, err := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
-		if err != nil {
-			return fmt.Errorf("malformed request: workflows must be specified with a 'metadata.name=...' field selector; unable to parse: %w", err)
-		}
-		if len(wfName) > 0 {
+		wfName := argoutil.RecoverWorkflowNameFromSelectorStringIfAny(opts.FieldSelector)
+		if wfName != "" {
+			// If we are using an alias (such as `@latest`) we need to dereference it.
+			// s.getWorkflow does that for us
 			wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -169,12 +170,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		select {
 		case <-ctx.Done():
 			return nil
-		case event, ok := <-watch.ResultChan():
-			var wf *wfv1.Workflow
-			if ok {
-				wf, ok = event.Object.(*wfv1.Workflow)
-			}
-			if !ok {
+		case event, open := <-watch.ResultChan():
+			if !open {
 				log.Debug("Re-establishing workflow watch")
 				watch.Stop()
 				watch, err = wfIf.Watch(*opts)
@@ -183,19 +180,73 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				}
 				continue
 			}
-			log.Debug("Received event")
+			log.Debug("Received workflow event")
+			wf, ok := event.Object.(*wfv1.Workflow)
+			if !ok {
+				// object is probably probably metav1.Status, `FromObject` can deal with anything
+				return apierr.FromObject(event.Object)
+			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
 			err := s.hydrator.Hydrate(wf)
 			if err != nil {
 				return err
 			}
-			logCtx.Debug("Sending event")
+			logCtx.Debug("Sending workflow event")
 			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: wf})
 			if err != nil {
 				return err
 			}
 			// when we re-establish, we want to start at the same place
 			opts.ResourceVersion = wf.ResourceVersion
+		}
+	}
+}
+
+func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws workflowpkg.WorkflowService_WatchEventsServer) error {
+	ctx := ws.Context()
+	kubeClient := auth.GetKubeClient(ctx)
+	var opts = &metav1.ListOptions{}
+	if req.ListOptions != nil {
+		opts = req.ListOptions
+	}
+	s.instanceIDService.With(opts)
+	eventInterface := kubeClient.CoreV1().Events(req.Namespace)
+	watch, err := eventInterface.Watch(*opts)
+	if err != nil {
+		return err
+	}
+	defer watch.Stop()
+
+	log.Debug("Piping events to channel")
+	defer log.Debug("Result channel done")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event, open := <-watch.ResultChan():
+			if !open {
+				log.Debug("Re-establishing event watch")
+				watch.Stop()
+				watch, err = eventInterface.Watch(*opts)
+				if err != nil {
+					return err
+				}
+				continue
+			}
+			log.Debug("Received event")
+			e, ok := event.Object.(*corev1.Event)
+			if !ok {
+				// object is probably probably metav1.Status, `FromObject` can deal with anything
+				return apierr.FromObject(event.Object)
+			}
+			log.Debug("Sending event")
+			err = ws.Send(e)
+			if err != nil {
+				return err
+			}
+			// when we re-establish, we want to start at the same place
+			opts.ResourceVersion = e.ResourceVersion
 		}
 	}
 }

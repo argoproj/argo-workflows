@@ -5,6 +5,7 @@ import {RouteComponentProps} from 'react-router';
 import {Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
@@ -67,17 +68,14 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     public componentDidMount(): void {
-        services.archivedWorkflows
-            .get(this.uid)
-            .then(workflow => this.setState({workflow}))
+        services.info
+            .getInfo()
+            .then(info => this.setState({links: info.links}))
+            .then(() => services.archivedWorkflows.get(this.uid).then(workflow => this.setState({error: null, workflow})))
             .catch(error => this.setState({error}));
-        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public render() {
-        if (this.state.error) {
-            throw this.state.error;
-        }
         const items = [
             {
                 title: 'Resubmit',
@@ -135,6 +133,9 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private renderArchivedWorkflowDetails() {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
         if (!this.state.workflow) {
             return <Loading />;
         }
@@ -212,12 +213,11 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                 },
                                 spec: this.state.workflow.spec
                             }}
-                            onSubmit={(value: Workflow) => {
+                            onSubmit={(value: Workflow) =>
                                 services.workflows
                                     .create(value, value.metadata.namespace)
                                     .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
-                                    .catch(error => this.setState({error}));
-                            }}
+                            }
                         />
                     )}
                 </SlidingPanel>
@@ -247,6 +247,10 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private openLink(link: Link) {
-        document.location.href = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
+        document.location.href = link.url
+            .replace('${metadata.namespace}', this.state.workflow.metadata.namespace)
+            .replace('${metadata.name}', this.state.workflow.metadata.name)
+            .replace('${status.startedAt}', this.state.workflow.status.startedAt)
+            .replace('${status.finishedAt}', this.state.workflow.status.finishedAt);
     }
 }

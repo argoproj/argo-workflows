@@ -20,7 +20,7 @@ Each indicator is divided by a common denominator depending on resource type.
 Each resource type has a denominator used to make large values smaller.
 
  * CPU: `1`
- * Memory: `100Mi`
+ * Memory: `1Gi`
  * Storage: `10Gi`
  * Ephemeral Storage: `10Gi`
  * All others: `1` 

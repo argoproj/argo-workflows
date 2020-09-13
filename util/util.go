@@ -16,6 +16,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo/util/errors"
 	"github.com/argoproj/argo/util/retry"
 )
 
@@ -39,7 +40,7 @@ func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]
 		secret, err = secretsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)
-			if !retry.IsRetryableKubeAPIError(err) {
+			if !errorsutil.IsTransientErr(err) {
 				return false, err
 			}
 			return false, nil
@@ -96,22 +97,21 @@ func RecoverIndexFromNodeName(name string) int {
 
 func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 	result := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String()
-	compare, err := RecoverWorkflowNameFromSelectorString(result)
-	if err != nil || wfName != compare {
-		log.WithFields(log.Fields{"wfName": wfName}).Error(err)
+	compare := RecoverWorkflowNameFromSelectorStringIfAny(result)
+	if wfName != compare {
 		panic(fmt.Sprintf("Could not recover field selector from workflow name. Expected '%s' but got '%s'\n", wfName, compare))
 	}
 	return result
 }
 
-func RecoverWorkflowNameFromSelectorString(selector string) (string, error) {
-	nameIndex := strings.Index(selector, "=")
-	if nameIndex < 0 {
-		return "", fmt.Errorf("incorrect prefix: selector is not formatted correctly")
+func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
+	const tag = "metadata.name="
+	if starts := strings.Index(selector, tag); starts > -1 {
+		suffix := selector[starts+len(tag):]
+		if ends := strings.Index(suffix, ","); ends > -1 {
+			return strings.TrimSpace(suffix[:ends])
+		}
+		return strings.TrimSpace(suffix)
 	}
-	prefix := selector[:nameIndex]
-	if prefix != "metadata.name" {
-		return "", fmt.Errorf("incorrect prefix: expected 'metadata.name' but got '%s'", prefix)
-	}
-	return selector[nameIndex+1:], nil
+	return ""
 }

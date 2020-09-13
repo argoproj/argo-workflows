@@ -42,6 +42,7 @@ nav:
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
+          - memoization.md
       # all other topics, including API access
       - Advanced:
           - workflow-requirements.md
@@ -51,11 +52,14 @@ nav:
           - access-token.md
           - rest-api.md
           - rest-examples.md
+          - events.md
+          - webhooks.md
           - submit-workflow-via-automation.md
           - workflow-submitting-workflow.md
           - resuming-workflow-via-automation.md
           - async-pattern.md
           - security.md
+      - ide-setup.md
       - Examples: examples/README.md
       - Field Reference: fields.md
       - CLI Reference:
@@ -86,6 +90,7 @@ nav:
           - argo lint: cli/argo_lint.md
           - argo list: cli/argo_list.md
           - argo logs: cli/argo_logs.md
+          - argo node: cli/argo_node.md
           - argo resubmit: cli/argo_resubmit.md
           - argo resume: cli/argo_resume.md
           - argo retry: cli/argo_retry.md
@@ -134,7 +139,7 @@ nav:
       - static-code-analysis.md
       - releasing.md
   - Releases ⧉: https://github.com/argoproj/argo/releases
-  - Roadmap ⧉: https://github.com/argoproj/argo/milestones
+  - Roadmap: roadmap.md
   - Blog ⧉: https://blog.argoproj.io/
   - Slack ⧉: https://argoproj.github.io/community/join-slack
   - Twitter ⧉: https://twitter.com/argoproj

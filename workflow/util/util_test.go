@@ -10,11 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
@@ -489,20 +490,19 @@ func TestApplySubmitOpts(t *testing.T) {
 		assert.Error(t, ApplySubmitOpts(&wfv1.Workflow{}, &wfv1.SubmitOpts{Parameters: []string{"a"}}))
 	})
 	t.Run("Parameters", func(t *testing.T) {
-		intOrString := intstr.Parse("0")
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: &intOrString}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: pointer.StringPtr("0")}},
 				},
 			},
 		}
-		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=1"}})
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=81861780812"}})
 		assert.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "1", parameters[0].Value.String())
+			assert.Equal(t, "81861780812", *parameters[0].Value)
 		}
 	})
 	t.Run("ParameterFile", func(t *testing.T) {
@@ -510,14 +510,53 @@ func TestApplySubmitOpts(t *testing.T) {
 		file, err := ioutil.TempFile("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 1`), 0644)
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0644)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "1", parameters[0].Value.String())
+			assert.Equal(t, "81861780812", *parameters[0].Value)
 		}
 	})
+}
+
+func TestFormulateResubmitWorkflow(t *testing.T) {
+	t.Run("Labels", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					common.LabelKeyControllerInstanceID:    "1",
+					common.LabelKeyClusterWorkflowTemplate: "1",
+					common.LabelKeyCronWorkflow:            "1",
+					common.LabelKeyWorkflowTemplate:        "1",
+					common.LabelKeyCreator:                 "1",
+					common.LabelKeyPhase:                   "1",
+					common.LabelKeyCompleted:               "1",
+				},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "test",
+						Name:       "testObj",
+					},
+				},
+			},
+		}
+		wf, err := FormulateResubmitWorkflow(wf, false)
+		if assert.NoError(t, err) {
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyControllerInstanceID)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyClusterWorkflowTemplate)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyCronWorkflow)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyWorkflowTemplate)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
+			assert.Equal(t, 1, len(wf.OwnerReferences))
+			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
+			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
+		}
+	})
+
 }

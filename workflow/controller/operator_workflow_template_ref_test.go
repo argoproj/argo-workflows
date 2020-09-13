@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
@@ -15,8 +15,8 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(unmarshalWF(wfWithTmplRef), controller)
 	woc.operate()
-	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.wfSpec.Templates)
-	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.wfSpec.Entrypoint)
+	assert.Equal(t, unmarshalWFTmpl(wfTmpl).Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
+	assert.Equal(t, woc.wf.Spec.Entrypoint, woc.execWf.Spec.Entrypoint)
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
@@ -29,11 +29,10 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentPassing", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: pointer.StringPtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -50,11 +49,10 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("CheckArgumentFromWFT", func(t *testing.T) {
-		value := intstr.Parse("test")
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: &value,
+				Value: pointer.StringPtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -132,8 +130,8 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
-		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
+		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
+		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
 	})
 }
 
@@ -160,4 +158,87 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 		woc.operate()
 		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	})
+}
+
+var wftWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: params-test-1
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: a-a
+        value: "10"
+      - name: b
+        value: ""
+      - name: c-c
+        value: "0"
+      - name: d
+        value: ""
+      - name: e-e
+        value: "10"
+      - name: f
+        value: ""
+      - name: g-g
+        value: "1"
+      - name: h
+        value: ""
+      - name: i-i
+        value: "{}"
+      - name: things
+        value: "[]"
+
+  templates:
+    - name: main
+      steps:
+        - - name: echoitems
+            template: echo
+
+    - name: echo
+      container:
+        image: busybox
+        command: [echo]
+        args: ["{{workflows.parameters.a-a}} = {{workflows.parameters.g-g}}"]
+`
+var wfWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: params-test-1-grx2n
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: f
+      value: f
+    - name: g-g
+      value: 2
+    - name: h
+      value: h
+    - name: i-i
+      value: '{}'
+    - name: things
+      value: '[{"a":"1","nested":{"B":"3"}},{"a":"2"}]'
+    - name: a-a
+      value: 5
+  workflowTemplateRef:
+    name: params-test-1
+`
+
+func TestWorkflowTemplateRefParamMerge(t *testing.T) {
+	wf := unmarshalWF(wfWithParam)
+	wftmpl := unmarshalWFTmpl(wftWithParam)
+
+	t.Run("CheckArgumentFromWF", func(t *testing.T) {
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		_, _, err := woc.loadExecutionSpec()
+		assert.NoError(t, err)
+		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
+	})
+
 }

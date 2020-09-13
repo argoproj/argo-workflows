@@ -1,21 +1,19 @@
 import * as React from 'react';
 
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {Link} from 'react-router-dom';
 import {CronWorkflow} from '../../../models';
-import {uiUrl} from '../../shared/base';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {services} from '../../shared/services';
+import {WorkflowLink} from '../../workflows/components/workflow-link';
 
 const jsonMergePatch = require('json-merge-patch');
+const parser = require('cron-parser');
 
 interface Props {
     cronWorkflow: CronWorkflow;
     onChange: (cronWorkflow: CronWorkflow) => void;
-
-    onError(error: Error): void;
 }
 
 export const CronWorkflowSummaryPanel = (props: Props) => {
@@ -37,6 +35,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
     const statusAttributes = [
         {title: 'Active', value: props.cronWorkflow.status.active ? getCronWorkflowActiveWorkflowList(props.cronWorkflow.status.active) : <i>No Workflows Active</i>},
         {title: 'Last Scheduled Time', value: props.cronWorkflow.status.lastScheduledTime},
+        {title: 'Next Scheduled Time', value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone)},
         {title: 'Conditions', value: <ConditionsPanel conditions={props.cronWorkflow.status.conditions} />}
     ];
     return (
@@ -72,12 +71,11 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
                             // magic - we get the latest from the server and then apply the changes from the rendered version to this
                             const original = props.cronWorkflow;
                             const patch = jsonMergePatch.generate(original, value) || {};
-                            services.cronWorkflows
+                            return services.cronWorkflows
                                 .get(props.cronWorkflow.metadata.name, props.cronWorkflow.metadata.namespace)
                                 .then(latest => jsonMergePatch.apply(latest, patch))
                                 .then(patched => services.cronWorkflows.update(patched, props.cronWorkflow.metadata.name, props.cronWorkflow.metadata.namespace))
-                                .then(updated => props.onChange(updated))
-                                .catch(error => props.onError(error));
+                                .then(updated => props.onChange(updated));
                         }}
                     />
                 </div>
@@ -86,16 +84,19 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
     );
 };
 
-function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]): JSX.Element {
-    return (
-        <div>
-            {active.reverse().map(activeWf => (
-                <div>
-                    <Link to={uiUrl(`workflows/${activeWf.namespace}/${activeWf.name}`)}>
-                        {activeWf.namespace}/{activeWf.name}
-                    </Link>
-                </div>
-            ))}
-        </div>
-    );
+function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]) {
+    return active.reverse().map(activeWf => <WorkflowLink key={activeWf.uid} namespace={activeWf.namespace} name={activeWf.name} />);
+}
+
+function getNextScheduledTime(schedule: string, tz: string): string {
+    let out = '';
+    try {
+        out = parser
+            .parseExpression(schedule, {tz})
+            .next()
+            .toISOString();
+    } catch (e) {
+        // Do nothing
+    }
+    return out;
 }

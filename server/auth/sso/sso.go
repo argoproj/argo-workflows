@@ -147,7 +147,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	if state != cookie.Value {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %s", state)))
+		_, _ = w.Write([]byte("invalid state: does not match cookie value"))
 		return
 	}
 	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"))

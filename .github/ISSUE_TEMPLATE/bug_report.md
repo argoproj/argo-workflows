@@ -1,68 +1,28 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
 labels: 'bug'
-assignees: ''
 ---
-Checklist:
+## Summary 
 
- * [ ] I've included the version.
- * [ ] I've included reproduction steps.
- * [ ] I've included the workflow YAML.
- * [ ] I've included the logs.
- 
-**What happened**:
+What happened/what you expected to happen?
 
-**What you expected to happen**:
+## Diagnostics
 
-**How to reproduce it (as minimally and precisely as possible)**:
+What version of Argo Workflows are you running?
 
-**Anything else we need to know?**:
-
-**Environment**:
-
-- Argo version:
-```
-$ argo version
-```
-- Kubernetes version :
-```
-$ kubectl version -o yaml
+```yaml
+Paste the workflow here, including status:
+kubectl get wf -o yaml ${workflow} 
 ```
 
-**Other debugging information (if applicable)**:
-
-- workflow result:
-
 ```
-argo --loglevel DEBUG get <workflowname>
-```
-
-- executor logs:
-
-```
-kubectl logs <failedpodname> -c init
-kubectl logs <failedpodname> -c wait
-```
-
-- workflow-controller logs:
-
-```
-kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name)
-```
-
-**Logs**
-
-```
-argo get <workflowname>
-kubectl logs <failedpodname> -c init
-kubectl logs <failedpodname> -c wait
-kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name)
+Paste the logs from the workflow controller:
+kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name) | grep ${workflow}
 ```
 
 ---
 <!-- Issue Author: Don't delete this message to encourage other users to support your issue! -->
 **Message from the maintainers**:
 
-If you are impacted by this bug please add a 👍 reaction to this issue! We often sort issues this way to know what to prioritize.
+Impacted by this bug? Give it a 👍. We prioritise the issues with the most 👍.

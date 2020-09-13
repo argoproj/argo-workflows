@@ -99,7 +99,8 @@ Metrics are defined in-place on the Workflow/Step/Task where they are emitted fr
 the Workflow/Step/Task completes, with the exception of [realtime metrics](#realtime-metrics).
 
 Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
-defining labels avoid cardinality explosion).
+defining labels avoid cardinality explosion). Metrics with the same `name` **must always** use the same exact `help` string,
+having different metrics with the same name, but with a different `help` string will cause an error (this is a Prometheus requirement).
 
 All metrics can also be conditionally emitted by defining a `when` clause. This `when` clause works the same as elsewhere
 in a workflow.
@@ -114,11 +115,11 @@ When defining a `histogram`, `buckets` must also be provided (see below).
 Metric names can only contain alphanumeric characters, `_`, and `:`.
 
 ### Metric Spec
- 
- In Argo you can define a metric on the `Workflow` level or on the `Template` level. Here is an example of a `Workflow`
- level Gauge metric that will report the Workflow duration time:
- 
- ```yaml
+
+In Argo you can define a metric on the `Workflow` level or on the `Template` level. Here is an example of a `Workflow`
+level Gauge metric that will report the Workflow duration time:
+
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -135,7 +136,7 @@ spec:
         gauge:                            # The metric type. Available are "gauge", "histogram", and "counter".
           value: "{{workflow.duration}}"  # The value of your metric. It could be an Argo variable (see variables doc) or a literal value
 
-... 
+...
 ```
 
 An example of a `Template`-level Counter metric that will increase a counter every time the step fails:
@@ -184,6 +185,7 @@ A similar example of such a Counter metric that will increase for every step sta
         command: ["python", -c]
         # fail with a 66% probability
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+...
 ```
 
 Finally, an example of a `Template`-level Histogram metric that tracks an internal value:
