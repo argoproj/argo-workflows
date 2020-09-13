@@ -29,9 +29,6 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
 
     public render() {
         const wf = this.props.workflow;
-        const workflowTemplate = wf.metadata.labels['workflows.argoproj.io/workflow-template'];
-        const clusterWorkflowTemplate = wf.metadata.labels['workflows.argoproj.io/cluster-workflow-template'];
-        const cronWorkflow = wf.metadata.labels['workflows.argoproj.io/cron-workflow'];
         return (
             <div className='workflows-list__row-container'>
                 <div className='row argo-table-list__row'>
@@ -50,13 +47,8 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='row small-11'>
-                        <div className='columns small-2'>{wf.metadata.name}</div>
+                        <div className='columns small-3'>{wf.metadata.name}</div>
                         <div className='columns small-2'>{wf.metadata.namespace}</div>
-                        <div className='columns small-2'>
-                            {workflowTemplate && 'wftmpl/' + workflowTemplate}
-                            {clusterWorkflowTemplate && 'cwft/' + clusterWorkflowTemplate}
-                            {cronWorkflow && 'cwf/' + cronWorkflow}
-                        </div>
                         <div className='columns small-2'>
                             <Timestamp date={wf.status.startedAt} />
                         </div>

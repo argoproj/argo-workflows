@@ -162,6 +162,11 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                         <Redirect to={this.archivedWorkflowsUrl} />
                                     </Route>
                                 )}
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={reportsUrl}>
+                                        <Redirect to={this.reportsUrl} />
+                                    </Route>
+                                )}
                                 <Route path={workflowsUrl} component={workflows.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
@@ -194,6 +199,10 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
 
     private get workflowsUrl() {
         return workflowsUrl + '/' + this.state.namespace || '';
+    }
+
+    private get reportsUrl() {
+        return reportsUrl + '/' + this.state.namespace || '';
     }
 
     public getChildContext() {
