@@ -1,19 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: timeout
+  generateName: hello-world-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
 spec:
   entrypoint: whalesay
   templates:
-    - name: main
-      dag:
-        tasks:
-          - name: whalesay
-            template: whalesay
-    - name: whalesay
-      activeDeadlineSeconds: 3s
-      container:
-        image: argoproj/argosay:v2
-        args: [ "sleep", "10s" ]
-      timeout: 3s
-
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
