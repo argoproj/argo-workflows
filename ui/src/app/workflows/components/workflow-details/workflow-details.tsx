@@ -141,7 +141,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                                     nodeClicked={nodeId => this.selectNode(nodeId)}
                                                 />
                                             )) ||
-                                                (this.selectedTabKey && (
+                                                (this.selectedTabKey === 'events' && (
                                                     <EventsPanel namespace={this.state.workflow.metadata.namespace} kind='Workflow' name={this.state.workflow.metadata.name} />
                                                 )) || (
                                                     <WorkflowTimeline
