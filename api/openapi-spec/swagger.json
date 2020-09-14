@@ -4463,6 +4463,10 @@
           "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
+        "volumeClaimGC": {
+          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
+        },
         "volumeClaimTemplates": {
           "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
           "type": "array",
@@ -4471,10 +4475,6 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "volumeGC": {
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
         },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.",
@@ -4918,6 +4918,10 @@
           "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
+        "volumeClaimGC": {
+          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
+        },
         "volumeClaimTemplates": {
           "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
           "type": "array",
@@ -4926,10 +4930,6 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
-        },
-        "volumeGC": {
-          "description": "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeClaimGC"
         },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.",

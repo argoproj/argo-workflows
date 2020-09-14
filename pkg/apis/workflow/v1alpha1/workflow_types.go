@@ -328,12 +328,12 @@ type WorkflowSpec struct {
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 
 	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
-	VolumeClaimGC *VolumeClaimGC `json:"volumeGC,omitempty" protobuf:"bytes,36,opt,name=volumeGC,casttype=VolumeClaimGC"`
+	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
 func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
-	// If no volumeGC strategy was provided, we default to the equivalent of "OnSuccess"
+	// If no volumeClaimGC strategy was provided, we default to the equivalent of "OnSuccess"
 	// to match the existing behavior for back-compat
 	if wfs.VolumeClaimGC == nil {
 		return &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}

@@ -1398,7 +1398,7 @@ message WorkflowSpec {
   optional Synchronization synchronization = 35;
 
   // VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
-  optional VolumeClaimGC volumeGC = 36;
+  optional VolumeClaimGC volumeClaimGC = 36;
 }
 
 // WorkflowStatus contains overall status information about a workflow

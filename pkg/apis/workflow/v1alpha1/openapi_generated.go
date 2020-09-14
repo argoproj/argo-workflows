@@ -4636,7 +4636,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
-					"volumeGC": {
+					"volumeClaimGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
@@ -5312,7 +5312,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
-					"volumeGC": {
+					"volumeClaimGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
