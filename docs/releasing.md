@@ -70,7 +70,7 @@ If this is GA:
 
 ```bash
 export HOMEBREW_GITHUB_API_TOKEN=******
-brew bump-formula-pr argo --version 2.7.2/
+brew bump-formula-pr argo --version 2.7.2
 ```
 
 * [ ] Check that Homebrew was successfully updated after the PR was merged:
@@ -86,5 +86,4 @@ brew bump-formula-pr argo --version 2.7.2/
 If this is GA:
 
 * [ ] Update the Java SDK formula.
-
 
