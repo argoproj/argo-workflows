@@ -26,8 +26,6 @@ Workflow is the definition of a workflow resource
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
-
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -314,6 +312,8 @@ WorkflowTemplate is the definition of a workflow template resource
 <summary>Examples (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
@@ -353,7 +353,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -697,7 +697,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -1004,7 +1004,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -1323,7 +1323,7 @@ Arguments to a template
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -1569,7 +1569,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -2128,7 +2128,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -2362,7 +2362,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
@@ -2474,7 +2474,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -2642,7 +2642,7 @@ Pod metdata
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -3381,7 +3381,7 @@ GitArtifact is the location of an git artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -3651,7 +3651,7 @@ DAGTask represents a node in the graph during DAG execution
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
@@ -3933,7 +3933,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -4335,7 +4335,7 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -4365,7 +4365,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
@@ -4467,7 +4467,7 @@ A single application container that you want to run within a pod.
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -4731,7 +4731,7 @@ EnvVar represents an environment variable present in a Container.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
@@ -4812,7 +4812,7 @@ ResourceRequirements describes the compute resource requirements.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -4884,7 +4884,7 @@ VolumeMount describes a mounting of a Volume within a container.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -5101,7 +5101,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -5719,7 +5719,7 @@ Adapts a Secret into a volume.The contents of the target Secret's Data field wil
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
@@ -6116,7 +6116,7 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -6426,7 +6426,7 @@ Adapts a secret into a projected volume.The contents of the target Secret's Data
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`buildkit.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit.yaml)
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
