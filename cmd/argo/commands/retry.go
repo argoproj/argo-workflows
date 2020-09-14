@@ -14,6 +14,8 @@ import (
 type retryOps struct {
 	nodeFieldSelector string // --node-field-selector
 	restartSuccessful bool   // --restart-successful
+	labelSelector     string // --selector
+	fieldSelector     string // --field-selector
 }
 
 func NewRetryCommand() *cobra.Command {
@@ -58,7 +60,22 @@ func NewRetryCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", retryOps.nodeFieldSelector, err)
 			}
 
-			for _, name := range args {
+			var names []string
+
+			if retryOps.labelSelector != "" || retryOps.fieldSelector != "" {
+				listed, err := listWorkflows(ctx, serviceClient, listFlags{
+					labels: retryOps.labelSelector,
+					fields: retryOps.fieldSelector,
+				})
+				errors.CheckError(err)
+
+				for _, w := range listed {
+					names = append(names, w.GetName())
+				}
+			}
+
+			names = append(names, args...)
+			for _, name := range names {
 				wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
 					Name:              name,
 					Namespace:         namespace,
@@ -80,5 +97,7 @@ func NewRetryCommand() *cobra.Command {
 	command.Flags().BoolVar(&cliSubmitOpts.log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&retryOps.restartSuccessful, "restart-successful", false, "indicates to restart successful nodes matching the --node-field-selector")
 	command.Flags().StringVar(&retryOps.nodeFieldSelector, "node-field-selector", "", "selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVarP(&retryOps.labelSelector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
+	command.Flags().StringVar(&retryOps.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	return command
 }

@@ -81,7 +81,7 @@ func NewStopCommand() *cobra.Command {
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
 	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	command.Flags().StringVarP(&stopArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
-	command.Flags().StringVar(&stopArgs.labelSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
+	command.Flags().StringVar(&stopArgs.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&stopArgs.dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	return command
 }
