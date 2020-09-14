@@ -163,6 +163,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
+// As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate() {
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
@@ -489,8 +490,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	// You MUST not call `persistUpdates` twice:
-	// * Fails the `reapplyUpdate` pre-condition - it can never recover.
+	// You MUST not call `persistUpdates` twice.
+	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
 	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")

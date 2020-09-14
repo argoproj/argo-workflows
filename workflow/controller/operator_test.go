@@ -727,24 +727,17 @@ spec:
 `
 
 func TestRetriesVariable(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(retriesVariableTemplate)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		woc := newWorkflowOperationCtx(wf, controller)
 		if i != 1 {
 			makePodsPhase(woc, apiv1.PodFailed)
-			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-			assert.NoError(t, err)
 		}
-		woc = newWorkflowOperationCtx(wf, controller)
 		woc.operate()
+		wf = woc.wf
 	}
 
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
@@ -785,33 +778,26 @@ spec:
 `
 
 func TestStepsRetriesVariable(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(stepsRetriesVariableTemplate)
-	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
-
+	cancel, controller := newController(wf)
+	defer cancel()
 	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		woc := newWorkflowOperationCtx(wf, controller)
 		if i != 1 {
 			makePodsPhase(woc, apiv1.PodFailed)
-			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-			assert.Nil(t, err)
 		}
 		// move to next retry step
-		woc = newWorkflowOperationCtx(wf, controller)
 		woc.operate()
+		wf = woc.wf
 	}
 
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, iterations, len(pods.Items))
-	for i := 0; i < iterations; i++ {
-		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	assert.NoError(t, err)
+	if assert.Len(t, pods.Items, iterations) {
+		for i := 0; i < iterations; i++ {
+			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+		}
 	}
 }
 
