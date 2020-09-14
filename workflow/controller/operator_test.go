@@ -177,7 +177,7 @@ func TestSidecarWithVolume(t *testing.T) {
 	assert.True(t, existingVolFound, "existing vol was not referenced by sidecar")
 }
 
-func makeVolumeGcStrategyTemplate(strategy wfv1.VolumeGCStrategy, phase wfv1.NodePhase) string {
+func makeVolumeGcStrategyTemplate(strategy wfv1.VolumeClaimGCStrategy, phase wfv1.NodePhase) string {
 	return fmt.Sprintf(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -234,27 +234,27 @@ status:
 func TestVolumeGCStrategy(t *testing.T) {
 	tests := []struct {
 		name                     string
-		strategy                 wfv1.VolumeGCStrategy
+		strategy                 wfv1.VolumeClaimGCStrategy
 		phase                    wfv1.NodePhase
 		expectedVolumesRemaining int
 	}{{
 		name:                     "failed/OnWorkflowCompletion",
-		strategy:                 wfv1.VolumeGCOnCompletion,
+		strategy:                 wfv1.VolumeClaimGCOnCompletion,
 		phase:                    wfv1.NodeFailed,
 		expectedVolumesRemaining: 0,
 	}, {
 		name:                     "failed/OnWorkflowSuccess",
-		strategy:                 wfv1.VolumeGCOnSuccess,
+		strategy:                 wfv1.VolumeClaimGCOnSuccess,
 		phase:                    wfv1.NodeFailed,
 		expectedVolumesRemaining: 1,
 	}, {
 		name:                     "succeeded/OnWorkflowSuccess",
-		strategy:                 wfv1.VolumeGCOnSuccess,
+		strategy:                 wfv1.VolumeClaimGCOnSuccess,
 		phase:                    wfv1.NodeSucceeded,
 		expectedVolumesRemaining: 0,
 	}, {
 		name:                     "succeeded/OnWorkflowCompletion",
-		strategy:                 wfv1.VolumeGCOnCompletion,
+		strategy:                 wfv1.VolumeClaimGCOnCompletion,
 		phase:                    wfv1.NodeSucceeded,
 		expectedVolumesRemaining: 0,
 	}}

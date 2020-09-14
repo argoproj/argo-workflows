@@ -77,12 +77,12 @@ const (
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
 
-// VolumeGCStrategy is the strategy to use when deleting volumes from completed workflows
-type VolumeGCStrategy string
+// VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
+type VolumeClaimGCStrategy string
 
 const (
-	VolumeGCOnCompletion VolumeGCStrategy = "OnWorkflowCompletion"
-	VolumeGCOnSuccess    VolumeGCStrategy = "OnWorkflowSuccess"
+	VolumeClaimGCOnCompletion VolumeClaimGCStrategy = "OnWorkflowCompletion"
+	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
 )
 
 // Workflow is the definition of a workflow resource
@@ -327,19 +327,19 @@ type WorkflowSpec struct {
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
 
-	// VolumeGC describes the strategy to use when to deleting volumes from completed workflows
-	VolumeGC *VolumeGC `json:"volumeGC,omitempty" protobuf:"bytes,36,opt,name=volumeGC,casttype=VolumeGC"`
+	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+	VolumeClaimGC *VolumeClaimGC `json:"volumeGC,omitempty" protobuf:"bytes,36,opt,name=volumeGC,casttype=VolumeClaimGC"`
 }
 
-// GetVolumeGC returns the VolumeGC that was defined in the workflow spec.  If none was provided, a default value is returned.
-func (wfs WorkflowSpec) GetVolumeGC() *VolumeGC {
+// GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	// If no volumeGC strategy was provided, we default to the equivalent of "OnSuccess"
 	// to match the existing behavior for back-compat
-	if wfs.VolumeGC == nil {
-		return &VolumeGC{Strategy: VolumeGCOnSuccess}
+	if wfs.VolumeClaimGC == nil {
+		return &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}
 	}
 
-	return wfs.VolumeGC
+	return wfs.VolumeClaimGC
 }
 
 type ShutdownStrategy string
@@ -716,16 +716,16 @@ type PodGC struct {
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
 }
 
-// VolumeGC describes how to delete volumes from completed Workflows
-type VolumeGC struct {
+// VolumeClaimGC describes how to delete volumes from completed Workflows
+type VolumeClaimGC struct {
 	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
-	Strategy VolumeGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeGCStrategy"`
+	Strategy VolumeClaimGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeClaimGCStrategy"`
 }
 
-// GetStrategy returns the VolumeGCStrategy to use for the workflow
-func (vgc VolumeGC) GetStrategy() VolumeGCStrategy {
+// GetStrategy returns the VolumeClaimGCStrategy to use for the workflow
+func (vgc VolumeClaimGC) GetStrategy() VolumeClaimGCStrategy {
 	if vgc.Strategy == "" {
-		return VolumeGCOnSuccess
+		return VolumeClaimGCOnSuccess
 	}
 
 	return vgc.Strategy
