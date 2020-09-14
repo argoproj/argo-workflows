@@ -32,6 +32,7 @@ type When struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
 	workflowName      string
+	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
 }
 
@@ -108,13 +109,11 @@ func (w *When) CreateWorkflowTemplates() *When {
 	if len(w.wfTemplates) == 0 {
 		w.t.Fatal("No workflow templates to create")
 	}
-	for i, wfTmpl := range w.wfTemplates {
+	for _, wfTmpl := range w.wfTemplates {
 		println("Creating workflow template", wfTmpl.Name)
-		created, err := w.wfTemplateClient.Create(wfTmpl)
+		_, err := w.wfTemplateClient.Create(wfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
-		} else {
-			w.wfTemplates[i] = created
 		}
 	}
 	return w
@@ -125,13 +124,11 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	if len(w.cwfTemplates) == 0 {
 		w.t.Fatal("No cluster workflow templates to create")
 	}
-	for i, cwfTmpl := range w.cwfTemplates {
+	for _, cwfTmpl := range w.cwfTemplates {
 		println("Creating cluster workflow template", cwfTmpl.Name)
-		created, err := w.cwfTemplateClient.Create(cwfTmpl)
+		_, err := w.cwfTemplateClient.Create(cwfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
-		} else {
-			w.cwfTemplates[i] = created
 		}
 	}
 	return w
@@ -143,11 +140,11 @@ func (w *When) CreateCronWorkflow() *When {
 		w.t.Fatal("No cron workflow to create")
 	}
 	println("Creating cron workflow", w.cronWf.Name)
-	created, err := w.cronClient.Create(w.cronWf)
+	cronWf, err := w.cronClient.Create(w.cronWf)
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.cronWf = created
+		w.cronWorkflowName = cronWf.Name
 	}
 	return w
 }
@@ -359,7 +356,7 @@ func (w *When) Then() *Then {
 	return &Then{
 		t:                w.t,
 		workflowName:     w.workflowName,
-		cronWorkflowName: w.cronWf.Name,
+		cronWorkflowName: w.cronWorkflowName,
 		client:           w.client,
 		cronClient:       w.cronClient,
 		hydrator:         w.hydrator,
