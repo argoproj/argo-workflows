@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: basic
+  labels:
+    argo-e2e: true
+spec:
+  workflowMetadata:
+    labels:
+      argo-e2e: true
+  schedule: "* * * * *"
+  workflowSpec:
+    entrypoint: main
+    templates:
+      - name: main
+        container:
+          image: argoproj/argosay:v2
