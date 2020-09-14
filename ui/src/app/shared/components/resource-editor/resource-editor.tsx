@@ -31,7 +31,7 @@ const LOCAL_STORAGE_KEY = 'ResourceEditorLang';
 export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private set lang(lang: string) {
         try {
-            this.setState({lang, error: null, value: stringify(parse(this.state.value), lang)});
+            this.setState(state => ({lang, error: null, value: stringify(parse(state.value), lang)}));
         } catch (error) {
             this.setState({error});
         }
@@ -84,14 +84,15 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     public componentDidUpdate(prevProps: Props<T>) {
         if (prevProps.value !== this.props.value) {
-            this.setState({value: stringify(this.props.value, this.state.lang)});
+            this.setState(state => ({value: stringify(this.props.value, state.lang)}));
         }
     }
 
     public handleFiles(files: FileList) {
         files[0]
             .text()
-            .then(value => this.setState({error: null, value: stringify(parse(value), this.state.lang)}))
+            .then(value => stringify(parse(value), this.state.lang))
+            .then(value => this.setState({error: null, value}))
             .catch(error => this.setState(error));
     }
 

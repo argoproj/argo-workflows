@@ -2016,6 +2016,10 @@
           "description": "Raw contains raw artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
         },
+        "recurseMode": {
+          "description": "If mode is set, apply the permission recursively into the artifact if it is a folder",
+          "type": "boolean"
+        },
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
@@ -2740,13 +2744,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
-      "type": [
-        "boolean",
-        "number",
-        "string",
-        "object"
-      ]
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -2766,7 +2764,7 @@
           "type": "string"
         },
         "url": {
-          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
+          "description": "The URL. May contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\" and \"${status.finishedAt}\".",
           "type": "string"
         }
       },
@@ -3123,7 +3121,7 @@
       "properties": {
         "default": {
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -3135,7 +3133,7 @@
         },
         "value": {
           "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "valueFrom": {
           "description": "ValueFrom is the source for the output parameter's value",
@@ -4029,7 +4027,7 @@
       "properties": {
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
-          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+          "type": "string"
         },
         "event": {
           "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",

@@ -90,7 +90,7 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("workflow")
 		json.
 			Path("$.links[0].url").
-			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
+			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}")
 	})
 }
 

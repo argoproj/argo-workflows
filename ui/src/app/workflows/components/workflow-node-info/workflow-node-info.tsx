@@ -120,7 +120,11 @@ export const WorkflowNodeSummary = (props: Props) => {
                         .map(link => (
                             <a
                                 className='argo-button argo-button--base-o'
-                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
+                                href={link.url
+                                    .replace('${metadata.namespace}', props.workflow.metadata.namespace)
+                                    .replace('${metadata.name}', props.node.id)
+                                    .replace('${status.startedAt}', props.node.startedAt)
+                                    .replace('${status.finishedAt}', props.node.finishedAt)}>
                                 <i className='fa fa-link' /> {link.name}
                             </a>
                         ))}
@@ -311,7 +315,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                 props.node.type === 'Pod' && {
                     title: 'EVENTS',
                     key: 'events',
-                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.name} />
+                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.id} />
                 },
                 {
                     title: 'CONTAINERS',
