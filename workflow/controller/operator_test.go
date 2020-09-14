@@ -4350,8 +4350,8 @@ spec:
 			State: apiv1.ContainerState{
 				Terminated: &apiv1.ContainerStateTerminated{
 					ExitCode: int32(123),
-					Message: "my-message",
-					Reason: "StartError",
+					Message:  "my-message",
+					Reason:   "StartError",
 				},
 			},
 		}}
