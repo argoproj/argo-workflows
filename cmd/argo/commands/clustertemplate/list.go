@@ -2,13 +2,13 @@ package clustertemplate
 
 import (
 	"fmt"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"log"
 	"os"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -24,8 +24,8 @@ func NewListCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "list",
 		Short: "list cluster workflow templates",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 
 			cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})
@@ -42,7 +42,7 @@ func NewListCommand() *cobra.Command {
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
 			}
-
+			return nil
 		},
 	}
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")

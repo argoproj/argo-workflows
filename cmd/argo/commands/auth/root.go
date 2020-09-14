@@ -7,8 +7,9 @@ import (
 func NewAuthCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use: "auth",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.HelpFunc()(cmd, args)
+			return nil
 		},
 	}
 	command.AddCommand(NewTokenCommand())

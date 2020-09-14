@@ -4,12 +4,12 @@ import (
 	"os"
 	"sort"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/printer"
@@ -23,10 +23,12 @@ func NewListCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use: "list",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			namespace := client.Namespace()
 			listOpts := &metav1.ListOptions{
 				FieldSelector: "metadata.namespace=" + namespace,
@@ -37,7 +39,9 @@ func NewListCommand() *cobra.Command {
 			for {
 				log.WithField("listOpts", listOpts).Debug()
 				resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: listOpts})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				workflows = append(workflows, resp.Items...)
 				if resp.Continue == "" {
 					break
@@ -45,8 +49,7 @@ func NewListCommand() *cobra.Command {
 				listOpts.Continue = resp.Continue
 			}
 			sort.Sort(workflows)
-			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true})
-			errors.CheckError(err)
+			return printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true})
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")

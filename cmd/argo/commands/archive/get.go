@@ -3,15 +3,12 @@ package archive
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 )
 
@@ -21,29 +18,33 @@ func NewGetCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use: "get UID",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 			uid := args[0]
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			switch output {
 			case "json":
 				output, err := json.Marshal(wf)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 				fmt.Println(string(output))
 			case "yaml":
 				output, err := yaml.Marshal(wf)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 				fmt.Println(string(output))
 			default:
@@ -70,6 +71,7 @@ func NewGetCommand() *cobra.Command {
 					fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 				}
 			}
+			return nil
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")

@@ -1,10 +1,10 @@
 package cron
 
 import (
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 )
 
@@ -17,14 +17,16 @@ func NewDeleteCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "delete [CRON_WORKFLOW... | --all]",
 		Short: "delete a cron workflow",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			if all {
 				cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
 					Namespace: client.Namespace(),
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				for _, cronWf := range cronWfList.Items {
 					args = append(args, cronWf.Name)
 				}
@@ -34,8 +36,11 @@ func NewDeleteCommand() *cobra.Command {
 					Name:      name,
 					Namespace: client.Namespace(),
 				})
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 			}
+			return nil
 		},
 	}
 

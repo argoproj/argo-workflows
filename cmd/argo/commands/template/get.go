@@ -3,7 +3,6 @@ package template
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -24,7 +23,7 @@ func NewGetCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 			namespace := client.Namespace()
@@ -34,10 +33,14 @@ func NewGetCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
-				printWorkflowTemplate(wftmpl, output)
+				err = printWorkflowTemplate(wftmpl, output)
+				if err != nil {
+					return err
+				}
 			}
+			return nil
 		},
 	}
 
@@ -45,7 +48,7 @@ func NewGetCommand() *cobra.Command {
 	return command
 }
 
-func printWorkflowTemplate(wf *wfv1.WorkflowTemplate, outFmt string) {
+func printWorkflowTemplate(wf *wfv1.WorkflowTemplate, outFmt string) error {
 	switch outFmt {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -58,8 +61,9 @@ func printWorkflowTemplate(wf *wfv1.WorkflowTemplate, outFmt string) {
 	case "wide", "":
 		printWorkflowTemplateHelper(wf)
 	default:
-		log.Fatalf("Unknown output format: %s", outFmt)
+		return fmt.Errorf("Unknown output format: %s", outFmt)
 	}
+	return nil
 }
 
 func printWorkflowTemplateHelper(wf *wfv1.WorkflowTemplate) {

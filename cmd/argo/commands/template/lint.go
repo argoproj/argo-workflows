@@ -24,12 +24,13 @@ func NewLintCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			err := ServerSideLint(args, strict)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			fmt.Printf("WorkflowTemplate manifests validated\n")
+			return nil
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
@@ -46,7 +47,7 @@ func ServerSideLint(args []string, strict bool) error {
 	if validateDir {
 		if len(args) > 1 {
 			fmt.Printf("Validation of a single directory supported")
-			os.Exit(1)
+			return cmdcommon.MissingArgumentsError
 		}
 		walkFunc := func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -99,7 +100,7 @@ func ServerSideLint(args []string, strict bool) error {
 		}
 	}
 	if invalid {
-		log.Fatalf("Errors encountered in validation")
+		return fmt.Errorf("Errors encountered in validation")
 	}
 	fmt.Printf("WorkflowTemplate manifests validated\n")
 	return nil

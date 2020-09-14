@@ -2,7 +2,6 @@ package template
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 
@@ -27,7 +26,7 @@ func NewListCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "list",
 		Short: "list workflow templates",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 			namespace := client.Namespace()
@@ -38,7 +37,7 @@ func NewListCommand() *cobra.Command {
 				Namespace: namespace,
 			})
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			switch listArgs.output {
 			case "", "wide":
@@ -48,9 +47,9 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(wftmp.ObjectMeta.Name)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				return fmt.Errorf("Unknown output mode: %s", listArgs.output)
 			}
-
+			return nil
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")

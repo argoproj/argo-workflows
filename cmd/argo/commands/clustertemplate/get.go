@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -22,7 +22,7 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get CLUSTER WORKFLOW_TEMPLATE...",
 		Short: "display details about a cluster workflow template",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 			for _, name := range args {
 				wftmpl, err := serviceClient.GetClusterWorkflowTemplate(ctx, &clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest{

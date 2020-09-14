@@ -3,16 +3,14 @@ package cron
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -25,13 +23,13 @@ func NewGetCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "get CRON_WORKFLOW...",
 		Short: "display details about a cron workflow",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 
-			ctx, apiClient := client.NewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClient()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			namespace := client.Namespace()
 
@@ -40,9 +38,12 @@ func NewGetCommand() *cobra.Command {
 					Name:      arg,
 					Namespace: namespace,
 				})
-				errors.CheckError(err)
-				printCronWorkflow(cronWf, output)
+				if err != nil {
+					return err
+				}
+				return printCronWorkflow(cronWf, output)
 			}
+			return nil
 		},
 	}
 
@@ -50,7 +51,7 @@ func NewGetCommand() *cobra.Command {
 	return command
 }
 
-func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
+func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) error {
 	switch outFmt {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -63,8 +64,9 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 	case "wide", "":
 		fmt.Print(getCronWorkflowGet(wf))
 	default:
-		log.Fatalf("Unknown output format: %s", outFmt)
+		return fmt.Errorf("Unknown output format: %s", outFmt)
 	}
+	return nil
 }
 
 func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {

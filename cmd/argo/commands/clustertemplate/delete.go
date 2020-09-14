@@ -3,11 +3,10 @@ package clustertemplate
 import (
 	"fmt"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/pkg/errors"
-
-	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 )
 
@@ -30,7 +29,7 @@ func NewDeleteCommand() *cobra.Command {
 }
 
 func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) error {
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClient()
 	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 	var delWFTmplNames []string
 	if allWFs {
@@ -47,7 +46,9 @@ func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) 
 		_, err := serviceClient.DeleteClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateDeleteRequest{
 			Name: cwfTmplName,
 		})
-		errors.CheckError(err)
+		if err != nil {
+			return err
+		}
 		fmt.Printf("ClusterWorkflowTemplate '%s' deleted\n", cwfTmplName)
 	}
 	return nil

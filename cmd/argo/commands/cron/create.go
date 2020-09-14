@@ -2,11 +2,10 @@ package cron
 
 import (
 	"fmt"
-	"log"
-	"os"
-
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+	"log"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -30,13 +29,13 @@ func NewCreateCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cron workflow",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 
-			CreateCronWorkflows(args, &cliCreateOpts, &submitOpts)
+			return CreateCronWorkflows(args, &cliCreateOpts, &submitOpts)
 		},
 	}
 
@@ -47,14 +46,14 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) {
+func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) error {
 
-	ctx, apiClient := client.NewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClient()
 	serviceClient := apiClient.NewCronWorkflowServiceClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var cronWorkflows []wfv1.CronWorkflow
@@ -65,7 +64,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 
 	if len(cronWorkflows) == 0 {
 		log.Println("No CronWorkflows found in given files")
-		os.Exit(1)
+		return nil
 	}
 
 	for _, cronWf := range cronWorkflows {
@@ -77,7 +76,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
 		err := util.ApplySubmitOpts(&newWf, submitOpts)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		cronWf.Spec.WorkflowSpec = newWf.Spec
 		if cronWf.Namespace == "" {
@@ -88,10 +87,11 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create workflow template: %v", err)
+			return fmt.Errorf("Failed to create workflow template: %v", err)
 		}
 		fmt.Print(getCronWorkflowGet(created))
 	}
+	return nil
 }
 
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml

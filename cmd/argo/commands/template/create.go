@@ -1,8 +1,8 @@
 package template
 
 import (
+	"fmt"
 	"log"
-	"os"
 
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
@@ -27,13 +27,13 @@ func NewCreateCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return cmdcommon.MissingArgumentsError
 			}
 
-			CreateWorkflowTemplates(args, &cliCreateOpts)
+			return CreateWorkflowTemplates(args, &cliCreateOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -41,7 +41,7 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
+func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) error {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
@@ -50,18 +50,21 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var workflowTemplates []wfv1.WorkflowTemplate
 	for _, body := range fileContents {
-		wftmpls := unmarshalWorkflowTemplates(body, cliOpts.strict)
+		wftmpls, err := unmarshalWorkflowTemplates(body, cliOpts.strict)
+		if err != nil {
+			return err
+		}
 		workflowTemplates = append(workflowTemplates, wftmpls...)
 	}
 
 	if len(workflowTemplates) == 0 {
 		log.Println("No workflow template found in given files")
-		os.Exit(1)
+		return nil
 	}
 
 	for _, wftmpl := range workflowTemplates {
@@ -73,14 +76,18 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 			Template:  &wftmpl,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create workflow template: %v", err)
+			return fmt.Errorf("Failed to create workflow template: %v", err)
 		}
-		printWorkflowTemplate(created, cliOpts.output)
+		err = printWorkflowTemplate(created, cliOpts.output)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // unmarshalWorkflowTemplates unmarshals the input bytes as either json or yaml
-func unmarshalWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.WorkflowTemplate {
+func unmarshalWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
 	var wf wfv1.WorkflowTemplate
 	var jsonOpts []json.JSONOpt
 	if strict {
@@ -88,12 +95,12 @@ func unmarshalWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.WorkflowTemp
 	}
 	err := json.Unmarshal(wfBytes, &wf, jsonOpts...)
 	if err == nil {
-		return []wfv1.WorkflowTemplate{wf}
+		return []wfv1.WorkflowTemplate{wf}, nil
 	}
 	yamlWfs, err := common.SplitWorkflowTemplateYAMLFile(wfBytes, strict)
 	if err == nil {
-		return yamlWfs
+		return yamlWfs, nil
 	}
-	log.Fatalf("Failed to parse workflow template: %v", err)
-	return nil
+
+	return nil, fmt.Errorf("Failed to parse workflow template: %v", err)
 }
