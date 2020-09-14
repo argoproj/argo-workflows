@@ -168,9 +168,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		workflowResyncPeriod,
 		wfc.tweakListOptions,
 		cache.Indexers{
-			common.LabelKeyCronWorkflow:            indexes.MetaLabelIndexFunc(common.LabelKeyCronWorkflow),
-			common.LabelKeyClusterWorkflowTemplate: indexes.MetaLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
-			common.LabelKeyWorkflowTemplate:        indexes.MetaLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+			common.LabelKeyCronWorkflow:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
+			common.LabelKeyClusterWorkflowTemplate: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
+			common.LabelKeyWorkflowTemplate:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
 		},
 	)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)

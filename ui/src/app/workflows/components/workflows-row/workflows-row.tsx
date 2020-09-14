@@ -57,15 +57,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                             <Timestamp date={wf.status.finishedAt} />
                         </div>
                         <div className='columns small-2'>
-                            <Ticker>
-                                {() => (
-                                    <DurationPanel
-                                        phase={wf.status.phase}
-                                        duration={wfDuration(wf.status)}
-                                        estimatedDuration={wf.status.estimatedDuration}
-                                    />
-                                )}
-                            </Ticker>
+                            <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
                         </div>
                         <div className='columns small-1'>
                             <div className='workflows-list__labels-container'>

@@ -64,13 +64,7 @@ export const WorkflowNodeSummary = (props: Props) => {
             title: 'DURATION',
             value: (
                 <Ticker disabled={props.workflow.status && props.workflow.status.phase !== models.NODE_PHASE.RUNNING}>
-                    {now => (
-                        <DurationPanel
-                            duration={nodeDuration(props.node, now)}
-                            phase={props.node.phase}
-                            estimatedDuration={props.node.estimatedDuration}
-                        />
-                    )}
+                    {now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}
                 </Ticker>
             )
         },
@@ -322,7 +316,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                 props.node.type === 'Pod' && {
                     title: 'EVENTS',
                     key: 'events',
-                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.name} />
+                    content: <EventsPanel namespace={props.workflow.metadata.namespace} kind='Pod' name={props.node.id} />
                 },
                 {
                     title: 'CONTAINERS',

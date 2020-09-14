@@ -44,6 +44,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -1122,40 +1123,15 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		updated = true
 		node.Message = message
 	}
-
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
-		if !node.IsDaemoned() {
-			node.FinishedAt = getLatestFinishedAt(pod)
-		}
-		if node.FinishedAt.IsZero() {
-			// If we get here, the container is daemoned so the
-			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		}
+		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
 	if updated {
 		return node
 	}
 	return nil
-}
-
-// getLatestFinishedAt returns the latest finishAt timestamp from all the
-// containers of this pod.
-func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
-	var latest metav1.Time
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
-		}
-	}
-	for _, ctr := range pod.Status.ContainerStatuses {
-		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
-			latest = ctr.State.Terminated.FinishedAt
-		}
-	}
-	return latest
 }
 
 func getPendingReason(pod *apiv1.Pod) string {
@@ -3064,10 +3040,11 @@ func (woc *wfOperationCtx) getBaselineWF() *wfv1.Workflow {
 		// then actually get it
 		wf, err := woc.getBaselineWFAux()
 		if err != nil {
-			log.WithError(err).Error("failed to get baseline workflow")
+			woc.log.WithError(err).Error("failed to get baseline workflow")
 			return nil
 		}
 		if wf != nil {
+			woc.log.WithField("name", wf.Name).Info("Baseline workflow")
 			woc.baselineWF = wf
 		}
 	}
@@ -3078,7 +3055,7 @@ func (woc *wfOperationCtx) getBaselineWFAux() (*wfv1.Workflow, error) {
 	for _, labelName := range []string{common.LabelKeyWorkflowTemplate, common.LabelKeyClusterWorkflowTemplate, common.LabelKeyCronWorkflow} {
 		labelValue, ok := woc.wf.Labels[labelName]
 		if ok {
-			objs, err := woc.controller.wfInformer.GetIndexer().ByIndex(labelName, labelValue)
+			objs, err := woc.controller.wfInformer.GetIndexer().ByIndex(labelName, indexes.MetaNamespaceLabelIndex(woc.wf.Namespace, labelValue))
 			if err != nil {
 				return nil, fmt.Errorf("failed to list workflows by index: %v", err)
 			}
@@ -3089,14 +3066,14 @@ func (woc *wfOperationCtx) getBaselineWFAux() (*wfv1.Workflow, error) {
 					return nil, fmt.Errorf("failed convert object to unstructured")
 				}
 				candidateWf := &wfv1.Workflow{}
-				err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &newBaselineWf)
+				err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, candidateWf)
 				if err != nil {
 					return nil, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
 				if candidateWf.Labels[common.LabelKeyCompleted] != "true" {
 					continue
 				}
-				if newBaselineWf == nil || candidateWf.Status.FinishedAt.After(newBaselineWf.Status.FinishedAt.Time) {
+				if newBaselineWf == nil || candidateWf.Status.FinishedAt.Time.After(newBaselineWf.Status.FinishedAt.Time) {
 					newBaselineWf = candidateWf
 				}
 			}
