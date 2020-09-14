@@ -50,4 +50,5 @@ func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) 
 		errors.CheckError(err)
 		fmt.Printf("ClusterWorkflowTemplate '%s' deleted\n", cwfTmplName)
 	}
+	return nil
 }

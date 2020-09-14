@@ -2,10 +2,10 @@ package auth
 
 import (
 	"fmt"
-	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
-	"os"
 
 	"github.com/spf13/cobra"
+
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 )

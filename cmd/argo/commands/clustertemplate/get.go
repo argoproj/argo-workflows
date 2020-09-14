@@ -3,12 +3,10 @@ package clustertemplate
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-
-	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/pkg/humanize"
+	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -38,6 +36,7 @@ func NewGetCommand() *cobra.Command {
 					return err
 				}
 			}
+			return nil
 		},
 	}
 
