@@ -15,7 +15,7 @@ export interface WorkflowDagRenderOptions {
     scale: number;
     nodesToDisplay: string[];
     expandNodes: Set<string>;
-    useFastRendering: boolean;
+    fastRenderer: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -187,11 +187,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return <Loading />;
         }
         const {nodes, edges} = this.prepareGraph();
-        if (this.state.useFastRendering) {
-            this.layoutGraphFast(nodes, edges);
-        } else {
-            this.layoutGraphPretty(nodes, edges);
-        }
+        this.layoutGraph(nodes, edges);
 
         return (
             <>
@@ -288,7 +284,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 'type:Skipped',
                 'type:Suspend'
             ],
-            useFastRendering: false
+            fastRenderer: false
         } as WorkflowDagRenderOptions;
     }
 
@@ -569,5 +565,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
             (node.type === 'Retry' && node.children.length === 1)
         );
+    }
+
+    private layoutGraph(nodes: string[], edges: Edge[]) {
+        if (this.state.fastRenderer) {
+            this.layoutGraphFast(nodes, edges);
+        } else {
+            this.layoutGraphPretty(nodes, edges);
+        }
     }
 }
