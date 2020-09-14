@@ -53,7 +53,7 @@ func (s *EstimatedDurationSuite) TestClusterWorkflowTemplate() {
 
 func (s *EstimatedDurationSuite) TestCronWorkflow() {
 	s.Given().
-		CronWorkflow("@testdata/basic-clusterworkflowtemplate.yaml").
+		CronWorkflow("@testdata/basic-cronworkflow.yaml").
 		When().
 		CreateCronWorkflow().
 		SubmitWorkflowsFromCronWorkflows().

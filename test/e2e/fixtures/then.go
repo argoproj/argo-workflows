@@ -17,7 +17,6 @@ import (
 type Then struct {
 	t                *testing.T
 	workflowName     string
-	wfTemplateNames  []string
 	cronWorkflowName string
 	client           v1alpha1.WorkflowInterface
 	cronClient       v1alpha1.CronWorkflowInterface
@@ -143,13 +142,11 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (t *Then) When() *When {
 	return &When{
-		t:                t.t,
-		client:           t.client,
-		cronClient:       t.cronClient,
-		hydrator:         t.hydrator,
-		workflowName:     t.workflowName,
-		wfTemplateNames:  t.wfTemplateNames,
-		cronWorkflowName: t.cronWorkflowName,
-		kubeClient:       t.kubeClient,
+		t:            t.t,
+		client:       t.client,
+		cronClient:   t.cronClient,
+		hydrator:     t.hydrator,
+		workflowName: t.workflowName,
+		kubeClient:   t.kubeClient,
 	}
 }
