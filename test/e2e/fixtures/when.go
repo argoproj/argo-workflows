@@ -14,6 +14,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -43,6 +44,46 @@ func (w *When) SubmitWorkflow() *When {
 	}
 	println("Submitting workflow", w.wf.Name, w.wf.GenerateName)
 	wf, err := w.client.Create(w.wf)
+	if err != nil {
+		w.t.Fatal(err)
+	} else {
+		w.workflowName = wf.Name
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
+	w.t.Helper()
+	for _, tmpl := range w.wfTemplates {
+		println("Submitting workflow from workflow template", tmpl.Name)
+		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false))
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.workflowName = wf.Name
+		}
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
+	w.t.Helper()
+	for _, tmpl := range w.cwfTemplates {
+		println("Submitting workflow from cluster workflow template", tmpl.Name)
+		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true))
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.workflowName = wf.Name
+		}
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
+	w.t.Helper()
+	println("Submitting workflow from cron workflow", w.cronWf.Name)
+	wf, err := w.client.Create(common.ConvertCronWorkflowToWorkflow(w.cronWf))
 	if err != nil {
 		w.t.Fatal(err)
 	} else {

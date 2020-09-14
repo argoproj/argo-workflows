@@ -238,8 +238,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             hidden = this.hiddenNode(nodeId);
                                         }
 
-                                        const duration = node ? new Date().getTime() - new Date(node.startedAt).getTime() : 0; // ms
-                                        const estimatedDuration = node && node.estimatedDuration ? node.estimatedDuration / 1000 / 1000 : Number.MAX_SAFE_INTEGER; // ms
+                                        const duration = node ? (new Date().getTime() - new Date(node.startedAt).getTime())/1000 : 0; // seconds
+                                        const estimatedDuration = node && node.estimatedDuration ? node.estimatedDuration : Number.MAX_SAFE_INTEGER; // seconds
                                         const complete = Math.max(Math.min(duration / estimatedDuration, 0.999), 0);
                                         const radius = ((this.nodeSize / 2) * 80) / 100;
                                         const offset = (2 * Math.PI * 3) / 4;

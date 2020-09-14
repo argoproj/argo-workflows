@@ -2954,7 +2954,7 @@
         },
         "estimatedDuration": {
           "type": "integer",
-          "format": "int64"
+          "format": "int32"
         },
         "finishedAt": {
           "description": "Time at which this node completed",
@@ -4498,7 +4498,7 @@
         },
         "estimatedDuration": {
           "type": "integer",
-          "format": "int64"
+          "format": "int32"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",

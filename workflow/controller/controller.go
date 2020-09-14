@@ -38,6 +38,7 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
@@ -161,7 +162,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions)
+	wfc.wfInformer = util.NewWorkflowInformer(
+		wfc.restConfig,
+		wfc.GetManagedNamespace(),
+		workflowResyncPeriod,
+		wfc.tweakListOptions,
+		cache.Indexers{
+			common.LabelKeyCronWorkflow:            indexes.MetaLabelIndexFunc(common.LabelKeyCronWorkflow),
+			common.LabelKeyClusterWorkflowTemplate: indexes.MetaLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
+			common.LabelKeyWorkflowTemplate:        indexes.MetaLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+		},
+	)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()

@@ -66,9 +66,9 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <Ticker disabled={props.workflow.status && props.workflow.status.phase !== models.NODE_PHASE.RUNNING}>
                     {now => (
                         <DurationPanel
-                            duration={1000 * nodeDuration(props.node, now)}
+                            duration={nodeDuration(props.node, now)}
                             phase={props.node.phase}
-                            estimatedDuration={props.node.estimatedDuration && props.node.estimatedDuration / 1000 / 1000}
+                            estimatedDuration={props.node.estimatedDuration}
                         />
                     )}
                 </Ticker>

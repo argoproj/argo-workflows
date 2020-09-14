@@ -6587,7 +6587,6 @@ spec:
                 type: object
               type: array
             estimatedDuration:
-              format: int64
               type: integer
             finishedAt:
               format: date-time
@@ -6608,7 +6607,6 @@ spec:
                   displayName:
                     type: string
                   estimatedDuration:
-                    format: int64
                     type: integer
                   finishedAt:
                     format: date-time

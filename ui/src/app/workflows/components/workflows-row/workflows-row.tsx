@@ -61,8 +61,8 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                                 {() => (
                                     <DurationPanel
                                         phase={wf.status.phase}
-                                        duration={1000 * wfDuration(wf.status)}
-                                        estimatedDuration={wf.status.estimatedDuration && wf.status.estimatedDuration / 1000 / 1000}
+                                        duration={wfDuration(wf.status)}
+                                        estimatedDuration={wf.status.estimatedDuration}
                                     />
                                 )}
                             </Ticker>

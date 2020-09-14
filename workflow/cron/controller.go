@@ -93,7 +93,7 @@ func (cc *Controller) Run(ctx context.Context) {
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
 		wfInformerListOptionsFunc(options, cc.instanceId)
-	})
+	}, cache.Indexers{})
 	cc.addWorkflowInformerHandler()
 
 	cc.wfLister = util.NewWorkflowLister(cc.wfInformer)

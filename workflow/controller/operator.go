@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -96,8 +97,8 @@ type wfOperationCtx struct {
 	// 'execWf.Spec' should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
-	execWf       *wfv1.Workflow
-	lastWorkflow *wfv1.Workflow
+	execWf     *wfv1.Workflow
+	baselineWF *wfv1.Workflow
 }
 
 var (
@@ -3056,74 +3057,87 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	return tmplRef, executionParameters, nil
 }
 
-func (woc *wfOperationCtx) getLastWorkflow() *wfv1.Workflow {
-	if woc.lastWorkflow == nil {
+func (woc *wfOperationCtx) getBaselineWF() *wfv1.Workflow {
+	if woc.baselineWF == nil {
 		// put a dummy into this so we don't try again
-		woc.lastWorkflow = &wfv1.Workflow{}
+		woc.baselineWF = &wfv1.Workflow{}
 		// then actually get it
-		wf, err := woc.getLastWorkflowAux()
+		wf, err := woc.getBaselineWFAux()
 		if err != nil {
-			log.WithError(err).Error("failed to get last workflow")
+			log.WithError(err).Error("failed to get baseline workflow")
 			return nil
 		}
 		if wf != nil {
-			woc.lastWorkflow = wf
+			woc.baselineWF = wf
 		}
 	}
-	return woc.lastWorkflow
+	return woc.baselineWF
 }
 
-func (woc *wfOperationCtx) getLastWorkflowAux() (*wfv1.Workflow, error) {
+func (woc *wfOperationCtx) getBaselineWFAux() (*wfv1.Workflow, error) {
 	for _, labelName := range []string{common.LabelKeyWorkflowTemplate, common.LabelKeyClusterWorkflowTemplate, common.LabelKeyCronWorkflow} {
 		labelValue, ok := woc.wf.Labels[labelName]
 		if ok {
-			labelSelector, _ := labels.Parse(common.LabelKeyCompleted + "=true," + labelName + "=" + labelValue)
-			labelSelector.Add(wfutil.InstanceIDRequirement(woc.controller.Config.InstanceID))
-			list, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
+			objs, err := woc.controller.wfInformer.GetIndexer().ByIndex(labelName, labelValue)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list workflows: %v", err)
+				return nil, fmt.Errorf("failed to list workflows by index: %v", err)
 			}
-			sort.Sort(list.Items)
-			for _, wf := range list.Items {
-				err = woc.controller.hydrator.Hydrate(&wf)
+			var newBaselineWf *wfv1.Workflow
+			for _, obj := range objs {
+				un, ok := obj.(*unstructured.Unstructured)
+				if !ok {
+					return nil, fmt.Errorf("failed convert object to unstructured")
+				}
+				candidateWf := &wfv1.Workflow{}
+				err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &newBaselineWf)
+				if err != nil {
+					return nil, fmt.Errorf("failed convert unstructured to workflow: %w", err)
+				}
+				if candidateWf.Labels[common.LabelKeyCompleted] != "true" {
+					continue
+				}
+				if newBaselineWf == nil || candidateWf.Status.FinishedAt.After(newBaselineWf.Status.FinishedAt.Time) {
+					newBaselineWf = candidateWf
+				}
+			}
+			if newBaselineWf != nil {
+				err = woc.controller.hydrator.Hydrate(newBaselineWf)
 				if err != nil {
 					return nil, fmt.Errorf("failed hydrate last workflow: %w", err)
 				}
-				return &wf, nil
+				return newBaselineWf, nil
 			}
+			// we failed to find a base-line in the live set, so we now look in the archive
+			labelSelector, _ := labels.Parse(common.LabelKeyCompleted + "=true," + labelName + "=" + labelValue)
+			labelSelector.Add(wfutil.InstanceIDRequirement(woc.controller.Config.InstanceID))
 			labelRequirements, _ := labelSelector.Requirements()
 			workflows, err := woc.controller.wfArchive.ListWorkflows(woc.wf.Namespace, time.Time{}, time.Time{}, labelRequirements, 1, 0)
 			if err != nil {
 				return nil, fmt.Errorf("failed to list archived workflows: %v", err)
 			}
-			for _, wf := range workflows {
-				return &wf, nil
+			if len(workflows) > 0 {
+				return &workflows[0], nil
 			}
 		}
 	}
 	return nil, nil
 }
 
-func (woc *wfOperationCtx) estimateWorkflowDuration() time.Duration {
-	wf := woc.getLastWorkflow()
+func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
+	wf := woc.getBaselineWF()
 	if wf == nil {
 		return 0
 	}
-	return wf.Status.GetDuration()
+	return wfv1.NewEstimatedDuration(wf.Status.GetDuration())
 }
 
-func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) time.Duration {
-	woc.log.WithField("nodeName", nodeName).Debug("estimating node duration")
-	wf := woc.getLastWorkflow()
+func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
+	wf := woc.getBaselineWF()
 	if wf == nil {
-		woc.log.WithField("nodeName", nodeName).Debug("no last workflow")
 		return 0
 	}
 	// special case for root node
 	nodeName = strings.Replace(nodeName, woc.wf.Name, wf.Name, 1)
 	oldNodeID := wf.NodeID(nodeName)
-	status := wf.Status.Nodes[oldNodeID]
-	duration := status.GetDuration()
-	woc.log.WithFields(log.Fields{"nodeName": nodeName, "oldNodeID": oldNodeID, "status": status, "duration": duration}).Debug("got estimated node duration")
-	return duration
+	return wfv1.NewEstimatedDuration(wf.Status.Nodes[oldNodeID].GetDuration())
 }

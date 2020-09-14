@@ -42,8 +42,8 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                     value: (
                         <DurationPanel
                             phase={props.workflow.status.phase}
-                            duration={1000 * wfDuration(props.workflow.status)}
-                            estimatedDuration={props.workflow.status.estimatedDuration && props.workflow.status.estimatedDuration / 1000 / 1000}
+                            duration={wfDuration(props.workflow.status)}
+                            estimatedDuration={props.workflow.status.estimatedDuration && props.workflow.status.estimatedDuration}
                         />
                     )
                 }
