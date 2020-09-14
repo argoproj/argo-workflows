@@ -13,6 +13,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/common"
@@ -559,4 +560,13 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		}
 	})
 
+}
+
+func TestToUnstructured(t *testing.T) {
+	un, err := ToUnstructured(&wfv1.Workflow{})
+	if assert.NoError(t, err) {
+		gv := un.GetObjectKind().GroupVersionKind()
+		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
+		assert.Equal(t, workflow.Version, gv.Version)
+	}
 }
