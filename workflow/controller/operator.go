@@ -2174,7 +2174,7 @@ func getStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
 		// Retry, withItems and withParam scenario
-		if indx := strings.LastIndex(name, "("); indx > 0 {
+		if indx := strings.Index(name, "("); indx > 0 {
 			return name[0:indx]
 		}
 		return name
