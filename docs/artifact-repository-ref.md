@@ -1,6 +1,6 @@
 # Artifact Repository Ref
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.9 and after
 
