@@ -4318,6 +4318,57 @@ spec:
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
+func TestStartError(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	// reconcille
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+
+	// make all created pods as successful
+	podInterface := controller.kubeclientset.CoreV1().Pods("my-ns")
+	list, err := podInterface.List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, list.Items, 1)
+	for _, pod := range list.Items {
+		pod.Status.Phase = apiv1.PodRunning
+		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{{
+			Name: "main",
+			State: apiv1.ContainerState{
+				Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode: int32(123),
+					Message: "my-message",
+					Reason: "StartError",
+				},
+			},
+		}}
+		_, err := podInterface.Update(&pod)
+		assert.NoError(t, err)
+	}
+
+	// reconcille
+	woc.operate()
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, "my-message", woc.wf.Status.Message)
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes["my-wf"].Phase)
+		assert.Equal(t, "my-message", woc.wf.Status.Nodes["my-wf"].Message)
+	}
+}
+
 var globalVarsOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

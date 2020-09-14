@@ -1066,6 +1066,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 				newDaemonStatus = pointer.BoolPtr(true)
 				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
+			// sometimes pods going into `Running` state with `StartError`
+			for _, s := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+				t := s.State.Terminated
+				if t != nil && t.ExitCode > 0 {
+					newPhase, message = inferFailedReason(pod)
+				}
+			}
 		}
 	default:
 		newPhase = wfv1.NodeError
