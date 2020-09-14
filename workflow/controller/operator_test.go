@@ -185,7 +185,7 @@ metadata:
   name: workflow-with-volumes
 spec:
   entrypoint: workflow-with-volumes
-  volumeGC:
+  volumeClaimGC:
     strategy: %s
   volumeClaimTemplates:
   - metadata:
