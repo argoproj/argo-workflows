@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {DurationPanel} from '../../../shared/components/duration';
+import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';

@@ -1,4 +1,4 @@
-// @ts-ignore
+import {Ticker} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 
@@ -191,86 +191,99 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return (
             <>
                 <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />
-                <div className='workflow-dag'>
-                    <svg
-                        style={{
-                            width: this.graph.width + this.hgap * 2,
-                            height: this.graph.height + this.vgap * 2,
-                            margin: this.nodeSize
-                        }}>
-                        <defs>
-                            <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={this.nodeSize / 6} markerHeight={this.nodeSize / 6} orient='auto-start-reverse'>
-                                <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
-                            </marker>
-                            <filter id='shadow' x='0' y='0' width='200%' height='200%'>
-                                <feOffset result='offOut' in='SourceGraphic' dx={0.5} dy={0.5} />
-                                <feColorMatrix result='matrixOut' in='offOut' type='matrix' values='0.1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 1 0' />
-                                <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation={0.5} />
-                                <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
-                            </filter>
-                        </defs>
-                        <g transform={`translate(${this.hgap},${this.vgap})`}>
-                            {this.graph.edges.map(edge => {
-                                const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
-                            })}
-                            {Array.from(this.graph.nodes).map(([nodeId, v]) => {
-                                let phase: DagPhase;
-                                let label: string;
-                                let hidden: boolean;
-                                const node = this.props.nodes[nodeId];
-                                if (isCollapsedNode(nodeId)) {
-                                    phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
-                                    label = getMessage(nodeId);
-                                    hidden = this.hiddenNode(nodeId);
-                                } else {
-                                    phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
-                                    label = Utils.shortNodeName(node);
-                                    hidden = this.hiddenNode(nodeId);
-                                }
+                <Ticker intervalMs={100}>
+                    {() => (
+                        <div className='workflow-dag'>
+                            <svg
+                                style={{
+                                    width: this.graph.width + this.hgap * 2,
+                                    height: this.graph.height + this.vgap * 2,
+                                    margin: this.nodeSize
+                                }}>
+                                <defs>
+                                    <marker
+                                        id='arrow'
+                                        viewBox='0 0 10 10'
+                                        refX={10}
+                                        refY={5}
+                                        markerWidth={this.nodeSize / 6}
+                                        markerHeight={this.nodeSize / 6}
+                                        orient='auto-start-reverse'>
+                                        <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
+                                    </marker>
+                                    <filter id='shadow' x='0' y='0' width='200%' height='200%'>
+                                        <feOffset result='offOut' in='SourceGraphic' dx={0.5} dy={0.5} />
+                                        <feColorMatrix result='matrixOut' in='offOut' type='matrix' values='0.1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 1 0' />
+                                        <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation={0.5} />
+                                        <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
+                                    </filter>
+                                </defs>
+                                <g transform={`translate(${this.hgap},${this.vgap})`}>
+                                    {this.graph.edges.map(edge => {
+                                        const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
+                                        return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
+                                    })}
+                                    {Array.from(this.graph.nodes).map(([nodeId, v]) => {
+                                        let phase: DagPhase;
+                                        let label: string;
+                                        let hidden: boolean;
+                                        const node = this.props.nodes[nodeId];
+                                        if (isCollapsedNode(nodeId)) {
+                                            phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
+                                            label = getMessage(nodeId);
+                                            hidden = this.hiddenNode(nodeId);
+                                        } else {
+                                            phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
+                                            label = Utils.shortNodeName(node);
+                                            hidden = this.hiddenNode(nodeId);
+                                        }
 
-                                const duration = new Date().getTime() - new Date(node.startedAt).getTime(); // ms
-                                const estimatedDuration = node.estimatedDuration ? node.estimatedDuration / 1000 / 1000 : Number.MAX_SAFE_INTEGER; // ms
-                                const radius = this.nodeSize / 2;
-                                const complete = Math.min(duration / estimatedDuration, 0.999);
-                                const offset = (2 * Math.PI * 3) / 4;
-                                const theta0 = offset;
-                                const theta1 = 2 * Math.PI * complete + offset;
-                                const start = {x: radius * Math.cos(theta0), y: radius * Math.sin(theta0)};
-                                const end = {x: radius * Math.cos(theta1), y: radius * Math.sin(theta1)};
-                                const theta = theta1 - theta0;
-                                const largeArcFlag = theta > Math.PI ? 1 : 0;
-                                const sweepFlag = 1;
-                                return (
-                                    <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
-                                        <circle
-                                            r={this.nodeSize / (hidden ? 16 : 2)}
-                                            className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
-                                                active: nodeId === this.props.selectedNodeId,
-                                                hidden
-                                            })}
-                                        />
-                                        {!hidden && (
-                                            <>
-                                                <path
-                                                    key='progress-path'
-                                                    d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`}
-                                                    className='progress'
+                                        const duration = node ? new Date().getTime() - new Date(node.startedAt).getTime() : 0; // ms
+                                        const estimatedDuration = node && node.estimatedDuration ? node.estimatedDuration / 1000 / 1000 : Number.MAX_SAFE_INTEGER; // ms
+                                        const complete = Math.max(Math.min(duration / estimatedDuration, 0.999), 0);
+                                        const radius = ((this.nodeSize / 2) * 80) / 100;
+                                        const offset = (2 * Math.PI * 3) / 4;
+                                        const theta0 = offset;
+                                        const theta1 = 2 * Math.PI * complete + offset;
+                                        const start = {x: radius * Math.cos(theta0), y: radius * Math.sin(theta0)};
+                                        const end = {x: radius * Math.cos(theta1), y: radius * Math.sin(theta1)};
+                                        const theta = theta1 - theta0;
+                                        const largeArcFlag = theta > Math.PI ? 1 : 0;
+                                        const sweepFlag = 1;
+                                        return (
+                                            <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
+                                                <circle
+                                                    r={this.nodeSize / (hidden ? 16 : 2)}
+                                                    className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
+                                                        active: nodeId === this.props.selectedNodeId,
+                                                        hidden
+                                                    })}
                                                 />
-                                                ;{this.icon(phase)}
-                                                <g transform={`translate(0,${this.nodeSize})`}>
-                                                    <text className='label' fontSize={12 / this.scale}>
-                                                        {WorkflowDag.formatLabel(label)}
-                                                    </text>
-                                                </g>
-                                            </>
-                                        )}
-                                    </g>
-                                );
-                            })}
-                        </g>
-                    </svg>
-                </div>
+                                                {!hidden && (
+                                                    <>
+                                                        {(phase === NODE_PHASE.PENDING || phase === NODE_PHASE.RUNNING) && (
+                                                            <path
+                                                                key='progress-path'
+                                                                d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`}
+                                                                className='progress'
+                                                            />
+                                                        )}
+                                                        {this.icon(phase)}
+                                                        <g transform={`translate(0,${this.nodeSize})`}>
+                                                            <text className='label' fontSize={12 / this.scale}>
+                                                                {WorkflowDag.formatLabel(label)}
+                                                            </text>
+                                                        </g>
+                                                    </>
+                                                )}
+                                            </g>
+                                        );
+                                    })}
+                                </g>
+                            </svg>
+                        </div>
+                    )}
+                </Ticker>
             </>
         );
     }

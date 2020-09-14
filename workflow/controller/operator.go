@@ -24,6 +24,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -95,7 +96,7 @@ type wfOperationCtx struct {
 	// 'execWf.Spec' should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
-	execWf *wfv1.Workflow
+	execWf       *wfv1.Workflow
 	lastWorkflow *wfv1.Workflow
 }
 
@@ -3057,39 +3058,46 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 func (woc *wfOperationCtx) getLastWorkflow() *wfv1.Workflow {
 	if woc.lastWorkflow == nil {
+		// put a dummy into this so we don't try again
+		woc.lastWorkflow = &wfv1.Workflow{}
+		// then actually get it
 		wf, err := woc.getLastWorkflowAux()
 		if err != nil {
 			log.WithError(err).Error("failed to get last workflow")
 			return nil
 		}
-		if wf == nil {
-			return nil
+		if wf != nil {
+			woc.lastWorkflow = wf
 		}
-		err = woc.controller.hydrator.Hydrate(wf)
-		if err != nil {
-			log.WithError(err).Error("failed hydrate last workflow")
-			return nil
-		}
-		woc.lastWorkflow = wf
 	}
 	return woc.lastWorkflow
 }
 
 func (woc *wfOperationCtx) getLastWorkflowAux() (*wfv1.Workflow, error) {
-	// TODO workflows.argoproj.io/resubmitted-from-workflow
 	for _, labelName := range []string{common.LabelKeyWorkflowTemplate, common.LabelKeyClusterWorkflowTemplate, common.LabelKeyCronWorkflow} {
 		labelValue, ok := woc.wf.Labels[labelName]
 		if ok {
-			// TODO instanceid
-			list, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace).List(metav1.ListOptions{
-				LabelSelector: common.LabelKeyCompleted + "=true," + labelName + "=" + labelValue,
-			})
+			labelSelector, _ := labels.Parse(common.LabelKeyCompleted + "=true," + labelName + "=" + labelValue)
+			labelSelector.Add(wfutil.InstanceIDRequirement(woc.controller.Config.InstanceID))
+			list, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to list workflows: %v", err)
 			}
 			sort.Sort(list.Items)
-			for _, item := range list.Items {
-				return &item, nil
+			for _, wf := range list.Items {
+				err = woc.controller.hydrator.Hydrate(&wf)
+				if err != nil {
+					return nil, fmt.Errorf("failed hydrate last workflow: %w", err)
+				}
+				return &wf, nil
+			}
+			labelRequirements, _ := labelSelector.Requirements()
+			workflows, err := woc.controller.wfArchive.ListWorkflows(woc.wf.Namespace, time.Time{}, time.Time{}, labelRequirements, 1, 0)
+			if err != nil {
+				return nil, fmt.Errorf("failed to list archived workflows: %v", err)
+			}
+			for _, wf := range workflows {
+				return &wf, nil
 			}
 		}
 	}

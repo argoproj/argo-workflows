@@ -46,6 +46,7 @@ type archivedWorkflowLabelRecord struct {
 
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
+	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
 	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error

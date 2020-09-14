@@ -3,7 +3,7 @@ import * as React from 'react';
 import {Link} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-import {DurationPanel} from '../../../shared/components/duration';
+import {DurationPanel} from '../../../shared/components/duration-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {wfDuration} from '../../../shared/duration';
@@ -30,9 +30,6 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
 
     public render() {
         const wf = this.props.workflow;
-        const workflowTemplate = wf.metadata.labels['workflows.argoproj.io/workflow-template'];
-        const clusterWorkflowTemplate = wf.metadata.labels['workflows.argoproj.io/cluster-workflow-template'];
-        const cronWorkflow = wf.metadata.labels['workflows.argoproj.io/cron-workflow'];
         return (
             <div className='workflows-list__row-container'>
                 <div className='row argo-table-list__row'>
@@ -51,13 +48,8 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <Link to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)} className='row small-11'>
-                        <div className='columns small-2'>{wf.metadata.name}</div>
-                        <div className='columns small-1'>{wf.metadata.namespace}</div>
-                        <div className='columns small-2'>
-                            {workflowTemplate}
-                            {clusterWorkflowTemplate}
-                            {cronWorkflow}
-                        </div>
+                        <div className='columns small-3'>{wf.metadata.name}</div>
+                        <div className='columns small-2'>{wf.metadata.namespace}</div>
                         <div className='columns small-2'>
                             <Timestamp date={wf.status.startedAt} />
                         </div>

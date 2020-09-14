@@ -29,7 +29,8 @@
   .progress {
     fill: transparent;
     stroke-width: 2;
-    stroke: $argo-color-gray-8;
+    stroke-dasharray: 1;
+    stroke: white;
   }
 
   .arrow {

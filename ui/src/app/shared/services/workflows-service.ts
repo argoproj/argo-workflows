@@ -75,6 +75,7 @@ export class WorkflowsService {
             'result.object.status.finishedAt',
             'result.object.status.phase',
             'result.object.status.startedAt',
+            'result.object.status.estimatedDuration',
             'result.type',
             'result.object.metadata.labels',
             'result.object.spec.suspend'

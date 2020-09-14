@@ -2,15 +2,12 @@ import {Ticker} from 'argo-ui';
 import * as React from 'react';
 
 import {labels, NODE_PHASE, Workflow} from '../../../models';
-import {NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
-import {uiUrl} from '../../shared/base';
-import {DurationPanel} from '../../shared/components/duration';
+import {DurationPanel} from '../../shared/components/duration-panel';
 import {Phase} from '../../shared/components/phase';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {Consumer} from '../../shared/context';
-import {formatDuration, wfDuration} from '../../shared/duration';
 import {wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
 import {WorkflowFrom} from './workflow-from';
