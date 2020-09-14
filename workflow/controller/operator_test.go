@@ -3336,8 +3336,7 @@ func TestNestedStepGroupGlobalParams(t *testing.T) {
 	}
 
 	assert.Equal(t, "hello world", *woc.wf.Status.Outputs.Parameters[0].Value)
-		assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
-	}
+	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
 }
 
 var globalVariablePlaceholders = `
@@ -4652,8 +4651,9 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		makePodsPhase(woc, apiv1.PodPending)
 		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
-		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 	t.Run("Invalid timeout format", func(t *testing.T) {
 		wf := unmarshalWF(stepTimeoutWf)
