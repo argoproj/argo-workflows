@@ -147,6 +147,8 @@ jobs:
           path: ui/node_modules
           key: ${{ runner.os }}-node-dep-v1-${{ hashFiles('**/yarn.lock') }}
       - name: Install, build and Lint
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: |
           yarn --cwd ui install
           yarn --cwd ui build
