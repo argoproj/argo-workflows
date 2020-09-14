@@ -44,7 +44,7 @@ type Metrics struct {
 
 	workflowsProcessed prometheus.Counter
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
-	workflows          map[string]bool
+	workflows          map[string][]string
 	operationDurations prometheus.Histogram
 	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
@@ -73,7 +73,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
-		workflows:          make(map[string]bool),
+		workflows:          make(map[string][]string),
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
@@ -126,10 +126,10 @@ func (m *Metrics) WorkflowAdded(key string, phase v1alpha1.NodePhase) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if m.workflows[key] {
+	if _, exists := m.workflows[key]; exists {
 		return
 	}
-	m.workflows[key] = true
+	m.workflows[key] = []string{}
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Inc()
 	}
@@ -139,7 +139,7 @@ func (m *Metrics) WorkflowUpdated(key string, fromPhase, toPhase v1alpha1.NodePh
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if fromPhase == toPhase || !m.workflows[key] {
+	if _, exists := m.workflows[key]; !exists || fromPhase == toPhase {
 		return
 	}
 	if _, ok := m.workflowsByPhase[fromPhase]; ok {
@@ -154,12 +154,20 @@ func (m *Metrics) WorkflowDeleted(key string, phase v1alpha1.NodePhase) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if !m.workflows[key] {
+	if _, exists := m.workflows[key]; !exists {
 		return
 	}
+	m.StopRealtimeMetricsForKey(key)
 	delete(m.workflows, key)
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Dec()
+	}
+}
+
+func (m *Metrics) StopRealtimeMetricsForKey(key string) {
+	realtimeMetrics := m.workflows[key]
+	for _, metric := range realtimeMetrics {
+		delete(m.customMetrics, metric)
 	}
 }
 
@@ -178,7 +186,7 @@ func (m *Metrics) GetCustomMetric(key string) prometheus.Metric {
 	return m.customMetrics[key].metric
 }
 
-func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) error {
+func (m *Metrics) UpsertCustomMetric(key string, ownerKey string, newMetric prometheus.Metric, realtime bool) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -193,6 +201,12 @@ func (m *Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) er
 		m.metricNameHelps[name] = help
 	}
 	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
+
+	// If this is a realtime metric, track it
+	if realtime {
+		m.workflows[ownerKey] = append(m.workflows[ownerKey], key)
+	}
+
 	return nil
 }
 

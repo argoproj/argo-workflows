@@ -105,6 +105,8 @@ var (
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	// ErrTimeout indicates a specific template timed out
+	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -198,6 +200,8 @@ func (woc *wfOperationCtx) operate() {
 		woc.preExecutionNodePhases[node.ID] = node.Phase
 	}
 
+	woc.setGlobalParameters(execArgs)
+
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
@@ -271,8 +275,6 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 		return
 	}
-
-	woc.setGlobalParameters(execArgs)
 
 	if woc.execWf.Spec.ArtifactRepositoryRef != nil {
 		repo, err := woc.getArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef)
@@ -464,7 +466,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	for _, param := range executionParameters.Parameters {
-		woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
@@ -474,7 +476,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
-			woc.globalParams["workflow.outputs.parameters."+param.Name] = param.Value.String()
+			woc.globalParams["workflow.outputs.parameters."+param.Name] = *param.Value
 		}
 	}
 }
@@ -1739,7 +1741,7 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 		deadline := node.StartedAt.Add(tmplTimeout)
 
 		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
-			return nil, fmt.Errorf("%s %s exceeded its deadline", node.Name, node.Type)
+			return nil, ErrTimeout
 		}
 		return &deadline, nil
 	}
@@ -2072,7 +2074,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if tmpl.IsResubmitPendingPods() && !node.Pending() {
+	} else if !tmpl.IsResubmitPendingPods() && !node.Pending() {
 		// This is not our first time executing this node.
 		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
 		// false, return.
@@ -2149,12 +2151,12 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					val = param.ValueFrom.Default.String()
+					val = *param.ValueFrom.Default
 				} else {
 					return nil, err
 				}
 			}
-			param.Value = intstr.ParsePtr(val)
+			param.Value = &val
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
 		}
@@ -2201,7 +2203,7 @@ func getStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
 		// Retry, withItems and withParam scenario
-		if indx := strings.LastIndex(name, "("); indx > 0 {
+		if indx := strings.Index(name, "("); indx > 0 {
 			return name[0:indx]
 		}
 		return name
@@ -2293,7 +2295,7 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 	}
 	for _, param := range outputs.Parameters {
 		if param.Value != nil {
-			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
+			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), *param.Value)
 		}
 	}
 	for _, art := range outputs.Artifacts {
@@ -2355,7 +2357,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 		if len(node.Outputs.Parameters) > 0 {
 			param := make(map[string]string)
 			for _, p := range node.Outputs.Parameters {
-				param[p.Name] = p.Value.String()
+				param[p.Name] = *p.Value
 			}
 			paramList = append(paramList, param)
 		}
@@ -2403,16 +2405,16 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 		woc.wf.Status.Outputs = &wfv1.Outputs{}
 	}
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
-	woc.globalParams[paramName] = param.Value.String()
+	woc.globalParams[paramName] = *param.Value
 	if index == -1 {
-		woc.log.Infof("setting %s: '%s'", paramName, param.Value)
+		woc.log.Infof("setting %s: '%s'", paramName, *param.Value)
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
 		woc.wf.Status.Outputs.Parameters = append(woc.wf.Status.Outputs.Parameters, gParam)
 		woc.updated = true
 	} else {
 		prevVal := *woc.wf.Status.Outputs.Parameters[index].Value
 		if prevVal != *param.Value {
-			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, woc.wf.Status.Outputs.Parameters[index].Value, param.Value)
+			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, *woc.wf.Status.Outputs.Parameters[index].Value, *param.Value)
 			woc.wf.Status.Outputs.Parameters[index].Value = param.Value
 			woc.updated = true
 		}
@@ -2834,7 +2836,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
 				continue
 			}
-			err = woc.controller.metrics.UpsertCustomMetric(metricTmpl.GetDesc(), updatedMetric)
+			err = woc.controller.metrics.UpsertCustomMetric(metricTmpl.GetDesc(), string(woc.wf.UID), updatedMetric, true)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
 				continue
@@ -2863,7 +2865,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			err = woc.controller.metrics.UpsertCustomMetric(metricSpec.GetDesc(), updatedMetric)
+			err = woc.controller.metrics.UpsertCustomMetric(metricSpec.GetDesc(), string(woc.wf.UID), updatedMetric, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 				continue

@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -42,7 +41,6 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
@@ -250,7 +248,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			if len(parts) != 2 {
 				return fmt.Errorf("expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			param := wfv1.Parameter{Name: parts[0], Value: intstrutil.ParsePtr(parts[1])}
+			param := wfv1.Parameter{Name: parts[0], Value: &parts[1]}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
@@ -284,7 +282,7 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				param := wfv1.Parameter{Name: k, Value: intstrutil.ParsePtr(value)}
+				param := wfv1.Parameter{Name: k, Value: &value}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
 					continue
@@ -417,7 +415,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	}
 	if node.Inputs != nil {
 		for _, inParam := range node.Inputs.Parameters {
-			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = inParam.Value.String()
+			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
 		}
 	}
 
@@ -478,8 +476,7 @@ func updateSuspendedNode(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Inte
 									if param.ValueFrom == nil || param.ValueFrom.Supplied == nil {
 										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
 									}
-									intStr := intstr.FromString(val)
-									node.Outputs.Parameters[i].Value = &intStr
+									node.Outputs.Parameters[i].Value = &val
 									node.Outputs.Parameters[i].ValueFrom = nil
 									nodeUpdated = true
 									hit = true

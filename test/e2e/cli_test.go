@@ -22,12 +22,19 @@ import (
 
 type CLISuite struct {
 	fixtures.E2ESuite
+	kubeConfig string
 }
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	_ = os.Unsetenv("ARGO_SERVER")
 	_ = os.Unsetenv("ARGO_TOKEN")
+	s.kubeConfig = os.Getenv("KUBECONFIG")
+}
+
+func (s *CLISuite) AfterTest(suiteName, testName string) {
+	_ = os.Setenv("KUBECONFIG", s.kubeConfig)
+	s.E2ESuite.AfterTest(suiteName, testName)
 }
 
 func (s *CLISuite) testNeedsOffloading() {
@@ -48,6 +55,7 @@ func (s *CLISuite) TestCompletion() {
 }
 
 func (s *CLISuite) TestVersion() {
+	_ = os.Setenv("KUBECONFIG", "/dev/null")
 	// check we can run this without error
 	s.Given().
 		RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
