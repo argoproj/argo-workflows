@@ -269,7 +269,7 @@ spec:
     name: whalesay-template
     outputs: {}
     retryStrategy:
-      limit: 2"
+      limit: "2"
 `
 
 func TestRetryStrategyMetric(t *testing.T) {
