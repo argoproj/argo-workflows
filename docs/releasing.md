@@ -80,10 +80,16 @@ brew bump-formula-pr argo --version 2.7.2
  argo version
  ```
 
-
 ### Update Java SDK
 
 If this is GA:
 
 * [ ] Update the Java SDK formula.
 
+```
+git clone git@github.com:argoproj-labs/argo-client-java.git
+cd argo-client-java
+make publish
+```
+
+* [ ] Check package published: https://github.com/argoproj-labs/argo-client-java/packages
