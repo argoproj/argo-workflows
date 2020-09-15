@@ -2169,6 +2169,7 @@
 <li>Output artifacts can only be saved on volumes (e.g. emptyDir) and not the base image layer (e.g. /tmp)</li>
 </ul>
 <h2 id="process-namespace-sharing-pns">Process Namespace Sharing (pns)<a class="headerlink" href="#process-namespace-sharing-pns" title="Permanent link">&para;</a></h2>
+<p><em>PNS can't be used when running Windows containers within your workflow as sharing process namespaces <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod">doesn't work on Windows</a>.</em></p>
 <h3 id="pros_3">Pros<a class="headerlink" href="#pros_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Secure since you cannot escape the privileges of the pod's service account</li>

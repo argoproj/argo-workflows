@@ -1718,6 +1718,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#limitations" title="Limitations" class="md-nav__link">
+    Limitations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#building-the-workflow-executor-image-for-windows" title="Building the workflow executor image for Windows" class="md-nav__link">
     Building the workflow executor image for Windows
   </a>
@@ -1957,6 +1964,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#limitations" title="Limitations" class="md-nav__link">
+    Limitations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#building-the-workflow-executor-image-for-windows" title="Building the workflow executor image for Windows" class="md-nav__link">
     Building the workflow executor image for Windows
   </a>
@@ -2077,6 +2091,11 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
 </code></pre></div>
 
 
+<p>Remember that <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#storage">volume mounts on Windows can only target a directory</a> in the container, and not an individual file.</p>
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Sharing process namespaces <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod">doesn't work on Windows</a> so you can't use the Process Namespace Sharing (pns) workflow executor.</li>
+</ul>
 <h2 id="building-the-workflow-executor-image-for-windows">Building the workflow executor image for Windows<a class="headerlink" href="#building-the-workflow-executor-image-for-windows" title="Permanent link">&para;</a></h2>
 <p>To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described <a href="https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise">in the docs</a>.</p>
 <p>You then clone the project and run the Docker build with the Dockerfile for Windows and <code>argoexec</code> as a target:</p>
