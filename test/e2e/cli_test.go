@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -370,6 +371,23 @@ func (s *CLISuite) TestWorkflowDeleteByName() {
 		})
 }
 
+func (s *CLISuite) TestDeleteByFieldSelector() {
+	var name string
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		}).
+		RunCli([]string{"delete", "--field-selector", fmt.Sprintf("metadata.name=%s", name)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowDeleteDryRun() {
 	s.Given().
 		When().
@@ -620,6 +638,46 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 			return wf.Status.Phase == wfv1.NodeFailed
 		}), "is terminated", 20*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		}).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.AnyActiveSuspendNode()
+		}), "suspended node").
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
+			innerStepsPodNode := status.Nodes.FindByDisplayName("steps-inner-step1")
+
+			assert.True(t, outerStepsPodNode.FinishedAt.Before(&retryTime))
+			assert.True(t, retryTime.Before(&innerStepsPodNode.FinishedAt))
+		})
+}
+
+func (s *CLIWithServerSuite) TestRetryByLabelSelector() {
+	s.testNeedsOffloading()
+	var retryTime corev1.Time
+
+	s.Given().
+		Workflow("@testdata/retry-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.AnyActiveSuspendNode()
+		}), "suspended node").
+		RunCli([]string{"terminate", "--selector", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow retry-test terminated")
+			}
+		}).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			retryTime = wf.Status.FinishedAt
+			return wf.Status.Phase == wfv1.NodeFailed
+		}), "is terminated", 20*time.Second).
+		RunCli([]string{"retry", "--selector", "argo-e2e=true", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
