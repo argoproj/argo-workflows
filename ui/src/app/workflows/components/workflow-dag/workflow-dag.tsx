@@ -41,7 +41,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private get gap() {
-        return this.nodeSize * 1.2;
+        return 1.25 * this.nodeSize;
     }
 
     /**
@@ -394,7 +394,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const graph = new dagre.graphlib.Graph();
 
         graph.setGraph({
-            edgesep: this.gap,
+            edgesep: 2.5 * this.gap,
             nodesep: this.gap,
             rankdir: this.state.horizontal ? 'LR' : 'TB',
             ranksep: this.gap
@@ -435,8 +435,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         let width = 0;
         let height = 0;
         nodes.forEach(node => {
-            width = Math.max(node.x + node.width, width);
-            height = Math.max(node.y + node.height, height);
+            width = Math.max(node.x + node.width / 2, width);
+            height = Math.max(node.y + node.height / 2, height);
         });
         return {width, height};
     }
