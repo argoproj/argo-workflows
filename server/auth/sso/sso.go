@@ -15,12 +15,14 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/argoproj/argo/server/auth/jws"
 )
 
 const Prefix = "Bearer v2:"
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (*oidc.UserInfo, error)
+	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -28,6 +30,7 @@ type Interface interface {
 var _ Interface = &sso{}
 
 type sso struct {
+	issuer   string
 	config   *oauth2.Config
 	provider providerInterface
 	baseHRef string
@@ -133,7 +136,7 @@ func newSso(
 	}
 
 	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
-	return &sso{config, provider, baseHRef, secure, key}, nil
+	return &sso{c.Issuer, config, provider, baseHRef, secure, key}, nil
 }
 
 const stateCookieName = "oauthState"
@@ -192,7 +195,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorization string) (*oidc.UserInfo, error) {
+func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
 	encryptedAccessToken, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode encrypted access token %v", err)
@@ -205,5 +208,5 @@ func (s *sso) Authorize(ctx context.Context, authorization string) (*oidc.UserIn
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info %v", err)
 	}
-	return userInfo, nil
+	return &jws.ClaimSet{Iss: s.issuer, Sub: userInfo.Subject}, nil
 }
