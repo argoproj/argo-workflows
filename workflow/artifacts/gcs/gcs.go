@@ -97,6 +97,10 @@ func downloadObjects(client *storage.Client, bucket, key, path string) error {
 // download an object from the bucket
 func downloadObject(client *storage.Client, bucket, key, objName, path string) error {
 	objPrefix := filepath.Clean(key)
+	if os.PathSeparator == '\\' {
+		objPrefix = strings.ReplaceAll(objPrefix, "\\", "/")
+	}
+
 	relObjPath := strings.TrimPrefix(objName, objPrefix)
 	localPath := filepath.Join(path, relObjPath)
 	objectDir, _ := filepath.Split(localPath)
@@ -179,7 +183,7 @@ func listFileRelPaths(path string, relPath string) ([]string, error) {
 	}
 	for _, file := range files {
 		if file.IsDir() {
-			fs, err := listFileRelPaths(path+file.Name()+"/", relPath+file.Name()+"/")
+			fs, err := listFileRelPaths(path+file.Name()+string(os.PathSeparator), relPath+file.Name()+string(os.PathSeparator))
 			if err != nil {
 				return nil, err
 			}
@@ -198,20 +202,29 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 		return fmt.Errorf("test if %s is a dir: %v", path, err)
 	}
 	if isDir {
-		dirName := filepath.Clean(path) + "/"
+		dirName := filepath.Clean(path) + string(os.PathSeparator)
 		keyPrefix := filepath.Clean(key) + "/"
 		fileRelPaths, err := listFileRelPaths(dirName, "")
 		if err != nil {
 			return err
 		}
 		for _, relPath := range fileRelPaths {
-			err = uploadObject(client, bucket, keyPrefix+relPath, dirName+relPath)
+			fullKey := keyPrefix + relPath
+			if os.PathSeparator == '\\' {
+				fullKey = strings.ReplaceAll(fullKey, "\\", "/")
+			}
+
+			err = uploadObject(client, bucket, fullKey, dirName+relPath)
 			if err != nil {
 				return fmt.Errorf("upload %s: %v", dirName+relPath, err)
 			}
 		}
 	} else {
-		err = uploadObject(client, bucket, filepath.Clean(key), path)
+		objectKey := filepath.Clean(key)
+		if os.PathSeparator == '\\' {
+			objectKey = strings.ReplaceAll(objectKey, "\\", "/")
+		}
+		err = uploadObject(client, bucket, objectKey, path)
 		if err != nil {
 			return fmt.Errorf("upload %s: %v", path, err)
 		}
