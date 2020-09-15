@@ -1392,7 +1392,6 @@ func (woc *wfOperationCtx) deletePVCs() error {
 			return nil
 		}
 	case wfv1.VolumeClaimGCOnCompletion:
-		break
 	default:
 		return fmt.Errorf("unknown volume gc strategy: %s", gcStrategy)
 	}

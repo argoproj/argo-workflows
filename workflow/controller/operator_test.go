@@ -261,20 +261,16 @@ func TestVolumeGCStrategy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cancel, controller := newController()
-			defer cancel()
-			assert.NotNil(t, controller)
-			wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 			wf := unmarshalWF(makeVolumeGcStrategyTemplate(tt.strategy, tt.phase))
-			wf, err := wfcset.Create(wf)
-			assert.NoError(t, err)
-			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-			assert.NoError(t, err)
+			cancel, controller := newController(wf)
+			defer cancel()
+			wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 			woc := newWorkflowOperationCtx(wf, controller)
 			woc.operate()
-			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedVolumesRemaining, len(wf.Status.PersistentVolumeClaims))
+			wf, err := wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			if assert.NoError(t, err) {
+				assert.Len(t, wf.Status.PersistentVolumeClaims, tt.expectedVolumesRemaining)
+			}
 		})
 	}
 }
