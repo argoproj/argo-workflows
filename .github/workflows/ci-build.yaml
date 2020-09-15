@@ -123,6 +123,10 @@ jobs:
           GOPATH: /home/runner/go
         run: |
           git fetch --tags
+
+          mkdir -p /home/runner/go/src/github.com/argoproj
+          ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
+
           make codegen STATIC_FILES=false
       - name: Make lint
         env:
