@@ -16,6 +16,8 @@ export interface WorkflowDagRenderOptions {
     nodesToDisplay: string[];
     expandNodes: Set<string>;
     fastRenderer: boolean;
+    // If this flag is true, we have found our current workflow status to be malformed. Wait for an update before attempting
+    // to render again. This flag is set to false after every update to the component.
     waitForUpdate: boolean;
 }
 
@@ -180,13 +182,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.state = {
             ...this.getOptions(),
             expandNodes: new Set(),
-            waitForUpdate: false,
+            waitForUpdate: false
         };
     }
 
     public componentDidUpdate(prevProps: Readonly<WorkflowDagProps>, prevState: Readonly<WorkflowDagRenderOptions>, snapshot?: any): void {
         if (prevState.waitForUpdate) {
-            this.setState({waitForUpdate: false})
+            this.setState({waitForUpdate: false});
         }
     }
 
@@ -232,15 +234,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                     label = getMessage(nodeId);
                                     hidden = this.hiddenNode(nodeId);
                                 } else {
-                                    const node = this.props.nodes[nodeId];
-                                    if (!node) {
-                                        // We may arrive here if we retry a workflow with a failed pod. During the retry operation, the node corresponding
-                                        // for the failed pod gets deleted, but the child reference of the parent nodes does not, causing them to refer to
-                                        // a node that doesn't exist. As soon as the workflow gets operated on again, the node will be recreated. For the
-                                        // time before that happens, don't error out.
-                                        this.setState({waitForUpdate: true});
-                                        return true;
-                                    }
+                                    const node = this.getNode(nodeId);
                                     phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
                                     label = Utils.shortNodeName(node);
                                     hidden = this.hiddenNode(nodeId);
@@ -277,6 +271,19 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private saveOptions(newChanges: WorkflowDagRenderOptions) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
         this.setState(newChanges);
+    }
+
+    private getNode(nodeId: string): NodeStatus {
+        const node: NodeStatus = this.getNode(nodeId);
+        if (!node) {
+            // We may arrive here if we retry a workflow with a failed pod. During the retry operation, the node corresponding
+            // for the failed pod gets deleted, but the child reference of the parent nodes does not, causing them to refer to
+            // a node that doesn't exist. As soon as the workflow gets operated on again, the node will be recreated. For the
+            // time before that happens, don't error out.
+            this.setState({waitForUpdate: true});
+            return null;
+        }
+        return node;
     }
 
     private getOptions(): WorkflowDagRenderOptions {
@@ -554,13 +561,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private getOutboundNodes(nodeID: string): string[] {
-        const node = this.props.nodes[nodeID];
+        const node = this.getNode(nodeID);
         if (node.type === 'Pod' || node.type === 'Skipped') {
             return [node.id];
         }
         let outbound = Array<string>();
         for (const outboundNodeID of node.outboundNodes || []) {
-            const outNode = this.props.nodes[outboundNodeID];
+            const outNode = this.getNode(outboundNodeID);
             if (outNode.type === 'Pod') {
                 outbound.push(outboundNodeID);
             } else {
@@ -575,15 +582,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return !this.state.nodesToDisplay.includes('type:' + getType(id));
         }
 
-        const node = this.props.nodes[id];
-        if (!node) {
-            // We may arrive here if we retry a workflow with a failed pod. During the retry operation, the node corresponding
-            // for the failed pod gets deleted, but the child reference of the parent nodes does not, causing them to refer to
-            // a node that doesn't exist. As soon as the workflow gets operated on again, the node will be recreated. For the
-            // time before that happens, don't error out.
-            this.setState({waitForUpdate: true});
-            return true;
-        }
+        const node = this.getNode(id);
         // Filter the node if it is a virtual node or a Retry node with one child
         return (
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
