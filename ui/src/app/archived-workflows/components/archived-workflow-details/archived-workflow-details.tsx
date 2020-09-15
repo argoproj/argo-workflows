@@ -247,6 +247,10 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private openLink(link: Link) {
-        document.location.href = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
+        document.location.href = link.url
+            .replace('${metadata.namespace}', this.state.workflow.metadata.namespace)
+            .replace('${metadata.name}', this.state.workflow.metadata.name)
+            .replace('${status.startedAt}', this.state.workflow.status.startedAt)
+            .replace('${status.finishedAt}', this.state.workflow.status.finishedAt);
     }
 }

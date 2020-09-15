@@ -1,6 +1,6 @@
 # One Workflow Submitting Another
 
-![beta](assets/beta.svg)
+![GA](assets/ga.svg)
 
 > v2.8 and after
 
@@ -27,7 +27,7 @@ spec:
           curl http://argo-server:2746/api/v1/workflows/argo/submit \
             -fs \
             -H "Authorization: Bearer eyJhbGci..." \
-            -d '{"resourceKind": "WorkflowTemplate", "resourceName": "wait", "submitOptions": {"labels": "workflows.argoproj.io/workflow-template=wait"}}' ```
+            -d '{"resourceKind": "WorkflowTemplate", "resourceName": "wait", "submitOptions": {"labels": "workflows.argoproj.io/workflow-template=wait"}}'
 ```
 
 See also:

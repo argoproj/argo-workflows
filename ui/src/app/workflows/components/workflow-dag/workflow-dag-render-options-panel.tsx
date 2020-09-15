@@ -125,6 +125,17 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                     title='Expand all nodes'>
                     <i className='fa fa-expand' data-fa-transform='rotate-45' />
                 </a>
+                <a
+                    className={classNames({active: this.props.fastRenderer})}
+                    onClick={() =>
+                        this.props.onChange({
+                            ...this.workflowDagRenderOptions,
+                            fastRenderer: !this.props.fastRenderer
+                        })
+                    }
+                    title='Use a faster, but less pretty, renderer to display the workflow'>
+                    <i className='fa fa-bolt' />
+                </a>
             </div>
         );
     }

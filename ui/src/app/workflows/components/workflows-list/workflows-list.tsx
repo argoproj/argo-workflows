@@ -42,7 +42,6 @@ interface State {
 interface WorkflowListRenderOptions {
     paginationLimit: number;
     selectedPhases: string[];
-    selectedLabels: string[];
 }
 
 const allBatchActionsEnabled: Actions.OperationDisabled = {
@@ -72,8 +71,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         }
         return {
             paginationLimit: 0,
-            selectedPhases: [],
-            selectedLabels: []
+            selectedPhases: []
         } as WorkflowListRenderOptions;
     }
 
@@ -89,7 +87,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             },
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
-            selectedLabels: this.queryParams('label').length > 0 ? this.queryParams('label') : savedOptions.selectedLabels,
+            selectedLabels: this.queryParams('label'),
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
         };
@@ -255,10 +253,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private get options() {
         const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
         options.selectedPhases = this.state.selectedPhases;
-        options.selectedLabels = [];
-        this.state.selectedLabels.forEach(label => {
-            options.selectedLabels.push(label);
-        });
         if (this.state.pagination.limit) {
             options.paginationLimit = this.state.pagination.limit;
         }
@@ -339,15 +333,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     if (!wfUID) {
                                         return;
                                     }
-                                    const currentlySelected = this.state.selectedWorkflows;
-                                    if (!(wfUID in currentlySelected)) {
-                                        this.updateBatchActionsDisabled(subWf, false);
+                                    const currentlySelected: Map<string, Workflow> = this.state.selectedWorkflows;
+                                    if (!currentlySelected.has(wfUID)) {
                                         currentlySelected.set(wfUID, subWf);
                                     } else {
-                                        this.updateBatchActionsDisabled(subWf, true);
                                         currentlySelected.delete(wfUID);
                                     }
-                                    this.setState({selectedWorkflows: new Map<string, models.Workflow>(currentlySelected)});
+                                    this.updateCurrentlySelectedAndBatchActions(currentlySelected);
                                 }}
                             />
                         );
@@ -361,23 +353,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private updateBatchActionsDisabled(wf: Workflow, deselect: boolean): void {
-        const currentlyDisabled: any = this.state.batchActionDisabled;
+    private updateCurrentlySelectedAndBatchActions(newSelectedWorkflows: Map<string, Workflow>): void {
         const actions: any = Actions.WorkflowOperationsMap;
         const nowDisabled: any = {...allBatchActionsEnabled};
-        for (const action of Object.keys(currentlyDisabled)) {
-            if (deselect) {
-                for (const wfUID of Object.keys(this.state.selectedWorkflows)) {
-                    if (wfUID === wf.metadata.uid) {
-                        continue;
-                    }
-                    nowDisabled[action] = actions[action].disabled(this.state.selectedWorkflows.get(wfUID)) || nowDisabled[action];
-                }
-            } else {
-                nowDisabled[action] = actions[action].disabled(wf) || currentlyDisabled[action];
+        for (const action of Object.keys(nowDisabled)) {
+            for (const wf of Array.from(newSelectedWorkflows.values())) {
+                nowDisabled[action] = nowDisabled[action] || actions[action].disabled(wf);
             }
         }
-        this.setState({batchActionDisabled: nowDisabled});
+        this.setState({batchActionDisabled: nowDisabled, selectedWorkflows: new Map<string, models.Workflow>(newSelectedWorkflows)});
     }
 
     private renderQuery(ctx: any) {

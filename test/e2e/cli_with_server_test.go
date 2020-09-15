@@ -18,7 +18,6 @@ import (
 
 type CLIWithServerSuite struct {
 	CLISuite
-	kubeConfig string
 }
 
 func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
@@ -29,12 +28,10 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	_ = os.Setenv("ARGO_SECURE", "false")
 	_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
 	// we should not need this to run any tests
-	s.kubeConfig = os.Getenv("KUBECONFIG")
-
+	_ = os.Setenv("KUBECONFIG", "/dev/null")
 }
 
 func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
-	_ = os.Setenv("KUBECONFIG", s.kubeConfig)
 	_ = os.Unsetenv("ARGO_SERVER")
 	_ = os.Unsetenv("ARGO_SECURE")
 	_ = os.Unsetenv("ARGO_TOKEN")
@@ -229,7 +226,7 @@ spec:
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
 			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
+				assert.Equal(t, "Hello, World!", *nodeStatus.Inputs.Parameters[0].Value)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
 			if assert.NotNil(t, nodeStatus) {

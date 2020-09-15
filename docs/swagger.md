@@ -793,6 +793,7 @@ Artifact indicates an artifact to place at a specified path
 | oss | [io.argoproj.workflow.v1alpha1.OSSArtifact](#io.argoproj.workflow.v1alpha1.ossartifact) | OSS contains OSS artifact location details | No |
 | path | string | Path is the container path to the artifact | No |
 | raw | [io.argoproj.workflow.v1alpha1.RawArtifact](#io.argoproj.workflow.v1alpha1.rawartifact) | Raw contains raw artifact location details | No |
+| recurseMode | boolean | If mode is set, apply the permission recursively into the artifact if it is a folder | No |
 | s3 | [io.argoproj.workflow.v1alpha1.S3Artifact](#io.argoproj.workflow.v1alpha1.s3artifact) | S3 contains S3 artifact location details | No |
 | subPath | string | SubPath allows an artifact to be sourced from a subpath within the specified source | No |
 
@@ -1128,7 +1129,7 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.argoproj.workflow.v1alpha1.Item | boolean,number,string,object | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
+| io.argoproj.workflow.v1alpha1.Item |  | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
 
 #### io.argoproj.workflow.v1alpha1.Link
 
@@ -1138,7 +1139,7 @@ A link to another app.
 | ---- | ---- | ----------- | -------- |
 | name | string | The name of the link, E.g. "Workflow Logs" or "Pod Logs" | Yes |
 | scope | string | Either "workflow" or "pod" | Yes |
-| url | string | The URL. May contain "${metadata.namespace}" and "${metadata.name}". | Yes |
+| url | string | The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}". | Yes |
 
 #### io.argoproj.workflow.v1alpha1.LintCronWorkflowRequest
 
@@ -1296,10 +1297,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default is the default value to use for an input parameter if a value was not supplied | No |
+| default | string | Default is the default value to use for an input parameter if a value was not supplied | No |
 | globalName | string | GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters | No |
 | name | string | Name is the parameter name | Yes |
-| value | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
+| value | string | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
 | valueFrom | [io.argoproj.workflow.v1alpha1.ValueFrom](#io.argoproj.workflow.v1alpha1.valuefrom) | ValueFrom is the source for the output parameter's value | No |
 
 #### io.argoproj.workflow.v1alpha1.PodGC
@@ -1611,7 +1612,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| default | string | Default specifies a value to be used if retrieving the value from the specified source fails | No |
 | event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |

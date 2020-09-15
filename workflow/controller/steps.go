@@ -59,10 +59,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		if woc.wf.GetNodeByName(sgNodeName) == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
-		} else {
-			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+		{
+			sgNode := woc.wf.GetNodeByName(sgNodeName)
+			if sgNode == nil {
+				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+			} else if !sgNode.Fulfilled() {
+				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+			}
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {
@@ -236,6 +239,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
+			case ErrTimeout:
+				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())
@@ -281,7 +286,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
-	woc.log.Infof("Step group node %v successful", node)
+	woc.log.Infof("Step group node %v successful", node.ID)
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
@@ -493,7 +498,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	if node.Inputs != nil {
 		for _, param := range node.Inputs.Parameters {
 			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			localScope[key] = param.Value.String()
+			localScope[key] = *param.Value
 		}
 	}
 
@@ -503,7 +508,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		}
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
-			localScope[key] = param.Value.String()
+			localScope[key] = *param.Value
 		}
 	}
 
