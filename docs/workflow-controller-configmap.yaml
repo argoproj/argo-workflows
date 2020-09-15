@@ -26,7 +26,7 @@ data:
     nodeEvents:
       enabled: true
 
-    # uncomment flowing lines if workflow controller runs in a different k8s cluster with the 
+    # uncomment flowing lines if workflow controller runs in a different k8s cluster with the
     # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
     # kubeconfig secret
     # kubeConfig:
@@ -42,10 +42,10 @@ data:
     links:
       - name: Example Workflow Link
         scope: workflow
-        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
       - name: Example Pod Link
         scope: pod
-        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}&startedAt=${status.startedAt}&finishedAt=${status.finishedAt}
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
@@ -185,6 +185,10 @@ data:
         passwordSecret:
           name: argo-postgres-config
           key: password
+        ssl: true
+        # sslMode must be one of: disable, require, verify-ca, verify-full
+        # you can find more information about those ssl options here: https://godoc.org/github.com/lib/pq
+        sslMode: require
 
       # Optional config for mysql:
       # mysql:

@@ -314,7 +314,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	go test ./...
+	env KUBECONFIG=/dev/null go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -398,6 +398,15 @@ test-e2e-cron:
 .PHONY: smoke
 smoke:
 	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
+
+.PHONY: destress
+destress: cli
+	kubectl delete wf -l stress
+
+.PHONY: stress
+stress: destress cli
+	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
+	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(Y)
 
 # clean
 

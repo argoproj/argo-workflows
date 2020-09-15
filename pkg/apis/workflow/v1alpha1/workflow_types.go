@@ -77,6 +77,14 @@ const (
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
 
+// VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
+type VolumeClaimGCStrategy string
+
+const (
+	VolumeClaimGCOnCompletion VolumeClaimGCStrategy = "OnWorkflowCompletion"
+	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -318,6 +326,20 @@ type WorkflowSpec struct {
 
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
+
+	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
+}
+
+// GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
+	// If no volumeClaimGC strategy was provided, we default to the equivalent of "OnSuccess"
+	// to match the existing behavior for back-compat
+	if wfs.VolumeClaimGC == nil {
+		return &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}
+	}
+
+	return wfs.VolumeClaimGC
 }
 
 type ShutdownStrategy string
@@ -536,6 +558,10 @@ type Template struct {
 
 	// Memoize allows templates to use outputs generated from already executed templates
 	Memoize *Memoize `json:"memoize,omitempty" protobuf:"bytes,37,opt,name=memoize"`
+
+	// Timout allows to set the total node execution timeout duration counting from the node's start time.
+	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
+	Timeout string `json:"timeout,omitempty" protobuf:"bytes,38,opt,name=timeout"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -606,11 +632,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *string `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -642,7 +668,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -679,12 +705,30 @@ type Artifact struct {
 
 	// SubPath allows an artifact to be sourced from a subpath within the specified source
 	SubPath string `json:"subPath,omitempty" protobuf:"bytes,9,opt,name=subPath"`
+
+	// If mode is set, apply the permission recursively into the artifact if it is a folder
+	RecurseMode bool `json:"recurseMode,omitempty" protobuf:"varint,10,opt,name=recurseMode"`
 }
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+}
+
+// VolumeClaimGC describes how to delete volumes from completed Workflows
+type VolumeClaimGC struct {
+	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+	Strategy VolumeClaimGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeClaimGCStrategy"`
+}
+
+// GetStrategy returns the VolumeClaimGCStrategy to use for the workflow
+func (vgc VolumeClaimGC) GetStrategy() VolumeClaimGCStrategy {
+	if vgc.Strategy == "" {
+		return VolumeClaimGCOnSuccess
+	}
+
+	return vgc.Strategy
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts

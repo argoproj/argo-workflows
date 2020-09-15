@@ -314,6 +314,14 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Fulfilled() {
+		// Collect the completed task metrics
+		_, tmpl, _, _ := dagCtx.tmplCtx.ResolveTemplate(task)
+		if tmpl != nil && tmpl.Metrics != nil {
+			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
+				localScope, realTimeScope := woc.prepareMetricScope(node)
+				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			}
+		}
 		if node.Completed() {
 			// Run the node's onExit node, if any.
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
@@ -432,7 +440,21 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		node, err = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		if err != nil {
+			switch err {
+			case ErrDeadlineExceeded:
+				return
+			case ErrParallelismReached:
+			case ErrTimeout:
+				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
+				return
+			default:
+				woc.log.Infof("DAG %s deemed errored due to task %s error: %s", node.ID, taskNodeName, err.Error())
+				_ = woc.markNodePhase(taskNodeName, wfv1.NodeError, fmt.Sprintf("task '%s' errored", taskNodeName))
+				return
+			}
+		}
 	}
 
 	if taskGroupNode != nil {

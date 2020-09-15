@@ -2,14 +2,16 @@ package executor
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/executor/mocks"
 )
 
@@ -48,7 +50,7 @@ func TestSaveParameters(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("has a newline\n", nil)
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
+	assert.Equal(t, "has a newline", *we.Template.Outputs.Parameters[0].Value)
 }
 
 // TestIsBaseImagePath tests logic of isBaseImagePath which determines if a path is coming from a
@@ -116,7 +118,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: intstrutil.ParsePtr("Default Value"),
+						Default: pointer.StringPtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -136,7 +138,7 @@ func TestDefaultParameters(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, we.Template.Outputs.Parameters[0].Value.String(), "Default Value")
+	assert.Equal(t, *we.Template.Outputs.Parameters[0].Value, "Default Value")
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
@@ -148,7 +150,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: intstrutil.ParsePtr(""),
+						Default: pointer.StringPtr(""),
 						Path:    "/path",
 					},
 				},
@@ -168,7 +170,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
+	assert.Equal(t, "", *we.Template.Outputs.Parameters[0].Value)
 }
 
 func TestIsTarball(t *testing.T) {
@@ -193,4 +195,62 @@ func TestIsTarball(t *testing.T) {
 		}
 		assert.Equal(t, test.isTarball, ok, test.path)
 	}
+}
+
+func TestChmod(t *testing.T) {
+
+	type perm struct {
+		dir  string
+		file string
+	}
+
+	tests := []struct {
+		mode        int32
+		recurse     bool
+		permissions perm
+	}{
+		{
+			0777,
+			false,
+			perm{
+				"drwxrwxrwx",
+				"-rw-------",
+			},
+		},
+		{
+			0777,
+			true,
+			perm{
+				"drwxrwxrwx",
+				"-rwxrwxrwx",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		// Setup directory and file for testing
+		tempDir, err := ioutil.TempDir("testdata", "chmod-dir-test")
+		assert.NoError(t, err)
+
+		tempFile, err := ioutil.TempFile(tempDir, "chmod-file-test")
+		assert.NoError(t, err)
+
+		// TearDown test by removing directory and file
+		defer os.RemoveAll(tempDir)
+
+		// Run chmod function
+		err = chmod(tempDir, test.mode, test.recurse)
+		assert.NoError(t, err)
+
+		// Check directory mode if set
+		dirPermission, err := os.Stat(tempDir)
+		assert.NoError(t, err)
+		assert.Equal(t, dirPermission.Mode().String(), test.permissions.dir)
+
+		// Check file mode mode if set
+		filePermission, err := os.Stat(tempFile.Name())
+		assert.NoError(t, err)
+		assert.Equal(t, filePermission.Mode().String(), test.permissions.file)
+	}
+
 }

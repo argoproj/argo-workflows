@@ -64,7 +64,8 @@ RUN apt-get update && \
         /usr/share/doc \
         /usr/share/doc-base
 
-ADD hack/recurl.sh hack/image_arch.sh .
+ADD hack/recurl.sh .
+ADD hack/image_arch.sh .
 RUN . ./image_arch.sh && ./recurl.sh /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/${IMAGE_ARCH}/kubectl
 RUN ./recurl.sh /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64
 RUN rm recurl.sh

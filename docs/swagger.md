@@ -793,6 +793,7 @@ Artifact indicates an artifact to place at a specified path
 | oss | [io.argoproj.workflow.v1alpha1.OSSArtifact](#io.argoproj.workflow.v1alpha1.ossartifact) | OSS contains OSS artifact location details | No |
 | path | string | Path is the container path to the artifact | No |
 | raw | [io.argoproj.workflow.v1alpha1.RawArtifact](#io.argoproj.workflow.v1alpha1.rawartifact) | Raw contains raw artifact location details | No |
+| recurseMode | boolean | If mode is set, apply the permission recursively into the artifact if it is a folder | No |
 | s3 | [io.argoproj.workflow.v1alpha1.S3Artifact](#io.argoproj.workflow.v1alpha1.s3artifact) | S3 contains S3 artifact location details | No |
 | subPath | string | SubPath allows an artifact to be sourced from a subpath within the specified source | No |
 
@@ -1129,7 +1130,7 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.argoproj.workflow.v1alpha1.Item | boolean,number,string,object | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
+| io.argoproj.workflow.v1alpha1.Item |  | Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number |  |
 
 #### io.argoproj.workflow.v1alpha1.Link
 
@@ -1139,7 +1140,7 @@ A link to another app.
 | ---- | ---- | ----------- | -------- |
 | name | string | The name of the link, E.g. "Workflow Logs" or "Pod Logs" | Yes |
 | scope | string | Either "workflow" or "pod" | Yes |
-| url | string | The URL. May contain "${metadata.namespace}" and "${metadata.name}". | Yes |
+| url | string | The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}". | Yes |
 
 #### io.argoproj.workflow.v1alpha1.LintCronWorkflowRequest
 
@@ -1297,10 +1298,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default is the default value to use for an input parameter if a value was not supplied | No |
+| default | string | Default is the default value to use for an input parameter if a value was not supplied | No |
 | globalName | string | GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters | No |
 | name | string | Name is the parameter name | Yes |
-| value | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
+| value | string | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
 | valueFrom | [io.argoproj.workflow.v1alpha1.ValueFrom](#io.argoproj.workflow.v1alpha1.valuefrom) | ValueFrom is the source for the output parameter's value | No |
 
 #### io.argoproj.workflow.v1alpha1.PodGC
@@ -1553,6 +1554,7 @@ Template is a reusable and composable unit of execution in a workflow
 | synchronization | [io.argoproj.workflow.v1alpha1.Synchronization](#io.argoproj.workflow.v1alpha1.synchronization) | Synchronization holds synchronization lock configuration for this template | No |
 | template | string | Template is the name of the template which is used as the base of this template. DEPRECATED: This field is not used. | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource which is used as the base of this template. DEPRECATED: This field is not used. | No |
+| timeout | string | Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. | No |
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a template. | No |
 
@@ -1611,7 +1613,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| default | string | Default specifies a value to be used if retrieving the value from the specified source fails | No |
 | event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |
@@ -1631,6 +1633,14 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | goVersion | string |  | Yes |
 | platform | string |  | Yes |
 | version | string |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.VolumeClaimGC
+
+VolumeClaimGC describes how to delete volumes from completed Workflows
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| strategy | string | Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess" | No |
 
 #### io.argoproj.workflow.v1alpha1.Workflow
 
@@ -1770,6 +1780,7 @@ WorkflowSpec is the specification of a Workflow.
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | ttlSecondsAfterFinished | integer | TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. | No |
 | ttlStrategy | [io.argoproj.workflow.v1alpha1.TTLStrategy](#io.argoproj.workflow.v1alpha1.ttlstrategy) | TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values. | No |
+| volumeClaimGC | [io.argoproj.workflow.v1alpha1.VolumeClaimGC](#io.argoproj.workflow.v1alpha1.volumeclaimgc) | VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows | No |
 | volumeClaimTemplates | [ [io.k8s.api.core.v1.PersistentVolumeClaim](#io.k8s.api.core.v1.persistentvolumeclaim) ] | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1. | No |
 | workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution | No |
@@ -1928,6 +1939,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | ttlSecondsAfterFinished | integer | TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. | No |
 | ttlStrategy | [io.argoproj.workflow.v1alpha1.TTLStrategy](#io.argoproj.workflow.v1alpha1.ttlstrategy) | TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values. | No |
+| volumeClaimGC | [io.argoproj.workflow.v1alpha1.VolumeClaimGC](#io.argoproj.workflow.v1alpha1.volumeclaimgc) | VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows | No |
 | volumeClaimTemplates | [ [io.k8s.api.core.v1.PersistentVolumeClaim](#io.k8s.api.core.v1.persistentvolumeclaim) ] | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1. | No |
 | workflowMetadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | WorkflowMetadata contains some metadata of the workflow to be refer | No |

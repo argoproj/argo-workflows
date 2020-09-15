@@ -335,6 +335,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
+	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
+	node := woc.wf.GetNodeByName(nodeName)
+	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
+	if err != nil {
+		return nil, err
+	}
+
+	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+		newActiveDeadlineSeconds := int64(time.Until(*templateDeadline).Seconds())
+		if newActiveDeadlineSeconds <= 1 {
+			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+		}
+		woc.log.Debugf("Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
+		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+	}
+
 	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
 	// an `AlreadyExists` error because we won't get that error if there is not enough resources
 	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(pod.Namespace + "/" + pod.Name))
@@ -372,7 +388,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
-		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
+		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
 	podParams[common.LocalVarPodName] = pod.Name
 	specBytes, err := json.Marshal(pod)

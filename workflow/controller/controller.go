@@ -665,22 +665,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				wfc.metrics.WorkflowAdded(key, getWfPhase(obj))
-			}
+			wf := obj.(*unstructured.Unstructured)
+			wfc.metrics.WorkflowAdded(string(wf.GetUID()), getWfPhase(obj))
 		},
 		UpdateFunc: func(old, new interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(new)
-			if err == nil {
-				wfc.metrics.WorkflowUpdated(key, getWfPhase(old), getWfPhase(new))
-			}
+			wf := new.(*unstructured.Unstructured)
+			wfc.metrics.WorkflowUpdated(string(wf.GetUID()), getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				wfc.metrics.WorkflowDeleted(key, getWfPhase(obj))
-			}
+			wf := obj.(*unstructured.Unstructured)
+			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
 		},
 	})
 }

@@ -109,11 +109,12 @@ func TestSingleDependency(t *testing.T) {
 		woc.operate()
 		// Mark the status of the pod according to the test
 		if _, ok := statusMap[status]; ok {
-			makePodsPhase(t, statusMap[status], controller.kubeclientset, wf.ObjectMeta.Namespace)
+			makePodsPhase(woc, statusMap[status])
 		} else {
-			makePodsPhase(t, v1.PodPending, controller.kubeclientset, wf.ObjectMeta.Namespace)
+			makePodsPhase(woc, v1.PodPending)
 		}
 
+		woc = newWorkflowOperationCtx(woc.wf, controller)
 		woc.operate()
 		found := false
 		for _, node := range woc.wf.Status.Nodes {
@@ -186,6 +187,8 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+
+	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -614,6 +617,7 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -835,6 +839,7 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -1283,6 +1288,7 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
 	}
 
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	// This is the crucial part of the test
@@ -1765,6 +1771,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 
 	retryNode.Phase = wfv1.NodeSucceeded
 	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 	retryNode = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
 	if assert.NotNil(t, retryNode) {

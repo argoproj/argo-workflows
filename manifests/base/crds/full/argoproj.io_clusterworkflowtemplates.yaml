@@ -528,6 +528,8 @@ spec:
                         required:
                         - data
                         type: object
+                      recurseMode:
+                        type: boolean
                       s3:
                         properties:
                           accessKeySecret:
@@ -583,26 +585,17 @@ spec:
                   items:
                     properties:
                       default:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        x-kubernetes-int-or-string: true
+                        type: string
                       globalName:
                         type: string
                       name:
                         type: string
                       value:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        x-kubernetes-int-or-string: true
+                        type: string
                       valueFrom:
                         properties:
                           default:
-                            anyOf:
-                            - type: integer
-                            - type: string
-                            x-kubernetes-int-or-string: true
+                            type: string
                           event:
                             type: string
                           jqFilter:
@@ -1645,6 +1638,8 @@ spec:
                               required:
                               - data
                               type: object
+                            recurseMode:
+                              type: boolean
                             s3:
                               properties:
                                 accessKeySecret:
@@ -1700,26 +1695,17 @@ spec:
                         items:
                           properties:
                             default:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -2523,6 +2509,8 @@ spec:
                                         required:
                                         - data
                                         type: object
+                                      recurseMode:
+                                        type: boolean
                                       s3:
                                         properties:
                                           accessKeySecret:
@@ -2578,26 +2566,17 @@ spec:
                                   items:
                                     properties:
                                       default:
-                                        anyOf:
-                                        - type: integer
-                                        - type: string
-                                        x-kubernetes-int-or-string: true
+                                        type: string
                                       globalName:
                                         type: string
                                       name:
                                         type: string
                                       value:
-                                        anyOf:
-                                        - type: integer
-                                        - type: string
-                                        x-kubernetes-int-or-string: true
+                                        type: string
                                       valueFrom:
                                         properties:
                                           default:
-                                            anyOf:
-                                            - type: integer
-                                            - type: string
-                                            x-kubernetes-int-or-string: true
+                                            type: string
                                           event:
                                             type: string
                                           jqFilter:
@@ -3474,6 +3453,8 @@ spec:
                               required:
                               - data
                               type: object
+                            recurseMode:
+                              type: boolean
                             s3:
                               properties:
                                 accessKeySecret:
@@ -3529,26 +3510,17 @@ spec:
                         items:
                           properties:
                             default:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -3906,6 +3878,8 @@ spec:
                               required:
                               - data
                               type: object
+                            recurseMode:
+                              type: boolean
                             s3:
                               properties:
                                 accessKeySecret:
@@ -3963,26 +3937,17 @@ spec:
                         items:
                           properties:
                             default:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              anyOf:
-                              - type: integer
-                              - type: string
-                              x-kubernetes-int-or-string: true
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -5232,6 +5197,8 @@ spec:
                       template:
                         type: string
                     type: object
+                  timeout:
+                    type: string
                   tolerations:
                     items:
                       properties:
@@ -5875,6 +5842,11 @@ spec:
                 secondsAfterSuccess:
                   format: int32
                   type: integer
+              type: object
+            volumeClaimGC:
+              properties:
+                strategy:
+                  type: string
               type: object
             volumeClaimTemplates:
               items:

@@ -53,10 +53,12 @@ func TestBasicMetric(t *testing.T) {
 	woc.operate()
 
 	// Schedule first pod and mark completed
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
-	makePodsPhaseAll(t, apiv1.PodSucceeded, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(woc, apiv1.PodSucceeded)
 
 	// Process first metrics
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
@@ -71,7 +73,7 @@ var counterMetric = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  name: counter-metric
 spec:
   entrypoint: whalesay
   templates:
@@ -90,34 +92,32 @@ spec:
             labels:
               - key: name
                 value: flakey
-            when: "{{status}} == Error"
+            when: "{{status}} == Failed"
             counter:
               value: "1"
       container:
         image: docker/whalesay:latest
         command: [cowsay]
+      
 `
 
 func TestCounterMetric(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(counterMetric)
-	_, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
+	cancel, controller := newController(wf)
+	defer cancel()
 
 	// Schedule first pod and mark completed
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	makePodsPhaseAll(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(woc, apiv1.PodFailed)
 
 	// Process first metrics
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
-	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
+	metricTotalDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricTotalDesc))
-	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
+	metricErrorDesc := woc.wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
 
 	metricTotalCounter := controller.metrics.GetCustomMetric(metricTotalDesc).(prometheus.Counter)
@@ -125,10 +125,12 @@ func TestCounterMetric(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, metricTotalCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
 
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
+	metricErrorCounter, ok := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+	if ok {
+		metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+		assert.NoError(t, err)
+		assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
+	}
 }
 
 func getMetricStringValue(metric prometheus.Metric) (string, error) {
@@ -267,21 +269,14 @@ spec:
     name: whalesay-template
     outputs: {}
     retryStrategy:
-      limit: 2
-status:
-  phase: Running
-  startedAt: "2020-07-14T16:26:21Z"
+      limit: "2"
 `
 
 func TestRetryStrategyMetric(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(testRetryStrategyMetric)
-	_, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate()
 
 	// Ensure no metrics have been emitted yet
@@ -294,20 +289,192 @@ func TestRetryStrategyMetric(t *testing.T) {
 	podNode := woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"]
 	podNode.Phase = v1alpha1.NodeSucceeded
 	woc.wf.Status.Nodes["workflow-template-whalesay-9pk8f-1966833540"] = podNode
+	woc = newWorkflowOperationCtx(woc.wf, controller)
 	woc.operate()
 
 	metricErrorDesc = wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
+	if assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc)) {
+		metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+		metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
+		assert.NoError(t, err)
+		assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+
+		metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
+		assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+		metricErrorCounter = controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+		metricErrorCounterString, err = getMetricStringValue(metricErrorCounter)
+		assert.NoError(t, err)
+		assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
+	}
+}
+
+var dagTmplMetrics = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-nl9bj
+spec:
+  arguments: {}
+  entrypoint: steps
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: random-int-dag
+        template: random-int
+      - arguments: {}
+        name: flakey-dag
+        template: flakey
+
+    name: steps
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt
+      command:
+      - sh
+      - -c
+      image: alpine:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - help: Value of the int emitted by random-int at step level
+        histogram:
+          buckets:
+          - 2.01
+          - 4.01
+          - 6.01
+          - 8.01
+          - 10.01
+          value: 5
+        name: random_int_step_histogram_dag
+      - gauge:
+          realtime: true
+          value: '{{duration}}'
+        help: Duration gauge by name
+        labels:
+        - key: name
+          value: random-int
+        name: duration_gauge_dag
+    name: random-int
+    outputs:
+      parameters:
+      - globalName: rand-int-value
+        name: rand-int-value
+        valueFrom:
+          path: /tmp/rand_int.txt
+  - arguments: {}
+    container:
+      args:
+      - import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)
+      command:
+      - python
+      - -c
+      image: python:alpine3.6
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    metrics:
+      prometheus:
+      - counter:
+          value: "1"
+        help: Count of step execution by result status
+        labels:
+        - key: name
+          value: flakey
+        - key: status
+          value: Failed
+        name: result_counter_dag
+    name: flakey
+    outputs: {}
+`
+
+func TestDAGTmplMetrics(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(dagTmplMetrics)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	tmpl := woc.wf.GetTemplateByName("random-int")
+	assert.NotNil(t, tmpl)
+	metricDesc := tmpl.Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metricHistogram := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Histogram)
+	metricHistogramString, err := getMetricStringValue(metricHistogram)
+	assert.NoError(t, err)
+	assert.Contains(t, metricHistogramString, `histogram:<sample_count:1 sample_sum:5`)
+
+	tmpl = woc.wf.GetTemplateByName("flakey")
+	assert.NotNil(t, tmpl)
+	metricDesc = tmpl.Metrics.Prometheus[0].GetDesc()
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metricCounter := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Counter)
+	metricCounterString, err := getMetricStringValue(metricCounter)
+	assert.NoError(t, err)
+	assert.Contains(t, metricCounterString, `counter:<value:1 > `)
+}
+
+var testRealtimeWorkflowMetricWithGlobalParameters = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-foobar
+  labels:
+    testLabel: foobar
+spec:
+  arguments:
+    parameters:
+      - name: testParam
+        value: foo
+  entrypoint: whalesay
+  metrics:
+    prometheus:
+      - name: intuit_data_persistplat_dppselfservice_workflow_test_duration
+        help: Duration of workflow
+        labels:
+          - key: workflowName
+            value: "{{workflow.name}}"
+          - key: label
+            value: "{{workflow.labels.testLabel}}"
+        gauge:
+          realtime: true
+          value: "{{workflow.duration}}"
+  templates:
+    - name: whalesay
+      resubmitPendingPods: true
+      container:
+        image: docker/whalesay
+        command: [ cowsay ]
+        args: [ "hello world" ]
+`
+
+func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(testRealtimeWorkflowMetricWithGlobalParameters)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	metricErrorDesc := wf.Spec.Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
-
-	metricErrorDesc = wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
-	metricErrorCounter = controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
-	metricErrorCounterString, err = getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
-
+	assert.Contains(t, metricErrorCounterString, `label:<name:"workflowName" value:"test-foobar" > gauge:<value:`)
 }

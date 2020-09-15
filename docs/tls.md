@@ -1,6 +1,6 @@
 # Transport Layer Security
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.8 and after
 
@@ -40,7 +40,13 @@ export ARGO_INSECURE_SKIP_VERIFY=true
 argo --secure --insecure-skip-verify list
 ```
 
-Tip: Don't forget to update your readiness probe to use HTTPS, [example](https://github.com/argoproj/argo/blob/master/test/e2e/manifests/mixins/argo-server-deployment.yaml).
+Tip: Don't forget to update your readiness probe to use HTTPS. To do so, edit your `argo-server` Deployment's `readinessProbe` spec: 
+
+```
+readinessProbe:
+    httpGet: 
+        scheme: HTTPS
+```
 
 ### Encrypted and Verified
 

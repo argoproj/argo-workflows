@@ -52,8 +52,8 @@ func TestSwagger(t *testing.T) {
 	t.Run("io.argoproj.workflow.v1alpha1.Parameter", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Parameter"].(obj)
 		properties := definition["properties"].(obj)
-		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["default"].(obj)["$ref"])
-		assert.Equal(t, "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString", properties["value"].(obj)["$ref"])
+		assert.Equal(t, "string", properties["default"].(obj)["type"])
+		assert.Equal(t, "string", properties["value"].(obj)["type"])
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.Histogram", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Histogram"].(obj)
@@ -67,7 +67,7 @@ func TestSwagger(t *testing.T) {
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.Item", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Item"].(obj)
-		assert.ElementsMatch(t, []string{"boolean", "number", "object", "string"}, definition["type"])
+		assert.Empty(t, definition["type"])
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.ParallelSteps", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"].(obj)

@@ -78,6 +78,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -225,6 +227,8 @@ Workflow is the definition of a workflow resource
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -403,6 +407,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -551,6 +557,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
@@ -633,6 +641,7 @@ WorkflowSpec is the specification of a Workflow.
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
+|`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 |`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
@@ -741,6 +750,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -888,6 +899,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -1042,6 +1055,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -1190,6 +1205,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
@@ -1272,6 +1289,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
+|`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 |`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be refer|
@@ -1330,6 +1348,8 @@ Arguments to a template
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -1402,6 +1422,8 @@ Arguments to a template
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -1591,6 +1613,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -1739,6 +1763,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
@@ -1818,6 +1844,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this template|
 |~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
+|`timeout`|`string`|Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -1838,6 +1865,15 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterCompletion`|`int32`|SecondsAfterCompletion is the number of seconds to live after completion|
 |`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
+
+## VolumeClaimGC
+
+VolumeClaimGC describes how to delete volumes from completed Workflows
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"|
 
 ## WorkflowTemplateRef
 
@@ -2075,6 +2111,7 @@ Artifact indicates an artifact to place at a specified path
 |`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`path`|`string`|Path is the container path to the artifact|
 |`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
+|`recurseMode`|`boolean`|If mode is set, apply the permission recursively into the artifact if it is a folder|
 |`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 |`subPath`|`string`|SubPath allows an artifact to be sourced from a subpath within the specified source|
 
@@ -2123,6 +2160,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
@@ -2196,6 +2235,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo/blob/master/examples/suspend-template-outputs.yaml)
@@ -2222,10 +2263,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|[`IntOrString`](#intorstring)|Default is the default value to use for an input parameter if a value was not supplied|
+|`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|[`IntOrString`](#intorstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -2342,6 +2383,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
@@ -2452,6 +2495,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`exit-code-output-variable.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-code-output-variable.yaml)
 
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
@@ -2527,6 +2572,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -2643,6 +2690,8 @@ Pod metdata
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
+
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
 
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
@@ -2791,6 +2840,8 @@ Pod metdata
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -3102,6 +3153,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`scripts-python.yaml`](https://github.com/argoproj/argo/blob/master/examples/scripts-python.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -3496,7 +3549,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
@@ -3611,6 +3664,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`exit-handler-dag-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/exit-handler-dag-level.yaml)
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
@@ -3695,6 +3750,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`resource-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-flags.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 </details>
 
 ### Fields
@@ -3919,6 +3976,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -4066,6 +4125,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -4431,6 +4492,8 @@ A single application container that you want to run within a pod.
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -4560,6 +4623,8 @@ A single application container that you want to run within a pod.
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -5065,6 +5130,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -5212,6 +5279,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 
@@ -6072,6 +6141,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`dag-targets.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-targets.yaml)
 
+- [`dag-task-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-task-level-timeout.yaml)
+
 - [`default-pdb-support.yaml`](https://github.com/argoproj/argo/blob/master/examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](https://github.com/argoproj/argo/blob/master/examples/dns-config.yaml)
@@ -6219,6 +6290,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`sidecar.yaml`](https://github.com/argoproj/argo/blob/master/examples/sidecar.yaml)
 
 - [`status-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/status-reference.yaml)
+
+- [`step-level-timeout.yaml`](https://github.com/argoproj/argo/blob/master/examples/step-level-timeout.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/steps.yaml)
 

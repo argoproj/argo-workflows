@@ -1,4 +1,5 @@
 import * as classNames from 'classnames';
+import * as dagre from 'dagre';
 import * as React from 'react';
 
 import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
@@ -14,6 +15,7 @@ export interface WorkflowDagRenderOptions {
     scale: number;
     nodesToDisplay: string[];
     expandNodes: Set<string>;
+    fastRenderer: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -281,7 +283,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 'type:Retry',
                 'type:Skipped',
                 'type:Suspend'
-            ]
+            ],
+            fastRenderer: false
         } as WorkflowDagRenderOptions;
     }
 
@@ -296,6 +299,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
 
         const allNodes = this.props.nodes;
+        const getChildren = (nodeId: string): string[] => {
+            if (!allNodes[nodeId] || !allNodes[nodeId].children) {
+                return [];
+            }
+            return allNodes[nodeId].children;
+        };
         const pushChildren = (nodeId: string, children: string[], isExpanded: boolean): void => {
             if (!children) {
                 return;
@@ -306,7 +315,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 queue.push({
                     nodeName: children[0],
                     parent: nodeId,
-                    children: allNodes[children[0]].children
+                    children: getChildren(children[0])
                 });
                 const newChildren: string[] = children
                     .slice(1, children.length - 1)
@@ -320,7 +329,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 queue.push({
                     nodeName: children[children.length - 1],
                     parent: nodeId,
-                    children: allNodes[children[children.length - 1]].children
+                    children: getChildren(children[children.length - 1])
                 });
             } else {
                 // Node will not be collapsed
@@ -328,7 +337,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     queue.push({
                         nodeName: child,
                         parent: nodeId,
-                        children: allNodes[child].children
+                        children: getChildren(child)
                     })
                 );
             }
@@ -337,7 +346,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const root: PrepareNode = {
             nodeName: this.props.workflowName,
             parent: '',
-            children: this.props.nodes[this.props.workflowName].children
+            children: getChildren(this.props.workflowName)
         };
 
         const queue: PrepareNode[] = [root];
@@ -384,7 +393,56 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return {nodes, edges};
     }
 
-    private layoutGraph(nodes: string[], edges: Edge[]) {
+    private layoutGraphPretty(nodes: string[], edges: Edge[]) {
+        const graph = new dagre.graphlib.Graph();
+
+        graph.setGraph({
+            edgesep: 20 / this.scale,
+            nodesep: 50 / this.scale,
+            rankdir: this.state.horizontal ? 'LR' : 'TB',
+            ranksep: 50 / this.scale
+        });
+
+        graph.setDefaultEdgeLabel(() => ({}));
+
+        nodes.forEach(node => {
+            graph.setNode(node, {label: node, width: this.nodeSize, height: this.nodeSize});
+        });
+        edges.forEach(edge => {
+            if (edge.v && edge.w) {
+                graph.setEdge(edge.v, edge.w);
+            }
+        });
+        dagre.layout(graph);
+
+        const size = this.getGraphSize(graph.nodes().map((id: string) => graph.node(id)));
+        this.graph = {
+            width: size.width,
+            height: size.height,
+            nodes: new Map<string, {x: number; y: number}>(),
+            edges: []
+        };
+
+        graph.nodes().map((id: string) => {
+            const node = graph.node(id);
+            this.graph.nodes.set(node.label, {x: node.x, y: node.y});
+        });
+        graph.edges().map((edge: Edge) => {
+            this.graph.edges.push(this.generateEdge(edge));
+        });
+    }
+
+    private getGraphSize(nodes: dagre.Node[]): {width: number; height: number} {
+        let width = 0;
+        let height = 0;
+        nodes.forEach(node => {
+            width = Math.max(node.x + node.width / 2, width);
+            height = Math.max(node.y + node.height / 2, height);
+        });
+        return {width, height};
+    }
+
+    private layoutGraphFast(nodes: string[], edges: Edge[]) {
         const hash = {scale: this.scale, nodeCount: nodes.length, nodesToDisplay: this.state.nodesToDisplay};
         // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
         if (this.hash === hash) {
@@ -427,26 +485,28 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 });
             });
         });
+        this.graph.edges = edges.filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w)).map(e => this.generateEdge(e));
+    }
+
+    private generateEdge(edge: Edge) {
         // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
         const h = this.state.horizontal ? this.nodeSize / 2 : 0;
         const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
-        this.graph.edges = edges
-            .filter(e => this.graph.nodes.has(e.v) && this.graph.nodes.has(e.w))
-            .map(e => ({
-                v: e.v,
-                w: e.w,
-                points: [
-                    {
-                        // for hidden nodes, we want to size them zero
-                        x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
-                        y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
-                    },
-                    {
-                        x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
-                        y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
-                    }
-                ]
-            }));
+        return {
+            v: edge.v,
+            w: edge.w,
+            points: [
+                {
+                    // for hidden nodes, we want to size them zero
+                    x: this.graph.nodes.get(edge.v).x + (this.hiddenNode(edge.v) ? 0 : h),
+                    y: this.graph.nodes.get(edge.v).y + (this.hiddenNode(edge.v) ? 0 : v)
+                },
+                {
+                    x: this.graph.nodes.get(edge.w).x - (this.hiddenNode(edge.w) ? 0 : h),
+                    y: this.graph.nodes.get(edge.w).y - (this.hiddenNode(edge.w) ? 0 : v)
+                }
+            ]
+        };
     }
 
     private selectNode(nodeId: string) {
@@ -505,5 +565,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
             (node.type === 'Retry' && node.children.length === 1)
         );
+    }
+
+    private layoutGraph(nodes: string[], edges: Edge[]) {
+        if (this.state.fastRenderer) {
+            this.layoutGraphFast(nodes, edges);
+        } else {
+            this.layoutGraphPretty(nodes, edges);
+        }
     }
 }

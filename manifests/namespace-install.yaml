@@ -155,6 +155,7 @@ rules:
   verbs:
   - create
   - delete
+  - get
 - apiGroups:
   - argoproj.io
   resources:
@@ -254,10 +255,13 @@ rules:
   - events
   verbs:
   - watch
+  - create
+  - patch
 - apiGroups:
   - ""
   resources:
   - secrets
+  - serviceaccounts
   verbs:
   - get
 - apiGroups:

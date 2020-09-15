@@ -88,6 +88,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer":               schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":                   schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Version":                     schema_pkg_apis_workflow_v1alpha1_Version(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC":               schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":                    schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":        schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":    schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
@@ -307,6 +308,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "SubPath allows an artifact to be sourced from a subpath within the specified source",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"recurseMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "If mode is set, apply the permission recursively into the artifact if it is a folder",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -1644,7 +1652,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 					},
 					"url": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
+							Description: "The URL. May contain \"${metadata.namespace}\", \"${metadata.name}\", \"${status.startedAt}\" and \"${status.finishedAt}\".",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2304,13 +2312,15 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default is the default value to use for an input parameter if a value was not supplied",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"valueFrom": {
@@ -2331,7 +2341,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"},
 	}
 }
 
@@ -3656,6 +3666,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Memoize"),
 						},
 					},
+					"timeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Timout allows to set the total node execution timeout duration counting from the node's start time. This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -4001,14 +4018,15 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
-							Ref:         ref("k8s.io/apimachinery/pkg/util/intstr.IntOrString"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom"},
 	}
 }
 
@@ -4068,6 +4086,26 @@ func schema_pkg_apis_workflow_v1alpha1_Version(ref common.ReferenceCallback) com
 					},
 				},
 				Required: []string{"version", "buildDate", "gitCommit", "gitTag", "gitTreeState", "goVersion", "compiler", "platform"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VolumeClaimGC describes how to delete volumes from completed Workflows",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"strategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Strategy is the strategy to use. One of \"OnWorkflowCompletion\", \"OnWorkflowSuccess\"",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -4598,11 +4636,17 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
+					"volumeClaimGC": {
+						SchemaProps: spec.SchemaProps{
+							Description: "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -5268,6 +5312,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
+					"volumeClaimGC": {
+						SchemaProps: spec.SchemaProps{
+							Description: "VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
+						},
+					},
 					"workflowMetadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowMetadata contains some metadata of the workflow to be refer",
@@ -5278,6 +5328,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
