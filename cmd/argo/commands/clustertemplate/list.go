@@ -2,13 +2,13 @@ package clustertemplate
 
 import (
 	"fmt"
-	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"log"
 	"os"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )

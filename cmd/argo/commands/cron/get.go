@@ -41,7 +41,10 @@ func NewGetCommand() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				return printCronWorkflow(cronWf, output)
+				err = printCronWorkflow(cronWf, output)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		},

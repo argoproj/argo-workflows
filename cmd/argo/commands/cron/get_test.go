@@ -5,8 +5,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/cmd/argo/commands/common"
+	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient/cronworkflow/mocks"
+	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -74,4 +79,24 @@ func TestNextRuntime(t *testing.T) {
 			assert.Greater(t, next.Unix(), time.Now().Unix())
 		}
 	}
+}
+
+func TestNewGetCommand(t *testing.T) {
+	client := clientmocks.Client{}
+	cronWfClient := mocks.CronWorkflowServiceClient{}
+	var cronWfObj v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(cronwf), &cronWfObj)
+	assert.NoError(t, err)
+	cronWfClient.On("GetCronWorkflow", mock.Anything, mock.Anything).Return(&cronWfObj, nil)
+	client.On("NewCronWorkflowServiceClient").Return(&cronWfClient)
+	common.APIClient = &client
+	deleteCommand := NewGetCommand()
+	deleteCommand.SetArgs([]string{"hello-world"})
+	execFunc := func() {
+		err := deleteCommand.Execute()
+		assert.NoError(t, err)
+	}
+	output := test.CaptureOutput(execFunc)
+	assert.Contains(t, output, "hello-world")
+	assert.Contains(t, output, "* * * * *")
 }

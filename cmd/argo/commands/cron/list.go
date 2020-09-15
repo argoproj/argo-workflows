@@ -55,7 +55,7 @@ func NewListCommand() *cobra.Command {
 					fmt.Println(cronWf.ObjectMeta.Name)
 				}
 			default:
-				fmt.Errorf("Unknown output mode: %s", listArgs.output)
+				return fmt.Errorf("Unknown output mode: %s", listArgs.output)
 			}
 			return nil
 		},
