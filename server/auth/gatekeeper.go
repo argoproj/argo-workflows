@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/coreos/go-oidc"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -14,9 +15,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth/jws"
-	"github.com/argoproj/argo/server/auth/jwt"
 	"github.com/argoproj/argo/server/auth/sso"
+	"github.com/argoproj/argo/server/auth/userinfo"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
@@ -25,7 +25,7 @@ type ContextKey string
 const (
 	WfKey       ContextKey = "versioned.Interface"
 	KubeKey     ContextKey = "kubernetes.Interface"
-	ClaimSetKey ContextKey = "jws.ClaimSet"
+	UserInfoKey ContextKey = "oidc.UserInfo"
 )
 
 type Gatekeeper interface {
@@ -77,7 +77,7 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), ClaimSetKey, claimSet), nil
+	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), UserInfoKey, claimSet), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -88,8 +88,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaimSet(ctx context.Context) *jws.ClaimSet {
-	config, _ := ctx.Value(ClaimSetKey).(*jws.ClaimSet)
+func GetUserInfo(ctx context.Context) *oidc.UserInfo {
+	config, _ := ctx.Value(UserInfoKey).(*oidc.UserInfo)
 	return config
 }
 
@@ -111,7 +111,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jws.ClaimSet, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *oidc.UserInfo, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
@@ -135,17 +135,17 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		claimSet, _ := jwt.ClaimSetFor(restConfig)
+		claimSet, _ := userinfo.UserInfoFor(restConfig)
 		return wfClient, kubeClient, claimSet, nil
 	case Server:
-		claimSet, _ := jwt.ClaimSetFor(s.restConfig)
+		claimSet, _ := userinfo.UserInfoFor(s.restConfig)
 		return s.wfClient, s.kubeClient, claimSet, nil
 	case SSO:
-		claimSet, err := s.ssoIf.Authorize(ctx, authorization)
+		userInfo, err := s.ssoIf.Authorize(ctx, authorization)
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, claimSet, nil
+		return s.wfClient, s.kubeClient, userInfo, nil
 	default:
 		panic("this should never happen")
 	}

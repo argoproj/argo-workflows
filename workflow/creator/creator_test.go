@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/coreos/go-oidc"
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/jws"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -21,14 +21,14 @@ func TestLabel(t *testing.T) {
 	})
 	t.Run("NotEmpty", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"}), wf)
+		Label(context.WithValue(context.TODO(), auth.UserInfoKey, &oidc.UserInfo{Subject: "my-sub"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		}
 	})
 	t.Run("TooLong", func(t *testing.T) {
 		wf := &wfv1.Workflow{}
-		Label(context.WithValue(context.TODO(), auth.ClaimSetKey, &jws.ClaimSet{Sub: strings.Repeat("x", 63) + "y"}), wf)
+		Label(context.WithValue(context.TODO(), auth.UserInfoKey, &oidc.UserInfo{Subject: strings.Repeat("x", 63) + "y"}), wf)
 		if assert.NotEmpty(t, wf.Labels) {
 			assert.Equal(t, strings.Repeat("x", 62)+"y", wf.Labels[common.LabelKeyCreator])
 		}

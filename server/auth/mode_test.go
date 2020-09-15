@@ -50,7 +50,7 @@ func TestModes_GetMode(t *testing.T) {
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
-		mode, err := GetMode("Bearer id_token:")
+		mode, err := GetMode("Bearer v2:")
 		if assert.NoError(t, err) {
 			assert.Equal(t, SSO, mode)
 		}

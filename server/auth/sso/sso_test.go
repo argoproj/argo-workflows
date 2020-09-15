@@ -17,15 +17,19 @@ const testNamespace = "argo"
 
 type fakeOidcProvider struct{}
 
+func (p fakeOidcProvider) UserInfo(context.Context, oauth2.TokenSource) (*oidc.UserInfo, error) {
+	return &oidc.UserInfo{}, nil
+}
+
 func (fakeOidcProvider) Endpoint() oauth2.Endpoint {
 	return oauth2.Endpoint{}
 }
 
-func (fakeOidcProvider) Verifier(config *oidc.Config) *oidc.IDTokenVerifier {
+func (fakeOidcProvider) Verifier(*oidc.Config) *oidc.IDTokenVerifier {
 	return nil
 }
 
-func fakeOidcFactory(ctx context.Context, issuer string) (providerInterface, error) {
+func fakeOIDCProviderFactory(ctx context.Context, issuer string) (providerInterface, error) {
 	return fakeOidcProvider{}, nil
 }
 
@@ -58,7 +62,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ssoInterface, err := newSso(fakeOIDCProviderFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
@@ -84,7 +88,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ssoInterface, err := newSso(fakeOIDCProviderFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
@@ -98,7 +102,7 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	_, err := newSso(fakeOIDCProviderFactory, config, fakeClient, "/", false)
 	require.Error(t, err)
 	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }

@@ -34,12 +34,7 @@ export class UserInfo extends BasePage<RouteComponentProps<any>, State> {
                         <h3>
                             <i className='fa fa-user-alt' /> User Info
                         </h3>
-                        {this.state.userInfo && (
-                            <>
-                                <p>Issuer: {this.state.userInfo.issuer || '-'}</p>
-                                <p>Subject: {this.state.userInfo.subject || '-'}</p>
-                            </>
-                        )}
+                        {this.state.userInfo && <p>Subject: {this.state.userInfo.subject || '-'}</p>}
                         <a className='argo-button argo-button--base-o' href={uiUrl('login')}>
                             <i className='fa fa-shield-alt' /> Login / Logout
                         </a>

@@ -2,12 +2,12 @@ package sso
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/argoproj/pkg/jwt/zjwt"
 	"github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc"
 	log "github.com/sirupsen/logrus"
@@ -15,14 +15,12 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/argoproj/argo/server/auth/jws"
 )
 
-const Prefix = "Bearer id_token:"
+const Prefix = "Bearer v2:"
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
+	Authorize(ctx context.Context, authorization string) (*oidc.UserInfo, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -30,10 +28,11 @@ type Interface interface {
 var _ Interface = &sso{}
 
 type sso struct {
-	config          *oauth2.Config
-	idTokenVerifier *oidc.IDTokenVerifier
-	baseHRef        string
-	secure          bool
+	config   *oauth2.Config
+	provider providerInterface
+	baseHRef string
+	secure   bool
+	key      []byte
 }
 
 type Config struct {
@@ -43,13 +42,14 @@ type Config struct {
 	RedirectURL  string                  `json:"redirectUrl"`
 }
 
-// Abtsract methods of oidc.Provider that our code uses into an interface. That
+// Abstract methods of oidc.Provider that our code uses into an interface. That
 // will allow us to implement a stub for unit testing.  If you start using more
 // oidc.Provider methods in this file, add them here and provide a stub
 // implementation in test.
 type providerInterface interface {
 	Endpoint() oauth2.Endpoint
 	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
+	UserInfo(ctx context.Context, source oauth2.TokenSource) (*oidc.UserInfo, error)
 }
 
 type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
@@ -99,6 +99,23 @@ func newSso(
 			return nil, err
 		}
 	}
+
+	key, err := generateKey()
+	if err != nil {
+		return nil, err
+	}
+	// whoa - are you ignoring errors - yes - we don't care if it fails - all that must happen if for
+	// the get to work
+	_, _ = secretsIf.Create(&apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "sso"},
+		Data:       map[string][]byte{"key": key},
+	})
+	secret, err := secretsIf.Get("sso", metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	key = secret.Data["key"]
+
 	clientID := clientIDObj.Data[c.ClientID.Key]
 	if clientID == nil {
 		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
@@ -107,7 +124,6 @@ func newSso(
 	if clientSecret == nil {
 		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
 	}
-
 	config := &oauth2.Config{
 		ClientID:     string(clientID),
 		ClientSecret: string(clientSecret),
@@ -115,9 +131,9 @@ func newSso(
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID},
 	}
-	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
+
 	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
-	return &sso{config, idTokenVerifier, baseHRef, secure}, nil
+	return &sso{config, provider, baseHRef, secure, key}, nil
 }
 
 const stateCookieName = "oauthState"
@@ -156,31 +172,13 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
 		return
 	}
-	rawIDToken, ok := oauth2Token.Extra("id_token").(string)
-	if !ok {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte("failed to get id_token"))
-		return
-	}
-	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
+	encryptedAccessToken, err := encrypt(s.key, []byte(oauth2Token.AccessToken))
 	if err != nil {
 		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
+		_, _ = w.Write([]byte(fmt.Sprintf("failed to encrypt access token: %v", err)))
 		return
 	}
-	c := &jws.ClaimSet{}
-	if err := idToken.Claims(c); err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
-		return
-	}
-	token, err := zjwt.ZJWT(rawIDToken)
-	if err != nil {
-		w.WriteHeader(500)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to get compress token: %v", err)))
-		return
-	}
-	value := Prefix + token
+	value := Prefix + base64.StdEncoding.EncodeToString(encryptedAccessToken)
 	log.Debugf("handing oauth2 callback %v", value)
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
@@ -194,18 +192,18 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
-	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorization, Prefix))
+func (s *sso) Authorize(ctx context.Context, authorization string) (*oidc.UserInfo, error) {
+	encryptedAccessToken, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decompress token %v", err)
+		return nil, fmt.Errorf("failed to decode encrypted access token %v", err)
 	}
-	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
+	accessToken, err := decrypt(s.key, encryptedAccessToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to verify id_token %v", err)
+		return nil, fmt.Errorf("failed to decrypt encrypted access token %v", err)
 	}
-	c := &jws.ClaimSet{}
-	if err := idToken.Claims(c); err != nil {
-		return nil, fmt.Errorf("failed to parse claims: %v", err)
+	userInfo, err := s.provider.UserInfo(ctx, s.config.TokenSource(ctx, &oauth2.Token{AccessToken: string(accessToken)}))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info %v", err)
 	}
-	return c, nil
+	return userInfo, nil
 }

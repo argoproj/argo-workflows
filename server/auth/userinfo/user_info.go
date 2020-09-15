@@ -1,4 +1,4 @@
-package jwt
+package userinfo
 
 import (
 	"encoding/base64"
@@ -7,15 +7,14 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/coreos/go-oidc"
 	"k8s.io/client-go/rest"
-
-	"github.com/argoproj/argo/server/auth/jws"
 )
 
-func ClaimSetFor(restConfig *rest.Config) (*jws.ClaimSet, error) {
+func UserInfoFor(restConfig *rest.Config) (*oidc.UserInfo, error) {
 	username := restConfig.Username
 	if username != "" {
-		return &jws.ClaimSet{Sub: username}, nil
+		return &oidc.UserInfo{Subject: username}, nil
 	} else if restConfig.BearerToken != "" || restConfig.BearerTokenFile != "" {
 		bearerToken := restConfig.BearerToken
 		if bearerToken == "" {
@@ -35,7 +34,7 @@ func ClaimSetFor(restConfig *rest.Config) (*jws.ClaimSet, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode bearer token's JWT payload: %w", err)
 		}
-		claims := &jws.ClaimSet{}
+		claims := &oidc.UserInfo{}
 		err = json.Unmarshal(data, &claims)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal bearer token's JWT payload: %w", err)

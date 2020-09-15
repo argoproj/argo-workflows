@@ -15,5 +15,4 @@ export interface Version {
 
 export interface GetUserInfoResponse {
     subject?: string;
-    issuer?: string;
 }
