@@ -3476,6 +3476,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1volumeclaimgc" title="io.argoproj.workflow.v1alpha1.VolumeClaimGC" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.VolumeClaimGC
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1workflow" title="io.argoproj.workflow.v1alpha1.Workflow" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.Workflow
   </a>
@@ -6971,6 +6978,13 @@
           <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1version" title="io.argoproj.workflow.v1alpha1.Version" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.Version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1volumeclaimgc" title="io.argoproj.workflow.v1alpha1.VolumeClaimGC" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.VolumeClaimGC
   </a>
   
 </li>
@@ -13829,6 +13843,26 @@
 </tr>
 </tbody>
 </table>
+<h4 id="ioargoprojworkflowv1alpha1volumeclaimgc">io.argoproj.workflow.v1alpha1.VolumeClaimGC<a class="headerlink" href="#ioargoprojworkflowv1alpha1volumeclaimgc" title="Permanent link">&para;</a></h4>
+<p>VolumeClaimGC describes how to delete volumes from completed Workflows</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>strategy</td>
+<td>string</td>
+<td>Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
 <h4 id="ioargoprojworkflowv1alpha1workflow">io.argoproj.workflow.v1alpha1.Workflow<a class="headerlink" href="#ioargoprojworkflowv1alpha1workflow" title="Permanent link">&para;</a></h4>
 <p>Workflow is the definition of a workflow resource</p>
 <table>
@@ -14411,6 +14445,12 @@
 <td>ttlStrategy</td>
 <td><a href="#io.argoproj.workflow.v1alpha1.ttlstrategy">io.argoproj.workflow.v1alpha1.TTLStrategy</a></td>
 <td>TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.</td>
+<td>No</td>
+</tr>
+<tr>
+<td>volumeClaimGC</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.volumeclaimgc">io.argoproj.workflow.v1alpha1.VolumeClaimGC</a></td>
+<td>VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows</td>
 <td>No</td>
 </tr>
 <tr>
@@ -15089,6 +15129,12 @@
 <td>ttlStrategy</td>
 <td><a href="#io.argoproj.workflow.v1alpha1.ttlstrategy">io.argoproj.workflow.v1alpha1.TTLStrategy</a></td>
 <td>TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.</td>
+<td>No</td>
+</tr>
+<tr>
+<td>volumeClaimGC</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.volumeclaimgc">io.argoproj.workflow.v1alpha1.VolumeClaimGC</a></td>
+<td>VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows</td>
 <td>No</td>
 </tr>
 <tr>
