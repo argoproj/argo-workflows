@@ -44,6 +44,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 * Output artifacts can only be saved on volumes (e.g. emptyDir) and not the base image layer (e.g. /tmp)
 
 ## Process Namespace Sharing (pns)
+*PNS can't be used when running Windows containers within your workflow as sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod).*
 
 ### Pros
 
