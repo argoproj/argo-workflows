@@ -689,6 +689,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
+	deletedNodes := make(map[string]bool)
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -709,6 +710,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 				newNode.FinishedAt = metav1.Time{}
 				newWF.Status.Nodes[newNode.ID] = *newNode
 				continue
+			} else {
+				deletedNodes[node.ID] = true
 			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
@@ -731,6 +734,30 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		}
 	}
 
+	if len(deletedNodes) > 0 {
+		for _, node := range newWF.Status.Nodes {
+			if len(node.Children) > 0 {
+				var newChildren []string
+				for _, child := range node.Children {
+					if !deletedNodes[child] {
+						newChildren = append(newChildren, child)
+					}
+				}
+				node.Children = newChildren
+			}
+
+			if len(node.OutboundNodes) > 0 {
+				var outboundNodes []string
+				for _, outboundNode := range node.OutboundNodes {
+					if !deletedNodes[outboundNode] {
+						outboundNodes = append(outboundNodes, outboundNode)
+					}
+				}
+				node.OutboundNodes = outboundNodes
+			}
+			newWF.Status.Nodes[node.ID] = node
+		}
+	}
 	err = hydrator.Dehydrate(newWF)
 	if err != nil {
 		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
