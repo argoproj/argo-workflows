@@ -1632,6 +1632,14 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | platform | string |  | Yes |
 | version | string |  | Yes |
 
+#### io.argoproj.workflow.v1alpha1.VolumeClaimGC
+
+VolumeClaimGC describes how to delete volumes from completed Workflows
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| strategy | string | Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess" | No |
+
 #### io.argoproj.workflow.v1alpha1.Workflow
 
 Workflow is the definition of a workflow resource
@@ -1771,6 +1779,7 @@ WorkflowSpec is the specification of a Workflow.
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | ttlSecondsAfterFinished | integer | TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. | No |
 | ttlStrategy | [io.argoproj.workflow.v1alpha1.TTLStrategy](#io.argoproj.workflow.v1alpha1.ttlstrategy) | TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values. | No |
+| volumeClaimGC | [io.argoproj.workflow.v1alpha1.VolumeClaimGC](#io.argoproj.workflow.v1alpha1.volumeclaimgc) | VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows | No |
 | volumeClaimTemplates | [ [io.k8s.api.core.v1.PersistentVolumeClaim](#io.k8s.api.core.v1.persistentvolumeclaim) ] | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1. | No |
 | workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution | No |
@@ -1930,6 +1939,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | ttlSecondsAfterFinished | integer | TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. | No |
 | ttlStrategy | [io.argoproj.workflow.v1alpha1.TTLStrategy](#io.argoproj.workflow.v1alpha1.ttlstrategy) | TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values. | No |
+| volumeClaimGC | [io.argoproj.workflow.v1alpha1.VolumeClaimGC](#io.argoproj.workflow.v1alpha1.volumeclaimgc) | VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows | No |
 | volumeClaimTemplates | [ [io.k8s.api.core.v1.PersistentVolumeClaim](#io.k8s.api.core.v1.persistentvolumeclaim) ] | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1. | No |
 | workflowMetadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | WorkflowMetadata contains some metadata of the workflow to be refer | No |

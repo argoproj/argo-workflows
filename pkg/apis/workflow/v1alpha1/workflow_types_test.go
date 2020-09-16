@@ -212,3 +212,10 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
+	spec := WorkflowSpec{}
+
+	assert.NotNil(t, spec.GetVolumeClaimGC())
+	assert.Equal(t, &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}, spec.GetVolumeClaimGC())
+}

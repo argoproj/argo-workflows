@@ -160,6 +160,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
+// As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate() {
 	defer func() {
 		if woc.wf.Status.Fulfilled() {
@@ -486,6 +487,12 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
+	// You MUST not call `persistUpdates` twice.
+	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
+	// * It will double the number of Kubernetes API requests.
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		woc.log.Panic("cannot persist updates with mismatched resource versions")
+	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
@@ -584,6 +591,10 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
+	// if this condition is true, then this func will always error
+	if woc.orig.ResourceVersion != woc.wf.ResourceVersion {
+		woc.log.Panic("cannot re-apply update with mismatched resource versions")
+	}
 	err := woc.controller.hydrator.Hydrate(woc.orig)
 	if err != nil {
 		return nil, err
@@ -1353,11 +1364,20 @@ func (woc *wfOperationCtx) createPVCs() error {
 }
 
 func (woc *wfOperationCtx) deletePVCs() error {
-	if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
-		// Skip deleting PVCs to reuse them for retried failed/error workflows.
-		// PVCs are automatically deleted when corresponded owner workflows get deleted.
-		return nil
+	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
+
+	switch gcStrategy {
+	case wfv1.VolumeClaimGCOnSuccess:
+		if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
+			// Skip deleting PVCs to reuse them for retried failed/error workflows.
+			// PVCs are automatically deleted when corresponded owner workflows get deleted.
+			return nil
+		}
+	case wfv1.VolumeClaimGCOnCompletion:
+	default:
+		return fmt.Errorf("unknown volume gc strategy: %s", gcStrategy)
 	}
+
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
 	if totalPVCs == 0 {
 		// PVC list already empty. nothing to do
@@ -1485,8 +1505,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if node != nil {
 		if node.Fulfilled() {
-			if resolvedTmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+			if processedTmpl.Synchronization != nil {
+				woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, processedTmpl.Synchronization)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1532,7 +1552,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if processedTmpl.Synchronization != nil {
 		priority, creationTime := getWfPriority(woc.wf)
-		lockAcquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, resolvedTmpl.Synchronization)
+		lockAcquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
@@ -1631,8 +1651,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 
-		if resolvedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+		if processedTmpl.Synchronization != nil {
+			woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, processedTmpl.Synchronization)
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
@@ -1713,7 +1733,8 @@ func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.
 func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted bool, message ...string) {
 	if woc.wf.Status.Phase != phase {
 		if woc.wf.Status.Phase.Fulfilled() {
-			panic(fmt.Sprintf("workflow \"%s/%s\" is already fulfilled", woc.wf.Namespace, woc.wf.Name))
+			woc.log.WithFields(log.Fields{"fromPhase": woc.wf.Status.Phase, "toPhase": phase}).
+				Panic("workflow is already fulfilled")
 		}
 		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
 		woc.updated = true
@@ -1913,6 +1934,10 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		panic(fmt.Sprintf("workflow '%s' node '%s' uninitialized when marking as %v: %s", woc.wf.Name, nodeName, phase, message))
 	}
 	if node.Phase != phase {
+		if node.Phase.Fulfilled() {
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "fromPhase": node.Phase, "toPhase": phase}).
+				Error("node is already fulfilled")
+		}
 		woc.log.Infof("node %s phase %s -> %s", node.ID, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true
@@ -2152,7 +2177,7 @@ func getStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
 		// Retry, withItems and withParam scenario
-		if indx := strings.LastIndex(name, "("); indx > 0 {
+		if indx := strings.Index(name, "("); indx > 0 {
 			return name[0:indx]
 		}
 		return name
@@ -2785,7 +2810,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
 				continue
 			}
-			err = woc.controller.metrics.UpsertCustomMetric(metricTmpl.GetDesc(), updatedMetric)
+			err = woc.controller.metrics.UpsertCustomMetric(metricTmpl.GetDesc(), string(woc.wf.UID), updatedMetric, true)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricTmpl.Name, err))
 				continue
@@ -2814,7 +2839,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			err = woc.controller.metrics.UpsertCustomMetric(metricSpec.GetDesc(), updatedMetric)
+			err = woc.controller.metrics.UpsertCustomMetric(metricSpec.GetDesc(), string(woc.wf.UID), updatedMetric, false)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not construct metric '%s': %s", metricSpec.Name, err))
 				continue

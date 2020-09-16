@@ -1,6 +1,6 @@
 # Argo Server SSO
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.9 and after
 

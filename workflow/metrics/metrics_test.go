@@ -104,12 +104,12 @@ func TestMetrics(t *testing.T) {
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
-	err = m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
+	err = m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, m.GetCustomMetric("metric"))
 	}
 
-	err = m.UpsertCustomMetric("metric2", newCounter("test", "new test", nil))
+	err = m.UpsertCustomMetric("metric2", "", newCounter("test", "new test", nil), false)
 	assert.Error(t, err)
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
@@ -121,7 +121,7 @@ func TestMetrics(t *testing.T) {
 		},
 	})
 	if assert.NoError(t, err) {
-		err = m.UpsertCustomMetric("asdf", badMetric)
+		err = m.UpsertCustomMetric("asdf", "", badMetric, false)
 		assert.Error(t, err)
 	}
 }
@@ -141,7 +141,7 @@ func TestMetricGC(t *testing.T) {
 	m := New(config, config)
 	assert.Len(t, m.customMetrics, 0)
 
-	err := m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
+	err := m.UpsertCustomMetric("metric", "", newCounter("test", "test", nil), false)
 	if assert.NoError(t, err) {
 		assert.Len(t, m.customMetrics, 1)
 	}
@@ -178,6 +178,45 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1.0, *metric.Counter.Value)
 		}
-
 	}
+}
+
+func TestRealTimeMetricDeletion(t *testing.T) {
+	config := ServerConfig{
+		Enabled: true,
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
+		TTL:     1 * time.Second,
+	}
+	m := New(config, config)
+
+	m.WorkflowAdded("123", v1alpha1.NodeRunning)
+	rtMetric, err := ConstructRealTimeGaugeMetric(&v1alpha1.Prometheus{Name: "name", Help: "hello"}, func() float64 { return 0.0 })
+	assert.NoError(t, err)
+	assert.Empty(t, m.workflows["123"])
+	assert.Len(t, m.customMetrics, 0)
+
+	err = m.UpsertCustomMetric("metrickey", "123", rtMetric, true)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, m.workflows["123"])
+	assert.Len(t, m.customMetrics, 1)
+
+	m.WorkflowDeleted("123", v1alpha1.NodeRunning)
+	assert.Empty(t, m.workflows["123"])
+	assert.Len(t, m.customMetrics, 0)
+
+	m.WorkflowAdded("456", v1alpha1.NodeRunning)
+	metric, err := ConstructOrUpdateMetric(nil, &v1alpha1.Prometheus{Name: "name", Help: "hello", Gauge: &v1alpha1.Gauge{Value: "1"}})
+	assert.NoError(t, err)
+	assert.Empty(t, m.workflows["456"])
+	assert.Len(t, m.customMetrics, 0)
+
+	err = m.UpsertCustomMetric("metrickey", "456", metric, false)
+	assert.NoError(t, err)
+	assert.Empty(t, m.workflows["456"])
+	assert.Len(t, m.customMetrics, 1)
+
+	m.WorkflowDeleted("456", v1alpha1.NodeRunning)
+	assert.Empty(t, m.workflows["456"])
+	assert.Len(t, m.customMetrics, 1)
 }

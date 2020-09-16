@@ -312,6 +312,8 @@ WorkflowTemplate is the definition of a workflow template resource
 <summary>Examples (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
@@ -350,6 +352,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -642,6 +646,7 @@ WorkflowSpec is the specification of a Workflow.
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
+|`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 |`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
@@ -693,6 +698,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -999,6 +1006,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -1290,6 +1299,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
+|`volumeClaimGC`|[`VolumeClaimGC`](#volumeclaimgc)|VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 |`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be refer|
@@ -1316,6 +1326,8 @@ Arguments to a template
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -1594,6 +1606,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -1899,6 +1913,15 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
 
+## VolumeClaimGC
+
+VolumeClaimGC describes how to delete volumes from completed Workflows
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"|
+
 ## WorkflowTemplateRef
 
 WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
@@ -2151,6 +2174,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -2401,6 +2426,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
@@ -2510,6 +2537,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -2676,6 +2705,8 @@ Pod metdata
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -3380,6 +3411,8 @@ GitArtifact is the location of an git artifact
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -3648,6 +3681,8 @@ DAGTask represents a node in the graph during DAG execution
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
@@ -3909,6 +3944,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -4310,6 +4347,8 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -4337,6 +4376,8 @@ Volume represents a named volume in a pod that may be accessed by any container 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`init-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/init-container.yaml)
 
@@ -4449,6 +4490,8 @@ A single application container that you want to run within a pod.
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -4712,6 +4755,8 @@ EnvVar represents an environment variable present in a Container.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`colored-logs.yaml`](https://github.com/argoproj/argo/blob/master/examples/colored-logs.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
@@ -4791,6 +4836,8 @@ ResourceRequirements describes the compute resource requirements.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -4860,6 +4907,8 @@ VolumeMount describes a mounting of a Volume within a container.
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -5075,6 +5124,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -5692,6 +5743,8 @@ Adapts a Secret into a volume.The contents of the target Secret's Data field wil
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>
 
@@ -6087,6 +6140,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci.yaml)
@@ -6394,6 +6449,8 @@ Adapts a secret into a projected volume.The contents of the target Secret's Data
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo/blob/master/examples/secrets.yaml)
 </details>

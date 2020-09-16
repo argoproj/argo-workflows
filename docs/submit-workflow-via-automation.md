@@ -1,6 +1,6 @@
 # Submitting A Workflow Via Automation
 
-![beta](assets/beta.svg)
+![GA](assets/ga.svg)
 
 > v2.8 and after
 

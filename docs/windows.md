@@ -101,6 +101,12 @@ Artifacts work mostly the same way as on Linux. All paths get automatically mapp
         args: ["dir C:\\message"]   # List the C:\message directory
 ```
 
+Remember that [volume mounts on Windows can only target a directory](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#storage) in the container, and not an individual file.
+
+## Limitations
+
+- Sharing process namespaces [doesn't work on Windows](https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#v1-pod) so you can't use the Process Namespace Sharing (pns) workflow executor.
+
 ## Building the workflow executor image for Windows
 
 To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described [in the docs](https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise).

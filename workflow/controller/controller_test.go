@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
@@ -219,33 +220,39 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 	return &artifact
 }
 
+type with func(pod *apiv1.Pod)
+
+func withOutputs(outputs string) with {
+	return func(pod *apiv1.Pod) {
+		pod.GetAnnotations()[common.AnnotationKeyOutputs] = outputs
+	}
+}
+
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
-func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
-	podcs := kubeclientset.CoreV1().Pods(namespace)
+func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(metav1.ListOptions{})
-	assert.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 	for _, pod := range pods.Items {
 		if pod.Status.Phase == "" {
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {
 				pod.Status.Message = "Pod failed"
 			}
-			_, _ = podcs.Update(&pod)
+			for _, w := range with {
+				w(&pod)
+			}
+			updatedPod, err := podcs.Update(&pod)
+			if err != nil {
+				panic(err)
+			}
+			err = woc.controller.podInformer.GetStore().Update(updatedPod)
+			if err != nil {
+				panic(err)
+			}
 		}
-	}
-}
-
-// makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
-func makePodsPhaseAll(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
-	podcs := kubeclientset.CoreV1().Pods(namespace)
-	pods, err := podcs.List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	for _, pod := range pods.Items {
-		pod.Status.Phase = phase
-		if phase == apiv1.PodFailed {
-			pod.Status.Message = "Pod failed"
-		}
-		_, _ = podcs.Update(&pod)
 	}
 }
 
