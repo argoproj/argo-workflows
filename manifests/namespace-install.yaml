@@ -351,7 +351,7 @@ spec:
       - args:
         - server
         - --namespaced
-        image: argoproj/argocli:v2.3.0-rc3
+        image: argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
@@ -385,11 +385,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.3.0-rc3
+        - argoproj/argoexec:latest
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.3.0-rc3
+        image: argoproj/workflow-controller:latest
         name: workflow-controller
       nodeSelector:
         kubernetes.io/os: linux
