@@ -30,12 +30,12 @@ type Interface interface {
 var _ Interface = &sso{}
 
 type sso struct {
-	issuer   string
-	config   *oauth2.Config
-	provider providerInterface
-	baseHRef string
-	secure   bool
-	key      []byte
+	issuer              string
+	config              *oauth2.Config
+	provider            providerInterface
+	baseHRef            string
+	secure              bool
+	cookieEncryptionKey []byte
 }
 
 type Config struct {
@@ -51,7 +51,6 @@ type Config struct {
 // implementation in test.
 type providerInterface interface {
 	Endpoint() oauth2.Endpoint
-	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
 	UserInfo(ctx context.Context, source oauth2.TokenSource) (*oidc.UserInfo, error)
 }
 
@@ -103,21 +102,23 @@ func newSso(
 		}
 	}
 
-	key, err := generateKey()
+	generatedKey, err := generateKey()
 	if err != nil {
 		return nil, err
 	}
-	// whoa - are you ignoring errors - yes - we don't care if it fails - all that must happen if for
-	// the get to work
+	// whoa - are you ignoring errors - yes - we don't care if it fails -
+	// if it fails, then the get will fail, and the pod restart
+	// it may fail due to race condition with another pod - which is fine,
+	// when it restart it'll get the new key
 	_, _ = secretsIf.Create(&apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "sso"},
-		Data:       map[string][]byte{"key": key},
+		Data:       map[string][]byte{"cookieEncryptionKey": generatedKey},
 	})
 	secret, err := secretsIf.Get("sso", metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	key = secret.Data["key"]
+	cookieEncryptionKey := secret.Data["cookieEncryptionKey"]
 
 	clientID := clientIDObj.Data[c.ClientID.Key]
 	if clientID == nil {
@@ -136,7 +137,7 @@ func newSso(
 	}
 
 	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
-	return &sso{c.Issuer, config, provider, baseHRef, secure, key}, nil
+	return &sso{c.Issuer, config, provider, baseHRef, secure, cookieEncryptionKey}, nil
 }
 
 const stateCookieName = "oauthState"
@@ -175,7 +176,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to exchange token: %v", err)))
 		return
 	}
-	encryptedAccessToken, err := encrypt(s.key, []byte(oauth2Token.AccessToken))
+	encryptedAccessToken, err := encrypt(s.cookieEncryptionKey, []byte(oauth2Token.AccessToken))
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to encrypt access token: %v", err)))
@@ -198,15 +199,15 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
 	encryptedAccessToken, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode encrypted access token %v", err)
+		return nil, fmt.Errorf("failed to decode encrypted access token: %w", err)
 	}
-	accessToken, err := decrypt(s.key, encryptedAccessToken)
+	accessToken, err := decrypt(s.cookieEncryptionKey, encryptedAccessToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt encrypted access token %v", err)
+		return nil, fmt.Errorf("failed to decrypt encrypted access token: %w", err)
 	}
 	userInfo, err := s.provider.UserInfo(ctx, s.config.TokenSource(ctx, &oauth2.Token{AccessToken: string(accessToken)}))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user info %v", err)
+		return nil, fmt.Errorf("failed to get user info: %w", err)
 	}
 	return &jws.ClaimSet{Iss: s.issuer, Sub: userInfo.Subject}, nil
 }
