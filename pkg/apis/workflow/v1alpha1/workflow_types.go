@@ -1712,9 +1712,7 @@ type HTTPArtifact struct {
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
 
 	// Headers are an optional list of headers to send with HTTP requests for artifacts
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Headers []Header `json:"headers,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=headers"`
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
 }
 
 func (h *HTTPArtifact) HasLocation() bool {

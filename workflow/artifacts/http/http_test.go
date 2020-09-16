@@ -7,11 +7,9 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/argoproj/argo/errors"
-
 	"github.com/stretchr/testify/assert"
 
+	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -46,12 +44,11 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 				ArtifactLocation: wfv1.ArtifactLocation{HTTP: a},
 			}, "/tmp/found-with-request-headers")
 			if assert.NoError(t, err) {
-				assert.Regexp(t, regexp.MustCompile("start"), "it's starting")
 				_, err := os.Stat("/tmp/found-with-request-headers")
 				assert.NoError(t, err)
 			}
 		})
-		curl := "curl -fsS -L -o /tmp/found-with-request-headers https://github.com/argoproj/argo -H 'Accept: application/json' -H 'Authorization: Bearer foo-bar"
+		curl := "curl -fsS -L -o /tmp/found-with-request-headers https://github.com/argoproj/argo -H Accept: application/json -H Authorization: Bearer foo-bar"
 		assert.Regexp(t, regexp.MustCompile(curl), output)
 	})
 	t.Run("NotFound", func(t *testing.T) {

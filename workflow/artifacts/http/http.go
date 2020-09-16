@@ -21,7 +21,7 @@ func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) err
 	headers := inputArtifact.HTTP.Headers
 	for _, v := range headers {
 		// Build curl -H string for each key-value header parameter
-		args = append(args, fmt.Sprintf("-H '%s: %s'", v.Name, v.Value))
+		args = append(args, "-H", fmt.Sprintf("%s: %s", v.Name, v.Value))
 	}
 	log.Info(strings.Join(append([]string{"curl"}, args...), " "))
 	cmd := exec.Command("curl", args...)
