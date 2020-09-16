@@ -49,6 +49,8 @@ const (
 	NodeError NodePhase = "Error"
 	// Node was omitted because its `depends` condition was not met (only relevant in DAGs)
 	NodeOmitted NodePhase = "Omitted"
+	// Node is waiting for a lock
+	NodeWaiting NodePhase = "Waiting"
 )
 
 // NodeType is the type of a node
@@ -1466,6 +1468,11 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 // Pending returns whether or not the node is in pending state
 func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
+}
+
+// Waiting returns whether or not the node is waiting for a lock
+func (n NodeStatus) Waiting() bool {
+	return n.Phase == NodeWaiting
 }
 
 // IsDaemoned returns whether or not the node is deamoned
