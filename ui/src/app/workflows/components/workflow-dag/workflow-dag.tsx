@@ -40,12 +40,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return 32 / this.scale;
     }
 
-    private get hgap() {
-        return this.nodeSize * 2;
-    }
-
-    private get vgap() {
-        return this.nodeSize;
+    private get gap() {
+        return 1.25 * this.nodeSize;
     }
 
     /**
@@ -195,8 +191,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 <div className='workflow-dag'>
                     <svg
                         style={{
-                            width: this.graph.width + this.hgap * 2,
-                            height: this.graph.height + this.vgap * 2,
+                            width: this.graph.width + this.gap * 2,
+                            height: this.graph.height + this.gap * 2,
                             margin: this.nodeSize
                         }}>
                         <defs>
@@ -210,7 +206,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
                             </filter>
                         </defs>
-                        <g transform={`translate(${this.hgap},${this.vgap})`}>
+                        <g transform={`translate(${this.gap},${this.gap})`}>
                             {this.graph.edges.map(edge => {
                                 const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
                                 return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
@@ -231,6 +227,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 }
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
+                                        <title>{label}</title>
                                         <circle
                                             r={this.nodeSize / (hidden ? 16 : 2)}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
@@ -397,10 +394,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const graph = new dagre.graphlib.Graph();
 
         graph.setGraph({
-            edgesep: 20 / this.scale,
-            nodesep: 50 / this.scale,
+            edgesep: 2.5 * this.gap,
+            nodesep: this.gap,
             rankdir: this.state.horizontal ? 'LR' : 'TB',
-            ranksep: 50 / this.scale
+            ranksep: this.gap
         });
 
         graph.setDefaultEdgeLabel(() => ({}));
@@ -423,11 +420,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             edges: []
         };
 
-        graph.nodes().map((id: string) => {
-            const node = graph.node(id);
-            this.graph.nodes.set(node.label, {x: node.x, y: node.y});
-        });
-        graph.edges().map((edge: Edge) => {
+        graph
+            .nodes()
+            .map(id => graph.node(id))
+            .forEach(node => {
+                this.graph.nodes.set(node.label, {x: node.x, y: node.y});
+            });
+        graph.edges().forEach((edge: Edge) => {
             this.graph.edges.push(this.generateEdge(edge));
         });
     }
@@ -443,13 +442,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private layoutGraphFast(nodes: string[], edges: Edge[]) {
-        const hash = {scale: this.scale, nodeCount: nodes.length, nodesToDisplay: this.state.nodesToDisplay};
-        // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
-        if (this.hash === hash) {
-            return;
-        }
-        this.hash = hash;
-
         const g = new Graph();
         g.nodes = nodes;
         g.edges = new Set(edges);
@@ -464,24 +456,24 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         // we have a lot of logic here about laying it out with suitable gaps - but what if we
         // would just translate it somehow?
         if (this.state.horizontal) {
-            this.graph.width = layers.length * this.hgap * 2;
+            this.graph.width = layers.length * this.gap * 2;
         } else {
-            this.graph.height = layers.length * this.vgap * 2;
+            this.graph.height = layers.length * this.gap * 2;
         }
         layers.forEach(level => {
             if (this.state.horizontal) {
-                this.graph.height = Math.max(this.graph.height, level.length * this.vgap * 2);
+                this.graph.height = Math.max(this.graph.height, level.length * this.gap * 2);
             } else {
-                this.graph.width = Math.max(this.graph.width, level.length * this.hgap * 2);
+                this.graph.width = Math.max(this.graph.width, level.length * this.gap * 2);
             }
         });
         layers.forEach((level, i) => {
             level.forEach((node, j) => {
-                const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.hgap;
-                const t = !this.state.horizontal ? 0 : this.graph.height / 2 - level.length * this.vgap;
+                const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.gap;
+                const t = !this.state.horizontal ? 0 : this.graph.height / 2 - level.length * this.gap;
                 this.graph.nodes.set(node, {
-                    x: (this.state.horizontal ? i : j) * this.hgap * 2 + l,
-                    y: (this.state.horizontal ? j : i) * this.vgap * 2 + t
+                    x: (this.state.horizontal ? i : j) * this.gap * 2 + l,
+                    y: (this.state.horizontal ? j : i) * this.gap * 2 + t
                 });
             });
         });
@@ -568,6 +560,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private layoutGraph(nodes: string[], edges: Edge[]) {
+        const hash = {scale: this.scale, nodeCount: nodes.length, nodesToDisplay: this.state.nodesToDisplay};
+        // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
+        if (this.hash === hash) {
+            return;
+        }
+        this.hash = hash;
         if (this.state.fastRenderer) {
             this.layoutGraphFast(nodes, edges);
         } else {

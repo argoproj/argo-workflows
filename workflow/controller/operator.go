@@ -1382,11 +1382,20 @@ func (woc *wfOperationCtx) createPVCs() error {
 }
 
 func (woc *wfOperationCtx) deletePVCs() error {
-	if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
-		// Skip deleting PVCs to reuse them for retried failed/error workflows.
-		// PVCs are automatically deleted when corresponded owner workflows get deleted.
-		return nil
+	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
+
+	switch gcStrategy {
+	case wfv1.VolumeClaimGCOnSuccess:
+		if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
+			// Skip deleting PVCs to reuse them for retried failed/error workflows.
+			// PVCs are automatically deleted when corresponded owner workflows get deleted.
+			return nil
+		}
+	case wfv1.VolumeClaimGCOnCompletion:
+	default:
+		return fmt.Errorf("unknown volume gc strategy: %s", gcStrategy)
 	}
+
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
 	if totalPVCs == 0 {
 		// PVC list already empty. nothing to do
