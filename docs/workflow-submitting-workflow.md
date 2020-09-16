@@ -1,6 +1,6 @@
 # One Workflow Submitting Another
 
-![beta](assets/beta.svg)
+![GA](assets/ga.svg)
 
 > v2.8 and after
 
