@@ -552,9 +552,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
 
         const node = this.props.nodes[id];
-        if (!node) {
-            return false;
-        }
         // Filter the node if it is a virtual node or a Retry node with one child
         return (
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
