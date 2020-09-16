@@ -159,7 +159,7 @@ func TestSSO(t *testing.T) {
 	t.Run("Authorize", func(t *testing.T) {
 		t.Run("NotBase64Token", func(t *testing.T) {
 			_, err := ssoInterface.Authorize(context.Background(), "garbage")
-			assert.EqualError(t, err, "failed to decode encrypted access token illegal base64 data at input byte 4")
+			assert.EqualError(t, err, "failed to decode encrypted access token: illegal base64 data at input byte 4")
 		})
 		t.Run("CorruptToken", func(t *testing.T) {
 			key, err := generateKey()
@@ -168,19 +168,19 @@ func TestSSO(t *testing.T) {
 			assert.NoError(t, err)
 			encodedEncryptedAccessToken := base64.StdEncoding.EncodeToString(encryptedAccessToken)
 			_, err = ssoInterface.Authorize(context.Background(), encodedEncryptedAccessToken)
-			assert.EqualError(t, err, "failed to decrypt encrypted access token cipher: message authentication failed")
+			assert.EqualError(t, err, "failed to decrypt encrypted access token: cipher: message authentication failed")
 		})
+		// set-up a garbage token
 		encryptedAccessToken, err := encrypt(sso.cookieEncryptionKey, []byte("garbage"))
 		assert.NoError(t, err)
 		encodedEncryptedAccessToken := base64.StdEncoding.EncodeToString(encryptedAccessToken)
-		t.Run("UserInfoFailed", func(t *testing.T) {
+		t.Run("UserInfoErr", func(t *testing.T) {
 			userInfoError = errors.New("my-error")
 			defer func() { userInfoError = nil }()
 			_, err := sso.Authorize(context.Background(), encodedEncryptedAccessToken)
 			assert.EqualError(t, err, "failed to get user info: my-error")
 		})
 		t.Run("Successful", func(t *testing.T) {
-
 			claimSet, err := sso.Authorize(context.Background(), encodedEncryptedAccessToken)
 			if assert.NoError(t, err) {
 				assert.Equal(t, "https://test-issuer", claimSet.Iss)
