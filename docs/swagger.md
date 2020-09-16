@@ -1,7 +1,7 @@
 # Argo
 Argo
 
-## Version: latest
+## Version: v2.3.0-rc3
 
 ### Security
 **BearerToken**  
