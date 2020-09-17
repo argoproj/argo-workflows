@@ -564,6 +564,12 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		// we dequeued it.
 		return true
 	}
+	return wfc.enqueueWfFromPodLabel(obj, key.(string))
+}
+
+// enqueueWfFromPodLabel will extract the workflow name from pod label and
+// enqueue workflow for process workflow
+func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}, key string) bool {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
 		log.WithFields(log.Fields{"key": key}).Warn("Key in index is not a pod")
@@ -744,7 +750,8 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if err != nil {
 					return
 				}
-				wfc.podQueue.Add(key)
+				// Enqueue the workflow for deleted pod
+				wfc.enqueueWfFromPodLabel(obj, key)
 			},
 		},
 	)
