@@ -1719,8 +1719,14 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Cache"),
 						},
 					},
+					"maxAge": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"key", "cache"},
+				Required: []string{"key", "cache", "maxAge"},
 			},
 		},
 		Dependencies: []string{

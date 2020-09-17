@@ -1171,6 +1171,7 @@ Memoization
 | ---- | ---- | ----------- | -------- |
 | cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) |  | Yes |
 | key | string |  | Yes |
+| maxAge | string |  | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Metadata
 

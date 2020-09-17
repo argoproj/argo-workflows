@@ -2278,8 +2278,9 @@ type Counter struct {
 
 // Memoization
 type Memoize struct {
-	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
-	Cache *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+	Key    string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	Cache  *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+	MaxAge string `json:"maxAge" protobuf:"bytes,3,opt,name=maxAge"`
 }
 
 type MemoizationStatus struct {

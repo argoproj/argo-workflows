@@ -2626,6 +2626,7 @@ Memoization
 |:----------:|:----------:|---------------|
 |`cache`|[`Cache`](#cache)|_No description available_|
 |`key`|`string`|_No description available_|
+|`maxAge`|`string`|_No description available_|
 
 ## Metadata
 

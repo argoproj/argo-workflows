@@ -2817,13 +2817,17 @@
       "type": "object",
       "required": [
         "key",
-        "cache"
+        "cache",
+        "maxAge"
       ],
       "properties": {
         "cache": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
         },
         "key": {
+          "type": "string"
+        },
+        "maxAge": {
           "type": "string"
         }
       }

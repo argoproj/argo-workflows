@@ -824,7 +824,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
-					c := *woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+					c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 					err := c.Save(node.MemoizationStatus.Key, node.ID, node.Outputs)
 					if err != nil {
 						woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
@@ -1493,30 +1493,36 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	// If memoization is on, check if node output exists in cache
-	if resolvedTmpl.Memoize != nil && node == nil {
-		// return cacheEntry struct instead of wfv1.Outputs
-		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
-		if c == nil {
-			err := fmt.Errorf("Cache could not be found or created")
+	if node == nil && resolvedTmpl.Memoize != nil {
+		cache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+		if cache == nil {
+			err := fmt.Errorf("cache could not be found or created")
 			woc.log.WithFields(log.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
-		entry, err := (*c).Load(processedTmpl.Memoize.Key)
+
+		entry, err := cache.Load(processedTmpl.Memoize.Key)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
-		hit := false
-		outputs := &wfv1.Outputs{}
-		if entry != nil {
-			hit = true
-			outputs = entry.Outputs
+
+		var outputs *wfv1.Outputs
+		if processedTmpl.Memoize.MaxAge != "" {
+			maxAge, err := time.ParseDuration(processedTmpl.Memoize.MaxAge)
+			if err != nil {
+				err := fmt.Errorf("invalid maxAge: %s", err)
+				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
+			}
+			outputs = entry.GetOutputsWithMaxAge(maxAge)
+		} else {
+			outputs = entry.GetOutputs()
 		}
-		memStat := &wfv1.MemoizationStatus{
-			Hit:       hit,
+		memoizationStatus := &wfv1.MemoizationStatus{
+			Hit:       entry != nil,
 			Key:       processedTmpl.Memoize.Key,
 			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memStat)
+		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memoizationStatus)
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
