@@ -89,7 +89,7 @@ If this is GA:
 ```
 git clone git@github.com:argoproj-labs/argo-client-java.git
 cd argo-client-java
-make publish
+make publish VERSION=v2.7.2
 ```
 
 * [ ] Check package published: https://github.com/argoproj-labs/argo-client-java/packages
