@@ -3049,19 +3049,20 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 	}
 
-	//In WorkflowTemplateRef scenario, we need to merge the Workflow Default, Workflow spec and storedWorkflowspec for execWf.
+	//In WorkflowTemplateRef scenario, we need to merge the  Workflow spec, :StoredWorkflowspec and Workflow Default for execWf.
+	// Overlay
 	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
-	err := woc.controller.setWorkflowDefaults(&targetWf)
+
+	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
+	if err != nil {
+		return nil, executionParameters, err
+	}
+
+	err = woc.controller.setWorkflowDefaults(&targetWf)
 	if err != nil {
 		log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
 		return nil, executionParameters, err
 	}
-
-	err = wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
-	if err != nil {
-		return nil, executionParameters, err
-	}
-
 	// Setting the merged workflow to executable workflow
 	woc.execWf = &targetWf
 
