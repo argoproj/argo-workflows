@@ -50,8 +50,8 @@ FROM debian:10.3-slim as argoexec-base
 
 ARG IMAGE_OS=linux
 
-# NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.15.1
+# NOTE: kubectl version should be one minor version less than https://storage.googleapis.com/kubernetes-release/release/stable.txt
+ENV KUBECTL_VERSION=1.18.8
 ENV JQ_VERSION=1.6
 RUN apt-get update && \
     apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https ca-certificates tar mime-support && \
