@@ -77,7 +77,7 @@ brew bump-formula-pr argo --version 2.7.2
  
  ```
  brew upgrade argo
- argo version
+ /usr/local/bin/argo version
  ```
 
 ### Update Java SDK
