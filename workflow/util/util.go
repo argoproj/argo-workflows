@@ -736,28 +736,26 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 
 	if len(deletedNodes) > 0 {
 		for _, node := range newWF.Status.Nodes {
-			if len(node.Children) > 0 {
-				var newChildren []string
-				for _, child := range node.Children {
-					if !deletedNodes[child] {
-						newChildren = append(newChildren, child)
-					}
+			var newChildren []string
+			for _, child := range node.Children {
+				if !deletedNodes[child] {
+					newChildren = append(newChildren, child)
 				}
-				node.Children = newChildren
 			}
+			node.Children = newChildren
 
-			if len(node.OutboundNodes) > 0 {
-				var outboundNodes []string
-				for _, outboundNode := range node.OutboundNodes {
-					if !deletedNodes[outboundNode] {
-						outboundNodes = append(outboundNodes, outboundNode)
-					}
+			var outboundNodes []string
+			for _, outboundNode := range node.OutboundNodes {
+				if !deletedNodes[outboundNode] {
+					outboundNodes = append(outboundNodes, outboundNode)
 				}
-				node.OutboundNodes = outboundNodes
 			}
+			node.OutboundNodes = outboundNodes
+
 			newWF.Status.Nodes[node.ID] = node
 		}
 	}
+
 	err = hydrator.Dehydrate(newWF)
 	if err != nil {
 		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)

@@ -276,10 +276,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private getNode(nodeId: string): NodeStatus {
         const node: NodeStatus = this.getNode(nodeId);
         if (!node) {
-            // We may arrive here if we retry a workflow with a failed pod. During the retry operation, the node corresponding
-            // for the failed pod gets deleted, but the child reference of the parent nodes does not, causing them to refer to
-            // a node that doesn't exist. As soon as the workflow gets operated on again, the node will be recreated. For the
-            // time before that happens, don't error out.
+            // If we arrive here, the workflow is likely malformed. Wait for an update before continuing.
             this.setState({waitForUpdate: true});
             return null;
         }
