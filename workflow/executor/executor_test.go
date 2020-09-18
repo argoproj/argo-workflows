@@ -202,7 +202,7 @@ func TestIsTarball(t *testing.T) {
 func TestIsZip(t *testing.T) {
 	tests := []struct {
 		path      string
-		isZip bool
+		isZip     bool
 		expectErr bool
 	}{
 		{"testdata/file", false, false},
