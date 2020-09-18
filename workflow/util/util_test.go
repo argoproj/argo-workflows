@@ -715,7 +715,7 @@ status:
 `
 
 func TestDeepDeleteNodes(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	kubeClient := &kubefake.Clientset{}
 	origWf := unmarshalWF(deepDeleteOfNodes)
 
