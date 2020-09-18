@@ -138,10 +138,11 @@ func (w *When) CreateCronWorkflow() *When {
 		w.t.Fatal("No cron workflow to create")
 	}
 	println("Creating cron workflow", w.cronWf.Name)
-	var err error
-	w.cronWf, err = w.cronClient.Create(w.cronWf)
+	cronWf, err := w.cronClient.Create(w.cronWf)
 	if err != nil {
 		w.t.Fatal(err)
+	} else {
+		w.cronWf = cronWf
 	}
 	return w
 }
