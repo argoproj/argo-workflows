@@ -304,6 +304,8 @@ spec:
                                 format: int32
                                 type: integer
                             type: object
+                          zip:
+                            type: object
                         type: object
                       archiveLogs:
                         type: boolean
@@ -1414,6 +1416,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -2284,6 +2288,8 @@ spec:
                                               compressionLevel:
                                                 format: int32
                                                 type: integer
+                                            type: object
+                                          zip:
                                             type: object
                                         type: object
                                       archiveLogs:
@@ -3229,6 +3235,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -3653,6 +3661,8 @@ spec:
                                     compressionLevel:
                                       format: int32
                                       type: integer
+                                  type: object
+                                zip:
                                   type: object
                               type: object
                             archiveLogs:

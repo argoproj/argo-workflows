@@ -190,14 +190,13 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		} else if art.GetArchive().Tar != nil {
 			// explicitly a tar
 			isTar = true
+		} else if art.GetArchive().Zip != nil {
+			// explicitly a zip
+			isZip = true
 		} else {
-			// auto-detect
+			// auto-detect if tarball
+			// (don't try to autodetect zip files for backwards compatibility)
 			isTar, err = isTarball(tempArtPath)
-			if err != nil {
-				return err
-			}
-
-			isZip, err = isZipFile(tempArtPath)
 			if err != nil {
 				return err
 			}
@@ -854,18 +853,6 @@ func isTarball(filePath string) (bool, error) {
 	tarr := tar.NewReader(gzr)
 	_, err = tarr.Next()
 	return err == nil, nil
-}
-
-// isZipFile returns whether or not the file is a zip file
-func isZipFile(filePath string) (bool, error) {
-	log.Infof("Detecting if %s is a zip file", filePath)
-	r, err := zip.OpenReader(filePath)
-	if err != nil {
-		return false, nil
-	}
-	defer r.Close()
-
-	return true, nil
 }
 
 // untar extracts a tarball to a temporary directory,

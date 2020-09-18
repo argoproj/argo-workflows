@@ -199,31 +199,6 @@ func TestIsTarball(t *testing.T) {
 	}
 }
 
-func TestIsZip(t *testing.T) {
-	tests := []struct {
-		path      string
-		isZip     bool
-		expectErr bool
-	}{
-		{"testdata/file", false, false},
-		{"testdata/file.zip", true, false},
-		{"testdata/file.tar", false, false},
-		{"testdata/file.gz", false, false},
-		{"testdata/file.tar.gz", false, false},
-		{"testdata/file.tgz", false, false},
-	}
-
-	for _, test := range tests {
-		ok, err := isZipFile(test.path)
-		if test.expectErr {
-			assert.Error(t, err, test.path)
-		} else {
-			assert.NoError(t, err, test.path)
-		}
-		assert.Equal(t, test.isZip, ok, test.path)
-	}
-}
-
 func TestUnzip(t *testing.T) {
 	zipPath := "testdata/file.zip"
 	destPath := "testdata/unzippedFile"
