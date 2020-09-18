@@ -689,6 +689,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
+	deletedNodes := make(map[string]bool)
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -709,6 +710,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 				newNode.FinishedAt = metav1.Time{}
 				newWF.Status.Nodes[newNode.ID] = *newNode
 				continue
+			} else {
+				deletedNodes[node.ID] = true
 			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
@@ -728,6 +731,28 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 			newNode.FinishedAt = metav1.Time{}
 			newWF.Status.Nodes[newNode.ID] = *newNode
 			continue
+		}
+	}
+
+	if len(deletedNodes) > 0 {
+		for _, node := range newWF.Status.Nodes {
+			var newChildren []string
+			for _, child := range node.Children {
+				if !deletedNodes[child] {
+					newChildren = append(newChildren, child)
+				}
+			}
+			node.Children = newChildren
+
+			var outboundNodes []string
+			for _, outboundNode := range node.OutboundNodes {
+				if !deletedNodes[outboundNode] {
+					outboundNodes = append(outboundNodes, outboundNode)
+				}
+			}
+			node.OutboundNodes = outboundNodes
+
+			newWF.Status.Nodes[node.ID] = node
 		}
 	}
 

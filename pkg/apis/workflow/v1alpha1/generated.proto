@@ -1187,6 +1187,12 @@ message Version {
   optional string platform = 8;
 }
 
+// VolumeClaimGC describes how to delete volumes from completed Workflows
+message VolumeClaimGC {
+  // Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+  optional string strategy = 1;
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -1393,6 +1399,9 @@ message WorkflowSpec {
 
   // Synchronization holds synchronization lock configuration for this Workflow
   optional Synchronization synchronization = 35;
+
+  // VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+  optional VolumeClaimGC volumeClaimGC = 36;
 }
 
 // WorkflowStatus contains overall status information about a workflow

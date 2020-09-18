@@ -22,3 +22,12 @@ rules:
     verbs:
       - get
       - watch
+  # This allows one workflow to create another.
+  # Not needed for the majority of use cases.
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows
+    verbs:
+      - create
+      - get

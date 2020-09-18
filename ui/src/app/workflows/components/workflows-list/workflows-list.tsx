@@ -42,7 +42,6 @@ interface State {
 interface WorkflowListRenderOptions {
     paginationLimit: number;
     selectedPhases: string[];
-    selectedLabels: string[];
 }
 
 const allBatchActionsEnabled: Actions.OperationDisabled = {
@@ -72,8 +71,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         }
         return {
             paginationLimit: 0,
-            selectedPhases: [],
-            selectedLabels: []
+            selectedPhases: []
         } as WorkflowListRenderOptions;
     }
 
@@ -89,7 +87,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             },
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase').length > 0 ? this.queryParams('phase') : savedOptions.selectedPhases,
-            selectedLabels: this.queryParams('label').length > 0 ? this.queryParams('label') : savedOptions.selectedLabels,
+            selectedLabels: this.queryParams('label'),
             selectedWorkflows: new Map<string, models.Workflow>(),
             batchActionDisabled: {...allBatchActionsEnabled}
         };
@@ -255,10 +253,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private get options() {
         const options: WorkflowListRenderOptions = {} as WorkflowListRenderOptions;
         options.selectedPhases = this.state.selectedPhases;
-        options.selectedLabels = [];
-        this.state.selectedLabels.forEach(label => {
-            options.selectedLabels.push(label);
-        });
         if (this.state.pagination.limit) {
             options.paginationLimit = this.state.pagination.limit;
         }
