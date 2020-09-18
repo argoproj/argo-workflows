@@ -271,7 +271,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private getNode(nodeId: string): NodeStatus {
-        const node: NodeStatus = this.getNode(nodeId);
+        const node: NodeStatus = this.props.nodes[nodeId];
         if (!node) {
             // If we arrive here, the workflow is likely malformed. Wait for an update before continuing.
             this.setState({waitForUpdate: true});
