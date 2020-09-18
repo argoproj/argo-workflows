@@ -20,6 +20,7 @@ func NewCronWorkflowCommand() *cobra.Command {
 	command.AddCommand(NewLintCommand())
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(NewResumeCommand())
+	command.AddCommand(NewBackfillCommand())
 
 	return command
 }
