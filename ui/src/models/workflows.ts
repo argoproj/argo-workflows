@@ -454,6 +454,9 @@ export interface NodeStatus {
      */
     finishedAt: kubernetes.Time;
 
+    /**
+     * Estimated duration in seconds.
+     */
     estimatedDuration?: number;
 
     /**

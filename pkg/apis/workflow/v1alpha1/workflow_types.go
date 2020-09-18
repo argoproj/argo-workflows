@@ -1030,6 +1030,7 @@ type WorkflowStatus struct {
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
 	// A human readable message indicating details about why the workflow is in this condition.
@@ -1337,6 +1338,7 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.

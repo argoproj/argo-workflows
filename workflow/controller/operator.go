@@ -98,7 +98,8 @@ type wfOperationCtx struct {
 	// 'execWf.Spec' should usually be used instead `wf.Spec`, with two exceptions for user editable fields:
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
-	execWf     *wfv1.Workflow
+	execWf *wfv1.Workflow
+	// a different workflow that acts as a baseline for estimating the duration of this workflow
 	baselineWF *wfv1.Workflow
 }
 
@@ -247,7 +248,6 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
-
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()

@@ -2953,6 +2953,7 @@
           "type": "string"
         },
         "estimatedDuration": {
+          "description": "EstimatedDuration in seconds.",
           "type": "integer",
           "format": "int32"
         },
@@ -4497,6 +4498,7 @@
           }
         },
         "estimatedDuration": {
+          "description": "EstimatedDuration in seconds.",
           "type": "integer",
           "format": "int32"
         },

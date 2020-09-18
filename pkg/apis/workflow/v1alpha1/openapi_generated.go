@@ -2025,8 +2025,9 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"estimatedDuration": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
+							Description: "EstimatedDuration in seconds.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"resourcesDuration": {
@@ -4657,8 +4658,9 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"estimatedDuration": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
+							Description: "EstimatedDuration in seconds.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"message": {

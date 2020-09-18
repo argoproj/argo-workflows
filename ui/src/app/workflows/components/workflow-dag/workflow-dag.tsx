@@ -240,18 +240,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             hidden = this.hiddenNode(nodeId);
                                         }
 
-                                        const duration = node ? (new Date().getTime() - new Date(node.startedAt).getTime()) / 1000 : 0; // seconds
-                                        const estimatedDuration = node && node.estimatedDuration ? node.estimatedDuration : Number.MAX_SAFE_INTEGER; // seconds
-                                        const complete = Math.max(Math.min(duration / estimatedDuration, 0.999), 0);
-                                        const radius = ((this.nodeSize / 2) * 80) / 100;
-                                        const offset = (2 * Math.PI * 3) / 4;
-                                        const theta0 = offset;
-                                        const theta1 = 2 * Math.PI * complete + offset;
-                                        const start = {x: radius * Math.cos(theta0), y: radius * Math.sin(theta0)};
-                                        const end = {x: radius * Math.cos(theta1), y: radius * Math.sin(theta1)};
-                                        const theta = theta1 - theta0;
-                                        const largeArcFlag = theta > Math.PI ? 1 : 0;
-                                        const sweepFlag = 1;
                                         return (
                                             <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                                 <circle
@@ -263,13 +251,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                                 />
                                                 {!hidden && (
                                                     <>
-                                                        {phase === NODE_PHASE.RUNNING && (
-                                                            <path
-                                                                key='progress-path'
-                                                                d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`}
-                                                                className='progress'
-                                                            />
-                                                        )}
+                                                        {this.progressPath(node)}
                                                         {this.icon(phase)}
                                                         <g transform={`translate(0,${this.nodeSize})`}>
                                                             <text className='label' fontSize={12 / this.scale}>
@@ -554,6 +536,25 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         } else {
             this.setState({expandNodes: new Set(this.state.expandNodes).add(getNodeParent(nodeId))});
         }
+    }
+
+    private progressPath(node: NodeStatus) {
+        if (!node || node.phase !== NODE_PHASE.RUNNING) {
+            return;
+        }
+        const duration = (new Date().getTime() - new Date(node.startedAt).getTime()) / 1000; // seconds
+        const estimatedDuration = node.estimatedDuration ? node.estimatedDuration : Number.MAX_SAFE_INTEGER; // seconds
+        const complete = Math.max(Math.min(duration / estimatedDuration, 0.999), 0);
+        const radius = ((this.nodeSize / 2) * 80) / 100;
+        const offset = (2 * Math.PI * 3) / 4;
+        const theta0 = offset;
+        const theta1 = 2 * Math.PI * complete + offset;
+        const start = {x: radius * Math.cos(theta0), y: radius * Math.sin(theta0)};
+        const end = {x: radius * Math.cos(theta1), y: radius * Math.sin(theta1)};
+        const theta = theta1 - theta0;
+        const largeArcFlag = theta > Math.PI ? 1 : 0;
+        const sweepFlag = 1;
+        return <path key='progress-path' d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`} className='progress' />;
     }
 
     private icon(phase: DagPhase) {

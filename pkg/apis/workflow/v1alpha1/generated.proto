@@ -605,6 +605,7 @@ message NodeStatus {
   // Time at which this node completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
+  // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 24;
 
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
@@ -1405,6 +1406,7 @@ message WorkflowStatus {
   // Time at which this workflow completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
 
+  // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 16;
 
   // A human readable message indicating details about why the workflow is in this condition.
