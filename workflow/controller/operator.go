@@ -42,7 +42,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/prediction"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -62,7 +62,7 @@ type wfOperationCtx struct {
 	log *log.Entry
 	// controller reference to workflow controller
 	controller        *WorkflowController
-	durationPredictor *prediction.DurationPredictor
+	durationEstimator *estimation.DurationEstimator
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams common.Parameters
@@ -246,7 +246,7 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
-		woc.wf.Status.EstimatedDuration = woc.getDurationPredictor().EstimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.getDurationEstimator().EstimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -1545,7 +1545,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.getDurationPredictor().EstimateNodeDuration(node.Name)
+			node.EstimatedDuration = woc.getDurationEstimator().EstimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1768,7 +1768,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.wf.Status.EstimatedDuration = woc.getDurationPredictor().EstimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.getDurationEstimator().EstimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1817,6 +1817,21 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			woc.updated = true
 		}
 	}
+}
+
+// get a predictor, this maybe null implementation in the case of rare error
+func (woc *wfOperationCtx) getDurationEstimator() *estimation.DurationEstimator {
+	if woc.durationEstimator == nil {
+		// in case of error, set this to null implementation
+		woc.durationEstimator = estimation.NullDurationEstimator
+		durationEstimator, err := woc.controller.durationEstimatorFactory.NewDurationEstimator(woc.wf)
+		if err != nil {
+			woc.log.WithError(err).Error("failed to create duration predictor")
+		} else {
+			woc.durationEstimator = durationEstimator
+		}
+	}
+	return woc.durationEstimator
 }
 
 func (woc *wfOperationCtx) hasDaemonNodes() bool {
@@ -1920,7 +1935,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:        boundaryID,
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
-		EstimatedDuration: woc.getDurationPredictor().EstimateNodeDuration(nodeName),
+		EstimatedDuration: woc.getDurationEstimator().EstimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -3074,18 +3089,4 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	return tmplRef, executionParameters, nil
-}
-
-func (woc *wfOperationCtx) getDurationPredictor() *prediction.DurationPredictor {
-	if woc.durationPredictor == nil {
-		// in case of error, set this to null implementation
-		woc.durationPredictor = prediction.NullDurationPredictor
-		durationPredictor, err := woc.controller.durationPredictorFactory.NewDurationPredictor(woc.wf)
-		if err != nil {
-			woc.log.WithError(err).Error("failed to create duration predictor")
-		} else {
-			woc.durationPredictor = durationPredictor
-		}
-	}
-	return woc.durationPredictor
 }

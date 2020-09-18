@@ -43,7 +43,7 @@ import (
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
-	"github.com/argoproj/argo/workflow/controller/prediction"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -93,7 +93,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo    sqldb.OffloadNodeStatusRepo
 	hydrator                 hydrator.Interface
 	wfArchive                sqldb.WorkflowArchive
-	durationPredictorFactory prediction.DurationPredictorFactory
+	durationEstimatorFactory estimation.DurationEstimatorFactory
 	syncManager              *sync.SyncManager
 	metrics                  *metrics.Metrics
 	eventRecorderManager     events.EventRecorderManager
@@ -183,7 +183,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
-	wfc.updatePredictionFactory()
+	wfc.updatePredictorFactory()
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
@@ -842,8 +842,8 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
-func (wfc *WorkflowController) updatePredictionFactory() {
-	wfc.durationPredictorFactory = prediction.NewDurationPredictorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
+func (wfc *WorkflowController) updatePredictorFactory() {
+	wfc.durationEstimatorFactory = estimation.NewDurationEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
 // setWorkflowDefaults sets values in the workflow.Spec with defaults from the

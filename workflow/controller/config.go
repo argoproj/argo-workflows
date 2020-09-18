@@ -12,7 +12,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/controller/prediction"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -35,7 +35,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	wfc.session = nil
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
-	wfc.durationPredictorFactory = prediction.NullDurationPredictorFactory
+	wfc.durationEstimatorFactory = estimation.NullDurationEstimatorFactory
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
@@ -76,7 +76,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		log.Info("Persistence configuration disabled")
 	}
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
-	wfc.updatePredictionFactory()
+	wfc.updatePredictorFactory()
 	return nil
 }
 
