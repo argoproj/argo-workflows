@@ -17,6 +17,10 @@ func MetaNamespaceLabelIndexFunc(label string) cache.IndexFunc {
 		if err != nil {
 			return []string{}, fmt.Errorf("object has no meta: %v", err)
 		}
-		return []string{MetaNamespaceLabelIndex(v.GetNamespace(), v.GetLabels()[label])}, nil
+		if value, exists := v.GetLabels()[label]; exists {
+			return []string{MetaNamespaceLabelIndex(v.GetNamespace(), value)}, nil
+		} else {
+			return []string{}, nil
+		}
 	}
 }
