@@ -3078,12 +3078,11 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 func (woc *wfOperationCtx) getDurationPredictor() *prediction.DurationPredictor {
 	if woc.durationPredictor == nil {
+		// in case of error, set this to null implementation
 		woc.durationPredictor = prediction.NullDurationPredictor
-		controller := woc.controller
-		durationPredictorFactory := controller.durationPredictorFactory
-		durationPredictor, err := durationPredictorFactory.NewDurationPredictor(woc.wf)
+		durationPredictor, err := woc.controller.durationPredictorFactory.NewDurationPredictor(woc.wf)
 		if err != nil {
-			woc.log.WithError(err).Error("failed ot create new duration predictor")
+			woc.log.WithError(err).Error("failed to create duration predictor")
 		} else {
 			woc.durationPredictor = durationPredictor
 		}
