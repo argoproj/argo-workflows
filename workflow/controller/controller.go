@@ -183,7 +183,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
-	wfc.updatePredictorFactory()
+	wfc.updateDurationEstimationFactory()
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
@@ -842,7 +842,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
-func (wfc *WorkflowController) updatePredictorFactory() {
+func (wfc *WorkflowController) updateDurationEstimationFactory() {
 	wfc.durationEstimatorFactory = estimation.NewDurationEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
