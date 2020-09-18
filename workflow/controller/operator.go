@@ -24,8 +24,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -44,7 +42,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/indexes"
+	"github.com/argoproj/argo/workflow/controller/prediction"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -63,7 +61,8 @@ type wfOperationCtx struct {
 	// log is an logrus logging context to corralate logs with a workflow
 	log *log.Entry
 	// controller reference to workflow controller
-	controller *WorkflowController
+	controller        *WorkflowController
+	durationPredictor *prediction.DurationPredictor
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams common.Parameters
@@ -99,8 +98,6 @@ type wfOperationCtx struct {
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
 	execWf *wfv1.Workflow
-	// a different workflow that acts as a baseline for estimating the duration of this workflow
-	baselineWF *wfv1.Workflow
 }
 
 var (
@@ -249,7 +246,7 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
-		woc.wf.Status.EstimatedDuration = woc.EstimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.getDurationPredictor().EstimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -1548,7 +1545,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.EstimateNodeDuration(node.Name)
+			node.EstimatedDuration = woc.getDurationPredictor().EstimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1771,7 +1768,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.wf.Status.EstimatedDuration = woc.EstimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.getDurationPredictor().EstimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1923,7 +1920,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:        boundaryID,
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
-		EstimatedDuration: woc.EstimateNodeDuration(nodeName),
+		EstimatedDuration: woc.getDurationPredictor().EstimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -3079,92 +3076,17 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	return tmplRef, executionParameters, nil
 }
 
-func (woc *wfOperationCtx) getBaselineWF() *wfv1.Workflow {
-	if woc.baselineWF == nil {
-		// put a dummy into this so we don't try again
-		woc.baselineWF = &wfv1.Workflow{}
-		// then actually get it
-		wf, err := woc.getBaselineWFAux()
+func (woc *wfOperationCtx) getDurationPredictor() *prediction.DurationPredictor {
+	if woc.durationPredictor == nil {
+		woc.durationPredictor = prediction.NullDurationPredictor
+		controller := woc.controller
+		durationPredictorFactory := controller.durationPredictorFactory
+		durationPredictor, err := durationPredictorFactory.NewDurationPredictor(woc.wf)
 		if err != nil {
-			woc.log.WithError(err).Error("failed to get baseline workflow")
-			return nil
-		}
-		if wf != nil {
-			woc.log.WithField("name", wf.Name).Info("Baseline workflow")
-			woc.baselineWF = wf
+			woc.log.WithError(err).Error("failed ot create new duration predictor")
+		} else {
+			woc.durationPredictor = durationPredictor
 		}
 	}
-	return woc.baselineWF
-}
-
-func (woc *wfOperationCtx) getBaselineWFAux() (*wfv1.Workflow, error) {
-	for labelName, indexName := range map[string]string{
-		common.LabelKeyWorkflowTemplate:        indexes.WorkflowTemplateIndex,
-		common.LabelKeyClusterWorkflowTemplate: indexes.ClusterWorkflowTemplateIndex,
-		common.LabelKeyCronWorkflow:            indexes.CronWorkflowIndex,
-	} {
-		labelValue, exists := woc.wf.Labels[labelName]
-		if exists {
-			objs, err := woc.controller.wfInformer.GetIndexer().ByIndex(indexName, indexes.MetaNamespaceLabelIndex(woc.wf.Namespace, labelValue))
-			if err != nil {
-				return nil, fmt.Errorf("failed to list workflows by index: %v", err)
-			}
-			var newBaselineWf *wfv1.Workflow
-			for _, obj := range objs {
-				un, ok := obj.(*unstructured.Unstructured)
-				if !ok {
-					return nil, fmt.Errorf("failed convert object to unstructured")
-				}
-				candidateWf := &wfv1.Workflow{}
-				err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, candidateWf)
-				if err != nil {
-					return nil, fmt.Errorf("failed convert unstructured to workflow: %w", err)
-				}
-				if candidateWf.Labels[common.LabelKeyCompleted] != "true" {
-					continue
-				}
-				if newBaselineWf == nil || candidateWf.Status.FinishedAt.Time.After(newBaselineWf.Status.FinishedAt.Time) {
-					newBaselineWf = candidateWf
-				}
-			}
-			if newBaselineWf != nil {
-				err = woc.controller.hydrator.Hydrate(newBaselineWf)
-				if err != nil {
-					return nil, fmt.Errorf("failed hydrate last workflow: %w", err)
-				}
-				return newBaselineWf, nil
-			}
-			// we failed to find a base-line in the live set, so we now look in the archive
-			labelSelector, _ := labels.Parse(common.LabelKeyCompleted + "=true," + labelName + "=" + labelValue)
-			labelSelector.Add(wfutil.InstanceIDRequirement(woc.controller.Config.InstanceID))
-			labelRequirements, _ := labelSelector.Requirements()
-			workflows, err := woc.controller.wfArchive.ListWorkflows(woc.wf.Namespace, time.Time{}, time.Time{}, labelRequirements, 1, 0)
-			if err != nil {
-				return nil, fmt.Errorf("failed to list archived workflows: %v", err)
-			}
-			if len(workflows) > 0 {
-				return &workflows[0], nil
-			}
-		}
-	}
-	return nil, nil
-}
-
-func (woc *wfOperationCtx) EstimateWorkflowDuration() wfv1.EstimatedDuration {
-	wf := woc.getBaselineWF()
-	if wf == nil {
-		return 0
-	}
-	return wfv1.NewEstimatedDuration(wf.Status.GetDuration())
-}
-
-func (woc *wfOperationCtx) EstimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
-	wf := woc.getBaselineWF()
-	if wf == nil {
-		return 0
-	}
-	// special case for root node
-	nodeName = strings.Replace(nodeName, woc.wf.Name, wf.Name, 1)
-	oldNodeID := wf.NodeID(nodeName)
-	return wfv1.NewEstimatedDuration(wf.Status.Nodes[oldNodeID].GetDuration())
+	return woc.durationPredictor
 }

@@ -35,7 +35,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	wfc.session = nil
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
-	wfc.durationPredictor = prediction.NullDurationPredictor
+	wfc.durationPredictorFactory = prediction.NullDurationPredictorFactory
 	wfc.archiveLabelSelector = labels.Everything()
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
@@ -76,7 +76,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		log.Info("Persistence configuration disabled")
 	}
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
-	wfc.durationPredictor = prediction.NewDurationPredictor()
+	wfc.updatePredictionFactory()
 	return nil
 }
 
