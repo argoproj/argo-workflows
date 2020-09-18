@@ -1,8 +1,8 @@
 # Events
 
-> v2.11 and after
+![GA](assets/ga.svg)
 
-![alpha](assets/alpha.svg)
+> v2.11 and after
 
 ## Overview
 
