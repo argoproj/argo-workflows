@@ -488,6 +488,7 @@ data:
     enabled: true
     path: /metrics
     port: 9090
+  parallelism: "2"
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

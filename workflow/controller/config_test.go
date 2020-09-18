@@ -6,7 +6,6 @@ import (
 	"github.com/argoproj/argo/workflow/sync"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo/config"
 )
@@ -14,7 +13,7 @@ import (
 func TestUpdateConfig(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
-	controller.throttler = sync.NewThrottler(0, workqueue.NewNamedRateLimitingQueue(nil, ""))
+	controller.throttler = sync.NewThrottler(0, func(string) {})
 	err := controller.updateConfig(config.Config{ExecutorImage: "argoexec:latest"})
 	assert.NoError(t, err)
 	assert.NotNil(t, controller.Config)

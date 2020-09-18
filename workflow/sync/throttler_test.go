@@ -2,85 +2,38 @@ package sync
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"k8s.io/client-go/util/workqueue"
 )
 
 func TestNoParallelismSamePriority(t *testing.T) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	throttler := NewThrottler(0, queue)
+	r := NewThrottler(0, func(key string) {})
 
-	throttler.Add("c", 0, time.Now().Add(2*time.Hour))
-	throttler.Add("b", 0, time.Now().Add(1*time.Hour))
-	throttler.Add("a", 0, time.Now())
+	r.Add(&val{"c", 1})
+	r.Add(&val{"b", 2})
+	r.Add(&val{"a", 3})
 
-	next, ok := throttler.Next("b")
-	assert.True(t, ok)
-	assert.Equal(t, "a", next)
-
-	next, ok = throttler.Next("c")
-	assert.True(t, ok)
-	assert.Equal(t, "b", next)
+	assert.True(t, r.Next("a"))
+	assert.True(t, r.Next("b"))
+	assert.True(t, r.Next("c"))
 }
 
 func TestWithParallelismLimitAndPriority(t *testing.T) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	throttler := NewThrottler(2, queue)
+	queue := ""
+	r := NewThrottler(2, func(key string) { queue = key })
 
-	throttler.Add("a", 1, time.Now())
-	throttler.Add("b", 2, time.Now())
-	throttler.Add("c", 3, time.Now())
-	throttler.Add("d", 4, time.Now())
+	r.Add(&val{"a", 1})
+	r.Add(&val{"b", 2})
+	r.Add(&val{"c", 3})
+	r.Add(&val{"d", 4})
 
-	next, ok := throttler.Next("a")
-	assert.True(t, ok)
-	assert.Equal(t, "d", next)
+	assert.False(t, r.Next("a"))
+	assert.False(t, r.Next("b"))
+	assert.False(t, r.Next("c"))
+	assert.True(t, r.Next("d"))
+	assert.True(t, r.Next("c"))
 
-	next, ok = throttler.Next("a")
-	assert.True(t, ok)
-	assert.Equal(t, "c", next)
+	assert.Equal(t, "", queue)
 
-	_, ok = throttler.Next("a")
-	assert.False(t, ok)
-
-	next, ok = throttler.Next("c")
-	assert.True(t, ok)
-	assert.Equal(t, "c", next)
-
-	throttler.Remove("c")
-
-	assert.Equal(t, 1, queue.Len())
-	queued, _ := queue.Get()
-	assert.Equal(t, "b", queued)
-}
-
-func TestChangeParallelism(t *testing.T) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-	throttler := NewThrottler(1, queue)
-
-	throttler.Add("a", 1, time.Now())
-	throttler.Add("b", 2, time.Now())
-	throttler.Add("c", 3, time.Now())
-	throttler.Add("d", 4, time.Now())
-
-	next, ok := throttler.Next("a")
-	assert.True(t, ok)
-	assert.Equal(t, "d", next)
-
-	_, ok = throttler.Next("b")
-	assert.False(t, ok)
-
-	_, ok = throttler.Next("c")
-	assert.False(t, ok)
-
-	throttler.SetParallelism(3)
-
-	assert.Equal(t, 2, queue.Len())
-	queued, _ := queue.Get()
-	assert.Equal(t, "c", queued)
-	queued, _ = queue.Get()
-	assert.Equal(t, "b", queued)
+	r.Remove("c")
 }

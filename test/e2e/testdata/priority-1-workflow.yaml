@@ -1,0 +1,13 @@
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  generateName: priority-1-
+  labels:
+    argo-e2e: "true"
+spec:
+  priority: 1
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2

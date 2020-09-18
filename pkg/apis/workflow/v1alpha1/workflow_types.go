@@ -99,6 +99,10 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
+func (in *Workflow) GetKey() string {
+	return in.Namespace + "/" + in.Name
+}
+
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
 type Workflows []Workflow
 
@@ -414,6 +418,13 @@ func (b ParallelSteps) OpenAPISchemaFormat() string { return "" }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
+}
+
+func (in *WorkflowSpec) GetPriority() int32 {
+	if in.Priority == nil {
+		return 0
+	}
+	return *in.Priority
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -2075,6 +2086,18 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 		return true, nil
 	}
 	return false, nil
+}
+
+func (in *Workflow) HigherPriorityThan(x interface{}) bool {
+	j := x.(*Workflow)
+	if in.GetPriority() == j.GetPriority() {
+		return in.GetCreationTimestamp().Time.Before(j.GetCreationTimestamp().Time)
+	}
+	return in.GetPriority() > j.GetPriority()
+}
+
+func (in *Workflow) GetPriority() int32 {
+	return in.Spec.GetPriority()
 }
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines

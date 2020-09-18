@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"container/heap"
 	"fmt"
 	"strings"
 	"sync"
@@ -8,12 +9,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	sema "golang.org/x/sync/semaphore"
+
+	"github.com/argoproj/argo/workflow/sync/queue"
 )
 
 type Semaphore struct {
 	name              string
 	limit             int
-	pending           *priorityQueue
+	pending           *queue.DedupePriorityQueue
 	semaphore         *sema.Weighted
 	lockHolder        map[string]bool
 	inPending         map[string]bool
@@ -26,7 +29,7 @@ func NewSemaphore(name string, limit int, callbackFunc func(string), lockType Lo
 	return &Semaphore{
 		name:              name,
 		limit:             limit,
-		pending:           &priorityQueue{itemByKey: make(map[interface{}]*item)},
+		pending:           queue.NewDedupePriorityQueue(),
 		semaphore:         sema.NewWeighted(int64(limit)),
 		lockHolder:        make(map[string]bool),
 		inPending:         make(map[string]bool),
@@ -89,8 +92,7 @@ func (s *Semaphore) release(key string) bool {
 
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))
 		if s.pending.Len() > 0 {
-			item := s.pending.peek()
-			keyStr := fmt.Sprintf("%v", item.key)
+			keyStr := queue.Peek(s.pending).(*queue.Item).Value.(*holder).key
 			items := strings.Split(keyStr, "/")
 			workflowKey := keyStr
 			if len(items) == 3 {
@@ -103,6 +105,24 @@ func (s *Semaphore) release(key string) bool {
 	return true
 }
 
+type holder struct {
+	key          string
+	priority     int32
+	creationTime time.Time
+}
+
+func (h *holder) HigherPriorityThan(x interface{}) bool {
+	i := x.(*holder)
+	if h.priority == i.priority {
+		return h.creationTime.Before(i.creationTime)
+	}
+	return h.priority > i.priority
+}
+
+func (h *holder) GetKey() string { return h.key }
+
+var _ queue.Keyed = &holder{}
+
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
 func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	s.lock.Lock()
@@ -112,8 +132,11 @@ func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime ti
 		s.log.Debugf("Lock is already acquired by %s", holderKey)
 		return
 	}
-
-	s.pending.add(holderKey, priority, creationTime)
+	if s.pending.Contains(holderKey) {
+		index := s.pending.Index(holderKey)
+		heap.Remove(s.pending, index)
+	}
+	heap.Push(s.pending, queue.NewItem(&holder{holderKey, priority, creationTime}))
 	s.log.Debugf("Added into Queue %s", holderKey)
 }
 
@@ -141,15 +164,14 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	if s.pending.Len() > 0 {
-		item := s.pending.peek()
-		nextKey = fmt.Sprintf("%v", item.key)
+		nextKey = queue.Peek(s.pending).(*queue.Item).Value.(*holder).key
 		if holderKey != nextKey {
 			return false, waitingMsg
 		}
 	}
 
 	if s.acquire(holderKey) {
-		s.pending.pop()
+		_ = s.pending.Pop()
 		s.log.Infof("%s acquired by %s ", s.name, nextKey)
 		return true, ""
 	}

@@ -168,8 +168,11 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf2.Status.Synchronization)
-		assert.NotNil(t, wf2.Status.Synchronization.Mutex)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+		if assert.NotNil(t, wf2.Status.Synchronization.Mutex) {
+			if assert.NotEmpty(t, wf2.Status.Synchronization.Mutex.Holding, 1) {
+				assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
+			}
+		}
 		concurrenyMgr.ReleaseAll(wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
@@ -320,7 +323,10 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Synchronization)
-		assert.NotNil(t, wf.Status.Synchronization.Mutex)
-		assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-2216915482", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+		if assert.NotNil(t, wf.Status.Synchronization.Mutex) {
+			if assert.NotEmpty(t, wf.Status.Synchronization.Mutex.Holding) {
+				assert.Equal(t, "synchronization-tmpl-level-mutex-vjcdk-2216915482", wf.Status.Synchronization.Mutex.Holding[0].Holder)
+			}
+		}
 	})
 }

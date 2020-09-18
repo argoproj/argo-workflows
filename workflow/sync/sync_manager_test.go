@@ -482,9 +482,11 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf2.Status.Synchronization)
-		assert.NotNil(t, wf2.Status.Synchronization.Semaphore)
-		assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
-
+		if assert.NotNil(t, wf2.Status.Synchronization.Semaphore) {
+			if assert.NotEmpty(t, wf2.Status.Synchronization.Semaphore.Holding) {
+				assert.Equal(t, wf2.Name, wf2.Status.Synchronization.Semaphore.Holding[0].Holders[0])
+			}
+		}
 	})
 }
 
