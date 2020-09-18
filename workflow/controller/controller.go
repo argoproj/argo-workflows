@@ -568,7 +568,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
-// enqueue workflow for process workflow
+// enqueue workflow for processing
 func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}, key string) bool {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
