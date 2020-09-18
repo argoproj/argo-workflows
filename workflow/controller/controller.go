@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/errors"
+	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -85,6 +87,7 @@ type WorkflowController struct {
 	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
+	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
@@ -123,6 +126,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
@@ -456,6 +460,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// or was deleted, but the work queue still had an entry for it.
 		return true
 	}
+
+	wfc.workflowKeyLock.Lock(key.(string))
+	defer wfc.workflowKeyLock.Unlock(key.(string))
+
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects
 	un, ok := obj.(*unstructured.Unstructured)
@@ -674,6 +682,20 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
+	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			un, ok := obj.(*unstructured.Unstructured)
+			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
+			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: wfc.archiveWorkflow,
+			UpdateFunc: func(_, obj interface{}) {
+				wfc.archiveWorkflow(obj)
+			},
+		},
+	},
+	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			wf := obj.(*unstructured.Unstructured)
@@ -688,6 +710,60 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
 		},
 	})
+}
+
+func (wfc *WorkflowController) archiveWorkflow(obj interface{}) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		log.Error("failed to get key for object")
+		return
+	}
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
+	err = wfc.archiveWorkflowAux(obj)
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("failed to archive workflow")
+	}
+}
+
+func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
+	}
+	err = wfc.hydrator.Hydrate(wf)
+	if err != nil {
+		return fmt.Errorf("failed to hydrate workflow: %w", err)
+	}
+	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info("archiving workflow")
+	err = wfc.wfArchive.ArchiveWorkflow(wf)
+	if err != nil {
+		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+	data, err := json.Marshal(map[string]interface{}{
+		"metadata": metav1.ObjectMeta{
+			Labels: map[string]string{
+				common.LabelKeyWorkflowArchivingStatus: "Archived",
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
+	if err != nil {
+		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually
+		// been deleted, so it's not a problem to get a `IsNotFound` error
+		if apierr.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {

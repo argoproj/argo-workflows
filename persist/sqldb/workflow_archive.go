@@ -51,6 +51,7 @@ type WorkflowArchive interface {
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 	DeleteExpiredWorkflows(ttl time.Duration) error
+	IsEnabled() bool
 }
 
 type workflowArchive struct {
@@ -59,6 +60,10 @@ type workflowArchive struct {
 	managedNamespace  string
 	instanceIDService instanceid.Service
 	dbType            dbType
+}
+
+func (r *workflowArchive) IsEnabled() bool {
+	return true
 }
 
 // NewWorkflowArchive returns a new workflowArchive
