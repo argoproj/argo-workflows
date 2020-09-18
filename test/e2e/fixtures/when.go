@@ -31,8 +31,6 @@ type When struct {
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
-	workflowName      string
-	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
 }
 
@@ -46,7 +44,7 @@ func (w *When) SubmitWorkflow() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.workflowName = wf.Name
+		w.wf = wf
 	}
 	return w
 }
@@ -59,7 +57,7 @@ func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
-			w.workflowName = wf.Name
+			w.wf = wf
 		}
 	}
 	return w
@@ -73,7 +71,7 @@ func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
 		if err != nil {
 			w.t.Fatal(err)
 		} else {
-			w.workflowName = wf.Name
+			w.wf = wf
 		}
 	}
 	return w
@@ -86,7 +84,7 @@ func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.workflowName = wf.Name
+		w.wf = wf
 	}
 	return w
 }
@@ -140,11 +138,10 @@ func (w *When) CreateCronWorkflow() *When {
 		w.t.Fatal("No cron workflow to create")
 	}
 	println("Creating cron workflow", w.cronWf.Name)
-	cronWf, err := w.cronClient.Create(w.cronWf)
+	var err error
+	w.cronWf, err = w.cronClient.Create(w.cronWf)
 	if err != nil {
 		w.t.Fatal(err)
-	} else {
-		w.cronWorkflowName = cronWf.Name
 	}
 	return w
 }
@@ -164,7 +161,10 @@ var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.Finish
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
-	workflowName := w.workflowName
+	workflowName := ""
+	if w.wf != nil {
+		workflowName = w.wf.Name
+	}
 	condition := ToFinish
 	message := "to finish"
 	for _, opt := range options {
@@ -212,7 +212,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
-					w.workflowName = wf.Name
+					w.wf = wf
 					return w
 				}
 			} else {
@@ -242,8 +242,8 @@ func (w *When) Wait(timeout time.Duration) *When {
 
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
-	println("Deleting", w.workflowName)
-	err := w.client.Delete(w.workflowName, nil)
+	println("Deleting", w.wf.Name)
+	err := w.client.Delete(w.wf.Name, nil)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -354,13 +354,13 @@ func (w *When) deleteResourceQuota(name string) *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:                w.t,
-		workflowName:     w.workflowName,
-		cronWorkflowName: w.cronWorkflowName,
-		client:           w.client,
-		cronClient:       w.cronClient,
-		hydrator:         w.hydrator,
-		kubeClient:       w.kubeClient,
+		t:          w.t,
+		wf:         w.wf,
+		cronWf:     w.cronWf,
+		client:     w.client,
+		cronClient: w.cronClient,
+		hydrator:   w.hydrator,
+		kubeClient: w.kubeClient,
 	}
 }
 
@@ -378,7 +378,6 @@ func (w *When) Given() *Given {
 		wfTemplates:       w.wfTemplates,
 		cwfTemplates:      w.cwfTemplates,
 		cronWf:            w.cronWf,
-		workflowName:      w.workflowName,
 		kubeClient:        w.kubeClient,
 	}
 }

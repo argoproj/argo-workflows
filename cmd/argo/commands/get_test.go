@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	testutil "github.com/argoproj/argo/test/util"
 )
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
@@ -108,7 +108,23 @@ func TestStatusToNodeFieldSelector(t *testing.T) {
 	assert.Equal(t, "phase=Running", one)
 }
 
-var indexTest = `apiVersion: argoproj.io/v1alpha1
+func Test_printWorkflowHelper(t *testing.T) {
+	t.Run("EstimatedDuration", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`
+spec:
+  templates:
+  - name: main
+status:
+  estimatedDuration: 1
+  phase: Running
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Regexp(t, `EstimatedDuration: *1 second`, output)
+	})
+	t.Run("IndexOrdering", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-02T16:04:21Z"
@@ -338,15 +354,11 @@ status:
       type: Pod
   phase: Succeeded
   startedAt: "2020-06-02T16:04:21Z"
-`
-
-func TestIndexOrdering(t *testing.T) {
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(indexTest), &wf)
-	if assert.NoError(t, err) {
-		assert.Contains(t, printWorkflowHelper(&wf, getFlags{}), `         
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Contains(t, output, `         
    ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
    ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
    ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
-	}
+	})
 }
