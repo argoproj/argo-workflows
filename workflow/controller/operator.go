@@ -3102,10 +3102,14 @@ func (woc *wfOperationCtx) getBaselineWF() *wfv1.Workflow {
 }
 
 func (woc *wfOperationCtx) getBaselineWFAux() (*wfv1.Workflow, error) {
-	for _, labelName := range []string{common.LabelKeyWorkflowTemplate, common.LabelKeyClusterWorkflowTemplate, common.LabelKeyCronWorkflow} {
-		labelValue, ok := woc.wf.Labels[labelName]
-		if ok {
-			objs, err := woc.controller.wfInformer.GetIndexer().ByIndex(labelName, indexes.MetaNamespaceLabelIndex(woc.wf.Namespace, labelValue))
+	for labelName, indexName := range map[string]string{
+		common.LabelKeyWorkflowTemplate:        indexes.WorkflowTemplateIndex,
+		common.LabelKeyClusterWorkflowTemplate: indexes.ClusterWorkflowTemplateIndex,
+		common.LabelKeyCronWorkflow:            indexes.CronWorkflowIndex,
+	} {
+		labelValue, exists := woc.wf.Labels[labelName]
+		if exists {
+			objs, err := woc.controller.wfInformer.GetIndexer().ByIndex(indexName, indexes.MetaNamespaceLabelIndex(woc.wf.Namespace, labelValue))
 			if err != nil {
 				return nil, fmt.Errorf("failed to list workflows by index: %v", err)
 			}
