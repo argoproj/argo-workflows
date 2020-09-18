@@ -1833,6 +1833,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#update-java-sdk" title="Update Java SDK" class="md-nav__link">
+    Update Java SDK
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1970,6 +1977,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#update-java-sdk" title="Update Java SDK" class="md-nav__link">
+    Update Java SDK
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2065,7 +2079,8 @@
 <ul>
 <li>[ ] Update the Homebrew formula.</li>
 </ul>
-<div class="codehilite"><pre><span></span><code>brew bump-formula-pr argo --version <span class="nv">$VERSION</span>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span> <span class="nv">HOMEBREW_GITHUB_API_TOKEN</span><span class="o">=</span>******
+brew bump-formula-pr argo --version <span class="m">2</span>.7.2
 </code></pre></div>
 
 
@@ -2073,7 +2088,21 @@
 <li>[ ] Check that Homebrew was successfully updated after the PR was merged:</li>
 </ul>
 <p><code>brew upgrade argo
- argo version</code></p>
+ /usr/local/bin/argo version</code></p>
+<h3 id="update-java-sdk">Update Java SDK<a class="headerlink" href="#update-java-sdk" title="Permanent link">&para;</a></h3>
+<p>If this is GA:</p>
+<ul>
+<li>[ ] Update the Java SDK formula.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="err">git clone git@github.com:argoproj-labs/argo-client-java.git</span>
+<span class="err">cd argo-client-java</span>
+<span class="err">make publish VERSION=v2.7.2</span>
+</code></pre></div>
+
+
+<ul>
+<li>[ ] Check package published: https://github.com/argoproj-labs/argo-client-java/packages</li>
+</ul>
                 
                   
                 
