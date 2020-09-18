@@ -14,6 +14,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -115,8 +116,17 @@ func (w *When) CreateCronWorkflow() *When {
 
 type Condition func(wf *wfv1.Workflow) bool
 
+var ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
 var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
-var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.FinishedAt.IsZero() }
+
+// `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
+// This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
+// creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
+var ToBeDone Condition = func(wf *wfv1.Workflow) bool {
+	return ToBeCompleted(wf) && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending"
+}
+
+var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
 
 // Wait for a workflow to meet a condition:
 // Options:
@@ -129,8 +139,8 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
 	workflowName := w.workflowName
-	condition := ToFinish
-	message := "to finish"
+	condition := ToBeDone
+	message := "to be done"
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
@@ -148,7 +158,6 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		}
 	}
 
-	w.t.Helper()
 	start := time.Now()
 
 	fieldSelector := ""
@@ -172,6 +181,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		select {
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
+			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {

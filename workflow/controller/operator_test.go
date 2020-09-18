@@ -2897,44 +2897,25 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var invalidSpec = `
+func TestEventNodeEvents(t *testing.T) {
+	for manifest, want := range map[string][]string{
+		// Invalid spec
+		`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: invalid-spec
 spec:
   entrypoint: 123
-`
-
-func TestEventInvalidSpec(t *testing.T) {
-	// Test whether a WorkflowFailed event is emitted in case of invalid spec
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(invalidSpec)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	events := getEvents(controller, 2)
-	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
-	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", events[1])
-}
-
-func getEvents(controller *WorkflowController, num int) []string {
-	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
-	events := make([]string, num)
-	for i := 0; i < num; i++ {
-		events[i] = <-c
-	}
-	return events
-}
-
-var failLoadArtifactRepoCm = `
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Warning WorkflowFailed invalid spec: template name '123' undefined",
+		},
+		`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-repo-config-ref-
+  name: artifact-repo-config-ref-
 spec:
   entrypoint: whalesay
   artifactRepositoryRef:
@@ -2950,21 +2931,74 @@ spec:
       artifacts:
       - name: message
         path: /tmp/hello_world.txt
-`
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config",
+		},
+		// DAG
+		`
+metadata:
+  name: dag-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// steps
+		`
+metadata:
+  name: steps-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+	} {
+		wf := unmarshalWF(manifest)
+		cancel, controller := newController(wf)
+		defer cancel()
+		t.Run(wf.Name, func(t *testing.T) {
+			woc := newWorkflowOperationCtx(wf, controller)
+			woc.operate()
+			makePodsPhase(woc, apiv1.PodSucceeded)
+			woc = newWorkflowOperationCtx(woc.wf, controller)
+			woc.operate()
+			assert.Equal(t, want, getEvents(controller, len(want)))
+		})
+	}
+}
 
-func TestEventFailArtifactRepoCm(t *testing.T) {
-	// Test whether a WorkflowFailed event is emitted in case of failure in loading artifact repository config map
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(failLoadArtifactRepoCm)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	events := getEvents(controller, 2)
-	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
-	assert.Equal(t, "Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", events[1])
+func getEvents(controller *WorkflowController, num int) []string {
+	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+	events := make([]string, num)
+	for i := 0; i < num; i++ {
+		events[i] = <-c
+	}
+	return events
 }
 
 var pdbwf = `
