@@ -563,7 +563,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 	for key, val := range wf.ObjectMeta.Labels {
 		switch key {
-		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted:
+		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
 			newWF.ObjectMeta.Labels[key] = val
@@ -669,6 +669,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
+	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning
