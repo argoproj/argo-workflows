@@ -2,6 +2,7 @@ package executor
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"compress/gzip"
@@ -181,9 +182,11 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		}
 
 		isTar := false
+		isZip := false
 		if art.GetArchive().None != nil {
 			// explicitly not a tar
 			isTar = false
+			isZip = false
 		} else if art.GetArchive().Tar != nil {
 			// explicitly a tar
 			isTar = true
@@ -193,10 +196,18 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			if err != nil {
 				return err
 			}
+
+			isZip, err = isZipFile(tempArtPath)
+			if err != nil {
+				return err
+			}
 		}
 
 		if isTar {
 			err = untar(tempArtPath, artPath)
+			_ = os.Remove(tempArtPath)
+		} else if isZip {
+			err = unzip(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
 			err = os.Rename(tempArtPath, artPath)
@@ -845,16 +856,108 @@ func isTarball(filePath string) (bool, error) {
 	return err == nil, nil
 }
 
+// isZipFile returns whether or not the file is a zip file
+func isZipFile(filePath string) (bool, error) {
+	log.Infof("Detecting if %s is a zip file", filePath)
+	r, err := zip.OpenReader(filePath)
+	if err != nil {
+		return false, nil
+	}
+	defer r.Close()
+
+	return true, nil
+}
+
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
+	decompressor := func(src string, dest string) error {
+		return common.RunCommand("tar", "-xf", src, "-C", dest)
+	}
+
+	return unpack(tarPath, destPath, decompressor)
+}
+
+// unzip extracts a zip folder to a temporary directory,
+// renaming it to the desired location
+func unzip(zipPath string, destPath string) error {
+	decompressor := func(src string, dest string) error {
+		r, err := zip.OpenReader(src)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err := r.Close(); err != nil {
+				panic(err)
+			}
+		}()
+
+		// Closure to address file descriptors issue with all the deferred .Close() methods
+		extractAndWriteFile := func(f *zip.File) error {
+			rc, err := f.Open()
+			if err != nil {
+				return err
+			}
+			defer func() {
+				if err := rc.Close(); err != nil {
+					panic(err)
+				}
+			}()
+
+			path := filepath.Join(dest, f.Name)
+			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
+				return fmt.Errorf("%s: Illegal file path", path)
+			}
+
+			if f.FileInfo().IsDir() {
+				os.MkdirAll(path, f.Mode())
+			} else {
+				os.MkdirAll(filepath.Dir(path), f.Mode())
+				f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if err := f.Close(); err != nil {
+						panic(err)
+					}
+				}()
+
+				_, err = io.Copy(f, rc)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		for _, f := range r.File {
+			err := extractAndWriteFile(f)
+			if err != nil {
+				return err
+			}
+			log.Infof("Extracting file: %s", f.Name)
+		}
+
+		log.Infof("Extraction of %s finished!", src)
+
+		return nil
+	}
+
+	return unpack(zipPath, destPath, decompressor)
+}
+
+// untar unpacks a compressed file (tarball or zip file) to a temporary directory,
+// renaming it to the desired location
+// decompression is done using the decompressor closure, that should decompress a tarball or zip file
+func unpack(tarPath string, destPath string, decompressor func(string, string) error) error {
 	// first extract the tar into a temporary dir
 	tmpDir := destPath + ".tmpdir"
 	err := os.MkdirAll(tmpDir, os.ModePerm)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = common.RunCommand("tar", "-xf", tarPath, "-C", tmpDir)
+	err = decompressor(tarPath, tmpDir)
 	if err != nil {
 		return err
 	}
