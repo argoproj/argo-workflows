@@ -32,6 +32,7 @@ import (
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/prediction"
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -151,6 +152,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
+		durationPredictor:    prediction.NullDurationPredictor,
 		hydrator:             hydratorfake.Noop,
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},

@@ -43,6 +43,7 @@ import (
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
+	"github.com/argoproj/argo/workflow/controller/prediction"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -92,6 +93,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
+	durationPredictor     prediction.DurationPredictor
 	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
