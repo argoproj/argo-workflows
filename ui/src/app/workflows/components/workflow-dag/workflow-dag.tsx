@@ -204,8 +204,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <div className='workflow-dag'>
                             <svg
                                 style={{
-                            width: this.graph.width + this.gap * 2,
-                            height: this.graph.height + this.gap * 2,
+                                    width: this.graph.width + this.gap * 2,
+                                    height: this.graph.height + this.gap * 2,
                                     margin: this.nodeSize
                                 }}>
                                 <defs>
@@ -226,7 +226,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                         <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
                                     </filter>
                                 </defs>
-                        <g transform={`translate(${this.gap},${this.gap})`}>
+                                <g transform={`translate(${this.gap},${this.gap})`}>
                                     {this.graph.edges.map(edge => {
                                         const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
                                         return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
@@ -235,7 +235,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                         let phase: DagPhase;
                                         let label: string;
                                         let hidden: boolean;
-                                        ui/src/models/workflows.ts
+                                        const node = this.getNode(nodeId);
                                         if (isCollapsedNode(nodeId)) {
                                             phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
                                             label = getMessage(nodeId);
@@ -248,7 +248,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
                                         return (
                                             <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
-                                        <title>{label}</title>
+                                                <title>{label}</title>
                                                 <circle
                                                     r={this.nodeSize / (hidden ? 16 : 2)}
                                                     className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
