@@ -249,7 +249,7 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
-		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.EstimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -1548,7 +1548,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
+			node.EstimatedDuration = woc.EstimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1771,7 +1771,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.EstimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1923,7 +1923,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:        boundaryID,
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
-		EstimatedDuration: woc.estimateNodeDuration(nodeName),
+		EstimatedDuration: woc.EstimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -3150,7 +3150,7 @@ func (woc *wfOperationCtx) getBaselineWFAux() (*wfv1.Workflow, error) {
 	return nil, nil
 }
 
-func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
+func (woc *wfOperationCtx) EstimateWorkflowDuration() wfv1.EstimatedDuration {
 	wf := woc.getBaselineWF()
 	if wf == nil {
 		return 0
@@ -3158,7 +3158,7 @@ func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
 	return wfv1.NewEstimatedDuration(wf.Status.GetDuration())
 }
 
-func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
+func (woc *wfOperationCtx) EstimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
 	wf := woc.getBaselineWF()
 	if wf == nil {
 		return 0
