@@ -62,11 +62,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
         {
             title: 'DURATION',
-            value: (
-                <Ticker disabled={props.workflow.status && props.workflow.status.phase !== models.NODE_PHASE.RUNNING}>
-                    {now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}
-                </Ticker>
-            )
+            value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
         },
         {
             title: 'MEMOIZATION',

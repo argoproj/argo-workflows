@@ -48,6 +48,17 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                     )
                 }
             ];
+            if (props.workflow.status.phase === NODE_PHASE.RUNNING) {
+                attributes.push({
+                    title: 'Progress',
+                    value: (
+                        <>
+                            {Object.values(props.workflow.status.nodes).filter(node => ![NODE_PHASE.PENDING, NODE_PHASE.RUNNING].includes(node.phase)).length}/
+                            {Object.values(props.workflow.status.nodes).length}
+                        </>
+                    )
+                });
+            }
             const creator = props.workflow.metadata.labels[labels.creator];
             if (creator) {
                 attributes.push({title: 'Creator', value: creator});

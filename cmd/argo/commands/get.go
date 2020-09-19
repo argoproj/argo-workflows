@@ -141,8 +141,11 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if !wf.Status.StartedAt.IsZero() {
 		out += fmt.Sprintf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
-	if wf.Status.Phase == wfv1.NodeRunning && wf.Status.EstimatedDuration > 0 {
-		out += fmt.Sprintf(fmtStr, "EstimatedDuration:", humanize.Duration(wf.Status.EstimatedDuration.ToDuration()))
+	if wf.Status.Phase == wfv1.NodeRunning {
+		if wf.Status.EstimatedDuration > 0 {
+			out += fmt.Sprintf(fmtStr, "EstimatedDuration:", humanize.Duration(wf.Status.EstimatedDuration.ToDuration()))
+		}
+		out += fmt.Sprintf(fmtStr, "Progress:", fmt.Sprintf("%v/%v", wf.Status.Nodes.Count(wfv1.NodeIsFulfilled), len(wf.Status.Nodes)))
 	}
 	if !wf.Status.ResourcesDuration.IsZero() {
 		out += fmt.Sprintf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)

@@ -1429,6 +1429,19 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
+var NodeIsFulfilled = func(v NodeStatus) bool { return v.Phase.Fulfilled() }
+
+func (in Nodes) Count(test func(v NodeStatus) bool) int {
+	count := 0
+	for _, v := range in {
+		if test(v) {
+			count++
+		}
+	}
+	return count
+
+}
+
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
 	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
