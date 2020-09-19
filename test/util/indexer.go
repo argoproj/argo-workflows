@@ -28,5 +28,5 @@ func (i Indexer) SetByIndex(indexName, indexedValue string, objs ...interface{})
 func (i Indexer) ByIndex(indexName, indexedValue string) ([]interface{}, error) {
 	return i.objs[indexName+"="+indexedValue], nil
 }
-func (i Indexer) GetIndexers() cache.Indexers                                { panic("implement me") }
-func (i Indexer) AddIndexers(cache.Indexers) error                           { panic("implement me") }
+func (i Indexer) GetIndexers() cache.Indexers      { panic("implement me") }
+func (i Indexer) AddIndexers(cache.Indexers) error { panic("implement me") }
