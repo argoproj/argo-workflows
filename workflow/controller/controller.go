@@ -567,7 +567,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 
 	err = wfc.enqueueWfFromPodLabel(obj)
 	if err != nil {
-		log.WithFields(log.Fields{"key": key}).Warn(err)
+		log.WithError(err).Warnf("Failed to enqueue the workflow for %s", key)
 	}
 	return true
 }
@@ -748,15 +748,10 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
-				_, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err != nil {
-					return
-				}
+
 				// Enqueue the workflow for deleted pod
-				err = wfc.enqueueWfFromPodLabel(obj)
-				if err != nil {
-					return
-				}
+				_ = wfc.enqueueWfFromPodLabel(obj)
+
 			},
 		},
 	)
