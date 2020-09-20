@@ -81,6 +81,120 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 	}
 }
 
+func TestEstimatedDuration(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+  labels:
+    workflows.argoproj.io/workflow-template: my-wftmpl
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(unmarshalWF(`
+metadata:
+  name: my-baseline-wf
+  namespace: my-ns
+status:
+  startedAt: "1970-01-01T00:00:00Z"
+  finishedAt: "1970-01-01T00:01:00Z"
+  nodes:
+    my-baseline-wf:
+      startedAt: "1970-01-01T00:00:00Z"
+      finishedAt: "1970-01-01T00:01:00Z"
+`), wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.EstimatedDuration)
+	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes[woc.wf.Name].EstimatedDuration)
+	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes.FindByDisplayName("pod").EstimatedDuration)
+}
+
+func TestDefaultProgress(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes.FindByDisplayName("pod").Progress)
+}
+
+func TestLoggedProgress(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	makePodsPhase(woc, apiv1.PodSucceeded, withProgress("50/100"), withNodeMessage("my-message"))
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("50/100"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	pod := woc.wf.Status.Nodes.FindByDisplayName("pod")
+	assert.Equal(t, wfv1.Progress("50/100"), pod.Progress)
+	assert.Equal(t, "my-message", pod.Message)
+}
+
 var sidecarWithVol = `
 # Verifies sidecars can reference volumeClaimTemplates
 apiVersion: argoproj.io/v1alpha1
@@ -1157,9 +1271,14 @@ spec:
 
 // TestStepsTemplateParallelismLimit verifies parallelism at a steps level is honored.
 func TestStepsTemplateParallelismLimit(t *testing.T) {
-	wf := unmarshalWF(stepsTemplateParallelismLimit)
-	cancel, controller := newController(wf)
+	cancel, controller := newController()
 	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(stepsTemplateParallelismLimit)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
@@ -1168,7 +1287,11 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 
 	// operate again and make sure we don't schedule any more pods
 	makePodsPhase(woc, apiv1.PodRunning)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
+	// log.Printf("%s", wfBytes)
+	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)

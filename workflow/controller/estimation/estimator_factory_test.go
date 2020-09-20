@@ -16,7 +16,7 @@ import (
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
-func TestEstimatorFactory(t *testing.T) {
+func Test_estimatorFactory(t *testing.T) {
 	informer := testutil.NewSharedIndexInformer()
 	wfFailed := testutil.MustUnmarshallUnstructured(`
 apiVersion: argoproj.io/v1alpha1
@@ -62,7 +62,8 @@ metadata:
 	t.Run("None", func(t *testing.T) {
 		p, err := f.NewEstimator(&wfv1.Workflow{})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
-			assert.Nil(t, p.baselineWF)
+			e := p.(*estimator)
+			assert.Nil(t, e.baselineWF)
 		}
 	})
 	t.Run("WorkflowTemplate", func(t *testing.T) {
@@ -70,8 +71,9 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-wftmpl"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
-			if assert.NotNil(t, p.baselineWF) {
-				assert.Equal(t, "my-wftmpl-baseline", p.baselineWF.Name)
+			e := p.(*estimator)
+			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
+				assert.Equal(t, "my-wftmpl-baseline", e.baselineWF.Name)
 			}
 		}
 	})
@@ -80,8 +82,9 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyClusterWorkflowTemplate: "my-cwft"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
-			if assert.NotNil(t, p.baselineWF) {
-				assert.Equal(t, "my-cwft-baseline", p.baselineWF.Name)
+			e := p.(*estimator)
+			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
+				assert.Equal(t, "my-cwft-baseline", e.baselineWF.Name)
 			}
 		}
 	})
@@ -90,8 +93,9 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyCronWorkflow: "my-cwf"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
-			if assert.NotNil(t, p.baselineWF) {
-				assert.Equal(t, "my-cwf-baseline", p.baselineWF.Name)
+			e := p.(*estimator)
+			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
+				assert.Equal(t, "my-cwf-baseline", e.baselineWF.Name)
 			}
 		}
 	})
@@ -100,8 +104,9 @@ metadata:
 			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Labels: map[string]string{common.LabelKeyWorkflowTemplate: "my-archived-wftmpl"}},
 		})
 		if assert.NoError(t, err) && assert.NotNil(t, p) {
-			if assert.NotNil(t, p.baselineWF) {
-				assert.Equal(t, "my-archived-wftmpl-baseline", p.baselineWF.Name)
+			e := p.(*estimator)
+			if assert.NotNil(t, e) && assert.NotNil(t, e.baselineWF) {
+				assert.Equal(t, "my-archived-wftmpl-baseline", e.baselineWF.Name)
 			}
 		}
 	})

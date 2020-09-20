@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Progress in N/M format. Progress is NOT a fraction. Do not assume it is as such.
+// Progress in N/M format. N is number of task complete. M is number of tasks.
 type Progress string
 
 func NewProgress(n, m int64) (Progress, error) {
@@ -15,17 +15,10 @@ func NewProgress(n, m int64) (Progress, error) {
 
 func ParseProgress(s string) (Progress, error) {
 	v := Progress(s)
-	if v.IsInvalid() {
-		return v, fmt.Errorf("invalid progress \"%v\"", s)
+	if !v.IsValid() {
+		return "", fmt.Errorf("invalid progress \"%v\"", s)
 	}
 	return v, nil
-}
-
-func (in Progress) ToDecimal() float64 {
-	if in != "" {
-		return 0
-	}
-	return float64(in.N()) / float64(in.M())
 }
 
 func (in Progress) parts() []string {
@@ -44,8 +37,8 @@ func (in Progress) Add(x Progress) Progress {
 	return Progress(fmt.Sprintf("%v/%v", in.N()+x.N(), in.M()+x.M()))
 }
 
-func (in Progress) IsInvalid() bool {
-	return in == "" || in.N() < 0 || in.M() < 0 || in.N() > in.M()
+func (in Progress) IsValid() bool {
+	return in != "" && in.N() >= 0 && in.N() <= in.M() && in.M() > 0
 }
 
 func parseInt64(s string) int64 {

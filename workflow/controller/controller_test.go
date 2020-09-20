@@ -137,8 +137,6 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		panic("Timed out waiting for caches to sync")
 	}
 	kube := fake.NewSimpleClientset()
-	hydrator := hydratorfake.Noop
-	wfArchive := sqldb.NullWorkflowArchive
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
@@ -153,9 +151,9 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		workflowKeyLock:      sync.NewKeyLock(),
-		wfArchive:            wfArchive,
-		hydrator:             hydrator,
-		estimatorFactory:     estimation.NewEstimatorFactory(wfInformer, hydrator, wfArchive),
+		wfArchive:            sqldb.NullWorkflowArchive,
+		hydrator:             hydratorfake.Noop,
+		estimatorFactory:     estimation.DummyEstimatorFactory,
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
@@ -228,10 +226,12 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 
 type with func(pod *apiv1.Pod)
 
-func withOutputs(outputs string) with {
-	return func(pod *apiv1.Pod) {
-		pod.GetAnnotations()[common.AnnotationKeyOutputs] = outputs
-	}
+func withOutputs(v string) with     { return withAnnotation(common.AnnotationKeyOutputs, v) }
+func withProgress(v string) with    { return withAnnotation(common.AnnotationKeyProgress, v) }
+func withNodeMessage(v string) with { return withAnnotation(common.AnnotationKeyNodeMessage, v) }
+
+func withAnnotation(key, val string) with {
+	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state

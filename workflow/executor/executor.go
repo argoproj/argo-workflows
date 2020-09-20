@@ -15,7 +15,6 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
-	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -1035,14 +1034,10 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 
 // watch for the line `#argo progress=N/M` and update the progress annotation so that the controller is notified.
 func (we *WorkflowExecutor) monitorProgress(ctx context.Context) {
-	mainContainerID, err := we.GetMainContainerID()
-	if err != nil {
-		log.WithError(err).Error("failed to monitor progress: failed to get main container id")
-		return
-	}
+	mainContainerID, _ := we.GetMainContainerID()
 	reader, err := we.RuntimeExecutor.GetOutputStream(mainContainerID, true)
 	if err != nil {
-		log.WithError(err).Error("failed to monitor progress: failed to get output stream")
+		log.WithError(err).Error("cannot monitor progress: failed to get output stream")
 		return
 	}
 	defer func() { _ = reader.Close() }()
@@ -1060,33 +1055,31 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context) {
 				log.WithError(err).Error("failed to monitor progress: failed to read line")
 				return
 			}
-			annotations := map[string]string{}
-			if matches := regexp.MustCompile("#argo .*progress=([0-9]+/[0-9]+)").FindStringSubmatch(line); len(matches) == 2 {
-				progress, err := wfv1.ParseProgress(matches[1])
-				if err != nil {
-					log.WithError(err).Error("failed to monitor progress: failed to parse progress")
-				} else {
-					annotations[common.AnnotationKeyProgress] = string(progress)
-				}
-			}
-			if matches := regexp.MustCompile(`#argo .*message="([^"]*)"`).FindStringSubmatch(line); len(matches) == 2 {
-				annotations[common.AnnotationKeyNodeMessage] = matches[1]
+			annotations, err := parseProgressAnnotations(line)
+			if err != nil {
+				log.WithError(err).Warn("failed to parse progress annotations")
 			}
 			if len(annotations) > 0 {
-				metadata := map[string]interface{}{"annotations": annotations}
-				log.WithFields(metadata).Info()
-				patch, err := json.Marshal(map[string]interface{}{"metadata": metadata})
-				if err != nil {
-					log.WithError(err).Error("failed to marshall annotations")
-				}
-				// as we want to be tolerant to problems with this feature, we ignore errors
-				_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(we.PodName, types.MergePatchType, patch)
-				if err != nil {
-					log.WithError(err).Error("failed to patch pod")
-				}
+				err := we.patchProgressAnnotations(annotations)
+				log.WithError(err).Warn("failed to patch progress annotations")
 			}
 		}
 	}
+}
+
+func (we *WorkflowExecutor) patchProgressAnnotations(annotations map[string]string) error {
+	metadata := map[string]interface{}{"annotations": annotations}
+	log.WithFields(metadata).Info("patching progress annotations")
+	patch, err := json.Marshal(map[string]interface{}{"metadata": metadata})
+	if err != nil {
+		return fmt.Errorf("failed to marshall annotations: %w", err)
+	}
+	// as we want to be tolerant to problems with this feature, we ignore errors
+	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(we.PodName, types.MergePatchType, patch)
+	if err != nil {
+		return fmt.Errorf("failed to patch pod¬: %w", err)
+	}
+	return nil
 }
 
 // monitorAnnotations starts a goroutine which monitors for any changes to the pod annotations.

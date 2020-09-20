@@ -10,10 +10,10 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestEstimator(t *testing.T) {
+func Test_estimator(t *testing.T) {
 	a := metav1.Time{}
 	b := metav1.Time{Time: time.Time{}.Add(time.Second)}
-	p := Estimator{
+	p := &estimator{
 		&wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
 			Status: wfv1.WorkflowStatus{

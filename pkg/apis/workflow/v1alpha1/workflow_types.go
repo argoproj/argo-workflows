@@ -1241,10 +1241,6 @@ func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
 }
 
-func (in ResourcesDuration) Equal(v ResourcesDuration) bool {
-	return reflect.DeepEqual(in, v)
-}
-
 func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
 	q, ok := map[apiv1.ResourceName]resource.Quantity{
 		apiv1.ResourceMemory:           resource.MustParse("100Mi"),

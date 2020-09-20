@@ -63,7 +63,8 @@ type wfOperationCtx struct {
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
-	estimator  *estimation.Estimator
+	// estimate duration
+	estimator estimation.Estimator
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams common.Parameters
@@ -247,7 +248,7 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
-		woc.wf.Status.EstimatedDuration = woc.getEstimator().EstimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -1089,6 +1090,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		log.Error(message)
 	}
 
+	// if nothing has been set-up so far, then we fallback to user specified
 	if message == "" {
 		message = pod.Annotations[common.AnnotationKeyNodeMessage]
 	}
@@ -1551,7 +1553,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.getEstimator().EstimateNodeDuration(node.Name)
+			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1774,7 +1776,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.wf.Status.EstimatedDuration = woc.getEstimator().EstimateWorkflowDuration()
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1826,88 +1828,88 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 }
 
 // get a predictor, this maybe null implementation in the case of rare error
-func (woc *wfOperationCtx) getEstimator() *estimation.Estimator {
+func (woc *wfOperationCtx) getEstimator() estimation.Estimator {
 	if woc.estimator == nil {
-		// in case of error, set this to null implementation
-		woc.estimator = estimation.FallbackEstimator(woc.wf)
-		durationEstimator, err := woc.controller.estimatorFactory.NewEstimator(woc.wf)
-		if err != nil {
-			woc.log.WithError(err).Error("failed to create duration predictor")
-		} else {
-			woc.estimator = durationEstimator
-		}
+		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(woc.wf)
 	}
 	return woc.estimator
 }
 
+func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
+	return woc.getEstimator().EstimateWorkflowDuration()
+}
+
+func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
+	return woc.getEstimator().EstimateNodeDuration(nodeName)
+}
+
 func (woc *wfOperationCtx) updateNodes() {
-	nodeIDs, err := graph.TopSort(woc.wf.Status.Nodes, woc.wf.Name)
+	nodes := woc.wf.Status.Nodes
+	nodeIDs, err := graph.TopSort(nodes, woc.wf.Name)
 	if err != nil {
-		log.WithError(err).Error("failed to sort nodes")
+		woc.log.WithError(err).Error("failed to sort nodes")
 		return
 	}
 	for _, nodeID := range nodeIDs {
-		node := woc.wf.Status.Nodes[nodeID]
-		if !node.IsLeaf() {
+		node := nodes[nodeID]
+		// leaf nodes will have been computed, we only need to update those that have yet to be calculated
+		if len(node.Children) > 0 && node.Fulfilled() && node.ResourcesDuration.IsZero() {
 			v := wfv1.ResourcesDuration{}
 			for _, childID := range node.Children {
-				v = v.Add(woc.wf.Status.Nodes[childID].ResourcesDuration)
+				v = v.Add(nodes[childID].ResourcesDuration)
 			}
-			if !node.ResourcesDuration.Equal(v) {
-				node.ResourcesDuration = v
-				woc.wf.Status.Nodes[nodeID] = node
-				woc.updated = true
-			}
+			node.ResourcesDuration = v
+			nodes[nodeID] = node
+			woc.updated = true
 		}
-		nodeProgress := wfv1.Progress("0/0")
+		// unlike resource duration, progress can change
+		progress := wfv1.Progress("")
 		if node.IsLeaf() {
-			if node.Fulfilled() {
-				nodeProgress = "1/1"
-			} else {
-				nodeProgress = "0/1"
-			}
 			if node.Type == wfv1.NodeTypePod {
-				obj, exists, err := woc.controller.podInformer.GetIndexer().GetByKey(woc.wf.Namespace + "/" + node.ID)
-				if err != nil {
-					log.WithError(err).Warn("failed to get pod")
-				} else if !exists {
-					log.Warn("pod not found")
-				} else if pod, ok := obj.(*apiv1.Pod); ok {
-					if annotation, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-						podProgress, err := wfv1.ParseProgress(annotation)
-						if err != nil {
-							log.WithError(err).Warn("invalid pod progress")
-						} else {
-							nodeProgress = podProgress
-						}
-					}
-				} else {
-					log.Warn("object not pod")
-				}
+				progress = woc.podProgress(node, node.Progress)
+			}
+			// bit of a cheat, we kind of assume `0/1` is always set by the controller, not the pod
+			// and that if it is fulfilled, it should be complete
+			if node.Fulfilled() && (progress == "" || progress == "0/1") {
+				progress = "1/1"
+			} else if progress == "" {
+				progress = "0/1"
 			}
 		} else {
+			progress = "0/0"
 			for _, childNodeID := range node.Children {
-				p := woc.wf.Status.Nodes[childNodeID].Progress
-				if !p.IsInvalid() {
-					nodeProgress = nodeProgress.Add(p)
+				v := nodes[childNodeID].Progress
+				if v.IsValid() {
+					progress = progress.Add(v)
 				}
 			}
 		}
-		if node.Progress != nodeProgress {
-			node.Progress = nodeProgress
-			woc.wf.Status.Nodes[nodeID] = node
+		if progress.IsValid() && node.Progress != progress {
+			node.Progress = progress
+			nodes[nodeID] = node
 			woc.updated = true
 		}
 	}
-	rootNode := woc.wf.Status.Nodes[woc.wf.Name]
-	if !woc.wf.Status.ResourcesDuration.Equal(rootNode.ResourcesDuration) {
+	if woc.updated {
+		rootNode := nodes[woc.wf.Name]
 		woc.wf.Status.ResourcesDuration = rootNode.ResourcesDuration
-		woc.updated = true
-	}
-	if woc.wf.Status.Progress != rootNode.Progress {
 		woc.wf.Status.Progress = rootNode.Progress
-		woc.updated = true
 	}
+}
+
+func (woc *wfOperationCtx) podProgress(node wfv1.NodeStatus, progress wfv1.Progress) wfv1.Progress {
+	// for pods, lets see what the annotation says pod can get deleted of course, so
+	// can be empty and return "", even it previously had a value
+	obj, _, _ := woc.controller.podInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
+	if pod, ok := obj.(*apiv1.Pod); ok {
+		if annotation, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
+			v, _ := wfv1.ParseProgress(annotation)
+			if v.IsValid() {
+				return v
+			}
+		}
+	}
+	return progress
 }
 
 func (woc *wfOperationCtx) hasDaemonNodes() bool {
@@ -2011,7 +2013,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:        boundaryID,
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
-		EstimatedDuration: woc.getEstimator().EstimateNodeDuration(nodeName),
+		EstimatedDuration: woc.estimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {

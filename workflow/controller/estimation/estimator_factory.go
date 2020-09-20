@@ -17,7 +17,8 @@ import (
 )
 
 type EstimatorFactory interface {
-	NewEstimator(wf *wfv1.Workflow) (*Estimator, error)
+	// ALWAYS return as estimator, even if it also returns an error.
+	NewEstimator(wf *wfv1.Workflow) (Estimator, error)
 }
 
 type estimatorFactory struct {
@@ -32,7 +33,8 @@ func NewEstimatorFactory(wfInformer cache.SharedIndexInformer, hydrator hydrator
 	return &estimatorFactory{wfInformer, hydrator, wfArchive}
 }
 
-func (woc *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (*Estimator, error) {
+func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
+	defaultEstimator := &estimator{wf: wf}
 	for labelName, indexName := range map[string]string{
 		common.LabelKeyWorkflowTemplate:        indexes.WorkflowTemplateIndex,
 		common.LabelKeyClusterWorkflowTemplate: indexes.ClusterWorkflowTemplateIndex,
@@ -40,15 +42,15 @@ func (woc *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (*Estimator, error)
 	} {
 		labelValue, exists := wf.Labels[labelName]
 		if exists {
-			objs, err := woc.wfInformer.GetIndexer().ByIndex(indexName, indexes.MetaNamespaceLabelIndex(wf.Namespace, labelValue))
+			objs, err := f.wfInformer.GetIndexer().ByIndex(indexName, indexes.MetaNamespaceLabelIndex(wf.Namespace, labelValue))
 			if err != nil {
-				return nil, fmt.Errorf("failed to list workflows by index: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to list workflows by index: %v", err)
 			}
 			var newestWf *wfv1.Workflow
 			for _, obj := range objs {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
-					return nil, fmt.Errorf("failed convert object to unstructured")
+					return defaultEstimator, fmt.Errorf("failed convert object to unstructured")
 				}
 				if un.GetLabels()[common.LabelKeyPhase] != string(wfv1.NodeSucceeded) {
 					continue
@@ -56,7 +58,7 @@ func (woc *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (*Estimator, error)
 				candidateWf := &wfv1.Workflow{}
 				err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, candidateWf)
 				if err != nil {
-					return nil, fmt.Errorf("failed convert unstructured to workflow: %w", err)
+					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
 				// we use `startedAt` because that's same as how the archive sorts
 				if newestWf == nil || candidateWf.Status.StartedAt.Time.After(newestWf.Status.StartedAt.Time) {
@@ -64,25 +66,25 @@ func (woc *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (*Estimator, error)
 				}
 			}
 			if newestWf != nil {
-				err = woc.hydrator.Hydrate(newestWf)
+				err = f.hydrator.Hydrate(newestWf)
 				if err != nil {
-					return nil, fmt.Errorf("failed hydrate last workflow: %w", err)
+					return defaultEstimator, fmt.Errorf("failed hydrate last workflow: %w", err)
 				}
-				return &Estimator{wf, newestWf}, nil
+				return &estimator{wf, newestWf}, nil
 			}
 			// we failed to find a base-line in the live set, so we now look in the archive
-			labelRequirements, err := labels.ParseToRequirements(common.LabelKeyPhase + "=" + string(wfv1.NodeSucceeded) + "," + labelName + "=" + labelValue)
+			requirements, err := labels.ParseToRequirements(common.LabelKeyPhase + "=" + string(wfv1.NodeSucceeded) + "," + labelName + "=" + labelValue)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse selector to requirements: %v", err)
+				return defaultEstimator, fmt.Errorf("failed to parse selector to requirements: %v", err)
 			}
-			workflows, err := woc.wfArchive.ListWorkflows(wf.Namespace, time.Time{}, time.Time{}, labelRequirements, 1, 0)
+			workflows, err := f.wfArchive.ListWorkflows(wf.Namespace, time.Time{}, time.Time{}, requirements, 1, 0)
 			if err != nil {
 				return nil, fmt.Errorf("failed to list archived workflows: %v", err)
 			}
 			if len(workflows) > 0 {
-				return &Estimator{wf, &workflows[0]}, nil
+				return &estimator{wf, &workflows[0]}, nil
 			}
 		}
 	}
-	return &Estimator{wf: wf}, nil
+	return defaultEstimator, nil
 }

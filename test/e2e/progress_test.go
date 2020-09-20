@@ -17,7 +17,21 @@ type ProgressSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *ProgressSuite) TestProgress() {
+func (s *ProgressSuite) TestDefaultProgress() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.Progress("1/1"), status.Progress)
+			assert.Equal(t, wfv1.Progress("1/1"), status.Nodes[metadata.Name].Progress)
+		})
+}
+
+func (s *ProgressSuite) TestLoggedProgress() {
 	s.Given().
 		Workflow("@testdata/progress-workflow.yaml").
 		When().

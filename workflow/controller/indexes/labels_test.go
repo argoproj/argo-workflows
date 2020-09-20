@@ -29,5 +29,4 @@ func TestMetaNamespaceLabelIndexFunc(t *testing.T) {
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, values, []string{"my-ns/my-value"})
 	})
-
 }
