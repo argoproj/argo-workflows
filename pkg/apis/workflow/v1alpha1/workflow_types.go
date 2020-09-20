@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stevenle/topsort"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -66,6 +65,15 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
 )
+
+func (t NodeType) IsLeaf() bool {
+	switch t {
+	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
+		return true
+	default:
+		return false
+	}
+}
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
@@ -1039,24 +1047,6 @@ func (in Nodes) Any(f func(node NodeStatus) bool) bool {
 	return false
 }
 
-// Return a list of node IDs that can be iterated over know we'll visit each one only once and that
-// we'll visit downstream dependencies before upstream ones.
-// The parameter `nodeID` is usually the root node ID (i.e. the workflow's name).
-func (in Nodes) TopSort(nodeID string) ([]string, error) {
-	graph := topsort.NewGraph()
-	for _, n := range in {
-		graph.AddNode(n.ID)
-		for _, w := range n.Children {
-			graph.AddNode(w)
-			err := graph.AddEdge(n.ID, w)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return graph.TopSort(nodeID)
-}
-
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -1581,7 +1571,7 @@ func (n NodeStatus) GetDuration() time.Duration {
 }
 
 func (in *NodeStatus) IsLeaf() bool {
-	return len(in.Children) == 0
+	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

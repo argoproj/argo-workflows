@@ -79,10 +79,10 @@ type WorkflowController struct {
 	wfclientset      wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer               cache.SharedIndexInformer
-	wftmplInformer           wfextvv1alpha1.WorkflowTemplateInformer
-	cwftmplInformer          wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	podInformer              cache.SharedIndexInformer
+	wfInformer            cache.SharedIndexInformer
+	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
+	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
+	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan string

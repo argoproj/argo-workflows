@@ -143,8 +143,8 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:            kube,
-		dynamicInterface:         dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
+		kubeclientset:        kube,
+		dynamicInterface:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
 		wfclientset:          wfclientset,
 		completedPods:        make(chan string, 16),
 		wfInformer:           wfInformer,

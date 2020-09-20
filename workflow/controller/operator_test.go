@@ -1352,15 +1352,13 @@ func TestSidecarResourceLimits(t *testing.T) {
 
 // TestSuspendResume tests the suspend and resume feature
 func TestSuspendResume(t *testing.T) {
-	cancel, controller := newController()
+	wf := unmarshalWF(stepsTemplateParallelismLimit)
+	cancel, controller := newController(wf)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(stepsTemplateParallelismLimit)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
 
 	// suspend the workflow
-	err = util.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
+	err := util.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)

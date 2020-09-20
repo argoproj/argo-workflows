@@ -569,7 +569,7 @@ export interface WorkflowStatus {
      */
     estimatedDuration?: number;
     /**
-    * Progress as numerator/denominator.
+     * Progress as numerator/denominator.
      */
     progress?: string;
     /**

@@ -43,6 +43,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
+	"github.com/argoproj/argo/workflow/controller/graph"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -487,8 +488,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
-	woc.updateResourceDuration()
-	woc.updateProgress()
+	woc.updateNodes()
 	if !woc.updated {
 		return
 	}
@@ -1840,10 +1840,10 @@ func (woc *wfOperationCtx) getEstimator() *estimation.Estimator {
 	return woc.estimator
 }
 
-func (woc *wfOperationCtx) updateResourceDuration() {
-	nodeIDs, err := woc.wf.Status.Nodes.TopSort(woc.wf.Name)
+func (woc *wfOperationCtx) updateNodes() {
+	nodeIDs, err := graph.TopSort(woc.wf.Status.Nodes, woc.wf.Name)
 	if err != nil {
-		log.WithError(err).Error("failed to sort nodes update progress")
+		log.WithError(err).Error("failed to sort nodes")
 		return
 	}
 	for _, nodeID := range nodeIDs {
@@ -1859,18 +1859,6 @@ func (woc *wfOperationCtx) updateResourceDuration() {
 				woc.updated = true
 			}
 		}
-	}
-}
-
-func (woc *wfOperationCtx) updateProgress() {
-	nodeIDs, err := woc.wf.Status.Nodes.TopSort(woc.wf.Name)
-	if err != nil {
-		log.WithError(err).Error("failed to sort nodes update progress")
-		return
-	}
-	wfProgress := wfv1.Progress("0/0")
-	for _, nodeID := range nodeIDs {
-		node := woc.wf.Status.Nodes[nodeID]
 		nodeProgress := wfv1.Progress("0/0")
 		if node.IsLeaf() {
 			if node.Fulfilled() {
@@ -1910,12 +1898,14 @@ func (woc *wfOperationCtx) updateProgress() {
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.updated = true
 		}
-		if node.IsLeaf() {
-			wfProgress = wfProgress.Add(nodeProgress)
-		}
 	}
-	if woc.wf.Status.Progress != wfProgress {
-		woc.wf.Status.Progress = wfProgress
+	rootNode := woc.wf.Status.Nodes[woc.wf.Name]
+	if !woc.wf.Status.ResourcesDuration.Equal(rootNode.ResourcesDuration) {
+		woc.wf.Status.ResourcesDuration = rootNode.ResourcesDuration
+		woc.updated = true
+	}
+	if woc.wf.Status.Progress != rootNode.Progress {
+		woc.wf.Status.Progress = rootNode.Progress
 		woc.updated = true
 	}
 }
