@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: progress
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v1
+        command: [ sh, -c ]
+        args:
+          - |
+            for p in $(seq 1 100); do
+              echo "#argo progress=$p/100, message=\"my argo message\""
+            done
+
