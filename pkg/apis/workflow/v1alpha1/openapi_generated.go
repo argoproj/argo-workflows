@@ -2024,11 +2024,11 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
-					"estimatedDuration": {
+					"progress": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EstimatedDuration in seconds.",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Description: "Progress to completion",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"resourcesDuration": {
@@ -4683,11 +4683,11 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
-					"estimatedDuration": {
+					"progress": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EstimatedDuration in seconds.",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Description: "Progress to completion",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"message": {

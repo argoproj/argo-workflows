@@ -137,27 +137,29 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		panic("Timed out waiting for caches to sync")
 	}
 	kube := fake.NewSimpleClientset()
+	hydrator := hydratorfake.Noop
+	wfArchive := sqldb.NullWorkflowArchive
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:            kube,
 		dynamicInterface:         dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
-		wfclientset:              wfclientset,
-		completedPods:            make(chan string, 16),
-		wfInformer:               wfInformer,
-		wftmplInformer:           wftmplInformer,
-		cwftmplInformer:          cwftmplInformer,
-		wfQueue:                  workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:                 workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		workflowKeyLock:          sync.NewKeyLock(),
-		wfArchive:                sqldb.NullWorkflowArchive,
-		hydrator:                 hydratorfake.Noop,
-		durationEstimatorFactory: estimation.NullDurationEstimatorFactory,
-		metrics:                  metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		eventRecorderManager:     &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
-		archiveLabelSelector:     labels.Everything(),
-		cacheFactory:             controllercache.NewCacheFactory(kube, "default"),
+		wfclientset:          wfclientset,
+		completedPods:        make(chan string, 16),
+		wfInformer:           wfInformer,
+		wftmplInformer:       wftmplInformer,
+		cwftmplInformer:      cwftmplInformer,
+		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		workflowKeyLock:      sync.NewKeyLock(),
+		wfArchive:            wfArchive,
+		hydrator:             hydrator,
+		estimatorFactory:     estimation.NewEstimatorFactory(wfInformer, hydrator, wfArchive),
+		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
+		archiveLabelSelector: labels.Everything(),
+		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
 	controller.podInformer = controller.newPodInformer()
 	return cancel, controller

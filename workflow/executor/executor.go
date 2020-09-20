@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -931,6 +933,7 @@ func (we *WorkflowExecutor) Wait() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	we.monitorProgress(ctx)
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
@@ -1028,6 +1031,62 @@ func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath 
 		}
 	}()
 	return res
+}
+
+// watch for the line `#argo progress=N/M` and update the progress annotation so that the controller is notified.
+func (we *WorkflowExecutor) monitorProgress(ctx context.Context) {
+	mainContainerID, err := we.GetMainContainerID()
+	if err != nil {
+		log.WithError(err).Error("failed to monitor progress: failed to get main container id")
+		return
+	}
+	reader, err := we.RuntimeExecutor.GetOutputStream(mainContainerID, true)
+	if err != nil {
+		log.WithError(err).Error("failed to monitor progress: failed to get output stream")
+		return
+	}
+	defer func() { _ = reader.Close() }()
+	bufReader := bufio.NewReader(reader)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			line, err := bufReader.ReadString('\n')
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				log.WithError(err).Error("failed to monitor progress: failed to read line")
+				return
+			}
+			annotations := map[string]string{}
+			if matches := regexp.MustCompile("#argo .*progress=([0-9]+/[0-9]+)").FindStringSubmatch(line); len(matches) == 2 {
+				progress, err := wfv1.ParseProgress(matches[1])
+				if err != nil {
+					log.WithError(err).Error("failed to monitor progress: failed to parse progress")
+				} else {
+					annotations[common.AnnotationKeyProgress] = string(progress)
+				}
+			}
+			if matches := regexp.MustCompile(`#argo .*message="([^"]*)"`).FindStringSubmatch(line); len(matches) == 2 {
+				annotations[common.AnnotationKeyNodeMessage] = matches[1]
+			}
+			if len(annotations) > 0 {
+				metadata := map[string]interface{}{"annotations": annotations}
+				log.WithFields(metadata).Info()
+				patch, err := json.Marshal(map[string]interface{}{"metadata": metadata})
+				if err != nil {
+					log.WithError(err).Error("failed to marshall annotations")
+				}
+				// as we want to be tolerant to problems with this feature, we ignore errors
+				_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(we.PodName, types.MergePatchType, patch)
+				if err != nil {
+					log.WithError(err).Error("failed to patch pod")
+				}
+			}
+		}
+	}
 }
 
 // monitorAnnotations starts a goroutine which monitors for any changes to the pod annotations.

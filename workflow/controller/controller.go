@@ -83,22 +83,22 @@ type WorkflowController struct {
 	wftmplInformer           wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer          wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer              cache.SharedIndexInformer
-	wfQueue                  workqueue.RateLimitingInterface
-	podQueue                 workqueue.RateLimitingInterface
-	completedPods            chan string
-	gcPods                   chan string // pods to be deleted depend on GC strategy
-	throttler                sync.Throttler
-	workflowKeyLock          syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session                  sqlbuilder.Database
-	offloadNodeStatusRepo    sqldb.OffloadNodeStatusRepo
-	hydrator                 hydrator.Interface
-	wfArchive                sqldb.WorkflowArchive
-	durationEstimatorFactory estimation.DurationEstimatorFactory
-	syncManager              *sync.SyncManager
-	metrics                  *metrics.Metrics
-	eventRecorderManager     events.EventRecorderManager
-	archiveLabelSelector     labels.Selector
-	cacheFactory             controllercache.CacheFactory
+	wfQueue               workqueue.RateLimitingInterface
+	podQueue              workqueue.RateLimitingInterface
+	completedPods         chan string
+	gcPods                chan string // pods to be deleted depend on GC strategy
+	throttler             sync.Throttler
+	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
+	session               sqlbuilder.Database
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	hydrator              hydrator.Interface
+	wfArchive             sqldb.WorkflowArchive
+	estimatorFactory      estimation.EstimatorFactory
+	syncManager           *sync.SyncManager
+	metrics               *metrics.Metrics
+	eventRecorderManager  events.EventRecorderManager
+	archiveLabelSelector  labels.Selector
+	cacheFactory          controllercache.CacheFactory
 }
 
 const (
@@ -183,7 +183,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
-	wfc.updateDurationEstimationFactory()
+	wfc.updateEstimatorFactory()
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
@@ -849,8 +849,8 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 }
 
 // call this func whenever the configuration changes, or when the workflow informer changes
-func (wfc *WorkflowController) updateDurationEstimationFactory() {
-	wfc.durationEstimatorFactory = estimation.NewDurationEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
+func (wfc *WorkflowController) updateEstimatorFactory() {
+	wfc.estimatorFactory = estimation.NewEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
 // setWorkflowDefaults sets values in the workflow.Spec with defaults from the

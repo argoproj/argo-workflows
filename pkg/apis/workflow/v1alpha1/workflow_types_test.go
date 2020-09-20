@@ -118,11 +118,6 @@ func TestNodes_Any(t *testing.T) {
 	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
 }
 
-func TestNodes_Count(t *testing.T) {
-	assert.Equal(t, 1, Nodes{"": NodeStatus{Name: "foo"}}.Count(func(node NodeStatus) bool { return node.Name == "foo" }))
-	assert.Equal(t, 0, Nodes{"": NodeStatus{Name: "foo"}}.Count(func(node NodeStatus) bool { return node.Name == "bar" }))
-}
-
 func TestResourcesDuration(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		assert.Equal(t, ResourcesDuration{}.String(), "")

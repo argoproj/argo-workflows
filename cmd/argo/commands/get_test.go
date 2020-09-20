@@ -114,11 +114,7 @@ func Test_printWorkflowHelper(t *testing.T) {
 		testutil.MustUnmarshallYAML(`
 status:
   phase: Running
-  nodes:
-   0:
-     phase: Running
-   1: 
-     phase: Succeeded
+  progress: 1/2
 `, &wf)
 		output := printWorkflowHelper(&wf, getFlags{})
 		assert.Regexp(t, `Progress: *1/2`, output)

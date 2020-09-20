@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stevenle/topsort"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1038,6 +1039,24 @@ func (in Nodes) Any(f func(node NodeStatus) bool) bool {
 	return false
 }
 
+// Return a list of node IDs that can be iterated over know we'll visit each one only once and that
+// we'll visit downstream dependencies before upstream ones.
+// The parameter `nodeID` is usually the root node ID (i.e. the workflow's name).
+func (in Nodes) TopSort(nodeID string) ([]string, error) {
+	graph := topsort.NewGraph()
+	for _, n := range in {
+		graph.AddNode(n.ID)
+		for _, w := range n.Children {
+			graph.AddNode(w)
+			err := graph.AddEdge(n.ID, w)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return graph.TopSort(nodeID)
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -1047,17 +1066,6 @@ type UserContainer struct {
 	// dind daemon to partially see the same filesystem as the main container in
 	// order to use features such as docker volume binding
 	MirrorVolumeMounts *bool `json:"mirrorVolumeMounts,omitempty" protobuf:"varint,2,opt,name=mirrorVolumeMounts"`
-}
-
-// EstimatedDuration is in seconds.
-type EstimatedDuration int
-
-func (d EstimatedDuration) ToDuration() time.Duration {
-	return time.Second * time.Duration(d)
-}
-
-func NewEstimatedDuration(d time.Duration) EstimatedDuration {
-	return EstimatedDuration(d.Seconds())
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1073,6 +1081,9 @@ type WorkflowStatus struct {
 
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,17,opt,name=progress,casttype=Progress"`
 
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
@@ -1240,6 +1251,10 @@ func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
 }
 
+func (in ResourcesDuration) Equal(v ResourcesDuration) bool {
+	return reflect.DeepEqual(in, v)
+}
+
 func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
 	q, ok := map[apiv1.ResourceName]resource.Quantity{
 		apiv1.ResourceMemory:           resource.MustParse("100Mi"),
@@ -1382,6 +1397,9 @@ type NodeStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,25,opt,name=progress,casttype=Progress"`
+
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
@@ -1427,19 +1445,6 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 		i = i.Add(status.ResourcesDuration)
 	}
 	return i
-}
-
-var NodeIsFulfilled = func(v NodeStatus) bool { return v.Phase.Fulfilled() }
-
-func (in Nodes) Count(test func(v NodeStatus) bool) int {
-	count := 0
-	for _, v := range in {
-		if test(v) {
-			count++
-		}
-	}
-	return count
-
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
@@ -1573,6 +1578,10 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
+func (in *NodeStatus) IsLeaf() bool {
+	return len(in.Children) == 0
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

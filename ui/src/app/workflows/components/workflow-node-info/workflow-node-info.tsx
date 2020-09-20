@@ -64,6 +64,7 @@ export const WorkflowNodeSummary = (props: Props) => {
             title: 'DURATION',
             value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
         },
+        {title: 'PROGRESS', value: props.node.progress || "-"},
         {
             title: 'MEMOIZATION',
             value: (

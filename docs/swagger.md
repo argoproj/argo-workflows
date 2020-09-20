@@ -1234,7 +1234,6 @@ NodeStatus contains status information about an individual node in the workflow
 | children | [ string ] | Children is a list of child node IDs | No |
 | daemoned | boolean | Daemoned tracks whether or not this node was daemoned and need to be terminated | No |
 | displayName | string | DisplayName is a human readable representation of the node. Unique within a template boundary | No |
-| estimatedDuration | integer | EstimatedDuration in seconds. | No |
 | finishedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this node completed | No |
 | hostNodeName | string | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | No |
 | id | string | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | Yes |
@@ -1246,6 +1245,7 @@ NodeStatus contains status information about an individual node in the workflow
 | outputs | [io.argoproj.workflow.v1alpha1.Outputs](#io.argoproj.workflow.v1alpha1.outputs) | Outputs captures output parameter values and artifact locations produced by this template invocation | No |
 | phase | string | Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine. | No |
 | podIP | string | PodIP captures the IP of the pod for daemoned steps | No |
+| progress | string | Progress to completion | No |
 | resourcesDuration | object | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. | No |
 | startedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this node started | No |
 | storedTemplateID | string | StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore. | No |
@@ -1793,7 +1793,6 @@ WorkflowStatus contains overall status information about a workflow
 | ---- | ---- | ----------- | -------- |
 | compressedNodes | string | Compressed and base64 decoded Nodes map | No |
 | conditions | [ [io.argoproj.workflow.v1alpha1.Condition](#io.argoproj.workflow.v1alpha1.condition) ] | Conditions is a list of conditions the Workflow may have | No |
-| estimatedDuration | integer | EstimatedDuration in seconds. | No |
 | finishedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this workflow completed | No |
 | message | string | A human readable message indicating details about why the workflow is in this condition. | No |
 | nodes | object | Nodes is a mapping between a node ID and the node's status. | No |
@@ -1801,6 +1800,7 @@ WorkflowStatus contains overall status information about a workflow
 | outputs | [io.argoproj.workflow.v1alpha1.Outputs](#io.argoproj.workflow.v1alpha1.outputs) | Outputs captures output values and artifact locations produced by the workflow via global outputs | No |
 | persistentVolumeClaims | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow. | No |
 | phase | string | Phase a simple, high-level summary of where the workflow is in its lifecycle. | No |
+| progress | string | Progress to completion | No |
 | resourcesDuration | object | ResourcesDuration is the total for the workflow | No |
 | startedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this workflow started | No |
 | storedTemplates | object | StoredTemplates is a mapping between a template ref and the node's status. | No |
