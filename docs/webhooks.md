@@ -1,8 +1,8 @@
 # Webhooks
 
-> v2.11 and after
-
 ![alpha](assets/alpha.svg)
+
+> v2.11 and after
 
 Many clients can send events via the [events](events.md) API endpoint using a standard authorization header. However, for clients that are unable to do so (e.g. because they use signature verification as proof of origin), additional configuration is required.
 

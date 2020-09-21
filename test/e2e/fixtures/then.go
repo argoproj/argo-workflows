@@ -1,6 +1,7 @@
 package fixtures
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -101,7 +102,7 @@ var HasInvolvedObjectWithName = func(kind string, name string) func(event apiv1.
 	}
 }
 
-func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...func(*testing.T, apiv1.Event)) *Then {
+func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, block func(*testing.T, []apiv1.Event)) *Then {
 	t.t.Helper()
 	eventList, err := t.kubeClient.CoreV1().Events(Namespace).Watch(metav1.ListOptions{})
 	if err != nil {
@@ -109,24 +110,25 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, blocks ...
 	}
 	ticker := time.NewTicker(defaultTimeout)
 	defer ticker.Stop()
-	for len(blocks) > 0 {
+	var events []apiv1.Event
+	for num > len(events) {
 		select {
 		case <-ticker.C:
 			t.t.Fatal("timeout waiting for events")
 		case event := <-eventList.ResultChan():
 			e, ok := event.Object.(*apiv1.Event)
 			if !ok {
-				t.t.Fatal("event is not an event")
+				t.t.Fatalf("event is not an event: %v", reflect.TypeOf(e).String())
 			}
 			if filter(*e) {
 				println("event", e.InvolvedObject.Kind+"/"+e.InvolvedObject.Name, e.Reason)
-				blocks[0](t.t, *e)
-				blocks = blocks[1:]
-				if t.t.Failed() {
-					t.t.FailNow()
-				}
+				events = append(events, *e)
 			}
 		}
+	}
+	block(t.t, events)
+	if t.t.Failed() {
+		t.t.FailNow()
 	}
 	return t
 }

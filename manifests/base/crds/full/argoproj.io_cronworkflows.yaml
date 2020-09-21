@@ -5864,6 +5864,11 @@ spec:
                       format: int32
                       type: integer
                   type: object
+                volumeClaimGC:
+                  properties:
+                    strategy:
+                      type: string
+                  type: object
                 volumeClaimTemplates:
                   items:
                     properties:

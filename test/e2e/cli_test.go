@@ -116,7 +116,7 @@ func (s *CLISuite) TestLogs() {
 		Workflow(`@smoke/basic.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Nodes.FindByDisplayName(wf.Name) != nil
 		}), "pod running", 10*time.Second).
@@ -193,7 +193,7 @@ func (s *CLISuite) TestLogProblems() {
 		Workflow(`@testdata/log-problems.yaml`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		Then().
 		// logs should come in order
 		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
@@ -299,7 +299,7 @@ func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow sleep-3s suspended")
@@ -588,14 +588,6 @@ func (s *CLISuite) TestWorkflowLint() {
 				}
 			})
 	})
-
-	// All files in this directory are Workflows, expect success
-	s.Run("AllWorkflows", func() {
-		s.Given().
-			RunCli([]string{"lint", "stress"}, func(t *testing.T, output string, err error) {
-				assert.NoError(t, err)
-			})
-	})
 }
 
 func (s *CLIWithServerSuite) TestWorkflowRetry() {
@@ -606,7 +598,7 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 		Workflow("@testdata/retry-test.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
 		}), "suspended node").

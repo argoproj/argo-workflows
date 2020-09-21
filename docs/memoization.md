@@ -1,6 +1,6 @@
 # Step Level Memoization
 
-![alpha](assets/alpha.svg)
+![beta](assets/beta.svg)
 
 > v2.10 and after
 
