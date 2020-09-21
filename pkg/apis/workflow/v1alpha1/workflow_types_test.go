@@ -118,24 +118,35 @@ func TestNodes_Any(t *testing.T) {
 	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
 }
 
-func TestResourcesDuration(t *testing.T) {
-	t.Run("String", func(t *testing.T) {
-		assert.Equal(t, ResourcesDuration{}.String(), "")
-		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*(100Mi memory)")
+func TestResourcesDuration_String(t *testing.T) {
+	assert.Empty(t, ResourcesDuration{}.String(), "empty")
+	assert.Equal(t, "1s*(100Mi memory)", ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "memory")
+}
+
+func TestResourcesDuration_Add(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		assert.Empty(t, ResourcesDuration{}.Add(ResourcesDuration{}))
 	})
-	t.Run("Add", func(t *testing.T) {
-		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
-		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.
-			Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).
-			String(), "2s*(100Mi memory)")
+	t.Run("X+Empty", func(t *testing.T) {
+		s := ResourcesDuration{"x": NewResourceDuration(time.Second)}.
+			Add(nil)
+		assert.Equal(t, ResourceDuration(1), s["x"])
 	})
-	t.Run("CPUAndMemory", func(t *testing.T) {
-		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
-		s := ResourcesDuration{corev1.ResourceCPU: NewResourceDuration(2 * time.Second)}.
-			Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).
-			String()
-		assert.Contains(t, s, "1s*(100Mi memory)")
-		assert.Contains(t, s, "2s*(1 cpu)")
+	t.Run("Empty+X", func(t *testing.T) {
+		s := ResourcesDuration{}.
+			Add(ResourcesDuration{"x": NewResourceDuration(time.Second)})
+		assert.Equal(t, ResourceDuration(1), s["x"])
+	})
+	t.Run("X+2X", func(t *testing.T) {
+		s := ResourcesDuration{"x": NewResourceDuration(1 * time.Second)}.
+			Add(ResourcesDuration{"x": NewResourceDuration(2 * time.Second)})
+		assert.Equal(t, ResourceDuration(3), s["x"])
+	})
+	t.Run("X+Y", func(t *testing.T) {
+		s := ResourcesDuration{"x": NewResourceDuration(1 * time.Second)}.
+			Add(ResourcesDuration{"y": NewResourceDuration(2 * time.Second)})
+		assert.Equal(t, ResourceDuration(1), s["x"])
+		assert.Equal(t, ResourceDuration(2), s["y"])
 	})
 }
 

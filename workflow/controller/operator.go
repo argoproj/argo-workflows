@@ -486,10 +486,10 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
-	woc.updateNodes()
 	if !woc.updated {
 		return
 	}
+	woc.updateNodes()
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
@@ -1805,12 +1805,10 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 
 func (woc *wfOperationCtx) updateNodes() {
 	nodes := woc.wf.Status.Nodes
-	resourceUpdator := resource.NewUpdator(woc.wf)
+	resourceUpdator := resource.NewUpdater(woc.wf)
 	err := graph.Visit(nodes, resourceUpdator)
 	if err != nil {
 		log.WithError(err).Error("failed to visit graph")
-	} else {
-		woc.updated = woc.updated || resourceUpdator.Updated
 	}
 }
 

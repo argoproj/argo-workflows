@@ -32,6 +32,6 @@ func TestVisit(t *testing.T) {
 	}, v)
 	if assert.NoError(t, err) {
 		assert.True(t, v.inited)
-		assert.Equal(t, []string{"root-2", "child", "root-1"}, v.visted, "we visit all nodes and roots except missing")
+		assert.Equal(t, []string{"root-2", "child", "root-1"}, v.visted, "we visit all nodes except missing")
 	}
 }

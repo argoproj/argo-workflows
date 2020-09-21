@@ -54,6 +54,14 @@ const (
 // NodeType is the type of a node
 type NodeType string
 
+func (t NodeType) IsLeaf() bool {
+	switch t {
+	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
+		return true
+	}
+	return false
+}
+
 // Node types
 const (
 	NodeTypePod       NodeType = "Pod"
@@ -1208,10 +1216,14 @@ func (in ResourceDuration) String() string {
 type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
 func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
-	for n, d := range o {
-		in[n] += d
+	res := ResourcesDuration{}
+	for n, d := range in {
+		res[n] += d
 	}
-	return in
+	for n, d := range o {
+		res[n] += d
+	}
+	return res
 }
 
 func (in ResourcesDuration) String() string {
@@ -1526,7 +1538,7 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 // IsLeaf return if the node is a leaf or not. This must  be guarded by a `Fulfilled()` check as this will only
 // be accurate when the node is fulfilled and no more children will be added.
 func (in NodeStatus) IsLeaf() bool {
-	return len(in.Children) == 0
+	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

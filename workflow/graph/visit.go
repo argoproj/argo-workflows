@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"strings"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -9,22 +11,19 @@ type Visitor interface {
 	Visit(nodeID string)
 }
 
-func Visit(nodes wfv1.Nodes, visitors ...Visitor) error {
+func Visit(nodes wfv1.Nodes, visitor Visitor) error {
 	nodeIDs, err := TopSort(nodes)
 	if err != nil {
 		return err
 	}
-	for _, visitor := range visitors {
-		visitor.Init()
-	}
+	println(strings.Join(nodeIDs, ","))
+	visitor.Init()
 	for _, nodeID := range nodeIDs {
 		_, ok := nodes[nodeID]
 		if !ok {
 			continue
 		}
-		for _, visitor := range visitors {
-			visitor.Visit(nodeID)
-		}
+		visitor.Visit(nodeID)
 	}
 	return nil
 }
