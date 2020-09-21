@@ -103,11 +103,6 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
-func TestTemplate_IsResubmitAllowed(t *testing.T) {
-	assert.False(t, (&Template{}).IsResubmitPendingPods())
-	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitPendingPods())
-}
-
 func TestNodeStatus_IsLeaf(t *testing.T) {
 	assert.True(t, NodeStatus{Children: []string{}}.IsLeaf())
 	assert.False(t, NodeStatus{Children: []string{""}}.IsLeaf())

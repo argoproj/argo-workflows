@@ -4313,7 +4313,6 @@ spec:
     metadata: {}
     name: resubmit-pending
     outputs: {}
-    resubmitPendingPods: true
     script:
       command:
       - bash
@@ -4634,7 +4633,6 @@ spec:
         requests:
           memory: 1Gi
     name: whalesay
-    resubmitPendingPods: true
 status:
   finishedAt: null
   nodes:
@@ -5027,6 +5025,50 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	nodeStatus, msg := inferFailedReason(&pod)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
+}
+
+func TestResubmitPendingPods(t *testing.T) {
+	wf := unmarshalWF(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: my-image
+`)
+	wftmpl := unmarshalWFTmpl(wftmplGlobalVarsOnExit)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.True(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.Phase == wfv1.NodePending
+	}))
+
+	deletePods(woc)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.True(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.Phase == wfv1.NodePending
+	}))
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 var wfRetryWithParam = `
