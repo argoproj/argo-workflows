@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,34 +37,18 @@ func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) 
 	// content from the tar archive and output into stdout. In this way, we do not need to
 	// create and copy the content into a file from the wait container.
 	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", containerID, sourcePath)
-	cmd := exec.Command("sh", "-c", dockerCpCmd)
-	log.Info(cmd.Args)
-	out, err := cmd.Output()
+	out, err := common.RunShellCommand(dockerCpCmd)
 	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
-			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-		}
-		return "", errors.InternalWrapError(err)
+		return "", err
 	}
 	return string(out), nil
 }
 
 func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	var levelFlag string
-	switch compressionLevel {
-	case gzip.NoCompression:
-		// best we can do - if we skip gzip it's a different file
-		levelFlag = "-1"
-	case gzip.DefaultCompression:
-		// use cmd default
-		levelFlag = ""
-	default:
-		// -1 through -9 (or error)
-		levelFlag = "-" + strconv.Itoa(compressionLevel)
-	}
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip %s > %s", containerID, sourcePath, levelFlag, destPath)
-	err := common.RunCommand("sh", "-c", dockerCpCmd)
+
+	dockerCpCmd := getDockerCpCmd(containerID, sourcePath, compressionLevel, destPath)
+	_, err := common.RunShellCommand(dockerCpCmd)
 	if err != nil {
 		return err
 	}
@@ -182,7 +167,8 @@ func (d *DockerExecutor) WaitInit() error {
 
 // Wait for the container to complete
 func (d *DockerExecutor) Wait(containerID string) error {
-	return common.RunCommand("docker", "wait", containerID)
+	_, err := common.RunCommand("docker", "wait", containerID)
+	return err
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
@@ -190,7 +176,7 @@ func (d *DockerExecutor) Kill(containerIDs []string) error {
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
 	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
 	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
-	err := common.RunCommand("docker", killArgs...)
+	_, err := common.RunCommand("docker", killArgs...)
 	if err != nil {
 		log.Warningf("Ignored error from 'docker kill --signal TERM': %s", err)
 	}
@@ -218,4 +204,29 @@ func (d *DockerExecutor) Kill(containerIDs []string) error {
 	}
 	log.Infof("Containers %s killed successfully", containerIDs)
 	return nil
+}
+
+// getDockerCpCmd uses os-specific code to run `docker cp` and gzip/7zip to copy gzipped data from another
+// container.
+func getDockerCpCmd(containerID, sourcePath string, compressionLevel int, destPath string) string {
+	gzipCmd := "gzip %s > %s"
+	levelFlagParam := "-"
+	if runtime.GOOS == "windows" {
+		gzipCmd = "7za.exe a -tgzip -si %s %s"
+		levelFlagParam = "-mx"
+	}
+
+	var levelFlag string
+	switch compressionLevel {
+	case gzip.NoCompression:
+		// best we can do - if we skip gzip it's a different file
+		levelFlag = levelFlagParam + "1"
+	case gzip.DefaultCompression:
+		// use cmd default
+		levelFlag = ""
+	default:
+		// -1 through -9 (or error)
+		levelFlag = levelFlagParam + strconv.Itoa(compressionLevel)
+	}
+	return fmt.Sprintf("docker cp -a %s:%s - | %s", containerID, sourcePath, fmt.Sprintf(gzipCmd, levelFlag, destPath))
 }
