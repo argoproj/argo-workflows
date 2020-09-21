@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/graph"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -859,15 +860,15 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
 
-	for _, pod := range podList.Items {
+	for _, pod := range podList {
 		parallelPodNum <- pod.Name
 		wg.Add(1)
-		go func(tmpPod apiv1.Pod) {
+		go func(pod *apiv1.Pod) {
 			defer wg.Done()
-			performAssessment(&tmpPod)
-			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
+			performAssessment(pod)
+			err = woc.applyExecutionControl(pod, wfNodesLock)
 			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
+				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
 			}
 			<-parallelPodNum
 		}(pod)
@@ -1006,18 +1007,22 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
-	options := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s",
-			common.LabelKeyWorkflow,
-			woc.wf.ObjectMeta.Name),
-	}
-	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
+	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
-	return podList, nil
+	pods := make([]*apiv1.Pod, len(objs))
+	for i, obj := range objs {
+		pod, ok := obj.(*apiv1.Pod)
+		if !ok {
+			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
+		}
+		pods[i] = pod
+	}
+	return pods, nil
 }
+
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
 	if err != nil {
