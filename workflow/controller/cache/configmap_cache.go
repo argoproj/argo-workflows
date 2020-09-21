@@ -102,8 +102,8 @@ func (c *configMapCache) Save(key string, nodeId string, value *wfv1.Outputs) er
 	}
 
 	newEntry := Entry{
-		NodeID:  nodeId,
-		Outputs: value,
+		NodeID:            nodeId,
+		Outputs:           value,
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
 

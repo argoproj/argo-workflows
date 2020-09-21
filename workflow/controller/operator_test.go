@@ -4052,7 +4052,6 @@ spec:
       - name: message
     memoize:
       key: "{{inputs.parameters.message}}"
-      maxAge: 1d
       cache:
         configMap:
           name: whalesay-cache

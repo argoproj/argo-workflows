@@ -1,10 +1,11 @@
 package cache
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"regexp"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -21,7 +22,6 @@ type Entry struct {
 	Outputs           *wfv1.Outputs `json:"outputs"`
 	CreationTimestamp metav1.Time   `json:"creationTimestamp"`
 }
-
 
 func (e *Entry) GetOutputs() *wfv1.Outputs {
 	if e == nil {
