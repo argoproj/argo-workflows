@@ -1851,11 +1851,16 @@ func (woc *wfOperationCtx) updateNodes() {
 		return
 	}
 	for _, nodeID := range nodeIDs {
-		node := nodes[nodeID]
+		node, ok := nodes[nodeID]
+		// this can happen when bad data ends up in the system
+		if !ok {
+			continue
+		}
 		// leaf nodes will have been computed, we only need to update those that have yet to be calculated
 		if len(node.Children) > 0 && node.Fulfilled() && node.ResourcesDuration.IsZero() {
 			v := wfv1.ResourcesDuration{}
 			for _, childID := range node.Children {
+				// this will tolerate missing child (will be 0) and therefore ignored
 				v = v.Add(nodes[childID].ResourcesDuration)
 			}
 			node.ResourcesDuration = v
@@ -1878,6 +1883,7 @@ func (woc *wfOperationCtx) updateNodes() {
 		} else {
 			progress = "0/0"
 			for _, childNodeID := range node.Children {
+				// this will tolerate missing child (will be "") and therefore ignored
 				v := nodes[childNodeID].Progress
 				if v.IsValid() {
 					progress = progress.Add(v)
