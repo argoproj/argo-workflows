@@ -837,19 +837,17 @@ func (we *WorkflowExecutor) patchPodAnnotations() error {
 	if len(we.annotations) == 0 {
 		return nil
 	}
-	metadata := map[string]interface{}{"annotations": we.annotations}
-	log.WithFields(metadata).Info("patching progress annotations")
-	patch, err := json.Marshal(map[string]interface{}{"metadata": metadata})
+	log.Info("patching pod annotations")
+	patch, err := json.Marshal(map[string]interface{}{"metadata": map[string]interface{}{"annotations": we.annotations}})
 	if err != nil {
 		return fmt.Errorf("failed to marshall annotations: %w", err)
 	}
 	err = wait.ExponentialBackoff(retry.DefaultRetry, func() (done bool, err error) {
-		// as we want to be tolerant to problems with this feature, we ignore errors
 		_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(we.PodName, types.MergePatchType, patch)
 		return err == nil, err
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch po annotations: %w", err)
+		return fmt.Errorf("failed to patch pod annotations: %w", err)
 	}
 	we.annotations = make(map[string]string)
 	return nil
@@ -1100,17 +1098,21 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context) {
 				return
 			} else if countDown > 0 {
 				if strings.Contains(line, "#argo") {
+					log.Info("`#argo` appeared in the first 10 logs lines, continuing progress monitoring")
 					countDown = -1
 				} else {
 					countDown--
 				}
 			}
 			if v := messageRegexp.FindStringSubmatch(line); len(v) == 2 {
-				we.annotations[common.AnnotationKeyNodeMessage] = v[1]
+				message := v[1]
+				log.WithField("message", message).Info()
+				we.annotations[common.AnnotationKeyNodeMessage] = message
 			}
 			if v := progressRegexp.FindStringSubmatch(line); len(v) == 2 {
 				progress, ok := wfv1.ParseProgress(v[1])
 				if ok {
+					log.WithField("progress", progress).Info()
 					we.annotations[common.AnnotationKeyProgress] = string(progress)
 				}
 			}

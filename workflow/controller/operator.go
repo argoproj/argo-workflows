@@ -43,8 +43,9 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
-	"github.com/argoproj/argo/workflow/controller/graph"
+	"github.com/argoproj/argo/workflow/graph"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/progress"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
@@ -1845,80 +1846,14 @@ func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedD
 
 func (woc *wfOperationCtx) updateNodes() {
 	nodes := woc.wf.Status.Nodes
-	nodeIDs, err := graph.TopSort(nodes, woc.wf.Name)
+	progressUpdator := progress.NewUpdator(woc.controller.podInformer, woc.wf)
+	resourceUpdator := resource.NewUpdator(woc.wf)
+	err := graph.Visit(nodes, woc.wf.Name, progressUpdator, resourceUpdator)
 	if err != nil {
-		woc.log.WithError(err).Error("failed to sort nodes")
-		return
+		log.WithError(err).Error("failed to visit graph")
+	} else {
+		woc.updated = woc.updated || progressUpdator.Updated || resourceUpdator.Updated
 	}
-	woc.wf.Status.ResourcesDuration = wfv1.ResourcesDuration{}
-	woc.wf.Status.Progress = "0/0"
-	for _, nodeID := range nodeIDs {
-		node, ok := nodes[nodeID]
-		// this can happen when bad data ends up in the system
-		if !ok {
-			continue
-		}
-		// leaf nodes will have been computed, we only need to update those that have yet to be calculated
-		if len(node.Children) > 0 && node.Fulfilled() && node.ResourcesDuration.IsZero() {
-			v := wfv1.ResourcesDuration{}
-			for _, childID := range node.Children {
-				// this will tolerate missing child (will be 0) and therefore ignored
-				v = v.Add(nodes[childID].ResourcesDuration)
-			}
-			node.ResourcesDuration = v
-			nodes[nodeID] = node
-			woc.updated = true
-		}
-		// unlike resource duration, progress can change
-		progress := wfv1.Progress("")
-		if node.IsLeaf() {
-			if node.Type == wfv1.NodeTypePod {
-				progress = woc.podProgress(node, node.Progress)
-			}
-			// bit of a cheat, we kind of assume `0/1` is always set by the controller, not the pod
-			// and that if it is fulfilled, it should be complete
-			if node.Fulfilled() && (progress == "" || progress == "0/1") {
-				progress = "1/1"
-			} else if progress == "" {
-				progress = "0/1"
-			}
-		} else {
-			progress = "0/0"
-			for _, childNodeID := range node.Children {
-				// this will tolerate missing child (will be "") and therefore ignored
-				v := nodes[childNodeID].Progress
-				if v.IsValid() {
-					progress = progress.Add(v)
-				}
-			}
-		}
-		if progress.IsValid() && node.Progress != progress {
-			node.Progress = progress
-			nodes[nodeID] = node
-			woc.updated = true
-		}
-		if node.IsLeaf() {
-			// we don't `woc.updated = true`, we assume that if anything has changed, that that last
-			// black of code will have done that
-			woc.wf.Status.ResourcesDuration = woc.wf.Status.ResourcesDuration.Add(node.ResourcesDuration)
-			woc.wf.Status.Progress = woc.wf.Status.Progress.Add(node.Progress)
-		}
-	}
-}
-
-func (woc *wfOperationCtx) podProgress(node wfv1.NodeStatus, progress wfv1.Progress) wfv1.Progress {
-	// for pods, lets see what the annotation says pod can get deleted of course, so
-	// can be empty and return "", even it previously had a value
-	obj, _, _ := woc.controller.podInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
-	if pod, ok := obj.(*apiv1.Pod); ok {
-		if annotation, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-			v, ok := wfv1.ParseProgress(annotation)
-			if ok {
-				return v
-			}
-		}
-	}
-	return progress
 }
 
 func (woc *wfOperationCtx) hasDaemonNodes() bool {

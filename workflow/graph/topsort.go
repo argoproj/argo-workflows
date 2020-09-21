@@ -10,16 +10,16 @@ import (
 // we'll visit downstream dependencies before upstream ones.
 // The parameter `nodeID` is usually the root node ID (i.e. the workflow's name).
 func TopSort(nodes wfv1.Nodes, nodeID string) ([]string, error) {
-	graph := topsort.NewGraph()
+	g := topsort.NewGraph()
 	for nodeID, node := range nodes {
-		graph.AddNode(nodeID)
+		g.AddNode(nodeID)
 		for _, childNodeID := range node.Children {
-			graph.AddNode(childNodeID)
-			err := graph.AddEdge(nodeID, childNodeID)
+			g.AddNode(childNodeID)
+			err := g.AddEdge(nodeID, childNodeID)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	return graph.TopSort(nodeID)
+	return g.TopSort(nodeID)
 }
