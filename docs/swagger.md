@@ -756,6 +756,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 | ---- | ---- | ----------- | -------- |
 | none | [io.argoproj.workflow.v1alpha1.NoneStrategy](#io.argoproj.workflow.v1alpha1.nonestrategy) |  | No |
 | tar | [io.argoproj.workflow.v1alpha1.TarStrategy](#io.argoproj.workflow.v1alpha1.tarstrategy) |  | No |
+| zip | [io.argoproj.workflow.v1alpha1.ZipStrategy](#io.argoproj.workflow.v1alpha1.zipstrategy) |  | No |
 
 #### io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse
 
@@ -1965,6 +1966,14 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | ---- | ---- | ----------- | -------- |
 | object | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |  | No |
 | type | string |  | No |
+
+#### io.argoproj.workflow.v1alpha1.ZipStrategy
+
+ZipStrategy will unzip zipped input artifacts
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.ZipStrategy | object | ZipStrategy will unzip zipped input artifacts |  |
 
 #### io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource
 
