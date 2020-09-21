@@ -329,6 +329,9 @@ type WorkflowSpec struct {
 
 	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
 	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
+
+	// RetryStrategy for all templates in the workflow.
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
@@ -546,9 +549,6 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
-
-	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
@@ -1841,10 +1841,6 @@ func (tmpl *Template) IsLeaf() bool {
 		return true
 	}
 	return false
-}
-
-func (tmpl *Template) IsResubmitPendingPods() bool {
-	return tmpl != nil && tmpl.ResubmitPendingPods
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

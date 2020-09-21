@@ -258,6 +258,20 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	}
 }
 
+func deletePods(woc *wfOperationCtx) {
+	for _, obj := range woc.controller.podInformer.GetStore().List() {
+		pod := obj.(*apiv1.Pod)
+		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+		err = woc.controller.podInformer.GetStore().Delete(obj)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	ans := true
 	t.Run("WithoutDefaults", func(t *testing.T) {
