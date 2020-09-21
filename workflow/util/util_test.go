@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
@@ -40,7 +40,7 @@ spec:
 `
 	wf := unmarshalWF(workflowYaml)
 	newWf := wf.DeepCopy()
-	wfClientSet := fakeClientset.NewSimpleClientset()
+	wfClientSet := argofake.NewSimpleClientset()
 	newWf, err := SubmitWorkflow(nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
 	assert.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
@@ -279,7 +279,7 @@ status:
 `
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
 	_, err := wfIf.Create(origWf)
@@ -305,7 +305,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
 	_, err := wfIf.Create(origWf)
@@ -427,7 +427,7 @@ status:
 `
 
 func TestUpdateSuspendedNode(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(susWorkflow)
 
 	_, err := wfIf.Create(origWf)
@@ -535,6 +535,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 					common.LabelKeyCreator:                 "1",
 					common.LabelKeyPhase:                   "1",
 					common.LabelKeyCompleted:               "1",
+					common.LabelKeyWorkflowArchivingStatus: "1",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -553,6 +554,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
 			assert.Equal(t, 1, len(wf.OwnerReferences))
 			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
@@ -713,7 +715,7 @@ status:
 `
 
 func TestDeepDeleteNodes(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	kubeClient := &kubefake.Clientset{}
 	origWf := unmarshalWF(deepDeleteOfNodes)
 
@@ -724,5 +726,25 @@ func TestDeepDeleteNodes(t *testing.T) {
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
 		assert.NotContains(t, string(newWfBytes), "steps-9fkqc-3224593506")
+	}
+}
+
+func TestRetryWorkflow(t *testing.T) {
+	kubeClient := kubefake.NewSimpleClientset()
+	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+			common.LabelKeyCompleted:               "true",
+			common.LabelKeyWorkflowArchivingStatus: "Pending",
+		}},
+		Status: wfv1.WorkflowStatus{Phase: wfv1.NodeFailed},
+	}
+	_, err := wfClient.Create(wf)
+	assert.NoError(t, err)
+	wf, err = RetryWorkflow(kubeClient, hydratorfake.Always, wfClient, wf, false, "")
+	if assert.NoError(t, err) {
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
+		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
 	}
 }

@@ -39,7 +39,7 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow().
 		Then().
@@ -226,18 +226,21 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowRunning", e.Reason)
-			},
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowNodeFailed", e.Reason)
-				assert.Contains(t, e.Message, "Failed node failed-step-event-")
-				assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
-				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
-			},
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowFailed", e.Reason)
-				assert.Equal(t, "failed with exit code 1", e.Message)
+			2,
+			func(t *testing.T, es []corev1.Event) {
+				for _, e := range es {
+					switch e.Reason {
+					case "WorkflowRunning":
+					case "WorkflowNodeFailed":
+						assert.Contains(t, e.Message, "Failed node failed-step-event-")
+						assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
+						assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
+					case "WorkflowFailed":
+						assert.Equal(t, "failed with exit code 1", e.Message)
+					default:
+						assert.Fail(t, e.Reason)
+					}
+				}
 			},
 		)
 }
@@ -256,18 +259,21 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowRunning", e.Reason)
-			},
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowNodeSucceeded", e.Reason)
-				assert.Contains(t, e.Message, "Succeeded node success-event-")
-				assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
-				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
-			},
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowSucceeded", e.Reason)
-				assert.Equal(t, "Workflow completed", e.Message)
+			3,
+			func(t *testing.T, es []corev1.Event) {
+				for _, e := range es {
+					switch e.Reason {
+					case "WorkflowRunning":
+					case "WorkflowNodeSucceeded":
+						assert.Contains(t, e.Message, "Succeeded node success-event-")
+						assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
+						assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
+					case "WorkflowSucceeded":
+						assert.Equal(t, "Workflow completed", e.Message)
+					default:
+						assert.Fail(t, e.Reason)
+					}
+				}
 			},
 		)
 }
@@ -286,12 +292,12 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		}).
 		ExpectAuditEvents(
 			fixtures.HasInvolvedObject(workflow.WorkflowKind, uid),
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowRunning", e.Reason)
-			},
-			func(t *testing.T, e corev1.Event) {
-				assert.Equal(t, "WorkflowFailed", e.Reason)
-				assert.Contains(t, e.Message, "pvc create error")
+			2,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e[0].Reason)
+
+				assert.Equal(t, "WorkflowFailed", e[1].Reason)
+				assert.Contains(t, e[1].Message, "pvc create error")
 			},
 		)
 }
@@ -357,7 +363,7 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
@@ -405,7 +411,7 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
@@ -472,7 +478,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
@@ -497,7 +503,7 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate terminated")
@@ -765,7 +771,7 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		When().
 		StorageQuota("5Mi").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
 		}), "PVC pending").
