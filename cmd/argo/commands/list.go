@@ -47,7 +47,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			if !allNamespaces {
 				listArgs.namespace = client.Namespace()

@@ -35,7 +35,7 @@ func NewWaitCommand() *cobra.Command {
   argo wait @latest
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			return waitWorkflows(ctx, serviceClient, namespace, args, ignoreNotFound, false)

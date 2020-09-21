@@ -42,7 +42,7 @@ func NewResubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &priority
 			}
 
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 

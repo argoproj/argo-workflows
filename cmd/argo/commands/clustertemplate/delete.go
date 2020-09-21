@@ -29,7 +29,7 @@ func NewDeleteCommand() *cobra.Command {
 }
 
 func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) error {
-	ctx, apiClient := cmdcommon.CreateNewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 	var delWFTmplNames []string
 	if allWFs {

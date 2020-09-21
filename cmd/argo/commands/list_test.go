@@ -12,6 +12,7 @@ import (
 
 	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
@@ -21,6 +22,9 @@ import (
 
 func TestNewListCommand(t *testing.T) {
 	client := clientmocks.Client{}
+	cmdcommon.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	wfClient := mocks.WorkflowServiceClient{}
 	var wfList wfv1.WorkflowList
 	var wf, wf1 wfv1.Workflow
@@ -31,13 +35,8 @@ func TestNewListCommand(t *testing.T) {
 	wfList.Items = wfv1.Workflows{wf, wf1}
 	wfClient.On("ListWorkflows", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wfList, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	cmdcommon.APIClient = &client
 	listCommand := NewListCommand()
-	execFunc := func() {
-		err := listCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+	output := test.ExecuteCommand(t, listCommand)
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "hello-world")
 	assert.Contains(t, output, "Succeeded")

@@ -71,7 +71,7 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				return cmdcommon.MissingArgumentsError
 			}
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {

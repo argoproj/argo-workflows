@@ -25,7 +25,7 @@ func NewGetCommand() *cobra.Command {
 			}
 			uid := args[0]
 
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			if err != nil {
 				return err

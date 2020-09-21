@@ -70,7 +70,7 @@ func NewSubmitCommand() *cobra.Command {
 				logrus.Warn("--status should only be used with --watch")
 			}
 
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			if from != "" {

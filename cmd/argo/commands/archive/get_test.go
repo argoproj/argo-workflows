@@ -1,7 +1,10 @@
 package archive
 
 import (
+	"context"
 	"testing"
+
+	"github.com/argoproj/argo/pkg/apiclient"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -78,17 +81,15 @@ func TestNewGetCommand(t *testing.T) {
 	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
 	assert.NoError(t, err)
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	archiveClient := mocks.ArchivedWorkflowServiceClient{}
 	archiveClient.On("GetArchivedWorkflow", mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewArchivedWorkflowServiceClient").Return(&archiveClient, nil)
-	common.APIClient = &client
 	getCommand := NewGetCommand()
 	getCommand.SetArgs([]string{"hello-World"})
-	execFunc := func() {
-		err := getCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+	output := test.ExecuteCommand(t, getCommand)
 
 	assert.Contains(t, output, "hello-world")
 	assert.Contains(t, output, "Succeeded")

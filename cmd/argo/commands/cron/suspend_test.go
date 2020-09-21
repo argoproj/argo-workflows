@@ -1,7 +1,11 @@
 package cron
 
 import (
+	"context"
+	"os"
 	"testing"
+
+	"github.com/argoproj/argo/pkg/apiclient"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,6 +20,9 @@ import (
 
 func TestNewSuspend(t *testing.T) {
 	client := clientmocks.Client{}
+	cmdcommon.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	cronwfClient := mocks.CronWorkflowServiceClient{}
 	var cronWf wfv1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronWfWithStatus), &cronWf)
@@ -23,10 +30,10 @@ func TestNewSuspend(t *testing.T) {
 	cronwfClient.On("GetCronWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&cronWf, nil)
 	cronwfClient.On("UpdateCronWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&cronWf, nil)
 	client.On("NewCronWorkflowServiceClient").Return(&cronwfClient)
-	cmdcommon.APIClient = &client
 	suspendCommand := NewSuspendCommand()
 	suspendCommand.SetArgs([]string{"hello-world"})
 	execFunc := func() {
+		os.Setenv("ARGO_NAMESPACE", "default")
 		err := suspendCommand.Execute()
 		assert.NoError(t, err)
 	}

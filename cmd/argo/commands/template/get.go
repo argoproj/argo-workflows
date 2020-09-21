@@ -24,7 +24,7 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {

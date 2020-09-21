@@ -1,7 +1,10 @@
 package template
 
 import (
+	"context"
 	"testing"
+
+	"github.com/argoproj/argo/pkg/apiclient"
 
 	"sigs.k8s.io/yaml"
 
@@ -17,6 +20,9 @@ import (
 
 func TestNewListCommand(t *testing.T) {
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	wftClient := mocks.WorkflowTemplateServiceClient{}
 	var wftmpl wfv1.WorkflowTemplate
 	err := yaml.Unmarshal([]byte(wft), &wftmpl)
@@ -27,13 +33,10 @@ func TestNewListCommand(t *testing.T) {
 
 	wftClient.On("ListWorkflowTemplates", mock.Anything, mock.Anything).Return(&wftList, nil)
 	client.On("NewWorkflowTemplateServiceClient").Return(&wftClient)
-	common.APIClient = &client
+
 	listCommand := NewListCommand()
-	execFunc := func() {
-		err := listCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+
+	output := test.ExecuteCommand(t, listCommand)
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "workflow-template-whalesay-template")
 }

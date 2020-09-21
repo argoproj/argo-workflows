@@ -45,7 +45,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) error {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := cmdcommon.CreateNewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)

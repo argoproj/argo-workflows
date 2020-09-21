@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"testing"
 
 	"sigs.k8s.io/yaml"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -17,6 +19,9 @@ import (
 
 func TestNewGetCommand(t *testing.T) {
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	wftClient := mocks.WorkflowTemplateServiceClient{}
 	var wftmpl wfv1.WorkflowTemplate
 	err := yaml.Unmarshal([]byte(wft), &wftmpl)
@@ -24,14 +29,9 @@ func TestNewGetCommand(t *testing.T) {
 
 	wftClient.On("GetWorkflowTemplate", mock.Anything, mock.Anything).Return(&wftmpl, nil)
 	client.On("NewWorkflowTemplateServiceClient").Return(&wftClient)
-	common.APIClient = &client
 	getCommand := NewGetCommand()
 	getCommand.SetArgs([]string{"workflow-template-whalesay-template"})
-	execFunc := func() {
-		err := getCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+	output := test.ExecuteCommand(t, getCommand)
 	assert.Contains(t, output, "workflow-template-whalesay-template")
 	assert.Contains(t, output, "Created")
 }

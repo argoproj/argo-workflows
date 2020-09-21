@@ -24,7 +24,7 @@ func NewListCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use: "list",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			if err != nil {
 				return err

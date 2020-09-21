@@ -20,7 +20,7 @@ func NewVersionCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmdutil.PrintVersion(CLIName, argo.GetVersion(), short)
 			if _, ok := os.LookupEnv("ARGO_SERVER"); ok {
-				ctx, apiClient := cmdcommon.CreateNewAPIClient()
+				ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 				serviceClient, err := apiClient.NewInfoServiceClient()
 				if err != nil {
 					return err

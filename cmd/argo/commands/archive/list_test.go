@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflowarchive/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -23,16 +25,14 @@ func TestNewListCommand(t *testing.T) {
 	wfList.Items = wfv1.Workflows{wf}
 
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	archiveClient := mocks.ArchivedWorkflowServiceClient{}
 	archiveClient.On("ListArchivedWorkflows", mock.Anything, mock.Anything).Return(&wfList, nil)
 	client.On("NewArchivedWorkflowServiceClient").Return(&archiveClient, nil)
-	common.APIClient = &client
 	listCommand := NewListCommand()
-	execFunc := func() {
-		err := listCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+	output := test.ExecuteCommand(t, listCommand)
 	assert.Contains(t, output, "hello-world")
 	assert.Contains(t, output, "Succeeded")
 }

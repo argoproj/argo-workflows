@@ -40,7 +40,7 @@ func NewLintCommand() *cobra.Command {
 func ServerSideLint(args []string, strict bool) error {
 	validateDir := cmdutil.MustIsDir(args[0])
 
-	ctx, apiClient := cmdcommon.CreateNewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 
 	invalid := false

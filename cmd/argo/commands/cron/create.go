@@ -7,11 +7,10 @@ import (
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
-	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
-
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 
+	cmdcommon "github.com/argoproj/argo/cmd/argo/commands/common"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -50,7 +49,7 @@ func NewCreateCommand() *cobra.Command {
 
 func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *wfv1.SubmitOpts) error {
 
-	ctx, apiClient := cmdcommon.CreateNewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 	serviceClient := apiClient.NewCronWorkflowServiceClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)

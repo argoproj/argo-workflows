@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
 	"text/tabwriter"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -425,16 +427,15 @@ Status:              Succeeded
 	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
 	assert.NoError(t, err)
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	wfClient := mocks.WorkflowServiceClient{}
 	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
-	common.APIClient = &client
 	getCommand := NewGetCommand()
 	getCommand.SetArgs([]string{"hello-world"})
-	execFunc := func() {
-		err := getCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+
+	output := test.ExecuteCommand(t, getCommand)
 	assert.Contains(t, output, getOutput)
 }

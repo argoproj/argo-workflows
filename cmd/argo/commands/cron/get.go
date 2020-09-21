@@ -29,7 +29,7 @@ func NewGetCommand() *cobra.Command {
 				return cmdcommon.MissingArgumentsError
 			}
 
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			namespace := client.Namespace()
 

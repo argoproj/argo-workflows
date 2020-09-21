@@ -1,6 +1,7 @@
 package clustertemplate
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate/mocks"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -20,6 +22,9 @@ func TestNewLintCommand(t *testing.T) {
 	err := ioutil.WriteFile("cwft.yaml", []byte(cwfts), 0644)
 	assert.NoError(t, err)
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	cwftClient := mocks.ClusterWorkflowTemplateServiceClient{}
 	var cwftmpl wfv1.ClusterWorkflowTemplate
 	err = yaml.Unmarshal([]byte(cwfts), &cwftmpl)
@@ -27,14 +32,9 @@ func TestNewLintCommand(t *testing.T) {
 
 	cwftClient.On("LintClusterWorkflowTemplate", mock.Anything, mock.Anything).Return(&cwftmpl, nil)
 	client.On("NewClusterWorkflowTemplateServiceClient").Return(&cwftClient)
-	common.APIClient = &client
 	lintCommand := NewLintCommand()
 	lintCommand.SetArgs([]string{"cwft.yaml"})
-	execFunc := func() {
-		err := lintCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+	output := test.ExecuteCommand(t, lintCommand)
 	os.Remove("cwft.yaml")
 	assert.Contains(t, output, "manifests validated")
 }

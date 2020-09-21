@@ -13,7 +13,7 @@ func NewDeleteCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use: "delete UID...",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			if err != nil {
 				return err

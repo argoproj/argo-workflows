@@ -31,7 +31,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list cron workflows",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {

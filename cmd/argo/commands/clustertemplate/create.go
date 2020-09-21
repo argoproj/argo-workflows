@@ -44,7 +44,7 @@ func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) 
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}
-	ctx, apiClient := cmdcommon.CreateNewAPIClient()
+	ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)

@@ -1,14 +1,12 @@
 package common
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient"
 
 	"github.com/spf13/cobra"
 
@@ -90,13 +88,4 @@ func ANSIFormat(s string, codes ...int) string {
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
 }
 
-//  To set Mock client in Unit test
-var APIClient apiclient.Client
-
-func CreateNewAPIClient() (context.Context, apiclient.Client) {
-	if APIClient == nil {
-		return client.NewAPIClient()
-	}
-	// Unittest scenario
-	return context.TODO(), APIClient
-}
+var CreateNewAPIClientFunc = client.NewAPIClient

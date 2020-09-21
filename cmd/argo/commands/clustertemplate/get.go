@@ -22,7 +22,7 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get CLUSTER WORKFLOW_TEMPLATE...",
 		Short: "display details about a cluster workflow template",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient := cmdcommon.CreateNewAPIClient()
+			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 			for _, name := range args {
 				wftmpl, err := serviceClient.GetClusterWorkflowTemplate(ctx, &clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest{

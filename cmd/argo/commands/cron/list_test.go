@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
+	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow/mocks"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -16,6 +18,9 @@ import (
 
 func TestNewListCommand(t *testing.T) {
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	cronWfClient := mocks.CronWorkflowServiceClient{}
 	var cronWfObj wfv1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronwf), &cronWfObj)
@@ -26,13 +31,10 @@ func TestNewListCommand(t *testing.T) {
 
 	cronWfClient.On("ListCronWorkflows", mock.Anything, mock.Anything).Return(&cronWfList, nil)
 	client.On("NewCronWorkflowServiceClient").Return(&cronWfClient)
-	common.APIClient = &client
+
 	listCommand := NewListCommand()
-	execFunc := func() {
-		err := listCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+
+	output := test.ExecuteCommand(t, listCommand)
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "hello-world")
 }

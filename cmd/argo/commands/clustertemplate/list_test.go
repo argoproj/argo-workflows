@@ -1,7 +1,10 @@
 package clustertemplate
 
 import (
+	"context"
 	"testing"
+
+	"github.com/argoproj/argo/pkg/apiclient"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,6 +19,9 @@ import (
 
 func TestNewListCommand(t *testing.T) {
 	client := clientmocks.Client{}
+	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
+		return context.TODO(), &client
+	}
 	wftClient := mocks.ClusterWorkflowTemplateServiceClient{}
 	var cwftmpl wfv1.ClusterWorkflowTemplate
 	err := yaml.Unmarshal([]byte(cwfts), &cwftmpl)
@@ -26,13 +32,8 @@ func TestNewListCommand(t *testing.T) {
 
 	wftClient.On("ListClusterWorkflowTemplates", mock.Anything, mock.Anything).Return(&cwftList, nil)
 	client.On("NewClusterWorkflowTemplateServiceClient").Return(&wftClient)
-	common.APIClient = &client
 	listCommand := NewListCommand()
-	execFunc := func() {
-		err := listCommand.Execute()
-		assert.NoError(t, err)
-	}
-	output := test.CaptureOutput(execFunc)
+	output := test.ExecuteCommand(t, listCommand)
 	assert.Contains(t, output, "NAME")
 	assert.Contains(t, output, "workflow-template-whalesay-template")
 }
