@@ -200,19 +200,27 @@ func (d *DockerExecutor) Kill(containerIDs []string) error {
 	if err := waitCmd.Start(); err != nil {
 		return errors.InternalWrapError(err)
 	}
-	timer := time.AfterFunc(execcommon.KillGracePeriod*time.Second, func() {
+	// waitCh needs buffer of 1 so it can always send the result of waitCmd.Wait() without blocking.
+	// Otherwise, if the KillGracePeriod elapses and the forced kill branch is run, there would
+	// be no receiver for waitCh and the goroutine would block forever
+	waitCh := make(chan error, 1)
+	go func() {
+		defer close(waitCh)
+		waitCh <- waitCmd.Wait()
+	}()
+	select {
+	case err = <-waitCh:
+		// waitCmd completed
+	case <-time.After(execcommon.KillGracePeriod * time.Second):
 		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", execcommon.KillGracePeriod)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)
 		// same as kill case above, we ignore any error
-		err = forceKillCmd.Run()
-		if err != nil {
+		if err := forceKillCmd.Run(); err != nil {
 			log.Warningf("Ignored error from 'docker kill --signal KILL': %s", err)
 		}
-	})
-	err = waitCmd.Wait()
-	_ = timer.Stop()
+	}
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
