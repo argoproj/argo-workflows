@@ -28,6 +28,7 @@ type Given struct {
 	wfTemplates       []*wfv1.WorkflowTemplate
 	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
 	cronWf            *wfv1.CronWorkflow
+	workflowName      string
 	kubeClient        kubernetes.Interface
 }
 
@@ -107,7 +108,7 @@ func (g *Given) checkLabels(m metav1.Object) {
 
 func (g *Given) WorkflowName(name string) *Given {
 	g.t.Helper()
-	g.wf = &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: name}}
+	g.workflowName = name
 	return g
 }
 
@@ -183,6 +184,7 @@ func (g *Given) When() *When {
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,
+		workflowName:      g.workflowName,
 		kubeClient:        g.kubeClient,
 	}
 }
