@@ -13,5 +13,6 @@ spec:
           - |
             for p in $(seq 1 100); do
               echo "#argo progress=$p/100, message=\"my argo message\""
+              sleep 10s
             done
 

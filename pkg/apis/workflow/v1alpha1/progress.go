@@ -9,16 +9,13 @@ import (
 // Progress in N/M format. N is number of task complete. M is number of tasks.
 type Progress string
 
-func NewProgress(n, m int64) (Progress, error) {
+func NewProgress(n, m int64) (Progress, bool) {
 	return ParseProgress(fmt.Sprintf("%v/%v", n, m))
 }
 
-func ParseProgress(s string) (Progress, error) {
+func ParseProgress(s string) (Progress, bool) {
 	v := Progress(s)
-	if !v.IsValid() {
-		return "", fmt.Errorf("invalid progress \"%v\"", s)
-	}
-	return v, nil
+	return v, v.IsValid()
 }
 
 func (in Progress) parts() []string {

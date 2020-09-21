@@ -1850,6 +1850,8 @@ func (woc *wfOperationCtx) updateNodes() {
 		woc.log.WithError(err).Error("failed to sort nodes")
 		return
 	}
+	woc.wf.Status.ResourcesDuration = wfv1.ResourcesDuration{}
+	woc.wf.Status.Progress = "0/0"
 	for _, nodeID := range nodeIDs {
 		node, ok := nodes[nodeID]
 		// this can happen when bad data ends up in the system
@@ -1895,11 +1897,12 @@ func (woc *wfOperationCtx) updateNodes() {
 			nodes[nodeID] = node
 			woc.updated = true
 		}
-	}
-	if woc.updated {
-		rootNode := nodes[woc.wf.Name]
-		woc.wf.Status.ResourcesDuration = rootNode.ResourcesDuration
-		woc.wf.Status.Progress = rootNode.Progress
+		if node.IsLeaf() {
+			// we don't `woc.updated = true`, we assume that if anything has changed, that that last
+			// black of code will have done that
+			woc.wf.Status.ResourcesDuration = woc.wf.Status.ResourcesDuration.Add(node.ResourcesDuration)
+			woc.wf.Status.Progress = woc.wf.Status.Progress.Add(node.Progress)
+		}
 	}
 }
 
@@ -1909,8 +1912,8 @@ func (woc *wfOperationCtx) podProgress(node wfv1.NodeStatus, progress wfv1.Progr
 	obj, _, _ := woc.controller.podInformer.GetStore().GetByKey(woc.wf.Namespace + "/" + node.ID)
 	if pod, ok := obj.(*apiv1.Pod); ok {
 		if annotation, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
-			v, _ := wfv1.ParseProgress(annotation)
-			if v.IsValid() {
+			v, ok := wfv1.ParseProgress(annotation)
+			if ok {
 				return v
 			}
 		}

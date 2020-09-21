@@ -8,10 +8,10 @@ import (
 
 func TestProgress(t *testing.T) {
 	t.Run("ParseProgress", func(t *testing.T) {
-		_, err := ParseProgress("")
-		assert.Error(t, err)
-		progress, err := ParseProgress("0/1")
-		assert.NoError(t, err)
+		_, ok := ParseProgress("")
+		assert.False(t, ok)
+		progress, ok := ParseProgress("0/1")
+		assert.True(t, ok)
 		assert.Equal(t, Progress("0/1"), progress)
 	})
 	t.Run("IsValid", func(t *testing.T) {
