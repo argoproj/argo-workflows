@@ -36,7 +36,7 @@
     
     
       
-        <title>Events - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Tolerating Pod Deletion - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#events" tabindex="1" class="md-skip">
+      <a href="#tolerating-pod-deletion" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              Events
+              Tolerating Pod Deletion
             </span>
           
         </div>
@@ -377,10 +377,12 @@
           
           
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-2" type="checkbox" id="nav-4-2">
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-2" type="checkbox" id="nav-4-2" checked>
     
     <label class="md-nav__link" for="nav-4-2">
       Intermediate
@@ -576,11 +578,49 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../tolerating-pod-deletion/" title="Tolerating Pod Deletion" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Tolerating Pod Deletion
+      </label>
+    
+    <a href="./" title="Tolerating Pod Deletion" class="md-nav__link md-nav__link--active">
       Tolerating Pod Deletion
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" title="Example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -593,12 +633,10 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-3" type="checkbox" id="nav-4-3" checked>
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4-3" type="checkbox" id="nav-4-3">
     
     <label class="md-nav__link" for="nav-4-3">
       Advanced
@@ -698,131 +736,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Events
-      </label>
-    
-    <a href="./" title="Events" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../events/" title="Events" class="md-nav__link">
       Events
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" title="Overview" class="md-nav__link">
-    Overview
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#authentication-and-security" title="Authentication and Security" class="md-nav__link">
-    Authentication and Security
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#submitting-a-workflow-from-a-workflow-template" title="Submitting A Workflow From A Workflow Template" class="md-nav__link">
-    Submitting A Workflow From A Workflow Template
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#event-expression-syntax-and-the-event-expression-environment" title="Event Expression Syntax and the Event Expression Environment" class="md-nav__link">
-    Event Expression Syntax and the Event Expression Environment
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#expression-syntax" title="Expression Syntax" class="md-nav__link">
-    Expression Syntax
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#expression-environment" title="Expression Environment" class="md-nav__link">
-    Expression Environment
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#payload" title="Payload" class="md-nav__link">
-    Payload
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metadata" title="MetaData" class="md-nav__link">
-    MetaData
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#headers" title="Headers" class="md-nav__link">
-    Headers
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#discriminator" title="Discriminator" class="md-nav__link">
-    Discriminator
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#high-availability" title="High-Availability" class="md-nav__link">
-    High-Availability
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -1997,90 +1915,8 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" title="Overview" class="md-nav__link">
-    Overview
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#authentication-and-security" title="Authentication and Security" class="md-nav__link">
-    Authentication and Security
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#submitting-a-workflow-from-a-workflow-template" title="Submitting A Workflow From A Workflow Template" class="md-nav__link">
-    Submitting A Workflow From A Workflow Template
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#event-expression-syntax-and-the-event-expression-environment" title="Event Expression Syntax and the Event Expression Environment" class="md-nav__link">
-    Event Expression Syntax and the Event Expression Environment
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#expression-syntax" title="Expression Syntax" class="md-nav__link">
-    Expression Syntax
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#expression-environment" title="Expression Environment" class="md-nav__link">
-    Expression Environment
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#payload" title="Payload" class="md-nav__link">
-    Payload
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metadata" title="MetaData" class="md-nav__link">
-    MetaData
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#headers" title="Headers" class="md-nav__link">
-    Headers
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#discriminator" title="Discriminator" class="md-nav__link">
-    Discriminator
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#high-availability" title="High-Availability" class="md-nav__link">
-    High-Availability
+  <a href="#example" title="Example" class="md-nav__link">
+    Example
   </a>
   
 </li>
@@ -2101,131 +1937,40 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/events.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo/edit/master/docs/tolerating-pod-deletion.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h1>
-<p><img alt="GA" src="../assets/ga.svg" /></p>
+                <h1 id="tolerating-pod-deletion">Tolerating Pod Deletion<a class="headerlink" href="#tolerating-pod-deletion" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p>v2.11 and after</p>
+<p>v2.12 and after</p>
 </blockquote>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>To support external webhooks, we have this endpoint <code>/api/v1/events/{namespace}/{descriminator}</code>. Events can be sent to that can be any JSON data.</p>
-<p>These events can submit <em>workflow templates</em> or <em>cluster workflow templates</em>.</p>
-<p>You may also wish to read about <a href="../webhooks/">webhooks</a>.</p>
-<h2 id="authentication-and-security">Authentication and Security<a class="headerlink" href="#authentication-and-security" title="Permanent link">&para;</a></h2>
-<p>Clients wanting to send events to the endpoint need an <a href="../access-token/">access token</a>.   </p>
-<p>It is only possible to submit workflow templates your access token has access to: <a href="../manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
-<p>Example (note the trailing slash):</p>
-<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/ <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
-  -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
-</code></pre></div>
-
-
-<p>With a <strong>discriminator</strong>:</p>
-<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/my-discriminator <span class="se">\</span>
-  -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
-  -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
-</code></pre></div>
-
-
-<p>The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  </p>
-<div class="admonition warning">
-<p class="admonition-title">Processing Order</p>
-<p>Events may not always be processed in the order they are received.   </p>
-</div>
-<h2 id="submitting-a-workflow-from-a-workflow-template">Submitting A Workflow From A Workflow Template<a class="headerlink" href="#submitting-a-workflow-from-a-workflow-template" title="Permanent link">&para;</a></h2>
-<p>A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
-The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.</p>
+<p>In Kubernetes, pods are cattle and can be deleted at any time. Deletion could be manually via <code>kubectl delete pod</code>, during a node drain, or for other reasons.</p>
+<p>This can be very inconvenient, your workflow will error, but for reasons outside of your control.</p>
+<p>A <a href="../examples/default-pdb-support.yaml">pod disruption budget</a> can reduce the likelihood of this happening. But, it cannot entirely prevent it.   </p>
+<p>To retry pods that were deleted, set <code>retryStrategy.retryPolicy: OnError</code>.</p>
+<p>This can be set at a workflow-level, template-level, or globally (using <a href="../default-workflow-specs/">workflow defaults</a>)</p>
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<p>Run the following workflow (which will sleep for 30s):</p>
 <div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowEventBinding</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">event-consumer</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example</span>
 <span class="nt">spec</span><span class="p">:</span>
-  <span class="nt">event</span><span class="p">:</span>
-    <span class="nt">selector</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message != &quot;&quot; &amp;&amp; metadata[&quot;x-argo&quot;] == [&quot;true&quot;] &amp;&amp; discriminator == &quot;my-discriminator&quot;</span>
-  <span class="nt">submit</span><span class="p">:</span>
-    <span class="nt">workflowTemplateRef</span><span class="p">:</span>
-      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-wf-tmple</span>
-    <span class="nt">arguments</span><span class="p">:</span>
-      <span class="nt">parameters</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
-        <span class="nt">valueFrom</span><span class="p">:</span>
-          <span class="nt">event</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message</span>
+  <span class="nt">retryStrategy</span><span class="p">:</span>
+   <span class="nt">retryPolicy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">OnError</span>
+   <span class="nt">limit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+  <span class="nt">entrypoint</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
+  <span class="nt">templates</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">main</span>
+      <span class="nt">container</span><span class="p">:</span>
+        <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
+        <span class="nt">command</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">sleep</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">30s</span> 
 </code></pre></div>
 
 
-<p>Event:</p>
-<div class="codehilite"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator <span class="se">\</span>
-    -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
-    -H <span class="s2">&quot;X-Argo-E2E: true&quot;</span> <span class="se">\</span>
-    -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello events&quot;}&#39;</span>
-</code></pre></div>
-
-
-<div class="admonition warning">
-<p class="admonition-title">Malformed Expressions</p>
-<p>If the expression is malformed, this is logged. It is not visible in logs or the UI. </p>
-</div>
-<h2 id="event-expression-syntax-and-the-event-expression-environment">Event Expression Syntax and the Event Expression Environment<a class="headerlink" href="#event-expression-syntax-and-the-event-expression-environment" title="Permanent link">&para;</a></h2>
-<p><strong>Event expressions</strong> are expressions that are evaluated over the <strong>event expression environment</strong>.</p>
-<h3 id="expression-syntax">Expression Syntax<a class="headerlink" href="#expression-syntax" title="Permanent link">&para;</a></h3>
-<p>Because the endpoint accepts any JSON data, it is the user's responsibility to write a suitable expression to correctly filter the events they are interested in. Therefore, DO NOT assume the existence of any fields, and guard against them using a nil check.</p>
-<p><a href="https://github.com/antonmedv/expr">Learn more about expression syntax</a>.</p>
-<h3 id="expression-environment">Expression Environment<a class="headerlink" href="#expression-environment" title="Permanent link">&para;</a></h3>
-<p>The event environment contains:</p>
-<ul>
-<li><code>payload</code> the event payload.</li>
-<li><code>metadata</code> event metadata, including HTTP headers.</li>
-<li><code>discriminator</code> the discriminator from the URL.  </li>
-</ul>
-<h3 id="payload">Payload<a class="headerlink" href="#payload" title="Permanent link">&para;</a></h3>
-<p>This is the JSON payload of the event.</p>
-<p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">payload</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">clone_url</span> <span class="o">==</span> <span class="s2">&quot;http://gihub.com/argoproj/argo&quot;</span>
-</code></pre></div>
-
-
-<h3 id="metadata">MetaData<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
-<p>Metadata is data about the event, this includes <strong>headers</strong>:</p>
-<h4 id="headers">Headers<a class="headerlink" href="#headers" title="Permanent link">&para;</a></h4>
-<p>HTTP header names are lowercase and only include those that have <code>x-</code> as their prefix. Their values are lists, not single values.    </p>
-<ul>
-<li>Wrong: <code>metadata["X-Github-Event"] = "push"</code></li>
-<li>Wrong: <code>metadata["x-github-event"] = "push"</code></li>
-<li>Wrong: <code>metadata["X-Github-Event"] = ["push"]</code></li>
-<li>Wrong: <code>metadata["github-event"] = ["push"]</code></li>
-<li>Wrong: <code>metadata["authorization"] = ["push"]</code></li>
-<li>Right: <code>metadata["x-github-event"] = ["push"]</code></li>
-</ul>
-<p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">metadata[&quot;x-argo&quot;] == [&quot;yes&quot;]</span>
-</code></pre></div>
-
-
-<h3 id="discriminator">Discriminator<a class="headerlink" href="#discriminator" title="Permanent link">&para;</a></h3>
-<p>This is only for edge-cases where neither the payload, or metadata provide enough information to discriminate. Typically, it should be empty and ignored.</p>
-<p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">discriminator == &quot;my-discriminator&quot;</span>
-</code></pre></div>
-
-
-<h2 id="high-availability">High-Availability<a class="headerlink" href="#high-availability" title="Permanent link">&para;</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Run Minimum 2 Replicas</p>
-<p>You MUST run a minimum of two Argo Server replicas if you do not want to lose events. </p>
-</div>
-<p>If you are processing large numbers of events, you may need to scale up the Argo Server to handle them. By default, a single Argo Server can be processing 64 events before the endpoint will start returning 503 errors.</p>
-<p>Vertically you can:</p>
-<ul>
-<li>Increase the size of the event operation queue <code>--event-operation-queue-size</code> (good for temporary event bursts).</li>
-<li>Increase the number of workers <code>--event-worker-count</code> (good for sustained numbers of events).</li>
-</ul>
-<p>Horizontally you can:</p>
-<ul>
-<li>Run more Argo Servers (good for sustained numbers of events AND high-availability).</li>
-</ul>
+<p>Then execute <code>kubectl delete pod example</code>. You'll see that the errored node is automatically retried.</p>
                 
                   
                 
@@ -2246,7 +1991,7 @@ The following example will be trigger by an event with "message" in the payload.
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../rest-examples/" title="API Examples" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../memoization/" title="Step Level Memoization" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -2255,19 +2000,19 @@ The following example will be trigger by an event with "message" in the payload.
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                API Examples
+                Step Level Memoization
               </span>
             </div>
           </a>
         
         
-          <a href="../webhooks/" title="Webhooks" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../workflow-requirements/" title="Workflow Restrictions" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Webhooks
+                Workflow Restrictions
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">

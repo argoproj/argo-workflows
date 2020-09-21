@@ -572,6 +572,18 @@
   </li>
 
         
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../tolerating-pod-deletion/" title="Tolerating Pod Deletion" class="md-nav__link">
+      Tolerating Pod Deletion
+    </a>
+  </li>
+
+        
       </ul>
     </nav>
   </li>
@@ -13414,12 +13426,6 @@
 <td>No</td>
 </tr>
 <tr>
-<td>resubmitPendingPods</td>
-<td>boolean</td>
-<td>ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission</td>
-<td>No</td>
-</tr>
-<tr>
 <td>retryStrategy</td>
 <td><a href="#io.argoproj.workflow.v1alpha1.retrystrategy">io.argoproj.workflow.v1alpha1.RetryStrategy</a></td>
 <td>RetryStrategy describes how to retry a template when it fails</td>
@@ -14388,6 +14394,12 @@
 <td>No</td>
 </tr>
 <tr>
+<td>retryStrategy</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.retrystrategy">io.argoproj.workflow.v1alpha1.RetryStrategy</a></td>
+<td>RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.</td>
+<td>No</td>
+</tr>
+<tr>
 <td>schedulerName</td>
 <td>string</td>
 <td>Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.</td>
@@ -15069,6 +15081,12 @@
 <td>priority</td>
 <td>integer</td>
 <td>Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.</td>
+<td>No</td>
+</tr>
+<tr>
+<td>retryStrategy</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.retrystrategy">io.argoproj.workflow.v1alpha1.RetryStrategy</a></td>
+<td>RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.</td>
 <td>No</td>
 </tr>
 <tr>
