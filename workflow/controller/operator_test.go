@@ -81,6 +81,39 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 	}
 }
 
+func TestResourcesDuration(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.NotEmpty(t, woc.wf.Status.ResourcesDuration, "workflow duration not empty")
+	assert.False(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.ResourcesDuration.IsZero()
+	}), "zero node durations empty")
+}
+
 var sidecarWithVol = `
 # Verifies sidecars can reference volumeClaimTemplates
 apiVersion: argoproj.io/v1alpha1

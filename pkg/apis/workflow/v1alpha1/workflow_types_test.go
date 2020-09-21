@@ -108,6 +108,11 @@ func TestTemplate_IsResubmitAllowed(t *testing.T) {
 	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitPendingPods())
 }
 
+func TestNodeStatus_IsLeaf(t *testing.T) {
+	assert.True(t, NodeStatus{Children: []string{}}.IsLeaf())
+	assert.False(t, NodeStatus{Children: []string{""}}.IsLeaf())
+}
+
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
@@ -142,14 +147,6 @@ func TestResourcesDuration(t *testing.T) {
 func TestResourceDuration(t *testing.T) {
 	assert.Equal(t, ResourceDuration(1), NewResourceDuration(1*time.Second))
 	assert.Equal(t, "1s", NewResourceDuration(1*time.Second).String())
-}
-
-func TestNodes_GetResourcesDuration(t *testing.T) {
-	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesDuration())
-	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 3}, Nodes{
-		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}},
-		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}},
-	}.GetResourcesDuration())
 }
 
 func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {

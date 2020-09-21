@@ -49,6 +49,7 @@ require (
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cobra v1.0.0
+	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/gjson v1.3.5
 	github.com/valyala/fasttemplate v1.1.0

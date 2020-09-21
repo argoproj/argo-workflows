@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/graph"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -484,6 +485,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
+	woc.updateNodes()
 	if !woc.updated {
 		return
 	}
@@ -1792,7 +1794,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
 			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
 			err := woc.deletePDBResource()
 			if err != nil {
@@ -1811,6 +1812,17 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.updated = true
 		}
+	}
+}
+
+func (woc *wfOperationCtx) updateNodes() {
+	nodes := woc.wf.Status.Nodes
+	resourceUpdator := resource.NewUpdator(woc.wf)
+	err := graph.Visit(nodes, resourceUpdator)
+	if err != nil {
+		log.WithError(err).Error("failed to visit graph")
+	} else {
+		woc.updated = woc.updated || resourceUpdator.Updated
 	}
 }
 

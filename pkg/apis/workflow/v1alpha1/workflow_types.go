@@ -1404,14 +1404,6 @@ type NodeStatus struct {
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
 }
 
-func (n Nodes) GetResourcesDuration() ResourcesDuration {
-	i := ResourcesDuration{}
-	for _, status := range n {
-		i = i.Add(status.ResourcesDuration)
-	}
-	return i
-}
-
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
 	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
@@ -1529,6 +1521,12 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+// IsLeaf return if the node is a leaf or not. This must  be guarded by a `Fulfilled()` check as this will only
+// be accurate when the node is fulfilled and no more children will be added.
+func (in NodeStatus) IsLeaf() bool {
+	return len(in.Children) == 0
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
