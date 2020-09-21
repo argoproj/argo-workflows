@@ -4069,7 +4069,7 @@ spec:
 func TestConfigMapCacheLoadOperate(t *testing.T) {
 	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 		Data: map[string]string{
-			"hi-there-world": fmt.Sprintf(`{"nodeID":"memoized-simple-workflow-5wj2p","outputs":{"parameters":[{"name":"hello","value":"foobar","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-simple-workflow-5wj2p/memoized-simple-workflow-5wj2p/main.log"}}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`),
+			"hi-there-world": `{"nodeID":"memoized-simple-workflow-5wj2p","outputs":{"parameters":[{"name":"hello","value":"foobar","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-simple-workflow-5wj2p/memoized-simple-workflow-5wj2p/main.log"}}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -4221,7 +4221,8 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 
 	if assert.Len(t, woc.wf.Status.Nodes, 1) {
 		for _, node := range woc.wf.Status.Nodes {
-			assert.Nil(t, node.Outputs)
+			assert.NotNil(t, node.Outputs)
+			assert.False(t, node.Outputs.HasOutputs())
 			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 		}
 	}
