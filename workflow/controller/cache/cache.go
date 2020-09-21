@@ -23,6 +23,10 @@ type Entry struct {
 	CreationTimestamp metav1.Time   `json:"creationTimestamp"`
 }
 
+func (e *Entry) Hit() bool {
+	return e != nil && e.NodeID != ""
+}
+
 func (e *Entry) GetOutputs() *wfv1.Outputs {
 	if e == nil {
 		return nil
@@ -30,15 +34,15 @@ func (e *Entry) GetOutputs() *wfv1.Outputs {
 	return e.Outputs
 }
 
-func (e *Entry) GetOutputsWithMaxAge(maxAge time.Duration) *wfv1.Outputs {
+func (e *Entry) GetOutputsWithMaxAge(maxAge time.Duration) (*wfv1.Outputs, bool) {
 	if e == nil {
-		return nil
+		return nil, false
 	}
 	if time.Since(e.CreationTimestamp.Time) > maxAge {
 		// Outputs have expired
-		return nil
+		return nil, false
 	}
-	return e.Outputs
+	return e.Outputs, true
 }
 
 type cacheFactory struct {
