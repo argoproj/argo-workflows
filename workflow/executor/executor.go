@@ -948,7 +948,7 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 		return errors.InternalWrapError(err)
 	}
 	if decompressor != nil {
-		if  err = decompressor(srcPath, tmpDir); err != nil {
+		if err = decompressor(srcPath, tmpDir); err != nil {
 			return err
 		}
 	}
