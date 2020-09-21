@@ -937,7 +937,7 @@ func unzip(zipPath string, destPath string) error {
 	return unpack(zipPath, destPath, decompressor)
 }
 
-// untar unpacks a compressed file (tarball or zip file) to a temporary directory,
+// unpack unpacks a compressed file (tarball or zip file) to a temporary directory,
 // renaming it to the desired location
 // decompression is done using the decompressor closure, that should decompress a tarball or zip file
 func unpack(srcPath string, destPath string, decompressor func(string, string) error) error {
