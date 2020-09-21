@@ -947,8 +947,10 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	if err = decompressor(srcPath, tmpDir); err != nil {
-		return err
+	if decompressor != nil {
+		if  err = decompressor(srcPath, tmpDir); err != nil {
+			return err
+		}
 	}
 	// next, decide how we wish to rename the file/dir
 	// to the destination path.
