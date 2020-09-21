@@ -745,7 +745,7 @@ type TarStrategy struct {
 	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
 }
 
-// ZipStrategy
+// ZipStrategy will unzip zipped input artifacts
 type ZipStrategy struct{}
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent

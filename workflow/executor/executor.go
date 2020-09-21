@@ -897,13 +897,11 @@ func unzip(zipPath string, destPath string) error {
 			}
 
 			if f.FileInfo().IsDir() {
-				err = os.MkdirAll(path, f.Mode())
-				if err != nil {
+				if err = os.MkdirAll(path, f.Mode()); err != nil {
 					return err
 				}
 			} else {
-				err = os.MkdirAll(filepath.Dir(path), f.Mode())
-				if err != nil {
+				if err = os.MkdirAll(filepath.Dir(path), f.Mode()); err != nil {
 					return err
 				}
 				f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
@@ -925,8 +923,7 @@ func unzip(zipPath string, destPath string) error {
 		}
 
 		for _, f := range r.File {
-			err := extractAndWriteFile(f)
-			if err != nil {
+			if err := extractAndWriteFile(f); err != nil {
 				return err
 			}
 			log.Infof("Extracting file: %s", f.Name)
@@ -943,15 +940,14 @@ func unzip(zipPath string, destPath string) error {
 // untar unpacks a compressed file (tarball or zip file) to a temporary directory,
 // renaming it to the desired location
 // decompression is done using the decompressor closure, that should decompress a tarball or zip file
-func unpack(tarPath string, destPath string, decompressor func(string, string) error) error {
+func unpack(srcPath string, destPath string, decompressor func(string, string) error) error {
 	// first extract the tar into a temporary dir
 	tmpDir := destPath + ".tmpdir"
 	err := os.MkdirAll(tmpDir, os.ModePerm)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = decompressor(tarPath, tmpDir)
-	if err != nil {
+	if err = decompressor(srcPath, tmpDir); err != nil {
 		return err
 	}
 	// next, decide how we wish to rename the file/dir
