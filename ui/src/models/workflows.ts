@@ -455,6 +455,16 @@ export interface NodeStatus {
     finishedAt: kubernetes.Time;
 
     /**
+     * Estimated duration in seconds.
+     */
+    estimatedDuration?: number;
+
+    /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
+
+    /**
      * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
@@ -554,6 +564,14 @@ export interface WorkflowStatus {
     phase: NodePhase;
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
+    /**
+     * Estimated duration in seconds.
+     */
+    estimatedDuration?: number;
+    /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
     /**
      * A human readable message indicating details about why the workflow is in this condition.
      */

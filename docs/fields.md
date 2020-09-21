@@ -316,6 +316,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
@@ -525,6 +527,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
+
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
@@ -659,6 +663,7 @@ WorkflowStatus contains overall status information about a workflow
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
+|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -666,6 +671,7 @@ WorkflowStatus contains overall status information about a workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output values and artifact locations produced by the workflow via global outputs|
 |`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.|
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle.|
+|`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
@@ -869,6 +875,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -1176,6 +1184,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -1739,6 +1749,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
+
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
@@ -1936,6 +1948,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`children`|`Array< string >`|Children is a list of child node IDs|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
+|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
@@ -1947,6 +1960,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
+|`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
@@ -2824,6 +2838,8 @@ Pod metdata
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -4116,6 +4132,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
+
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
@@ -4627,6 +4645,8 @@ A single application container that you want to run within a pod.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -5283,6 +5303,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -6298,6 +6320,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
+
+- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 

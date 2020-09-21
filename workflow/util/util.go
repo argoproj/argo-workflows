@@ -55,7 +55,7 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
-func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	dclient, err := dynamic.NewForConfig(cfg)
 	if err != nil {
 		panic(err)
@@ -71,7 +71,7 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 		dclient,
 		ns,
 		resyncPeriod,
-		cache.Indexers{},
+		indexers,
 		tweakListOptions,
 	)
 	return informer

@@ -39,6 +39,8 @@ nav:
           - enhanced-depends-logic.md
           - artifact-repository-ref.md
           - resource-duration.md
+          - estimated-duration.md
+          - progress.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
