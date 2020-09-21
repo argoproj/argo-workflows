@@ -791,6 +791,28 @@ spec:
             priority:
               format: int32
               type: integer
+            retryStrategy:
+              properties:
+                backoff:
+                  properties:
+                    duration:
+                      type: string
+                    factor:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      x-kubernetes-int-or-string: true
+                    maxDuration:
+                      type: string
+                  type: object
+                limit:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  x-kubernetes-int-or-string: true
+                retryPolicy:
+                  type: string
+              type: object
             schedulerName:
               type: string
             securityContext:
@@ -3998,8 +4020,6 @@ spec:
                     required:
                     - action
                     type: object
-                  resubmitPendingPods:
-                    type: boolean
                   retryStrategy:
                     properties:
                       backoff:
