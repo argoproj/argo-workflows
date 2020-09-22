@@ -488,7 +488,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
-	woc.updated = progress.UpdateProgress(woc.controller.podInformer, woc.wf) || woc.updated 
+	woc.updated = progress.UpdateProgress(woc.controller.podInformer, woc.wf) || woc.updated
 	if !woc.updated {
 		return
 	}
@@ -1910,15 +1910,15 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	}
 
 	node := wfv1.NodeStatus{
-		ID:                nodeID,
-		Name:              nodeName,
-		TemplateName:      orgTmpl.GetTemplateName(),
-		TemplateRef:       orgTmpl.GetTemplateRef(),
-		TemplateScope:     templateScope,
-		Type:              nodeType,
-		BoundaryID:        boundaryID,
-		Phase:             phase,
-		StartedAt:         metav1.Time{Time: time.Now().UTC()},
+		ID:            nodeID,
+		Name:          nodeName,
+		TemplateName:  orgTmpl.GetTemplateName(),
+		TemplateRef:   orgTmpl.GetTemplateRef(),
+		TemplateScope: templateScope,
+		Type:          nodeType,
+		BoundaryID:    boundaryID,
+		Phase:         phase,
+		StartedAt:     metav1.Time{Time: time.Now().UTC()},
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
