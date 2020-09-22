@@ -75,7 +75,7 @@ func NewCommand() *cobra.Command {
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
-	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the logging level. One of: debug|info|warn|error")
+	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 
 	return command
