@@ -119,16 +119,6 @@ status:
 		output := printWorkflowHelper(&wf, getFlags{})
 		assert.Regexp(t, `Progress: *1/2`, output)
 	})
-	t.Run("EstimatedDuration", func(t *testing.T) {
-		var wf wfv1.Workflow
-		testutil.MustUnmarshallYAML(`
-status:
-  estimatedDuration: 1
-  phase: Running
-`, &wf)
-		output := printWorkflowHelper(&wf, getFlags{})
-		assert.Regexp(t, `EstimatedDuration: *1 second`, output)
-	})
 	t.Run("IndexOrdering", func(t *testing.T) {
 		var wf wfv1.Workflow
 		testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1

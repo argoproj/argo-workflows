@@ -43,8 +43,6 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/estimation"
-	"github.com/argoproj/argo/workflow/graph"
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/progress"
@@ -66,8 +64,6 @@ type wfOperationCtx struct {
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
-	// estimate duration
-	estimator estimation.Estimator
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams common.Parameters
@@ -252,7 +248,6 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
-		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -493,7 +488,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
-	woc.updateNodes()
+	woc.updated = progress.UpdateProgress(woc.controller.podInformer, woc.wf) || woc.updated 
 	if !woc.updated {
 		return
 	}
@@ -1550,7 +1545,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1774,7 +1768,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1822,34 +1815,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.updated = true
 		}
-	}
-}
-
-// get a predictor, this maybe null implementation in the case of rare error
-func (woc *wfOperationCtx) getEstimator() estimation.Estimator {
-	if woc.estimator == nil {
-		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(woc.wf)
-	}
-	return woc.estimator
-}
-
-func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
-	return woc.getEstimator().EstimateWorkflowDuration()
-}
-
-func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
-	return woc.getEstimator().EstimateNodeDuration(nodeName)
-}
-
-func (woc *wfOperationCtx) updateNodes() {
-	nodes := woc.wf.Status.Nodes
-	progressUpdator := progress.NewUpdator(woc.controller.podInformer, woc.wf)
-	resourceUpdator := resource.NewUpdator(woc.wf)
-	err := graph.Visit(nodes, woc.wf.Name, progressUpdator, resourceUpdator)
-	if err != nil {
-		log.WithError(err).Error("failed to visit graph")
-	} else {
-		woc.updated = woc.updated || progressUpdator.Updated || resourceUpdator.Updated
 	}
 }
 
@@ -1954,7 +1919,6 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:        boundaryID,
 		Phase:             phase,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
-		EstimatedDuration: woc.estimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {

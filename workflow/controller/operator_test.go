@@ -81,52 +81,6 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 	}
 }
 
-func TestEstimatedDuration(t *testing.T) {
-	wf := unmarshalWF(`
-metadata:
-  name: my-wf
-  namespace: my-ns
-  labels:
-    workflows.argoproj.io/workflow-template: my-wftmpl
-spec:
-  entrypoint: main
-  templates:
-   - name: main
-     dag:
-       tasks:
-       - name: pod
-         template: pod
-   - name: pod
-     container: 
-       image: my-image
-`)
-	cancel, controller := newController(unmarshalWF(`
-metadata:
-  name: my-baseline-wf
-  namespace: my-ns
-status:
-  startedAt: "1970-01-01T00:00:00Z"
-  finishedAt: "1970-01-01T00:01:00Z"
-  nodes:
-    my-baseline-wf:
-      startedAt: "1970-01-01T00:00:00Z"
-      finishedAt: "1970-01-01T00:01:00Z"
-`), wf)
-	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-
-	makePodsPhase(woc, apiv1.PodSucceeded)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
-	woc.operate()
-
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
-	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.EstimatedDuration)
-	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes[woc.wf.Name].EstimatedDuration)
-	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes.FindByDisplayName("pod").EstimatedDuration)
-}
-
 func TestDefaultProgress(t *testing.T) {
 	wf := unmarshalWF(`
 metadata:
