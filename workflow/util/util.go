@@ -140,7 +140,14 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 // ToUnstructured converts an workflow to an Unstructured object
 func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(wf)
-	return &unstructured.Unstructured{Object: obj}, err
+	if err != nil {
+		return nil, err
+	}
+	un := &unstructured.Unstructured{Object: obj}
+	// we need to add these values so that the `EventRecorder` does not error
+	un.SetKind(workflow.WorkflowKind)
+	un.SetAPIVersion(workflow.Version)
+	return un, nil
 }
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
@@ -563,7 +570,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 	for key, val := range wf.ObjectMeta.Labels {
 		switch key {
-		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted:
+		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
 			newWF.ObjectMeta.Labels[key] = val
@@ -669,6 +676,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
+	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning

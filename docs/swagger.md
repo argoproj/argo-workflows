@@ -1542,7 +1542,6 @@ Template is a reusable and composable unit of execution in a workflow
 | priority | integer | Priority to apply to workflow pods. | No |
 | priorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | resource | [io.argoproj.workflow.v1alpha1.ResourceTemplate](#io.argoproj.workflow.v1alpha1.resourcetemplate) | Resource template subtype which can run k8s resources | No |
-| resubmitPendingPods | boolean | ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission | No |
 | retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy describes how to retry a template when it fails | No |
 | schedulerName | string | If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler. | No |
 | script | [io.argoproj.workflow.v1alpha1.ScriptTemplate](#io.argoproj.workflow.v1alpha1.scripttemplate) | Script runs a portion of code against an interpreter | No |
@@ -1770,6 +1769,7 @@ WorkflowSpec is the specification of a Workflow.
 | podPriorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
 | priority | integer | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | No |
+| retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1. | No |
 | schedulerName | string | Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified. | No |
 | securityContext | [io.k8s.api.core.v1.PodSecurityContext](#io.k8s.api.core.v1.podsecuritycontext) | SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field. | No |
 | serviceAccountName | string | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. | No |
@@ -1929,6 +1929,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | podPriorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
 | priority | integer | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | No |
+| retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1. | No |
 | schedulerName | string | Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified. | No |
 | securityContext | [io.k8s.api.core.v1.PodSecurityContext](#io.k8s.api.core.v1.podsecuritycontext) | SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field. | No |
 | serviceAccountName | string | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. | No |

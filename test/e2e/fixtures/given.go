@@ -137,11 +137,13 @@ func (g *Given) CronWorkflow(text string) *Given {
 }
 
 var NoError = func(t *testing.T, output string, err error) {
+	t.Helper()
 	assert.NoError(t, err, output)
 }
 
 var OutputContains = func(contains string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
+		t.Helper()
 		if assert.NoError(t, err, output) {
 			assert.Contains(t, output, contains)
 		}
