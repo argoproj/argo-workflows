@@ -639,6 +639,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
@@ -1297,6 +1298,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
@@ -1531,6 +1533,40 @@ PodGC describes how to delete completed pods as they complete
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
+
+## RetryStrategy
+
+RetryStrategy provides controls on how to retry a workflow step
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
+
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
+
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
+|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
+|`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## Synchronization
 
@@ -1856,7 +1892,6 @@ Template is a reusable and composable unit of execution in a workflow
 |`priority`|`int32`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
-|`resubmitPendingPods`|`boolean`|ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
 |`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.|
 |`script`|[`ScriptTemplate`](#scripttemplate)|Script runs a portion of code against an interpreter|
@@ -2318,6 +2353,24 @@ Prometheus is a prometheus metric to be emitted
 |`labels`|`Array<`[`MetricLabel`](#metriclabel)`>`|Labels is a list of metric labels|
 |`name`|`string`|Name is the name of the metric|
 |`when`|`string`|When is a conditional statement that decides when to emit the metric|
+
+## Backoff
+
+Backoff is a backoff strategy to use within retryStrategy
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
+|`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
+|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
 
 ## Mutex
 
@@ -2971,40 +3024,6 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 |`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic" Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
 |`successCondition`|`string`|SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step|
-
-## RetryStrategy
-
-RetryStrategy provides controls on how to retry a workflow step
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
-
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
-
-- [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container-to-completion.yaml)
-
-- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
-
-- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
-
-- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
-
-- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
-
-- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
-|`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of attempts when retrying a container|
-|`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## ScriptTemplate
 
@@ -3755,24 +3774,6 @@ _No description available_
 |:----------:|:----------:|---------------|
 |`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|_No description available_|
 
-## Backoff
-
-Backoff is a backoff strategy to use within retryStrategy
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
-|`factor`|[`IntOrString`](#intorstring)|Factor is a factor to multiply the base duration after each failed retry|
-|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
-
 ## ContinueOn
 
 ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.
@@ -4465,9 +4466,21 @@ IntOrString is a type that can hold an int32 or a string.  When used in JSON or 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`timeouts-step.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-step.yaml)
+- [`clustertemplates.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`timeouts-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/timeouts-workflow.yaml)
+- [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
+
+- [`retry-backoff.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-backoff.yaml)
+
+- [`retry-container.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](https://github.com/argoproj/argo/blob/master/examples/retry-with-steps.yaml)
+
+- [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
 ## Container

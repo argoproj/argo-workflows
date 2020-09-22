@@ -805,7 +805,9 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
