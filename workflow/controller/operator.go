@@ -44,7 +44,6 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/indexes"
-	"github.com/argoproj/argo/workflow/graph"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -491,7 +490,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	woc.updateNodes()
+	resource.UpdateResourceDurations(woc.wf)
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
@@ -1809,15 +1808,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.updated = true
 		}
-	}
-}
-
-func (woc *wfOperationCtx) updateNodes() {
-	nodes := woc.wf.Status.Nodes
-	resourceUpdator := resource.NewUpdater(woc.wf)
-	err := graph.Visit(nodes, resourceUpdator)
-	if err != nil {
-		log.WithError(err).Error("failed to visit graph")
 	}
 }
 
