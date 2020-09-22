@@ -56,6 +56,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Microba](https://www.microba.com/)
+1. [Microblink](https://microblink.com/)
 1. [Mirantis](https://mirantis.com/)
 1. [New Relic](https://newrelic.com/)
 1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
