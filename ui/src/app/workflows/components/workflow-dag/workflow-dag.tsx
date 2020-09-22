@@ -16,9 +16,6 @@ export interface WorkflowDagRenderOptions {
     nodesToDisplay: string[];
     expandNodes: Set<string>;
     fastRenderer: boolean;
-    // If this flag is true, we have found our current workflow status to be malformed. Wait for an update before attempting
-    // to render again. This flag is set to false after every update to the component.
-    waitForUpdate: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -177,19 +174,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         super(props);
         this.state = {
             ...this.getOptions(),
-            expandNodes: new Set(),
-            waitForUpdate: false
+            expandNodes: new Set()
         };
     }
 
-    public componentDidUpdate(prevProps: Readonly<WorkflowDagProps>, prevState: Readonly<WorkflowDagRenderOptions>, snapshot?: any): void {
-        if (prevState.waitForUpdate) {
-            this.setState({waitForUpdate: false});
-        }
-    }
-
     public render() {
-        if (!this.props.nodes || this.state.waitForUpdate) {
+        if (!this.props.nodes) {
             return <Loading />;
         }
         const {nodes, edges} = this.prepareGraph();
@@ -273,8 +263,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private getNode(nodeId: string): NodeStatus {
         const node: NodeStatus = this.props.nodes[nodeId];
         if (!node) {
-            // If we arrive here, the workflow is likely malformed. Wait for an update before continuing.
-            this.setState({waitForUpdate: true});
             return null;
         }
         return node;
@@ -326,6 +314,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (!children) {
                 return;
             }
+
+            // Ensure that all children actually exist
+            children = children.filter(child => allNodes[child]);
 
             if (children.length > 3 && !isExpanded) {
                 // Node will be collapsed
