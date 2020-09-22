@@ -69,7 +69,11 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	if logOptions == nil {
 		logOptions = &corev1.PodLogOptions{}
 	}
-	logOptions.Timestamps = true
+	logCtx.WithField("options", logOptions).Debug("Log options")
+
+	// make a copy of requested log options and set timestamps to true, so they can be parsed out later
+	podLogStreamOptions := *logOptions
+	podLogStreamOptions.Timestamps = true
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
@@ -84,7 +88,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				defer wg.Done()
 				logCtx.Debug("Streaming pod logs")
 				defer logCtx.Debug("Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, logOptions).Stream()
+				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream()
 				if err != nil {
 					logCtx.Error(err)
 					return
