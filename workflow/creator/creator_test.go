@@ -7,9 +7,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"gopkg.in/square/go-jose.v2/jwt"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"gopkg.in/square/go-jose.v2/jwt"
 	"github.com/argoproj/argo/workflow/common"
 )
 

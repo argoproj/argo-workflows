@@ -10,8 +10,9 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"gopkg.in/square/go-jose.v2/jwt"
+
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth/sso/mocks"
 )
 

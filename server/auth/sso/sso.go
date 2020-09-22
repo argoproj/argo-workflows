@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"strings"
@@ -21,13 +22,16 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-const Prefix = "Bearer v2:"
-const issuer = "argo-server"
-const expiry = 10 * time.Hour
+const (
+	Prefix                              = "Bearer v2:"
+	issuer                              = "argo-server"                // the JWT issuer
+	expiry                              = 10 * time.Hour               // how long JWT are valid for
+	secretName                          = "sso"                        // where we store SSO secret
+	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
+)
 
 type Interface interface {
-	// TODO - remove ctx
-	Authorize(ctx context.Context, authorization string) (*jwt.Claims, error)
+	Authorize(authorization string) (*jwt.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -106,11 +110,27 @@ func newSso(
 			return nil, err
 		}
 	}
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate key: %w", err)
 	}
-	// TODO write to secret and then read back in case of race
+	// whoa - are you ignoring errors - yes - we don't care if it fails -
+	// if it fails, then the get will fail, and the pod restart
+	// it may fail due to race condition with another pod - which is fine,
+	// when it restart it'll get the new key
+	_, _ = secretsIf.Create(&apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: secretName},
+		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
+	})
+	secret, err := secretsIf.Get(secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secret: %w", err)
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
 	clientID := clientIDObj.Data[c.ClientID.Key]
 	if clientID == nil {
 		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
@@ -127,7 +147,7 @@ func newSso(
 		Scopes:       []string{oidc.ScopeOpenID},
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP, Key: privateKey.Public()}, nil)
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
@@ -215,7 +235,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorization string) (*jwt.Claims, error) {
+func (s *sso) Authorize(authorization string) (*jwt.Claims, error) {
 	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token %v", err)

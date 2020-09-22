@@ -140,7 +140,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		claims, _ := sso.ClaimSetFor(s.restConfig)
 		return s.wfClient, s.kubeClient, claims, nil
 	case SSO:
-		claims, err := s.ssoIf.Authorize(ctx, authorization)
+		claims, err := s.ssoIf.Authorize(authorization)
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}

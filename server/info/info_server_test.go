@@ -6,8 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo/server/auth"
 	"gopkg.in/square/go-jose.v2/jwt"
+
+	"github.com/argoproj/argo/server/auth"
 )
 
 func Test_infoServer_GetUserInfo(t *testing.T) {

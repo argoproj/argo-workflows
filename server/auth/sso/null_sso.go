@@ -1,7 +1,6 @@
 package sso
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -12,7 +11,7 @@ var NullSSO Interface = nullService{}
 
 type nullService struct{}
 
-func (n nullService) Authorize(context.Context, string) (*jwt.Claims, error) {
+func (n nullService) Authorize(string) (*jwt.Claims, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
