@@ -6,7 +6,7 @@ import (
 	context "context"
 	http "net/http"
 
-	jws "github.com/argoproj/argo/server/auth/jws"
+	jwt "gopkg.in/square/go-jose.v2/jwt"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -17,15 +17,15 @@ type Interface struct {
 }
 
 // Authorize provides a mock function with given fields: ctx, authorization
-func (_m *Interface) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
+func (_m *Interface) Authorize(ctx context.Context, authorization string) (*jwt.Claims, error) {
 	ret := _m.Called(ctx, authorization)
 
-	var r0 *jws.ClaimSet
-	if rf, ok := ret.Get(0).(func(context.Context, string) *jws.ClaimSet); ok {
+	var r0 *jwt.Claims
+	if rf, ok := ret.Get(0).(func(context.Context, string) *jwt.Claims); ok {
 		r0 = rf(ctx, authorization)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*jws.ClaimSet)
+			r0 = ret.Get(0).(*jwt.Claims)
 		}
 	}
 

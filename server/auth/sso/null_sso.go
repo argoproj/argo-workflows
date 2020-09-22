@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/argoproj/argo/server/auth/jws"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 var NullSSO Interface = nullService{}
 
 type nullService struct{}
 
-func (n nullService) Authorize(context.Context, string) (*jws.ClaimSet, error) {
+func (n nullService) Authorize(context.Context, string) (*jwt.Claims, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

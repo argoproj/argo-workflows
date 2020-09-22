@@ -10,7 +10,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/jws"
+	"gopkg.in/square/go-jose.v2/jwt"
 	testutil "github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
@@ -52,7 +52,7 @@ metadata:
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"))
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &jwt.Claims{Sub: "my-sub"})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
