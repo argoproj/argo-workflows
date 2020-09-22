@@ -103,11 +103,6 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
-func TestNodeStatus_IsLeaf(t *testing.T) {
-	assert.True(t, NodeStatus{Children: []string{}}.IsLeaf())
-	assert.False(t, NodeStatus{Children: []string{""}}.IsLeaf())
-}
-
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))

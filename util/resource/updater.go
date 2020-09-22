@@ -1,8 +1,6 @@
 package resource
 
 import (
-	"strings"
-
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/graph"
 )
@@ -21,30 +19,33 @@ func (u *Updater) Init() {
 	u.wf.Status.ResourcesDuration = wfv1.ResourcesDuration{}
 }
 
-func names(nodes wfv1.Nodes, children []string) []string {
-	names := make([]string, len(children))
-	for i, child := range children {
-		names[i] = nodes[child].Name
-	}
-	return names
-}
-
 func (u *Updater) Visit(nodeID string) {
 	nodes := u.wf.Status.Nodes
 	node := nodes[nodeID]
-	println(">", node.Name, node.Type, node.IsLeaf(), node.Phase, strings.Join(names(nodes, node.Children), ","), node.ResourcesDuration.String())
-	if !node.IsLeaf() {
-		if node.Fulfilled() {
-			v := wfv1.ResourcesDuration{}
-			for _, childID := range node.Children {
-				// this will tolerate missing child (will be 0) and therefore ignored
-				v = v.Add(nodes[childID].ResourcesDuration)
-			}
-			node.ResourcesDuration = v
-			nodes[nodeID] = node
-		}
-	} else {
+	// pods are already calculated and so we do not need to compute them,
+	// AND they are the only node that should contribute to the total
+	if node.Type == wfv1.NodeTypePod {
 		u.wf.Status.ResourcesDuration = u.wf.Status.ResourcesDuration.Add(node.ResourcesDuration)
+	} else if node.Fulfilled() {
+		// compute the sum of all children
+		node.ResourcesDuration = u.resourceDuration(node, make(map[string]bool))
+		nodes[nodeID] = node
 	}
-	println("<", node.Name, node.Type, node.IsLeaf(), node.Phase, strings.Join(names(nodes, node.Children), ","), node.ResourcesDuration.String())
+}
+
+func (u *Updater) resourceDuration(node wfv1.NodeStatus, visited map[string]bool) wfv1.ResourcesDuration {
+	v := wfv1.ResourcesDuration{}
+	for _, childID := range node.Children {
+		// we do not want to visit the same node twice, as will (a) do 2x work and (b) make `v` incorrect
+		if visited[childID] {
+			continue
+		}
+		visited[childID] = true
+		child := u.wf.Status.Nodes[childID]
+		if child.Type == wfv1.NodeTypePod {
+			v = v.Add(child.ResourcesDuration)
+		}
+		v = v.Add(u.resourceDuration(child, visited))
+	}
+	return v
 }

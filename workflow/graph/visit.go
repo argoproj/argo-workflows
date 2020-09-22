@@ -1,8 +1,6 @@
 package graph
 
 import (
-	"strings"
-
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -16,7 +14,6 @@ func Visit(nodes wfv1.Nodes, visitor Visitor) error {
 	if err != nil {
 		return err
 	}
-	println(strings.Join(nodeIDs, ","))
 	visitor.Init()
 	for _, nodeID := range nodeIDs {
 		_, ok := nodes[nodeID]
