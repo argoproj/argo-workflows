@@ -2,9 +2,10 @@ package s3
 
 import (
 	"context"
-	"github.com/minio/minio-go/v7"
 	"os"
 	"time"
+
+	"github.com/minio/minio-go/v7"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
