@@ -14,6 +14,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/common"
@@ -746,5 +747,14 @@ func TestRetryWorkflow(t *testing.T) {
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
 		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
 		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+	}
+}
+
+func TestToUnstructured(t *testing.T) {
+	un, err := ToUnstructured(&wfv1.Workflow{})
+	if assert.NoError(t, err) {
+		gv := un.GetObjectKind().GroupVersionKind()
+		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
+		assert.Equal(t, workflow.Version, gv.Version)
 	}
 }

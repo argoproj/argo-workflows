@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -112,6 +113,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime = 10 * time.Second
+const defaultRequeueTime = maxOperationTime
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -302,7 +304,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(10 * time.Second)
+			woc.requeue(defaultRequeueTime)
 			return
 		}
 		msg := "pvc create error"
@@ -540,19 +542,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	//
-	// This line was removed in v2.9.0, but issues arose with the controller picking up outdated versions of workflows,
-	// operating on them, then attempting to update the resources on the cluster. Since the workflows were outdated,
-	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
-	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
-	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
-	time.Sleep(1 * time.Second)
+	if os.Getenv("INFORMER_WRITE_BACK") != "false" {
+		if err := woc.writeBackToInformer(); err != nil {
+			woc.markWorkflowError(err, true)
+			return
+		}
+	} else {
+		time.Sleep(enoughTimeForInformerSync)
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -577,6 +574,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 		}
 	}
+}
+
+func (woc *wfOperationCtx) writeBackToInformer() error {
+	un, err := wfutil.ToUnstructured(woc.wf)
+	if err != nil {
+		return fmt.Errorf("failed to convert workflow to unstructured: %w", err)
+	}
+	err = woc.controller.wfInformer.GetStore().Update(un)
+	if err != nil {
+		return fmt.Errorf("failed to update informer store: %w", err)
+	}
+	return nil
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
@@ -1539,7 +1548,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		woc.requeue(0)
+		woc.requeue(defaultRequeueTime)
 		return node, ErrDeadlineExceeded
 	}
 
@@ -2227,7 +2236,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
 	if errorsutil.IsTransientErr(err) {
 		// Our error was most likely caused by a lack of resources.
-		woc.requeue(10 * time.Second)
+		woc.requeue(defaultRequeueTime)
 		return woc.markNodePending(nodeName, err), nil
 	}
 	return nil, err
