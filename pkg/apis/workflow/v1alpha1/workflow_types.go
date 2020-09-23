@@ -1373,9 +1373,6 @@ type NodeStatus struct {
 
 	// MemoizationStatus holds information about cached nodes
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
-
-	// Synchronization stores the status of synchronization locks
-	Synchronization *SynchronizationStatus `json:"synchronization,omitempty"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -2337,7 +2334,7 @@ func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
 	i, semaphoreHolding := ss.GetHolding(lockKey)
 	items := strings.Split(holderKey, "/")
 	holdingName := items[len(items)-1]
-	if i < 0 {
+	if i >= 0 {
 		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
 		ss.Holding[i] = semaphoreHolding
 		return true
@@ -2424,7 +2421,7 @@ func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []
 
 func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
 	i, _ := ms.GetHolding(lockKey)
-	if i < 0 {
+	if i >= 0 {
 		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
 		return true
 	}

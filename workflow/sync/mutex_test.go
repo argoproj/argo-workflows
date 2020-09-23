@@ -159,7 +159,7 @@ func TestMutexLock(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
-		assert.True(t, wfUpdate)
+		assert.False(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Synchronization)
@@ -306,7 +306,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "synchronization-tmpl-level-mutex-vjcdk-1432992664", 0, time.Now(), tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
-		assert.True(t, wfUpdate)
+		assert.False(t, wfUpdate)
 		assert.False(t, status)
 
 		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
