@@ -381,7 +381,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		holderKey2 := getHolderKey(wf2, "")
+		holderKey2 := GetHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
@@ -395,7 +395,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		concurrenyMgr.Release(wf, "", wf.Namespace, wf.Spec.Synchronization)
+		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
 		assert.Equal(t, holderKey2, nextKey)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.Equal(t, 0, len(wf.Status.Synchronization.Semaphore.Holding[0].Holders))
@@ -526,7 +526,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.False(t, status)
 
-		concurrenyMgr.Release(wf, "semaphore-tmpl-level-xjvln-3448864205", wf.Namespace, tmpl.Synchronization)
+		concurrenyMgr.Release(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders)

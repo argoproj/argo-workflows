@@ -135,7 +135,7 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		holderKey2 := getHolderKey(wf2, "")
+		holderKey2 := GetHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
@@ -149,7 +149,7 @@ func TestMutexLock(t *testing.T) {
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
-		concurrenyMgr.Release(wf, "", wf.Namespace, wf.Spec.Synchronization)
+		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
 		assert.Equal(t, holderKey2, nextKey)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.Equal(t, 0, len(wf.Status.Synchronization.Mutex.Holding))
@@ -309,7 +309,7 @@ func TestMutexTmplLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.False(t, status)
 
-		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", wf.Namespace, tmpl.Synchronization)
+		concurrenyMgr.Release(wf, "synchronization-tmpl-level-mutex-vjcdk-3941195474", tmpl.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.NotNil(t, wf.Status.Synchronization.Mutex)
 		assert.Empty(t, wf.Status.Synchronization.Mutex.Holding)
