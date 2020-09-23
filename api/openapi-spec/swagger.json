@@ -11,9 +11,9 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Argo",
-    "title": "Argo",
-    "version": "v2.11.0"
+    "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
+    "title": "Argo Server API",
+    "version": "latest"
   },
   "paths": {
     "/api/v1/archived-workflows": {
