@@ -381,7 +381,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		holderKey2 := GetHolderKey(wf2, "")
+		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)

@@ -173,7 +173,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32
 		}
 	}
 
-	holderKey := GetHolderKey(wf, nodeName)
+	holderKey := getHolderKey(wf, nodeName)
 	lock.addToQueue(holderKey, priority, creationTime)
 
 	ensureInit(wf, syncLockRef.GetType())
@@ -196,7 +196,7 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 		return
 	}
 
-	holderKey := GetHolderKey(wf, nodeName)
+	holderKey := getHolderKey(wf, nodeName)
 	lockName, err := GetLockName(syncRef, wf.Namespace)
 	if err != nil {
 		return
@@ -390,7 +390,7 @@ func ensureInit(wf *wfv1.Workflow, lockType wfv1.SynchronizationType) {
 //	return false
 //}
 
-func GetHolderKey(wf *wfv1.Workflow, nodeName string) string {
+func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	if wf == nil {
 		return ""
 	}
