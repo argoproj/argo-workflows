@@ -40,6 +40,7 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
@@ -797,7 +798,9 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {

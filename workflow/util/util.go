@@ -140,7 +140,14 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 // ToUnstructured converts an workflow to an Unstructured object
 func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(wf)
-	return &unstructured.Unstructured{Object: obj}, err
+	if err != nil {
+		return nil, err
+	}
+	un := &unstructured.Unstructured{Object: obj}
+	// we need to add these values so that the `EventRecorder` does not error
+	un.SetKind(workflow.WorkflowKind)
+	un.SetAPIVersion(workflow.Version)
+	return un, nil
 }
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
@@ -658,7 +665,19 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
+	var updated *wfv1.Workflow
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
+		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, wf, restartSuccessful, nodeFieldSelector)
+		return err == nil, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return updated, err
+}
 
+func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	err := hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
