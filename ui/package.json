@@ -40,7 +40,7 @@
         "swagger-ui-react": "^3.29.0"
     },
     "devDependencies": {
-        "@types/chart.js": "^2.9.23",
+        "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.2.3",
         "@types/deep-equal": "^1.0.1",
         "@types/history": "^4.6.2",

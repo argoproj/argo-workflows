@@ -12,7 +12,6 @@ import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
-import {Consumer} from '../../../shared/context';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
@@ -58,44 +57,31 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     public render() {
         return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Archived Workflows'
-                        toolbar={{
-                            breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}],
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Workflow Report',
-                                        iconClassName: 'fa fa-chart-bar',
-                                        action: () => ctx.navigation.goto(uiUrl('reports/' + this.state.namespace), {labels: this.state.selectedLabels.join(',')})
-                                    }
-                                ]
-                            }
-                        }}>
-                        <div className='row'>
-                            <div className='columns small-12 xlarge-2'>
-                                <div>
-                                    <ArchivedWorkflowFilters
-                                        workflows={this.state.workflows || []}
-                                        namespace={this.state.namespace}
-                                        phaseItems={Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR])}
-                                        selectedPhases={this.state.selectedPhases}
-                                        selectedLabels={this.state.selectedLabels}
-                                        minStartedAt={this.state.minStartedAt}
-                                        maxStartedAt={this.state.maxStartedAt}
-                                        onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
-                                        }
-                                    />
-                                </div>
-                            </div>
-                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
+            <Page
+                title='Archived Workflows'
+                toolbar={{
+                    breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}]
+                }}>
+                <div className='row'>
+                    <div className='columns small-12 xlarge-2'>
+                        <div>
+                            <ArchivedWorkflowFilters
+                                workflows={this.state.workflows || []}
+                                namespace={this.state.namespace}
+                                phaseItems={Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR])}
+                                selectedPhases={this.state.selectedPhases}
+                                selectedLabels={this.state.selectedLabels}
+                                minStartedAt={this.state.minStartedAt}
+                                maxStartedAt={this.state.maxStartedAt}
+                                onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
+                                    this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
+                                }
+                            />
                         </div>
-                    </Page>
-                )}
-            </Consumer>
+                    </div>
+                    <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
+                </div>
+            </Page>
         );
     }
 

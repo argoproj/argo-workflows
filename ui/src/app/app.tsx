@@ -202,7 +202,7 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
     }
 
     private get reportsUrl() {
-        return reportsUrl + '/' + this.state.namespace || '';
+        return reportsUrl + '/' + (this.state.namespace || '');
     }
 
     public getChildContext() {

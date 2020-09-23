@@ -1,4 +1,4 @@
-import {Page} from 'argo-ui/src/index';
+import {Checkbox, Page} from 'argo-ui/src/index';
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
@@ -7,7 +7,7 @@ import {RouteComponentProps} from 'react-router-dom';
 import {getColorForNodePhase, NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
-import {ErrorPanel} from '../../shared/components/error-panel';
+import {ErrorNotice} from '../../shared/components/error-notice';
 import {InputFilter} from '../../shared/components/input-filter';
 import {Loading} from '../../shared/components/loading';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
@@ -22,11 +22,14 @@ interface Chart {
 }
 
 interface State {
+    archivedWorkflows: boolean;
     namespace: string;
     labels: string[];
     error?: Error;
     charts?: Chart[];
 }
+
+const limit = 100;
 
 export class Reports extends BasePage<RouteComponentProps<any>, State> {
     private get phase() {
@@ -34,7 +37,11 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private set phase(phase: string) {
-        this.fetchReport(this.state.namespace, this.state.labels.filter(label => !label.startsWith('workflows.argoproj.io/phase')).concat('workflows.argoproj.io/phase=' + phase));
+        this.fetchReport(
+            this.state.namespace,
+            this.state.labels.filter(label => !label.startsWith('workflows.argoproj.io/phase')).concat('workflows.argoproj.io/phase=' + phase),
+            this.state.archivedWorkflows
+        );
     }
 
     private get canRunReport() {
@@ -44,13 +51,14 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
+            archivedWorkflows: !!this.queryParam('archivedWorkflows'),
             namespace: this.props.match.params.namespace || '',
             labels: (this.queryParam('labels') || '').split(',').filter(v => v !== '')
         };
     }
 
     public componentDidMount() {
-        this.fetchReport(this.state.namespace, this.state.labels);
+        this.fetchReport(this.state.namespace, this.state.labels, this.state.archivedWorkflows);
     }
 
     public render() {
@@ -66,13 +74,12 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private fetchReport(namespace: string, labels: string[]) {
-        this.setState({charts: null, namespace, labels}, () => {
+    private fetchReport(namespace: string, labels: string[], archivedWorkflows: boolean) {
+        this.setState({charts: null, namespace, labels, archivedWorkflows}, () => {
             if (!this.canRunReport) {
                 return;
             }
-            services.workflows
-                .list(namespace, [], labels, {})
+            (archivedWorkflows ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit}) : services.workflows.list(namespace, [], labels, {limit}))
                 .then(list => this.getExtractDatasets(list.items || []))
                 .then(charts => this.setState({charts, error: null}))
                 .catch(error => this.setState({error}));
@@ -90,7 +97,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 resourcesDuration: wf.status.resourcesDuration
             }))
             .sort((a, b) => b.finishedAt.getTime() - a.finishedAt.getTime())
-            .slice(0, 100)
+            .slice(0, limit)
             .reverse();
 
         const labels: string[] = new Array(filteredWorkflows.length);
@@ -182,7 +189,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 options: {
                     title: {
                         display: true,
-                        text: 'Resources'
+                        text: 'Resources (Not available for archived workflows)'
                     },
                     scales: {
                         xAxes: [{}],
@@ -208,29 +215,39 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 <div className='columns small-12'>
                     <div className='white-box'>
                         <div className='row'>
-                            <div className='columns small-3' key='namespace'>
+                            <div className='columns small-4' key='archived-workflows'>
+                                <label>
+                                    <Checkbox
+                                        checked={this.state.archivedWorkflows}
+                                        onChange={checked => {
+                                            this.fetchReport(this.state.namespace, this.state.labels, checked);
+                                        }}
+                                    />{' '}
+                                    Archived Workflows
+                                </label>
+                            </div>
+                            <div className='columns small-8' key='namespace'>
                                 <InputFilter
                                     name='namespace'
                                     value={this.state.namespace}
                                     placeholder='Namespace'
-                                    onChange={namespace => this.fetchReport(namespace, this.state.labels)}
+                                    onChange={namespace => this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows)}
                                 />
                             </div>
-                            <div className='columns small-5' key='labels'>
-                                <TagsInput placeholder='Labels' tags={this.state.labels} onChange={labels => this.fetchReport(this.state.namespace, labels)} />
+                        </div>
+                        <div className='row'>
+                            <div className='columns small-8' key='labels'>
+                                <TagsInput
+                                    placeholder='Labels'
+                                    tags={this.state.labels}
+                                    onChange={labels => this.fetchReport(this.state.namespace, labels, this.state.archivedWorkflows)}
+                                />
                             </div>
                             <div className='columns small-4' key='phases'>
                                 <p>
                                     {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
                                         <label key={phase} style={{marginRight: 10}}>
-                                            <input
-                                                type='radio'
-                                                checked={phase === this.phase}
-                                                onChange={() => {
-                                                    this.phase = phase;
-                                                }}
-                                                style={{marginRight: 5}}
-                                            />
+                                            <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
                                             {phase}
                                         </label>
                                     ))}
@@ -249,8 +266,8 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 <ZeroState title='Workflow Report'>
                     <p>
                         Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
-                        <b>cron workflows</b>, your workflows will be automatically labelled. Only archived workflows are shown (nothing will be shown if you don't have the{' '}
-                        <a href='https://argoproj.github.io/argo/workflow-archive/'>workflow archive</a> enabled).
+                        <b>cron workflows</b>, your workflows will be automatically labelled. You'll probably need to enable the{' '}
+                        <a href='https://argoproj.github.io/argo/workflow-archive/'>workflow archive</a> to get long term data. Only the most 100 records are shown.
                     </p>
                     <p>Select a namespace and at least one label to get a report.</p>
                     <p>
@@ -260,7 +277,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
             );
         }
         if (this.state.error) {
-            return <ErrorPanel error={this.state.error} />;
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
         }
         if (!this.state.charts) {
             return <Loading />;
