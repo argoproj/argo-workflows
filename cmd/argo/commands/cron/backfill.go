@@ -1,20 +1,23 @@
 package cron
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"os"
+	"time"
+
+	"github.com/ghodss/yaml"
+	cron "github.com/robfig/cron/v3"
+	"github.com/spf13/cobra"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/pkg/rand"
-	"github.com/go-yaml/yaml"
-	cron "github.com/robfig/cron/v3"
-	"github.com/spf13/cobra"
-	"math"
-	"os"
-	"time"
 )
 
 type backfillOpts struct {
@@ -44,12 +47,12 @@ func NewBackfillCommand() *cobra.Command {
 			return backfillCronWorkflow(args[0], cliOps)
 		},
 	}
-	command.Flags().StringVar(&cliOps.name, "name", "","Backfill name")
-	command.Flags().StringVar(&cliOps.startDate, "start", "","Start date")
-	command.Flags().StringVar(&cliOps.endDate, "end", "","End Date")
-	command.Flags().BoolVar(&cliOps.parallel, "parallel", false,"")
-	command.Flags().StringVar(&cliOps.argName, "argname","cronscheduletime","Schedule time argument name")
-	command.Flags().StringVar(&cliOps.dateFormat, "format",time.RFC822,"Date format for workflow argument value")
+	command.Flags().StringVar(&cliOps.name, "name", "", "Backfill name")
+	command.Flags().StringVar(&cliOps.startDate, "start", "", "Start date")
+	command.Flags().StringVar(&cliOps.endDate, "end", "", "End Date")
+	command.Flags().BoolVar(&cliOps.parallel, "parallel", false, "")
+	command.Flags().StringVar(&cliOps.argName, "argname", "cronscheduletime", "Schedule time argument name")
+	command.Flags().StringVar(&cliOps.dateFormat, "format", time.RFC822, "Date format for workflow argument value")
 
 	return command
 }
@@ -89,105 +92,108 @@ func backfillCronWorkflow(cronWFName string, cliOps backfillOpts) error {
 	}
 	scheTime := startTime
 	priority := int32(math.MaxInt32)
-	var jobWf []string
+	var scheList []string
+	wf := common.ConvertCronWorkflowToWorkflow(cronWF)
+	paramArg := "{{input.parameters.scheduletime}}"
+	wf.GenerateName = cronWF.Name + "-backfill-" + cliOps.name + "-"
+	param := v1alpha1.Parameter{
+		Name:  cliOps.argName,
+		Value: &paramArg,
+	}
+	if !cliOps.parallel {
+		wf.Spec.Priority = &priority
+		wf.Spec.Synchronization = &v1alpha1.Synchronization{
+			Mutex: &v1alpha1.Mutex{Name: cliOps.name},
+		}
+	}
+	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, param)
 	for {
 		scheTime = cronTab.Next(scheTime)
 		timeStr := scheTime.String()
-		wf := common.ConvertCronWorkflowToWorkflow(cronWF)
-		wf.GenerateName = cronWF.Name + "-backfill-"+cliOps.name+"-"
-		param := v1alpha1.Parameter{
-			Name:       cliOps.argName,
-			Value:       &timeStr,
-		}
-		if !cliOps.parallel {
-			wf.Spec.Priority = &priority
-			wf.Spec.Synchronization = &v1alpha1.Synchronization{
-				Mutex:     &v1alpha1.Mutex{Name: cliOps.name},
-			}
-		}
-		wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, param)
-
-		created, err := wfClient.CreateWorkflow(ctx, &workflow.WorkflowCreateRequest{
-			Namespace: client.Namespace(),
-			Workflow:  wf,
-		})
-		jobWf = append(jobWf, created.Name)
-		if err != nil {
-			fmt.Println(err)
-		}
-		priority--
+		scheList = append(scheList, timeStr)
 		if endTime.Before(scheTime) {
-			return nil
+			break
 		}
 	}
+	wfJsonByte, err := json.Marshal(wf)
+	yamlbyte, err := yaml.JSONToYAML(wfJsonByte)
+	if err != nil {
+		return err
+	}
+	wfYamlStr := "apiVersion: argoproj.io/v1alpha1 \n" + string(yamlbyte)
+	return CreateMonitorWf(wfYamlStr, client.Namespace(), scheList, wfClient, ctx)
 }
 
-var monitorWf=`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-   name: monitor-wf
-spec:
-  entrypoint: monitor
-  templates:
-  - name: monitor
-    steps:
-    - - name: watch-wf
-        template: watch-wf
-
-  - name: watch-wf
-    inputs:
-      parameters:  
-      - name: workflowname
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      source: |
-
+var backfillWf = `{
+   "apiVersion": "argoproj.io/v1alpha1",
+   "kind": "Workflow",
+   "metadata": {
+      "generateName": "backfill-wf-"
+   },
+   "spec": {
+      "entrypoint": "main",
+      "templates": [
+         {
+            "name": "main",
+            "steps": [
+               [
+                  {
+                     "name": "create-workflow",
+                     "template": "create-workflow",
+                     "arguments": {
+                        "parameters": [
+                           {
+                              "name": "cronscheduletime",
+                              "value": "{{item}}"
+                           }
+                        ],
+                        "withParam": "{{workflows.parameters.cronscheduletime}}"
+                     }
+                  }
+               ]
+            ]
+         },
+         {
+            "name": "create-workflow",
+            "inputs": {
+               "parameters": [
+                  {
+                     "name": "cronscheduletime"
+                  }
+               ]
+            },
+            "resource": {
+               "successCondition": "status.phase == successed",
+               "action": "create"
+            }
+         }
+      ]
+   }
+}
 `
 
-func constructParam(jobWf []string, tmpl *v1alpha1.Template)  error {
-	jsonbyte, err := json.Marshal(jobWf)
+func CreateMonitorWf(wf, namespace string, scheTime []string, wfClient workflow.WorkflowServiceClient, ctx context.Context) error {
+	const max_wf_count = 1000
+	var monitorWfObj v1alpha1.Workflow
+	err := json.Unmarshal([]byte(backfillWf), &monitorWfObj)
 	if err != nil {
 		return err
 	}
-	item := "{{item}}"
-	tmpl.Steps[0].Steps[0].Arguments = v1alpha1.Arguments{
-		Parameters:[]v1alpha1.Parameter{v1alpha1.Parameter{
-			Name:  "workflowname",
-			Value: &item,
-		},
-		},
+	fmt.Println(len(scheTime))
+	count := len(scheTime) / max_wf_count
+	startIdx := 0
+	for i := 0; i < count; i++ {
+
+		tmpl := monitorWfObj.GetTemplateByName("create-workflow")
+		scheTimeByte, err := json.Marshal(scheTime[startIdx : startIdx+max_wf_count])
+		if err != nil {
+			return err
+		}
+		tmpl.Resource.Manifest = wf
+		stepTmpl := monitorWfObj.GetTemplateByName("main")
+		stepTmpl.Steps[0].Steps[0].WithParam = string(scheTimeByte)
+		c, err := wfClient.CreateWorkflow(ctx, &workflow.WorkflowCreateRequest{Namespace: namespace, Workflow: &monitorWfObj})
+		fmt.Println(c.Namespace + "/" + c.Name)
 	}
-	tmpl.Steps[0].Steps[0].WithParam = string(jsonbyte)
 	return nil
 }
-
-func CreateMonitorWf(jobWf []string, wfClient workflow.WorkflowServiceClient) error {
-	var monitorWfObj v1alpha1.Workflow
-	err := yaml.Unmarshal([]byte(monitorWf), &monitorWfObj)
-	if err != nil {
-		return err
-	}
-	if len(jobWf) == 0 {
-		return nil
-	}
-	if len(jobWf) == 1 {
-		err = constructParam(jobWf,monitorWfObj.GetTemplateByName("watch-wf"))
-
-	}
-	if err != nil {
-		return err
-	}
-
-	monitorWfSize := 100
-	noSlice := len(jobWf)/monitorWfSize
-	startIdx := 0
-	endIdx := len(jobWf)
-
-	for i :=1;i<=noSlice; i++{
-		splitSlice := jobWf[startIdx: i* monitorWfSize]
-
-	}
-}
-
