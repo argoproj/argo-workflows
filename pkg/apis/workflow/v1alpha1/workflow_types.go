@@ -77,6 +77,14 @@ const (
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
 
+// VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
+type VolumeClaimGCStrategy string
+
+const (
+	VolumeClaimGCOnCompletion VolumeClaimGCStrategy = "OnWorkflowCompletion"
+	VolumeClaimGCOnSuccess    VolumeClaimGCStrategy = "OnWorkflowSuccess"
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -318,6 +326,23 @@ type WorkflowSpec struct {
 
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
+
+	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
+	VolumeClaimGC *VolumeClaimGC `json:"volumeClaimGC,omitempty" protobuf:"bytes,36,opt,name=volumeClaimGC,casttype=VolumeClaimGC"`
+
+	// RetryStrategy for all templates in the workflow.
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+}
+
+// GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
+	// If no volumeClaimGC strategy was provided, we default to the equivalent of "OnSuccess"
+	// to match the existing behavior for back-compat
+	if wfs.VolumeClaimGC == nil {
+		return &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}
+	}
+
+	return wfs.VolumeClaimGC
 }
 
 type ShutdownStrategy string
@@ -525,9 +550,6 @@ type Template struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
-	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
-	ResubmitPendingPods bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
-
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
@@ -692,6 +714,21 @@ type Artifact struct {
 type PodGC struct {
 	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+}
+
+// VolumeClaimGC describes how to delete volumes from completed Workflows
+type VolumeClaimGC struct {
+	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
+	Strategy VolumeClaimGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=VolumeClaimGCStrategy"`
+}
+
+// GetStrategy returns the VolumeClaimGCStrategy to use for the workflow
+func (vgc VolumeClaimGC) GetStrategy() VolumeClaimGCStrategy {
+	if vgc.Strategy == "" {
+		return VolumeClaimGCOnSuccess
+	}
+
+	return vgc.Strategy
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -1804,10 +1841,6 @@ func (tmpl *Template) IsLeaf() bool {
 		return true
 	}
 	return false
-}
-
-func (tmpl *Template) IsResubmitPendingPods() bool {
-	return tmpl != nil && tmpl.ResubmitPendingPods
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

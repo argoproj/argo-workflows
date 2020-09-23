@@ -103,11 +103,6 @@ func TestArtifact_GetArchive(t *testing.T) {
 	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
 }
 
-func TestTemplate_IsResubmitAllowed(t *testing.T) {
-	assert.False(t, (&Template{}).IsResubmitPendingPods())
-	assert.True(t, (&Template{ResubmitPendingPods: true}).IsResubmitPendingPods())
-}
-
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
@@ -216,4 +211,11 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
+	spec := WorkflowSpec{}
+
+	assert.NotNil(t, spec.GetVolumeClaimGC())
+	assert.Equal(t, &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}, spec.GetVolumeClaimGC())
 }

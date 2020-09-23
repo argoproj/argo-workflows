@@ -1,5 +1,5 @@
-# Argo
-Argo
+# Argo Server API
+You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`
 
 ## Version: latest
 
@@ -1541,7 +1541,6 @@ Template is a reusable and composable unit of execution in a workflow
 | priority | integer | Priority to apply to workflow pods. | No |
 | priorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | resource | [io.argoproj.workflow.v1alpha1.ResourceTemplate](#io.argoproj.workflow.v1alpha1.resourcetemplate) | Resource template subtype which can run k8s resources | No |
-| resubmitPendingPods | boolean | ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission | No |
 | retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy describes how to retry a template when it fails | No |
 | schedulerName | string | If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler. | No |
 | script | [io.argoproj.workflow.v1alpha1.ScriptTemplate](#io.argoproj.workflow.v1alpha1.scripttemplate) | Script runs a portion of code against an interpreter | No |
@@ -1632,6 +1631,14 @@ ValueFrom describes a location in which to obtain the value to a parameter
 | goVersion | string |  | Yes |
 | platform | string |  | Yes |
 | version | string |  | Yes |
+
+#### io.argoproj.workflow.v1alpha1.VolumeClaimGC
+
+VolumeClaimGC describes how to delete volumes from completed Workflows
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| strategy | string | Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess" | No |
 
 #### io.argoproj.workflow.v1alpha1.Workflow
 
@@ -1761,6 +1768,7 @@ WorkflowSpec is the specification of a Workflow.
 | podPriorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
 | priority | integer | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | No |
+| retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1. | No |
 | schedulerName | string | Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified. | No |
 | securityContext | [io.k8s.api.core.v1.PodSecurityContext](#io.k8s.api.core.v1.podsecuritycontext) | SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field. | No |
 | serviceAccountName | string | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. | No |
@@ -1771,6 +1779,7 @@ WorkflowSpec is the specification of a Workflow.
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | ttlSecondsAfterFinished | integer | TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. | No |
 | ttlStrategy | [io.argoproj.workflow.v1alpha1.TTLStrategy](#io.argoproj.workflow.v1alpha1.ttlstrategy) | TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values. | No |
+| volumeClaimGC | [io.argoproj.workflow.v1alpha1.VolumeClaimGC](#io.argoproj.workflow.v1alpha1.volumeclaimgc) | VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows | No |
 | volumeClaimTemplates | [ [io.k8s.api.core.v1.PersistentVolumeClaim](#io.k8s.api.core.v1.persistentvolumeclaim) ] | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1. | No |
 | workflowTemplateRef | [io.argoproj.workflow.v1alpha1.WorkflowTemplateRef](#io.argoproj.workflow.v1alpha1.workflowtemplateref) | WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution | No |
@@ -1919,6 +1928,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | podPriorityClassName | string | PriorityClassName to apply to workflow pods. | No |
 | podSpecPatch | string | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). | No |
 | priority | integer | Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first. | No |
+| retryStrategy | [io.argoproj.workflow.v1alpha1.RetryStrategy](#io.argoproj.workflow.v1alpha1.retrystrategy) | RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1. | No |
 | schedulerName | string | Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified. | No |
 | securityContext | [io.k8s.api.core.v1.PodSecurityContext](#io.k8s.api.core.v1.podsecuritycontext) | SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field. | No |
 | serviceAccountName | string | ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as. | No |
@@ -1929,6 +1939,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | tolerations | [ [io.k8s.api.core.v1.Toleration](#io.k8s.api.core.v1.toleration) ] | Tolerations to apply to workflow pods. | No |
 | ttlSecondsAfterFinished | integer | TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. | No |
 | ttlStrategy | [io.argoproj.workflow.v1alpha1.TTLStrategy](#io.argoproj.workflow.v1alpha1.ttlstrategy) | TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values. | No |
+| volumeClaimGC | [io.argoproj.workflow.v1alpha1.VolumeClaimGC](#io.argoproj.workflow.v1alpha1.volumeclaimgc) | VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows | No |
 | volumeClaimTemplates | [ [io.k8s.api.core.v1.PersistentVolumeClaim](#io.k8s.api.core.v1.persistentvolumeclaim) ] | VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow | No |
 | volumes | [ [io.k8s.api.core.v1.Volume](#io.k8s.api.core.v1.volume) ] | Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1. | No |
 | workflowMetadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | WorkflowMetadata contains some metadata of the workflow to be refer | No |

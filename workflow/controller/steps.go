@@ -59,10 +59,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		if woc.wf.GetNodeByName(sgNodeName) == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
-		} else {
-			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+		{
+			sgNode := woc.wf.GetNodeByName(sgNodeName)
+			if sgNode == nil {
+				_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+			} else if !sgNode.Fulfilled() {
+				_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+			}
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {
@@ -283,7 +286,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
-	woc.log.Infof("Step group node %v successful", node)
+	woc.log.Infof("Step group node %v successful", node.ID)
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 

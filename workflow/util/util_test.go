@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
@@ -39,7 +41,7 @@ spec:
 `
 	wf := unmarshalWF(workflowYaml)
 	newWf := wf.DeepCopy()
-	wfClientSet := fakeClientset.NewSimpleClientset()
+	wfClientSet := argofake.NewSimpleClientset()
 	newWf, err := SubmitWorkflow(nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
 	assert.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
@@ -278,7 +280,7 @@ status:
 `
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
 	_, err := wfIf.Create(origWf)
@@ -304,7 +306,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
 	_, err := wfIf.Create(origWf)
@@ -426,7 +428,7 @@ status:
 `
 
 func TestUpdateSuspendedNode(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(susWorkflow)
 
 	_, err := wfIf.Create(origWf)
@@ -534,6 +536,7 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 					common.LabelKeyCreator:                 "1",
 					common.LabelKeyPhase:                   "1",
 					common.LabelKeyCompleted:               "1",
+					common.LabelKeyWorkflowArchivingStatus: "1",
 				},
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -552,11 +555,206 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCreator)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyPhase)
 			assert.NotContains(t, wf.GetLabels(), common.LabelKeyCompleted)
+			assert.NotContains(t, wf.GetLabels(), common.LabelKeyWorkflowArchivingStatus)
 			assert.Contains(t, wf.GetLabels(), common.LabelKeyPreviousWorkflowName)
 			assert.Equal(t, 1, len(wf.OwnerReferences))
 			assert.Equal(t, "test", wf.OwnerReferences[0].APIVersion)
 			assert.Equal(t, "testObj", wf.OwnerReferences[0].Name)
 		}
 	})
+}
 
+var deepDeleteOfNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-09-16T16:07:54Z"
+  generateName: steps-
+  generation: 13
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: steps-9fkqc
+  resourceVersion: "383660"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
+  uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
+spec:
+  arguments: {}
+  entrypoint: foo
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: foo
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: pass
+        template: pass
+    - - arguments: {}
+        name: fail
+        template: fail
+  - arguments: {}
+    container:
+      args:
+      - exit 0
+      command:
+      - sh
+      - -c
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: pass
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-09-16T16:09:32Z"
+  message: child 'steps-9fkqc-3224593506' failed
+  nodes:
+    steps-9fkqc:
+      children:
+      - steps-9fkqc-2929074125
+      displayName: steps-9fkqc
+      finishedAt: "2020-09-16T16:09:32Z"
+      id: steps-9fkqc
+      message: child 'steps-9fkqc-3224593506' failed
+      name: steps-9fkqc
+      outboundNodes:
+      - steps-9fkqc-3224593506
+      phase: Failed
+      startedAt: "2020-09-16T16:07:54Z"
+      templateName: foo
+      templateScope: local/steps-9fkqc
+      type: Steps
+    steps-9fkqc-1411266092:
+      boundaryID: steps-9fkqc
+      children:
+      - steps-9fkqc-2862110744
+      displayName: pass
+      finishedAt: "2020-09-16T16:07:57Z"
+      hostNodeName: minikube
+      id: steps-9fkqc-1411266092
+      name: steps-9fkqc[0].pass
+      outputs:
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-09-16T16:07:54Z"
+      templateName: pass
+      templateScope: local/steps-9fkqc
+      type: Pod
+    steps-9fkqc-2862110744:
+      boundaryID: steps-9fkqc
+      children:
+      - steps-9fkqc-3224593506
+      displayName: '[1]'
+      finishedAt: "2020-09-16T16:09:32Z"
+      id: steps-9fkqc-2862110744
+      message: child 'steps-9fkqc-3224593506' failed
+      name: steps-9fkqc[1]
+      phase: Failed
+      startedAt: "2020-09-16T16:07:59Z"
+      templateName: foo
+      templateScope: local/steps-9fkqc
+      type: StepGroup
+    steps-9fkqc-2929074125:
+      boundaryID: steps-9fkqc
+      children:
+      - steps-9fkqc-1411266092
+      displayName: '[0]'
+      finishedAt: "2020-09-16T16:07:59Z"
+      id: steps-9fkqc-2929074125
+      name: steps-9fkqc[0]
+      phase: Succeeded
+      startedAt: "2020-09-16T16:07:54Z"
+      templateName: foo
+      templateScope: local/steps-9fkqc
+      type: StepGroup
+    steps-9fkqc-3224593506:
+      boundaryID: steps-9fkqc
+      displayName: fail
+      finishedAt: "2020-09-16T16:09:30Z"
+      hostNodeName: minikube
+      id: steps-9fkqc-3224593506
+      message: failed with exit code 1
+      name: steps-9fkqc[1].fail
+      outputs:
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-09-16T16:09:27Z"
+      templateName: fail
+      templateScope: local/steps-9fkqc
+      type: Pod
+  phase: Failed
+  resourcesDuration:
+    cpu: 4
+    memory: 2
+  startedAt: "2020-09-16T16:07:54Z"
+`
+
+func TestDeepDeleteNodes(t *testing.T) {
+	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	kubeClient := &kubefake.Clientset{}
+	origWf := unmarshalWF(deepDeleteOfNodes)
+
+	wf, err := wfIf.Create(origWf)
+	if assert.NoError(t, err) {
+		newWf, err := RetryWorkflow(kubeClient, hydratorfake.Noop, wfIf, wf, false, "")
+		assert.NoError(t, err)
+		newWfBytes, err := yaml.Marshal(newWf)
+		assert.NoError(t, err)
+		assert.NotContains(t, string(newWfBytes), "steps-9fkqc-3224593506")
+	}
+}
+
+func TestRetryWorkflow(t *testing.T) {
+	kubeClient := kubefake.NewSimpleClientset()
+	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{
+			common.LabelKeyCompleted:               "true",
+			common.LabelKeyWorkflowArchivingStatus: "Pending",
+		}},
+		Status: wfv1.WorkflowStatus{Phase: wfv1.NodeFailed},
+	}
+	_, err := wfClient.Create(wf)
+	assert.NoError(t, err)
+	wf, err = RetryWorkflow(kubeClient, hydratorfake.Always, wfClient, wf, false, "")
+	if assert.NoError(t, err) {
+		assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
+		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+	}
+}
+
+func TestToUnstructured(t *testing.T) {
+	un, err := ToUnstructured(&wfv1.Workflow{})
+	if assert.NoError(t, err) {
+		gv := un.GetObjectKind().GroupVersionKind()
+		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
+		assert.Equal(t, workflow.Version, gv.Version)
+	}
 }
