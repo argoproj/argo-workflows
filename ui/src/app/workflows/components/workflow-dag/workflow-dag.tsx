@@ -395,7 +395,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(v => {
                 nodes.push(onExitHandlerNodeId.id);
-                edges.push({v, w: onExitHandlerNodeId.id});
+                if (nodes.includes(v)) {
+                    edges.push({v, w: onExitHandlerNodeId.id});
+                }
             });
         }
         return {nodes, edges};
