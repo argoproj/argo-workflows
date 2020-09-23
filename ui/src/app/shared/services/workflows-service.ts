@@ -33,7 +33,6 @@ export class WorkflowsService {
             'items.status.phase',
             'items.status.finishedAt',
             'items.status.startedAt',
-            'items.status.estimatedDuration',
             'items.status.progress',
             'items.spec.suspend'
         ];
@@ -76,7 +75,6 @@ export class WorkflowsService {
             'result.object.status.finishedAt',
             'result.object.status.phase',
             'result.object.status.startedAt',
-            'result.object.status.estimatedDuration',
             'result.object.status.progress',
             'result.type',
             'result.object.metadata.labels',

@@ -488,7 +488,8 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
-	woc.updated = progress.UpdateProgress(woc.controller.podInformer, woc.wf) || woc.updated
+	updateProgress := progress.UpdateProgress(woc.controller.podInformer, woc.wf)
+	woc.updated = updateProgress || woc.updated
 	if !woc.updated {
 		return
 	}

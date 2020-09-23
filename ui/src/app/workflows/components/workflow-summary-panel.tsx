@@ -3,12 +3,11 @@ import * as React from 'react';
 
 import {labels, NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
-import {DurationPanel} from '../../shared/components/duration-panel';
 import {Phase} from '../../shared/components/phase';
 import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {Consumer} from '../../shared/context';
-import {wfDuration} from '../../shared/duration';
+import {formatDuration, wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
 import {WorkflowFrom} from './workflow-from';
 import {WorkflowLabels} from './workflow-labels/workflow-labels';
@@ -37,16 +36,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 },
                 {title: 'Started', value: <Timestamp date={props.workflow.status.startedAt} />},
                 {title: 'Finished ', value: <Timestamp date={props.workflow.status.finishedAt} />},
-                {
-                    title: 'Duration',
-                    value: (
-                        <DurationPanel
-                            phase={props.workflow.status.phase}
-                            duration={wfDuration(props.workflow.status)}
-                            estimatedDuration={props.workflow.status.estimatedDuration}
-                        />
-                    )
-                },
+                {title: 'Duration', value: formatDuration(wfDuration(props.workflow.status))},
                 {title: 'Progress', value: props.workflow.status.progress || '-'}
             ];
             const creator = props.workflow.metadata.labels[labels.creator];

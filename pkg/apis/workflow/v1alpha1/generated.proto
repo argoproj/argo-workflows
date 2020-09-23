@@ -605,9 +605,6 @@ message NodeStatus {
   // Time at which this node completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
-  // EstimatedDuration in seconds.
-  optional int64 estimatedDuration = 24;
-
   // Progress to completion
   optional string progress = 25;
 
@@ -1417,9 +1414,6 @@ message WorkflowStatus {
 
   // Time at which this workflow completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
-
-  // EstimatedDuration in seconds.
-  optional int64 estimatedDuration = 16;
 
   // Progress to completion
   optional string progress = 17;

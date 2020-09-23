@@ -12,7 +12,6 @@ func UpdateProgress(podInformer cache.SharedIndexInformer, wf *wfv1.Workflow) bo
 	updated := false
 	wf.Status.Progress = "0/0"
 	for nodeID, node := range wf.Status.Nodes {
-		// unlike resource duration, progress can change
 		progress := wfv1.Progress("")
 		if node.Type == wfv1.NodeTypePod {
 			progress = podProgress(podInformer, wf.Namespace, nodeID, node.Progress)
