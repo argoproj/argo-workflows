@@ -419,13 +419,13 @@ func TestIndexOrdering(t *testing.T) {
 }
 
 func TestGetCommand(t *testing.T) {
-	getOutput := `Name:                hello-world
-Namespace:           default
+	getOutput := `Name:                many-items-z26lj
+Namespace:           argo
 ServiceAccount:      default
 Status:              Succeeded
 `
 	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
+	err := yaml.Unmarshal([]byte(indexTest), &wf)
 	assert.NoError(t, err)
 	client := clientmocks.Client{}
 	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
@@ -435,7 +435,7 @@ Status:              Succeeded
 	wfClient.On("GetWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&wf, nil)
 	client.On("NewWorkflowServiceClient").Return(&wfClient)
 	getCommand := NewGetCommand()
-	getCommand.SetArgs([]string{"hello-world"})
+	getCommand.SetArgs([]string{"many-items-z26lj"})
 
 	output := test.ExecuteCommand(t, getCommand)
 	assert.Contains(t, output, getOutput)
