@@ -854,7 +854,7 @@ func untar(tarPath string, destPath string) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err = common.RunCommand("tar", "-xf", tarPath, "-C", tmpDir)
+	_, err = common.RunCommand("tar", "-xf", tarPath, "-C", tmpDir)
 	if err != nil {
 		return err
 	}
