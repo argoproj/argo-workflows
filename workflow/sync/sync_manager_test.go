@@ -330,7 +330,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
 		assert.NoError(t, err)
-		concurrenyMgr.Initialize(wfList)
+		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
@@ -343,7 +343,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
 		assert.NoError(t, err)
-		concurrenyMgr.Initialize(wfList)
+		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 0, len(concurrenyMgr.syncLockMap))
 	})
 

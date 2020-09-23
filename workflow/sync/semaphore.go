@@ -11,27 +11,27 @@ import (
 )
 
 type Semaphore struct {
-	name              string
-	limit             int
-	pending           *priorityQueue
-	semaphore         *sema.Weighted
-	lockHolder        map[string]bool
-	inPending         map[string]bool
-	lock              *sync.Mutex
-	releaseNotifyFunc ReleaseNotifyCallbackFunc
-	log               *log.Entry
+	name         string
+	limit        int
+	pending      *priorityQueue
+	semaphore    *sema.Weighted
+	lockHolder   map[string]bool
+	inPending    map[string]bool
+	lock         *sync.Mutex
+	lockReleased LockReleased
+	log          *log.Entry
 }
 
-func NewSemaphore(name string, limit int, callbackFunc func(string), lockType LockType) *Semaphore {
+func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType LockType) *Semaphore {
 	return &Semaphore{
-		name:              name,
-		limit:             limit,
-		pending:           &priorityQueue{itemByKey: make(map[interface{}]*item)},
-		semaphore:         sema.NewWeighted(int64(limit)),
-		lockHolder:        make(map[string]bool),
-		inPending:         make(map[string]bool),
-		lock:              &sync.Mutex{},
-		releaseNotifyFunc: callbackFunc,
+		name:         name,
+		limit:        limit,
+		pending:      &priorityQueue{itemByKey: make(map[interface{}]*item)},
+		semaphore:    sema.NewWeighted(int64(limit)),
+		lockHolder:   make(map[string]bool),
+		inPending:    make(map[string]bool),
+		lock:         &sync.Mutex{},
+		lockReleased: lockReleased,
 		log: log.WithFields(log.Fields{
 			string(lockType): name,
 		}),
@@ -64,11 +64,11 @@ func (s *Semaphore) resize(n int) bool {
 		cur = n
 	}
 
-	sema := sema.NewWeighted(int64(n))
-	status := sema.TryAcquire(int64(cur))
+	semaphore := sema.NewWeighted(int64(n))
+	status := semaphore.TryAcquire(int64(cur))
 	if status {
 		s.log.Infof("%s semaphore resized from %d to %d", s.name, cur, n)
-		s.semaphore = sema
+		s.semaphore = semaphore
 		s.limit = n
 	}
 	return status
@@ -97,7 +97,7 @@ func (s *Semaphore) release(key string) bool {
 				workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
 			}
 			s.log.Debugf("Enqueue the workflow %s", workflowKey)
-			s.releaseNotifyFunc(workflowKey)
+			s.lockReleased(workflowKey)
 		}
 	}
 	return true

@@ -3,13 +3,13 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/util/slice"
-	"github.com/argoproj/argo/workflow/sync"
 	"hash/fnv"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/argoproj/argo/util/slice"
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
@@ -972,8 +972,8 @@ type SynchronizationType string
 
 const (
 	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
-	SynchronizationTypeMutex SynchronizationType = "Mutex"
-	SynchronizationTypeUnknown SynchronizationType = "Unknown"
+	SynchronizationTypeMutex     SynchronizationType = "Mutex"
+	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
 )
 
 func (s *Synchronization) GetType() SynchronizationType {
@@ -983,20 +983,6 @@ func (s *Synchronization) GetType() SynchronizationType {
 		return SynchronizationTypeMutex
 	}
 	return SynchronizationTypeUnknown
-}
-
-func (s *Synchronization) GetLockName(namespace string) (*sync.LockName, error) {
-	switch s.GetType() {
-	case SynchronizationTypeSemaphore:
-		if s.Semaphore.ConfigMapKeyRef != nil {
-			return sync.NewLockName(namespace, s.Semaphore.ConfigMapKeyRef.Name, s.Semaphore.ConfigMapKeyRef.Key, sync.LockKindConfigMap), nil
-		}
-		return nil, fmt.Errorf("cannot get LockName for a Semaphore without a ConfigMapRef")
-	case SynchronizationTypeMutex:
-		return sync.NewLockName(namespace, s.Mutex.Name, "", sync.LockKindMutex), nil
-	default:
-		return nil, fmt.Errorf("cannot get LockName for a Sync of Unknown type")
-	}
 }
 
 // SemaphoreRef is a reference of Semaphore
@@ -1390,7 +1376,6 @@ type NodeStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty"`
-
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -2322,7 +2307,6 @@ func (ss *SemaphoreStatus) GetWaiting(semaphoreName string) (int, SemaphoreHoldi
 	return -1, SemaphoreHolding{}
 }
 
-
 func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
 	i, semaphoreWaiting := ss.GetWaiting(lockKey)
 	if i < 0 {
@@ -2405,7 +2389,6 @@ func (ms *MutexStatus) GetWaiting(mutexName string) (int, MutexHolding) {
 	}
 	return -1, MutexHolding{}
 }
-
 
 func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
 	if len(currentHolders) == 0 {

@@ -91,7 +91,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	syncManager           *sync.SyncManager
+	syncManager           *sync.Manager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
@@ -211,7 +211,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 // Create and initialize the Synchronization Manager
 func (wfc *WorkflowController) createSynchronizationManager() error {
-	syncLimitConfig := func(lockKey string) (int, error) {
+	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
 			return 0, err
@@ -228,9 +228,11 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		return strconv.Atoi(value)
 	}
 
-	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
+	lockReleased := func(key string) {
 		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
-	})
+	}
+
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, lockReleased)
 
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
@@ -244,7 +246,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(wfList)
+	wfc.syncManager.Initialize(wfList.Items)
 	return nil
 }
 

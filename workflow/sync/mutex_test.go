@@ -98,7 +98,7 @@ func TestMutexLock(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(metav1.ListOptions{})
 		assert.NoError(t, err)
-		concurrenyMgr.Initialize(wfList)
+		concurrenyMgr.Initialize(wfList.Items)
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {

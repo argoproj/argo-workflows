@@ -2,15 +2,17 @@ package sync
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/errors"
 	"strings"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type LockKind string
 
 const (
 	LockKindConfigMap LockKind = "ConfigMap"
-	LockKindMutex LockKind = "Mutex"
+	LockKindMutex     LockKind = "Mutex"
 )
 
 type LockName struct {
@@ -27,6 +29,20 @@ func NewLockName(namespace, resourceName, lockKey string, kind LockKind) *LockNa
 		ResourceName: resourceName,
 		Key:          lockKey,
 		Kind:         kind,
+	}
+}
+
+func GetLockName(sync *v1alpha1.Synchronization, namespace string) (*LockName, error) {
+	switch sync.GetType() {
+	case v1alpha1.SynchronizationTypeSemaphore:
+		if sync.Semaphore.ConfigMapKeyRef != nil {
+			return NewLockName(namespace, sync.Semaphore.ConfigMapKeyRef.Name, sync.Semaphore.ConfigMapKeyRef.Key, LockKindConfigMap), nil
+		}
+		return nil, fmt.Errorf("cannot get LockName for a Semaphore without a ConfigMapRef")
+	case v1alpha1.SynchronizationTypeMutex:
+		return NewLockName(namespace, sync.Mutex.Name, "", LockKindMutex), nil
+	default:
+		return nil, fmt.Errorf("cannot get LockName for a Sync of Unknown type")
 	}
 }
 
