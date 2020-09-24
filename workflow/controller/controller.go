@@ -462,7 +462,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	if !wfc.throttler.Next(key.(string)) {
-		log.WithFields(log.Fields{"key": key}).Warn("Workflow processing has been postponed due to max parallelism limit")
+		log.WithFields(log.Fields{"key": key}).Info("Workflow processing has been postponed due to max parallelism limit")
 		return true
 	}
 
@@ -480,17 +480,18 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-	// make sure this is removed from the throttler is complete
-	defer func() {
-		if wf.Labels[common.LabelKeyCompleted] == "true" {
-			wfc.throttler.Remove(key.(string))
-		}
-	}()
-
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
+
+	// make sure this is removed from the throttler is complete
+	defer func() {
+		// must be done with woc
+		if woc.wf.Labels[common.LabelKeyCompleted] == "true" {
+			wfc.throttler.Remove(key.(string))
+		}
+	}()
 
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {

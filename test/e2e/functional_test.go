@@ -911,6 +911,35 @@ spec:
 		DeleteMemoryQuota()
 }
 
+func (s *FunctionalSuite) TestParallelism() {
+	s.Given().
+		Workflow(`@smoke/basic.yaml`).
+		When().
+		// x11
+		SubmitWorkflow(). // 0
+		SubmitWorkflow(). // 1
+		SubmitWorkflow(). // 2
+		SubmitWorkflow(). // 3
+		SubmitWorkflow(). // 4
+		SubmitWorkflow(). // 5
+		SubmitWorkflow(). // 6
+		SubmitWorkflow(). // 7
+		SubmitWorkflow(). // 8
+		SubmitWorkflow(). // 9
+		SubmitWorkflow(). // 10
+		Then().
+		ExpectWorkflows(func(t *testing.T, list wfv1.Workflows) {
+			if assert.Len(t, list, 11) {
+				status := make(map[wfv1.NodePhase]int)
+				for _, wf := range list {
+					status[wf.Status.Phase] = status[wf.Status.Phase] + 1
+				}
+				assert.Equal(t, 1, status[""])
+				assert.Equal(t, 2, status[wfv1.NodeRunning])
+			}
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }

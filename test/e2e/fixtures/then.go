@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -75,7 +76,12 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 	return t
 }
 
-func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
+func (t *Then) ExpectWorkflows(block func(t *testing.T, list wfv1.Workflows)) *Then {
+	t.t.Helper()
+	return t.ExpectWorkflowList(metav1.ListOptions{LabelSelector: Label}, block)
+}
+
+func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, list wfv1.Workflows)) *Then {
 	t.t.Helper()
 	println("Listing workflows")
 	wfList, err := t.client.List(listOptions)
@@ -83,7 +89,8 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 		t.t.Fatal(err)
 	}
 	println("Checking expectation")
-	block(t.t, wfList)
+	sort.Sort(wfList.Items)
+	block(t.t, wfList.Items)
 	if t.t.Failed() {
 		t.t.FailNow()
 	}

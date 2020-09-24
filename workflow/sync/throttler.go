@@ -42,10 +42,10 @@ func (t *throttler) Add(key string, priority int32, creationTime time.Time) {
 func (t *throttler) Next(key string) bool {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	t.queueThrottled()
 	if t.parallelism == 0 || t.inProgress[key] {
 		return true
 	}
-	t.queueThrottled()
 	return false
 }
 
@@ -58,10 +58,10 @@ func (t *throttler) Remove(key string) {
 }
 
 func (t *throttler) queueThrottled() {
-	for t.parallelism > 0 && t.pending.Len() > 0 && t.parallelism > len(t.inProgress) {
-		next := t.pending.pop()
-		t.inProgress[next.key] = true
-		t.queue(next.key)
+	for t.pending.Len() > 0 && t.parallelism > len(t.inProgress) {
+		key := t.pending.pop().key
+		t.inProgress[key] = true
+		t.queue(key)
 	}
 }
 
