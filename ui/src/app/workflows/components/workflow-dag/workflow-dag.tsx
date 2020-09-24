@@ -16,9 +16,6 @@ export interface WorkflowDagRenderOptions {
     nodesToDisplay: string[];
     expandNodes: Set<string>;
     fastRenderer: boolean;
-    // If this flag is true, we have found our current workflow status to be malformed. Wait for an update before attempting
-    // to render again. This flag is set to false after every update to the component.
-    waitForUpdate: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -177,19 +174,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         super(props);
         this.state = {
             ...this.getOptions(),
-            expandNodes: new Set(),
-            waitForUpdate: false
+            expandNodes: new Set()
         };
     }
 
-    public componentDidUpdate(prevProps: Readonly<WorkflowDagProps>, prevState: Readonly<WorkflowDagRenderOptions>, snapshot?: any): void {
-        if (prevState.waitForUpdate) {
-            this.setState({waitForUpdate: false});
-        }
-    }
-
     public render() {
-        if (!this.props.nodes || this.state.waitForUpdate) {
+        if (!this.props.nodes) {
             return <Loading />;
         }
         const {nodes, edges} = this.prepareGraph();
@@ -273,8 +263,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private getNode(nodeId: string): NodeStatus {
         const node: NodeStatus = this.props.nodes[nodeId];
         if (!node) {
-            // If we arrive here, the workflow is likely malformed. Wait for an update before continuing.
-            this.setState({waitForUpdate: true});
             return null;
         }
         return node;
@@ -320,9 +308,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (!allNodes[nodeId] || !allNodes[nodeId].children) {
                 return [];
             }
-            return allNodes[nodeId].children;
+            return allNodes[nodeId].children.filter(child => allNodes[child]);
         };
-        const pushChildren = (nodeId: string, children: string[], isExpanded: boolean): void => {
+        const pushChildren = (nodeId: string, isExpanded: boolean): void => {
+            const children: string[] = getChildren(nodeId);
             if (!children) {
                 return;
             }
@@ -397,14 +386,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 continue;
             }
 
-            pushChildren(node.id, node.children, isExpanded);
+            pushChildren(node.id, isExpanded);
         }
 
         const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(v => {
                 nodes.push(onExitHandlerNodeId.id);
-                edges.push({v, w: onExitHandlerNodeId.id});
+                if (nodes.includes(v)) {
+                    edges.push({v, w: onExitHandlerNodeId.id});
+                }
             });
         }
         return {nodes, edges};
