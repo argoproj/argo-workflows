@@ -137,8 +137,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 	workqueue.SetProvider(wfc.metrics)
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
-	wfc.throttler = sync.NewThrottler(0, wfc.wfQueue)
-	wfc.throttler.SetParallelism(wfc.getParallelism())
+	wfc.throttler = sync.NewThrottler(wfc.getParallelism(), func(key string) { wfc.wfQueue.Add(key) })
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
 	return &wfc, nil
@@ -462,7 +461,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if key, ok = wfc.throttler.Next(key); !ok {
+	if !wfc.throttler.Next(key.(string)) {
 		log.WithFields(log.Fields{"key": key}).Warn("Workflow processing has been postponed due to max parallelism limit")
 		return true
 	}
@@ -473,16 +472,20 @@ func (wfc *WorkflowController) processNextItem() bool {
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		woc.persistUpdates()
-		wfc.throttler.Remove(key)
 		return true
 	}
 
-	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
-		wfc.throttler.Remove(key)
+	if wf.Labels[common.LabelKeyCompleted] == "true" {
 		// can get here if we already added the completed=true label,
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+	// make sure this is removed from the throttler is complete
+	defer func() {
+		if wf.Labels[common.LabelKeyCompleted] == "true" {
+			wfc.throttler.Remove(key.(string))
+		}
+	}()
 
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
@@ -494,7 +497,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		woc.log.Errorf("hydration failed: %v", err)
 		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
-		wfc.throttler.Remove(key)
 		return true
 	}
 
@@ -505,7 +507,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
 			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
 			woc.persistUpdates()
-			wfc.throttler.Remove(key)
 			return true
 		}
 		woc.updated = wfUpdate
@@ -520,9 +521,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
-
-		wfc.throttler.Remove(key)
-
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
 		if woc.execWf.Spec.PodGC != nil {

@@ -26,7 +26,7 @@ func NewSemaphore(name string, limit int, callbackFunc func(string), lockType Lo
 	return &Semaphore{
 		name:              name,
 		limit:             limit,
-		pending:           &priorityQueue{itemByKey: make(map[interface{}]*item)},
+		pending:           &priorityQueue{itemByKey: make(map[string]*item)},
 		semaphore:         sema.NewWeighted(int64(limit)),
 		lockHolder:        make(map[string]bool),
 		inPending:         make(map[string]bool),
