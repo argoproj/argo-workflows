@@ -11,9 +11,9 @@ spec:
   arguments:
     parameters:
       - name: "x"
-        value: 1
+        value: "1"
       - name: "y"
-        value: 1
+        value: "1"
   workflowMetadata:
     labels:
       stress: "true"
