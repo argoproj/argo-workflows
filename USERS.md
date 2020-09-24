@@ -63,6 +63,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [NVIDIA](https://www.nvidia.com/)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
+1. [PDOK](https://www.pdok.nl/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
