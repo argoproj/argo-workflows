@@ -3166,6 +3166,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1header" title="io.argoproj.workflow.v1alpha1.Header" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.Header
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1histogram" title="io.argoproj.workflow.v1alpha1.Histogram" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.Histogram
   </a>
@@ -6668,6 +6675,13 @@
           <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1httpartifact" title="io.argoproj.workflow.v1alpha1.HTTPArtifact" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.HTTPArtifact
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1header" title="io.argoproj.workflow.v1alpha1.Header" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.Header
   </a>
   
 </li>
@@ -11816,9 +11830,41 @@
 </thead>
 <tbody>
 <tr>
+<td>headers</td>
+<td>[ <a href="#io.argoproj.workflow.v1alpha1.header">io.argoproj.workflow.v1alpha1.Header</a> ]</td>
+<td>Headers are an optional list of headers to send with HTTP requests for artifacts</td>
+<td>No</td>
+</tr>
+<tr>
 <td>url</td>
 <td>string</td>
 <td>URL of the artifact</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<h4 id="ioargoprojworkflowv1alpha1header">io.argoproj.workflow.v1alpha1.Header<a class="headerlink" href="#ioargoprojworkflowv1alpha1header" title="Permanent link">&para;</a></h4>
+<p>Header indicate a key-value request header to be used when fetching artifacts over HTTP</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>Name is the header name</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>value</td>
+<td>string</td>
+<td>Value is the literal value to use for the header</td>
 <td>Yes</td>
 </tr>
 </tbody>
