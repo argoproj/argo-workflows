@@ -440,6 +440,18 @@ message HDFSKrbConfig {
 message HTTPArtifact {
   // URL of the artifact
   optional string url = 1;
+
+  // Headers are an optional list of headers to send with HTTP requests for artifacts
+  repeated Header headers = 2;
+}
+
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+message Header {
+  // Name is the header name
+  optional string name = 1;
+
+  // Value is the literal value to use for the header
+  optional string value = 2;
 }
 
 // Histogram is a Histogram prometheus metric
