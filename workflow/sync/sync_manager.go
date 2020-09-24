@@ -20,14 +20,6 @@ type Manager struct {
 	getSyncLimit GetSyncLimit
 }
 
-// TODO: try to get rid of this
-type LockType string
-
-const (
-	LockTypeSemaphore LockType = "semaphore"
-	LockTypeMutex     LockType = "mutex"
-)
-
 func NewLockManager(getSyncLimit GetSyncLimit, lockReleased LockReleased) *Manager {
 	return &Manager{
 		syncLockMap:  make(map[string]Synchronization),
@@ -103,7 +95,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32
 		return false, false, "", fmt.Errorf("requested configuration is invalid: %w", err)
 	}
 
-	lockKey := syncLockName.getLockKey()
+	lockKey := syncLockName.EncodeName()
 	lock, found := cm.syncLockMap[lockKey]
 	if !found {
 		switch syncLockRef.GetType() {
@@ -156,10 +148,10 @@ func (cm *Manager) Release(wf *wfv1.Workflow, nodeName string, syncRef *wfv1.Syn
 		return
 	}
 
-	if syncLockHolder, ok := cm.syncLockMap[lockName.getLockKey()]; ok {
+	if syncLockHolder, ok := cm.syncLockMap[lockName.EncodeName()]; ok {
 		syncLockHolder.release(holderKey)
-		log.Debugf("%s sync lock is released by %s", lockName.getLockKey(), holderKey)
-		lockKey := lockName.getLockKey()
+		log.Debugf("%s sync lock is released by %s", lockName.EncodeName(), holderKey)
+		lockKey := lockName.EncodeName()
 		wf.Status.Synchronization.GetStatus(syncRef.GetType()).LockReleased(holderKey, lockKey)
 	}
 }
@@ -249,7 +241,7 @@ func (cm *Manager) initializeSemaphore(semaphoreName string) (Synchronization, e
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semaphoreName, limit, cm.lockReleased, LockTypeSemaphore), nil
+	return NewSemaphore(semaphoreName, limit, cm.lockReleased, "semaphore"), nil
 }
 
 func (cm *Manager) initializeMutex(mutexName string) (Synchronization, error) {

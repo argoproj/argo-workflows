@@ -18,7 +18,7 @@ func NewMutex(name string, callbackFunc func(string)) *Mutex {
 	return &Mutex{
 		name:  name,
 		lock:  &sync.Mutex{},
-		mutex: NewSemaphore(name, 1, callbackFunc, LockTypeMutex),
+		mutex: NewSemaphore(name, 1, callbackFunc, "mutex"),
 	}
 }
 

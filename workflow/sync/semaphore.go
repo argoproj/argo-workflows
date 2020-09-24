@@ -22,7 +22,7 @@ type Semaphore struct {
 	log          *log.Entry
 }
 
-func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType LockType) *Semaphore {
+func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType string) *Semaphore {
 	return &Semaphore{
 		name:         name,
 		limit:        limit,
@@ -33,7 +33,7 @@ func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType Lo
 		lock:         &sync.Mutex{},
 		lockReleased: lockReleased,
 		log: log.WithFields(log.Fields{
-			string(lockType): name,
+			lockType: name,
 		}),
 	}
 }

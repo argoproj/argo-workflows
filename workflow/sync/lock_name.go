@@ -20,7 +20,6 @@ type LockName struct {
 	ResourceName string
 	Key          string
 	Kind         LockKind
-	Type         LockType
 }
 
 func NewLockName(namespace, resourceName, lockKey string, kind LockKind) *LockName {
@@ -48,41 +47,58 @@ func GetLockName(sync *v1alpha1.Synchronization, namespace string) (*LockName, e
 
 func DecodeLockName(lockName string) (*LockName, error) {
 	items := strings.Split(lockName, "/")
-	var lock LockName
-	// For mutex lockname
-	if len(items) == 3 && items[1] == string(LockTypeMutex) {
-		lock = LockName{Namespace: items[0], Kind: LockKind(items[1]), ResourceName: items[2]}
-	} else if len(items) == 4 { // For Semaphore lockname
-		lock = LockName{Namespace: items[0], Kind: LockKind(items[1]), ResourceName: items[2], Key: items[3]}
-	} else {
-		return nil, errors.New(errors.CodeBadRequest, "Invalid Lock Key")
+	if len(items) < 3 {
+		return nil, errors.New(errors.CodeBadRequest, "Invalid lock key: unknown format")
 	}
-	err := lock.validate()
+
+	var lock LockName
+	lockKind := LockKind(items[1])
+	switch lockKind {
+	case LockKindMutex:
+		lock = LockName{Namespace: items[0], Kind: LockKind(items[1]), ResourceName: items[2]}
+	case LockKindConfigMap:
+		lock = LockName{Namespace: items[0], Kind: LockKind(items[1]), ResourceName: items[2], Key: items[3]}
+	default:
+		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("Invalid lock key, unexpected kind: %s", lockKind))
+	}
+
+	err := lock.Validate()
 	if err != nil {
 		return nil, err
 	}
 	return &lock, nil
 }
 
-func (ln *LockName) getLockKey() string {
+func (ln *LockName) EncodeName() string {
 	if ln.Kind == LockKindMutex {
-		return fmt.Sprintf("%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName)
+		return ln.ValidateEncoding(fmt.Sprintf("%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName))
 	}
-	return fmt.Sprintf("%s/%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key)
+	return ln.ValidateEncoding(fmt.Sprintf("%s/%s/%s/%s", ln.Namespace, ln.Kind, ln.ResourceName, ln.Key))
 }
 
-func (ln *LockName) validate() error {
+func (ln *LockName) Validate() error {
 	if ln.Namespace == "" {
-		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. Namespace is missing")
+		return errors.New(errors.CodeBadRequest, "Invalid lock key: Namespace is missing")
 	}
 	if ln.Kind == "" {
-		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. Kind is missing")
+		return errors.New(errors.CodeBadRequest, "Invalid lock key: Kind is missing")
 	}
 	if ln.ResourceName == "" {
-		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. ResourceName is missing")
+		return errors.New(errors.CodeBadRequest, "Invalid lock key: ResourceName is missing")
 	}
-	if ln.Kind != LockKindMutex && ln.Key == "" {
-		return errors.New(errors.CodeBadRequest, "Invalid Lock Key. Key is missing")
+	if ln.Kind == LockKindConfigMap && ln.Key == "" {
+		return errors.New(errors.CodeBadRequest, "Invalid lock key: Key is missing for ConfigMap lock")
 	}
 	return nil
+}
+
+func (ln *LockName) ValidateEncoding(encoding string) string {
+	decoded, err := DecodeLockName(encoding)
+	if err != nil {
+		panic(fmt.Sprintf("bug: unable to decode lock that was just encoded: %s", err))
+	}
+	if ln.Namespace != decoded.Namespace || ln.Kind != decoded.Kind || ln.ResourceName != decoded.ResourceName || ln.Key != decoded.Key {
+		panic("bug: lock that was just encoded does not match encoding")
+	}
+	return encoding
 }
