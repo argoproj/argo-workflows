@@ -14,7 +14,7 @@ type LockReleased func(string)
 type GetSyncLimit func(string) (int, error)
 
 type Manager struct {
-	syncLockMap  map[string]Synchronization
+	syncLockMap  map[string]Semaphore
 	lock         *sync.Mutex
 	lockReleased LockReleased
 	getSyncLimit GetSyncLimit
@@ -22,7 +22,7 @@ type Manager struct {
 
 func NewLockManager(getSyncLimit GetSyncLimit, lockReleased LockReleased) *Manager {
 	return &Manager{
-		syncLockMap:  make(map[string]Synchronization),
+		syncLockMap:  make(map[string]Semaphore),
 		lock:         &sync.Mutex{},
 		lockReleased: lockReleased,
 		getSyncLimit: getSyncLimit,
@@ -30,7 +30,6 @@ func NewLockManager(getSyncLimit GetSyncLimit, lockReleased LockReleased) *Manag
 }
 
 func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
-
 	for _, wf := range wfs {
 		if wf.Status.Synchronization == nil {
 			continue
@@ -222,7 +221,6 @@ func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 
 func getResourceKey(namespace, wfName, resourceName string) string {
 	resourceKey := fmt.Sprintf("%s/%s", namespace, wfName)
-	// Template level semaphore
 	if resourceName != wfName {
 		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
 	}
@@ -236,7 +234,7 @@ func (cm *Manager) getCurrentLockHolders(lockName string) []string {
 	return nil
 }
 
-func (cm *Manager) initializeSemaphore(semaphoreName string) (Synchronization, error) {
+func (cm *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) {
 	limit, err := cm.getSyncLimit(semaphoreName)
 	if err != nil {
 		return nil, err
@@ -244,11 +242,11 @@ func (cm *Manager) initializeSemaphore(semaphoreName string) (Synchronization, e
 	return NewSemaphore(semaphoreName, limit, cm.lockReleased, "semaphore"), nil
 }
 
-func (cm *Manager) initializeMutex(mutexName string) (Synchronization, error) {
+func (cm *Manager) initializeMutex(mutexName string) (Semaphore, error) {
 	return NewMutex(mutexName, cm.lockReleased), nil
 }
 
-func (cm *Manager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, int, error) {
+func (cm *Manager) isSemaphoreSizeChanged(semaphore Semaphore) (bool, int, error) {
 	limit, err := cm.getSyncLimit(semaphore.getName())
 	if err != nil {
 		return false, semaphore.getLimit(), err
@@ -256,7 +254,7 @@ func (cm *Manager) isSemaphoreSizeChanged(semaphore Synchronization) (bool, int,
 	return semaphore.getLimit() != limit, limit, nil
 }
 
-func (cm *Manager) checkAndUpdateSemaphoreSize(semaphore Synchronization) error {
+func (cm *Manager) checkAndUpdateSemaphoreSize(semaphore Semaphore) error {
 	changed, newLimit, err := cm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
 		return err

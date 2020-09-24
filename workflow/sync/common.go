@@ -2,7 +2,7 @@ package sync
 
 import "time"
 
-type Synchronization interface {
+type Semaphore interface {
 	acquire(holderKey string) bool
 	tryAcquire(holderKey string) (bool, string)
 	release(key string) bool
@@ -11,4 +11,5 @@ type Synchronization interface {
 	getName() string
 	getLimit() int
 	resize(n int) bool
+	flushHolder(holderKey string)
 }

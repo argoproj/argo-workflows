@@ -10,26 +10,26 @@ import (
 	sema "golang.org/x/sync/semaphore"
 )
 
-type Semaphore struct {
+type PrioritySemaphore struct {
 	name         string
 	limit        int
 	pending      *priorityQueue
 	semaphore    *sema.Weighted
 	lockHolder   map[string]bool
-	inPending    map[string]bool
 	lock         *sync.Mutex
 	lockReleased LockReleased
 	log          *log.Entry
 }
 
-func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType string) *Semaphore {
-	return &Semaphore{
+var _ Semaphore = &PrioritySemaphore{}
+
+func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType string) *PrioritySemaphore {
+	return &PrioritySemaphore{
 		name:         name,
 		limit:        limit,
 		pending:      &priorityQueue{itemByKey: make(map[interface{}]*item)},
 		semaphore:    sema.NewWeighted(int64(limit)),
 		lockHolder:   make(map[string]bool),
-		inPending:    make(map[string]bool),
 		lock:         &sync.Mutex{},
 		lockReleased: lockReleased,
 		log: log.WithFields(log.Fields{
@@ -38,15 +38,15 @@ func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType st
 	}
 }
 
-func (s *Semaphore) getName() string {
+func (s *PrioritySemaphore) getName() string {
 	return s.name
 }
 
-func (s *Semaphore) getLimit() int {
+func (s *PrioritySemaphore) getLimit() int {
 	return s.limit
 }
 
-func (s *Semaphore) getCurrentHolders() []string {
+func (s *PrioritySemaphore) getCurrentHolders() []string {
 	var keys []string
 	for k := range s.lockHolder {
 		keys = append(keys, k)
@@ -54,7 +54,7 @@ func (s *Semaphore) getCurrentHolders() []string {
 	return keys
 }
 
-func (s *Semaphore) resize(n int) bool {
+func (s *PrioritySemaphore) resize(n int) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -74,7 +74,7 @@ func (s *Semaphore) resize(n int) bool {
 	return status
 }
 
-func (s *Semaphore) release(key string) bool {
+func (s *PrioritySemaphore) release(key string) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[key]; ok {
@@ -104,7 +104,7 @@ func (s *Semaphore) release(key string) bool {
 }
 
 // addToQueue adds the holderkey into priority queue that maintains the priority order to acquire the lock.
-func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (s *PrioritySemaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -117,7 +117,7 @@ func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime ti
 	s.log.Debugf("Added into Queue %s", holderKey)
 }
 
-func (s *Semaphore) acquire(holderKey string) bool {
+func (s *PrioritySemaphore) acquire(holderKey string) bool {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
 		return true
@@ -125,7 +125,7 @@ func (s *Semaphore) acquire(holderKey string) bool {
 	return false
 }
 
-func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
+func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -155,4 +155,11 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
 	return false, waitingMsg
+}
+
+func (s *PrioritySemaphore) flushHolder(holderKey string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.pending.remove(holderKey)
 }
