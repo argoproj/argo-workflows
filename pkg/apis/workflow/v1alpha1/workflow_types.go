@@ -1697,10 +1697,22 @@ func (r *RawArtifact) HasLocation() bool {
 	return r != nil
 }
 
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+type Header struct {
+	// Name is the header name
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
+
+	// Headers are an optional list of headers to send with HTTP requests for artifacts
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
 }
 
 func (h *HTTPArtifact) HasLocation() bool {

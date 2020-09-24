@@ -16,6 +16,7 @@ interface WorkflowLogsViewerProps {
 
 interface WorkflowLogsViewerState {
     error?: Error;
+    loaded: boolean;
     lines: string[];
 }
 
@@ -23,7 +24,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     private subscription: Subscription = null;
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
-        this.state = {lines: []};
+        this.state = {lines: [], loaded: false};
     }
 
     public componentDidMount(): void {
@@ -53,12 +54,12 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                             <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
                         </p>
                     )}
-                    {!this.state.error && this.state.lines.length === 0 && this.isCurrentNodeRunningOrPending() && (
+                    {!this.state.error && this.isWaitingForData() && (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
                     )}
-                    {!this.state.error && this.state.lines.length === 0 && !this.isCurrentNodeRunningOrPending() && <p>Pod did not output any logs.</p>}
+                    {!this.state.error && this.podHasNoLogs() && <p>Pod did not output any logs.</p>}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
                             <FullHeightLogsViewer
@@ -99,19 +100,28 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
         this.ensureUnsubscribed();
         this.subscription = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
             log => {
-                if (log) {
-                    this.setState(state => {
-                        log.split('\n').forEach(line => {
-                            state.lines.push(line);
-                        });
-                        return state;
-                    });
-                }
+                this.setState(state => {
+                    const newState = {...state, loaded: true};
+
+                    if (log) {
+                        newState.lines = newState.lines.concat(log.split('\n'));
+                    }
+
+                    return newState;
+                });
             },
             error => {
-                this.setState({error});
+                this.setState({error, loaded: true});
             }
         );
+    }
+
+    private podHasNoLogs() {
+        return !this.isWaitingForData() && this.state.lines.length === 0;
+    }
+
+    private isWaitingForData() {
+        return this.state.lines.length === 0 && (this.isCurrentNodeRunningOrPending() || !this.state.loaded);
     }
 
     private isCurrentNodeRunningOrPending(): boolean {

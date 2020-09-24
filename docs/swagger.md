@@ -1,5 +1,5 @@
-# Argo
-Argo
+# Argo Server API
+You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`
 
 ## Version: latest
 
@@ -1096,7 +1096,17 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| headers | [ [io.argoproj.workflow.v1alpha1.Header](#io.argoproj.workflow.v1alpha1.header) ] | Headers are an optional list of headers to send with HTTP requests for artifacts | No |
 | url | string | URL of the artifact | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Header
+
+Header indicate a key-value request header to be used when fetching artifacts over HTTP
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | Name is the header name | Yes |
+| value | string | Value is the literal value to use for the header | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Histogram
 
