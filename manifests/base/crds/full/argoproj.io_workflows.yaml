@@ -7323,6 +7323,11 @@ spec:
                     type: string
                   storedTemplateID:
                     type: string
+                  synchronizationStatus:
+                    properties:
+                      waitingForLock:
+                        type: boolean
+                    type: object
                   templateName:
                     type: string
                   templateRef:

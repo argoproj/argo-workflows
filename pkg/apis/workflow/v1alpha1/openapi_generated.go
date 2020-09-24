@@ -57,6 +57,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexHolding":                schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MutexStatus":                 schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus":                  schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus":   schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":                schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact":                 schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSBucket":                   schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
@@ -2106,12 +2107,38 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MemoizationStatus"),
 						},
 					},
+					"synchronizationStatus": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SynchronizationStatus is the synchronization status of the node",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NodeSynchronizationStatus stores the status of a node",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"waitingForLock": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WaitingForLock is a flag that tracks if the node is currently waiting for a lock",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 

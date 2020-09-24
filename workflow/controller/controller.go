@@ -224,7 +224,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 
 		value, found := configMap.Data[lockName.Key]
 		if !found {
-			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Sync configuration Key")
+			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.Key))
 		}
 		return strconv.Atoi(value)
 	}

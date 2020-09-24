@@ -1373,6 +1373,9 @@ type NodeStatus struct {
 
 	// MemoizationStatus holds information about cached nodes
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
+
+	// SynchronizationStatus is the synchronization status of the node
+	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,24,opt,name=synchronizationStatus"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -2441,4 +2444,10 @@ func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) Synchro
 	default:
 		panic("invalid syncType in GetStatus")
 	}
+}
+
+// NodeSynchronizationStatus stores the status of a node
+type NodeSynchronizationStatus struct {
+	// WaitingForLock is a flag that tracks if the node is currently waiting for a lock
+	WaitingForLock bool `json:"waitingForLock,omitempty" protobuf:"varint,1,opt,name=waitingForLock"`
 }
