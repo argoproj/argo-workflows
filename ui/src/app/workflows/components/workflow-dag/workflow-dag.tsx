@@ -308,15 +308,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (!allNodes[nodeId] || !allNodes[nodeId].children) {
                 return [];
             }
-            return allNodes[nodeId].children;
+            return allNodes[nodeId].children.filter(child => allNodes[child]);
         };
-        const pushChildren = (nodeId: string, children: string[], isExpanded: boolean): void => {
+        const pushChildren = (nodeId: string, isExpanded: boolean): void => {
+            const children: string[] = getChildren(nodeId);
             if (!children) {
                 return;
             }
-
-            // Ensure that all children actually exist
-            children = children.filter(child => allNodes[child]);
 
             if (children.length > 3 && !isExpanded) {
                 // Node will be collapsed
@@ -388,7 +386,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 continue;
             }
 
-            pushChildren(node.id, node.children, isExpanded);
+            pushChildren(node.id, isExpanded);
         }
 
         const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
