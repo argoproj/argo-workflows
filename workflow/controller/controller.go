@@ -475,6 +475,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
+	// this will ensure we process every incomplete workflow once every 20m
+	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
+
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	err = wfc.hydrator.Hydrate(woc.wf)
