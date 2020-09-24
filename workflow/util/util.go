@@ -659,16 +659,11 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	switch wf.Status.Phase {
-	case wfv1.NodeFailed, wfv1.NodeError:
-	default:
-		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
-	}
+func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, wf, restartSuccessful, nodeFieldSelector)
+		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
 		return err == nil, err
 	})
 	if err != nil {
@@ -677,8 +672,17 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	return updated, err
 }
 
-func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
-	err := hydrator.Hydrate(wf)
+func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	wf, err := wfClient.Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	switch wf.Status.Phase {
+	case wfv1.NodeFailed, wfv1.NodeError:
+	default:
+		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+	}
+	err = hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}
