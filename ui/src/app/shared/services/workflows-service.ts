@@ -1,6 +1,5 @@
-import {Observable, Observer} from 'rxjs';
+import {Observable} from 'rxjs';
 
-import {catchError, map} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Event, Workflow, WorkflowList} from '../../../models';
 import {SubmitOpts} from '../../../models/submit-opts';
@@ -119,26 +118,11 @@ export class WorkflowsService {
     }
 
     public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean): Observable<string> {
-        // we firstly try to get the logs from the API,
-        // but if that fails, then we try and get them from the artifacts
-        const logsFromArtifacts: Observable<string> = Observable.create((observer: Observer<string>) => {
-            requests
-                .get(this.getArtifactLogsUrl(workflow, nodeId, container, archived))
-                .then(resp => {
-                    resp.text.split('\n').forEach(line => observer.next(line));
-                })
-                .catch(err => observer.error(err));
-            // tslint:disable-next-line
-            return () => {};
-        });
         return requests
             .loadEventSource(
                 `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` + `?logOptions.container=${container}&logOptions.follow=true`
             )
-            .pipe(
-                map(line => JSON.parse(line).result.content),
-                catchError(() => logsFromArtifacts)
-            );
+            .map(line => JSON.parse(line).result.content);
     }
 
     public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {

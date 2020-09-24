@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import {Subscription} from 'rxjs';
+import {Observable, Subscription} from 'rxjs';
 import * as models from '../../../../models';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
@@ -15,7 +15,7 @@ interface WorkflowLogsViewerProps {
 }
 
 interface WorkflowLogsViewerState {
-    error?: Error;
+    error?: Error & {eventPhase?: number};
     loaded: boolean;
     lines: string[];
 }
@@ -34,6 +34,9 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     public componentWillUnmount(): void {
         this.ensureUnsubscribed();
     }
+    private get error() {
+        return this.state.error && this.state.error.eventPhase !== Event.AT_TARGET && this.state.error;
+    }
 
     public render() {
         return (
@@ -49,28 +52,24 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     {this.state.lines.length > 0 && <small className='muted'> {this.state.lines.length} line(s)</small>}
                 </p>
                 <div className='white-box'>
-                    {this.state.error && (
+                    {this.error && (
                         <p>
-                            <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
+                            <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.error.message}
                         </p>
                     )}
-                    {!this.state.error && this.isWaitingForData() && (
+                    {!this.error && this.isWaitingForData() && (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
                     )}
-                    {!this.state.error && this.podHasNoLogs() && <p>Pod did not output any logs.</p>}
+                    {!this.error && this.noPodLogsFound() && <p>No pod logs found.</p>}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
                             <FullHeightLogsViewer
                                 source={{
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
-                                    loadLogs: () => {
-                                        return services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(log => {
-                                            return log ? log + '\n' : '';
-                                        });
-                                    },
-                                    shouldRepeat: () => this.isCurrentNodeRunningOrPending()
+                                    loadLogs: () => Observable.from(this.state.lines),
+                                    shouldRepeat: () => false
                                 }}
                             />
                         </div>
@@ -116,7 +115,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
         );
     }
 
-    private podHasNoLogs() {
+    private noPodLogsFound() {
         return !this.isWaitingForData() && this.state.lines.length === 0;
     }
 
