@@ -4,6 +4,7 @@ package workflow
 const (
 	Group                            string = "argoproj.io"
 	Version                          string = "v1alpha1"
+	APIVersion                       string = Group + "/" + Version
 	WorkflowKind                     string = "Workflow"
 	WorkflowSingular                 string = "workflow"
 	WorkflowPlural                   string = "workflows"
