@@ -2123,12 +2123,14 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Cache": {
+      "description": "Cache is the configuration for the type of cache to be used",
       "type": "object",
       "required": [
         "configMap"
       ],
       "properties": {
         "configMap": {
+          "description": "ConfigMap sets a ConfigMap-based cache",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
         }
       }
@@ -2819,6 +2821,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
+      "description": "MemoizationStatus is the status of this memoized node",
       "type": "object",
       "required": [
         "hit",
@@ -2827,28 +2830,38 @@
       ],
       "properties": {
         "cacheName": {
+          "description": "Cache is the name of the cache that was used",
           "type": "string"
         },
         "hit": {
+          "description": "Hit indicates whether this node was created from a cache entry",
           "type": "boolean"
         },
         "key": {
+          "description": "Key is the name of the key used for this node's cache",
           "type": "string"
         }
       }
     },
     "io.argoproj.workflow.v1alpha1.Memoize": {
-      "description": "Memoization",
+      "description": "Memoization enables caching for the Outputs of the template",
       "type": "object",
       "required": [
         "key",
-        "cache"
+        "cache",
+        "maxAge"
       ],
       "properties": {
         "cache": {
+          "description": "Cache sets and configures the kind of cache",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
         },
         "key": {
+          "description": "Key is the key to use as the caching key",
+          "type": "string"
+        },
+        "maxAge": {
+          "description": "MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.",
           "type": "string"
         }
       }
