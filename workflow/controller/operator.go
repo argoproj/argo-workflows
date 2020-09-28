@@ -1489,15 +1489,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	// If memoization is on, check if node output exists in cache
-	if node == nil && resolvedTmpl.Memoize != nil {
-		cache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
-		if cache == nil {
+	if node == nil && processedTmpl.Memoize != nil {
+		memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+		if memoizationCache == nil {
 			err := fmt.Errorf("cache could not be found or created")
 			woc.log.WithFields(log.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
 
-		entry, err := cache.Load(processedTmpl.Memoize.Key)
+		entry, err := memoizationCache.Load(processedTmpl.Memoize.Key)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
@@ -1889,10 +1889,10 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
-// Creates a node status that's completely initialized and marked as finished
+// Creates a node status that is or will be chaced
 func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
-		err := fmt.Errorf("Cannot initialize a cached node from a non-memoized template")
+		err := fmt.Errorf("cannot initialize a cached node from a non-memoized template")
 		woc.log.WithFields(log.Fields{"namespace": woc.wf.Namespace, "wfName": woc.wf.Name}).WithError(err)
 		panic(err)
 	}
@@ -1902,7 +1902,7 @@ func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wf
 	return node
 }
 
-// Creates a node status that's completely initialized and marked as finished
+// Creates a node status that has been cached, completely initialized, and marked as finished
 func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	node := woc.initializeCacheNode(nodeName, resolvedTmpl, templateScope, orgTmpl, boundaryID, memStat, messages...)
 	node.Phase = wfv1.NodeSucceeded
