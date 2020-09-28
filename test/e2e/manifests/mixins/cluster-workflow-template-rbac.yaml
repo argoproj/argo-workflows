@@ -14,6 +14,18 @@ rules:
       - watch
       - create
       - delete
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows 
+      - workflows/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - create
+      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
