@@ -41,7 +41,7 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow().
 		Then().
@@ -58,7 +58,7 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
@@ -78,7 +78,7 @@ func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
 		Workflow("@testdata/sleepy-retry-on-error-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
 		WaitForWorkflow().
 		Then().
@@ -401,18 +401,18 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
-		WaitForWorkflow(fixtures.NewCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodePending == a.Phase && wfv1.NodePending == b.Phase
-		}, "pods pending")).
+		}), "pods pending").
 		DeleteMemoryQuota().
-		WaitForWorkflow(fixtures.NewCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded"))
+		}), "pods succeeded")
 }
 
 // 128M is for argo executor
@@ -448,18 +448,18 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
-		WaitForWorkflow(fixtures.NewCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
 			return wfv1.NodePending == a.Phase && wfv1.NodePending == b.Phase
-		}, "pods pending")).
+		}), "pods pending").
 		DeleteMemoryQuota().
-		WaitForWorkflow(fixtures.NewCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded"))
+		}), "pods succeeded")
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {
@@ -515,7 +515,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
@@ -540,7 +540,7 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		Workflow("@functional/stop-terminate.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate terminated")
@@ -808,10 +808,10 @@ func (s *FunctionalSuite) TestStorageQuotaLimit() {
 		When().
 		StorageQuota("5Mi").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
-		WaitForWorkflow(fixtures.NewCondition(func(wf *wfv1.Workflow) bool {
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
 			return strings.Contains(wf.Status.Message, "Waiting for a PVC to be created")
-		}, "PVC pending")).
+		}), "PVC pending").
 		DeleteStorageQuota().
 		WaitForWorkflow().
 		Then().
@@ -858,7 +858,9 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed)
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeFailed
+		}), "Waiting for timeout", 30*time.Second)
 }
 
 func (s *FunctionalSuite) TestTemplateLevelTimeoutWithForbidden() {
@@ -903,39 +905,10 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeFailed
+		}), "Waiting for timeout", 30*time.Second).
 		DeleteMemoryQuota()
-}
-
-func (s *FunctionalSuite) TestParallelism() {
-	s.Given().
-		Workflow(`@smoke/basic.yaml`).
-		When().
-		// x11
-		SubmitWorkflow(). // 0
-		SubmitWorkflow(). // 1
-		SubmitWorkflow(). // 2
-		SubmitWorkflow(). // 3
-		SubmitWorkflow(). // 4
-		SubmitWorkflow(). // 5
-		SubmitWorkflow(). // 6
-		SubmitWorkflow(). // 7
-		SubmitWorkflow(). // 8
-		SubmitWorkflow(). // 9
-		WaitForWorkflow(fixtures.ToBeRunning).
-		SubmitWorkflow(). // 10
-		Wait(time.Second).
-		Then().
-		ExpectWorkflows(func(t *testing.T, list wfv1.Workflows) {
-			if assert.Len(t, list, 11) {
-				status := make(map[wfv1.NodePhase]int)
-				for _, wf := range list {
-					status[wf.Status.Phase] = status[wf.Status.Phase] + 1
-				}
-				assert.Equal(t, 1, status[""])
-				assert.Equal(t, 10, status[wfv1.NodeRunning])
-			}
-		})
 }
 
 func TestFunctionalSuite(t *testing.T) {

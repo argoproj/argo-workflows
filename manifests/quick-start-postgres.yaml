@@ -489,7 +489,6 @@ data:
     enabled: true
     path: /metrics
     port: 9090
-  parallelism: "10"
   persistence: |
     connectionPool:
       maxIdleConns: 100

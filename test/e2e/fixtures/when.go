@@ -3,6 +3,7 @@ package fixtures
 import (
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -113,50 +114,48 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-type Condition struct {
-	test    func(wf *wfv1.Workflow) bool
-	message string
-}
+type Condition func(wf *wfv1.Workflow) bool
 
-func NewCondition(test func(wf *wfv1.Workflow) bool, message string) Condition {
-	return Condition{test, message}
-}
-
-var ToBeCompleted = NewCondition(func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }, "to be completed")
-var ToStart = NewCondition(func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }, "to start")
-var ToBeRunning = NewCondition(func(wf *wfv1.Workflow) bool {
+var ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
+var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
+var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
 	return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 		return node.Phase == wfv1.NodeRunning
 	})
-}, "to be running")
+}
 
 // `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
 // This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
 // creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
-var ToBeDone = NewCondition(func(wf *wfv1.Workflow) bool {
-	return ToBeCompleted.test(wf) && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending"
-}, "to be done")
-var ToBeFailed = NewCondition(func(wf *wfv1.Workflow) bool { return wf.Status.Phase == wfv1.NodeFailed }, "to be failed")
+var ToBeDone Condition = func(wf *wfv1.Workflow) bool {
+	return ToBeCompleted(wf) && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending"
+}
 
-var ToBeArchived = NewCondition(func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }, "to be archived")
-var ToHaveASuspendedNode = NewCondition(func(wf *wfv1.Workflow) bool { return wf.Status.AnyActiveSuspendNode() }, "suspended node")
+var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
 
 // Wait for a workflow to meet a condition:
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
-// * `string` - the workflow's name (not spaces)
-// * `Condition` - a condition - `ToBeDone` by default
+// * `string` - either:
+//    * the workflow's name (not spaces)
+//    * or a new message (if it contain spaces) - default "to finish"
+// * `Condition` - a condition - `ToFinish` by default
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
 	workflowName := w.workflowName
 	condition := ToBeDone
+	message := "to be done"
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
 			timeout = v
 		case string:
-			workflowName = v
+			if strings.Contains(v, " ") {
+				message = v
+			} else {
+				workflowName = v
+			}
 		case Condition:
 			condition = v
 		default:
@@ -171,7 +170,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		fieldSelector = "metadata.name=" + workflowName
 	}
 
-	println("Waiting", timeout.String(), "for workflow", fieldSelector, condition.message)
+	println("Waiting", timeout.String(), "for workflow", fieldSelector, message)
 	opts := metav1.ListOptions{LabelSelector: Label, FieldSelector: fieldSelector}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -190,7 +189,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
-				if condition.test(wf) {
+				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.workflowName = wf.Name
 					return w
@@ -199,7 +198,7 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 				w.t.Fatal("not ok")
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, condition.message)
+			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, message)
 		}
 	}
 }
