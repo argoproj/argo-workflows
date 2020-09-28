@@ -3,7 +3,6 @@ package sync
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -81,7 +80,7 @@ func (cm *Manager) Initialize(wfs []wfv1.Workflow) {
 
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , status of Workflow status updated, waiting message if lock is not available and any error encountered
-func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32, creationTime time.Time, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
+func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *wfv1.Synchronization) (bool, bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 
@@ -119,7 +118,14 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32
 	}
 
 	holderKey := getHolderKey(wf, nodeName)
-	lock.addToQueue(holderKey, priority, creationTime)
+	var priority int32
+	if wf.Spec.Priority != nil {
+		priority = *wf.Spec.Priority
+	} else {
+		priority = 0
+	}
+	creationTime := wf.CreationTimestamp
+	lock.addToQueue(holderKey, priority, creationTime.Time)
 
 	ensureInit(wf, syncLockRef.GetType())
 	currentHolders := cm.getCurrentLockHolders(lockKey)

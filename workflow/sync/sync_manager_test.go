@@ -356,7 +356,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		wf3 := wf.DeepCopy()
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", 0, time.Now(), wf.Spec.Synchronization)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -367,14 +367,14 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Equal(t, wf.Name, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		// Try to acquire again
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", 0, time.Now(), wf.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
 		assert.False(t, wfUpdate)
 
 		wf1.Name = "two"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, time.Now(), wf1.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
@@ -382,14 +382,14 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		wf2.Name = "three"
 		holderKey2 := getHolderKey(wf2, "")
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf3.Name = "four"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", 0, time.Now(), wf3.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", wf3.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
@@ -401,14 +401,14 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Equal(t, 0, len(wf.Status.Synchronization.Semaphore.Holding[0].Holders))
 
 		// Low priority workflow try to acquire the lock
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, time.Now(), wf1.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		// High Priority workflow acquires the lock
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -437,7 +437,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		wf := unmarshalWF(wfWithSemaphore)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", 0, createTime, wf.Spec.Synchronization)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -447,14 +447,14 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.Equal(t, wf.Name, wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		wf1.Name = "two"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, createTime, wf1.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 0, createTime.Add(10*time.Millisecond), wf2.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
@@ -467,7 +467,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		_, err = kube.CoreV1().ConfigMaps("default").Update(cm)
 		assert.NoError(t, err)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, createTime, wf1.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
@@ -476,7 +476,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.NotNil(t, wf1.Status.Synchronization.Semaphore)
 		assert.Equal(t, wf1.Name, wf1.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 0, createTime.Add(10*time.Millisecond), wf2.Spec.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -504,7 +504,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		wf := unmarshalWF(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
 
-		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -514,13 +514,13 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.Equal(t, "semaphore-tmpl-level-xjvln-3448864205", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
 		// Try to acquire again
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.True(t, status)
 		assert.False(t, wfUpdate)
 		assert.Empty(t, msg)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.True(t, wfUpdate)
@@ -531,7 +531,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding[0].Holders)
 
-		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", 0, time.Now(), tmpl.Synchronization)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", tmpl.Synchronization)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
