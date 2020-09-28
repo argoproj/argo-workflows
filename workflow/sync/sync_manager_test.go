@@ -433,8 +433,8 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		})
-		createTime := time.Now()
 		wf := unmarshalWF(wfWithSemaphore)
+		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
 		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
