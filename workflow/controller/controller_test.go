@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/sync"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
@@ -148,6 +149,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		cwftmplInformer:      cwftmplInformer,
 		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
@@ -252,6 +254,20 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 			if err != nil {
 				panic(err)
 			}
+		}
+	}
+}
+
+func deletePods(woc *wfOperationCtx) {
+	for _, obj := range woc.controller.podInformer.GetStore().List() {
+		pod := obj.(*apiv1.Pod)
+		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+		err = woc.controller.podInformer.GetStore().Delete(obj)
+		if err != nil {
+			panic(err)
 		}
 	}
 }

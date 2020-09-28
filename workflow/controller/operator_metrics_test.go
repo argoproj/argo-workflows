@@ -453,7 +453,6 @@ spec:
           value: "{{workflow.duration}}"
   templates:
     - name: whalesay
-      resubmitPendingPods: true
       container:
         image: docker/whalesay
         command: [ cowsay ]

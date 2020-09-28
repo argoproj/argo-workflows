@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -42,6 +43,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -110,6 +112,7 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime = 10 * time.Second
+const defaultRequeueTime = maxOperationTime
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -300,7 +303,7 @@ func (woc *wfOperationCtx) operate() {
 			// Error was most likely caused by a lack of resources.
 			// In this case, Workflow will be in pending state and requeue.
 			woc.markWorkflowPhase(wfv1.NodePending, false, fmt.Sprintf("Waiting for a PVC to be created. %v", err))
-			woc.requeue(10 * time.Second)
+			woc.requeue(defaultRequeueTime)
 			return
 		}
 		msg := "pvc create error"
@@ -537,19 +540,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	//
-	// This line was removed in v2.9.0, but issues arose with the controller picking up outdated versions of workflows,
-	// operating on them, then attempting to update the resources on the cluster. Since the workflows were outdated,
-	// conflicts arose when attempting to update, causing our conflict resolution code to be invoked. The conflict
-	// resolution code was not perfect and workflow information was not correctly persisted, causing undefined behavior.
-	// This line was reintroduced in v2.9.5, and should remain as long as we use our current informer pattern.
-	time.Sleep(1 * time.Second)
+	if os.Getenv("INFORMER_WRITE_BACK") != "false" {
+		if err := woc.writeBackToInformer(); err != nil {
+			woc.markWorkflowError(err, true)
+			return
+		}
+	} else {
+		time.Sleep(enoughTimeForInformerSync)
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -574,6 +572,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 		}
 	}
+}
+
+func (woc *wfOperationCtx) writeBackToInformer() error {
+	un, err := wfutil.ToUnstructured(woc.wf)
+	if err != nil {
+		return fmt.Errorf("failed to convert workflow to unstructured: %w", err)
+	}
+	err = woc.controller.wfInformer.GetStore().Update(un)
+	if err != nil {
+		return fmt.Errorf("failed to update informer store: %w", err)
+	}
+	return nil
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
@@ -857,15 +867,15 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
 
-	for _, pod := range podList.Items {
+	for _, pod := range podList {
 		parallelPodNum <- pod.Name
 		wg.Add(1)
-		go func(tmpPod apiv1.Pod) {
+		go func(pod *apiv1.Pod) {
 			defer wg.Done()
-			performAssessment(&tmpPod)
-			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
+			performAssessment(pod)
+			err = woc.applyExecutionControl(pod, wfNodesLock)
 			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
+				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
 			}
 			<-parallelPodNum
 		}(pod)
@@ -875,8 +885,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
-	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
-	// the node with Error.
+	// It is now impossible to infer pod status. We can do at this point is to mark the node with Error, or
+	// we can re-submit it.
 	for nodeID, node := range woc.wf.Status.Nodes {
 		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
@@ -887,25 +897,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
 			if node.Pending() {
-				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
-				if err != nil {
-					return err
-				}
-				_, tmpl, _, err := tmplCtx.ResolveTemplate(&node)
-				if err != nil {
-					return err
-				}
-
-				// The pod may have been intentionally deleted (e.g. `kubectl delete pod`).
-				// If the user has specified re-submit allowed, so we do not mark the node as error (yet).
-				if tmpl.IsResubmitPendingPods() {
-					// We want to resubmit. Continue and do not mark as error.
-					continue
-				}
-				if tmpl.Synchronization != nil {
-					// Wait to acquire the lock
-					continue
-				}
+				continue
 			}
 
 			node.Message = "pod deleted"
@@ -1004,18 +996,22 @@ func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
-	options := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s",
-			common.LabelKeyWorkflow,
-			woc.wf.ObjectMeta.Name),
-	}
-	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+func (woc *wfOperationCtx) getAllWorkflowPods() ([]*apiv1.Pod, error) {
+	objs, err := woc.controller.podInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, err
 	}
-	return podList, nil
+	pods := make([]*apiv1.Pod, len(objs))
+	for i, obj := range objs {
+		pod, ok := obj.(*apiv1.Pod)
+		if !ok {
+			return nil, fmt.Errorf("expected \"*apiv1.Pod\", got \"%v\"", reflect.TypeOf(obj).String())
+		}
+		pods[i] = pod
+	}
+	return pods, nil
 }
+
 func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 	podSpecByte, err := json.Marshal(pod)
 	if err != nil {
@@ -1382,11 +1378,20 @@ func (woc *wfOperationCtx) createPVCs() error {
 }
 
 func (woc *wfOperationCtx) deletePVCs() error {
-	if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
-		// Skip deleting PVCs to reuse them for retried failed/error workflows.
-		// PVCs are automatically deleted when corresponded owner workflows get deleted.
-		return nil
+	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
+
+	switch gcStrategy {
+	case wfv1.VolumeClaimGCOnSuccess:
+		if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
+			// Skip deleting PVCs to reuse them for retried failed/error workflows.
+			// PVCs are automatically deleted when corresponded owner workflows get deleted.
+			return nil
+		}
+	case wfv1.VolumeClaimGCOnCompletion:
+	default:
+		return fmt.Errorf("unknown volume gc strategy: %s", gcStrategy)
 	}
+
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
 	if totalPVCs == 0 {
 		// PVC list already empty. nothing to do
@@ -1473,7 +1478,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
-	if resolvedTmpl.IsPodType() && resolvedTmpl.RetryStrategy == nil {
+	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 
@@ -1541,7 +1546,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		woc.requeue(0)
+		woc.requeue(defaultRequeueTime)
 		return node, ErrDeadlineExceeded
 	}
 
@@ -1585,14 +1590,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
 	retryNodeName := ""
-	if processedTmpl.RetryStrategy != nil {
+	if woc.retryStrategy(processedTmpl) != nil {
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 		}
-		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy, opts)
+		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *woc.retryStrategy(processedTmpl), opts)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		} else if !continueExecution {
@@ -1666,9 +1671,10 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
 		// and we return instead.
-		if processedTmpl.RetryStrategy == nil ||
-			(processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
-				processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
+		retryStrategy := woc.retryStrategy(processedTmpl)
+		if retryStrategy == nil ||
+			(retryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
+				retryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
 			return node, err
 		}
 	}
@@ -1792,17 +1798,13 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.updated = true
 				woc.wf.Status.Message = err.Error()
 			}
-
-			if woc.controller.isArchivable(woc.wf) {
-				err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-					err := woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
-					return err == nil, err
-				})
-				if err != nil {
-					woc.log.WithField("err", err).Error("Failed to archive workflow")
+			if woc.controller.wfArchive.IsEnabled() {
+				if woc.controller.isArchivable(woc.wf) {
+					woc.log.Infof("Marking workflow as pending archiving")
+					woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Pending"
+				} else {
+					woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
 				}
-			} else {
-				woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
 			}
 			woc.updated = true
 		}
@@ -2061,11 +2063,6 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
-	} else if !tmpl.IsResubmitPendingPods() && !node.Pending() {
-		// This is not our first time executing this node.
-		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
-		// false, return.
-		return node, nil
 	}
 
 	// Check if the output of this container is referenced elsewhere in the Workflow. If so, make sure to include it during
@@ -2229,7 +2226,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 func (woc *wfOperationCtx) requeueIfTransientErr(err error, nodeName string) (*wfv1.NodeStatus, error) {
 	if errorsutil.IsTransientErr(err) {
 		// Our error was most likely caused by a lack of resources.
-		woc.requeue(10 * time.Second)
+		woc.requeue(defaultRequeueTime)
 		return woc.markNodePending(nodeName, err), nil
 	}
 	return nil, err
@@ -3040,19 +3037,20 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 	}
 
-	//In WorkflowTemplateRef scenario, we need to merge the Workflow Default, Workflow spec and storedWorkflowspec for execWf.
+	//In WorkflowTemplateRef scenario, we need to merge the  Workflow spec, :StoredWorkflowspec and Workflow Default for execWf.
+	// Overlay
 	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
-	err := woc.controller.setWorkflowDefaults(&targetWf)
+
+	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
+	if err != nil {
+		return nil, executionParameters, err
+	}
+
+	err = woc.controller.setWorkflowDefaults(&targetWf)
 	if err != nil {
 		log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
 		return nil, executionParameters, err
 	}
-
-	err = wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
-	if err != nil {
-		return nil, executionParameters, err
-	}
-
 	// Setting the merged workflow to executable workflow
 	woc.execWf = &targetWf
 
@@ -3063,4 +3061,11 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	}
 
 	return tmplRef, executionParameters, nil
+}
+
+func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrategy {
+	if tmpl != nil && tmpl.RetryStrategy != nil {
+		return tmpl.RetryStrategy
+	}
+	return woc.execWf.Spec.RetryStrategy
 }
