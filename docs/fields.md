@@ -3501,6 +3501,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -3903,6 +3904,16 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## Header
+
+Header indicate a key-value request header to be used when fetching artifacts over HTTP
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|Name is the header name|
+|`value`|`string`|Value is the literal value to use for the header|
 
 ## SuppliedValueFrom
 
