@@ -25,7 +25,9 @@ argo terminate WORKFLOW WORKFLOW2... [flags]
 ### Options
 
 ```
-  -h, --help   help for terminate
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for terminate
+  -l, --selector string         Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
 ### Options inherited from parent commands

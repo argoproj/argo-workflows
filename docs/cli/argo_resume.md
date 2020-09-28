@@ -25,8 +25,10 @@ argo resume WORKFLOW1 WORKFLOW2... [flags]
 ### Options
 
 ```
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for resume
       --node-field-selector string   selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+  -l, --selector string              Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
 ### Options inherited from parent commands

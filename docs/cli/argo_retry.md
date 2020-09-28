@@ -42,11 +42,13 @@ argo retry [WORKFLOW...] [flags]
 ### Options
 
 ```
+      --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for retry
       --log                          log the workflow until it completes
       --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
   -o, --output string                Output format. One of: name|json|yaml|wide
       --restart-successful           indicates to restart successful nodes matching the --node-field-selector
+  -l, --selector string              Selector (label query) to filter on, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
   -w, --wait                         wait for the workflow to complete
       --watch                        watch the workflow until it completes
 ```
