@@ -842,9 +842,11 @@ Backoff is a backoff strategy to use within retryStrategy
 
 #### io.argoproj.workflow.v1alpha1.Cache
 
+Cache is the configuration for the type of cache to be used
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | Yes |
+| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) | ConfigMap sets a ConfigMap-based cache | Yes |
 
 #### io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate
 
@@ -1167,20 +1169,23 @@ A link to another app.
 
 #### io.argoproj.workflow.v1alpha1.MemoizationStatus
 
+MemoizationStatus is the status of this memoized node
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| cacheName | string |  | Yes |
-| hit | boolean |  | Yes |
-| key | string |  | Yes |
+| cacheName | string | Cache is the name of the cache that was used | Yes |
+| hit | boolean | Hit indicates whether this node was created from a cache entry | Yes |
+| key | string | Key is the name of the key used for this node's cache | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Memoize
 
-Memoization
+Memoization enables caching for the Outputs of the template
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) |  | Yes |
-| key | string |  | Yes |
+| cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) | Cache sets and configures the kind of cache | Yes |
+| key | string | Key is the key to use as the caching key | Yes |
+| maxAge | string | MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored. | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Metadata
 
