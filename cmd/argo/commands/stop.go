@@ -56,7 +56,7 @@ func NewStopCommand() *cobra.Command {
 				errors.CheckError(err)
 
 				for _, w := range listed {
-					names = append(names, w.GetName()) 
+					names = append(names, w.GetName())
 				}
 			}
 
