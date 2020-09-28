@@ -14,9 +14,9 @@ func TestNoParallelismSamePriority(t *testing.T) {
 	throttler.Add("b", 0, time.Now().Add(1*time.Hour))
 	throttler.Add("a", 0, time.Now())
 
-	assert.True(t, throttler.Next("a"))
-	assert.True(t, throttler.Next("b"))
-	assert.True(t, throttler.Next("c"))
+	assert.True(t, throttler.Progress("a"))
+	assert.True(t, throttler.Progress("b"))
+	assert.True(t, throttler.Progress("c"))
 }
 
 func TestWithParallelismLimitAndPriority(t *testing.T) {
@@ -28,22 +28,22 @@ func TestWithParallelismLimitAndPriority(t *testing.T) {
 	throttler.Add("c", 3, time.Now())
 	throttler.Add("d", 4, time.Now())
 
-	assert.True(t, throttler.Next("a"), "is started, even though low priority")
-	assert.True(t, throttler.Next("b"), "is started, even though low priority")
-	assert.False(t, throttler.Next("c"), "cannot start")
-	assert.False(t, throttler.Next("d"), "cannot start")
+	assert.True(t, throttler.Progress("a"), "is started, even though low priority")
+	assert.True(t, throttler.Progress("b"), "is started, even though low priority")
+	assert.False(t, throttler.Progress("c"), "cannot start")
+	assert.False(t, throttler.Progress("d"), "cannot start")
 	assert.Equal(t, "b", queuedKey)
 	queuedKey = ""
 
 	throttler.Remove("a")
-	assert.True(t, throttler.Next("b"), "stays running")
-	assert.True(t, throttler.Next("d"), "top priority")
-	assert.False(t, throttler.Next("c"))
+	assert.True(t, throttler.Progress("b"), "stays running")
+	assert.True(t, throttler.Progress("d"), "top priority")
+	assert.False(t, throttler.Progress("c"))
 	assert.Equal(t, "d", queuedKey)
 	queuedKey = ""
 
 	throttler.Remove("b")
-	assert.True(t, throttler.Next("d"), "top priority")
-	assert.True(t, throttler.Next("c"), "now running too")
+	assert.True(t, throttler.Progress("d"), "top priority")
+	assert.True(t, throttler.Progress("c"), "now running too")
 	assert.Equal(t, "c", queuedKey)
 }

@@ -10,7 +10,7 @@ import (
 type Throttler interface {
 	Add(key string, priority int32, creationTime time.Time)
 	// Next returns true if item should be processed by controller now or return false.
-	Next(key string) bool
+	Progress(key string) bool
 	// Remove notifies throttler that item processing is done. In responses the throttler triggers processing of previously throttled items.
 	Remove(key string)
 }
@@ -35,17 +35,20 @@ func NewThrottler(parallelism int, queue func(key string)) Throttler {
 func (t *throttler) Add(key string, priority int32, creationTime time.Time) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	if t.parallelism == 0 {
+		return
+	}
 	t.pending.add(key, priority, creationTime)
 	t.queueThrottled()
 }
 
-func (t *throttler) Next(key string) bool {
+func (t *throttler) Progress(key string) bool {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	t.queueThrottled()
 	if t.parallelism == 0 || t.inProgress[key] {
 		return true
 	}
+	t.queueThrottled()
 	return false
 }
 
