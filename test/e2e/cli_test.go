@@ -386,7 +386,7 @@ func (s *CLISuite) TestWorkflowDeleteNothing() {
 		When().
 		SubmitWorkflow().
 		RunCli([]string{"delete"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.NotContains(t, output, "deleted")
 			}
 		})
