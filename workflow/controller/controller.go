@@ -96,7 +96,7 @@ type WorkflowController struct {
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
-	cacheFactory          controllercache.CacheFactory
+	cacheFactory          controllercache.Factory
 }
 
 const (
@@ -489,6 +489,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+
+	// this will ensure we process every incomplete workflow once every 20m
+	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 

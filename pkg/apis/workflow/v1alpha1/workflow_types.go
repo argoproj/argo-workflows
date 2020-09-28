@@ -1211,10 +1211,14 @@ func (in ResourceDuration) String() string {
 type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
 func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
-	for n, d := range o {
-		in[n] += d
+	res := ResourcesDuration{}
+	for n, d := range in {
+		res[n] += d
 	}
-	return in
+	for n, d := range o {
+		res[n] += d
+	}
+	return res
 }
 
 func (in ResourcesDuration) String() string {
@@ -1408,14 +1412,6 @@ type NodeStatus struct {
 
 	// MemoizationStatus holds information about cached nodes
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
-}
-
-func (n Nodes) GetResourcesDuration() ResourcesDuration {
-	i := ResourcesDuration{}
-	for _, status := range n {
-		i = i.Add(status.ResourcesDuration)
-	}
-	return i
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
@@ -1703,10 +1699,22 @@ func (r *RawArtifact) HasLocation() bool {
 	return r != nil
 }
 
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+type Header struct {
+	// Name is the header name
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
+
+	// Headers are an optional list of headers to send with HTTP requests for artifacts
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
 }
 
 func (h *HTTPArtifact) HasLocation() bool {
@@ -2278,18 +2286,29 @@ type Counter struct {
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
-// Memoization
+// Memoization enables caching for the Outputs of the template
 type Memoize struct {
-	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	// Key is the key to use as the caching key
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	// Cache sets and configures the kind of cache
 	Cache *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+	// MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+	// than the MaxAge, it will be ignored.
+	MaxAge string `json:"maxAge" protobuf:"bytes,3,opt,name=maxAge"`
 }
 
+// MemoizationStatus is the status of this memoized node
 type MemoizationStatus struct {
-	Hit       bool   `json:"hit" protobuf:"bytes,1,opt,name=hit"`
-	Key       string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// Hit indicates whether this node was created from a cache entry
+	Hit bool `json:"hit" protobuf:"bytes,1,opt,name=hit"`
+	// Key is the name of the key used for this node's cache
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// Cache is the name of the cache that was used
 	CacheName string `json:"cacheName" protobuf:"bytes,3,opt,name=cacheName"`
 }
 
+// Cache is the configuration for the type of cache to be used
 type Cache struct {
+	// ConfigMap sets a ConfigMap-based cache
 	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
 }

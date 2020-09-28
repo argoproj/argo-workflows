@@ -144,7 +144,9 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+// Cache is the configuration for the type of cache to be used
 message Cache {
+  // ConfigMap sets a ConfigMap-based cache
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
 }
 
@@ -440,6 +442,18 @@ message HDFSKrbConfig {
 message HTTPArtifact {
   // URL of the artifact
   optional string url = 1;
+
+  // Headers are an optional list of headers to send with HTTP requests for artifacts
+  repeated Header headers = 2;
+}
+
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+message Header {
+  // Name is the header name
+  optional string name = 1;
+
+  // Value is the literal value to use for the header
+  optional string value = 2;
 }
 
 // Histogram is a Histogram prometheus metric
@@ -487,19 +501,29 @@ message Link {
   optional string url = 3;
 }
 
+// MemoizationStatus is the status of this memoized node
 message MemoizationStatus {
+  // Hit indicates whether this node was created from a cache entry
   optional bool hit = 1;
 
+  // Key is the name of the key used for this node's cache
   optional string key = 2;
 
+  // Cache is the name of the cache that was used
   optional string cacheName = 3;
 }
 
-// Memoization
+// Memoization enables caching for the Outputs of the template
 message Memoize {
+  // Key is the key to use as the caching key
   optional string key = 1;
 
+  // Cache sets and configures the kind of cache
   optional Cache cache = 2;
+
+  // MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+  // than the MaxAge, it will be ignored.
+  optional string maxAge = 3;
 }
 
 // Pod metdata
