@@ -6,12 +6,14 @@ import (
 	"time"
 )
 
-// Throttler allows CRD controller to limit number of items it is processing in parallel.
+// Throttler allows the controller to limit number of items it is processing in parallel.
+// Items are processed in priority order, and one processing starts, other items (including higher-priority items)
+// will be kept pending until the processing is complete.
 type Throttler interface {
 	Add(key string, priority int32, creationTime time.Time)
-	// Next returns true if item should be processed by controller now or return false.
-	Progress(key string) bool
-	// Remove notifies throttler that item processing is done. In responses the throttler triggers processing of previously throttled items.
+	// Admin returns if the item should be processed.
+	Admit(key string) bool
+	// Remove notifies throttler that item processing is no longer needed
 	Remove(key string)
 }
 
@@ -23,6 +25,8 @@ type throttler struct {
 	parallelism int
 }
 
+// NewThrottler returns a throttle that only runs `parallelism` items at once. When an item may need processing,
+// `queue` is invoked. 
 func NewThrottler(parallelism int, queue func(key string)) Throttler {
 	return &throttler{
 		queue:       queue,
@@ -42,7 +46,7 @@ func (t *throttler) Add(key string, priority int32, creationTime time.Time) {
 	t.queueThrottled()
 }
 
-func (t *throttler) Progress(key string) bool {
+func (t *throttler) Admit(key string) bool {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	if t.parallelism == 0 || t.inProgress[key] {

@@ -462,7 +462,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if !wfc.throttler.Progress(key.(string)) {
+	if !wfc.throttler.Admit(key.(string)) {
 		log.WithFields(log.Fields{"key": key}).Info("Workflow processing has been postponed due to max parallelism limit")
 		return true
 	}
