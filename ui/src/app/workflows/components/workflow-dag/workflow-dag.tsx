@@ -220,7 +220,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                     label = getMessage(nodeId);
                                     hidden = this.hiddenNode(nodeId);
                                 } else {
-                                    const node = this.props.nodes[nodeId];
+                                    const node = this.getNode(nodeId);
                                     phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
                                     label = Utils.shortNodeName(node);
                                     hidden = this.hiddenNode(nodeId);
@@ -258,6 +258,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private saveOptions(newChanges: WorkflowDagRenderOptions) {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
         this.setState(newChanges);
+    }
+
+    private getNode(nodeId: string): NodeStatus {
+        const node: NodeStatus = this.props.nodes[nodeId];
+        if (!node) {
+            return null;
+        }
+        return node;
     }
 
     private getOptions(): WorkflowDagRenderOptions {
@@ -300,9 +308,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (!allNodes[nodeId] || !allNodes[nodeId].children) {
                 return [];
             }
-            return allNodes[nodeId].children;
+            return allNodes[nodeId].children.filter(child => allNodes[child]);
         };
-        const pushChildren = (nodeId: string, children: string[], isExpanded: boolean): void => {
+        const pushChildren = (nodeId: string, isExpanded: boolean): void => {
+            const children: string[] = getChildren(nodeId);
             if (!children) {
                 return;
             }
@@ -377,14 +386,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 continue;
             }
 
-            pushChildren(node.id, node.children, isExpanded);
+            pushChildren(node.id, isExpanded);
         }
 
         const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(v => {
                 nodes.push(onExitHandlerNodeId.id);
-                edges.push({v, w: onExitHandlerNodeId.id});
+                if (nodes.includes(v)) {
+                    edges.push({v, w: onExitHandlerNodeId.id});
+                }
             });
         }
         return {nodes, edges};
@@ -530,13 +541,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private getOutboundNodes(nodeID: string): string[] {
-        const node = this.props.nodes[nodeID];
+        const node = this.getNode(nodeID);
         if (node.type === 'Pod' || node.type === 'Skipped') {
             return [node.id];
         }
         let outbound = Array<string>();
         for (const outboundNodeID of node.outboundNodes || []) {
-            const outNode = this.props.nodes[outboundNodeID];
+            const outNode = this.getNode(outboundNodeID);
             if (outNode.type === 'Pod') {
                 outbound.push(outboundNodeID);
             } else {
@@ -551,7 +562,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return !this.state.nodesToDisplay.includes('type:' + getType(id));
         }
 
-        const node = this.props.nodes[id];
+        const node = this.getNode(id);
         // Filter the node if it is a virtual node or a Retry node with one child
         return (
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
