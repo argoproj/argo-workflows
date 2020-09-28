@@ -1993,7 +1993,7 @@
 </ul>
 <p>We recommend using <a href="https://k3d.io/">K3D</a> to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:</p>
 <div class="codehilite"><pre><span></span><code><span class="err">cp ~/.kube/config ~/.kube/config.bak</span>
-<span class="err">cat $(k3d get-kubeconfig --name=&#39;k3s-default&#39;) &gt;&gt; ~/.kube/config</span>
+<span class="err">cat $(k3d kubeconfig get k3s-default) &gt;&gt; ~/.kube/config</span>
 </code></pre></div>
 
 
