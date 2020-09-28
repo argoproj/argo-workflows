@@ -9,6 +9,7 @@ import (
 // Throttler allows the controller to limit number of items it is processing in parallel.
 // Items are processed in priority order, and one processing starts, other items (including higher-priority items)
 // will be kept pending until the processing is complete.
+// Implementations should be idempotent.
 type Throttler interface {
 	Add(key string, priority int32, creationTime time.Time)
 	// Admin returns if the item should be processed.
@@ -26,7 +27,7 @@ type throttler struct {
 }
 
 // NewThrottler returns a throttle that only runs `parallelism` items at once. When an item may need processing,
-// `queue` is invoked. 
+// `queue` is invoked.
 func NewThrottler(parallelism int, queue func(key string)) Throttler {
 	return &throttler{
 		queue:       queue,
