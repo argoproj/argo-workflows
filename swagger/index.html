@@ -10925,6 +10925,7 @@
 </tbody>
 </table>
 <h4 id="ioargoprojworkflowv1alpha1cache">io.argoproj.workflow.v1alpha1.Cache<a class="headerlink" href="#ioargoprojworkflowv1alpha1cache" title="Permanent link">&para;</a></h4>
+<p>Cache is the configuration for the type of cache to be used</p>
 <table>
 <thead>
 <tr>
@@ -10938,7 +10939,7 @@
 <tr>
 <td>configMap</td>
 <td><a href="#io.k8s.api.core.v1.configmapkeyselector">io.k8s.api.core.v1.ConfigMapKeySelector</a></td>
-<td></td>
+<td>ConfigMap sets a ConfigMap-based cache</td>
 <td>Yes</td>
 </tr>
 </tbody>
@@ -12049,6 +12050,7 @@
 </tbody>
 </table>
 <h4 id="ioargoprojworkflowv1alpha1memoizationstatus">io.argoproj.workflow.v1alpha1.MemoizationStatus<a class="headerlink" href="#ioargoprojworkflowv1alpha1memoizationstatus" title="Permanent link">&para;</a></h4>
+<p>MemoizationStatus is the status of this memoized node</p>
 <table>
 <thead>
 <tr>
@@ -12062,25 +12064,25 @@
 <tr>
 <td>cacheName</td>
 <td>string</td>
-<td></td>
+<td>Cache is the name of the cache that was used</td>
 <td>Yes</td>
 </tr>
 <tr>
 <td>hit</td>
 <td>boolean</td>
-<td></td>
+<td>Hit indicates whether this node was created from a cache entry</td>
 <td>Yes</td>
 </tr>
 <tr>
 <td>key</td>
 <td>string</td>
-<td></td>
+<td>Key is the name of the key used for this node's cache</td>
 <td>Yes</td>
 </tr>
 </tbody>
 </table>
 <h4 id="ioargoprojworkflowv1alpha1memoize">io.argoproj.workflow.v1alpha1.Memoize<a class="headerlink" href="#ioargoprojworkflowv1alpha1memoize" title="Permanent link">&para;</a></h4>
-<p>Memoization</p>
+<p>Memoization enables caching for the Outputs of the template</p>
 <table>
 <thead>
 <tr>
@@ -12094,13 +12096,19 @@
 <tr>
 <td>cache</td>
 <td><a href="#io.argoproj.workflow.v1alpha1.cache">io.argoproj.workflow.v1alpha1.Cache</a></td>
-<td></td>
+<td>Cache sets and configures the kind of cache</td>
 <td>Yes</td>
 </tr>
 <tr>
 <td>key</td>
 <td>string</td>
-<td></td>
+<td>Key is the key to use as the caching key</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>maxAge</td>
+<td>string</td>
+<td>MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.</td>
 <td>Yes</td>
 </tr>
 </tbody>

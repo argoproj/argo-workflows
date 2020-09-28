@@ -8593,7 +8593,7 @@
 </tbody>
 </table>
 <h2 id="memoize">Memoize<a class="headerlink" href="#memoize" title="Permanent link">&para;</a></h2>
-<p>Memoization</p>
+<p>Memoization enables caching for the Outputs of the template</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -8616,12 +8616,17 @@
 <tr>
 <td align="center"><code>cache</code></td>
 <td align="center"><a href="#cache"><code>Cache</code></a></td>
-<td><em>No description available</em></td>
+<td>Cache sets and configures the kind of cache</td>
 </tr>
 <tr>
 <td align="center"><code>key</code></td>
 <td align="center"><code>string</code></td>
-<td><em>No description available</em></td>
+<td>Key is the key to use as the caching key</td>
+</tr>
+<tr>
+<td align="center"><code>maxAge</code></td>
+<td align="center"><code>string</code></td>
+<td>MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.</td>
 </tr>
 </tbody>
 </table>
@@ -9477,7 +9482,7 @@
 </tbody>
 </table>
 <h2 id="memoizationstatus">MemoizationStatus<a class="headerlink" href="#memoizationstatus" title="Permanent link">&para;</a></h2>
-<p><em>No description available</em></p>
+<p>MemoizationStatus is the status of this memoized node</p>
 <h3 id="fields_40">Fields<a class="headerlink" href="#fields_40" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -9491,17 +9496,17 @@
 <tr>
 <td align="center"><code>cacheName</code></td>
 <td align="center"><code>string</code></td>
-<td><em>No description available</em></td>
+<td>Cache is the name of the cache that was used</td>
 </tr>
 <tr>
 <td align="center"><code>hit</code></td>
 <td align="center"><code>boolean</code></td>
-<td><em>No description available</em></td>
+<td>Hit indicates whether this node was created from a cache entry</td>
 </tr>
 <tr>
 <td align="center"><code>key</code></td>
 <td align="center"><code>string</code></td>
-<td><em>No description available</em></td>
+<td>Key is the name of the key used for this node's cache</td>
 </tr>
 </tbody>
 </table>
@@ -10369,7 +10374,7 @@
 </tbody>
 </table>
 <h2 id="cache">Cache<a class="headerlink" href="#cache" title="Permanent link">&para;</a></h2>
-<p><em>No description available</em></p>
+<p>Cache is the configuration for the type of cache to be used</p>
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -10392,7 +10397,7 @@
 <tr>
 <td align="center"><code>configMap</code></td>
 <td align="center"><a href="#configmapkeyselector"><code>ConfigMapKeySelector</code></a></td>
-<td><em>No description available</em></td>
+<td>ConfigMap sets a ConfigMap-based cache</td>
 </tr>
 </tbody>
 </table>
