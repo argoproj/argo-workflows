@@ -3,13 +3,14 @@ package controller
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/argoproj/pkg/sync"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/utils/pointer"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -19,7 +20,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
@@ -35,6 +35,7 @@ import (
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 var helloWorldWf = `
@@ -120,33 +121,39 @@ func (t testEventRecorderManager) Get(string) record.EventRecorder {
 
 var _ events.EventRecorderManager = &testEventRecorderManager{}
 
-func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
+func newController(options ...interface{}) (context.CancelFunc, *WorkflowController) {
+	// get all the objects and add to the fake
+	var objects []runtime.Object
+	var uns []runtime.Object
+	for _, opt := range options {
+		switch v := opt.(type) {
+		// special case for workflows must be unstructured
+		case *wfv1.Workflow:
+			un, err := util.ToUnstructured(v)
+			if err != nil {
+				panic(err)
+			}
+			uns = append(uns, un)
+			objects = append(objects, v)
+		case runtime.Object:
+			objects = append(objects, v)
+		}
+	}
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
-	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
-	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
-	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
+	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, uns...)
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
-	go wftmplInformer.Informer().Run(ctx.Done())
-	go cwftmplInformer.Informer().Run(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
-		panic("Timed out waiting for caches to sync")
-	}
-	if !cache.WaitForCacheSync(ctx.Done(), cwftmplInformer.Informer().HasSynced) {
-		panic("Timed out waiting for caches to sync")
-	}
 	kube := fake.NewSimpleClientset()
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:        kube,
-		dynamicInterface:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
+		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
 		completedPods:        make(chan string, 16),
-		wfInformer:           wfInformer,
-		wftmplInformer:       wftmplInformer,
-		cwftmplInformer:      cwftmplInformer,
+		wftmplInformer:       informerFactory.Argoproj().V1alpha1().WorkflowTemplates(),
+		cwftmplInformer:      informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates(),
 		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		workflowKeyLock:      sync.NewKeyLock(),
@@ -157,47 +164,59 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
+	for _, opt := range options {
+		switch v := opt.(type) {
+		// any post-processing
+		case func(workflowController *WorkflowController):
+			v(controller)
+		}
+	}
+	controller.throttler = controller.newThrottler()
+	controller.wfInformer = util.NewWorkflowInformerFromDynamic(dynamicClient, "", 0, controller.tweakListOptions)
 	controller.podInformer = controller.newPodInformer()
+	controller.addWorkflowInformerHandlers()
+	go controller.wfInformer.Run(ctx.Done())
+	go controller.wftmplInformer.Informer().Run(ctx.Done())
+	go controller.cwftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), controller.wfInformer.HasSynced, controller.wftmplInformer.Informer().HasSynced, controller.cwftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 	return cancel, controller
 }
 
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
-	cancel, controller := newController()
-	myBool := true
-	controller.Config.WorkflowDefaults = &wfv1.Workflow{
-		Spec: wfv1.WorkflowSpec{
-			HostNetwork: &myBool,
-		},
-	}
+	cancel, controller := newController(func(controller *WorkflowController) {
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{HostNetwork: pointer.BoolPtr(true)},
+		}
+	})
 	return cancel, controller
 }
 
 func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController) {
-	cancel, controller := newController()
-	myBool := true
-	var ten int32 = 10
-	var seven int32 = 10
-	controller.Config.WorkflowDefaults = &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				"annotation": "value",
+	cancel, controller := newController(func(controller *WorkflowController) {
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"annotation": "value",
+				},
+				Labels: map[string]string{
+					"label": "value",
+				},
 			},
-			Labels: map[string]string{
-				"label": "value",
+			Spec: wfv1.WorkflowSpec{
+				HostNetwork:        pointer.BoolPtr(true),
+				Entrypoint:         "good_entrypoint",
+				ServiceAccountName: "my_service_account",
+				TTLStrategy: &wfv1.TTLStrategy{
+					SecondsAfterCompletion: pointer.Int32Ptr(10),
+					SecondsAfterSuccess:    pointer.Int32Ptr(10),
+					SecondsAfterFailure:    pointer.Int32Ptr(10),
+				},
+				TTLSecondsAfterFinished: pointer.Int32Ptr(7),
 			},
-		},
-		Spec: wfv1.WorkflowSpec{
-			HostNetwork:        &myBool,
-			Entrypoint:         "good_entrypoint",
-			ServiceAccountName: "my_service_account",
-			TTLStrategy: &wfv1.TTLStrategy{
-				SecondsAfterCompletion: &ten,
-				SecondsAfterSuccess:    &ten,
-				SecondsAfterFailure:    &ten,
-			},
-			TTLSecondsAfterFinished: &seven,
-		},
-	}
+		}
+	})
 	return cancel, controller
 }
 
@@ -220,6 +239,22 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 		panic(err)
 	}
 	return &artifact
+}
+
+func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
+	obj, exists, err := controller.wfInformer.GetStore().GetByKey(name)
+	if err != nil {
+		panic(err)
+	}
+	if !exists {
+		test(nil)
+		return
+	}
+	wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+	if err != nil {
+		panic(err)
+	}
+	test(wf)
 }
 
 type with func(pod *apiv1.Pod)
@@ -365,6 +400,46 @@ func TestClusterController(t *testing.T) {
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
+}
+
+func TestParallelism(t *testing.T) {
+	cancel, controller := newController(
+		unmarshalWF(`
+metadata:
+  name: my-wf-0
+spec:
+  entrypoint: main
+  templates:
+    - name: main 
+      container: 
+        image: my-image
+`),
+		unmarshalWF(`
+metadata:
+  name: my-wf-1
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container: 
+        image: my-image
+`),
+		func(controller *WorkflowController) { controller.Config.Parallelism = 1 },
+	)
+	defer cancel()
+	assert.True(t, controller.processNextItem())
+	assert.True(t, controller.processNextItem())
+
+	expectWorkflow(controller, "my-wf-0", func(wf *wfv1.Workflow) {
+		if assert.NotNil(t, wf) {
+			assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+		}
+	})
+	expectWorkflow(controller, "my-wf-1", func(wf *wfv1.Workflow) {
+		if assert.NotNil(t, wf) {
+			assert.Empty(t, wf.Status.Phase)
+		}
+	})
 }
 
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {

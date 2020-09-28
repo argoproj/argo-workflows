@@ -137,10 +137,14 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 	workqueue.SetProvider(wfc.metrics)
 	wfc.wfQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "workflow_queue")
-	wfc.throttler = sync.NewThrottler(wfc.getParallelism(), func(key string) { wfc.wfQueue.Add(key) })
+	wfc.throttler = wfc.newThrottler()
 	wfc.podQueue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "pod_queue")
 
 	return &wfc, nil
+}
+
+func (wfc *WorkflowController) newThrottler() sync.Throttler {
+	return sync.NewThrottler(wfc.Config.Parallelism, func(key string) { wfc.wfQueue.Add(key) })
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -185,11 +189,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.metrics.RunServer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
-		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
-			log.Error("Timed out waiting for caches to sync")
-			return
-		}
+	if !cache.WaitForCacheSync(ctx.Done(), wfc.wfInformer.HasSynced, wfc.wftmplInformer.Informer().HasSynced, wfc.podInformer.HasSynced) {
+		panic("Timed out waiting for caches to sync")
 	}
 
 	// Create Synchronization Manager
@@ -864,10 +865,6 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
-}
-
-func (wfc *WorkflowController) getParallelism() int {
-	return wfc.Config.Parallelism
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

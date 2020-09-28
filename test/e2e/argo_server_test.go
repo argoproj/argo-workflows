@@ -968,7 +968,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeArchived, "to be archived").
+		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1014,7 +1014,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart, "to start").
+		WaitForWorkflow(fixtures.ToStart).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1157,7 +1157,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeArchived, "to be archived")
+		WaitForWorkflow(fixtures.ToBeArchived)
 
 	for _, tt := range []struct {
 		name     string

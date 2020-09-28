@@ -60,7 +60,10 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 	if err != nil {
 		panic(err)
 	}
+	return NewWorkflowInformerFromDynamic(dclient, ns, resyncPeriod, tweakListOptions)
+}
 
+func NewWorkflowInformerFromDynamic(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
@@ -146,7 +149,7 @@ func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	un := &unstructured.Unstructured{Object: obj}
 	// we need to add these values so that the `EventRecorder` does not error
 	un.SetKind(workflow.WorkflowKind)
-	un.SetAPIVersion(workflow.Version)
+	un.SetAPIVersion(workflow.APIVersion)
 	return un, nil
 }
 
