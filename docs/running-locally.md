@@ -13,7 +13,7 @@
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
 
     cp ~/.kube/config ~/.kube/config.bak
-    cat $(k3d get-kubeconfig --name='k3s-default') >> ~/.kube/config
+    cat $(k3d kubeconfig get k3s-default) >> ~/.kube/config
     
 Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context automatically.
 
