@@ -2992,9 +2992,6 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
-			if !errorsutil.IsTransientErr(err) {
-				return false, err
-			}
 			return false, nil
 		}
 		return true, nil
