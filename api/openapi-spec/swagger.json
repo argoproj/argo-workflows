@@ -3070,9 +3070,9 @@
       "description": "NodeSynchronizationStatus stores the status of a node",
       "type": "object",
       "properties": {
-        "waitingForLock": {
-          "description": "WaitingForLock is a flag that tracks if the node is currently waiting for a lock",
-          "type": "boolean"
+        "waiting": {
+          "description": "Waiting is the name of the lock that this node is waiting for",
+          "type": "string"
         }
       }
     },

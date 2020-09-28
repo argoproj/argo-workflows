@@ -1271,7 +1271,7 @@ NodeSynchronizationStatus stores the status of a node
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| waitingForLock | boolean | WaitingForLock is a flag that tracks if the node is currently waiting for a lock | No |
+| waiting | string | Waiting is the name of the lock that this node is waiting for | No |
 
 #### io.argoproj.workflow.v1alpha1.NoneStrategy
 

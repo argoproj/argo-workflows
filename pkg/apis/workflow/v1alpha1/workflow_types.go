@@ -2460,6 +2460,6 @@ func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) Synchro
 
 // NodeSynchronizationStatus stores the status of a node
 type NodeSynchronizationStatus struct {
-	// WaitingForLock is a flag that tracks if the node is currently waiting for a lock
-	WaitingForLock bool `json:"waitingForLock,omitempty" protobuf:"varint,1,opt,name=waitingForLock"`
+	// Waiting is the name of the lock that this node is waiting for
+	Waiting string `json:"waiting,omitempty" protobuf:"bytes,1,opt,name=waiting"`
 }

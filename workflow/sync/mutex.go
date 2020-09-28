@@ -58,6 +58,12 @@ func (m *PriorityMutex) addToQueue(holderKey string, priority int32, creationTim
 	m.mutex.addToQueue(holderKey, priority, creationTime)
 }
 
+func (m *PriorityMutex) removeFromQueue(holderKey string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.mutex.removeFromQueue(holderKey)
+}
+
 func (m *PriorityMutex) tryAcquire(holderKey string) (bool, string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()

@@ -114,8 +114,18 @@ func (s *PrioritySemaphore) addToQueue(holderKey string, priority int32, creatio
 	}
 
 	s.pending.add(holderKey, priority, creationTime)
-	s.log.Debugf("Added into Queue %s", holderKey)
+	s.log.Debugf("Added into queue: %s", holderKey)
 }
+
+
+func (s *PrioritySemaphore) removeFromQueue(holderKey string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.pending.remove(holderKey)
+	s.log.Debugf("Removed from queue: %s", holderKey)
+}
+
 
 func (s *PrioritySemaphore) acquire(holderKey string) bool {
 	if s.semaphore.TryAcquire(1) {

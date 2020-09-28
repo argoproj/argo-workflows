@@ -7,6 +7,7 @@ type Semaphore interface {
 	tryAcquire(holderKey string) (bool, string)
 	release(key string) bool
 	addToQueue(holderKey string, priority int32, creationTime time.Time)
+	removeFromQueue(holderKey string)
 	getCurrentHolders() []string
 	getName() string
 	getLimit() int

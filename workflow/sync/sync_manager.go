@@ -85,7 +85,7 @@ func (cm *Manager) TryAcquire(wf *wfv1.Workflow, nodeName string, syncLockRef *w
 	defer cm.lock.Unlock()
 
 	if syncLockRef == nil {
-		return true, false, "", nil
+		return false, false, "", fmt.Errorf("cannot acquire lock from nil Synchronization")
 	}
 
 	syncLockName, err := GetLockName(syncLockRef, wf.Namespace)
@@ -199,6 +199,16 @@ func (cm *Manager) ReleaseAll(wf *wfv1.Workflow) bool {
 			log.Infof("%s released a lock from %s", resourceKey, holding.Mutex)
 		}
 		wf.Status.Synchronization.Mutex = nil
+	}
+
+	for _, node := range wf.Status.Nodes {
+		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+			lock := cm.syncLockMap[node.SynchronizationStatus.Waiting]
+			lock.removeFromQueue(getHolderKey(wf, node.ID))
+
+			node.SynchronizationStatus = nil
+			wf.Status.Nodes[node.ID] = node
+		}
 	}
 
 	wf.Status.Synchronization = nil

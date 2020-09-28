@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	argosync "github.com/argoproj/argo/workflow/sync"
 	"math"
 	"os"
 	"reflect"
@@ -964,7 +965,7 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 		}
 		switch node.Phase {
 		case wfv1.NodePending, wfv1.NodeRunning:
-			if node.SynchronizationStatus != nil && node.SynchronizationStatus.WaitingForLock {
+			if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
 				// Do not include pending nodes that are waiting for a lock
 				continue
 			}
@@ -1577,12 +1578,18 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
-			return woc.markNodeWaitingForLock(node.Name, true), nil
+			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
+			if err != nil {
+				// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
+				// unexpected behavior and is a bug.
+				panic("bug: GetLockName should not return an error after a call to TryAcquire")
+			}
+			return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName()), nil
 		} else {
 			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
 				node.Message = ""
-				node = woc.markNodeWaitingForLock(node.Name, false)
+				node = woc.markNodeWaitingForLock(node.Name, "")
 			}
 		}
 
@@ -2012,7 +2019,7 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 }
 
 // markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
-func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, waiting bool) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string) *wfv1.NodeStatus {
 	node := woc.wf.GetNodeByName(nodeName)
 	if node == nil {
 		return node
@@ -2021,7 +2028,14 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, waiting bool)
 	if node.SynchronizationStatus == nil {
 		node.SynchronizationStatus = &wfv1.NodeSynchronizationStatus{}
 	}
-	node.SynchronizationStatus.WaitingForLock = waiting
+
+	if lockName == "" {
+		// If we are no longer waiting for a lock, nil out the sync status
+		node.SynchronizationStatus = nil
+	} else {
+		node.SynchronizationStatus.Waiting = lockName
+	}
+
 	woc.wf.Status.Nodes[node.ID] = *node
 	woc.updated = true
 	return node

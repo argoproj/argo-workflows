@@ -661,8 +661,8 @@ message NodeStatus {
 
 // NodeSynchronizationStatus stores the status of a node
 message NodeSynchronizationStatus {
-  // WaitingForLock is a flag that tracks if the node is currently waiting for a lock
-  optional bool waitingForLock = 1;
+  // Waiting is the name of the lock that this node is waiting for
+  optional string waiting = 1;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent

@@ -3314,7 +3314,7 @@ NodeSynchronizationStatus stores the status of a node
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`waitingForLock`|`boolean`|WaitingForLock is a flag that tracks if the node is currently waiting for a lock|
+|`waiting`|`string`|Waiting is the name of the lock that this node is waiting for|
 
 ## MutexStatus
 

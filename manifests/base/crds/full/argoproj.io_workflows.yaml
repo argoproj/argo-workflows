@@ -7421,8 +7421,8 @@ spec:
                     type: string
                   synchronizationStatus:
                     properties:
-                      waitingForLock:
-                        type: boolean
+                      waiting:
+                        type: string
                     type: object
                   templateName:
                     type: string

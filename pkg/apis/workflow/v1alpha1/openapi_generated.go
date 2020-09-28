@@ -2173,10 +2173,10 @@ func schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref common.Refe
 				Description: "NodeSynchronizationStatus stores the status of a node",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"waitingForLock": {
+					"waiting": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WaitingForLock is a flag that tracks if the node is currently waiting for a lock",
-							Type:        []string{"boolean"},
+							Description: "Waiting is the name of the lock that this node is waiting for",
+							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
