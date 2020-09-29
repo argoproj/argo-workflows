@@ -50,6 +50,7 @@ rules:
       - workfloweventbindings
       - workflowtemplates
       - cronworkflows
+      - cronworkflows/finalizers
     verbs:
       - create
       - get

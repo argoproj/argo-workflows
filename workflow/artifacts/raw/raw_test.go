@@ -1,6 +1,7 @@
 package raw_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -18,7 +19,7 @@ const (
 
 func TestLoad(t *testing.T) {
 
-	content := "time: " + string(time.Now().UnixNano())
+	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
 	lf, err := ioutil.TempFile("", LoadFileName)
 	assert.NoError(t, err)
 	defer os.Remove(lf.Name())

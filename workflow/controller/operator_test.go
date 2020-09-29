@@ -81,6 +81,39 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 	}
 }
 
+func TestResourcesDuration(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.NotEmpty(t, woc.wf.Status.ResourcesDuration, "workflow duration not empty")
+	assert.False(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.ResourcesDuration.IsZero()
+	}), "zero node durations empty")
+}
+
 var sidecarWithVol = `
 # Verifies sidecars can reference volumeClaimTemplates
 apiVersion: argoproj.io/v1alpha1
@@ -2897,44 +2930,25 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var invalidSpec = `
+func TestEventNodeEvents(t *testing.T) {
+	for manifest, want := range map[string][]string{
+		// Invalid spec
+		`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: invalid-spec
 spec:
   entrypoint: 123
-`
-
-func TestEventInvalidSpec(t *testing.T) {
-	// Test whether a WorkflowFailed event is emitted in case of invalid spec
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(invalidSpec)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	events := getEvents(controller, 2)
-	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
-	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", events[1])
-}
-
-func getEvents(controller *WorkflowController, num int) []string {
-	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
-	events := make([]string, num)
-	for i := 0; i < num; i++ {
-		events[i] = <-c
-	}
-	return events
-}
-
-var failLoadArtifactRepoCm = `
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Warning WorkflowFailed invalid spec: template name '123' undefined",
+		},
+		`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-repo-config-ref-
+  name: artifact-repo-config-ref-
 spec:
   entrypoint: whalesay
   artifactRepositoryRef:
@@ -2950,21 +2964,74 @@ spec:
       artifacts:
       - name: message
         path: /tmp/hello_world.txt
-`
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config",
+		},
+		// DAG
+		`
+metadata:
+  name: dag-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events.a%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node dag-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+		// steps
+		`
+metadata:
+  name: steps-events
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: a
+            template: whalesay
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+`: {
+			"Normal WorkflowRunning Workflow Running",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0].a%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events[0]%!(EXTRA []interface {}=[])",
+			"Normal WorkflowNodeSucceeded Succeeded node steps-events%!(EXTRA []interface {}=[])",
+			"Normal WorkflowSucceeded Workflow completed",
+		},
+	} {
+		wf := unmarshalWF(manifest)
+		cancel, controller := newController(wf)
+		defer cancel()
+		t.Run(wf.Name, func(t *testing.T) {
+			woc := newWorkflowOperationCtx(wf, controller)
+			woc.operate()
+			makePodsPhase(woc, apiv1.PodSucceeded)
+			woc = newWorkflowOperationCtx(woc.wf, controller)
+			woc.operate()
+			assert.Equal(t, want, getEvents(controller, len(want)))
+		})
+	}
+}
 
-func TestEventFailArtifactRepoCm(t *testing.T) {
-	// Test whether a WorkflowFailed event is emitted in case of failure in loading artifact repository config map
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(failLoadArtifactRepoCm)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	events := getEvents(controller, 2)
-	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
-	assert.Equal(t, "Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", events[1])
+func getEvents(controller *WorkflowController, num int) []string {
+	c := controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+	events := make([]string, num)
+	for i := 0; i < num; i++ {
+		events[i] = <-c
+	}
+	return events
 }
 
 var pdbwf = `
@@ -4052,7 +4119,6 @@ spec:
       - name: message
     memoize:
       key: "{{inputs.parameters.message}}"
-      maxAge: 1d
       cache:
         configMap:
           name: whalesay-cache
@@ -4068,10 +4134,9 @@ spec:
 `
 
 func TestConfigMapCacheLoadOperate(t *testing.T) {
-
 	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 		Data: map[string]string{
-			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{"parameters":[{"name":"hello","value":"\n__________ \n\u003c hi there \u003e\n ---------- \n    \\\n     \\\n      \\     \n                    ##        .            \n              ##\n## ##       ==            \n           ## ## ## ##      ===            \n       /\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"___/\n===        \n  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   \n       \\______ o          __/            \n        \\    \\        __/             \n          \\____\\______/   ","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-workflow-btfmf/memoized-workflow-btfmf/main.log"}}]}}`,
+			"hi-there-world": `{"nodeID":"memoized-simple-workflow-5wj2p","outputs":{"parameters":[{"name":"hello","value":"foobar","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-simple-workflow-5wj2p/memoized-simple-workflow-5wj2p/main.log"}}]},"creationTimestamp":"2020-09-21T18:12:56Z"}`,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -4094,22 +4159,111 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 
-	status := woc.wf.Status
-	assert.Len(t, status.Nodes, 1)
-	outputs := &wfv1.Outputs{}
-	for _, node := range status.Nodes {
-		outputs = node.Outputs
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.NotNil(t, node.Outputs)
+			assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
+			assert.Equal(t, "foobar", *node.Outputs.Parameters[0].Value)
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
 	}
-	assert.NotNil(t, outputs)
-	assert.Equal(t, "hello", outputs.Parameters[0].Name)
-	assert.Equal(t, sampleOutput, *outputs.Parameters[0].Value)
+}
+
+var workflowCachedMaxAge = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: memoized-workflow-test
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hi-there-world
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    memoize:
+      key: "{{inputs.parameters.message}}"
+      maxAge: '10s'
+      cache:
+        configMap:
+          name: whalesay-cache
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 10; cowsay {{inputs.parameters.message}} > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: hello
+        valueFrom:
+          path: /tmp/hello_world.txt
+`
+
+func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
+	getEntryCreatedAtTime := func(time time.Time) apiv1.ConfigMap {
+		jsonTime, _ := time.UTC().MarshalJSON()
+		return apiv1.ConfigMap{
+			Data: map[string]string{
+				"hi-there-world": fmt.Sprintf(`{"nodeID":"memoized-simple-workflow-5wj2p","outputs":{"parameters":[{"name":"hello","value":"foobar","valueFrom":{"path":"/tmp/hello_world.txt"}}],"artifacts":[{"name":"main-logs","archiveLogs":true,"s3":{"endpoint":"minio:9000","bucket":"my-bucket","insecure":true,"accessKeySecret":{"name":"my-minio-cred","key":"accesskey"},"secretKeySecret":{"name":"my-minio-cred","key":"secretkey"},"key":"memoized-simple-workflow-5wj2p/memoized-simple-workflow-5wj2p/main.log"}}]},"creationTimestamp":%s}`, string(jsonTime)),
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "ConfigMap",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "whalesay-cache",
+				ResourceVersion: "1630732",
+			},
+		}
+	}
+	wf := unmarshalWF(workflowCachedMaxAge)
+	cancel, controller := newController()
+
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	assert.NoError(t, err)
+
+	nonExpiredEntry := getEntryCreatedAtTime(time.Now().Add(-5 * time.Second))
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&nonExpiredEntry)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.NotNil(t, node.Outputs)
+			assert.Equal(t, "hello", node.Outputs.Parameters[0].Name)
+			assert.Equal(t, "foobar", *node.Outputs.Parameters[0].Value)
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
+	}
+
+	cancel()
+	cancel, controller = newController()
+	defer cancel()
+
+	expiredEntry := getEntryCreatedAtTime(time.Now().Add(-15 * time.Second))
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&expiredEntry)
+	assert.NoError(t, err)
+
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.Nil(t, node.Outputs)
+			assert.Equal(t, wfv1.NodePending, node.Phase)
+		}
+	}
 }
 
 func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
-
 	var sampleConfigMapCacheEntry = apiv1.ConfigMap{
 		Data: map[string]string{
-			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}`,
+			"hi-there-world": `{"ExpiresAt":"2020-06-18T17:11:05Z","NodeID":"memoize-abx4124-123129321123","Outputs":{}}`,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -4132,13 +4286,13 @@ func TestConfigMapCacheLoadNilOutputs(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotPanics(t, woc.operate)
 
-	status := woc.wf.Status
-	assert.Len(t, status.Nodes, 1)
-	outputs := &wfv1.Outputs{}
-	for _, node := range status.Nodes {
-		outputs = node.Outputs
+	if assert.Len(t, woc.wf.Status.Nodes, 1) {
+		for _, node := range woc.wf.Status.Nodes {
+			assert.NotNil(t, node.Outputs)
+			assert.False(t, node.Outputs.HasOutputs())
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		}
 	}
-	assert.Nil(t, outputs)
 }
 
 func TestConfigMapCacheSaveOperate(t *testing.T) {
@@ -4149,7 +4303,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	sampleOutputs := wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
-			{Name: "hello", Value: pointer.StringPtr(sampleOutput)},
+			{Name: "hello", Value: pointer.StringPtr("foobar")},
 		},
 	}
 
@@ -4165,7 +4319,7 @@ func TestConfigMapCacheSaveOperate(t *testing.T) {
 
 	rawEntry, ok := cm.Data["hi-there-world"]
 	assert.True(t, ok)
-	var entry cache.CacheEntry
+	var entry cache.Entry
 	testutil.MustUnmarshallJSON(rawEntry, &entry)
 
 	if assert.NotNil(t, entry.Outputs) {
@@ -4246,7 +4400,6 @@ spec:
     metadata: {}
     name: resubmit-pending
     outputs: {}
-    resubmitPendingPods: true
     script:
       command:
       - bash
@@ -4567,7 +4720,6 @@ spec:
         requests:
           memory: 1Gi
     name: whalesay
-    resubmitPendingPods: true
 status:
   finishedAt: null
   nodes:
@@ -4960,6 +5112,50 @@ func TestPodFailureWithContainerWaitingState(t *testing.T) {
 	nodeStatus, msg := inferFailedReason(&pod)
 	assert.Equal(t, wfv1.NodeError, nodeStatus)
 	assert.Contains(t, msg, "Pod failed before")
+}
+
+func TestResubmitPendingPods(t *testing.T) {
+	wf := unmarshalWF(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: my-image
+`)
+	wftmpl := unmarshalWFTmpl(wftmplGlobalVarsOnExit)
+	cancel, controller := newController(wf, wftmpl)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.True(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.Phase == wfv1.NodePending
+	}))
+
+	deletePods(woc)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.True(t, woc.wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.Phase == wfv1.NodePending
+	}))
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 var wfRetryWithParam = `

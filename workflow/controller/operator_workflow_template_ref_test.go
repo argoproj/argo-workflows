@@ -63,6 +63,42 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
 
 	})
+
+	t.Run("CheckMergingWFDefaults", func(t *testing.T) {
+		wfDefaultActiveS := int64(5)
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{Spec: wfv1.WorkflowSpec{
+			ActiveDeadlineSeconds: &wfDefaultActiveS,
+		},
+		}
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfDefaultActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
+
+	})
+	t.Run("CheckMergingWFTandWF", func(t *testing.T) {
+		wfActiveS := int64(10)
+		wftActiveS := int64(10)
+		wfDefaultActiveS := int64(5)
+
+		wftmpl.Spec.ActiveDeadlineSeconds = &wftActiveS
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
+		controller.Config.WorkflowDefaults = &wfv1.Workflow{Spec: wfv1.WorkflowSpec{
+			ActiveDeadlineSeconds: &wfDefaultActiveS,
+		},
+		}
+		wf.Spec.ActiveDeadlineSeconds = &wfActiveS
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wfActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
+
+		wf.Spec.ActiveDeadlineSeconds = nil
+		woc = newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		assert.Equal(t, wftActiveS, *woc.execWf.Spec.ActiveDeadlineSeconds)
+	})
 }
 
 const wfWithStatus = `
