@@ -1133,6 +1133,7 @@ message TemplateRef {
 
   // RuntimeResolution skips validation at creation time.
   // By enabling this option, you can create the referred workflow template before the actual runtime.
+  // DEPRECATED: This value is not used anymore and is ignored
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
