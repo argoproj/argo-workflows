@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 
@@ -139,49 +138,56 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 			objects = append(objects, v)
 		}
 	}
+
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, uns...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(context.Background())
 	kube := fake.NewSimpleClientset()
-	controller := &WorkflowController{
-		Config: config.Config{
-			ExecutorImage: "executor:latest",
-		},
+	wfc := &WorkflowController{
+		Config:               config.Config{ExecutorImage: "executor:latest"},
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicClient,
 		wfclientset:          wfclientset,
 		completedPods:        make(chan string, 16),
-		wftmplInformer:       informerFactory.Argoproj().V1alpha1().WorkflowTemplates(),
-		cwftmplInformer:      informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates(),
-		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
-		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
 	}
+
 	for _, opt := range options {
 		switch v := opt.(type) {
 		// any post-processing
 		case func(workflowController *WorkflowController):
-			v(controller)
+			v(wfc)
 		}
 	}
-	controller.throttler = controller.newThrottler()
-	controller.wfInformer = util.NewWorkflowInformerFromDynamic(dynamicClient, "", 0, controller.tweakListOptions)
-	controller.podInformer = controller.newPodInformer()
-	controller.addWorkflowInformerHandlers()
-	go controller.wfInformer.Run(ctx.Done())
-	go controller.wftmplInformer.Informer().Run(ctx.Done())
-	go controller.cwftmplInformer.Informer().Run(ctx.Done())
-	if !cache.WaitForCacheSync(ctx.Done(), controller.wfInformer.HasSynced, controller.wftmplInformer.Informer().HasSynced, controller.cwftmplInformer.Informer().HasSynced) {
-		panic("Timed out waiting for caches to sync")
+
+	// always compare to NewWorkflowController to see what this block of code should be doing
+	{
+		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
+		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.throttler = wfc.newThrottler()
+		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}
-	return cancel, controller
+
+	// always compare to WorkflowController.Run to see what this block of code should be doing
+	{
+		wfc.wfInformer = util.NewWorkflowInformer(dynamicClient, "", 0, wfc.tweakListOptions)
+		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+		wfc.addWorkflowInformerHandlers()
+		wfc.podInformer = wfc.newPodInformer()
+		go wfc.wfInformer.Run(ctx.Done())
+		go wfc.wftmplInformer.Informer().Run(ctx.Done())
+		go wfc.podInformer.Run(ctx.Done())
+		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
+		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+		wfc.waitForCacheSync(ctx)
+	}
+	return cancel, wfc
 }
 
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {

@@ -21,7 +21,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -48,7 +47,6 @@ type Controller struct {
 	wfQueue              workqueue.RateLimitingInterface
 	cronWfInformer       informers.GenericInformer
 	cronWfQueue          workqueue.RateLimitingInterface
-	restConfig           *rest.Config
 	dynamicInterface     dynamic.Interface
 	metrics              *metrics.Metrics
 	eventRecorderManager events.EventRecorderManager
@@ -60,14 +58,13 @@ const (
 	cronWorkflowWorkflowWorkers = 2
 )
 
-func NewCronController(wfclientset versioned.Interface, restConfig *rest.Config, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
+func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
 	return &Controller{
 		wfClientset:          wfclientset,
 		namespace:            namespace,
 		managedNamespace:     managedNamespace,
 		instanceId:           instanceId,
 		cron:                 cron.New(),
-		restConfig:           restConfig,
 		dynamicInterface:     dynamicInterface,
 		nameEntryIDMap:       make(map[string]cron.EntryID),
 		nameEntryIDMapLock:   &sync.Mutex{},
@@ -91,7 +88,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
+	cc.wfInformer = util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
 		wfInformerListOptionsFunc(options, cc.instanceId)
 	})
 	cc.addWorkflowInformerHandler()
