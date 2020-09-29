@@ -1975,7 +1975,7 @@
 <h2 id="setting-the-configmap">Setting the Configmap<a class="headerlink" href="#setting-the-configmap" title="Permanent link">&para;</a></h2>
 <p>The configmap should be saved as a K8s Configmap on the cluster in the same namespace as the <code>workflow-controller</code>.
 It should then be referenced by the <code>workflow-controller</code> as an command argument:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Deployment</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-controller</span>
@@ -2004,10 +2004,9 @@ It should then be referenced by the <code>workflow-controller</code> as an comma
               <span class="nt">kubernetes.io/os</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">linux</span>
 </code></pre></div>
 
-
 <h2 id="alternate-structure">Alternate Structure<a class="headerlink" href="#alternate-structure" title="Permanent link">&para;</a></h2>
 <p>In all versions, the configuration may be under a <code>config: |</code> key:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2030,10 +2029,9 @@ It should then be referenced by the <code>workflow-controller</code> as an comma
           <span class="no">key: secretKey</span>
 </code></pre></div>
 
-
 <p>In version 2.7+, the <code>config: |</code> key is optional. However, if the <code>config: |</code> key is not used, all nested maps under top level
 keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>

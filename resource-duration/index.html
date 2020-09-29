@@ -2055,11 +2055,10 @@ set <code>requests</code> and/or <code>limits</code> for all containers.</p>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
 <p>A pod that runs for 3min, with a CPU limit of <code>2000m</code>, no memory request and an <code>nvidia.com/gpu</code> 
 resource limit of <code>1</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">CPU</span><span class="o">:</span>    <span class="mi">3</span><span class="n">min</span> <span class="o">*</span> <span class="mi">2000</span><span class="n">m</span> <span class="o">/</span> <span class="mi">1000</span><span class="n">m</span> <span class="o">=</span> <span class="mi">6</span><span class="n">min</span> <span class="o">*</span> <span class="o">(</span><span class="mi">1</span> <span class="n">cpu</span><span class="o">)</span>
-<span class="n">Memory</span><span class="o">:</span> <span class="mi">3</span><span class="n">min</span> <span class="o">*</span> <span class="mi">100</span><span class="n">Mi</span> <span class="o">/</span> <span class="mi">1</span><span class="n">Gi</span>   <span class="o">=</span> <span class="mi">18</span><span class="n">sec</span> <span class="o">*</span> <span class="o">(</span><span class="mi">100</span><span class="n">Mi</span> <span class="n">memory</span><span class="o">)</span>
-<span class="n">GPU</span><span class="o">:</span>    <span class="mi">3</span><span class="n">min</span> <span class="o">*</span> <span class="mi">1</span>     <span class="sr">/ 1     = 2min * (1 nvidia.com/g</span><span class="n">pu</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code>CPU:    3min * 2000m / 1000m = 6min * (1 cpu)
+Memory: 3min * 100Mi / 1Gi   = 18sec * (100Mi memory)
+GPU:    3min * 1     / 1     = 2min * (1 nvidia.com/gpu)
 </code></pre></div>
-
 
 <h3 id="webcli-reporting">Web/CLI reporting<a class="headerlink" href="#webcli-reporting" title="Permanent link">&para;</a></h3>
 <p>Both the web and CLI give abbreviated usage, like <code>9m10s*cpu,6s*memory,2m31s*nvidia.com/gpu</code>. In

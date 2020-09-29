@@ -2071,7 +2071,7 @@
 can be created cluster scoped like <code>ClusterRole</code> and can be accessed all namespaces in the cluster. </p>
 <p><code>WorkflowTemplates</code> documentation <a href="../workflow-templates/">link</a></p>
 <h2 id="defining-clusterworkflowtemplate">Defining <code>ClusterWorkflowTemplate</code><a class="headerlink" href="#defining-clusterworkflowtemplate" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ClusterWorkflowTemplate</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cluster-workflow-template-whalesay-template</span>
@@ -2087,13 +2087,12 @@ can be created cluster scoped like <code>ClusterRole</code> and can be accessed 
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <h2 id="referencing-other-clusterworkflowtemplates">Referencing other <code>ClusterWorkflowTemplates</code><a class="headerlink" href="#referencing-other-clusterworkflowtemplates" title="Permanent link">&para;</a></h2>
 <p>You can reference <code>templates</code> from another <code>ClusterWorkflowTemplates</code> using a <code>templateRef</code> field with <code>clusterScope: true</code> .
 Just as how you reference other <code>templates</code> within the same <code>Workflow</code>, you should do so from a <code>steps</code> or <code>dag</code> template.</p>
 <p>Here is an example:
-More examples <a href=""></a></p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+More examples <a href=""></a>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-template-hello-world-</span>
@@ -2111,16 +2110,14 @@ More examples <a href=""></a></p>
             <span class="nt">parameters</span><span class="p">:</span>
             <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
               <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span>
-</code></pre></div>
-
-
+</code></pre></div></p>
 <blockquote>
 <p>2.9 and after</p>
 </blockquote>
 <h4 id="create-workflow-from-clusterworkflowtemplate-spec">Create <code>Workflow</code> from <code>ClusterWorkflowTemplate</code> Spec<a class="headerlink" href="#create-workflow-from-clusterworkflowtemplate-spec" title="Permanent link">&para;</a></h4>
 <p>You can create <code>Workflow</code> from <code>ClusterWorkflowTemplate</code> spec using <code>workflowTemplateRef</code> with <code>clusterScope: true</code>. If you pass the arguments to created <code>Workflow</code>, it will be merged with ClusterWorkflowTemplate arguments </p>
-<p>Here is an example for <code>ClusterWorkflowTemplate</code> with <code>entrypoint</code> and <code>arguments</code></p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<p>Here is an example for <code>ClusterWorkflowTemplate</code> with <code>entrypoint</code> and <code>arguments</code>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ClusterWorkflowTemplate</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cluster-workflow-template-submittable</span>
@@ -2140,10 +2137,8 @@ More examples <a href=""></a></p>
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
-
-<p>Here is an example for creating <code>ClusterWorkflowTemplate</code> as Workflow with passing <code>entrypoint</code> and <code>arguments</code> to <code>ClusterWorkflowTemplate</code></p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+Here is an example for creating <code>ClusterWorkflowTemplate</code> as Workflow with passing <code>entrypoint</code> and <code>arguments</code> to <code>ClusterWorkflowTemplate</code>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cluster-workflow-template-hello-world-</span>
@@ -2156,11 +2151,9 @@ More examples <a href=""></a></p>
   <span class="nt">workflowTemplateRef</span><span class="p">:</span>
     <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cluster-workflow-template-submittable</span>
     <span class="nt">clusterScope</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div>
-
-
-<p>Here is an example of a creating <code>WorkflowTemplate</code> as Workflow and using <code>WorkflowTemplates</code>'s <code>entrypoint</code> and <code>Workflow Arguments</code></p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+</code></pre></div></p>
+<p>Here is an example of a creating <code>WorkflowTemplate</code> as Workflow and using <code>WorkflowTemplates</code>'s <code>entrypoint</code> and <code>Workflow Arguments</code>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cluster-workflow-template-hello-world-</span>
@@ -2168,29 +2161,23 @@ More examples <a href=""></a></p>
   <span class="nt">workflowTemplateRef</span><span class="p">:</span>
     <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cluster-workflow-template-submittable</span>
     <span class="nt">clusterScope</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div>
-
-
+</code></pre></div></p>
 <h2 id="managing-clusterworkflowtemplates">Managing <code>ClusterWorkflowTemplates</code><a class="headerlink" href="#managing-clusterworkflowtemplates" title="Permanent link">&para;</a></h2>
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
 <p>You can create some example templates as follows:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo cluster-template create https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/clustertemplates.yaml</span>
+<div class="highlight"><pre><span></span><code>argo cluster-template create https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/clustertemplates.yaml
 </code></pre></div>
-
 
 <p>The submit a workflow using one of those templates:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml</span>
+<div class="highlight"><pre><span></span><code>argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 </code></pre></div>
-
 
 <blockquote>
 <p>2.7 and after</p>
-<p>The submit a <code>ClusterWorkflowTemplate</code> as a <code>Workflow</code>:</p>
+<p>The submit a <code>ClusterWorkflowTemplate</code> as a <code>Workflow</code>:
+<div class="highlight"><pre><span></span><code>argo submit --from clusterworkflowtemplate/workflow-template-submittable
+</code></pre></div></p>
 </blockquote>
-<div class="codehilite"><pre><span></span><code>argo submit --from clusterworkflowtemplate/workflow-template-submittable
-</code></pre></div>
-
-
 <h3 id="kubectl"><code>kubectl</code><a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h3>
 <p>Using <code>kubectl apply -f</code> and <code>kubectl get cwft</code></p>
 <h3 id="ui">UI<a class="headerlink" href="#ui" title="Permanent link">&para;</a></h3>

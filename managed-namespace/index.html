@@ -1906,14 +1906,14 @@ This dictates if you must set-up cluster roles or normal roles.</p>
 Argo Server using <code>--namespaced</code>. If you would like to have the workflows
 running in a separated namespace, add <code>--managed-namespace</code> as well.</p>
 <p>For example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">      - args:</span>
-<span class="err">        - --configmap</span>
-<span class="err">        - workflow-controller-configmap</span>
-<span class="err">        - --executor-image</span>
-<span class="err">        - argoproj/workflow-controller:v2.5.1</span>
-<span class="err">        - --namespaced</span>
-<span class="err">        - --managed-namespace</span>
-<span class="err">        - default</span>
+<div class="highlight"><pre><span></span><code>      - args:
+        - --configmap
+        - workflow-controller-configmap
+        - --executor-image
+        - argoproj/workflow-controller:v2.5.1
+        - --namespaced
+        - --managed-namespace
+        - default
 </code></pre></div>
                 
                   

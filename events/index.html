@@ -2117,18 +2117,16 @@
 <p>Clients wanting to send events to the endpoint need an <a href="../access-token/">access token</a>.   </p>
 <p>It is only possible to submit workflow templates your access token has access to: <a href="../manifests/quick-start/base/webhooks/submit-workflow-template-role.yaml">example role</a>.</p>
 <p>Example (note the trailing slash):</p>
-<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/ <span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/ <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
-
 
 <p>With a <strong>discriminator</strong>:</p>
-<div class="codehilite"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/my-discriminator <span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/my-discriminator <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
-
 
 <p>The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  </p>
 <div class="admonition warning">
@@ -2138,7 +2136,7 @@
 <h2 id="submitting-a-workflow-from-a-workflow-template">Submitting A Workflow From A Workflow Template<a class="headerlink" href="#submitting-a-workflow-from-a-workflow-template" title="Permanent link">&para;</a></h2>
 <p>A workflow template will be submitted (i.e. workflow created from it) and that can be created using parameters from the event itself. 
 The following example will be trigger by an event with "message" in the payload. That message will be used as an argument for the created workflow.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowEventBinding</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">event-consumer</span>
@@ -2155,14 +2153,12 @@ The following example will be trigger by an event with "message" in the payload.
           <span class="nt">event</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message</span>
 </code></pre></div>
 
-
 <p>Event:</p>
-<div class="codehilite"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator <span class="se">\</span>
+<div class="highlight"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator <span class="se">\</span>
     -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
     -H <span class="s2">&quot;X-Argo-E2E: true&quot;</span> <span class="se">\</span>
     -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello events&quot;}&#39;</span>
 </code></pre></div>
-
 
 <div class="admonition warning">
 <p class="admonition-title">Malformed Expressions</p>
@@ -2183,9 +2179,8 @@ The following example will be trigger by an event with "message" in the payload.
 <h3 id="payload">Payload<a class="headerlink" href="#payload" title="Permanent link">&para;</a></h3>
 <p>This is the JSON payload of the event.</p>
 <p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">payload</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">clone_url</span> <span class="o">==</span> <span class="s2">&quot;http://gihub.com/argoproj/argo&quot;</span>
+<div class="highlight"><pre><span></span><code>payload.repository.clone_url == &quot;http://gihub.com/argoproj/argo&quot;
 </code></pre></div>
-
 
 <h3 id="metadata">MetaData<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
 <p>Metadata is data about the event, this includes <strong>headers</strong>:</p>
@@ -2200,16 +2195,14 @@ The following example will be trigger by an event with "message" in the payload.
 <li>Right: <code>metadata["x-github-event"] = ["push"]</code></li>
 </ul>
 <p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">metadata[&quot;x-argo&quot;] == [&quot;yes&quot;]</span>
+<div class="highlight"><pre><span></span><code>metadata[&quot;x-argo&quot;] == [&quot;yes&quot;]
 </code></pre></div>
-
 
 <h3 id="discriminator">Discriminator<a class="headerlink" href="#discriminator" title="Permanent link">&para;</a></h3>
 <p>This is only for edge-cases where neither the payload, or metadata provide enough information to discriminate. Typically, it should be empty and ignored.</p>
 <p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">discriminator == &quot;my-discriminator&quot;</span>
+<div class="highlight"><pre><span></span><code>discriminator == &quot;my-discriminator&quot;
 </code></pre></div>
-
 
 <h2 id="high-availability">High-Availability<a class="headerlink" href="#high-availability" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">

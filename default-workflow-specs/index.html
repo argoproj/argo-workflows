@@ -1966,7 +1966,7 @@ If a Workflow has a value that also has a default value set in the config map, t
 <p>Default Workflow values can be specified by adding them under the <code>workflowDefaults</code> key in the <a href="../workflow-controller-configmap.yaml"><code>workflow-controller-configmap</code></a>.
 Values can be added as the would under the <code>Workflow.spec</code> tag.</p>
 <p>For example, to specify default values that would partially produce the following <code>Workflow</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">gc-ttl-</span>
@@ -1980,9 +1980,8 @@ Values can be added as the would under the <code>Workflow.spec</code> tag.</p>
   <span class="nt">parallelism</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
 </code></pre></div>
 
-
 <p>The following would be specified in the Config Map:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This file describes the config settings available in the workflow controller configmap</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>

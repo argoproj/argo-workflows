@@ -2018,7 +2018,7 @@
 </ul>
 <h2 id="schedule-workflows-with-windows-containers">Schedule workflows with Windows containers<a class="headerlink" href="#schedule-workflows-with-windows-containers" title="Permanent link">&para;</a></h2>
 <p>If you're running workflows in your hybrid Kubernetes cluster, always make sure to include a <code>nodeSelector</code> to run the steps on the correct host OS:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-windows-</span>
@@ -2034,18 +2034,15 @@
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
-<p>You can run this example and get the logs:</p>
-<div class="codehilite"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-windows.yaml
+<p>You can run this example and get the logs:
+<div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-windows.yaml
 $ argo logs hello-windows-s9kk5
-hello-windows-s9kk5: <span class="s2">&quot;Hello from Windows Container!&quot;</span>
-</code></pre></div>
-
-
+hello-windows-s9kk5: &quot;Hello from Windows Container!&quot;
+</code></pre></div></p>
 <h2 id="schedule-hybrid-workflows">Schedule hybrid workflows<a class="headerlink" href="#schedule-hybrid-workflows" title="Permanent link">&para;</a></h2>
 <p>You can also run different steps on different host OSs. This can for example be very helpful when you need to compile your application on Windows and Linux.</p>
-<p>An example workflow can look like the following:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<p>An example workflow can look like the following:
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-hybrid-</span>
@@ -2073,20 +2070,16 @@ hello-windows-s9kk5: <span class="s2">&quot;Hello from Windows Container!&quot;<
         <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">alpine</span>
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">echo</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Linux</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
-</code></pre></div>
-
-
-<p>Again, you can run this example and get the logs:</p>
-<div class="codehilite"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-hybrid.yaml
+</code></pre></div></p>
+<p>Again, you can run this example and get the logs:
+<div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-hybrid.yaml
 $ argo logs hello-hybrid-plqpp
-hello-hybrid-plqpp-1977432187: <span class="s2">&quot;Hello from Windows Container!&quot;</span>
+hello-hybrid-plqpp-1977432187: &quot;Hello from Windows Container!&quot;
 hello-hybrid-plqpp-764774907: Hello from Linux Container!
-</code></pre></div>
-
-
+</code></pre></div></p>
 <h2 id="artifact-mount-path">Artifact mount path<a class="headerlink" href="#artifact-mount-path" title="Permanent link">&para;</a></h2>
 <p>Artifacts work mostly the same way as on Linux. All paths get automatically mapped to the <code>C:</code> drive. For example:</p>
-<div class="codehilite"><pre><span></span><code> <span class="c1"># ...</span>
+<div class="highlight"><pre><span></span><code> <span class="c1"># ...</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">print-message</span>
       <span class="nt">inputs</span><span class="p">:</span>
         <span class="nt">artifacts</span><span class="p">:</span>
@@ -2102,7 +2095,6 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;dir</span><span class="nv"> </span><span class="s">C:\\message&quot;</span><span class="p p-Indicator">]</span>   <span class="c1"># List the C:\message directory</span>
 </code></pre></div>
 
-
 <p>Remember that <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#storage">volume mounts on Windows can only target a directory</a> in the container, and not an individual file.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>
@@ -2111,9 +2103,9 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
 <h2 id="building-the-workflow-executor-image-for-windows">Building the workflow executor image for Windows<a class="headerlink" href="#building-the-workflow-executor-image-for-windows" title="Permanent link">&para;</a></h2>
 <p>To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described <a href="https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise">in the docs</a>.</p>
 <p>You then clone the project and run the Docker build with the Dockerfile for Windows and <code>argoexec</code> as a target:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">git clone https://github.com/argoproj/argo.git</span>
-<span class="err">cd argo</span>
-<span class="err">docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .</span>
+<div class="highlight"><pre><span></span><code>git clone https://github.com/argoproj/argo.git
+cd argo
+docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .
 </code></pre></div>
                 
                   

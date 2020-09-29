@@ -1947,17 +1947,15 @@
 </blockquote>
 <h2 id="to-start-argo-server-with-sso">To start Argo Server with SSO.<a class="headerlink" href="#to-start-argo-server-with-sso" title="Permanent link">&para;</a></h2>
 <p>Firstly, configure the settings <a href="../workflow-controller-configmap.yaml">workflow-controller-configmap.yaml</a> with the correct OAuth 2 values.</p>
-<p>Next, create the k8s secrets for holding the OAuth2 <code>client-id</code> and <code>client-secret</code>. You may refer to the kubernetes documentation on <a href="https://kubernetes.io/docs/tasks/configmap-secret/">Managing secrets</a>. For example by using kubectl with literals:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">kubectl</span> <span class="k">create</span> <span class="n">secret</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="n">generic</span> <span class="n">client</span><span class="o">-</span><span class="n">id</span><span class="o">-</span><span class="n">secret</span> <span class="err">\</span>
-  <span class="c1">--from-literal=client-id-key=foo</span>
+<p>Next, create the k8s secrets for holding the OAuth2 <code>client-id</code> and <code>client-secret</code>. You may refer to the kubernetes documentation on <a href="https://kubernetes.io/docs/tasks/configmap-secret/">Managing secrets</a>. For example by using kubectl with literals:
+<div class="highlight"><pre><span></span><code>kubectl create secret -n argo generic client-id-secret \
+  --from-literal=client-id-key=foo
 
-<span class="n">kubectl</span> <span class="k">create</span> <span class="n">secret</span> <span class="o">-</span><span class="n">n</span> <span class="n">argo</span> <span class="n">generic</span> <span class="n">client</span><span class="o">-</span><span class="n">secret</span><span class="o">-</span><span class="n">secret</span> <span class="err">\</span>
-  <span class="c1">--from-literal=client-secret-key=bar</span>
-</code></pre></div>
-
-
+kubectl create secret -n argo generic client-secret-secret \
+  --from-literal=client-secret-key=bar
+</code></pre></div></p>
 <p>Then, start the Argo Server using the SSO <a href="../argo-server-auth-mode/">auth mode</a>:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo server --auth-mode sso --auth-mode ...</span>
+<div class="highlight"><pre><span></span><code>argo server --auth-mode sso --auth-mode ...
 </code></pre></div>
                 
                   

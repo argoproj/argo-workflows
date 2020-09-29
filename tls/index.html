@@ -1994,45 +1994,39 @@
 <p><em>Recommended for: development and test environments</em></p>
 <p>You can encrypt connections without any real effort. </p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo server --secure</span>
+<div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>
-
 
 <p>It will start with a self-signed certificate that expires after 365 days.</p>
 <p>Run the CLI with <code>--secure</code> (or <code>ARGO_SECURE=true</code>) and <code>--insecure-skip-verify</code> (or <code>ARGO_INSECURE_SKIP_VERIFY=true</code>).</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo --secure --insecure-skip-verify list</span>
+<div class="highlight"><pre><span></span><code>argo --secure --insecure-skip-verify list
 </code></pre></div>
 
-
-<div class="codehilite"><pre><span></span><code><span class="k">export</span> <span class="n">ARGO_SECURE</span><span class="o">=</span><span class="bp">true</span>
-<span class="k">export</span> <span class="n">ARGO_INSECURE_SKIP_VERIFY</span><span class="o">=</span><span class="bp">true</span>
-<span class="n">argo</span> <span class="o">--</span><span class="n">secure</span> <span class="o">--</span><span class="n">insecure</span><span class="o">-</span><span class="n">skip</span><span class="o">-</span><span class="n">verify</span> <span class="n">list</span>
+<div class="highlight"><pre><span></span><code>export ARGO_SECURE=true
+export ARGO_INSECURE_SKIP_VERIFY=true
+argo --secure --insecure-skip-verify list
 </code></pre></div>
-
 
 <p>Tip: Don't forget to update your readiness probe to use HTTPS. To do so, edit your <code>argo-server</code> Deployment's <code>readinessProbe</code> spec: </p>
-<div class="codehilite"><pre><span></span><code><span class="n">readinessProbe</span><span class="o">:</span>
-    <span class="n">httpGet</span><span class="o">:</span> 
-        <span class="n">scheme</span><span class="o">:</span> <span class="n">HTTPS</span>
+<div class="highlight"><pre><span></span><code>readinessProbe:
+    httpGet: 
+        scheme: HTTPS
 </code></pre></div>
-
 
 <h3 id="encrypted-and-verified">Encrypted and Verified<a class="headerlink" href="#encrypted-and-verified" title="Permanent link">&para;</a></h3>
 <p><em>Recommended for: production environments</em></p>
 <p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this documentation.</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo server --secure</span>
+<div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>
-
 
 <p>As before, it will start with a self-signed certificate that expires after 365 days.</p>
 <p>Run the CLI with <code>--secure</code> (or <code>ARGO_SECURE=true</code>) only.</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo --secure list</span>
+<div class="highlight"><pre><span></span><code>argo --secure list
 </code></pre></div>
 
-
-<div class="codehilite"><pre><span></span><code><span class="k">export</span> <span class="n">ARGO_SECURE</span><span class="o">=</span><span class="bp">true</span>
-<span class="n">argo</span> <span class="n">list</span>
+<div class="highlight"><pre><span></span><code>export ARGO_SECURE=true
+argo list
 </code></pre></div>
                 
                   

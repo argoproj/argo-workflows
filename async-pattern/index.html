@@ -1979,66 +1979,63 @@
 <h2 id="the-pattern">The pattern<a class="headerlink" href="#the-pattern" title="Permanent link">&para;</a></h2>
 <p>The pattern involves two steps - the first step is a short-running step that triggers a long-running job outside Argo (eg an HTTP submission), and the second step is a <code>Suspend</code> step that suspends workflow exection and is ultimately either resumed or stopped (ie failed) via a call to the Argo API when the job outside Argo succeeds or fails.</p>
 <p>When implemented as a <code>WorkflowTemplate</code> it can look something like this:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">apiVersion</span><span class="o">:</span> <span class="n">argoproj</span><span class="o">.</span><span class="na">io</span><span class="o">/</span><span class="n">v1alpha1</span>
-<span class="n">kind</span><span class="o">:</span> <span class="n">WorkflowTemplate</span>
-<span class="n">metadata</span><span class="o">:</span>
-  <span class="n">name</span><span class="o">:</span> <span class="n">external</span><span class="o">-</span><span class="n">job</span><span class="o">-</span><span class="n">template</span>
-<span class="n">spec</span><span class="o">:</span>
-  <span class="n">templates</span><span class="o">:</span>
-  <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">run</span><span class="o">-</span><span class="n">external</span><span class="o">-</span><span class="n">job</span>
-    <span class="n">inputs</span><span class="o">:</span>
-      <span class="n">parameters</span><span class="o">:</span>
-        <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="s2">&quot;job-cmd&quot;</span>
-    <span class="n">steps</span><span class="o">:</span>
-      <span class="o">-</span> <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">trigger</span><span class="o">-</span><span class="n">job</span>
-          <span class="n">template</span><span class="o">:</span> <span class="n">trigger</span><span class="o">-</span><span class="n">job</span>
-          <span class="k">arguments</span><span class="o">:</span>
-            <span class="n">parameters</span><span class="o">:</span>
-              <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="s2">&quot;job-cmd&quot;</span>
-                <span class="n">value</span><span class="o">:</span> <span class="s2">&quot;{{inputs.parameters.job-cmd}}&quot;</span>
-      <span class="o">-</span> <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">wait</span><span class="o">-</span><span class="n">completion</span>
-          <span class="n">template</span><span class="o">:</span> <span class="n">wait</span><span class="o">-</span><span class="n">completion</span>
-          <span class="k">arguments</span><span class="o">:</span>
-            <span class="n">parameters</span><span class="o">:</span>
-              <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">uuid</span>
-                <span class="n">value</span><span class="o">:</span> <span class="s2">&quot;{{steps.trigger-job.outputs.result}}&quot;</span>
+<div class="highlight"><pre><span></span><code>apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: external-job-template
+spec:
+  templates:
+  - name: run-external-job
+    inputs:
+      parameters:
+        - name: &quot;job-cmd&quot;
+    steps:
+      - - name: trigger-job
+          template: trigger-job
+          arguments:
+            parameters:
+              - name: &quot;job-cmd&quot;
+                value: &quot;{{inputs.parameters.job-cmd}}&quot;
+      - - name: wait-completion
+          template: wait-completion
+          arguments:
+            parameters:
+              - name: uuid
+                value: &quot;{{steps.trigger-job.outputs.result}}&quot;
 
-  <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">trigger</span><span class="o">-</span><span class="n">job</span>
-    <span class="n">inputs</span><span class="o">:</span>
-      <span class="n">parameters</span><span class="o">:</span>
-        <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="s2">&quot;job-cmd&quot;</span>
-          <span class="n">value</span><span class="o">:</span> <span class="s2">&quot;{{inputs.parameters.job-cmd}}&quot;</span>
-      <span class="n">image</span><span class="o">:</span> <span class="n">appropriate</span><span class="o">/</span><span class="n">curl</span><span class="o">:</span><span class="n">latest</span>
-      <span class="n">command</span><span class="o">:</span> <span class="o">[</span><span class="s2">&quot;/bin/sh&quot;</span><span class="o">,</span> <span class="s2">&quot;-c&quot;</span><span class="o">]</span>
-      <span class="n">args</span><span class="o">:</span> <span class="o">[</span><span class="s2">&quot;{{inputs.parameters.cmd}}&quot;</span><span class="o">]</span>
+  - name: trigger-job
+    inputs:
+      parameters:
+        - name: &quot;job-cmd&quot;
+          value: &quot;{{inputs.parameters.job-cmd}}&quot;
+      image: appropriate/curl:latest
+      command: [&quot;/bin/sh&quot;, &quot;-c&quot;]
+      args: [&quot;{{inputs.parameters.cmd}}&quot;]
 
-  <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">wait</span><span class="o">-</span><span class="n">completion</span>
-    <span class="n">inputs</span><span class="o">:</span>
-      <span class="n">parameters</span><span class="o">:</span>
-        <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">uuid</span>
-    <span class="n">suspend</span><span class="o">:</span> <span class="o">{}</span>
+  - name: wait-completion
+    inputs:
+      parameters:
+        - name: uuid
+    suspend: {}
 </code></pre></div>
-
 
 <p>In this case the <code>job-cmd</code> parameter can be a command that makes an http call via curl to an endpoint that returns a job uuid. More sophisticated submission and parsing of submission output could be done with something like a Python script step.</p>
 <p>On job completion the external job would need to call either resume if successful:</p>
 <p>You may need  an <a href="../access-token/">access token</a>.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">curl</span> <span class="c1">--request PUT \</span>
-  <span class="c1">--url http://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/resume</span>
-  <span class="c1">--header &#39;content-type: application/json&#39; \</span>
-  <span class="c1">--header &quot;Authorization: Bearer $ARGO_TOKEN&quot; \</span>
-  <span class="c1">--data &#39;{</span>
-      <span class="ss">&quot;namespace&quot;</span><span class="p">:</span> <span class="ss">&quot;&lt;NAMESPACE&gt;&quot;</span><span class="p">,</span>
-      <span class="ss">&quot;name&quot;</span><span class="p">:</span> <span class="ss">&quot;&lt;WORKFLOWNAME&gt;&quot;</span><span class="p">,</span>
-      <span class="ss">&quot;nodeFieldSelector&quot;</span><span class="p">:</span> <span class="ss">&quot;inputs.parameters.uuid.value=&lt;UUID&gt;&quot;</span>
-    <span class="err">}&#39;</span>  
-  <span class="o">```</span>
+<p><div class="highlight"><pre><span></span><code>curl --request PUT \
+  --url http://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/resume
+  --header &#39;content-type: application/json&#39; \
+  --header &quot;Authorization: Bearer $ARGO_TOKEN&quot; \
+  --data &#39;{
+      &quot;namespace&quot;: &quot;&lt;NAMESPACE&gt;&quot;,
+      &quot;name&quot;: &quot;&lt;WORKFLOWNAME&gt;&quot;,
+      &quot;nodeFieldSelector&quot;: &quot;inputs.parameters.uuid.value=&lt;UUID&gt;&quot;
+    }&#39;  
+  ```
 
-<span class="k">or</span> <span class="n">stop</span> <span class="k">if</span> <span class="n">unsuccessful</span><span class="p">:</span>
+or stop if unsuccessful:
 </code></pre></div>
-
-
-<p>curl --request PUT \
+curl --request PUT \
   --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
   --header 'content-type: application/json' \
   --header "Authorization: Bearer $ARGO_TOKEN" \
@@ -2052,9 +2049,8 @@
 <h2 id="retrying-failed-jobs">Retrying failed jobs<a class="headerlink" href="#retrying-failed-jobs" title="Permanent link">&para;</a></h2>
 <p>Using <code>argo retry</code> on failed jobs that follow this pattern will cause Argo to re-attempt the Suspend step without re-triggering the job.  </p>
 <p>Instead you need to use the <code>--restart-successful</code> option, eg if using the template from above:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">argo retry &lt;WORKFLOWNAME&gt; --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed</span>
+<div class="highlight"><pre><span></span><code>argo retry &lt;WORKFLOWNAME&gt; --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
 </code></pre></div>
-
 
 <p>See also:</p>
 <ul>

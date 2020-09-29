@@ -1901,7 +1901,7 @@
 <p>v2.8 and after</p>
 </blockquote>
 <p>If you want one workflow to create another, you can do this using <code>curl</code>. You'll need an <a href="../access-token/">access token</a>. Typically the best way is to submit from a workflow template:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">demo-</span>
@@ -1923,7 +1923,6 @@
             <span class="no">-H &quot;Authorization: Bearer eyJhbGci...&quot; \</span>
             <span class="no">-d &#39;{&quot;resourceKind&quot;: &quot;WorkflowTemplate&quot;, &quot;resourceName&quot;: &quot;wait&quot;, &quot;submitOptions&quot;: {&quot;labels&quot;: &quot;workflows.argoproj.io/workflow-template=wait&quot;}}&#39;</span>
 </code></pre></div>
-
 
 <p>See also:</p>
 <ul>

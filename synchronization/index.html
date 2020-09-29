@@ -2004,23 +2004,21 @@
 templates within a workflow without having to restrict others.</p>
 <p>Users can create multiple synchronization configurations in the <code>ConfigMap</code> that can be referred to 
 from a workflow or template within a workflow.</p>
-<p>For example:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<p>For example:
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
  <span class="l l-Scalar l-Scalar-Plain">kind</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>
  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-config</span>
 <span class="nt">data</span><span class="p">:</span>
   <span class="nt">workflow</span><span class="p">:</span> <span class="s">&quot;1&quot;</span>  <span class="c1"># Only one workflow can run at given time in particular namespace</span>
   <span class="nt">template</span><span class="p">:</span> <span class="s">&quot;2&quot;</span>  <span class="c1"># Two instance of template can run at a given time in particular namespace</span>
-</code></pre></div>
-
-
+</code></pre></div></p>
 <h3 id="workflow-level-synchronization">Workflow-level Synchronization<a class="headerlink" href="#workflow-level-synchronization" title="Permanent link">&para;</a></h3>
 <p>Workflow-level synchronization limits parallel execution of the workflow if workflow have same synchronization reference. 
 In this example, Workflow refers <code>workflow</code> synchronization key which is configured as rate limit 1, 
 so only one workflow instance will be executed at given time even multiple workflows created. </p>
 <p>example:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-wf-level-</span>
@@ -2039,13 +2037,12 @@ so only one workflow instance will be executed at given time even multiple workf
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <h3 id="template-level-synchronization">Template-level Synchronization<a class="headerlink" href="#template-level-synchronization" title="Permanent link">&para;</a></h3>
 <p>Template-level synchronization limits parallel execution of the template across workflows, if template have same synchronization reference. 
 In this example, <code>acquire-lock</code> template has synchronization reference of <code>template</code> key which is configured as rate limit 2, 
 so, two instance of templates will be executed at given time even multiple step/task with in workflow or different workflow refers same template. </p>
 <p>example:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<p><div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">synchronization-tmpl-level-</span>
@@ -2073,9 +2070,7 @@ so, two instance of templates will be executed at given time even multiple step/
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;sleep</span><span class="nv"> </span><span class="s">10;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">acquired</span><span class="nv"> </span><span class="s">lock&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
-
-<p>Examples:
+Examples:
 1. <a href="https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml">Workflow level</a>
 2. <a href="https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml">Step level</a></p>
 <h3 id="other-parallelism-support">Other Parallelism support:<a class="headerlink" href="#other-parallelism-support" title="Permanent link">&para;</a></h3>

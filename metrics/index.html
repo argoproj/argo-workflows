@@ -2169,7 +2169,7 @@ the metric type a <code>value</code> must be specified. This value can be either
 <h3 id="metric-spec">Metric Spec<a class="headerlink" href="#metric-spec" title="Permanent link">&para;</a></h3>
 <p>In Argo you can define a metric on the <code>Workflow</code> level or on the <code>Template</code> level. Here is an example of a <code>Workflow</code>
 level Gauge metric that will report the Workflow duration time:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">model-training-</span>
@@ -2188,9 +2188,8 @@ level Gauge metric that will report the Workflow duration time:</p>
 <span class="nn">...</span>
 </code></pre></div>
 
-
 <p>An example of a <code>Template</code>-level Counter metric that will increase a counter every time the step fails:</p>
-<div class="codehilite"><pre><span></span><code><span class="nn">...</span>
+<div class="highlight"><pre><span></span><code><span class="nn">...</span>
   <span class="nt">templates</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flakey</span>
       <span class="nt">metrics</span><span class="p">:</span>
@@ -2211,9 +2210,8 @@ level Gauge metric that will report the Workflow duration time:</p>
 <span class="nn">...</span>
 </code></pre></div>
 
-
 <p>A similar example of such a Counter metric that will increase for every step status</p>
-<div class="codehilite"><pre><span></span><code><span class="nn">...</span>
+<div class="highlight"><pre><span></span><code><span class="nn">...</span>
   <span class="nt">templates</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">flakey</span>
       <span class="nt">metrics</span><span class="p">:</span>
@@ -2235,9 +2233,8 @@ level Gauge metric that will report the Workflow duration time:</p>
 <span class="nn">...</span>
 </code></pre></div>
 
-
 <p>Finally, an example of a <code>Template</code>-level Histogram metric that tracks an internal value:</p>
-<div class="codehilite"><pre><span></span><code><span class="nn">...</span>
+<div class="highlight"><pre><span></span><code><span class="nn">...</span>
   <span class="nt">templates</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">random-int</span>
       <span class="nt">metrics</span><span class="p">:</span>
@@ -2266,12 +2263,11 @@ level Gauge metric that will report the Workflow duration time:</p>
 <span class="nn">...</span>
 </code></pre></div>
 
-
 <h3 id="realtime-metrics">Realtime metrics<a class="headerlink" href="#realtime-metrics" title="Permanent link">&para;</a></h3>
 <p>Argo supports a limited number of real-time metrics. These metrics are emitted in realtime, beginning when the step execution starts
 and ending when it completes. Realtime metrics are only available on Gauge type metrics and with a <a href="../variables/#realtime-metrics">limited number of variables</a>.</p>
 <p>To define a realtime metric simply add <code>realtime: true</code> to a gauge metric with a valid realtime variable. For example:</p>
-<div class="codehilite"><pre><span></span><code>  <span class="nt">gauge</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code>  <span class="nt">gauge</span><span class="p">:</span>
     <span class="nt">realtime</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
     <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;{{duration}}&quot;</span>
 </code></pre></div>

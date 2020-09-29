@@ -2125,7 +2125,7 @@
 <p><code>CronWorkflow</code> are workflows that run on a preset schedule. They are designed to be converted from <code>Workflow</code> easily and to mimick the same options as Kubernetes <code>CronJob</code>. In essence, <code>CronWorkflow</code> = <code>Workflow</code> + some specific cron options.</p>
 <h2 id="cronworkflow-spec"><code>CronWorkflow</code> Spec<a class="headerlink" href="#cronworkflow-spec" title="Permanent link">&para;</a></h2>
 <p>An example <code>CronWorkflow</code> spec would look like:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CronWorkflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test-cron-wf</span>
@@ -2142,7 +2142,6 @@
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;date;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">90&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 
 <h3 id="workflowspec-and-workflowmetadata"><code>workflowSpec</code> and <code>workflowMetadata</code><a class="headerlink" href="#workflowspec-and-workflowmetadata" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow.spec.workflowSpec</code> is the same type as <code>Workflow.spec</code> and serves as a template for <code>Workflow</code> objects that are created from it. Everything under this spec will be converted to a <code>Workflow</code>.</p>
@@ -2203,7 +2202,7 @@
 <h2 id="managing-cronworkflow">Managing <code>CronWorkflow</code><a class="headerlink" href="#managing-cronworkflow" title="Permanent link">&para;</a></h2>
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow</code> can be created from the CLI by using basic commands:</p>
-<div class="codehilite"><pre><span></span><code>$ argo cron create cron.yaml
+<div class="highlight"><pre><span></span><code>$ argo cron create cron.yaml
 Name:                          test-cron-wf
 Namespace:                     argo
 Created:                       Mon Nov <span class="m">18</span> <span class="m">10</span>:17:06 -0800 <span class="o">(</span>now<span class="o">)</span>
@@ -2233,7 +2232,6 @@ ConcurrencyPolicy:             Replace
 LastScheduledTime:             Mon Nov <span class="m">18</span> <span class="m">10</span>:21:00 -0800 <span class="o">(</span><span class="m">51</span> seconds ago<span class="o">)</span>
 Active Workflows:              test-cron-wf-rt4nf
 </code></pre></div>
-
 
 <h3 id="kubectl"><code>kubectl</code><a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h3>
 <p>Using <code>kubectl apply -f</code> and <code>kubectl get cwf</code></p>

@@ -1983,21 +1983,21 @@ This allows you to easily manipulate cache entries manually through <code>kubect
 <h2 id="using-memoization">Using Memoization<a class="headerlink" href="#using-memoization" title="Permanent link">&para;</a></h2>
 <p>Memoization is set at the template level. You must specify a key, which can be static strings but more often depend on inputs. 
 You must also specify a name for the ConfigMap cache. </p>
-<div class="codehilite"><pre><span></span><code><span class="n">apiVersion</span><span class="o">:</span> <span class="n">argoproj</span><span class="o">.</span><span class="na">io</span><span class="o">/</span><span class="n">v1alpha1</span>
-<span class="n">kind</span><span class="o">:</span> <span class="n">Workflow</span>
-<span class="n">metadata</span><span class="o">:</span>
- <span class="n">generateName</span><span class="o">:</span> <span class="n">memoized</span><span class="o">-</span><span class="n">workflow</span><span class="o">-</span>
-<span class="n">spec</span><span class="o">:</span>
- <span class="n">entrypoint</span><span class="o">:</span> <span class="n">whalesay</span>
- <span class="n">templates</span><span class="o">:</span>
-    <span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">whalesay</span>
-      <span class="n">memoize</span><span class="o">:</span>
-        <span class="n">key</span><span class="o">:</span> <span class="s2">&quot;{{inputs.parameters.message}}&quot;</span> 
-        <span class="n">cache</span><span class="o">:</span>
-          <span class="n">configMap</span><span class="o">:</span>
-            <span class="n">name</span><span class="o">:</span> <span class="n">whalesay</span><span class="o">-</span><span class="n">cache</span>
+<div class="highlight"><pre><span></span><code>apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ generateName: memoized-workflow-
+spec:
+ entrypoint: whalesay
+ templates:
+    - name: whalesay
+      memoize:
+        key: &quot;{{inputs.parameters.message}}&quot; 
+        cache:
+          configMap:
+            name: whalesay-cache
 
-<span class="o">...</span>
+...
 </code></pre></div>
                 
                   

@@ -1963,7 +1963,7 @@
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>You can use <code>workflowTemplateRef</code> to trigger a workflow inline.
 1. Define your workflow as a <code>workflowtemplate</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<p><div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-template-submittable</span>
@@ -1983,13 +1983,9 @@
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
-
-<ol>
-<li>Create the <code>Workflowtemplate</code> in cluster using <code>argo template create &lt;yaml&gt;</code></li>
-<li>Define the workflow of workflows. </li>
-</ol>
-<div class="codehilite"><pre><span></span><code><span class="c1"># This template demonstrates a workflow of workflows.</span>
+2. Create the <code>Workflowtemplate</code> in cluster using <code>argo template create &lt;yaml&gt;</code>
+3. Define the workflow of workflows. 
+<div class="highlight"><pre><span></span><code><span class="c1"># This template demonstrates a workflow of workflows.</span>
 <span class="c1"># Workflow triggers one or more workflow and manage it.</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
@@ -2053,7 +2049,7 @@
               <span class="no">name: {{inputs.parameters.workflowtemplate}}</span>
         <span class="nt">successCondition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">status.phase == Succeeded</span>
         <span class="nt">failureCondition</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">status.phase in (Failed, Error)</span>
-</code></pre></div>
+</code></pre></div></p>
                 
                   
                 

@@ -1994,64 +1994,61 @@
 <li>argo-server is available on localhost:2746</li>
 </ul>
 <h2 id="submitting-workflow">Submitting workflow<a class="headerlink" href="#submitting-workflow" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code><span class="err">curl --request POST \</span>
-<span class="err">  --url http://localhost:2746/api/v1/workflows/argo \</span>
-<span class="err">  --header &#39;content-type: application/json&#39; \</span>
-<span class="err">  --data &#39;{</span>
-<span class="err">  &quot;namespace&quot;: &quot;argo&quot;,</span>
-<span class="err">  &quot;serverDryRun&quot;: false,</span>
-<span class="err">     &quot;workflow&quot;: {</span>
-<span class="err">      &quot;metadata&quot;: {</span>
-<span class="err">        &quot;generateName&quot;: &quot;hello-world-&quot;,</span>
-<span class="err">        &quot;namespace&quot;: &quot;argo&quot;,</span>
-<span class="err">        &quot;labels&quot;: {</span>
-<span class="err">          &quot;workflows.argoproj.io/completed&quot;: &quot;false&quot;</span>
-<span class="err">         }</span>
-<span class="err">      },</span>
-<span class="err">     &quot;spec&quot;: {</span>
-<span class="err">       &quot;templates&quot;: [</span>
-<span class="err">        {</span>
-<span class="err">         &quot;name&quot;: &quot;whalesay&quot;,</span>
-<span class="err">         &quot;arguments&quot;: {},</span>
-<span class="err">         &quot;inputs&quot;: {},</span>
-<span class="err">         &quot;outputs&quot;: {},</span>
-<span class="err">         &quot;metadata&quot;: {},</span>
-<span class="err">         &quot;container&quot;: {</span>
-<span class="err">          &quot;name&quot;: &quot;&quot;,</span>
-<span class="err">          &quot;image&quot;: &quot;docker/whalesay:latest&quot;,</span>
-<span class="err">          &quot;command&quot;: [</span>
-<span class="err">            &quot;cowsay&quot;</span>
-<span class="err">          ],</span>
-<span class="err">          &quot;args&quot;: [</span>
-<span class="err">            &quot;hello world&quot;</span>
-<span class="err">          ],</span>
-<span class="err">          &quot;resources&quot;: {}</span>
-<span class="err">        }</span>
-<span class="err">      }</span>
-<span class="err">    ],</span>
-<span class="err">    &quot;entrypoint&quot;: &quot;whalesay&quot;,</span>
-<span class="err">    &quot;arguments&quot;: {}</span>
-<span class="err">  }</span>
-<span class="err">}</span>
-<span class="err">}&#39;</span>
+<div class="highlight"><pre><span></span><code>curl --request POST \
+  --url http://localhost:2746/api/v1/workflows/argo \
+  --header &#39;content-type: application/json&#39; \
+  --data &#39;{
+  &quot;namespace&quot;: &quot;argo&quot;,
+  &quot;serverDryRun&quot;: false,
+     &quot;workflow&quot;: {
+      &quot;metadata&quot;: {
+        &quot;generateName&quot;: &quot;hello-world-&quot;,
+        &quot;namespace&quot;: &quot;argo&quot;,
+        &quot;labels&quot;: {
+          &quot;workflows.argoproj.io/completed&quot;: &quot;false&quot;
+         }
+      },
+     &quot;spec&quot;: {
+       &quot;templates&quot;: [
+        {
+         &quot;name&quot;: &quot;whalesay&quot;,
+         &quot;arguments&quot;: {},
+         &quot;inputs&quot;: {},
+         &quot;outputs&quot;: {},
+         &quot;metadata&quot;: {},
+         &quot;container&quot;: {
+          &quot;name&quot;: &quot;&quot;,
+          &quot;image&quot;: &quot;docker/whalesay:latest&quot;,
+          &quot;command&quot;: [
+            &quot;cowsay&quot;
+          ],
+          &quot;args&quot;: [
+            &quot;hello world&quot;
+          ],
+          &quot;resources&quot;: {}
+        }
+      }
+    ],
+    &quot;entrypoint&quot;: &quot;whalesay&quot;,
+    &quot;arguments&quot;: {}
+  }
+}
+}&#39;
 </code></pre></div>
-
 
 <h2 id="getting-workflows-for-namespace-argo">Getting workflows for namespace argo<a class="headerlink" href="#getting-workflows-for-namespace-argo" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code><span class="err">curl --request GET \</span>
-<span class="err">  --url http://localhost:2746/api/v1/workflows/argo</span>
+<div class="highlight"><pre><span></span><code>curl --request GET \
+  --url http://localhost:2746/api/v1/workflows/argo
 </code></pre></div>
-
 
 <h2 id="getting-single-workflow-for-namespace-argo">Getting single workflow for namespace argo<a class="headerlink" href="#getting-single-workflow-for-namespace-argo" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code><span class="err">curl --request GET \</span>
-<span class="err">  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt</span>
+<div class="highlight"><pre><span></span><code>curl --request GET \
+  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
 </code></pre></div>
 
-
 <h2 id="deleting-single-workflow-for-namespace-argo">Deleting single workflow for namespace argo<a class="headerlink" href="#deleting-single-workflow-for-namespace-argo" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code><span class="err">curl --request DELETE \</span>
-<span class="err">  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt</span>
+<div class="highlight"><pre><span></span><code>curl --request DELETE \
+  --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
 </code></pre></div>
                 
                   

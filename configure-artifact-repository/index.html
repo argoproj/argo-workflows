@@ -2088,23 +2088,20 @@ Subsequent sections will show how to use it.</p>
 </tbody>
 </table>
 <h2 id="configuring-minio">Configuring Minio<a class="headerlink" href="#configuring-minio" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code>$ brew install helm <span class="c1"># mac, helm 3.x</span>
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ <span class="c1"># official Helm stable charts</span>
+<div class="highlight"><pre><span></span><code>$ brew install helm # mac, helm 3.x
+$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
 $ helm repo update
-$ helm install argo-artifacts stable/minio --set service.type<span class="o">=</span>LoadBalancer --set <span class="nv">fullnameOverride</span><span class="o">=</span>argo-artifacts
+$ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 </code></pre></div>
-
 
 <p>Login to the Minio UI using a web browser (port 9000) after obtaining the
 external IP using <code>kubectl</code>.</p>
-<div class="codehilite"><pre><span></span><code>$ kubectl get service argo-artifacts
+<div class="highlight"><pre><span></span><code>$ kubectl get service argo-artifacts
 </code></pre></div>
-
 
 <p>On Minikube:</p>
-<div class="codehilite"><pre><span></span><code>$ minikube service --url argo-artifacts
+<div class="highlight"><pre><span></span><code>$ minikube service --url argo-artifacts
 </code></pre></div>
-
 
 <p>NOTE: When minio is installed via Helm, it uses the following hard-wired default
 credentials, which you will use to login to the UI:</p>
@@ -2120,43 +2117,41 @@ create access keys with reduced scope. If you want to limit the permissions for
 an access key, you will need to create a user with just the permissions you want
 to associate with the access key. Otherwise, you can just create an access key
 using your existing user account.</p>
-<div class="codehilite"><pre><span></span><code>$ <span class="nb">export</span> <span class="nv">mybucket</span><span class="o">=</span>bucket249
-$ cat &gt; policy.json <span class="s">&lt;&lt;EOF</span>
-<span class="s">{</span>
-<span class="s">   &quot;Version&quot;:&quot;2012-10-17&quot;,</span>
-<span class="s">   &quot;Statement&quot;:[</span>
-<span class="s">      {</span>
-<span class="s">         &quot;Effect&quot;:&quot;Allow&quot;,</span>
-<span class="s">         &quot;Action&quot;:[</span>
-<span class="s">            &quot;s3:PutObject&quot;,</span>
-<span class="s">            &quot;s3:GetObject&quot;</span>
-<span class="s">         ],</span>
-<span class="s">         &quot;Resource&quot;:&quot;arn:aws:s3:::$mybucket/*&quot;</span>
-<span class="s">      }</span>
-<span class="s">   ]</span>
-<span class="s">}</span>
-<span class="s">EOF</span>
-$ aws s3 mb s3://<span class="nv">$mybucket</span> <span class="o">[</span>--region xxx<span class="o">]</span>
-$ aws iam create-user --user-name <span class="nv">$mybucket</span>-user
-$ aws iam put-user-policy --user-name <span class="nv">$mybucket</span>-user --policy-name <span class="nv">$mybucket</span>-policy --policy-document file://policy.json
-$ aws iam create-access-key --user-name <span class="nv">$mybucket</span>-user &gt; access-key.json
+<div class="highlight"><pre><span></span><code>$ export mybucket=bucket249
+$ cat &gt; policy.json &lt;&lt;EOF
+{
+   &quot;Version&quot;:&quot;2012-10-17&quot;,
+   &quot;Statement&quot;:[
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:PutObject&quot;,
+            &quot;s3:GetObject&quot;
+         ],
+         &quot;Resource&quot;:&quot;arn:aws:s3:::$mybucket/*&quot;
+      }
+   ]
+}
+EOF
+$ aws s3 mb s3://$mybucket [--region xxx]
+$ aws iam create-user --user-name $mybucket-user
+$ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
+$ aws iam create-access-key --user-name $mybucket-user &gt; access-key.json
 </code></pre></div>
-
 
 <p>NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
 specify a bucket region in your workflow configuration.</p>
-<div class="codehilite"><pre><span></span><code><span class="err">    ...</span>
-<span class="err">      {</span>
-<span class="err">         &quot;Effect&quot;:&quot;Allow&quot;,</span>
-<span class="err">         &quot;Action&quot;:[</span>
-<span class="err">            &quot;s3:GetBucketLocation&quot;</span>
-<span class="err">         ],</span>
-<span class="err">         &quot;Resource&quot;:&quot;arn:aws:s3:::*&quot;</span>
-<span class="err">      }</span>
-<span class="err">    ...</span>
+<div class="highlight"><pre><span></span><code>    ...
+      {
+         &quot;Effect&quot;:&quot;Allow&quot;,
+         &quot;Action&quot;:[
+            &quot;s3:GetBucketLocation&quot;
+         ],
+         &quot;Resource&quot;:&quot;arn:aws:s3:::*&quot;
+      }
+    ...
 </code></pre></div>
-
 
 <h2 id="configuring-gcs-google-cloud-storage">Configuring GCS (Google Cloud Storage)<a class="headerlink" href="#configuring-gcs-google-cloud-storage" title="Permanent link">&para;</a></h2>
 <p>Create a bucket from the GCP Console
@@ -2168,7 +2163,7 @@ specify a bucket region in your workflow configuration.</p>
 <li>Create a kubernetes secret to store the key.</li>
 <li>Configure <code>gcs</code> artifact as following in the yaml.</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">message</span>
     <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/message</span>
     <span class="nt">gcs</span><span class="p">:</span>
@@ -2187,7 +2182,6 @@ specify a bucket region in your workflow configuration.</p>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span>
 </code></pre></div>
 
-
 <p>If it's a GKE cluster, and Workload Identity is configured, there's no need to
 create the Service Account key and store it as a K8s secret,
 <code>serviceAccountKeySecret</code> is also not needed in this case. Please follow the
@@ -2203,7 +2197,7 @@ access is on a per project rather than per bucket basis.</p>
 <li>Create a new key if needed.</li>
 <li>Configure <code>s3</code> artifact as following exmaple.</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
     <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-ouput-artifact</span>
     <span class="nt">s3</span><span class="p">:</span>
@@ -2222,7 +2216,6 @@ access is on a per project rather than per bucket basis.</p>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
 </code></pre></div>
 
-
 <h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
 <p>To configure artifact storage for Alibaba Cloud OSS, please first follow
 the <a href="https://www.alibabacloud.com/product/oss">official documentation</a> to set up
@@ -2230,7 +2223,7 @@ an OSS account and bucket. </p>
 <p>Once it's set up, you can find endpoint and bucket
 information on your OSS dashboard and then use them like the following to
 configure the artifact storage for your workflow:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-art</span>
     <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/my-artifact</span>
     <span class="nt">oss</span><span class="p">:</span>
@@ -2249,7 +2242,6 @@ configure the artifact storage for your workflow:</p>
         <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
 </code></pre></div>
-
 
 <h1 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h1>
 <p>In order for Argo to use your artifact repository, you can configure it as the
@@ -2288,24 +2280,23 @@ AccessKey and SecretKey.</p>
 <p>For Alibaba Cloud OSS, the <code>accessKeySecret</code> and <code>secretKeySecret</code> corresponds to
 <code>accessKeyID</code> <code>and accessKeySecret</code> respectively.</p>
 <p>Example:</p>
-<div class="codehilite"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo      <span class="c1"># assumes argo was installed in the argo namespace</span>
+<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo      # assumes argo was installed in the argo namespace
 ...
 data:
-  artifactRepository: <span class="p">|</span>
+  artifactRepository: |
     s3:
       bucket: my-bucket
-      keyFormat: prefix/in/bucket     <span class="c1">#optional</span>
-      endpoint: my-minio-endpoint.default:9000        <span class="c1">#AWS =&gt; s3.amazonaws.com; GCS =&gt; storage.googleapis.com</span>
-      insecure: <span class="nb">true</span>                  <span class="c1">#omit for S3/GCS. Needed when minio runs without TLS</span>
-      accessKeySecret:                <span class="c1">#omit if accessing via AWS IAM</span>
+      keyFormat: prefix/in/bucket     #optional
+      endpoint: my-minio-endpoint.default:9000        #AWS =&gt; s3.amazonaws.com; GCS =&gt; storage.googleapis.com
+      insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
+      accessKeySecret:                #omit if accessing via AWS IAM
         name: my-minio-cred
         key: accessKey
-      secretKeySecret:                <span class="c1">#omit if accessing via AWS IAM</span>
+      secretKeySecret:                #omit if accessing via AWS IAM
         name: my-minio-cred
         key: secretKey
-      useSDKCreds: <span class="nb">true</span>               <span class="c1">#tells argo to use AWS SDK&#39;s default provider chain, enable for things like IRSA support</span>
+      useSDKCreds: true               #tells argo to use AWS SDK&#39;s default provider chain, enable for things like IRSA support
 </code></pre></div>
-
 
 <p>The secrets are retrieved from the namespace you use to run your workflows. Note
 that you can specify a <code>keyFormat</code>.</p>
@@ -2314,63 +2305,62 @@ that you can specify a <code>keyFormat</code>.</p>
 <p><code>serviceAccountKeySecret</code> refereces to a k8 secret which stores a Google Cloud
 service account key to access the bucket.</p>
 <p>Example:</p>
-<div class="codehilite"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  <span class="c1"># assumes argo was installed in the argo namespace</span>
+<div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
 ...
 data:
-  artifactRepository: <span class="p">|</span>
+  artifactRepository: |
     gcs:
       bucket: my-bucket
-      keyFormat: prefix/in/bucket     <span class="c1">#optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;</span>
+      keyFormat: prefix/in/bucket     #optional, it could reference workflow variables, such as &quot;{{workflow.name}}/{{pod.name}}&quot;
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey
 </code></pre></div>
-
 
 <h1 id="accessing-non-default-artifact-repositories">Accessing Non-Default Artifact Repositories<a class="headerlink" href="#accessing-non-default-artifact-repositories" title="Permanent link">&para;</a></h1>
 <p>This section shows how to access artifacts from non-default artifact
 repositories.</p>
 <p>The <code>endpoint</code>, <code>accessKeySecret</code> and <code>secretKeySecret</code> are the same as for
 configuring the default artifact repository described previously.</p>
-<div class="codehilite"><pre><span></span><code><span class="err">  templates:</span>
-<span class="err">  - name: artifact-example</span>
-<span class="err">    inputs:</span>
-<span class="err">      artifacts:</span>
-<span class="err">      - name: my-input-artifact</span>
-<span class="err">        path: /my-input-artifact</span>
-<span class="err">        s3:</span>
-<span class="err">          endpoint: s3.amazonaws.com</span>
-<span class="err">          bucket: my-aws-bucket-name</span>
-<span class="err">          key: path/in/bucket/my-input-artifact.tgz</span>
-<span class="err">          accessKeySecret:</span>
-<span class="err">            name: my-aws-s3-credentials</span>
-<span class="err">            key: accessKey</span>
-<span class="err">          secretKeySecret:</span>
-<span class="err">            name: my-aws-s3-credentials</span>
-<span class="err">            key: secretKey</span>
-<span class="err">    outputs:</span>
-<span class="err">      artifacts:</span>
-<span class="err">      - name: my-output-artifact</span>
-<span class="err">        path: /my-ouput-artifact</span>
-<span class="err">        s3:</span>
-<span class="err">          endpoint: storage.googleapis.com</span>
-<span class="err">          bucket: my-gcs-bucket-name</span>
-<span class="err">          # NOTE that, by default, all output artifacts are automatically tarred and</span>
-<span class="err">          # gzipped before saving. So as a best practice, .tgz or .tar.gz</span>
-<span class="err">          # should be incorporated into the key name so the resulting file</span>
-<span class="err">          # has an accurate file extension.</span>
-<span class="err">          key: path/in/bucket/my-output-artifact.tgz</span>
-<span class="err">          accessKeySecret:</span>
-<span class="err">            name: my-gcs-s3-credentials</span>
-<span class="err">            key: accessKey</span>
-<span class="err">          secretKeySecret:</span>
-<span class="err">            name: my-gcs-s3-credentials</span>
-<span class="err">            key: secretKey</span>
-<span class="err">          region: my-GCS-storage-bucket-region</span>
-<span class="err">    container:</span>
-<span class="err">      image: debian:latest</span>
-<span class="err">      command: [sh, -c]</span>
-<span class="err">      args: [&quot;cp -r /my-input-artifact /my-output-artifact&quot;]</span>
+<div class="highlight"><pre><span></span><code>  templates:
+  - name: artifact-example
+    inputs:
+      artifacts:
+      - name: my-input-artifact
+        path: /my-input-artifact
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-aws-bucket-name
+          key: path/in/bucket/my-input-artifact.tgz
+          accessKeySecret:
+            name: my-aws-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-aws-s3-credentials
+            key: secretKey
+    outputs:
+      artifacts:
+      - name: my-output-artifact
+        path: /my-ouput-artifact
+        s3:
+          endpoint: storage.googleapis.com
+          bucket: my-gcs-bucket-name
+          # NOTE that, by default, all output artifacts are automatically tarred and
+          # gzipped before saving. So as a best practice, .tgz or .tar.gz
+          # should be incorporated into the key name so the resulting file
+          # has an accurate file extension.
+          key: path/in/bucket/my-output-artifact.tgz
+          accessKeySecret:
+            name: my-gcs-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-gcs-s3-credentials
+            key: secretKey
+          region: my-GCS-storage-bucket-region
+    container:
+      image: debian:latest
+      command: [sh, -c]
+      args: [&quot;cp -r /my-input-artifact /my-output-artifact&quot;]
 </code></pre></div>
                 
                   

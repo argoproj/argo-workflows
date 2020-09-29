@@ -2338,7 +2338,7 @@
 </ol>
 <h2 id="argo-cli">Argo CLI<a class="headerlink" href="#argo-cli" title="Permanent link">&para;</a></h2>
 <p>In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo command line interface (CLI) commands.</p>
-<div class="codehilite"><pre><span></span><code>argo submit hello-world.yaml    <span class="c1"># submit a workflow spec to Kubernetes</span>
+<div class="highlight"><pre><span></span><code>argo submit hello-world.yaml    <span class="c1"># submit a workflow spec to Kubernetes</span>
 argo list                       <span class="c1"># list current workflows</span>
 argo get hello-world-xxx        <span class="c1"># get info about a specific workflow</span>
 argo logs -w hello-world-xxx    <span class="c1"># get logs from all steps in a workflow</span>
@@ -2346,9 +2346,8 @@ argo logs hello-world-xxx-yyy   <span class="c1"># get logs from a specific step
 argo delete hello-world-xxx     <span class="c1"># delete workflow</span>
 </code></pre></div>
 
-
 <p>You can also run workflow specs directly using <code>kubectl</code> but the Argo CLI provides syntax checking, nicer output, and requires less typing.</p>
-<div class="codehilite"><pre><span></span><code>kubectl create -f hello-world.yaml
+<div class="highlight"><pre><span></span><code>kubectl create -f hello-world.yaml
 kubectl get wf
 kubectl get wf hello-world-xxx
 kubectl get po --selector<span class="o">=</span>workflows.argoproj.io/workflow<span class="o">=</span>hello-world-xxx --show-all  <span class="c1"># similar to argo</span>
@@ -2356,11 +2355,10 @@ kubectl logs hello-world-xxx-yyy -c main
 kubectl delete wf hello-world-xxx
 </code></pre></div>
 
-
 <h2 id="hello-world">Hello World!<a class="headerlink" href="#hello-world" title="Permanent link">&para;</a></h2>
 <p>Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.</p>
 <p>You can run this directly from your shell with a simple docker command:</p>
-<div class="codehilite"><pre><span></span><code>$ docker run docker/whalesay cowsay <span class="s2">&quot;hello world&quot;</span>
+<div class="highlight"><pre><span></span><code>$ docker run docker/whalesay cowsay <span class="s2">&quot;hello world&quot;</span>
  _____________
 &lt; hello world &gt;
  -------------
@@ -2381,10 +2379,9 @@ Hello from Docker!
 This message shows that your installation appears to be working correctly.
 </code></pre></div>
 
-
 <p>Below, we run the same container on a Kubernetes cluster using an Argo workflow template.
 Be sure to read the comments as they provide useful explanations.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>                  <span class="c1"># new type of k8s spec</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-world-</span>    <span class="c1"># name of the workflow spec</span>
@@ -2402,11 +2399,10 @@ Be sure to read the comments as they provide useful explanations.</p>
           <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100m</span>
 </code></pre></div>
 
-
 <p>Argo adds a new <code>kind</code> of Kubernetes spec called a <code>Workflow</code>. The above spec contains a single <code>template</code> called <code>whalesay</code> which runs the <code>docker/whalesay</code> container and invokes <code>cowsay "hello world"</code>. The <code>whalesay</code> template is the <code>entrypoint</code> for the spec. The entrypoint specifies the initial template that should be invoked when the workflow spec is executed by Kubernetes. Being able to specify the entrypoint is more useful when there is more than one template defined in the Kubernetes workflow spec. :-)</p>
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <p>Let's look at a slightly more complex workflow spec with parameters.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hello-world-parameters-</span>
@@ -2432,31 +2428,26 @@ Be sure to read the comments as they provide useful explanations.</p>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>This time, the <code>whalesay</code> template takes an input parameter named <code>message</code> that is passed as the <code>args</code> to the <code>cowsay</code> command. In order to reference parameters (e.g., <code>"{{inputs.parameters.message}}"</code>), the parameters must be enclosed in double quotes to escape the curly braces in YAML.</p>
 <p>The argo CLI provides a convenient way to override parameters used to invoke the entrypoint. For example, the following command would bind the <code>message</code> parameter to "goodbye world" instead of the default "hello world".</p>
-<div class="codehilite"><pre><span></span><code>argo submit arguments-parameters.yaml -p <span class="nv">message</span><span class="o">=</span><span class="s2">&quot;goodbye world&quot;</span>
+<div class="highlight"><pre><span></span><code>argo submit arguments-parameters.yaml -p <span class="nv">message</span><span class="o">=</span><span class="s2">&quot;goodbye world&quot;</span>
 </code></pre></div>
-
 
 <p>In case of multiple parameters that can be overriten, the argo CLI provides a command to load parameters files in YAML or JSON format. Here is an example of that kind of parameter file:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">message</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">goodbye world</span>
+<div class="highlight"><pre><span></span><code><span class="nt">message</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">goodbye world</span>
 </code></pre></div>
-
 
 <p>To run use following command:</p>
-<div class="codehilite"><pre><span></span><code>argo submit arguments-parameters.yaml --parameter-file params.yaml
+<div class="highlight"><pre><span></span><code>argo submit arguments-parameters.yaml --parameter-file params.yaml
 </code></pre></div>
-
 
 <p>Command-line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the <code>whalesay</code> template called <code>whalesay-caps</code> but you don't want to change the default entrypoint, you can invoke this from the command line as follows:</p>
-<div class="codehilite"><pre><span></span><code>argo submit arguments-parameters.yaml --entrypoint whalesay-caps
+<div class="highlight"><pre><span></span><code>argo submit arguments-parameters.yaml --entrypoint whalesay-caps
 </code></pre></div>
-
 
 <p>By using a combination of the <code>--entrypoint</code> and <code>-p</code> parameters, you can call any template in the workflow spec with any parameter that you like.</p>
 <p>The values set in the <code>spec.arguments.parameters</code> are globally scoped and can be accessed via <code>{{workflow.parameters.parameter_name}}</code>. This can be useful to pass information to multiple steps in a workflow. For example, if you wanted to run your workflows with different logging levels that are set in the environment of each container, you could have a YAML file similar to this one:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">global-parameters-</span>
@@ -2484,11 +2475,10 @@ Be sure to read the comments as they provide useful explanations.</p>
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">runB</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>In this workflow, both steps <code>A</code> and <code>B</code> would have the same log-level set to <code>INFO</code> and can easily be changed between workflow submissions using the <code>-p</code> flag.</p>
 <h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
 <p>In this example, we'll see how to create multi-step workflows, how to define more than one template in a workflow spec, and how to create nested workflows. Be sure to read the comments as they provide useful explanations.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">steps-</span>
@@ -2531,20 +2521,18 @@ Be sure to read the comments as they provide useful explanations.</p>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>The above workflow spec prints three different flavors of "hello". The <code>hello-hello-hello</code> template consists of three <code>steps</code>. The first step named <code>hello1</code> will be run in sequence whereas the next two steps named <code>hello2a</code> and <code>hello2b</code> will be run in parallel with each other. Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named <code>hello2a</code> and <code>hello2b</code> ran in parallel with each other.</p>
-<div class="codehilite"><pre><span></span><code>STEP                                     PODNAME
+<div class="highlight"><pre><span></span><code>STEP                                     PODNAME
  ✔ arguments-parameters-rbm92
  ├---✔ hello1                   steps-rbm92-2023062412
  └-·-✔ hello2a                  steps-rbm92-685171357
    └-✔ hello2b                  steps-rbm92-634838500
 </code></pre></div>
 
-
 <h2 id="dag">DAG<a class="headerlink" href="#dag" title="Permanent link">&para;</a></h2>
 <p>As an alternative to specifying sequences of steps, you can define the workflow as a directed-acyclic graph (DAG) by specifying the dependencies of each task. This can be simpler to maintain for complex workflows and allows for maximum parallelism when running tasks.</p>
 <p>In the following workflow, step <code>A</code> runs first, as it has no dependencies. Once <code>A</code> has finished, steps <code>B</code> and <code>C</code> run in parallel. Finally, once <code>B</code> and <code>C</code> have completed, step <code>D</code> can run.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">dag-diamond-</span>
@@ -2582,7 +2570,6 @@ Be sure to read the comments as they provide useful explanations.</p>
           <span class="nt">parameters</span><span class="p">:</span> <span class="p p-Indicator">[{</span><span class="nt">name</span><span class="p">:</span> <span class="nv">message</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span> <span class="nv">D</span><span class="p p-Indicator">}]</span>
 </code></pre></div>
 
-
 <p>The dependency graph may have <a href="dag-multiroot.yaml">multiple roots</a>. The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.</p>
 <p>The DAG logic has a built-in <code>fail fast</code> feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself.
 The <a href="dag-disable-failFast.yaml">FailFast</a> flag default is <code>true</code>,  if set to <code>false</code>, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at <a href="https://github.com/argoproj/argo/issues/1442">here</a>.</p>
@@ -2592,7 +2579,7 @@ You will need to configure an artifact repository to run this example.
 <a href="https://argoproj.github.io/argo/configure-artifact-repository/">Configuring an artifact repository here</a>.</p>
 <p>When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.</p>
 <p>The below workflow spec consists of two steps that run in sequence. The first step named <code>generate-artifact</code> will generate an artifact using the <code>whalesay</code> template that will be consumed by the second step named <code>print-message</code> that then consumes the generated artifact.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">artifact-passing-</span>
@@ -2637,11 +2624,10 @@ You will need to configure an artifact repository to run this example.
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cat</span><span class="nv"> </span><span class="s">/tmp/message&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>The <code>whalesay</code> template uses the <code>cowsay</code> command to generate a file named <code>/tmp/hello-world.txt</code>. It then <code>outputs</code> this file as an artifact named <code>hello-art</code>. In general, the artifact's <code>path</code> may be a directory rather than just a file. The <code>print-message</code> template takes an input artifact named <code>message</code>, unpacks it at the <code>path</code> named <code>/tmp/message</code> and then prints the contents of <code>/tmp/message</code> using the <code>cat</code> command.
 The <code>artifact-example</code> template passes the <code>hello-art</code> artifact generated as an output of the <code>generate-artifact</code> step as the <code>message</code> input artifact to the <code>print-message</code> step. DAG templates use the tasks prefix to refer to another task, for example <code>{{tasks.generate-artifact.outputs.artifacts.hello-art}}</code>.</p>
 <p>Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the <code>archive</code> field. For example:</p>
-<div class="codehilite"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span>
     <span class="l l-Scalar l-Scalar-Plain">outputs</span><span class="p p-Indicator">:</span>
       <span class="nt">artifacts</span><span class="p">:</span>
         <span class="c1"># default behavior - tar+gzip default compression.</span>
@@ -2668,7 +2654,6 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <span class="l l-Scalar l-Scalar-Plain">&lt;... snipped ...&gt;</span>
 </code></pre></div>
 
-
 <h2 id="the-structure-of-workflow-specs">The Structure of Workflow Specs<a class="headerlink" href="#the-structure-of-workflow-specs" title="Permanent link">&para;</a></h2>
 <p>We now know enough about the basic components of a workflow spec to review its basic structure:</p>
 <ul>
@@ -2693,7 +2678,7 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <p>Note that the container section of the workflow spec will accept the same options as the container section of a pod spec, including but not limited to environment variables, secrets, and volume mounts. Similarly, for volume claims and volumes.</p>
 <h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
 <p>Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts. See the <a href="https://kubernetes.io/docs/concepts/configuration/secret/">Kubernetes documentation</a> for more information.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># To run this example, first create the secret by running:</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># To run this example, first create the secret by running:</span>
 <span class="c1"># kubectl create secret generic my-secret --from-literal=mypassword=S00perS3cretPa55word</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
@@ -2729,10 +2714,9 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
         <span class="nt">mountPath</span><span class="p">:</span> <span class="s">&quot;/secret/mountpath&quot;</span>
 </code></pre></div>
 
-
 <h2 id="scripts-results">Scripts &amp; Results<a class="headerlink" href="#scripts-results" title="Permanent link">&para;</a></h2>
 <p>Often, we just want a template that executes a script specified as a here-script (also known as a <code>here document</code>) in the workflow spec. This example shows how to do that:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">scripts-bash-</span>
@@ -2784,12 +2768,11 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">result</span><span class="nv"> </span><span class="s">was:</span><span class="nv"> </span><span class="s">{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>The <code>script</code> keyword allows the specification of the script body using the <code>source</code> tag. This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to <code>command</code>, which should be an interpreter that executes the script body.</p>
 <p>The use of the <code>script</code> feature also assigns the standard output of running the script to a special output parameter named <code>result</code>. This allows you to use the result of running the script itself in the rest of the workflow spec. In this example, the result is simply echoed by the print-message template.</p>
 <h2 id="output-parameters">Output Parameters<a class="headerlink" href="#output-parameters" title="Permanent link">&para;</a></h2>
 <p>Output parameters provide a general mechanism to use the result of a step as a parameter rather than as an artifact. This allows you to use the result from any type of step, not just a <code>script</code>, for conditional tests, loops, and arguments. Output parameters work similarly to <code>script result</code> except that the value of the output parameter is set to the contents of a generated file rather than the contents of <code>stdout</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">output-parameter-</span>
@@ -2829,11 +2812,10 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>DAG templates use the tasks prefix to refer to another task, for example <code>{{tasks.generate-parameter.outputs.parameters.hello-param}}</code>.</p>
 <h2 id="loops">Loops<a class="headerlink" href="#loops" title="Permanent link">&para;</a></h2>
 <p>When writing workflows, it is often very useful to be able to iterate over a set of inputs as shown in this example:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">loops-</span>
@@ -2862,9 +2844,8 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>We can also iterate over sets of items:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">loops-maps-</span>
@@ -2898,9 +2879,8 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">/etc/os-release</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>We can pass lists of items as parameters:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">loops-param-arg-</span>
@@ -2945,9 +2925,8 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">/etc/os-release</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>We can even dynamically generate the list of items to iterate over!</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">loops-param-result-</span>
@@ -2987,10 +2966,9 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">sleeping</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">{{inputs.parameters.seconds}}</span><span class="nv"> </span><span class="s">seconds;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">{{inputs.parameters.seconds}};</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">done&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <h2 id="conditionals">Conditionals<a class="headerlink" href="#conditionals" title="Permanent link">&para;</a></h2>
 <p>We also support conditional execution as shown in this example:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">coinflip-</span>
@@ -3033,10 +3011,9 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">tails\&quot;&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <h2 id="retrying-failed-or-errored-steps">Retrying Failed or Errored Steps<a class="headerlink" href="#retrying-failed-or-errored-steps" title="Permanent link">&para;</a></h2>
 <p>You can specify a <code>retryStrategy</code> that will dictate how failed or errored steps are retried:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># This example demonstrates the use of retry back offs</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># This example demonstrates the use of retry back offs</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -3059,7 +3036,6 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <ul>
 <li><code>limit</code> is the maximum number of times the container will be retried.</li>
 <li><code>retryPolicy</code> specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"</li>
@@ -3068,7 +3044,7 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
 <p>Providing an empty <code>retryStrategy</code> (i.e. <code>retryStrategy: {}</code>) will cause a container to retry until completion.</p>
 <h2 id="recursion">Recursion<a class="headerlink" href="#recursion" title="Permanent link">&para;</a></h2>
 <p>Templates can recursively invoke each other! In this variation of the above coin-flip template, we continue to flip coins until it comes up heads.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">coinflip-recursive-</span>
@@ -3104,9 +3080,8 @@ The <code>artifact-example</code> template passes the <code>hello-art</code> art
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">\&quot;it</span><span class="nv"> </span><span class="s">was</span><span class="nv"> </span><span class="s">heads\&quot;&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <p>Here's the result of a couple of runs of coinflip for comparison.</p>
-<div class="codehilite"><pre><span></span><code>argo get coinflip-recursive-tzcb5
+<div class="highlight"><pre><span></span><code>argo get coinflip-recursive-tzcb5
 
 STEP                         PODNAME                              MESSAGE
  ✔ coinflip-recursive-vhph5
@@ -3130,7 +3105,6 @@ STEP                          PODNAME                              MESSAGE
                └-○ tails
 </code></pre></div>
 
-
 <p>In the first run, the coin immediately comes up heads and we stop. In the second run, the coin comes up tail three times before it finally comes up heads and we stop.</p>
 <h2 id="exit-handlers">Exit handlers<a class="headerlink" href="#exit-handlers" title="Permanent link">&para;</a></h2>
 <p>An exit handler is a template that <em>always</em> executes, irrespective of success or failure, at the end of the workflow.</p>
@@ -3141,7 +3115,7 @@ STEP                          PODNAME                              MESSAGE
 <li>posting the pass/fail status to a webhook result (e.g. GitHub build result)</li>
 <li>resubmitting or submitting another workflow</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">exit-handlers-</span>
@@ -3187,10 +3161,9 @@ STEP                          PODNAME                              MESSAGE
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo</span><span class="nv"> </span><span class="s">boohoo!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <h2 id="timeouts">Timeouts<a class="headerlink" href="#timeouts" title="Permanent link">&para;</a></h2>
 <p>To limit the elapsed time for a workflow, you can set the variable <code>activeDeadlineSeconds</code>.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># To enforce a timeout for a container template, specify a value for activeDeadlineSeconds.</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># To enforce a timeout for a container template, specify a value for activeDeadlineSeconds.</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -3206,10 +3179,9 @@ STEP                          PODNAME                              MESSAGE
     <span class="nt">activeDeadlineSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>           <span class="c1"># terminate container template after 10 seconds</span>
 </code></pre></div>
 
-
 <h2 id="volumes">Volumes<a class="headerlink" href="#volumes" title="Permanent link">&para;</a></h2>
 <p>The following example dynamically creates a volume and then uses the volume in a two step workflow.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">volumes-pvc-</span>
@@ -3253,10 +3225,9 @@ STEP                          PODNAME                              MESSAGE
         <span class="nt">mountPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt/vol</span>
 </code></pre></div>
 
-
 <p>Volumes are a very useful way to move large amounts of data from one step in a workflow to another. Depending on the system, some volumes may be accessible concurrently from multiple steps.</p>
 <p>In some cases, you want to access an already existing volume rather than creating/destroying one dynamically.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Define Kubernetes PVC</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Define Kubernetes PVC</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -3308,10 +3279,9 @@ STEP                          PODNAME                              MESSAGE
         <span class="nt">mountPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt/vol</span>
 </code></pre></div>
 
-
 <p>It's also possible to declare existing volumes at the template level, instead of the workflow level.
 This can be useful workflows that generate volumes using a <code>resource</code> step.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">template-level-volume-</span>
@@ -3396,15 +3366,13 @@ This can be useful workflows that generate volumes using a <code>resource</code>
         <span class="nt">mountPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt/vol</span>
 </code></pre></div>
 
-
 <h2 id="suspending">Suspending<a class="headerlink" href="#suspending" title="Permanent link">&para;</a></h2>
 <p>Workflows can be suspended by</p>
-<div class="codehilite"><pre><span></span><code>argo <span class="nb">suspend</span> WORKFLOW
+<div class="highlight"><pre><span></span><code>argo <span class="nb">suspend</span> WORKFLOW
 </code></pre></div>
 
-
 <p>Or by specifying a <code>suspend</code> step on the workflow:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">suspend-template-</span>
@@ -3436,16 +3404,13 @@ This can be useful workflows that generate volumes using a <code>resource</code>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
-<p>Once suspended, a Workflow will not schedule any new steps until it is resumed. It can be resumed manually by</p>
-<div class="codehilite"><pre><span></span><code>argo resume WORKFLOW
+<p>Once suspended, a Workflow will not schedule any new steps until it is resumed. It can be resumed manually by
+<div class="highlight"><pre><span></span><code>argo resume WORKFLOW
 </code></pre></div>
-
-
-<p>Or automatically with a <code>duration</code> limit as the example above.</p>
+Or automatically with a <code>duration</code> limit as the example above.</p>
 <h2 id="daemon-containers">Daemon Containers<a class="headerlink" href="#daemon-containers" title="Permanent link">&para;</a></h2>
 <p>Argo workflows can start containers that run in the background (also known as <code>daemon containers</code>) while the workflow itself continues execution. Note that the daemons will be <em>automatically destroyed</em> when the workflow exits the template scope in which the daemon was invoked. Daemon containers are useful for starting up services to be tested or to be used in testing (e.g., fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">daemon-step-</span>
@@ -3515,11 +3480,10 @@ This can be useful workflows that generate volumes using a <code>resource</code>
           <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100m</span>
 </code></pre></div>
 
-
 <p>DAG templates use the tasks prefix to refer to another task, for example <code>{{tasks.influx.ip}}</code>.</p>
 <h2 id="sidecars">Sidecars<a class="headerlink" href="#sidecars" title="Permanent link">&para;</a></h2>
 <p>A sidecar is another container that executes concurrently in the same pod as the main container and is useful in creating multi-container pods.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sidecar-nginx-</span>
@@ -3538,11 +3502,10 @@ This can be useful workflows that generate volumes using a <code>resource</code>
       <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">nginx:1.13</span>
 </code></pre></div>
 
-
 <p>In the above example, we create a sidecar container that runs nginx as a simple web server. The order in which containers come up is random, so in this example the main container polls the nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems: always wait for any services you need to come up before running your main code.</p>
 <h2 id="hardwired-artifacts">Hardwired Artifacts<a class="headerlink" href="#hardwired-artifacts" title="Permanent link">&para;</a></h2>
 <p>With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, http, gcs and s3 artifacts.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">hardwired-artifact-</span>
@@ -3584,10 +3547,9 @@ This can be useful workflows that generate volumes using a <code>resource</code>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;ls</span><span class="nv"> </span><span class="s">-l</span><span class="nv"> </span><span class="s">/src</span><span class="nv"> </span><span class="s">/bin/kubectl</span><span class="nv"> </span><span class="s">/s3&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-
 <h2 id="kubernetes-resources">Kubernetes Resources<a class="headerlink" href="#kubernetes-resources" title="Permanent link">&para;</a></h2>
 <p>In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># in a workflow. The resource template type accepts any k8s manifest</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># in a workflow. The resource template type accepts any k8s manifest</span>
 <span class="c1"># (including CRDs) and can perform any kubectl action against it (e.g. create,</span>
 <span class="c1"># apply, delete, patch).</span>
 <span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
@@ -3627,20 +3589,18 @@ This can be useful workflows that generate volumes using a <code>resource</code>
           <span class="no">backoffLimit: 4</span>
 </code></pre></div>
 
-
 <p>Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use <a href="https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/">Kubernetes garbage collection</a> with the workflow resource as an owner reference (<a href="k8s-owner-reference.yaml">example</a>).</p>
 <p><strong>Note:</strong>
 When patching, the resource will accept another attribute, <code>mergeStrategy</code>, which can either be <code>strategic</code>, <code>merge</code>, or <code>json</code>. If this attribute is not supplied, it will default to <code>strategic</code>. Keep in mind that Custom Resources cannot be patched with <code>strategic</code>, so a different strategy must be chosen. For example, suppose you have the <a href="https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition">CronTab CustomResourceDefinition</a> defined, and the following instance of a CronTab:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="s">&quot;stable.example.com/v1&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="s">&quot;stable.example.com/v1&quot;</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">CronTab</span>
 <span class="nt">spec</span><span class="p">:</span>
   <span class="nt">cronSpec</span><span class="p">:</span> <span class="s">&quot;*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*/5&quot;</span>
   <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-awesome-cron-image</span>
 </code></pre></div>
 
-
 <p>This Crontab can be modified using the following Argo Workflow:</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">k8s-patch-</span>
@@ -3659,10 +3619,9 @@ When patching, the resource will accept another attribute, <code>mergeStrategy</
           <span class="no">image: my-awesome-cron-image</span>
 </code></pre></div>
 
-
 <h2 id="docker-in-docker-using-sidecars">Docker-in-Docker Using Sidecars<a class="headerlink" href="#docker-in-docker-using-sidecars" title="Permanent link">&para;</a></h2>
 <p>An application of sidecars is to implement Docker-in-Docker (DinD). DinD is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sidecar-dind-</span>
@@ -3689,12 +3648,11 @@ When patching, the resource will accept another attribute, <code>mergeStrategy</
       <span class="nt">mirrorVolumeMounts</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 
-
 <h2 id="custom-template-variable-reference">Custom Template Variable Reference<a class="headerlink" href="#custom-template-variable-reference" title="Permanent link">&para;</a></h2>
 <p>In this example, we can see how we can use the other template language variable reference (E.g: Jinja) in Argo workflow template.
 Argo will validate and resolve only the variable that starts with Argo allowed prefix
 {<strong><em>"item", "steps", "inputs", "outputs", "workflow", "tasks"</em></strong>}</p>
-<div class="codehilite"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
   <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">custom-template-variable-</span>
@@ -3726,7 +3684,6 @@ Argo will validate and resolve only the variable that starts with Argo allowed p
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{user.username}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 
 <h2 id="continuous-integration-example">Continuous Integration Example<a class="headerlink" href="#continuous-integration-example" title="Permanent link">&para;</a></h2>
 <p>Continuous integration is a popular application for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.</p>
