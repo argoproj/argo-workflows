@@ -76,7 +76,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(req.Workflow)
 	if err != nil {
 		if apierr.IsServerTimeout(err) && req.Workflow.GenerateName != "" && req.Workflow.Name != "" {
-			errWithHint := fmt.Errorf(`create request failed due to timeout, but it's likeley that workflow "%s" already exists. Original error: %w`, req.Workflow.Name, err)
+			errWithHint := fmt.Errorf(`create request failed due to timeout, but it's possible that workflow "%s" already exists. Original error: %w`, req.Workflow.Name, err)
 			log.Error(errWithHint)
 			return nil, errWithHint
 		}
