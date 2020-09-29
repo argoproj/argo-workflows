@@ -1070,7 +1070,7 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context) {
 	}
 	defer func() { _ = reader.Close() }()
 	bufReader := bufio.NewReader(reader)
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	countDown := 10
 	for {
@@ -1081,7 +1081,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context) {
 			err := we.patchPodAnnotations()
 			if err != nil {
 				log.WithError(err).Warn("failed to patch progress annotations")
-
 			}
 		default:
 			line, err := bufReader.ReadString('\n')

@@ -12,25 +12,37 @@ func UpdateProgress(podInformer cache.SharedIndexInformer, wf *wfv1.Workflow) bo
 	updated := false
 	wf.Status.Progress = "0/0"
 	for nodeID, node := range wf.Status.Nodes {
-		progress := wfv1.Progress("")
-		if node.Type == wfv1.NodeTypePod {
-			progress = podProgress(podInformer, wf.Namespace, nodeID, node.Progress)
-			// bit of a cheat, we kind of assume `0/1` is always set by the controller, not the pod
-			// and that if it is fulfilled, it should be complete
-			if node.Fulfilled() && (progress == "" || progress == "0/1") {
+		if node.Type != wfv1.NodeTypePod {
+			continue
+		}
+		progress := podProgress(podInformer, wf.Namespace, nodeID, node.Progress)
+		// bit of a cheat, we kind of assume `0/1` is always set by the controller, not the pod
+		// and that if it is fulfilled, it should be complete
+		if node.Fulfilled() {
+			if progress == "" || progress == "0/1" {
 				progress = "1/1"
-			} else if progress == "" {
-				progress = "0/1"
 			}
-			wf.Status.Progress = wf.Status.Progress.Add(progress)
-		} else {
-			progress = sumProgress(wf, node, make(map[string]bool))
+		} else if progress == "" {
+			progress = "0/1"
 		}
 		if progress.IsValid() && node.Progress != progress {
 			node.Progress = progress
 			wf.Status.Nodes[nodeID] = node
 			updated = true
 		}
+		wf.Status.Progress = wf.Status.Progress.Add(progress)
+	}
+	for nodeID, node := range wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			continue
+		}
+		progress := sumProgress(wf, node, make(map[string]bool))
+		if progress.IsValid() && node.Progress != progress {
+			node.Progress = progress
+			wf.Status.Nodes[nodeID] = node
+			updated = true
+		}
+
 	}
 	return updated
 }
