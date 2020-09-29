@@ -15,6 +15,7 @@ import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
 import {denominator} from '../../shared/duration';
 import {services} from '../../shared/services';
+import {Utils} from '../../shared/utils';
 
 interface Chart {
     data: ChartData<any>;
@@ -79,11 +80,25 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
             if (!this.canRunReport) {
                 return;
             }
-            (archivedWorkflows ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit}) : services.workflows.list(namespace, [], labels, {limit}))
+            (archivedWorkflows
+                ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit})
+                : services.workflows.list(namespace, [], labels, {limit}, [
+                      'items.metadata.name',
+                      'items.status.phase',
+                      'items.status.startedAt',
+                      'items.status.finishedAt',
+                      'items.status.resourcesDuration'
+                  ])
+            )
                 .then(list => this.getExtractDatasets(list.items || []))
-                .then(charts => this.setState({charts, error: null}))
+                .then(charts => this.setState({charts, error: null}, () => this.saveHistory()))
                 .catch(error => this.setState({error}));
         });
+    }
+
+    private saveHistory() {
+        this.url = uiUrl('reports/' + this.state.namespace + '?archivedWorkflows=' + this.state.archivedWorkflows + '&labels=' + this.state.labels.join(','));
+        Utils.setCurrentNamespace(this.state.namespace);
     }
 
     private getExtractDatasets(workflows: Workflow[]) {
@@ -267,7 +282,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     <p>
                         Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
                         <b>cron workflows</b>, your workflows will be automatically labelled. You'll probably need to enable the{' '}
-                        <a href='https://argoproj.github.io/argo/workflow-archive/'>workflow archive</a> to get long term data. Only the most 100 records are shown.
+                        <a href='https://argoproj.github.io/argo/workflow-archive/'>workflow archive</a> to get long term data. Only the 100 most recent workflows are shown.
                     </p>
                     <p>Select a namespace and at least one label to get a report.</p>
                     <p>
