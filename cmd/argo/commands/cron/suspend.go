@@ -13,8 +13,9 @@ import (
 // NewSuspendCommand returns a new instance of an `argo suspend` command
 func NewSuspendCommand() *cobra.Command {
 	var command = &cobra.Command{
-		Use:   "suspend CRON_WORKFLOW...",
-		Short: "suspend zero or more cron workflows",
+		Use:          "suspend CRON_WORKFLOW...",
+		Short:        "suspend zero or more cron workflows",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()

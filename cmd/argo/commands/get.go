@@ -66,6 +66,7 @@ func NewGetCommand() *cobra.Command {
 # Get the latest workflow:
   argo get @latest
 `,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

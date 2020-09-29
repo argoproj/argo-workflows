@@ -37,6 +37,7 @@ func NewResubmitCommand() *cobra.Command {
 
   argo resubmit @latest
 `,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority

@@ -31,6 +31,7 @@ func NewStopCommand() *cobra.Command {
 # Stop the latest workflow:
   argo stop @latest
 `,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()

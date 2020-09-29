@@ -36,6 +36,7 @@ func NewWatchCommand() *cobra.Command {
 
   argo watch @latest
 `,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)

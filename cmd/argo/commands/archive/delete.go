@@ -11,7 +11,8 @@ import (
 
 func NewDeleteCommand() *cobra.Command {
 	var command = &cobra.Command{
-		Use: "delete UID...",
+		Use:          "delete UID...",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()

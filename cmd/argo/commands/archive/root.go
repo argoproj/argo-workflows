@@ -6,7 +6,8 @@ import (
 
 func NewArchiveCommand() *cobra.Command {
 	var command = &cobra.Command{
-		Use: "archive",
+		Use:          "archive",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.HelpFunc()(cmd, args)
 			return nil

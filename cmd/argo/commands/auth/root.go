@@ -6,7 +6,8 @@ import (
 
 func NewAuthCommand() *cobra.Command {
 	var command = &cobra.Command{
-		Use: "auth",
+		Use:          "auth",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.HelpFunc()(cmd, args)
 			return nil

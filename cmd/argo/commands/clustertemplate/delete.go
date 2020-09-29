@@ -17,8 +17,9 @@ func NewDeleteCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "delete WORKFLOW_TEMPLATE",
-		Short: "delete a cluster workflow template",
+		Use:          "delete WORKFLOW_TEMPLATE",
+		Short:        "delete a cluster workflow template",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return apiServerDeleteClusterWorkflowTemplates(all, args)
 		},

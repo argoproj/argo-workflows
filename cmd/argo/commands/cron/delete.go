@@ -15,8 +15,9 @@ func NewDeleteCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "delete [CRON_WORKFLOW... | --all]",
-		Short: "delete a cron workflow",
+		Use:          "delete [CRON_WORKFLOW... | --all]",
+		Short:        "delete a cron workflow",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()

@@ -22,6 +22,7 @@ func NewSuspendCommand() *cobra.Command {
 # Suspend the latest workflow:
   argo suspend @latest
 `,
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()

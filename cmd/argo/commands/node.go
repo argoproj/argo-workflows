@@ -38,6 +38,7 @@ func NewNodeCommand() *cobra.Command {
 
   argo node set my-wf --message "We did it!"" --node-field-selector displayName=approve
 `,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if len(args) < 1 {

@@ -49,6 +49,7 @@ func NewLogsCommand() *cobra.Command {
 # Print the logs of the latest workflow:
   argo logs @latest
 `,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// parse all the args

@@ -22,6 +22,7 @@ func NewTerminateCommand() *cobra.Command {
 # Terminate the latest workflow:
   argo terminate @latest
 `,
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
 
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()

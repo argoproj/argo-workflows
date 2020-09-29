@@ -21,14 +21,14 @@ func NewGetCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "get CRON_WORKFLOW...",
-		Short: "display details about a cron workflow",
+		Use:          "get CRON_WORKFLOW...",
+		Short:        "display details about a cron workflow",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				return cmdcommon.MissingArgumentsError
 			}
-
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			namespace := client.Namespace()

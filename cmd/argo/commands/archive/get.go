@@ -17,7 +17,8 @@ func NewGetCommand() *cobra.Command {
 		output string
 	)
 	var command = &cobra.Command{
-		Use: "get UID",
+		Use:          "get UID",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)

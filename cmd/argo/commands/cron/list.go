@@ -28,8 +28,9 @@ func NewListCommand() *cobra.Command {
 		listArgs listFlags
 	)
 	var command = &cobra.Command{
-		Use:   "list",
-		Short: "list cron workflows",
+		Use:          "list",
+		Short:        "list cron workflows",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewCronWorkflowServiceClient()

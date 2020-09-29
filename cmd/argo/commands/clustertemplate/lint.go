@@ -17,8 +17,9 @@ func NewLintCommand() *cobra.Command {
 		strict bool
 	)
 	var command = &cobra.Command{
-		Use:   "lint FILE...",
-		Short: "validate files or directories of cluster workflow template manifests",
+		Use:          "lint FILE...",
+		Short:        "validate files or directories of cluster workflow template manifests",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()

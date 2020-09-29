@@ -44,8 +44,9 @@ func NewListCommand() *cobra.Command {
 		allNamespaces bool
 	)
 	var command = &cobra.Command{
-		Use:   "list",
-		Short: "list workflows",
+		Use:          "list",
+		Short:        "list workflows",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()

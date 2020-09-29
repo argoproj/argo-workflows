@@ -12,8 +12,9 @@ import (
 
 func NewTokenCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "token",
-		Short: "Print the auth token",
+		Use:          "token",
+		Short:        "Print the auth token",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 0 {
 				cmd.HelpFunc()(cmd, args)
