@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	argosync "github.com/argoproj/argo/workflow/sync"
 	"math"
 	"os"
 	"reflect"
@@ -46,6 +45,7 @@ import (
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/metrics"
+	argosync "github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
