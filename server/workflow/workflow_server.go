@@ -74,11 +74,12 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	}
 
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(req.Workflow)
-	if err != nil {
-		log.Errorf("Create request failed: %s", err)
-		return nil, err
-	}
 
+	if err != nil {
+		log.Errorf("Create request is failed. Error: %s", err)
+		return nil, err
+
+	}
 	return wf, nil
 }
 
