@@ -2665,7 +2665,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 ## Memoize
 
-Memoization
+Memoization enables caching for the Outputs of the template
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -2677,8 +2677,9 @@ Memoization
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`cache`|[`Cache`](#cache)|_No description available_|
-|`key`|`string`|_No description available_|
+|`cache`|[`Cache`](#cache)|Cache sets and configures the kind of cache|
+|`key`|`string`|Key is the key to use as the caching key|
+|`maxAge`|`string`|MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.|
 
 ## Metadata
 
@@ -3297,14 +3298,14 @@ TemplateRef is a reference of template resource.
 
 ## MemoizationStatus
 
-_No description available_
+MemoizationStatus is the status of this memoized node
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`cacheName`|`string`|_No description available_|
-|`hit`|`boolean`|_No description available_|
-|`key`|`string`|_No description available_|
+|`cacheName`|`string`|Cache is the name of the cache that was used|
+|`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
+|`key`|`string`|Key is the name of the key used for this node's cache|
 
 ## MutexStatus
 
@@ -3491,6 +3492,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -3744,7 +3746,7 @@ DAGTask represents a node in the graph during DAG execution
 
 ## Cache
 
-_No description available_
+Cache is the configuration for the type of cache to be used
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3756,7 +3758,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|_No description available_|
+|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMap sets a ConfigMap-based cache|
 
 ## ContinueOn
 
@@ -3893,6 +3895,16 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## Header
+
+Header indicate a key-value request header to be used when fetching artifacts over HTTP
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|Name is the header name|
+|`value`|`string`|Value is the literal value to use for the header|
 
 ## SuppliedValueFrom
 

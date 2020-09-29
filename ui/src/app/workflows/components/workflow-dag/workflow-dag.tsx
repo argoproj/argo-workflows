@@ -16,9 +16,6 @@ export interface WorkflowDagRenderOptions {
     nodesToDisplay: string[];
     expandNodes: Set<string>;
     fastRenderer: boolean;
-    // If this flag is true, we have found our current workflow status to be malformed. Wait for an update before attempting
-    // to render again. This flag is set to false after every update to the component.
-    waitForUpdate: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -177,19 +174,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         super(props);
         this.state = {
             ...this.getOptions(),
-            expandNodes: new Set(),
-            waitForUpdate: false
+            expandNodes: new Set()
         };
     }
 
-    public componentDidUpdate(prevProps: Readonly<WorkflowDagProps>, prevState: Readonly<WorkflowDagRenderOptions>, snapshot?: any): void {
-        if (prevState.waitForUpdate) {
-            this.setState({waitForUpdate: false});
-        }
-    }
-
     public render() {
-        if (!this.props.nodes || this.state.waitForUpdate) {
+        if (!this.props.nodes) {
             return <Loading />;
         }
         const {nodes, edges} = this.prepareGraph();
@@ -273,8 +263,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private getNode(nodeId: string): NodeStatus {
         const node: NodeStatus = this.props.nodes[nodeId];
         if (!node) {
-            // If we arrive here, the workflow is likely malformed. Wait for an update before continuing.
-            this.setState({waitForUpdate: true});
             return null;
         }
         return node;
@@ -320,9 +308,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             if (!allNodes[nodeId] || !allNodes[nodeId].children) {
                 return [];
             }
-            return allNodes[nodeId].children;
+            return allNodes[nodeId].children.filter(child => allNodes[child]);
         };
-        const pushChildren = (nodeId: string, children: string[], isExpanded: boolean): void => {
+        const pushChildren = (nodeId: string, isExpanded: boolean, queue: PrepareNode[]): void => {
+            const children: string[] = getChildren(nodeId);
             if (!children) {
                 return;
             }
@@ -360,52 +349,66 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             }
         };
 
-        const root: PrepareNode = {
+        const traverse = (root: PrepareNode): void => {
+            const queue: PrepareNode[] = [root];
+            const consideredChildren: Set<string> = new Set<string>();
+            let previousCollapsed: string = '';
+
+            while (queue.length > 0) {
+                const item = queue.pop();
+
+                if (isCollapsedNode(item.nodeName)) {
+                    if (item.nodeName !== previousCollapsed) {
+                        nodes.push(item.nodeName);
+                        edges.push({v: item.parent, w: item.nodeName});
+                        previousCollapsed = item.nodeName;
+                    }
+                    continue;
+                }
+
+                const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
+                nodes.push(item.nodeName);
+                edges.push({v: item.parent, w: item.nodeName});
+
+                // If we have already considered the children of this node, don't consider them again
+                if (consideredChildren.has(item.nodeName)) {
+                    continue;
+                }
+                consideredChildren.add(item.nodeName);
+
+                const node: NodeStatus = this.props.nodes[item.nodeName];
+                if (!node || node.phase === NODE_PHASE.OMITTED) {
+                    continue;
+                }
+
+                pushChildren(node.id, isExpanded, queue);
+            }
+        };
+
+        const workflowRoot: PrepareNode = {
             nodeName: this.props.workflowName,
             parent: '',
             children: getChildren(this.props.workflowName)
         };
 
-        const queue: PrepareNode[] = [root];
-        const consideredChildren: Set<string> = new Set<string>();
-        let previousCollapsed: string = '';
-
-        while (queue.length > 0) {
-            const item = queue.pop();
-
-            if (isCollapsedNode(item.nodeName)) {
-                if (item.nodeName !== previousCollapsed) {
-                    nodes.push(item.nodeName);
-                    edges.push({v: item.parent, w: item.nodeName});
-                    previousCollapsed = item.nodeName;
-                }
-                continue;
-            }
-
-            const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
-            nodes.push(item.nodeName);
-            edges.push({v: item.parent, w: item.nodeName});
-
-            // If we have already considered the children of this node, don't consider them again
-            if (consideredChildren.has(item.nodeName)) {
-                continue;
-            }
-            consideredChildren.add(item.nodeName);
-
-            const node: NodeStatus = this.props.nodes[item.nodeName];
-            if (!node || node.phase === NODE_PHASE.OMITTED) {
-                continue;
-            }
-
-            pushChildren(node.id, node.children, isExpanded);
-        }
+        // Traverse the workflow from the root node
+        traverse(workflowRoot);
 
         const onExitHandlerNodeId = Object.values(allNodes).find(nodeId => nodeId.name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(v => {
                 nodes.push(onExitHandlerNodeId.id);
-                edges.push({v, w: onExitHandlerNodeId.id});
+                if (nodes.includes(v)) {
+                    edges.push({v, w: onExitHandlerNodeId.id});
+                }
             });
+            const onExitRoot: PrepareNode = {
+                nodeName: onExitHandlerNodeId.id,
+                parent: '',
+                children: getChildren(onExitHandlerNodeId.id)
+            };
+            // Traverse the onExit tree starting from the onExit node itself
+            traverse(onExitRoot);
         }
         return {nodes, edges};
     }

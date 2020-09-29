@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 
@@ -17,6 +18,11 @@ type HTTPArtifactDriver struct{}
 func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Download the file to a local file path
 	args := []string{"-fsS", "-L", "-o", path, inputArtifact.HTTP.URL}
+	headers := inputArtifact.HTTP.Headers
+	for _, v := range headers {
+		// Build curl -H string for each key-value header parameter
+		args = append(args, "-H", fmt.Sprintf("%s: %s", v.Name, v.Value))
+	}
 	log.Info(strings.Join(append([]string{"curl"}, args...), " "))
 	cmd := exec.Command("curl", args...)
 	output, err := cmd.CombinedOutput()

@@ -14,6 +14,8 @@ google_analytics:
 markdown_extensions:
   - codehilite
   - admonition
+  - pymdownx.superfences
+  - pymdownx.details
   - toc:
       permalink: true
 nav:
