@@ -173,19 +173,19 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
     }
 
     private get archivedWorkflowsUrl() {
-        return archivedWorkflowsUrl + '/' + this.state.namespace || '';
+        return archivedWorkflowsUrl + '/' + (this.state.namespace || '');
     }
 
     private get cronWorkflowsUrl() {
-        return cronWorkflowsUrl + '/' + this.state.namespace || '';
+        return cronWorkflowsUrl + '/' + (this.state.namespace || '');
     }
 
     private get workflowTemplatesUrl() {
-        return workflowTemplatesUrl + '/' + this.state.namespace || '';
+        return workflowTemplatesUrl + '/' + (this.state.namespace || '');
     }
 
     private get workflowsUrl() {
-        return workflowsUrl + '/' + this.state.namespace || '';
+        return workflowsUrl + '/' + (this.state.namespace || '');
     }
 
     public getChildContext() {

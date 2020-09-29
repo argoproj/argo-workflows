@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -404,20 +405,33 @@ func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 }
 
 // RunCommand is a convenience function to run/log a command and log the stderr upon failure
-func RunCommand(name string, arg ...string) error {
+func RunCommand(name string, arg ...string) ([]byte, error) {
 	cmd := exec.Command(name, arg...)
 	cmdStr := strings.Join(cmd.Args, " ")
 	log.Info(cmdStr)
-	_, err := cmd.Output()
+	out, err := cmd.Output()
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
 			errOutput := string(exErr.Stderr)
 			log.Errorf("`%s` failed: %s", cmdStr, errOutput)
-			return errors.InternalError(strings.TrimSpace(errOutput))
+			return nil, errors.InternalError(strings.TrimSpace(errOutput))
 		}
-		return errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
-	return nil
+	return out, nil
+}
+
+// RunShellCommand is a convenience function to use RunCommand for shell executions. It's os-specific
+// and runs `cmd` in windows.
+func RunShellCommand(arg ...string) ([]byte, error) {
+	name := "sh"
+	shellFlag := "-c"
+	if runtime.GOOS == "windows" {
+		name = "cmd"
+		shellFlag = "/c"
+	}
+	arg = append([]string{shellFlag}, arg...)
+	return RunCommand(name, arg...)
 }
 
 const patchRetries = 5

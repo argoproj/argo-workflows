@@ -58,18 +58,21 @@ func NewCommand() *cobra.Command {
 
 	client.AddKubectlFlagsToCmd(command)
 	client.AddAPIClientFlagsToCmd(command)
-
 	// global log level
 	var logLevel string
+	var glogLevel int
 	var verbose bool
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {
 			logLevel = "debug"
+			glogLevel = 6
 		}
 		cli.SetLogLevel(logLevel)
+		cli.SetGLogLevel(glogLevel)
 		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 
 	return command

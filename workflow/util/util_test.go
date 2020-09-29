@@ -14,6 +14,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/common"
@@ -721,7 +722,7 @@ func TestDeepDeleteNodes(t *testing.T) {
 
 	wf, err := wfIf.Create(origWf)
 	if assert.NoError(t, err) {
-		newWf, err := RetryWorkflow(kubeClient, hydratorfake.Noop, wfIf, wf, false, "")
+		newWf, err := RetryWorkflow(kubeClient, hydratorfake.Noop, wfIf, wf.Name, false, "")
 		assert.NoError(t, err)
 		newWfBytes, err := yaml.Marshal(newWf)
 		assert.NoError(t, err)
@@ -741,10 +742,19 @@ func TestRetryWorkflow(t *testing.T) {
 	}
 	_, err := wfClient.Create(wf)
 	assert.NoError(t, err)
-	wf, err = RetryWorkflow(kubeClient, hydratorfake.Always, wfClient, wf, false, "")
+	wf, err = RetryWorkflow(kubeClient, hydratorfake.Always, wfClient, wf.Name, false, "")
 	if assert.NoError(t, err) {
 		assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
 		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
 		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
+	}
+}
+
+func TestToUnstructured(t *testing.T) {
+	un, err := ToUnstructured(&wfv1.Workflow{})
+	if assert.NoError(t, err) {
+		gv := un.GetObjectKind().GroupVersionKind()
+		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
+		assert.Equal(t, workflow.Version, gv.Version)
 	}
 }

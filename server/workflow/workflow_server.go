@@ -183,7 +183,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			log.Debug("Received workflow event")
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if !ok {
-				// object is probably probably metav1.Status, `FromObject` can deal with anything
+				// object is probably metav1.Status, `FromObject` can deal with anything
 				return apierr.FromObject(event.Object)
 			}
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
@@ -282,7 +282,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	wf, err = util.RetryWorkflow(kubeClient, s.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, req.RestartSuccessful, req.NodeFieldSelector)
+	wf, err = util.RetryWorkflow(kubeClient, s.hydrator, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf.Name, req.RestartSuccessful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}
