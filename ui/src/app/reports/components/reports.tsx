@@ -1,4 +1,4 @@
-import {Checkbox, Page} from 'argo-ui/src/index';
+import {Checkbox, DataLoader, Page, Select} from 'argo-ui/src/index';
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
@@ -32,17 +32,33 @@ interface State {
 
 const limit = 100;
 
+const labelKeyPhase = 'workflows.argoproj.io/phase';
+const labelKeyWorkflowTemplate = 'workflows.argoproj.io/workflow-template';
+const labelKeyCronWorkflow = 'workflows.argoproj.io/cron-workflow';
+
 export class Reports extends BasePage<RouteComponentProps<any>, State> {
     private get phase() {
-        return (this.state.labels.find(label => label.startsWith('workflows.argoproj.io/phase')) || '').replace(/workflows.argoproj.io\/phase=/, '');
+        return this.getLabel(labelKeyPhase);
     }
 
-    private set phase(phase: string) {
-        this.fetchReport(
-            this.state.namespace,
-            this.state.labels.filter(label => !label.startsWith('workflows.argoproj.io/phase')).concat('workflows.argoproj.io/phase=' + phase),
-            this.state.archivedWorkflows
-        );
+    private set phase(value: string) {
+        this.setLabel(labelKeyPhase, value);
+    }
+
+    private get workflowTemplate() {
+        return this.getLabel(labelKeyWorkflowTemplate);
+    }
+
+    private set workflowTemplate(value: string) {
+        this.setLabel(labelKeyWorkflowTemplate, value);
+    }
+
+    private get cronWorkflow() {
+        return this.getLabel(labelKeyCronWorkflow);
+    }
+
+    private set cronWorkflow(value: string) {
+        this.setLabel(labelKeyCronWorkflow, value);
     }
 
     private get canRunReport() {
@@ -75,6 +91,14 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
+    private getLabel(name: string) {
+        return (this.state.labels.find(label => label.startsWith(name)) || '').replace(name, '');
+    }
+
+    private setLabel(name: string, value: string) {
+        this.fetchReport(this.state.namespace, this.state.labels.filter(label => !label.startsWith(name)).concat(name + '=' + value), this.state.archivedWorkflows);
+    }
+
     private fetchReport(namespace: string, labels: string[], archivedWorkflows: boolean) {
         this.setState({charts: null, namespace, labels, archivedWorkflows}, () => {
             if (!this.canRunReport) {
@@ -97,7 +121,13 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private saveHistory() {
-        this.url = uiUrl('reports/' + this.state.namespace + '?archivedWorkflows=' + this.state.archivedWorkflows + '&labels=' + this.state.labels.join(','));
+        this.url = uiUrl(
+            'reports/' +
+                this.state.namespace +
+                '?labels=' +
+                this.state.labels.join(',') +
+                (this.state.archivedWorkflows ? '&archivedWorkflows=' + this.state.archivedWorkflows : '')
+        );
         Utils.setCurrentNamespace(this.state.namespace);
     }
 
@@ -226,49 +256,50 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private renderFilters() {
         return (
-            <div className='row' style={{marginTop: 25, marginBottom: 25}}>
-                <div className='columns small-12'>
-                    <div className='white-box'>
-                        <div className='row'>
-                            <div className='columns small-4' key='archived-workflows'>
-                                <label>
-                                    <Checkbox
-                                        checked={this.state.archivedWorkflows}
-                                        onChange={checked => {
-                                            this.fetchReport(this.state.namespace, this.state.labels, checked);
-                                        }}
-                                    />{' '}
-                                    Archived Workflows
-                                </label>
-                            </div>
-                            <div className='columns small-8' key='namespace'>
-                                <InputFilter
-                                    name='namespace'
-                                    value={this.state.namespace}
-                                    placeholder='Namespace'
-                                    onChange={namespace => this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows)}
-                                />
-                            </div>
-                        </div>
-                        <div className='row'>
-                            <div className='columns small-8' key='labels'>
-                                <TagsInput
-                                    placeholder='Labels'
-                                    tags={this.state.labels}
-                                    onChange={labels => this.fetchReport(this.state.namespace, labels, this.state.archivedWorkflows)}
-                                />
-                            </div>
-                            <div className='columns small-4' key='phases'>
-                                <p>
-                                    {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
-                                        <label key={phase} style={{marginRight: 10}}>
-                                            <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
-                                            {phase}
-                                        </label>
-                                    ))}
-                                </p>
-                            </div>
-                        </div>
+            <div style={{margin: 25}} className='wf-filters-container'>
+                <div className='row'>
+                    <div className='columns small-4 xlarge-12'>
+                        <p className='wf-filters-container__title'>Archived Workflows</p>
+
+                        <Checkbox checked={this.state.archivedWorkflows} onChange={checked => this.fetchReport(this.state.namespace, this.state.labels, checked)} />
+                    </div>
+                    <div className='columns small-4 xlarge-12'>
+                        <p className='wf-filters-container__title'>Namespace</p>
+                        <InputFilter
+                            name='namespace'
+                            value={this.state.namespace}
+                            placeholder='Namespace'
+                            onChange={namespace => this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows)}
+                        />
+                    </div>
+                    <div className='columns small-4 xlarge-12'>
+                        <p className='wf-filters-container__title'>Labels</p>
+                        <TagsInput
+                            placeholder='Labels'
+                            tags={this.state.labels}
+                            onChange={labels => this.fetchReport(this.state.namespace, labels, this.state.archivedWorkflows)}
+                        />
+                    </div>
+                    <div className='columns small-4 xlarge-12'>
+                        <p className='wf-filters-container__title'>Workflow Template</p>
+                        <DataLoader load={() => services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}>
+                            {list => <Select options={list} value={this.workflowTemplate} onChange={x => (this.workflowTemplate = x.value)} />}
+                        </DataLoader>
+                    </div>
+                    <div className='columns small-4 xlarge-12'>
+                        <p className='wf-filters-container__title'>Cron Workflow</p>
+                        <DataLoader load={() => services.cronWorkflows.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}>
+                            {list => <Select options={list} value={this.cronWorkflow} onChange={x => (this.cronWorkflow = x.value)} />}
+                        </DataLoader>
+                    </div>
+                    <div className='columns small-43 xlarge-12'>
+                        <p className='wf-filters-container__title'>Phase</p>
+                        {[NODE_PHASE.SUCCEEDED, NODE_PHASE.ERROR, NODE_PHASE.FAILED].map(phase => (
+                            <label key={phase} style={{marginRight: 10}}>
+                                <input type='radio' checked={phase === this.phase} onChange={() => (this.phase = phase)} style={{marginRight: 5}} />
+                                {phase}
+                            </label>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -322,7 +353,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 <div className='row' key='info'>
                     <div className='columns small-12'>
                         <small>
-                            <i className='fa fa-info-circle' /> Showing {this.state.charts[0].data.labels.length} workflows.
+                            <i className='fa fa-info-circle' /> {this.state.charts[0].data.labels.length} records.
                         </small>
                     </div>
                 </div>
