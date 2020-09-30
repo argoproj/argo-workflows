@@ -66,6 +66,15 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
+func (t NodeType) IsLeaf() bool {
+	switch t {
+	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
+		return true
+	default:
+		return false
+	}
+}
+
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -1061,6 +1070,9 @@ type WorkflowStatus struct {
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
@@ -1370,6 +1382,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
@@ -1460,6 +1475,13 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
+func (ws *WorkflowStatus) GetDuration() time.Duration {
+	if ws.FinishedAt.IsZero() {
+		return 0
+	}
+	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
+}
+
 // Pending returns whether or not the node is in pending state
 func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
@@ -1526,6 +1548,17 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+func (n NodeStatus) GetDuration() time.Duration {
+	if n.FinishedAt.IsZero() {
+		return 0
+	}
+	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
+func (in *NodeStatus) IsLeaf() bool {
+	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
