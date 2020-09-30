@@ -98,7 +98,7 @@ type WorkflowController struct {
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
-	cacheFactory          controllercache.CacheFactory
+	cacheFactory          controllercache.Factory
 }
 
 const (
@@ -493,6 +493,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
+	// this will ensure we process every incomplete workflow once every 20m
+	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
+
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	err = wfc.hydrator.Hydrate(woc.wf)
@@ -805,7 +808,9 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {

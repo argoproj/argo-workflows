@@ -34,7 +34,9 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
-func (s *FunctionalSuite) TestDeletingWorkflowPod() {
+// when you delete a pending pod,
+// then the pod is re- created automatically
+func (s *FunctionalSuite) TestDeletingPendingPod() {
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
@@ -44,8 +46,45 @@ func (s *FunctionalSuite) TestDeletingWorkflowPod() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Len(t, status.Nodes, 1)
+		})
+}
+
+// where you delete a running pod,
+// then the workflow is errored
+func (s *FunctionalSuite) TestDeletingRunningPod() {
+	s.Given().
+		Workflow("@testdata/sleepy-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
-			assert.Contains(t, status.Message, "pod deleted")
+			assert.Len(t, status.Nodes, 1)
+			if assert.Contains(t, status.Nodes, "sleepy") {
+				assert.Equal(t, "pod deleted during operation", status.Nodes["sleepy"].Message)
+			}
+		})
+}
+
+// where you delete a running pod, and you have retry on error,
+// then the node is retried
+func (s *FunctionalSuite) TestDeletingRunningPodWithOrErrorRetryPolicy() {
+	s.Given().
+		Workflow("@testdata/sleepy-retry-on-error-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeRunning, "to be running").
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.NoError).
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Len(t, status.Nodes, 2)
 		})
 }
 
@@ -345,7 +384,6 @@ spec:
   entrypoint: dag
   templates:
   - name: cowsay
-    resubmitPendingPods: true
     container:
       image: argoproj/argosay:v2
       args: ["echo", "a"]
@@ -391,7 +429,6 @@ spec:
   entrypoint: dag
   templates:
   - name: cowsay
-    resubmitPendingPods: true
     retryStrategy:
       limit: 1
     container:
@@ -854,7 +891,6 @@ spec:
           parameters: [{name: message, value: "15s"}]
 
   - name: whalesay
-    resubmitPendingPods: true
     resources:
       limits:
         memory: 145M

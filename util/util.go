@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -114,4 +115,14 @@ func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
 		return strings.TrimSpace(suffix)
 	}
 	return ""
+}
+
+// getDeletePropagation return the default or configured DeletePropagation policy
+func GetDeletePropagation() *metav1.DeletionPropagation {
+	propagationPolicy := metav1.DeletePropagationBackground
+	envVal, ok := os.LookupEnv("WF_DEL_PROPAGATION_POLICY")
+	if ok && envVal != "" {
+		propagationPolicy = metav1.DeletionPropagation(envVal)
+	}
+	return &propagationPolicy
 }

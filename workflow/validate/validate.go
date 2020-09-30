@@ -327,11 +327,6 @@ Templates should be referenced from within a "steps" or a "dag" template. Here i
           template: %s`
 
 		out = fmt.Sprintf(out, tmpl.Name, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
-		if tmpl.TemplateRef.RuntimeResolution {
-			out += `
-          runtimeResolution: %t`
-			out = fmt.Sprintf(out, tmpl.TemplateRef.RuntimeResolution)
-		}
 	} else if tmpl.Template != "" {
 		out += `
         template: %s`
@@ -476,8 +471,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.New(errors.CodeBadRequest, "template name is required")
 		}
 		if tmplRef.RuntimeResolution {
-			// Let's see if the template exists at runtime.
-			return nil, nil
+			logrus.Warnf("the 'runtimeResolution' field is deprecated and ignored")
 		}
 	} else if tmplName != "" {
 		_, err := tmplCtx.GetTemplateByName(tmplName)
