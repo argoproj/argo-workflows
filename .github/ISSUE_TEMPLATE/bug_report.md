@@ -1,6 +1,6 @@
 ---
 name: Reproducible bug report 
-about: Create a reproducible bug report
+about: Create a reproducible bug report. Not for support requests.
 labels: 'bug'
 ---
 ## Summary 
