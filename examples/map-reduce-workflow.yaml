@@ -1,0 +1,138 @@
+# This workflow demonstrates a basic map-reduce.
+# This requries you have a artifact repository configured.
+#
+# Notes:
+# - You'll need to have an user namespaced artifact repository set-up to save intermediate results for this workflow.
+# - Only a single reducer.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: map-reduce-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: num_parts
+        value: "1"
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: split
+            template: split
+            arguments:
+              parameters:
+                - name: num_parts
+                  value: "{{workflow.parameters.num_parts}}"
+          - name: map
+            template: map
+            arguments:
+              parameters:
+                - name: partId
+                  value: '{{item}}'
+              artifacts:
+                - name: parts
+                  from: '{{tasks.split.outputs.artifacts.parts}}'
+            dependencies:
+              - split
+            withParam: '{{tasks.split.outputs.result}}'
+          - name: reduce
+            template: reduce
+            dependencies:
+              - map
+    # The `split` task creates a number of "parts". Each part has a unique ID (e.g. part-0, part-1).
+    # This task writes the part IDs to stdout (so that the `map` task can be expanded to have one task per part).
+    # And, it writes one "part file" for each of pieces of processing that needs doing, into to single directory
+    # which is then saved a output artifact.
+    - name: split
+      inputs:
+        parameters:
+          - name: num_parts
+      script:
+        image: 'docker/whalesay:latest'
+        command:
+          - bash
+          - -eu
+        source: |
+          mkdir -p /tmp/parts
+          echo '['
+          for i in $(seq 1 {{inputs.parameters.num_parts}}); do
+            if [ $i -gt 1 ]; then echo , ; fi
+            echo "  \"part-$i\""
+            echo "foo=$i" > /tmp/parts/part-$i
+          done
+          echo ']'
+      outputs:
+        artifacts:
+          - name: parts
+            path: /tmp/parts
+    # One `map` per part ID is started. Finds its own "part file" under `/tmp/parts/${partId}`.
+    # Each `map` task has an output artifact saved with a unique name for the part into to a common "results directory".
+    - name: map
+      inputs:
+        parameters:
+          - name: partId
+        artifacts:
+          - name: parts
+            path: /tmp/parts
+      script:
+        image: 'docker/whalesay:latest'
+        command:
+          - bash
+          - -eu
+        source: |
+          source /tmp/parts/{{inputs.parameters.partId}}
+          mkdir -p /tmp/results
+          # map `foo` to `2 + foo`
+          expr 2 + $foo > /tmp/results/{{inputs.parameters.partId}}
+      outputs:
+        artifacts:
+          - name: result
+            path: /tmp/results/{{inputs.parameters.partId}}
+            archive:
+              none: { }
+            s3:
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+              key: "{{workflow.name}}/results/{{inputs.parameters.partId}}"
+    # The `reduce` task takes the "results directory" and returns a single result.
+    - name: reduce
+      inputs:
+        artifacts:
+          - name: result
+            path: /tmp/results
+            s3:
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+              key: "{{workflow.name}}/results"
+      script:
+        image: 'docker/whalesay:latest'
+        command:
+          - bash
+          - -eu
+        source: |
+          final_result=0
+          for result in $(find /tmp/results -type f -exec cat {} ';'); do
+            final_result=$(expr $final_result + $result )
+          done
+          echo $final_result > /tmp/final_result
+      outputs:
+        parameters:
+          - name: final_result
+            globalName: final_result
+            valueFrom:
+              path: /tmp/final_result
