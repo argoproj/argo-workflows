@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -55,15 +54,7 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
-func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	dclient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		panic(err)
-	}
-	return NewWorkflowInformerFromDynamic(dclient, ns, resyncPeriod, tweakListOptions)
-}
-
-func NewWorkflowInformerFromDynamic(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
@@ -74,7 +65,7 @@ func NewWorkflowInformerFromDynamic(dclient dynamic.Interface, ns string, resync
 		dclient,
 		ns,
 		resyncPeriod,
-		cache.Indexers{},
+		indexers,
 		tweakListOptions,
 	)
 	return informer

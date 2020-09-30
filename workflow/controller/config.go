@@ -74,6 +74,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 		log.Info("Persistence configuration disabled")
 	}
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
+	wfc.updateEstimatorFactory()
 	return nil
 }
 
