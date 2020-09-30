@@ -1128,8 +1128,6 @@ metadata:
     argo-e2e: true
     foo: 1
 spec:
-  ttlStrategy:
-    secondsAfterCompletion: 0
   entrypoint: run-archie
   templates:
     - name: run-archie
