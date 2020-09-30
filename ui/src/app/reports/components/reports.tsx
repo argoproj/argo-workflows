@@ -95,7 +95,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private fetchReport(namespace: string, labels: string[], archivedWorkflows: boolean) {
         if (namespace === '' || labels.length === 0) {
-            this.setState({namespace, labels, archivedWorkflows, charts:null});
+            this.setState({namespace, labels, archivedWorkflows, charts: null});
             return;
         }
         (archivedWorkflows
