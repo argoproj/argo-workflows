@@ -16,6 +16,11 @@ import (
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {
+	if len(workflows) == 0 {
+		_, _ = fmt.Fprintln(out, "No workflows found")
+		return nil
+	}
+
 	switch opts.Output {
 	case "", "wide":
 		printTable(workflows, out, opts)
