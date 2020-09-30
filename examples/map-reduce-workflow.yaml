@@ -13,7 +13,7 @@ spec:
   arguments:
     parameters:
       - name: num_parts
-        value: "1"
+        value: "2"
   templates:
     - name: main
       dag:
@@ -49,19 +49,19 @@ spec:
         parameters:
           - name: num_parts
       script:
-        image: 'docker/whalesay:latest'
+        image: python:alpine3.6
         command:
-          - bash
-          - -eu
+          - python
         source: |
-          mkdir -p /tmp/parts
-          echo '['
-          for i in $(seq 1 {{inputs.parameters.num_parts}}); do
-            if [ $i -gt 1 ]; then echo , ; fi
-            echo "  \"part-$i\""
-            echo "foo=$i" > /tmp/parts/part-$i
-          done
-          echo ']'
+          import json
+          import os
+          import sys
+          os.mkdir("/tmp/parts")
+          partIds = list(map(lambda x: "part-" + str(x), range({{inputs.parameters.num_parts}})))
+          for i, partId in enumerate(partIds, start=1):
+            with open("/tmp/parts/" + partId + ".json", "w") as out:
+              json.dump({"foo": i}, out)
+          json.dump(partIds, sys.stdout)
       outputs:
         artifacts:
           - name: parts
@@ -76,19 +76,23 @@ spec:
           - name: parts
             path: /tmp/parts
       script:
-        image: 'docker/whalesay:latest'
+        image: python:alpine3.6
         command:
-          - bash
-          - -eu
+          - python
         source: |
-          source /tmp/parts/{{inputs.parameters.partId}}
-          mkdir -p /tmp/results
-          # map `foo` to `2 + foo`
-          expr 2 + $foo > /tmp/results/{{inputs.parameters.partId}}
+          import json
+          import os
+          import sys
+          partId = "{{inputs.parameters.partId}}"
+          os.mkdir("/tmp/results")
+          with open("/tmp/parts/" + partId + ".json") as f:
+            part = json.load(f)
+            with open("/tmp/results/" + partId + ".json", "w") as out:
+              json.dump({"bar": part["foo"] * 2}, out)
       outputs:
         artifacts:
           - name: result
-            path: /tmp/results/{{inputs.parameters.partId}}
+            path: /tmp/results/{{inputs.parameters.partId}}.json
             archive:
               none: { }
             s3:
@@ -101,7 +105,7 @@ spec:
               secretKeySecret:
                 name: my-minio-cred
                 key: secretkey
-              key: "{{workflow.name}}/results/{{inputs.parameters.partId}}"
+              key: "{{workflow.name}}/results/{{inputs.parameters.partId}}.json"
     # The `reduce` task takes the "results directory" and returns a single result.
     - name: reduce
       inputs:
@@ -120,19 +124,23 @@ spec:
                 key: secretkey
               key: "{{workflow.name}}/results"
       script:
-        image: 'docker/whalesay:latest'
+        image: python:alpine3.6
         command:
-          - bash
-          - -eu
+          - python
         source: |
-          final_result=0
-          for result in $(find /tmp/results -type f -exec cat {} ';'); do
-            final_result=$(expr $final_result + $result )
-          done
-          echo $final_result > /tmp/final_result
+          import json
+          import os
+          import sys
+          total = 0
+          for f in list(map(lambda x: open("/tmp/results/" + x), os.listdir("/tmp/results"))):
+            result = json.load(f)
+            total = total + result["bar"]
+          with open("/tmp/total", "w") as f:
+            f.write(str(total))
+            f.close()
       outputs:
         parameters:
-          - name: final_result
-            globalName: final_result
+          - name: total
+            globalName: total
             valueFrom:
-              path: /tmp/final_result
+              path: /tmp/total
