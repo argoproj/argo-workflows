@@ -1,6 +1,6 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Reproducible bug report 
+about: Create a reproducible bug report. Not for support requests.
 labels: 'bug'
 ---
 ## Summary 
@@ -9,10 +9,12 @@ What happened/what you expected to happen?
 
 ## Diagnostics
 
-What version of Argo Workflows are you running?
+What Kubernetes provider are you using? 
+
+What version of Argo Workflows are you running? 
 
 ```yaml
-Paste the workflow here, including status:
+Paste a workflow that reproduces the bug, including status:
 kubectl get wf -o yaml ${workflow} 
 ```
 
