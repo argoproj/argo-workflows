@@ -174,7 +174,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
