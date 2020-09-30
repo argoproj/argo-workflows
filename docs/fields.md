@@ -152,7 +152,7 @@ Workflow is the definition of a workflow resource
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -487,7 +487,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -836,7 +836,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -1145,7 +1145,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -1404,7 +1404,7 @@ Arguments to a template
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -1746,7 +1746,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2045,7 +2045,7 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2147,7 +2147,7 @@ Artifact indicates an artifact to place at a specified path
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -2262,7 +2262,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2478,7 +2478,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -2632,7 +2632,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2863,7 +2863,7 @@ Pod metdata
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -3056,7 +3056,7 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
@@ -3385,7 +3385,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
@@ -3602,7 +3602,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -3747,7 +3747,7 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
@@ -3841,6 +3841,8 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`parallelism-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-limit.yaml)
 
 - [`parallelism-template-limit.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-template-limit.yaml)
@@ -3911,7 +3913,7 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
@@ -4125,7 +4127,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -5307,7 +5309,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -5855,7 +5857,7 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -6326,7 +6328,7 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
-- [`map-reduce-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce-workflow.yaml)
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
