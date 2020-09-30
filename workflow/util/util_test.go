@@ -755,6 +755,7 @@ func TestToUnstructured(t *testing.T) {
 	if assert.NoError(t, err) {
 		gv := un.GetObjectKind().GroupVersionKind()
 		assert.Equal(t, workflow.WorkflowKind, gv.Kind)
+		assert.Equal(t, workflow.Group, gv.Group)
 		assert.Equal(t, workflow.Version, gv.Version)
 	}
 }
