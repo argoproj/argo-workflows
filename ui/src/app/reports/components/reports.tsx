@@ -9,7 +9,6 @@ import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {InputFilter} from '../../shared/components/input-filter';
-import {Loading} from '../../shared/components/loading';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
@@ -31,7 +30,6 @@ interface State {
 }
 
 const limit = 100;
-
 const labelKeyPhase = 'workflows.argoproj.io/phase';
 const labelKeyWorkflowTemplate = 'workflows.argoproj.io/workflow-template';
 const labelKeyCronWorkflow = 'workflows.argoproj.io/cron-workflow';
@@ -61,10 +59,6 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         this.setLabel(labelKeyCronWorkflow, value);
     }
 
-    private get canRunReport() {
-        return this.state.namespace !== '' && this.state.labels.length > 0;
-    }
-
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {
@@ -82,7 +76,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         return (
             <Consumer>
                 {ctx => (
-                    <Page title='Reports' toolbar={{breadcrumbs: [{title: 'Reports', path: uiUrl('/reports')}]}}>
+                    <Page title='Reports' toolbar={{breadcrumbs: [{title: 'Reports', path: uiUrl('/reports/' + this.state.namespace)}]}}>
                         {this.renderFilters()}
                         {this.renderReport(ctx)}
                     </Page>
@@ -92,7 +86,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private getLabel(name: string) {
-        return (this.state.labels.find(label => label.startsWith(name)) || '').replace(name, '');
+        return (this.state.labels.find(label => label.startsWith(name)) || '').replace(name + '=', '');
     }
 
     private setLabel(name: string, value: string) {
@@ -100,24 +94,23 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private fetchReport(namespace: string, labels: string[], archivedWorkflows: boolean) {
-        this.setState({charts: null, namespace, labels, archivedWorkflows}, () => {
-            if (!this.canRunReport) {
-                return;
-            }
-            (archivedWorkflows
-                ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit})
-                : services.workflows.list(namespace, [], labels, {limit}, [
-                      'items.metadata.name',
-                      'items.status.phase',
-                      'items.status.startedAt',
-                      'items.status.finishedAt',
-                      'items.status.resourcesDuration'
-                  ])
-            )
-                .then(list => this.getExtractDatasets(list.items || []))
-                .then(charts => this.setState({charts, error: null}, () => this.saveHistory()))
-                .catch(error => this.setState({error}));
-        });
+        if (namespace === '' || labels.length === 0) {
+            this.setState({namespace, labels, archivedWorkflows, charts:null});
+            return;
+        }
+        (archivedWorkflows
+            ? services.archivedWorkflows.list(namespace, [], labels, null, null, {limit})
+            : services.workflows.list(namespace, [], labels, {limit}, [
+                  'items.metadata.name',
+                  'items.status.phase',
+                  'items.status.startedAt',
+                  'items.status.finishedAt',
+                  'items.status.resourcesDuration'
+              ])
+        )
+            .then(list => this.getExtractDatasets(list.items || []))
+            .then(charts => this.setState({error: null, charts, namespace, labels, archivedWorkflows}, this.saveHistory))
+            .catch(error => this.setState({error}));
     }
 
     private saveHistory() {
@@ -234,7 +227,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 options: {
                     title: {
                         display: true,
-                        text: 'Resources (Not available for archived workflows)'
+                        text: 'Resources (not available for archived workflows)'
                     },
                     scales: {
                         xAxes: [{}],
@@ -260,7 +253,6 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                 <div className='row'>
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Archived Workflows</p>
-
                         <Checkbox checked={this.state.archivedWorkflows} onChange={checked => this.fetchReport(this.state.namespace, this.state.labels, checked)} />
                     </div>
                     <div className='columns small-4 xlarge-12'>
@@ -307,13 +299,16 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private renderReport(ctx: ContextApis) {
-        if (!this.canRunReport) {
+        if (this.state.error) {
+            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
+        }
+        if (!this.state.charts) {
             return (
                 <ZeroState title='Workflow Report'>
                     <p>
                         Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
                         <b>cron workflows</b>, your workflows will be automatically labelled. You'll probably need to enable the{' '}
-                        <a href='https://argoproj.github.io/argo/workflow-archive/'>workflow archive</a> to get long term data. Only the 100 most recent workflows are shown.
+                        <a href='https://argoproj.github.io/argo/workflow-archive/'>workflow archive</a> to get long term data. Only the {limit} most recent workflows are shown.
                     </p>
                     <p>Select a namespace and at least one label to get a report.</p>
                     <p>
@@ -321,12 +316,6 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     </p>
                 </ZeroState>
             );
-        }
-        if (this.state.error) {
-            return <ErrorNotice error={this.state.error} style={{margin: 20}} />;
-        }
-        if (!this.state.charts) {
-            return <Loading />;
         }
         return (
             <>
