@@ -2083,6 +2083,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
+					"estimatedDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EstimatedDuration in seconds.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"resourcesDuration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
@@ -3757,7 +3764,7 @@ func schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref common.ReferenceCallback)
 					},
 					"runtimeResolution": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.",
+							Description: "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -4732,6 +4739,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "Time at which this workflow completed",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"estimatedDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EstimatedDuration in seconds.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"message": {

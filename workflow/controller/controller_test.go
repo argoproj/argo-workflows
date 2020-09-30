@@ -31,6 +31,7 @@ import (
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -153,6 +154,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
+		estimatorFactory:     estimation.DummyEstimatorFactory,
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
@@ -265,10 +267,10 @@ func expectWorkflow(controller *WorkflowController, name string, test func(wf *w
 
 type with func(pod *apiv1.Pod)
 
-func withOutputs(outputs string) with {
-	return func(pod *apiv1.Pod) {
-		pod.GetAnnotations()[common.AnnotationKeyOutputs] = outputs
-	}
+func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
+
+func withAnnotation(key, val string) with {
+	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
