@@ -145,8 +145,7 @@ func (woc *cronWfOperationCtx) persistUpdate() {
 
 func (woc *cronWfOperationCtx) reapplyUpdate() (*v1alpha1.CronWorkflow, error) {
 	if woc.origCronWf.ResourceVersion != woc.cronWf.ResourceVersion {
-		woc.log.Error("cannot update cron workflow with mismatched resource versions")
-		return
+		return nil, fmt.Errorf("cannot re-apply cron workflow update with mismatched resource versions")
 	}
 	orig, err := json.Marshal(woc.origCronWf)
 	if err != nil {
