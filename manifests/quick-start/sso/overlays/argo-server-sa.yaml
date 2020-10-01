@@ -3,17 +3,5 @@ kind: ServiceAccount
 metadata:
   name: argo-server
   annotations:
-    # The rule is an expression used to determine if this service account should be used. 
-    # * `groups` - an array of the OIDC groups
-    # * `iss` - the issuer
-    # * `sub` - the subject (typically the username)
-    # Must evaluate to a boolean. 
-    # If you want an account to be the default to use, this rule can be "true".
-    # Details of the expression language are available in
-    # https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md.
     workflows.argoproj.io/rbac-rule: "'authors' in groups"
-    # The precedence is used to determine which service account to use whe
-    # Precedence is an integer. It may be negative. If omitted, it defaults to "0".
-    # Numerically higher values have higher precedence (not lower, which maybe counter-intuitive to you).
-    # If two rules match and have the same predence, then which one used will be arbitrary.
     workflows.argoproj.io/rbac-rule-precedence: "1"

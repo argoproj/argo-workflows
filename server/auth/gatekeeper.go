@@ -42,22 +42,25 @@ type Gatekeeper interface {
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
 
+type ClientForAuthorization func(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error)
+
 type gatekeeper struct {
-	Modes Modes
+	Modes                  Modes
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 	ssoIf      sso.Interface
+	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
 	namespace string
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, namespace string) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf, namespace}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf, clientForAuthorization, namespace}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -179,7 +182,7 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims) (versioned.Interfac
 		i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
 		return i
 	}
-	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[j]) > precedence(serviceAccounts[i]) })
+	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[i]) > precedence(serviceAccounts[j]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
 		data, err := json.Marshal(claims)
@@ -210,6 +213,7 @@ func (s *gatekeeper) rbacAuthorization(claims *types.Claims) (versioned.Interfac
 		if err != nil {
 			return nil, nil, err
 		}
+		log.WithFields(log.Fields{"serviceAccount": serviceAccount.Name, "subject": claims.Subject}).Info("selected SSO RBAC service account for user")
 		return wfClient, kubeClient, nil
 	}
 	return nil, nil, fmt.Errorf("no service account rule matches")
@@ -230,7 +234,7 @@ func (s *gatekeeper) authorizationForServiceAccount(serviceAccountName string) (
 	return "Bearer " + string(secret.Data["token"]), nil
 }
 
-func (s *gatekeeper) clientForAuthorization(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error) {
+func DefaultClientForAuthorization(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error) {
 	restConfig, err := kubeconfig.GetRestConfig(authorization)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to create REST config: %w", err)

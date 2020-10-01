@@ -48,7 +48,7 @@ type sso struct {
 	baseHRef        string
 	secure          bool
 	privateKey      crypto.PrivateKey
-	encrypter       jose.Encrypter
+	encryptor       jose.Encrypter
 	rbacConfig      *rbac.Config
 }
 
@@ -159,7 +159,7 @@ func newSso(
 		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, nil)
+	encryptor, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
@@ -170,7 +170,7 @@ func newSso(
 		baseHRef:        baseHRef,
 		secure:          secure,
 		privateKey:      privateKey,
-		encrypter:       encrypter,
+		encryptor:       encryptor,
 		rbacConfig:      c.RBAC,
 	}, nil
 }
@@ -229,9 +229,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	// we could filter groups here if we need to reduce JWT size
-	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
-	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
+	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
+	raw, err := jwt.Encrypted(s.encryptor).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)
 	}
