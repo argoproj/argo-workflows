@@ -229,7 +229,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}}
+	// we could filter groups here if we need to reduce JWT size
+	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)

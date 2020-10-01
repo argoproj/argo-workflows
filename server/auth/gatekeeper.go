@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -161,7 +162,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(claimSet *types.Claims) (versioned.Interface, kubernetes.Interface, error) {
+func (s *gatekeeper) rbacAuthorization(claims *types.Claims) (versioned.Interface, kubernetes.Interface, error) {
 	list, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
@@ -181,7 +182,16 @@ func (s *gatekeeper) rbacAuthorization(claimSet *types.Claims) (versioned.Interf
 	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[j]) > precedence(serviceAccounts[i]) })
 	for _, serviceAccount := range serviceAccounts {
 		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
-		result, err := expr.Eval(rule, claimSet)
+		data, err := json.Marshal(claims)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to marshall claims: %w", err)
+		}
+		v := make(map[string]interface{})
+		err = json.Unmarshal(data, &v)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to unmarshall claims: %w", err)
+		}
+		result, err := expr.Eval(rule, v)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to evaluate rule: %w", err)
 		}

@@ -236,8 +236,12 @@ data:
       # be in the form <argo-server-root-url>/oauth2/callback. It must be
       # browser-accessible.
       redirectUrl: https://argo-server/oauth2/callback
-      # RBAC Config. >= v2.11
-      rbac: {}
+      # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
+      scopes:
+       - groups
+      # RBAC Config. >= v2.12
+      rbac:
+        enabled: false
     # workflowRequirements restricts the Workflows that the controller will process.
     # Current options:
     #   referenceOnly: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller
