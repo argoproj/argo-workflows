@@ -660,6 +660,7 @@ WorkflowStatus contains overall status information about a workflow
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
+|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -1971,6 +1972,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`children`|`Array< string >`|Children is a list of child node IDs|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
+|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
@@ -2665,7 +2667,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 ## Memoize
 
-Memoization
+Memoization enables caching for the Outputs of the template
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -2677,8 +2679,9 @@ Memoization
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`cache`|[`Cache`](#cache)|_No description available_|
-|`key`|`string`|_No description available_|
+|`cache`|[`Cache`](#cache)|Cache sets and configures the kind of cache|
+|`key`|`string`|Key is the key to use as the caching key|
+|`maxAge`|`string`|MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.|
 
 ## Metadata
 
@@ -3292,19 +3295,19 @@ TemplateRef is a reference of template resource.
 |:----------:|:----------:|---------------|
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
-|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
+|~`runtimeResolution`~|~`boolean`~|~RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.~ DEPRECATED: This value is not used anymore and is ignored|
 |`template`|`string`|Template is the name of referred template in the resource.|
 
 ## MemoizationStatus
 
-_No description available_
+MemoizationStatus is the status of this memoized node
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`cacheName`|`string`|_No description available_|
-|`hit`|`boolean`|_No description available_|
-|`key`|`string`|_No description available_|
+|`cacheName`|`string`|Cache is the name of the cache that was used|
+|`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
+|`key`|`string`|Key is the name of the key used for this node's cache|
 
 ## MutexStatus
 
@@ -3491,6 +3494,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -3744,7 +3748,7 @@ DAGTask represents a node in the graph during DAG execution
 
 ## Cache
 
-_No description available_
+Cache is the configuration for the type of cache to be used
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3756,7 +3760,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|_No description available_|
+|`configMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMap sets a ConfigMap-based cache|
 
 ## ContinueOn
 
@@ -3893,6 +3897,16 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## Header
+
+Header indicate a key-value request header to be used when fetching artifacts over HTTP
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|Name is the header name|
+|`value`|`string`|Value is the literal value to use for the header|
 
 ## SuppliedValueFrom
 
