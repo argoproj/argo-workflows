@@ -1057,6 +1057,7 @@ Gauge is a Gauge prometheus metric
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| groups | [ string ] |  | No |
 | issuer | string |  | No |
 | subject | string |  | No |
 

@@ -4,19 +4,26 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
 
+	"github.com/antonmedv/expr"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"gopkg.in/square/go-jose.v2/jwt"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type ContextKey string
@@ -40,13 +47,15 @@ type gatekeeper struct {
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 	ssoIf      sso.Interface
+	// The namespace the server is installed in.
+	namespace string
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, namespace string) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf, namespace}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -118,21 +127,13 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !s.Modes[mode] {
-		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "client auth-mode is %v, but that mode is disabled", mode)
 	}
 	switch mode {
 	case Client:
-		restConfig, err := kubeconfig.GetRestConfig(authorization)
+		restConfig, wfClient, kubeClient, err := s.clientForAuthorization(authorization)
 		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
-		}
-		wfClient, err := versioned.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
-		}
-		kubeClient, err := kubernetes.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		claims, _ := sso.ClaimSetFor(restConfig)
 		return wfClient, kubeClient, claims, nil
@@ -144,8 +145,92 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, claims, nil
+		if s.ssoIf.IsRBACEnabled() {
+			v, k, err := s.rbacAuthorization(claims)
+			if err != nil {
+				log.WithError(err).Error("failed to perform RBAC authorization")
+				return nil, nil, nil, status.Error(codes.PermissionDenied, "not allowed")
+			}
+			return v, k, claims, nil
+		} else {
+			return s.wfClient, s.kubeClient, claims, nil
+		}
 	default:
 		panic("this should never happen")
 	}
+}
+
+func (s *gatekeeper) rbacAuthorization(claimSet jwt.Claims) (versioned.Interface, kubernetes.Interface, error) {
+	list, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
+	}
+	var serviceAccounts []corev1.ServiceAccount
+	for _, serviceAccount := range list.Items {
+		_, ok := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
+		if !ok {
+			continue
+		}
+		serviceAccounts = append(serviceAccounts, serviceAccount)
+	}
+	precedence := func(serviceAccount corev1.ServiceAccount) int {
+		i, _ := strconv.Atoi(serviceAccount.Annotations[common.AnnotationKeyRBACRulePrecedence])
+		return i
+	}
+	sort.Slice(serviceAccounts, func(i, j int) bool { return precedence(serviceAccounts[j]) > precedence(serviceAccounts[i]) })
+	for _, serviceAccount := range serviceAccounts {
+		rule := serviceAccount.Annotations[common.AnnotationKeyRBACRule]
+		result, err := expr.Eval(rule, claimSet)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to evaluate rule: %w", err)
+		}
+		allow, ok := result.(bool)
+		if !ok {
+			return nil, nil, fmt.Errorf("failed to evaluate rule: not a boolean")
+		}
+		if !allow {
+			continue
+		}
+		authorization, err := s.authorizationForServiceAccount(serviceAccount.Name)
+		if err != nil {
+			return nil, nil, err
+		}
+		_, wfClient, kubeClient, err := s.clientForAuthorization(authorization)
+		if err != nil {
+			return nil, nil, err
+		}
+		return wfClient, kubeClient, nil
+	}
+	return nil, nil, fmt.Errorf("no service account rule matches")
+}
+
+func (s *gatekeeper) authorizationForServiceAccount(serviceAccountName string) (string, error) {
+	serviceAccount, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get service account: %w", err)
+	}
+	if len(serviceAccount.Secrets) == 0 {
+		return "", fmt.Errorf("expected at least one secret for SSO RBAC service account: %w", err)
+	}
+	secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get service account secret: %w", err)
+	}
+	return "Bearer " + string(secret.Data["token"]), nil
+}
+
+func (s *gatekeeper) clientForAuthorization(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error) {
+	restConfig, err := kubeconfig.GetRestConfig(authorization)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create REST config: %w", err)
+	}
+	wfClient, err := versioned.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failure to create workflow client: %w", err)
+	}
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failure to create kubernetes client: %w", err)
+	}
+	return restConfig, wfClient, kubeClient, nil
 }

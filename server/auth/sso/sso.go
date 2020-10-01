@@ -20,6 +20,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/rbac"
 )
 
 const (
@@ -34,6 +37,7 @@ type Interface interface {
 	Authorize(authorization string) (*jwt.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
+	IsRBACEnabled() bool
 }
 
 var _ Interface = &sso{}
@@ -45,6 +49,11 @@ type sso struct {
 	secure          bool
 	privateKey      crypto.PrivateKey
 	encrypter       jose.Encrypter
+	rbacConfig      *rbac.Config
+}
+
+func (s *sso) IsRBACEnabled() bool {
+	return s.rbacConfig.IsEnabled()
 }
 
 type Config struct {
@@ -52,6 +61,9 @@ type Config struct {
 	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
+	RBAC         *rbac.Config            `json:"rbac,omitempty"`
+	// additional scopes (on top of "openid")
+	Scopes []string `json:"scopes,omitempty"`
 }
 
 // Abstract methods of oidc.Provider that our code uses into an interface. That
@@ -144,7 +156,7 @@ func newSso(
 		ClientSecret: string(clientSecret),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID},
+		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
 	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, nil)
@@ -159,6 +171,7 @@ func newSso(
 		secure:          secure,
 		privateKey:      privateKey,
 		encrypter:       encrypter,
+		rbacConfig: c.RBAC,
 	}, nil
 }
 
