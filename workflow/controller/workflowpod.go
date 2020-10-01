@@ -173,7 +173,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(tmpl),
-			SecurityContext:       &apiv1.PodSecurityContext{RunAsNonRoot: pointer.BoolPtr(true), RunAsUser: pointer.Int64Ptr(8737)},
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},

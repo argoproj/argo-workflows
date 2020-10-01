@@ -995,22 +995,6 @@ func TestTmplLevelHostAliases(t *testing.T) {
 
 }
 
-func TestPodSecurityContext(t *testing.T) {
-	woc := newWoc()
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
-	assert.NoError(t, err)
-	_, err = woc.executeContainer(woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &woc.execWf.Spec.Templates[0], &executeTemplateOpts{})
-	assert.NoError(t, err)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	pod := pods.Items[0]
-	if assert.NotNil(t, pod.Spec.SecurityContext) {
-		assert.Equal(t, pointer.BoolPtr(true), pod.Spec.SecurityContext.RunAsNonRoot)
-		assert.Equal(t, pointer.Int64Ptr(8737), pod.Spec.SecurityContext.RunAsUser)
-	}
-}
-
 // TestWFLevelSecurityContext verifies the ability to carry forward workflow level SecurityContext to Podspec
 func TestWFLevelSecurityContext(t *testing.T) {
 	woc := newWoc()
