@@ -293,13 +293,13 @@ func (woc *cronWfOperationCtx) reconcileDeletedWfs() error {
 		return fmt.Errorf("unable to list workflows: %s", err)
 	}
 
-	currentWfs := make(map[types.UID]bool)
+	currentWfs := make(map[types.UID]*v1alpha1.Workflow)
 	for _, wf := range wfList {
-		currentWfs[wf.UID] = true
+		currentWfs[wf.UID] = wf
 	}
 
 	for _, objectRef := range woc.cronWf.Status.Active {
-		if found := currentWfs[objectRef.UID]; !found {
+		if wf, found := currentWfs[objectRef.UID]; !found || wf.Status.Fulfilled() {
 			woc.removeFromActiveList(objectRef.UID)
 		}
 	}
