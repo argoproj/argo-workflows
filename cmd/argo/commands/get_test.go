@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
@@ -427,13 +428,13 @@ status:
 }
 
 func TestGetCommand(t *testing.T) {
-	getOutput := `Name:                many-items-z26lj
-Namespace:           argo
+	getOutput := `Name:                hello-world
+Namespace:           default
 ServiceAccount:      default
 Status:              Succeeded
 `
 	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(indexTest), &wf)
+	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
 	assert.NoError(t, err)
 	client := clientmocks.Client{}
 	common.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
