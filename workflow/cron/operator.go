@@ -123,6 +123,9 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 func (woc *cronWfOperationCtx) persistUpdate() {
 	if !woc.updated {
 		return
+	} else if woc.origCronWf.ResourceVersion != woc.cronWf.ResourceVersion {
+		woc.log.Error("cannot update cron workflow with mismatched resource versions")
+		return
 	}
 
 	_, err := woc.cronWfIf.Update(woc.cronWf)
@@ -141,6 +144,10 @@ func (woc *cronWfOperationCtx) persistUpdate() {
 }
 
 func (woc *cronWfOperationCtx) reapplyUpdate() (*v1alpha1.CronWorkflow, error) {
+	if woc.origCronWf.ResourceVersion != woc.cronWf.ResourceVersion {
+		woc.log.Error("cannot update cron workflow with mismatched resource versions")
+		return
+	}
 	orig, err := json.Marshal(woc.origCronWf)
 	if err != nil {
 		return nil, err
