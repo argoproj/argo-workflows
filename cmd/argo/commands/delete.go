@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -35,6 +36,10 @@ func NewDeleteCommand() *cobra.Command {
 `,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "") {
+				cmd.HelpFunc()(cmd, args)
+				return cmdcommon.MissingArgumentsError
+			}
 			ctx, apiClient := cmdcommon.CreateNewAPIClientFunc()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows

@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/common"
 	"github.com/argoproj/argo/cmd/argo/commands/test"
@@ -19,6 +18,7 @@ import (
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	testutil "github.com/argoproj/argo/test/util"
 )
 
 var wfWithStatus = `
@@ -174,7 +174,20 @@ func TestStatusToNodeFieldSelector(t *testing.T) {
 	assert.Equal(t, "phase=Running", one)
 }
 
-var indexTest = `apiVersion: argoproj.io/v1alpha1
+func Test_printWorkflowHelper(t *testing.T) {
+	t.Run("EstimatedDuration", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`
+status:
+  estimatedDuration: 1
+  phase: Running
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Regexp(t, `EstimatedDuration: *1 second`, output)
+	})
+	t.Run("IndexOrdering", func(t *testing.T) {
+		var wf wfv1.Workflow
+		testutil.MustUnmarshallYAML(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   creationTimestamp: "2020-06-02T16:04:21Z"
@@ -404,18 +417,13 @@ status:
       type: Pod
   phase: Succeeded
   startedAt: "2020-06-02T16:04:21Z"
-`
-
-func TestIndexOrdering(t *testing.T) {
-	t.Skip()
-	var wf wfv1.Workflow
-	err := yaml.Unmarshal([]byte(indexTest), &wf)
-	if assert.NoError(t, err) {
-		assert.Contains(t, printWorkflowHelper(&wf, getFlags{}), `         
+`, &wf)
+		output := printWorkflowHelper(&wf, getFlags{})
+		assert.Contains(t, output, `
    ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
-   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
+   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s
    ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
-	}
+	})
 }
 
 func TestGetCommand(t *testing.T) {

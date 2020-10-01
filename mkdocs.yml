@@ -14,6 +14,8 @@ google_analytics:
 markdown_extensions:
   - codehilite
   - admonition
+  - pymdownx.superfences
+  - pymdownx.details
   - toc:
       permalink: true
 nav:
@@ -39,6 +41,7 @@ nav:
           - enhanced-depends-logic.md
           - artifact-repository-ref.md
           - resource-duration.md
+          - estimated-duration.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
