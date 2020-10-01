@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"gopkg.in/square/go-jose.v2/jwt"
+	"github.com/argoproj/argo/server/auth/types"
 )
 
 var NullSSO Interface = nullService{}
@@ -15,7 +15,7 @@ func (n nullService) IsRBACEnabled() bool {
 	return false
 }
 
-func (n nullService) Authorize(string) (*jwt.Claims, error) {
+func (n nullService) Authorize(string) (*types.Claims, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

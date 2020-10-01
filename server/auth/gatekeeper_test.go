@@ -2,20 +2,20 @@ package auth
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/square/go-jose.v2/jwt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
-	"gopkg.in/square/go-jose.v2/jwt"
 
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth/sso/mocks"
+	"github.com/argoproj/argo/server/auth/types"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
@@ -63,7 +63,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&jwt.Claims{Subject: "my-sub"}, nil)
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, "my-ns")
 		if assert.NoError(t, err) {
@@ -79,11 +79,11 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	t.Run("SSO+RBAC", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(jws.ClaimSet{"groups": []string{"my-group"}}, nil)
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, "my-ns")
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer id_token:"))
+			_, err := g.Context(x("Bearer v2:"))
 			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
 		}
 	})

@@ -14,14 +14,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"gopkg.in/square/go-jose.v2/jwt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/auth/serviceaccount"
 	"github.com/argoproj/argo/server/auth/sso"
+	"github.com/argoproj/argo/server/auth/types"
 	"github.com/argoproj/argo/util/kubeconfig"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -31,7 +32,7 @@ type ContextKey string
 const (
 	WfKey     ContextKey = "versioned.Interface"
 	KubeKey   ContextKey = "kubernetes.Interface"
-	ClaimsKey ContextKey = "jwt.Claims"
+	ClaimsKey ContextKey = "Claims"
 )
 
 type Gatekeeper interface {
@@ -96,8 +97,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetClaims(ctx context.Context) *jwt.Claims {
-	config, _ := ctx.Value(ClaimsKey).(*jwt.Claims)
+func GetClaims(ctx context.Context) *types.Claims {
+	config, _ := ctx.Value(ClaimsKey).(*types.Claims)
 	return config
 }
 
@@ -119,7 +120,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *jwt.Claims, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
@@ -135,10 +136,10 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		claims, _ := sso.ClaimSetFor(restConfig)
+		claims, _ := serviceaccount.ClaimSetFor(restConfig)
 		return wfClient, kubeClient, claims, nil
 	case Server:
-		claims, _ := sso.ClaimSetFor(s.restConfig)
+		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
 		return s.wfClient, s.kubeClient, claims, nil
 	case SSO:
 		claims, err := s.ssoIf.Authorize(authorization)
@@ -160,7 +161,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	}
 }
 
-func (s *gatekeeper) rbacAuthorization(claimSet jwt.Claims) (versioned.Interface, kubernetes.Interface, error) {
+func (s *gatekeeper) rbacAuthorization(claimSet *types.Claims) (versioned.Interface, kubernetes.Interface, error) {
 	list, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list SSO RBAC service accounts: %w", err)
