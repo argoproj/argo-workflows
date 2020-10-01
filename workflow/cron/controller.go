@@ -255,6 +255,8 @@ func (cc *Controller) processNextWorkflowItem() bool {
 		return true
 	}
 
+	defer woc.persistUpdate()
+
 	// If the workflow is completed or was deleted, remove it from Active Workflows
 	if wf.Status.Fulfilled() || !wfExists {
 		log.Warnf("Workflow '%s' from CronWorkflow '%s' completed", wf.Name, woc.cronWf.Name)
