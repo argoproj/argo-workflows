@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/errors"
+	syncpkg "github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +40,8 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/estimation"
+	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
@@ -84,15 +88,17 @@ type WorkflowController struct {
 	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             sync.Throttler
+	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
+	estimatorFactory      estimation.EstimatorFactory
 	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
-	cacheFactory          controllercache.CacheFactory
+	cacheFactory          controllercache.Factory
 }
 
 const (
@@ -122,6 +128,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
@@ -153,6 +160,12 @@ func (wfc *WorkflowController) runCronController(ctx context.Context) {
 	cronController.Run(ctx)
 }
 
+var indexers = cache.Indexers{
+	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
+	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
+	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+}
+
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers int) {
 	defer wfc.wfQueue.ShutDown()
@@ -161,11 +174,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
+	wfc.updateEstimatorFactory()
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
@@ -445,6 +459,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// or was deleted, but the work queue still had an entry for it.
 		return true
 	}
+
+	wfc.workflowKeyLock.Lock(key.(string))
+	defer wfc.workflowKeyLock.Unlock(key.(string))
+
 	// The workflow informer receives unstructured objects to deal with the possibility of invalid
 	// workflow manifests that are unable to unmarshal to workflow objects
 	un, ok := obj.(*unstructured.Unstructured)
@@ -474,6 +492,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+
+	// this will ensure we process every incomplete workflow once every 20m
+	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
@@ -564,25 +585,33 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		// we dequeued it.
 		return true
 	}
+
+	err = wfc.enqueueWfFromPodLabel(obj)
+	if err != nil {
+		log.WithError(err).Warnf("Failed to enqueue the workflow for %s", key)
+	}
+	return true
+}
+
+// enqueueWfFromPodLabel will extract the workflow name from pod label and
+// enqueue workflow for processing
+func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) error {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		log.WithFields(log.Fields{"key": key}).Warn("Key in index is not a pod")
-		return true
+		return fmt.Errorf("Key in index is not a pod")
 	}
 	if pod.Labels == nil {
-		log.WithFields(log.Fields{"key": key}).Warn("Pod did not have labels")
-		return true
+		return fmt.Errorf("Pod did not have labels")
 	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		log.WithFields(log.Fields{"key": pod.ObjectMeta.Name}).Warn("Watch returned pod unrelated to any workflow")
-		return true
+		return fmt.Errorf("Watch returned pod unrelated to any workflow")
 	}
 	// add this change after 1s - this reduces the number of workflow reconciliations -
 	//with each reconciliation doing more work
 	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, enoughTimeForInformerSync)
-	return true
+	return nil
 }
 
 func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
@@ -663,6 +692,20 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
+	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			un, ok := obj.(*unstructured.Unstructured)
+			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
+			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+		},
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: wfc.archiveWorkflow,
+			UpdateFunc: func(_, obj interface{}) {
+				wfc.archiveWorkflow(obj)
+			},
+		},
+	},
+	)
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			wf := obj.(*unstructured.Unstructured)
@@ -677,6 +720,60 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
 		},
 	})
+}
+
+func (wfc *WorkflowController) archiveWorkflow(obj interface{}) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		log.Error("failed to get key for object")
+		return
+	}
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
+	err = wfc.archiveWorkflowAux(obj)
+	if err != nil {
+		log.WithField("key", key).WithError(err).Error("failed to archive workflow")
+	}
+}
+
+func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return nil
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		return fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
+	}
+	err = wfc.hydrator.Hydrate(wf)
+	if err != nil {
+		return fmt.Errorf("failed to hydrate workflow: %w", err)
+	}
+	log.WithFields(log.Fields{"namespace": wf.Namespace, "workflow": wf.Name, "uid": wf.UID}).Info("archiving workflow")
+	err = wfc.wfArchive.ArchiveWorkflow(wf)
+	if err != nil {
+		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+	data, err := json.Marshal(map[string]interface{}{
+		"metadata": metav1.ObjectMeta{
+			Labels: map[string]string{
+				common.LabelKeyWorkflowArchivingStatus: "Archived",
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(un.GetName(), types.MergePatchType, data)
+	if err != nil {
+		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually
+		// been deleted, so it's not a problem to get a `IsNotFound` error
+		if apierr.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to archive workflow: %w", err)
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
@@ -711,7 +808,9 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
+	})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -740,15 +839,19 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
-				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err != nil {
-					return
-				}
-				wfc.podQueue.Add(key)
+
+				// Enqueue the workflow for deleted pod
+				_ = wfc.enqueueWfFromPodLabel(obj)
+
 			},
 		},
 	)
 	return informer
+}
+
+// call this func whenever the configuration changes, or when the workflow informer changes
+func (wfc *WorkflowController) updateEstimatorFactory() {
+	wfc.estimatorFactory = estimation.NewEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
 // setWorkflowDefaults sets values in the workflow.Spec with defaults from the

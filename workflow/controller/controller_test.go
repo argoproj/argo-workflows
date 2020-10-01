@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/sync"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
@@ -31,6 +32,7 @@ import (
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -148,8 +150,10 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		cwftmplInformer:      cwftmplInformer,
 		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		workflowKeyLock:      sync.NewKeyLock(),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		hydrator:             hydratorfake.Noop,
+		estimatorFactory:     estimation.DummyEstimatorFactory,
 		metrics:              metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
@@ -222,10 +226,10 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 
 type with func(pod *apiv1.Pod)
 
-func withOutputs(outputs string) with {
-	return func(pod *apiv1.Pod) {
-		pod.GetAnnotations()[common.AnnotationKeyOutputs] = outputs
-	}
+func withOutputs(v string) with { return withAnnotation(common.AnnotationKeyOutputs, v) }
+
+func withAnnotation(key, val string) with {
+	return func(pod *apiv1.Pod) { pod.Annotations[key] = val }
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
@@ -252,6 +256,20 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 			if err != nil {
 				panic(err)
 			}
+		}
+	}
+}
+
+func deletePods(woc *wfOperationCtx) {
+	for _, obj := range woc.controller.podInformer.GetStore().List() {
+		pod := obj.(*apiv1.Pod)
+		err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+		err = woc.controller.podInformer.GetStore().Delete(obj)
+		if err != nil {
+			panic(err)
 		}
 	}
 }

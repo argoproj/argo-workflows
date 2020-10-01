@@ -57,8 +57,15 @@ const (
 	// Who created this workflow.
 	LabelKeyCreator = workflow.WorkflowFullName + "/creator"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
-	// Workflows and pods with a completed=true label will be ignored by the controller
+	// Workflows and pods with a completed=true label will be ignored by the controller.
+	// See also `LabelKeyWorkflowArchivingStatus`.
 	LabelKeyCompleted = workflow.WorkflowFullName + "/completed"
+	// LabelKeyWorkflowArchivingStatus indicates if a workflow needs archiving or not:
+	// * `` - does not need archiving ... yet
+	// * `Pending` - pending archiving
+	// * `Archived` - has been archived
+	// See also `LabelKeyCompleted`.
+	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)

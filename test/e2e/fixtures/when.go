@@ -14,6 +14,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -30,9 +31,6 @@ type When struct {
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	hydrator          hydrator.Interface
-	workflowName      string
-	wfTemplateNames   []string
-	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
 }
 
@@ -46,7 +44,47 @@ func (w *When) SubmitWorkflow() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.workflowName = wf.Name
+		w.wf = wf
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromWorkflowTemplates() *When {
+	w.t.Helper()
+	for _, tmpl := range w.wfTemplates {
+		println("Submitting workflow from workflow template", tmpl.Name)
+		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, false))
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wf = wf
+		}
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromClusterWorkflowTemplates() *When {
+	w.t.Helper()
+	for _, tmpl := range w.cwfTemplates {
+		println("Submitting workflow from cluster workflow template", tmpl.Name)
+		wf, err := w.client.Create(common.NewWorkflowFromWorkflowTemplate(tmpl.Name, tmpl.Spec.WorkflowMetadata, true))
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wf = wf
+		}
+	}
+	return w
+}
+
+func (w *When) SubmitWorkflowsFromCronWorkflows() *When {
+	w.t.Helper()
+	println("Submitting workflow from cron workflow", w.cronWf.Name)
+	wf, err := w.client.Create(common.ConvertCronWorkflowToWorkflow(w.cronWf))
+	if err != nil {
+		w.t.Fatal(err)
+	} else {
+		w.wf = wf
 	}
 	return w
 }
@@ -71,11 +109,9 @@ func (w *When) CreateWorkflowTemplates() *When {
 	}
 	for _, wfTmpl := range w.wfTemplates {
 		println("Creating workflow template", wfTmpl.Name)
-		wfTmpl, err := w.wfTemplateClient.Create(wfTmpl)
+		_, err := w.wfTemplateClient.Create(wfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
-		} else {
-			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
 	}
 	return w
@@ -88,11 +124,9 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	}
 	for _, cwfTmpl := range w.cwfTemplates {
 		println("Creating cluster workflow template", cwfTmpl.Name)
-		wfTmpl, err := w.cwfTemplateClient.Create(cwfTmpl)
+		_, err := w.cwfTemplateClient.Create(cwfTmpl)
 		if err != nil {
 			w.t.Fatal(err)
-		} else {
-			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
 	}
 	return w
@@ -108,15 +142,29 @@ func (w *When) CreateCronWorkflow() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	} else {
-		w.cronWorkflowName = cronWf.Name
+		w.cronWf = cronWf
 	}
 	return w
 }
 
 type Condition func(wf *wfv1.Workflow) bool
 
+var ToBeCompleted Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyCompleted] == "true" }
 var ToStart Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.StartedAt.IsZero() }
-var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.FinishedAt.IsZero() }
+var ToBeRunning Condition = func(wf *wfv1.Workflow) bool {
+	return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.Phase == wfv1.NodeRunning
+	})
+}
+
+// `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
+// This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
+// creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
+var ToBeDone Condition = func(wf *wfv1.Workflow) bool {
+	return ToBeCompleted(wf) && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending"
+}
+
+var ToBeArchived Condition = func(wf *wfv1.Workflow) bool { return wf.Labels[common.LabelKeyWorkflowArchivingStatus] == "Archived" }
 
 // Wait for a workflow to meet a condition:
 // Options:
@@ -128,9 +176,12 @@ var ToFinish Condition = func(wf *wfv1.Workflow) bool { return !wf.Status.Finish
 func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
-	workflowName := w.workflowName
-	condition := ToFinish
-	message := "to finish"
+	workflowName := ""
+	if w.wf != nil {
+		workflowName = w.wf.Name
+	}
+	condition := ToBeDone
+	message := "to be done"
 	for _, opt := range options {
 		switch v := opt.(type) {
 		case time.Duration:
@@ -148,7 +199,6 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		}
 	}
 
-	w.t.Helper()
 	start := time.Now()
 
 	fieldSelector := ""
@@ -172,11 +222,12 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		select {
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
+			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
-					w.workflowName = wf.Name
+					w.wf = wf
 					return w
 				}
 			} else {
@@ -206,8 +257,8 @@ func (w *When) Wait(timeout time.Duration) *When {
 
 func (w *When) DeleteWorkflow() *When {
 	w.t.Helper()
-	println("Deleting", w.workflowName)
-	err := w.client.Delete(w.workflowName, nil)
+	println("Deleting", w.wf.Name)
+	err := w.client.Delete(w.wf.Name, nil)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -318,14 +369,13 @@ func (w *When) deleteResourceQuota(name string) *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:                w.t,
-		workflowName:     w.workflowName,
-		wfTemplateNames:  w.wfTemplateNames,
-		cronWorkflowName: w.cronWorkflowName,
-		client:           w.client,
-		cronClient:       w.cronClient,
-		hydrator:         w.hydrator,
-		kubeClient:       w.kubeClient,
+		t:          w.t,
+		wf:         w.wf,
+		cronWf:     w.cronWf,
+		client:     w.client,
+		cronClient: w.cronClient,
+		hydrator:   w.hydrator,
+		kubeClient: w.kubeClient,
 	}
 }
 
@@ -343,7 +393,6 @@ func (w *When) Given() *Given {
 		wfTemplates:       w.wfTemplates,
 		cwfTemplates:      w.cwfTemplates,
 		cronWf:            w.cronWf,
-		workflowName:      w.workflowName,
 		kubeClient:        w.kubeClient,
 	}
 }

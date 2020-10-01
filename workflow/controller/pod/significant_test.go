@@ -22,9 +22,13 @@ func Test_SgnificantPodChange(t *testing.T) {
 		now := metav1.Now()
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &now}}), "deletion timestamp change")
 	})
+	t.Run("Annotations", func(t *testing.T) {
+		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "bar"}}}), "new annotation")
+		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "bar"}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "baz"}}}), "changed annotation")
+		assert.True(t, SignificantPodChange(&corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"foo": "bar"}}}, &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{}}}), "deleted annotation")
+	})
 	t.Run("Spec", func(t *testing.T) {
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{Spec: corev1.PodSpec{NodeName: "from"}}), "Node name change")
-
 	})
 	t.Run("Status", func(t *testing.T) {
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{Status: corev1.PodStatus{Phase: corev1.PodRunning}}), "Phase change")
@@ -63,5 +67,19 @@ func Test_SgnificantPodChange(t *testing.T) {
 	})
 	t.Run("InitContainerStatuses", func(t *testing.T) {
 		assert.True(t, SignificantPodChange(&corev1.Pod{}, &corev1.Pod{Status: corev1.PodStatus{InitContainerStatuses: []corev1.ContainerStatus{{}}}}), "Number of container status changes")
+	})
+	t.Run("Conditions", func(t *testing.T) {
+		assert.True(t, SignificantPodChange(
+			&corev1.Pod{},
+			&corev1.Pod{Status: corev1.PodStatus{Conditions: []corev1.PodCondition{{}}}}),
+			"condition added")
+		assert.True(t, SignificantPodChange(
+			&corev1.Pod{Status: corev1.PodStatus{Conditions: []corev1.PodCondition{{}}}},
+			&corev1.Pod{Status: corev1.PodStatus{Conditions: []corev1.PodCondition{{Reason: "es"}}}},
+		), "condition changed")
+		assert.True(t, SignificantPodChange(
+			&corev1.Pod{Status: corev1.PodStatus{Conditions: []corev1.PodCondition{{}}}},
+			&corev1.Pod{},
+		), "condition removed")
 	})
 }

@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -55,12 +54,7 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
-func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	dclient, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		panic(err)
-	}
-
+func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
@@ -71,7 +65,7 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 		dclient,
 		ns,
 		resyncPeriod,
-		cache.Indexers{},
+		indexers,
 		tweakListOptions,
 	)
 	return informer
@@ -140,7 +134,14 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 // ToUnstructured converts an workflow to an Unstructured object
 func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(wf)
-	return &unstructured.Unstructured{Object: obj}, err
+	if err != nil {
+		return nil, err
+	}
+	un := &unstructured.Unstructured{Object: obj}
+	// we need to add these values so that the `EventRecorder` does not error
+	un.SetKind(workflow.WorkflowKind)
+	un.SetAPIVersion(workflow.APIVersion)
+	return un, nil
 }
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
@@ -563,7 +564,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	}
 	for key, val := range wf.ObjectMeta.Labels {
 		switch key {
-		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted:
+		case common.LabelKeyCreator, common.LabelKeyPhase, common.LabelKeyCompleted, common.LabelKeyWorkflowArchivingStatus:
 			// ignore
 		default:
 			newWF.ObjectMeta.Labels[key] = val
@@ -652,14 +653,30 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	var updated *wfv1.Workflow
+	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		var err error
+		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
+		return err == nil, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return updated, err
+}
+
+func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+	wf, err := wfClient.Get(name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
 	switch wf.Status.Phase {
 	case wfv1.NodeFailed, wfv1.NodeError:
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
-
-	err := hydrator.Hydrate(wf)
+	err = hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}
@@ -669,6 +686,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
+	delete(newWF.Labels, common.LabelKeyWorkflowArchivingStatus)
 	newWF.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionFalse, Type: wfv1.ConditionTypeCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning
@@ -689,6 +707,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
+	deletedNodes := make(map[string]bool)
 	for _, node := range wf.Status.Nodes {
 		doForceResetNode := false
 		if _, present := nodeIDsToReset[node.ID]; present {
@@ -709,6 +728,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 				newNode.FinishedAt = metav1.Time{}
 				newWF.Status.Nodes[newNode.ID] = *newNode
 				continue
+			} else {
+				deletedNodes[node.ID] = true
 			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
@@ -728,6 +749,28 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 			newNode.FinishedAt = metav1.Time{}
 			newWF.Status.Nodes[newNode.ID] = *newNode
 			continue
+		}
+	}
+
+	if len(deletedNodes) > 0 {
+		for _, node := range newWF.Status.Nodes {
+			var newChildren []string
+			for _, child := range node.Children {
+				if !deletedNodes[child] {
+					newChildren = append(newChildren, child)
+				}
+			}
+			node.Children = newChildren
+
+			var outboundNodes []string
+			for _, outboundNode := range node.OutboundNodes {
+				if !deletedNodes[outboundNode] {
+					outboundNodes = append(outboundNodes, outboundNode)
+				}
+			}
+			node.OutboundNodes = outboundNodes
+
+			newWF.Status.Nodes[node.ID] = node
 		}
 	}
 

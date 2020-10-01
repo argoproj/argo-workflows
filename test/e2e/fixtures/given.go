@@ -28,7 +28,6 @@ type Given struct {
 	wfTemplates       []*wfv1.WorkflowTemplate
 	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
 	cronWf            *wfv1.CronWorkflow
-	workflowName      string
 	kubeClient        kubernetes.Interface
 }
 
@@ -108,7 +107,7 @@ func (g *Given) checkLabels(m metav1.Object) {
 
 func (g *Given) WorkflowName(name string) *Given {
 	g.t.Helper()
-	g.workflowName = name
+	g.wf = &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: name}}
 	return g
 }
 
@@ -137,11 +136,13 @@ func (g *Given) CronWorkflow(text string) *Given {
 }
 
 var NoError = func(t *testing.T, output string, err error) {
+	t.Helper()
 	assert.NoError(t, err, output)
 }
 
 var OutputContains = func(contains string) func(t *testing.T, output string, err error) {
 	return func(t *testing.T, output string, err error) {
+		t.Helper()
 		if assert.NoError(t, err, output) {
 			assert.Contains(t, output, contains)
 		}
@@ -184,7 +185,6 @@ func (g *Given) When() *When {
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,
 		hydrator:          g.hydrator,
-		workflowName:      g.workflowName,
 		kubeClient:        g.kubeClient,
 	}
 }

@@ -298,11 +298,11 @@ metadata:
 		ExpectAuditEvents(
 			func(event corev1.Event) bool {
 				return event.InvolvedObject.Name == "malformed" && event.InvolvedObject.Kind == workflow.WorkflowEventBindingKind
-			},
-			func(t *testing.T, event corev1.Event) {
-				assert.Equal(t, "argo", event.InvolvedObject.Namespace)
-				assert.Equal(t, "WorkflowEventBindingError", event.Reason)
-				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", event.Message)
+			}, 1,
+			func(t *testing.T, e []corev1.Event) {
+				assert.Equal(t, "argo", e[0].InvolvedObject.Namespace)
+				assert.Equal(t, "WorkflowEventBindingError", e[0].Reason)
+				assert.Equal(t, "failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF (1:1)", e[0].Message)
 			},
 		)
 }
@@ -968,7 +968,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived, "to be archived").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1014,7 +1014,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		WaitForWorkflow(fixtures.ToStart, "to start").
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			name = metadata.Name
@@ -1135,7 +1135,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
+		WaitForWorkflow(fixtures.ToBeArchived).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -1155,7 +1155,7 @@ spec:
         image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow()
+		WaitForWorkflow(fixtures.ToBeArchived, "to be archived")
 
 	for _, tt := range []struct {
 		name     string

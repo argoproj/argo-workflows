@@ -1,0 +1,18 @@
+kind: Workflow
+apiVersion: argoproj.io/v1alpha1
+metadata:
+  name: sleepy-retry-on-error
+  labels:
+    argo-e2e: "true"
+spec:
+  retryStrategy:
+    retryPolicy: OnError
+    limit: 1
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - sleep
+          - 10s
