@@ -12,5 +12,4 @@ type Semaphore interface {
 	getName() string
 	getLimit() int
 	resize(n int) bool
-	flushHolder(holderKey string)
 }

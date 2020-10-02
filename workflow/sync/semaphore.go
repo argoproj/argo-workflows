@@ -164,10 +164,3 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
 	return false, waitingMsg
 }
-
-func (s *PrioritySemaphore) flushHolder(holderKey string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.pending.remove(holderKey)
-}

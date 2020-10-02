@@ -69,9 +69,3 @@ func (m *PriorityMutex) tryAcquire(holderKey string) (bool, string) {
 	defer m.lock.Unlock()
 	return m.mutex.tryAcquire(holderKey)
 }
-
-func (m *PriorityMutex) flushHolder(holderKey string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.mutex.flushHolder(holderKey)
-}
