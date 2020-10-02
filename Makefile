@@ -96,7 +96,6 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-MOCK_FILES       := $(shell find persist server workflow pkg -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 # docker_build,image_name,binary_name,marker_file_name
@@ -236,12 +235,9 @@ $(GOPATH)/bin/mockery:
 	mv mockery $(GOPATH)/bin/mockery
 	mockery -version
 
-.PHONY: mocks
-mocks: $(GOPATH)/bin/mockery
-	./hack/update-mocks.sh $(MOCK_FILES)
-
 .PHONY: codegen
 codegen: status proto swagger manifests mocks docs
+	go generate ./...
 
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
