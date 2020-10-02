@@ -66,15 +66,6 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
-func (t NodeType) IsLeaf() bool {
-	switch t {
-	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
-		return true
-	default:
-		return false
-	}
-}
-
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -1561,10 +1552,6 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
-}
-
-func (in *NodeStatus) IsLeaf() bool {
-	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
