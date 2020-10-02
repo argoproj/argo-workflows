@@ -236,7 +236,7 @@ $(GOPATH)/bin/mockery:
 	mockery -version
 
 .PHONY: codegen
-codegen: status proto swagger manifests mocks docs
+codegen: status proto swagger manifests docs
 	go generate ./...
 
 .PHONY: crds
