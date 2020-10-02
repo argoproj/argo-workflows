@@ -17,17 +17,17 @@ import (
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v3/persist/sqldb"
+	"github.com/argoproj/argo/v3/persist/sqldb/mocks"
+	workflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	v1alpha "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/server/auth"
+	testutil "github.com/argoproj/argo/v3/test/util"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/instanceid"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 const unlabelled = `{

@@ -4,8 +4,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo/v3/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command

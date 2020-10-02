@@ -3,12 +3,12 @@ package controller
 import (
 	"testing"
 
-	"github.com/argoproj/argo/workflow/sync"
+	"github.com/argoproj/argo/v3/workflow/sync"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/config"
+	"github.com/argoproj/argo/v3/config"
 )
 
 func TestUpdateConfig(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/util"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test/util"
 )
 
 func TestUpdater(t *testing.T) {
@@ -16,20 +16,20 @@ status:
   nodes:
     root:
       phase: Succeeded
-      children: [pod, dag] 
-    pod: 
+      children: [pod, dag]
+    pod:
       phase: Succeeded
       type: Pod
-      resourcesDuration: 
+      resourcesDuration:
         x: 1
       children: [dag]
-    dag: 
+    dag:
       phase: Succeeded
       children: [dag-pod]
-    dag-pod: 
+    dag-pod:
       phase: Succeeded
       type: Pod
-      resourcesDuration: 
+      resourcesDuration:
         x: 2
 `, wf)
 	UpdateResourceDurations(wf)

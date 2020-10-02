@@ -8,11 +8,11 @@ import (
 
 	"github.com/argoproj/pkg/json"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
 )
 
 // LintWorkflowDir validates all workflow manifests in a directory. Ignores non-workflow manifests

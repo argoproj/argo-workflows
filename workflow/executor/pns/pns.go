@@ -18,11 +18,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/archive"
-	"github.com/argoproj/argo/workflow/common"
-	execcommon "github.com/argoproj/argo/workflow/executor/common"
-	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/util/archive"
+	"github.com/argoproj/argo/v3/workflow/common"
+	execcommon "github.com/argoproj/argo/v3/workflow/executor/common"
+	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 type PNSExecutor struct {

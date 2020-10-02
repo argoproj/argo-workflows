@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/v3/persist/sqldb"
+	sqldbmocks "github.com/argoproj/argo/v3/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/packer"
 )
 
 func TestHydrator(t *testing.T) {

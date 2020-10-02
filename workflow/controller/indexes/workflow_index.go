@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 const WorkflowIndex = "workflow"

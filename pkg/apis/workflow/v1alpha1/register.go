@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/argoproj/argo/pkg/apis/workflow"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

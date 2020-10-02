@@ -8,12 +8,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/controller/indexes"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+	sqldbmocks "github.com/argoproj/argo/v3/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	testutil "github.com/argoproj/argo/v3/test/util"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/controller/indexes"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
 )
 
 func Test_estimatorFactory(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) {

@@ -3,7 +3,7 @@ package sqldb
 import (
 	"fmt"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 var ExplosiveOffloadNodeStatusRepo OffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}

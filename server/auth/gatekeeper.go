@@ -14,9 +14,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth/sso"
-	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v3/server/auth/sso"
+	"github.com/argoproj/argo/v3/util/kubeconfig"
 )
 
 type ContextKey string

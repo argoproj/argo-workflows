@@ -8,7 +8,7 @@ import (
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/v3/server/auth"
 )
 
 func Test_infoServer_GetUserInfo(t *testing.T) {

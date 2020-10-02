@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	testutil "github.com/argoproj/argo/test/util"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	testutil "github.com/argoproj/argo/v3/test/util"
 )
 
 func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
@@ -353,9 +353,9 @@ status:
   startedAt: "2020-06-02T16:04:21Z"
 `, &wf)
 		output := printWorkflowHelper(&wf, getFlags{})
-		assert.Contains(t, output, `         
-   ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
-   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
+		assert.Contains(t, output, `
+   ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s
+   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s
    ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
 	})
 }

@@ -14,11 +14,11 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/workflow/common"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/workflow/common"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -34,7 +34,7 @@ spec:
     entrypoint: whalesay
     templates:
     - name: whalesay
-      container: 
+      container:
         image: docker/whalesay:latest
         command: [cowsay]
         args: ["hello world"]

@@ -27,15 +27,15 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
-	testutil "github.com/argoproj/argo/test/util"
-	intstrutil "github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/controller/cache"
-	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v3/config"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test"
+	testutil "github.com/argoproj/argo/v3/test/util"
+	intstrutil "github.com/argoproj/argo/v3/util/intstr"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/controller/cache"
+	hydratorfake "github.com/argoproj/argo/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo/v3/workflow/util"
 )
 
 // TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics
@@ -95,7 +95,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(wf)
@@ -130,7 +130,7 @@ spec:
        - name: pod
          template: pod
    - name: pod
-     container: 
+     container:
        image: my-image
 `)
 	cancel, controller := newController(unmarshalWF(`
@@ -4556,7 +4556,7 @@ spec:
     outputs:
       parameters:
       - name: my-param
-        valueFrom: 
+        valueFrom:
           path: /my-path
 `)
 	cancel, controller := newController(wf)
@@ -4872,8 +4872,8 @@ metadata:
 spec:
   entrypoint: main
   templates:
-  - name: main 
-    steps: 
+  - name: main
+    steps:
     - - name: step1
         template: whalesay
 
@@ -4893,7 +4893,7 @@ metadata:
 spec:
   entrypoint: main
   templates:
-  - name: main 
+  - name: main
     dag:
       tasks:
       - name: dag1
@@ -5113,7 +5113,7 @@ spec:
       secretName: default-token-rc4ml
 status:
   conditions:
-  - lastProbeTime: 
+  - lastProbeTime:
     lastTransitionTime: '2020-08-27T18:14:19Z'
     status: 'True'
     type: PodScheduled
@@ -5230,9 +5230,9 @@ spec:
 
   # divide-by-2 divides a number in half
   - name: divide-by-2
-    retryStrategy: 
+    retryStrategy:
         limit: 2
-        backoff: 
+        backoff:
             duration: "1"
             factor: 2
     inputs:
@@ -5246,9 +5246,9 @@ spec:
         echo $(({{inputs.parameters.num}}/2))
   # whalesay prints a number using whalesay
   - name: whalesay
-    retryStrategy: 
+    retryStrategy:
         limit: 2
-        backoff: 
+        backoff:
             duration: "1"
             factor: 2
     inputs:

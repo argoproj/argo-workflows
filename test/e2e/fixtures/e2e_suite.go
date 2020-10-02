@@ -21,11 +21,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util/kubeconfig"
+	"github.com/argoproj/argo/v3/workflow/hydrator"
 )
 
 const Namespace = "argo"

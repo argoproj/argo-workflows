@@ -8,13 +8,13 @@ import (
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
-	testutil "github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/util/instanceid"
-	"github.com/argoproj/argo/workflow/common"
+	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/server/auth"
+	testutil "github.com/argoproj/argo/v3/test/util"
+	"github.com/argoproj/argo/v3/util/instanceid"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/test/e2e/fixtures"
 )
 
 type ClusterWorkflowTemplateSuite struct {
@@ -56,7 +56,7 @@ spec:
     steps:
     - - name: call-whalesay-template
         templateRef:
-          name: cluster-workflow-template-nested-template 
+          name: cluster-workflow-template-nested-template
           template: whalesay-template
           clusterScope: true
         arguments:

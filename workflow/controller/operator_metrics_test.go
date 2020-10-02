@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -98,7 +98,7 @@ spec:
       container:
         image: docker/whalesay:latest
         command: [cowsay]
-      
+
 `
 
 func TestCounterMetric(t *testing.T) {

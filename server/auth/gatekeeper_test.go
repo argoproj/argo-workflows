@@ -12,8 +12,8 @@ import (
 
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth/sso/mocks"
+	fakewfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v3/server/auth/sso/mocks"
 )
 
 func TestServer_GetWFClient(t *testing.T) {

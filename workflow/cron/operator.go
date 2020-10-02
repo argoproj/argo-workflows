@@ -14,14 +14,14 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	typed "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/common"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	"github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo/v3/workflow/validate"
 )
 
 type cronWfOperationCtx struct {
