@@ -131,31 +131,6 @@ status:
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
-ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
-	# Get UI dependencies
-	@mkdir -p ui/node_modules
-ifeq ($(STATIC_FILES),true)
-	JOBS=max yarn --cwd ui install
-endif
-	@mkdir -p ui/dist
-	touch ui/dist/node_modules.marker
-
-ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
-	# Build UI
-	@mkdir -p ui/dist/app
-ifeq ($(STATIC_FILES),true)
-	JOBS=max yarn --cwd ui build
-else
-	echo "Built without static files" > ui/dist/app/index.html
-endif
-
-$(GOPATH)/bin/staticfiles:
-	go get bou.ke/staticfiles
-
-server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
-	# Pack UI into a Go file.
-	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
-
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
 dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
@@ -163,13 +138,13 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo: server/static/files.go $(CLI_PKGS)
+dist/argo: $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go $(CLI_PKGS)
+dist/argo-%: $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
@@ -227,6 +202,13 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 # generation
 
+.PHONY: codegen
+codegen: proto swagger manifests docs $(GOPATH)/bin/mockery
+	go generate ./...
+
+$(GOPATH)/bin/staticfiles:
+	go get bou.ke/staticfiles
+
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
 	tar zxvf dist/mockery.tar.gz mockery
@@ -235,39 +217,50 @@ $(GOPATH)/bin/mockery:
 	mv mockery $(GOPATH)/bin/mockery
 	mockery -version
 
-.PHONY: codegen
-codegen: status proto swagger manifests docs
-	go generate ./...
-
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
 
-# you cannot install a specific version using `go install`, so we do this business
-.PHONY: tools
-tools:
+vendor:
 	go mod vendor
-	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
-	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+
+$(GOPATH)/bin/controller-gen: vendor
 	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
 	rm -Rf vendor
 
-$(GOPATH)/bin/controller-gen: tools
-$(GOPATH)/bin/go-to-protobuf: tools
-$(GOPATH)/bin/protoc-gen-gogo: tools
-$(GOPATH)/bin/protoc-gen-gogofast: tools
-$(GOPATH)/bin/protoc-gen-grpc-gateway: tools
-$(GOPATH)/bin/protoc-gen-swagger: tools
-$(GOPATH)/bin/openapi-gen: tools
-$(GOPATH)/bin/swagger: tools
+$(GOPATH)/bin/go-to-protobuf: vendor
+	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+	rm -Rf vendor
+
+$(GOPATH)/bin/protoc-gen-gogo: vendor
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+	rm -Rf vendor
+
+$(GOPATH)/bin/protoc-gen-gogofast: vendor
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+	rm -Rf vendor
+
+$(GOPATH)/bin/protoc-gen-grpc-gateway: vendor
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	rm -Rf vendor
+
+$(GOPATH)/bin/protoc-gen-swagger: vendor
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	rm -Rf vendor
+
+$(GOPATH)/bin/openapi-gen: vendor
+	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+	rm -Rf vendor
+
+$(GOPATH)/bin/swagger: vendor
+	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
+	rm -Rf vendor
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
+
+$(GOPATH)/bin/goreman:
+	go get github.com/mattn/goreman
 
 .PHONY: proto
 proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
@@ -297,7 +290,7 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
 
 .PHONY: lint
-lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+lint: $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -309,7 +302,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go
+test:
 	env KUBECONFIG=/dev/null go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
@@ -349,9 +342,6 @@ test-images:
 .PHONY: stop
 stop:
 	killall argo workflow-controller kubectl || true
-
-$(GOPATH)/bin/goreman:
-	go get github.com/mattn/goreman
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
@@ -434,7 +424,7 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
@@ -492,6 +482,3 @@ endif
 check-version-warning:
 	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
 
-.PHONY: parse-examples
-parse-examples:
-	go run -tags fields ./hack parseexamples
