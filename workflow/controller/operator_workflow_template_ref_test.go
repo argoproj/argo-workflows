@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -32,7 +32,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: pointer.StringPtr("test"),
+				Value: intstrutil.ParsePtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -52,7 +52,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: pointer.StringPtr("test"),
+				Value: intstrutil.ParsePtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -166,8 +166,8 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
-		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
+		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
+		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
 	})
 }
 

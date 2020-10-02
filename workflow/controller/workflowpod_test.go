@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/util"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -660,7 +661,7 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	inputParameters := []wfv1.Parameter{
 		{
 			Name:  "volume-name",
-			Value: pointer.StringPtr("test-name"),
+			Value: intstrutil.ParsePtr("test-name"),
 		},
 	}
 

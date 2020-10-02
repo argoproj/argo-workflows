@@ -260,7 +260,8 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
 		if argParam != nil && argParam.Value != nil {
-			inParam.Value = argParam.Value
+			newValue := *argParam.Value
+			inParam.Value = &newValue
 		}
 		if inParam.Value == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
@@ -327,7 +328,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
-		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
+		replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)

@@ -11,12 +11,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
@@ -495,16 +495,16 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: pointer.StringPtr("0")}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: intstrutil.ParsePtr("0")}},
 				},
 			},
 		}
-		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=81861780812"}})
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=1"}})
 		assert.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", *parameters[0].Value)
+			assert.Equal(t, "1", parameters[0].Value.String())
 		}
 	})
 	t.Run("ParameterFile", func(t *testing.T) {
@@ -512,14 +512,14 @@ func TestApplySubmitOpts(t *testing.T) {
 		file, err := ioutil.TempFile("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0644)
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 1`), 0644)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", *parameters[0].Value)
+			assert.Equal(t, "1", parameters[0].Value.String())
 		}
 	})
 }

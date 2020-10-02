@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/executor/mocks"
 )
 
@@ -50,7 +50,7 @@ func TestSaveParameters(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("has a newline\n", nil)
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, "has a newline", *we.Template.Outputs.Parameters[0].Value)
+	assert.Equal(t, "has a newline", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 // TestIsBaseImagePath tests logic of isBaseImagePath which determines if a path is coming from a
@@ -118,7 +118,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: pointer.StringPtr("Default Value"),
+						Default: intstrutil.ParsePtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -138,7 +138,7 @@ func TestDefaultParameters(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, *we.Template.Outputs.Parameters[0].Value, "Default Value")
+	assert.Equal(t, we.Template.Outputs.Parameters[0].Value.String(), "Default Value")
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
@@ -150,7 +150,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: pointer.StringPtr(""),
+						Default: intstrutil.ParsePtr(""),
 						Path:    "/path",
 					},
 				},
@@ -170,7 +170,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, "", *we.Template.Outputs.Parameters[0].Value)
+	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
 }
 
 func TestIsTarball(t *testing.T) {

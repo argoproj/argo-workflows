@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
@@ -338,9 +339,9 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		if resourceNamespace == "" && resourceName == "" {
 			output := ""
 			if param.ValueFrom.Default != nil {
-				output = *param.ValueFrom.Default
+				output = param.ValueFrom.Default.String()
 			}
-			we.Template.Outputs.Parameters[i].Value = &output
+			we.Template.Outputs.Parameters[i].Value = intstr.ParsePtr(output)
 			continue
 		}
 		var cmd *exec.Cmd
@@ -365,7 +366,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		if err != nil {
 			// We have a default value to use instead of returning an error
 			if param.ValueFrom.Default != nil {
-				out = []byte(*param.ValueFrom.Default)
+				out = []byte(param.ValueFrom.Default.String())
 			} else {
 				if exErr, ok := err.(*exec.ExitError); ok {
 					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
@@ -374,7 +375,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			}
 		}
 		output := string(out)
-		we.Template.Outputs.Parameters[i].Value = &output
+		we.Template.Outputs.Parameters[i].Value = intstr.ParsePtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)

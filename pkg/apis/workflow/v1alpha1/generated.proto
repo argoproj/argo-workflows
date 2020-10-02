@@ -739,11 +739,11 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
-  optional string default = 2;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 2;
 
   // Value is the literal value to use for the parameter.
   // If specified in the context of an input parameter, the value takes precedence over any passed values
-  optional string value = 3;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString value = 3;
 
   // ValueFrom is the source for the output parameter's value
   optional ValueFrom valueFrom = 4;
@@ -1197,7 +1197,7 @@ message ValueFrom {
   optional SuppliedValueFrom supplied = 6;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
-  optional string default = 5;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
 }
 
 message Version {

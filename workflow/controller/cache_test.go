@@ -8,6 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/controller/cache"
 )
 
@@ -48,7 +49,7 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.Len(t, outputs.Parameters, 1) {
 		assert.Equal(t, "hello", outputs.Parameters[0].Name)
-		assert.Equal(t, "foobar", *outputs.Parameters[0].Value)
+		assert.Equal(t, "foobar", outputs.Parameters[0].Value.String())
 	}
 }
 
@@ -67,7 +68,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: &MockParamValue,
+		Value: intstrutil.ParsePtr(MockParamValue),
 	}
 	cancel, controller := newController()
 	defer cancel()
