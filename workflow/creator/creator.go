@@ -12,9 +12,9 @@ import (
 )
 
 func Label(ctx context.Context, obj metav1.Object) {
-	claims := auth.GetClaimSet(ctx)
+	claims := auth.GetClaims(ctx)
 	if claims != nil {
-		value := regexp.MustCompile("[^-_.a-z0-9A-Z]").ReplaceAllString(claims.Sub, "-")
+		value := regexp.MustCompile("[^-_.a-z0-9A-Z]").ReplaceAllString(claims.Subject, "-")
 		if len(value) > 63 {
 			value = value[len(value)-63:]
 		}
