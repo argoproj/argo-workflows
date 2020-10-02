@@ -204,7 +204,7 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 .PHONY: codegen
 codegen: proto swagger manifests docs $(GOPATH)/bin/mockery
-	go generate ./...
+	env STATIC_FILES=$(STATIC_FILES) go generate ./...
 
 $(GOPATH)/bin/staticfiles:
 	go get bou.ke/staticfiles

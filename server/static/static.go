@@ -1,8 +1,6 @@
 package static
 
-//go:generate yarn --cwd ../../ui install
-//go:generate yarn --cwd ../../ui build
-//go:generate staticfiles -o files.go ../../ui/dist/app
+//go:generate ./generate.sh
 
 import (
 	"fmt"
