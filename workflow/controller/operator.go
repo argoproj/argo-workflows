@@ -31,24 +31,24 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	errorsutil "github.com/argoproj/argo/util/errors"
-	"github.com/argoproj/argo/util/intstr"
-	"github.com/argoproj/argo/util/resource"
-	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/common"
-	controllercache "github.com/argoproj/argo/workflow/controller/cache"
-	"github.com/argoproj/argo/workflow/controller/estimation"
-	"github.com/argoproj/argo/workflow/controller/indexes"
-	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	wfutil "github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v3/config"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/util"
+	errorsutil "github.com/argoproj/argo/v3/util/errors"
+	"github.com/argoproj/argo/v3/util/intstr"
+	"github.com/argoproj/argo/v3/util/resource"
+	"github.com/argoproj/argo/v3/util/retry"
+	"github.com/argoproj/argo/v3/workflow/common"
+	controllercache "github.com/argoproj/argo/v3/workflow/controller/cache"
+	"github.com/argoproj/argo/v3/workflow/controller/estimation"
+	"github.com/argoproj/argo/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo/v3/workflow/util"
+	"github.com/argoproj/argo/v3/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -592,7 +592,7 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
-// See https://github.com/argoproj/argo/issues/913
+// See https://github.com/argoproj/argo/v3/issues/913
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(err, true)
@@ -1205,7 +1205,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/argoproj/argo/v3/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 		if ctr.State.Waiting != nil {
 			return wfv1.NodeError, fmt.Sprintf("Pod failed before %s container starts", ctr.Name)
@@ -1231,7 +1231,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	failMessages := make(map[string]string)
 	for _, ctr := range pod.Status.ContainerStatuses {
 		// Virtual Kubelet environment will not set the terminate on waiting container
-		// https://github.com/argoproj/argo/issues/3879
+		// https://github.com/argoproj/argo/v3/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
 
 		if ctr.State.Waiting != nil {

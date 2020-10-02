@@ -18,9 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/common"
-	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
+	"github.com/argoproj/argo/v3/errors"
+	"github.com/argoproj/argo/v3/workflow/common"
+	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
 
 // ExecResource will run kubectl action against a manifest

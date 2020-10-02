@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 )
 
 // MergeTo will merge one workflow (the "patch" workflow) into another (the "target" workflow.

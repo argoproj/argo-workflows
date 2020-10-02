@@ -14,7 +14,7 @@ import (
 
 	"github.com/spf13/cobra/doc"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/v3/cmd/argo/commands"
 )
 
 const sectionHeader = `
@@ -113,7 +113,7 @@ func getExamples(examples Set, summary string) string {
 	for _, example := range sortedSetKeys(examples) {
 		split := strings.Split(example, "/")
 		name := split[len(split)-1]
-		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo/blob/master/"+example))
+		out += fmt.Sprintf(listElement, link(fmt.Sprintf("`%s`", name), "https://github.com/argoproj/argo/v3/blob/master/"+example))
 	}
 	out += dropdownCloser
 	return out

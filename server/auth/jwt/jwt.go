@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/v3/server/auth/jws"
 )
 
 func ClaimSetFor(restConfig *rest.Config) (*jws.ClaimSet, error) {

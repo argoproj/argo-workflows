@@ -6,7 +6,7 @@ import (
 	context "context"
 	http "net/http"
 
-	jws "github.com/argoproj/argo/server/auth/jws"
+	jws "github.com/argoproj/argo/v3/server/auth/jws"
 
 	mock "github.com/stretchr/testify/mock"
 )

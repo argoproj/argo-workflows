@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/v3/server/auth/jws"
 )
 
 const Prefix = "Bearer id_token:"

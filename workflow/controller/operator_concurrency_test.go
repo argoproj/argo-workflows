@@ -12,9 +12,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
-	argoErr "github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/sync"
+	argoErr "github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v3/workflow/sync"
 )
 
 const configMap = `
@@ -29,22 +29,22 @@ data:
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
-metadata: 
+metadata:
   name: hello-world
   namespace: default
-spec: 
+spec:
   entrypoint: whalesay
-  templates: 
-    - 
-      synchronization: 
-        semaphore: 
-          configMapKeyRef: 
+  templates:
+    -
+      synchronization:
+        semaphore:
+          configMapKeyRef:
             key: template
             name: my-config
-      container: 
-        args: 
+      container:
+        args:
           - "hello world"
-        command: 
+        command:
           - cowsay
         image: "docker/whalesay:latest"
       name: whalesay
@@ -53,16 +53,16 @@ spec:
 const ScriptWfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
-metadata: 
+metadata:
   name: script-wf
   namespace: default
-spec: 
+spec:
   entrypoint: scriptTmpl
   templates:
   - name: scriptTmpl
-    synchronization: 
-      semaphore: 
-        configMapKeyRef: 
+    synchronization:
+      semaphore:
+        configMapKeyRef:
           key: template
           name: my-config
     script:
@@ -71,23 +71,23 @@ spec:
       # fail with a 66% probability
       source: |
         import random;
-        import sys; 
-        exit_code = random.choice([0, 1, 1]); 
+        import sys;
+        exit_code = random.choice([0, 1, 1]);
         sys.exit(exit_code)
 `
 const ResourceWfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
-metadata: 
+metadata:
   name: resource-wf
   namespace: default
-spec: 
+spec:
   entrypoint: resourceTmpl
   templates:
-  - name: resourceTmpl 
-    synchronization: 
-      semaphore: 
-        configMapKeyRef: 
+  - name: resourceTmpl
+    synchronization:
+      semaphore:
+        configMapKeyRef:
           key: template
           name: my-config
     resource:
