@@ -24,7 +24,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -33,7 +32,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/archive"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
@@ -471,7 +469,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output *intstr.IntOrString
+		var output *wfv1.Int64OrString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
@@ -483,7 +481,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = intstrutil.ParsePtr(fileContents)
+				output = wfv1.Int64OrStringPtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -497,14 +495,12 @@ func (we *WorkflowExecutor) SaveParameters() error {
 					return err
 				}
 			} else {
-				output = intstrutil.ParsePtr(string(data))
+				output = wfv1.Int64OrStringPtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		if output.Type == intstr.String {
-			output = intstrutil.ParsePtr(strings.TrimSuffix(output.String(), "\n"))
-		}
+		output = wfv1.Int64OrStringPtr(strings.TrimSuffix(output.String(), "\n"))
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}

@@ -7,7 +7,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -32,7 +31,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: intstrutil.ParsePtr("test"),
+				Value: wfv1.Int64OrStringPtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -52,7 +51,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: intstrutil.ParsePtr("test"),
+				Value: wfv1.Int64OrStringPtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)

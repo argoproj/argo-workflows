@@ -643,11 +643,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *Int64OrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -679,7 +679,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.

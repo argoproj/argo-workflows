@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/intstr"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
@@ -341,7 +341,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			if param.ValueFrom.Default != nil {
 				output = param.ValueFrom.Default.String()
 			}
-			we.Template.Outputs.Parameters[i].Value = intstr.ParsePtr(output)
+			we.Template.Outputs.Parameters[i].Value = wfv1.Int64OrStringPtr(output)
 			continue
 		}
 		var cmd *exec.Cmd
@@ -375,7 +375,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 			}
 		}
 		output := string(out)
-		we.Template.Outputs.Parameters[i].Value = intstr.ParsePtr(output)
+		we.Template.Outputs.Parameters[i].Value = wfv1.Int64OrStringPtr(output)
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)

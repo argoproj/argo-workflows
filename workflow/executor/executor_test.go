@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/executor/mocks"
 )
 
@@ -118,7 +117,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: intstrutil.ParsePtr("Default Value"),
+						Default: wfv1.Int64OrStringPtr("Default Value"),
 						Path:    "/path",
 					},
 				},
@@ -150,7 +149,7 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: intstrutil.ParsePtr(""),
+						Default: wfv1.Int64OrStringPtr(""),
 						Path:    "/path",
 					},
 				},

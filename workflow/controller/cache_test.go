@@ -8,7 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	intstrutil "github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/workflow/controller/cache"
 )
 
@@ -68,7 +67,7 @@ func TestConfigMapCacheSave(t *testing.T) {
 	var MockParamValue string = "Hello world"
 	var MockParam = wfv1.Parameter{
 		Name:  "hello",
-		Value: intstrutil.ParsePtr(MockParamValue),
+		Value: wfv1.Int64OrStringPtr(MockParamValue),
 	}
 	cancel, controller := newController()
 	defer cancel()
