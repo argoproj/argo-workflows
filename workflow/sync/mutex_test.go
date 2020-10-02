@@ -1,12 +1,12 @@
 package sync
 
 import (
-	"k8s.io/utils/pointer"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/utils/pointer"
 
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
