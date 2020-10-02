@@ -2990,6 +2990,11 @@
           "description": "DisplayName is a human readable representation of the node. Unique within a template boundary",
           "type": "string"
         },
+        "estimatedDuration": {
+          "description": "EstimatedDuration in seconds.",
+          "type": "integer",
+          "format": "int32"
+        },
         "finishedAt": {
           "description": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
@@ -3900,7 +3905,7 @@
           "type": "string"
         },
         "runtimeResolution": {
-          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.",
+          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored",
           "type": "boolean"
         },
         "template": {
@@ -4547,6 +4552,11 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           }
+        },
+        "estimatedDuration": {
+          "description": "EstimatedDuration in seconds.",
+          "type": "integer",
+          "format": "int32"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",

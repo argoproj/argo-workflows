@@ -629,8 +629,8 @@ message NodeStatus {
   // Time at which this node completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
-  // Progress to completion
-  optional string progress = 25;
+  // EstimatedDuration in seconds.
+  optional int64 estimatedDuration = 24;
 
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
   map<string, int64> resourcesDuration = 21;
@@ -1148,6 +1148,7 @@ message TemplateRef {
 
   // RuntimeResolution skips validation at creation time.
   // By enabling this option, you can create the referred workflow template before the actual runtime.
+  // DEPRECATED: This value is not used anymore and is ignored
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
@@ -1439,8 +1440,8 @@ message WorkflowStatus {
   // Time at which this workflow completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
 
-  // Progress to completion
-  optional string progress = 17;
+  // EstimatedDuration in seconds.
+  optional int64 estimatedDuration = 16;
 
   // A human readable message indicating details about why the workflow is in this condition.
   optional string message = 4;

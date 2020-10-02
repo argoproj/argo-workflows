@@ -66,6 +66,15 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
+func (t NodeType) IsLeaf() bool {
+	switch t {
+	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
+		return true
+	default:
+		return false
+	}
+}
+
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -953,6 +962,7 @@ type TemplateRef struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
+	// DEPRECATED: This value is not used anymore and is ignored
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
@@ -1059,6 +1069,9 @@ type WorkflowStatus struct {
 
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
+
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
 	// Progress to completion
 	Progress Progress `json:"progress,omitempty" protobuf:"bytes,17,opt,name=progress,casttype=Progress"`
@@ -1372,6 +1385,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
 	// Progress to completion
 	Progress Progress `json:"progress,omitempty" protobuf:"bytes,25,opt,name=progress,casttype=Progress"`
 
@@ -1465,6 +1481,13 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
+func (ws *WorkflowStatus) GetDuration() time.Duration {
+	if ws.FinishedAt.IsZero() {
+		return 0
+	}
+	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
+}
+
 // Pending returns whether or not the node is in pending state
 func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
@@ -1531,6 +1554,17 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+func (n NodeStatus) GetDuration() time.Duration {
+	if n.FinishedAt.IsZero() {
+		return 0
+	}
+	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
+func (in *NodeStatus) IsLeaf() bool {
+	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

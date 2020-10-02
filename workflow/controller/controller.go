@@ -40,6 +40,7 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/controller/informer"
 	"github.com/argoproj/argo/workflow/controller/pod"
@@ -92,6 +93,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
+	estimatorFactory      estimation.EstimatorFactory
 	syncManager           *sync.SyncManager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
@@ -172,11 +174,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
+	wfc.updateEstimatorFactory()
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
@@ -844,6 +847,11 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
+}
+
+// call this func whenever the configuration changes, or when the workflow informer changes
+func (wfc *WorkflowController) updateEstimatorFactory() {
+	wfc.estimatorFactory = estimation.NewEstimatorFactory(wfc.wfInformer, wfc.hydrator, wfc.wfArchive)
 }
 
 // setWorkflowDefaults sets values in the workflow.Spec with defaults from the
