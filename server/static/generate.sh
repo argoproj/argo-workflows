@@ -3,12 +3,17 @@ set -eu -o pipefail
 
 cd "$(dirname $0)/../.."
 
-if [ "${STATIC_FILES:=true}" = true ]; then
-  yarn --cwd ui build
-	JOBS=max yarn --cwd ui build
+if [ ui/dist/app -nt ui/dist/app/index.html ]; then
+  echo "changes since last build"
+  if [ "${STATIC_FILES:=true}" = true ]; then
+    yarn --cwd ui install
+    JOBS=max yarn --cwd ui build
+  else
+    mkdir -p ui/dist/app
+    echo "Built without static files" > ui/dist/app/index.html
+  fi
 else
-  mkdir -p ui/dist/app
-	echo "Built without static files" > ui/dist/app/index.html
+  echo "no changes since last build"
 fi
 
-staticfiles -o files.go ../../ui/dist/app
+staticfiles -o "$(dirname $0)/files.go" ui/dist/app

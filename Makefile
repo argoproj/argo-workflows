@@ -139,6 +139,7 @@ dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
 dist/argo: $(CLI_PKGS)
+	go generate ./server/static
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
@@ -226,35 +227,27 @@ vendor:
 
 $(GOPATH)/bin/controller-gen: vendor
 	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
-	rm -Rf vendor
 
 $(GOPATH)/bin/go-to-protobuf: vendor
 	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
-	rm -Rf vendor
 
 $(GOPATH)/bin/protoc-gen-gogo: vendor
 	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
-	rm -Rf vendor
 
 $(GOPATH)/bin/protoc-gen-gogofast: vendor
 	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
-	rm -Rf vendor
 
 $(GOPATH)/bin/protoc-gen-grpc-gateway: vendor
 	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-	rm -Rf vendor
 
 $(GOPATH)/bin/protoc-gen-swagger: vendor
 	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-	rm -Rf vendor
 
 $(GOPATH)/bin/openapi-gen: vendor
 	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
-	rm -Rf vendor
 
 $(GOPATH)/bin/swagger: vendor
 	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
-	rm -Rf vendor
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
@@ -303,6 +296,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test:
+	go generate ./server/static
 	env KUBECONFIG=/dev/null go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
