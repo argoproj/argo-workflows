@@ -238,11 +238,11 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		return strconv.Atoi(value)
 	}
 
-	lockReleased := func(key string) {
+	nextWorkflow := func(key string) {
 		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
 	}
 
-	wfc.syncManager = sync.NewLockManager(getSyncLimit, lockReleased)
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
 
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})

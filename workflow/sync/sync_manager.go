@@ -9,21 +9,21 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-type LockReleased func(string)
+type NextWorkflow func(string)
 type GetSyncLimit func(string) (int, error)
 
 type Manager struct {
 	syncLockMap  map[string]Semaphore
 	lock         *sync.Mutex
-	lockReleased LockReleased
+	nextWorkflow NextWorkflow
 	getSyncLimit GetSyncLimit
 }
 
-func NewLockManager(getSyncLimit GetSyncLimit, lockReleased LockReleased) *Manager {
+func NewLockManager(getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow) *Manager {
 	return &Manager{
 		syncLockMap:  make(map[string]Semaphore),
 		lock:         &sync.Mutex{},
-		lockReleased: lockReleased,
+		nextWorkflow: nextWorkflow,
 		getSyncLimit: getSyncLimit,
 	}
 }
@@ -255,11 +255,11 @@ func (cm *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) 
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semaphoreName, limit, cm.lockReleased, "semaphore"), nil
+	return NewSemaphore(semaphoreName, limit, cm.nextWorkflow, "semaphore"), nil
 }
 
 func (cm *Manager) initializeMutex(mutexName string) (Semaphore, error) {
-	return NewMutex(mutexName, cm.lockReleased), nil
+	return NewMutex(mutexName, cm.nextWorkflow), nil
 }
 
 func (cm *Manager) isSemaphoreSizeChanged(semaphore Semaphore) (bool, int, error) {

@@ -291,6 +291,7 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	}
 	return &wf
 }
+
 func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")

@@ -17,13 +17,13 @@ type PrioritySemaphore struct {
 	semaphore    *sema.Weighted
 	lockHolder   map[string]bool
 	lock         *sync.Mutex
-	lockReleased LockReleased
+	nextWorkflow NextWorkflow
 	log          *log.Entry
 }
 
 var _ Semaphore = &PrioritySemaphore{}
 
-func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType string) *PrioritySemaphore {
+func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string) *PrioritySemaphore {
 	return &PrioritySemaphore{
 		name:         name,
 		limit:        limit,
@@ -31,7 +31,7 @@ func NewSemaphore(name string, limit int, lockReleased LockReleased, lockType st
 		semaphore:    sema.NewWeighted(int64(limit)),
 		lockHolder:   make(map[string]bool),
 		lock:         &sync.Mutex{},
-		lockReleased: lockReleased,
+		nextWorkflow: nextWorkflow,
 		log: log.WithFields(log.Fields{
 			lockType: name,
 		}),
@@ -90,14 +90,14 @@ func (s *PrioritySemaphore) release(key string) bool {
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))
 		if s.pending.Len() > 0 {
 			item := s.pending.peek()
-			keyStr := fmt.Sprintf("%v", item.key)
+			keyStr := fmt.Sprint(item.key)
 			items := strings.Split(keyStr, "/")
 			workflowKey := keyStr
 			if len(items) == 3 {
 				workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
 			}
 			s.log.Debugf("Enqueue the workflow %s", workflowKey)
-			s.lockReleased(workflowKey)
+			s.nextWorkflow(workflowKey)
 		}
 	}
 	return true

@@ -16,11 +16,11 @@ var _ Semaphore = &PriorityMutex{}
 // NewMutex creates new mutex lock object
 // name of the mutex
 // callbackFunc is a release notification function.
-func NewMutex(name string, callbackFunc func(string)) *PriorityMutex {
+func NewMutex(name string, nextWorkflow NextWorkflow) *PriorityMutex {
 	return &PriorityMutex{
 		name:  name,
 		lock:  &sync.Mutex{},
-		mutex: NewSemaphore(name, 1, callbackFunc, "mutex"),
+		mutex: NewSemaphore(name, 1, nextWorkflow, "mutex"),
 	}
 }
 

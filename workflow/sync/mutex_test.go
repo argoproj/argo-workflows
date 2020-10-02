@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"k8s.io/utils/pointer"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,8 @@ var mutexWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: synchronization-wf-level-
+  name: one
+  namespace: default
 spec:
   entrypoint: whalesay
   synchronization:
@@ -101,9 +103,9 @@ func TestMutexLock(t *testing.T) {
 		assert.Equal(t, 1, len(concurrenyMgr.syncLockMap))
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
-		var nextKey string
+		var nextWorkflow string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
-			nextKey = key
+			nextWorkflow = key
 		})
 		wf := unmarshalWF(mutexWf)
 		wf1 := wf.DeepCopy()
@@ -134,6 +136,7 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
+		wf2.Spec.Priority = pointer.Int32Ptr(5)
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", wf2.Spec.Synchronization)
 		assert.NoError(t, err)
@@ -149,7 +152,7 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		concurrenyMgr.Release(wf, "", wf.Spec.Synchronization)
-		assert.Equal(t, holderKey2, nextKey)
+		assert.Equal(t, holderKey2, nextWorkflow)
 		assert.NotNil(t, wf.Status.Synchronization)
 		assert.Equal(t, 0, len(wf.Status.Synchronization.Mutex.Holding))
 
