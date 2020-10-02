@@ -24,7 +24,7 @@ func captureOutput(f func()) string {
 func TestHTTPArtifactDriver_Load(t *testing.T) {
 	driver := &HTTPArtifactDriver{}
 	a := &wfv1.HTTPArtifact{
-		URL: "https://github.com/argoproj/argo/v3",
+		URL: "https://github.com/argoproj/argo",
 	}
 	t.Run("Found", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
@@ -48,13 +48,13 @@ func TestHTTPArtifactDriver_Load(t *testing.T) {
 				assert.NoError(t, err)
 			}
 		})
-		curl := "curl -fsS -L -o /tmp/found-with-request-headers https://github.com/argoproj/argo/v3 -H Accept: application/json -H Authorization: Bearer foo-bar"
+		curl := "curl -fsS -L -o /tmp/found-with-request-headers https://github.com/argoproj/argo -H Accept: application/json -H Authorization: Bearer foo-bar"
 		assert.Regexp(t, regexp.MustCompile(curl), output)
 	})
 	t.Run("NotFound", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
-				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo/v3/not-found"},
+				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo/not-found"},
 			},
 		}, "/tmp/not-found")
 		if assert.Error(t, err) {
