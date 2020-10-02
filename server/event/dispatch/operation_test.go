@@ -10,10 +10,11 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
 
+	"gopkg.in/square/go-jose.v2/jwt"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/jws"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -45,7 +46,7 @@ func TestNewOperation(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimSetKey, &jws.ClaimSet{Sub: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &jwt.Claims{Subject: "my-sub"})
 	recorder := record.NewFakeRecorder(1)
 
 	// act
