@@ -503,7 +503,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "1", parameters[0].Value.String())
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 	t.Run("ParameterFile", func(t *testing.T) {
