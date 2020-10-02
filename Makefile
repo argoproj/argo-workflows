@@ -150,6 +150,9 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
+$(GOPATH)/bin/easyjson:
+	go get -u github.com/mailru/easyjson/...
+
 $(GOPATH)/bin/staticfiles:
 	go get bou.ke/staticfiles
 
@@ -241,7 +244,8 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger manifests mocks docs
+codegen: status proto swagger manifests mocks docs $(GOPATH)/bin/easyjson
+	go generate ./...
 
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen

@@ -1,3 +1,4 @@
+//go:generate easyjson $GOFILE
 package v1alpha1
 
 // A link to another app.

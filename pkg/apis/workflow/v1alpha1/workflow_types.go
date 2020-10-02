@@ -1,3 +1,4 @@
+//go:generate easyjson $GOFILE
 package v1alpha1
 
 import (
@@ -373,6 +374,7 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 }
 
 // +kubebuilder:validation:Type=array
+//easyjson:skip
 type ParallelSteps struct {
 	Steps []WorkflowStep `json:"-" protobuf:"bytes,1,rep,name=steps"`
 }

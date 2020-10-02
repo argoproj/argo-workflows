@@ -35,6 +35,7 @@ require (
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/klauspost/compress v1.9.7 // indirect
 	github.com/lib/pq v1.3.0 // indirect
+	github.com/mailru/easyjson v0.7.6
 	github.com/mattn/goreman v0.3.5
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/pkg/errors v0.9.1
