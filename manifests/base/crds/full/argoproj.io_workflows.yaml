@@ -7284,6 +7284,11 @@ spec:
                     type: string
                   storedTemplateID:
                     type: string
+                  synchronizationStatus:
+                    properties:
+                      waiting:
+                        type: string
+                    type: object
                   templateName:
                     type: string
                   templateRef:

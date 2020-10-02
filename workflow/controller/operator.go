@@ -43,6 +43,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/metrics"
+	argosync "github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
@@ -959,6 +960,10 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 		}
 		switch node.Phase {
 		case wfv1.NodePending, wfv1.NodeRunning:
+			if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+				// Do not include pending nodes that are waiting for a lock
+				continue
+			}
 			activePods++
 		}
 	}
@@ -1501,8 +1506,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if node != nil {
 		if node.Fulfilled() {
-			if resolvedTmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+			if processedTmpl.Synchronization != nil {
+				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1547,8 +1552,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	if processedTmpl.Synchronization != nil {
-		priority, creationTime := getWfPriority(woc.wf)
-		lockAcquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, resolvedTmpl.Synchronization)
+		lockAcquired, wfUpdated, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
@@ -1556,16 +1560,22 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
-			return node, nil
-		}
-
-		woc.updated = wfUpdate
-		if lockAcquired && wfUpdate {
+			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
+			if err != nil {
+				// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
+				// unexpected behavior and is a bug.
+				panic("bug: GetLockName should not return an error after a call to TryAcquire")
+			}
+			return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName()), nil
+		} else {
+			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
 				node.Message = ""
+				node = woc.markNodeWaitingForLock(node.Name, "")
 			}
-			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 		}
+
+		woc.updated = wfUpdated
 	}
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
@@ -1647,8 +1657,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		node = woc.markNodeError(nodeName, err)
 
-		if resolvedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, resolvedTmpl.Synchronization)
+		if processedTmpl.Synchronization != nil {
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
@@ -1986,6 +1996,29 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
 	node := woc.wf.GetNodeByName(nodeName)
 	return woc.markNodePhase(nodeName, wfv1.NodePending, fmt.Sprintf("Pending %s", time.Since(node.StartedAt.Time)))
+}
+
+// markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
+func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string) *wfv1.NodeStatus {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		return node
+	}
+
+	if node.SynchronizationStatus == nil {
+		node.SynchronizationStatus = &wfv1.NodeSynchronizationStatus{}
+	}
+
+	if lockName == "" {
+		// If we are no longer waiting for a lock, nil out the sync status
+		node.SynchronizationStatus = nil
+	} else {
+		node.SynchronizationStatus.Waiting = lockName
+	}
+
+	woc.wf.Status.Nodes[node.ID] = *node
+	woc.updated = true
+	return node
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
