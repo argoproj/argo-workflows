@@ -446,6 +446,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			case ErrDeadlineExceeded:
 				return
 			case ErrParallelismReached:
+			case ErrMaxDepthExceeded:
 			case ErrTimeout:
 				_ = woc.markNodePhase(taskNodeName, wfv1.NodeFailed, err.Error())
 				return

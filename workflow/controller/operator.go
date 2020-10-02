@@ -93,7 +93,6 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
-
 	// execWf holds the Workflow for use in execution.
 	// In Normal workflow scenario: It holds copy of workflow object
 	// In Submit From WorkflowTemplate: It holds merged workflow with WorkflowDefault, Workflow and WorkflowTemplate
@@ -101,6 +100,9 @@ type wfOperationCtx struct {
 	// 1. `wf.Spec.Suspend`
 	// 2. `wf.Spec.Shutdown`
 	execWf *wfv1.Workflow
+	// currentStackDepth tracks the depth of the "stack", increased with every nested call to executeTemplate and decreased
+	// when such calls return. This is used to prevent infinite recursion
+	currentStackDepth int
 }
 
 var (
@@ -110,6 +112,8 @@ var (
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
+	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
+	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, "Maximum recursion depth exceeded")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -150,6 +154,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		currentStackDepth:      0,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -1468,6 +1473,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), opts.boundaryID)
 
 	node := woc.wf.GetNodeByName(nodeName)
+
+	woc.currentStackDepth++
+	defer func() {woc.currentStackDepth--}()
+
+	if woc.currentStackDepth >= woc.controller.maxStackDepth {
+		return woc.initializeNodeOrMarkError(node, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, ErrMaxDepthExceeded), ErrMaxDepthExceeded
+	}
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()

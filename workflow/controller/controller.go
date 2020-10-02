@@ -54,6 +54,7 @@ import (
 )
 
 const enoughTimeForInformerSync = 1 * time.Second
+const defaultMaxStackDepth = 500
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -77,6 +78,10 @@ type WorkflowController struct {
 	kubeclientset    kubernetes.Interface
 	dynamicInterface dynamic.Interface
 	wfclientset      wfclientset.Interface
+
+	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
+	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
+	maxStackDepth int
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer            cache.SharedIndexInformer
@@ -135,6 +140,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 	wfc.UpdateConfig()
 
+	wfc.maxStackDepth = wfc.getMaxStackDepth()
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
 	workqueue.SetProvider(wfc.metrics)
@@ -883,6 +889,13 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 
 func (wfc *WorkflowController) getParallelism() int {
 	return wfc.Config.Parallelism
+}
+
+func (wfc *WorkflowController) getMaxStackDepth() int {
+	if wfc.Config.MaxStackDepth == 0 {
+		return defaultMaxStackDepth
+	}
+	return wfc.Config.MaxStackDepth
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

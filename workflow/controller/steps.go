@@ -239,8 +239,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
+			case ErrMaxDepthExceeded:
 			case ErrTimeout:
-				return woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("child '%s' timedout", childNodeName))
+				return woc.markNodePhase(node.Name, wfv1.NodeFailed, err.Error())
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.ID, childNodeName, err.Error())

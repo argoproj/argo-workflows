@@ -75,6 +75,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	}
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory()
+	wfc.maxStackDepth = wfc.getMaxStackDepth()
 	return nil
 }
 

@@ -90,6 +90,10 @@ type Config struct {
 
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
+
+	// MaxStackDepth is a configurable limit to the depth of the "stack", which is increased with every template reference
+	// and decreased when such calls return. This is used to prevent infinite recursion.
+	MaxStackDepth int `json:"maxStackDepth,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
