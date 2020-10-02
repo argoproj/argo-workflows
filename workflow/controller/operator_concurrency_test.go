@@ -123,7 +123,8 @@ func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 }
 
 func TestSemaphoreTmplLevel(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
@@ -184,7 +185,8 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreScriptTmplLevel(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
@@ -244,7 +246,8 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreResourceTmplLevel(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
@@ -304,7 +307,8 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	})
 }
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})

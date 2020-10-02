@@ -46,6 +46,7 @@ import (
 	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/progress"
 	argosync "github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
@@ -496,6 +497,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	resource.UpdateResourceDurations(woc.wf)
+	progress.UpdateProgress(woc.wf)
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.

@@ -160,6 +160,39 @@ status:
 	assert.Equal(t, wfv1.EstimatedDuration(1), woc.wf.Status.Nodes.FindByDisplayName("pod").EstimatedDuration)
 }
 
+func TestDefaultProgress(t *testing.T) {
+	wf := unmarshalWF(`
+metadata:
+  name: my-wf
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+   - name: main
+     dag:
+       tasks:
+       - name: pod
+         template: pod
+   - name: pod
+     container: 
+       image: my-image
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes[woc.wf.Name].Progress)
+	assert.Equal(t, wfv1.Progress("1/1"), woc.wf.Status.Nodes.FindByDisplayName("pod").Progress)
+}
+
 var sidecarWithVol = `
 # Verifies sidecars can reference volumeClaimTemplates
 apiVersion: argoproj.io/v1alpha1

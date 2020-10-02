@@ -68,15 +68,6 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
-func (t NodeType) IsLeaf() bool {
-	switch t {
-	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
-		return true
-	default:
-		return false
-	}
-}
-
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -1092,6 +1083,9 @@ type WorkflowStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,17,opt,name=progress,casttype=Progress"`
+
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
@@ -1356,6 +1350,9 @@ type NodeStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,26,opt,name=progress,casttype=Progress"`
+
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
@@ -1529,10 +1526,6 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
-}
-
-func (in *NodeStatus) IsLeaf() bool {
-	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

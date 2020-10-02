@@ -3042,6 +3042,10 @@
           "description": "PodIP captures the IP of the pod for daemoned steps",
           "type": "string"
         },
+        "progress": {
+          "description": "Progress to completion",
+          "type": "string"
+        },
         "resourcesDuration": {
           "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
           "type": "object",
@@ -4600,6 +4604,10 @@
         },
         "phase": {
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+          "type": "string"
+        },
+        "progress": {
+          "description": "Progress to completion",
           "type": "string"
         },
         "resourcesDuration": {
