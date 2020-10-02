@@ -3038,7 +3038,12 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	return specHolder.GetWorkflowSpec(), nil
+	wftSpec := specHolder.GetWorkflowSpec()
+
+	// Supporting TTLSecondsAfterFinished in TTLStrategy
+	wfutil.ConstructTTLStrategy(wftSpec)
+
+	return wftSpec, nil
 }
 
 func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {

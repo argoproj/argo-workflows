@@ -604,24 +604,24 @@ func TestGetTTLStrategy(t *testing.T) {
 		SecondsAfterCompletion: &ten,
 	}
 
-	ttl := getTTLStrategy(wf)
+	ttl := getTTLStrategy(wf, nil)
 	assert.NotNil(t, ttl)
 	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 
 	wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
-	ttl = getTTLStrategy(wf1)
+	ttl = getTTLStrategy(wf1, nil)
 	assert.NotNil(t, ttl)
 	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 	wf1.Spec.TTLStrategy = nil
 	wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
-	ttl = getTTLStrategy(wf1)
+	ttl = getTTLStrategy(wf1, nil)
 	assert.Nil(t, ttl)
 
 	wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
-	ttl = getTTLStrategy(wf2)
+	ttl = getTTLStrategy(wf2, nil)
 	assert.NotNil(t, ttl)
 	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 	wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
-	ttl = getTTLStrategy(wf2)
+	ttl = getTTLStrategy(wf2, nil)
 	assert.Nil(t, ttl)
 }

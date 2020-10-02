@@ -120,15 +120,22 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
-	if wf.Spec.TTLSecondsAfterFinished != nil {
-		if wf.Spec.TTLStrategy == nil {
-			ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompletion: wf.Spec.TTLSecondsAfterFinished}
-			wf.Spec.TTLStrategy = &ttlstrategy
-		} else if wf.Spec.TTLStrategy.SecondsAfterCompletion == nil {
-			wf.Spec.TTLStrategy.SecondsAfterCompletion = wf.Spec.TTLSecondsAfterFinished
+	ConstructTTLStrategy(&wf.Spec)
+	return &wf, err
+}
+
+// This function can be remove once `TTLSecondsAfterFinished` completely removed.
+func ConstructTTLStrategy(spec *wfv1.WorkflowSpec) {
+	if spec != nil {
+		if spec.TTLSecondsAfterFinished != nil {
+			if spec.TTLStrategy == nil {
+				ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompletion: spec.TTLSecondsAfterFinished}
+				spec.TTLStrategy = &ttlstrategy
+			} else if spec.TTLStrategy.SecondsAfterCompletion == nil {
+				spec.TTLStrategy.SecondsAfterCompletion = spec.TTLSecondsAfterFinished
+			}
 		}
 	}
-	return &wf, err
 }
 
 // ToUnstructured converts an workflow to an Unstructured object
