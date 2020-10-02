@@ -35,7 +35,7 @@ func NewDeleteCommand() *cobra.Command {
   argo delete @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "") {
+			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
