@@ -669,6 +669,15 @@ message NodeStatus {
 
   // MemoizationStatus holds information about cached nodes
   optional MemoizationStatus memoizationStatus = 23;
+
+  // SynchronizationStatus is the synchronization status of the node
+  optional NodeSynchronizationStatus synchronizationStatus = 25;
+}
+
+// NodeSynchronizationStatus stores the status of a node
+message NodeSynchronizationStatus {
+  // Waiting is the name of the lock that this node is waiting for
+  optional string waiting = 1;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
