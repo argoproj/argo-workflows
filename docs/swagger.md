@@ -1322,10 +1322,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default is the default value to use for an input parameter if a value was not supplied | No |
+| default | string | Default is the default value to use for an input parameter if a value was not supplied | No |
 | globalName | string | GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters | No |
 | name | string | Name is the parameter name | Yes |
-| value | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
+| value | string | Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values | No |
 | valueFrom | [io.argoproj.workflow.v1alpha1.ValueFrom](#io.argoproj.workflow.v1alpha1.valuefrom) | ValueFrom is the source for the output parameter's value | No |
 
 #### io.argoproj.workflow.v1alpha1.PodGC
@@ -1636,7 +1636,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| default | [io.k8s.apimachinery.pkg.util.intstr.IntOrString](#io.k8s.apimachinery.pkg.util.intstr.intorstring) | Default specifies a value to be used if retrieving the value from the specified source fails | No |
+| default | string | Default specifies a value to be used if retrieving the value from the specified source fails | No |
 | event | string | Selector (<https://github.com/antonmedv/expr>) that is evaluated against the event to get the value of the parameter. E.g. `payload.message` | No |
 | jqFilter | string | JQFilter expression against the resource object in resource templates | No |
 | jsonPath | string | JSONPath of a resource to retrieve an output parameter value from in resource templates | No |

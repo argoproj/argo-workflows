@@ -498,7 +498,7 @@ func TestApplySubmitOpts(t *testing.T) {
 				},
 			},
 		}
-		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=1"}})
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Parameters: []string{"a=81861780812"}})
 		assert.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
@@ -511,14 +511,14 @@ func TestApplySubmitOpts(t *testing.T) {
 		file, err := ioutil.TempFile("", "")
 		assert.NoError(t, err)
 		defer func() { _ = os.Remove(file.Name()) }()
-		err = ioutil.WriteFile(file.Name(), []byte(`a: 1`), 0644)
+		err = ioutil.WriteFile(file.Name(), []byte(`a: 81861780812`), 0644)
 		assert.NoError(t, err)
 		err = ApplySubmitOpts(wf, &wfv1.SubmitOpts{ParameterFile: file.Name()})
 		assert.NoError(t, err)
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "1", parameters[0].Value.String())
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 }

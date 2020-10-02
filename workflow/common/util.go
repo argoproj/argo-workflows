@@ -260,8 +260,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
 		if argParam != nil && argParam.Value != nil {
-			newValue := *argParam.Value
-			inParam.Value = &newValue
+			inParam.Value = argParam.Value
 		}
 		if inParam.Value == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)

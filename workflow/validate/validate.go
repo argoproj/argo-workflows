@@ -92,7 +92,8 @@ var (
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	return &wfv1.Parameter{Name: name, Value: wfv1.Int64OrStringPtr(placeholderGenerator.NextPlaceholder())}
+	s := placeholderGenerator.NextPlaceholder()
+	return &wfv1.Parameter{Name: name, Value: wfv1.Int64OrStringPtr(s)}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
