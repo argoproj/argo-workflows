@@ -3651,9 +3651,12 @@ spec:
                         type: object
                       key:
                         type: string
+                      maxAge:
+                        type: string
                     required:
                     - cache
                     - key
+                    - maxAge
                     type: object
                   metadata:
                     properties:
@@ -6683,6 +6686,8 @@ spec:
                     type: string
                 type: object
               type: array
+            estimatedDuration:
+              type: integer
             finishedAt:
               format: date-time
               type: string
@@ -6701,6 +6706,8 @@ spec:
                     type: boolean
                   displayName:
                     type: string
+                  estimatedDuration:
+                    type: integer
                   finishedAt:
                     format: date-time
                     type: string
@@ -11123,9 +11130,12 @@ spec:
                         type: object
                       key:
                         type: string
+                      maxAge:
+                        type: string
                     required:
                     - cache
                     - key
+                    - maxAge
                     type: object
                   metadata:
                     properties:
@@ -17004,9 +17014,12 @@ spec:
                             type: object
                           key:
                             type: string
+                          maxAge:
+                            type: string
                         required:
                         - cache
                         - key
+                        - maxAge
                         type: object
                       metadata:
                         properties:

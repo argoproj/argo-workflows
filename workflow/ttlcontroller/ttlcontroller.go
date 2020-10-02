@@ -16,6 +16,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	commonutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -177,8 +178,8 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	if c.ttlExpired(wf) {
 		log.Infof("Deleting TTL expired workflow %s/%s", wf.Namespace, wf.Name)
-		policy := metav1.DeletePropagationForeground
-		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
+
+		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: commonutil.GetDeletePropagation()})
 		if err != nil {
 			return err
 		}

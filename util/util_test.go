@@ -1,7 +1,10 @@
 package util
 
 import (
+	"os"
 	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -62,5 +65,19 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 	assert.Equal(t, name, "")
 	assert.NotPanics(t, func() {
 		_ = RecoverWorkflowNameFromSelectorStringIfAny("whatever")
+	})
+}
+
+func TestGetDeletePropagation(t *testing.T) {
+	t.Run("GetDefaultPolicy", func(t *testing.T) {
+		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
+	})
+	t.Run("GetEnvPolicy", func(t *testing.T) {
+		os.Setenv("WF_DEL_PROPAGATION_POLICY", "Foreground")
+		assert.Equal(t, metav1.DeletePropagationForeground, *GetDeletePropagation())
+	})
+	t.Run("GetEnvPolicyWithEmpty", func(t *testing.T) {
+		os.Setenv("WF_DEL_PROPAGATION_POLICY", "")
+		assert.Equal(t, metav1.DeletePropagationBackground, *GetDeletePropagation())
 	})
 }
