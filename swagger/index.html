@@ -3297,6 +3297,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1nodesynchronizationstatus" title="io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1nonestrategy" title="io.argoproj.workflow.v1alpha1.NoneStrategy" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.NoneStrategy
   </a>
@@ -6806,6 +6813,13 @@
           <li class="md-nav__item">
   <a href="#ioargoprojworkflowv1alpha1nodestatus" title="io.argoproj.workflow.v1alpha1.NodeStatus" class="md-nav__link">
     io.argoproj.workflow.v1alpha1.NodeStatus
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ioargoprojworkflowv1alpha1nodesynchronizationstatus" title="io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus" class="md-nav__link">
+    io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus
   </a>
   
 </li>
@@ -12396,6 +12410,12 @@
 <td>No</td>
 </tr>
 <tr>
+<td>synchronizationStatus</td>
+<td><a href="#io.argoproj.workflow.v1alpha1.nodesynchronizationstatus">io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus</a></td>
+<td>SynchronizationStatus is the synchronization status of the node</td>
+<td>No</td>
+</tr>
+<tr>
 <td>templateName</td>
 <td>string</td>
 <td>TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)</td>
@@ -12423,6 +12443,26 @@
 <td>workflowTemplateName</td>
 <td>string</td>
 <td>WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<h4 id="ioargoprojworkflowv1alpha1nodesynchronizationstatus">io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus<a class="headerlink" href="#ioargoprojworkflowv1alpha1nodesynchronizationstatus" title="Permanent link">&para;</a></h4>
+<p>NodeSynchronizationStatus stores the status of a node</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>waiting</td>
+<td>string</td>
+<td>Waiting is the name of the lock that this node is waiting for</td>
 <td>No</td>
 </tr>
 </tbody>
