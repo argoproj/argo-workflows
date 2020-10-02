@@ -19,7 +19,7 @@ import (
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth/sso/mocks"
+	ssomocks "github.com/argoproj/argo/server/auth/sso/mocks"
 	"github.com/argoproj/argo/server/auth/types"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -99,7 +99,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
-		ssoIf := &mocks.Interface{}
+		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(false)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
@@ -118,7 +118,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	log.AddHook(hook)
 	defer log.StandardLogger().ReplaceHooks(nil)
 	t.Run("SSO+RBAC,precedence=1", func(t *testing.T) {
-		ssoIf := &mocks.Interface{}
+		ssoIf := &ssomocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"my-group", "other-group"}}, nil)
 		ssoIf.On("IsRBACEnabled").Return(true)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
@@ -129,33 +129,33 @@ func TestServer_GetWFClient(t *testing.T) {
 				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 				if assert.NotNil(t, GetClaims(ctx)) {
 					assert.Equal(t, []string{"my-group", "other-group"}, GetClaims(ctx).Groups)
-				}
-				assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 			}
+			assert.Equal(t, "my-sa", hook.LastEntry().Data["serviceAccount"])
 		}
-	})
-	t.Run("SSO+RBAC,precedence=0", func(t *testing.T) {
-		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"other-group"}}, nil)
-		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+	}
+})
+t.Run("SSO+RBAC,precedence=0", func (t *testing.T) {
+	ssoIf := &ssomocks.Interface{}
+	ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{Groups: []string{"other-group"}}, nil)
+	ssoIf.On("IsRBACEnabled").Return(true)
+	g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+	if assert.NoError(t, err) {
+		_, err := g.Context(x("Bearer v2:whatever"))
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer v2:whatever"))
-			if assert.NoError(t, err) {
-				assert.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
-			}
+			assert.Equal(t, "my-other-sa", hook.LastEntry().Data["serviceAccount"])
 		}
-	})
-	t.Run("SSO+RBAC,denied", func(t *testing.T) {
-		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{}, nil)
-		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
-		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer v2:whatever"))
-			assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
-		}
-	})
+	}
+})
+t.Run("SSO+RBAC,denied", func (t *testing.T) {
+	ssoIf := &ssomocks.Interface{}
+	ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&types.Claims{}, nil)
+	ssoIf.On("IsRBACEnabled").Return(true)
+	g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf, clientForAuthorization, "my-ns")
+	if assert.NoError(t, err) {
+		_, err := g.Context(x("Bearer v2:whatever"))
+		assert.EqualError(t, err, "rpc error: code = PermissionDenied desc = not allowed")
+	}
+})
 }
 
 func x(authorization string) context.Context {

@@ -635,6 +635,74 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 		Status(200)
 }
 
+func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
+	s.e().POST("/api/v1/workflows/argo").
+		WithBytes([]byte((`{
+  "workflow": {
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Workflow",
+    "metadata": {
+      "generateName": "hello-world-",
+      "name": "hello-world",
+      "labels": {
+        "workflows.argoproj.io/archive-strategy": "false"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "argoproj/argosay:v2",
+            "args": [
+              "exit",
+              "0"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(200)
+
+	s.e().POST("/api/v1/workflows/argo").
+		WithBytes([]byte((`{
+  "workflow": {
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Workflow",
+    "metadata": {
+      "generateName": "hello-world-",
+      "name": "hello-world",
+      "labels": {
+        "workflows.argoproj.io/archive-strategy": "false"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "argoproj/argosay:v2",
+            "args": [
+              "exit",
+              "0"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(500).
+		Body().
+		Contains("create request failed due to timeout, but it's possible that workflow")
+}
+
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 	s.e().POST("/api/v1/workflows/argo").
 		WithBytes([]byte(`{

@@ -48,7 +48,7 @@ type sso struct {
 	baseHRef        string
 	secure          bool
 	privateKey      crypto.PrivateKey
-	encryptor       jose.Encrypter
+	encrypter       jose.Encrypter
 	rbacConfig      *rbac.Config
 }
 
@@ -159,7 +159,7 @@ func newSso(
 		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	encryptor, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
@@ -170,7 +170,7 @@ func newSso(
 		baseHRef:        baseHRef,
 		secure:          secure,
 		privateKey:      privateKey,
-		encryptor:       encryptor,
+		encrypter:       encrypter,
 		rbacConfig:      c.RBAC,
 	}, nil
 }
@@ -230,7 +230,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
-	raw, err := jwt.Encrypted(s.encryptor).Claims(argoClaims).CompactSerialize()
+	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)
 	}

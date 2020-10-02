@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/argoproj/argo/server/auth"

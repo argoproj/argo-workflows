@@ -3064,6 +3064,10 @@
           "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
           "type": "string"
         },
+        "synchronizationStatus": {
+          "description": "SynchronizationStatus is the synchronization status of the node",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus"
+        },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
           "type": "string"
@@ -3082,6 +3086,16 @@
         },
         "workflowTemplateName": {
           "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus": {
+      "description": "NodeSynchronizationStatus stores the status of a node",
+      "type": "object",
+      "properties": {
+        "waiting": {
+          "description": "Waiting is the name of the lock that this node is waiting for",
           "type": "string"
         }
       }

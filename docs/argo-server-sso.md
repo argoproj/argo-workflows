@@ -42,6 +42,15 @@ kubectl delete secret sso
 
 All users will need to log in again. Sorry.
 
+```
+kubectl delete secret sso
+```
+
+!!! Warning
+    The old key will be in the memory the any running Argo Server, and they will therefore accept and user with token encrypted using the old key. Every Argo Server MUST be restarted. 
+
+All users will need to log in again. Sorry.
+
 ## SSO RBAC
 
 > v2.12 and after

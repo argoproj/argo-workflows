@@ -33,7 +33,7 @@ type ContextKey string
 const (
 	WfKey     ContextKey = "versioned.Interface"
 	KubeKey   ContextKey = "kubernetes.Interface"
-	ClaimsKey ContextKey = "Claims"
+	ClaimsKey ContextKey = "types.Claims"
 )
 
 type Gatekeeper interface {
@@ -45,12 +45,12 @@ type Gatekeeper interface {
 type ClientForAuthorization func(authorization string) (*rest.Config, versioned.Interface, kubernetes.Interface, error)
 
 type gatekeeper struct {
-	Modes                  Modes
+	Modes Modes
 	// global clients, not to be used if there are better ones
-	wfClient   versioned.Interface
-	kubeClient kubernetes.Interface
-	restConfig *rest.Config
-	ssoIf      sso.Interface
+	wfClient               versioned.Interface
+	kubeClient             kubernetes.Interface
+	restConfig             *rest.Config
+	ssoIf                  sso.Interface
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
 	namespace string

@@ -6,11 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
+	"gopkg.in/square/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/pointer"
-
-	"gopkg.in/square/go-jose.v2/jwt"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
