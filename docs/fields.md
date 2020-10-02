@@ -318,8 +318,6 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
 
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
-
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
 
@@ -530,8 +528,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -883,8 +879,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
-
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
@@ -1193,8 +1187,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -1796,8 +1788,6 @@ Template is a reusable and composable unit of execution in a workflow
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -2917,8 +2907,6 @@ Pod metdata
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -4193,8 +4181,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
 
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
-
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
@@ -4718,8 +4704,6 @@ A single application container that you want to run within a pod.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo/blob/master/examples/resubmit.yaml)
 
@@ -5378,8 +5362,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
@@ -6399,8 +6381,6 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo/blob/master/examples/pod-spec-yaml-patch.yaml)
-
-- [`progress-workflowtemplate.yaml`](https://github.com/argoproj/argo/blob/master/examples/progress-workflowtemplate.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo/blob/master/examples/recursive-for-loop.yaml)
 
