@@ -41,10 +41,10 @@ import (
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
 var ExecutorRetry = wait.Backoff{
-	Steps:    8,
+	Steps:    5,
 	Duration: 1 * time.Second,
-	Factor:   1.0,
-	Jitter:   0.1,
+	Factor:   1.6,
+	Jitter:   0.5,
 }
 
 const (
