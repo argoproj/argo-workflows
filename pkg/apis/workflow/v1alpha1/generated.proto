@@ -633,7 +633,7 @@ message NodeStatus {
   optional int64 estimatedDuration = 24;
 
   // Progress to completion
-  optional string progress = 25;
+  optional string progress = 26;
 
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
   map<string, int64> resourcesDuration = 21;

@@ -1351,7 +1351,7 @@ type NodeStatus struct {
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
 	// Progress to completion
-	Progress Progress `json:"progress,omitempty" protobuf:"bytes,25,opt,name=progress,casttype=Progress"`
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,26,opt,name=progress,casttype=Progress"`
 
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
