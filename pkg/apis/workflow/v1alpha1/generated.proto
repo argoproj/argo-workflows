@@ -720,6 +720,7 @@ message Outputs {
 }
 
 // +kubebuilder:validation:Type=array
+// easyjson:skip
 message ParallelSteps {
   repeated WorkflowStep steps = 1;
 }
