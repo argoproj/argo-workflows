@@ -213,7 +213,7 @@ spec:
   arguments:
     parameters:
     - name: lines-count
-      value: 3
+      value: "3"
     artifacts:
     - name: text
       raw:
