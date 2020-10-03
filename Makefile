@@ -99,7 +99,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-CLI_DOCS         := $(shell find docs/cli -type f)
+CLI_DOCS         := $(shell lt -t docs/cli | head -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -470,7 +470,7 @@ docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
 docs: api/openapi-spec/swagger.json docs/swagger.md $(CLI_DOCS)
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
-$(CLI_DOCS): $(CLI_PKGS)
+$(CLI_DOCS): $(CLI_PKGS) staticfiles
 	go run ./hack/cli
 
 # pre-push
