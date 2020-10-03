@@ -1918,6 +1918,9 @@
         },
         "tar": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TarStrategy"
+        },
+        "zip": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ZipStrategy"
         }
       }
     },
@@ -5054,6 +5057,10 @@
           "title": "the type of change"
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.ZipStrategy": {
+      "description": "ZipStrategy will unzip zipped input artifacts",
+      "type": "object"
     },
     "io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "description": "Represents a Persistent Disk resource in AWS.\n\nAn AWS EBS disk must exist before mounting to a container. The disk must also be in the same AWS zone as the kubelet. An AWS EBS disk can only be mounted as read/write once. AWS EBS volumes support ownership management and SELinux relabeling.",
