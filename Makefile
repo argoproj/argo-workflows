@@ -99,7 +99,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-CLI_DOCS         := $(shell lt -t docs/cli | head -n1)
+CLI_DOCS         := $(shell ls -t docs/cli | head -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -134,12 +134,22 @@ status:
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
+ui/dist/app/index.html: $(UI_FILES)
+	# Build UI
+	@mkdir -p ui/dist/app
+ifeq ($(STATIC_FILES),true)
+	JOBS=max yarn --cwd ui install
+	JOBS=max yarn --cwd ui build
+else
+	echo "Built without static files" > ui/dist/app/index.html
+endif
+
 $(GOPATH)/bin/staticfiles:
 	go get bou.ke/staticfiles
 
-.PHONY: staticfiles
-staticfiles: $(GOPATH)/bin/staticfiles 
-	./hack/staticfiles.sh
+server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
+	# Pack UI into a Go file.
+	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -148,13 +158,13 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo: staticfiles $(CLI_PKGS)
+dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: staticfiles $(CLI_PKGS)
+dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
@@ -300,7 +310,7 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
 
 .PHONY: lint
-lint: staticfiles $(GOPATH)/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -312,7 +322,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: staticfiles
+test: server/static/files.go
 	env KUBECONFIG=/dev/null go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
@@ -437,7 +447,7 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-pkg/apiclient/_.secondary.swagger.json: pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+pkg/apiclient/_.secondary.swagger.json: server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
@@ -470,7 +480,7 @@ docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
 docs: api/openapi-spec/swagger.json docs/swagger.md $(CLI_DOCS)
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
-$(CLI_DOCS): $(CLI_PKGS) staticfiles
+$(CLI_DOCS): $(CLI_PKGS) server/static/files.go
 	go run ./hack/cli
 
 # pre-push
