@@ -134,8 +134,12 @@ status:
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
-server/static/files.go: $(GOPATH)/bin/staticfiles
-	go generate ./server/static
+$(GOPATH)/bin/staticfiles:
+	go get bou.ke/staticfiles
+
+.PHONY: staticfiles
+staticfiles: $(GOPATH)/bin/staticfiles 
+	./hack/staticfiles.sh
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -144,13 +148,13 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo: server/static/files.go $(CLI_PKGS)
+dist/argo: staticfiles $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: server/static/files.go $(CLI_PKGS)
+dist/argo-%: staticfiles $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
@@ -212,8 +216,6 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 codegen: proto swagger manifests docs $(GOPATH)/bin/mockery
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
-$(GOPATH)/bin/staticfiles:
-	go get bou.ke/staticfiles
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
@@ -270,9 +272,6 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
-$(GOPATH)/bin/goreman:
-	go get github.com/mattn/goreman
-
 .PHONY: proto
 proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 	./hack/generate-proto.sh
@@ -313,7 +312,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: server/static/files.go
+test: staticfiles
 	env KUBECONFIG=/dev/null go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
@@ -353,6 +352,9 @@ test-images:
 .PHONY: stop
 stop:
 	killall argo workflow-controller kubectl || true
+
+$(GOPATH)/bin/goreman:
+	go get github.com/mattn/goreman
 
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
@@ -435,7 +437,7 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-dist/hack: $(shell find hack)
+dist/hack: $(shell find hack) staticfiles
 	go build -o dist/hack ./hack 
 
 pkg/apiclient/_.secondary.swagger.json: dist/hack pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json

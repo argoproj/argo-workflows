@@ -1,7 +1,5 @@
 package static
 
-//go:generate ./generate.sh
-
 import (
 	"fmt"
 	"net/http"

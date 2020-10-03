@@ -6,6 +6,8 @@ if [ "$(ls -t pkg/client/listers/workflow/v1alpha1/*.go | head -n1)" -nt "$(ls -
   exit
 fi
 
+echo "running generate-groups.sh"
+
 bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.17.5/generate-groups.sh \
   "deepcopy,client,informer,lister" \
   github.com/argoproj/argo/pkg/client github.com/argoproj/argo/pkg/apis \
