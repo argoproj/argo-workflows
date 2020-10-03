@@ -54,6 +54,34 @@ func (s *CLISuite) TestCompletion() {
 	})
 }
 
+func (s *CLISuite) TestLogLevels() {
+	s.Run("Verbose", func() {
+		s.Given().
+			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "CLI version", "comment version header")
+					assert.Contains(t, output, "Config loaded from file", "glog output")
+				}
+			})
+	})
+	s.Run("LogLevel", func() {
+		s.Given().
+			RunCli([]string{"--loglevel=debug", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "CLI version", "comment version header")
+					assert.NotContains(t, output, "Config loaded from file", "glog output")
+				}
+			})
+	})
+	s.Run("GLogLevel", func() {
+		s.Given().
+			RunCli([]string{"--gloglevel=6", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Config loaded from file", "glog output")
+				}
+			})
+	})
+}
 func (s *CLISuite) TestVersion() {
 	_ = os.Setenv("KUBECONFIG", "/dev/null")
 	// check we can run this without error
@@ -386,7 +414,7 @@ func (s *CLISuite) TestWorkflowDeleteNothing() {
 		When().
 		SubmitWorkflow().
 		RunCli([]string{"delete"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.NotContains(t, output, "deleted")
 			}
 		})
@@ -611,8 +639,9 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 			retryTime = wf.Status.FinishedAt
 			return wf.Status.Phase == wfv1.NodeFailed
 		}), "is terminated", 20*time.Second).
+		Wait(3*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
+			if assert.NoError(t, err, output) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 			}

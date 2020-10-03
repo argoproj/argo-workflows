@@ -480,6 +480,18 @@ spec:
                         type: object
                       http:
                         properties:
+                          headers:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
                           url:
                             type: string
                         required:
@@ -1337,6 +1349,18 @@ spec:
                         type: object
                       http:
                         properties:
+                          headers:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
                           url:
                             type: string
                         required:
@@ -1612,6 +1636,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -2483,6 +2519,18 @@ spec:
                                         type: object
                                       http:
                                         properties:
+                                          headers:
+                                            items:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - name
+                                              - value
+                                              type: object
+                                            type: array
                                           url:
                                             type: string
                                         required:
@@ -3427,6 +3475,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -3591,9 +3651,12 @@ spec:
                         type: object
                       key:
                         type: string
+                      maxAge:
+                        type: string
                     required:
                     - cache
                     - key
+                    - maxAge
                     type: object
                   metadata:
                     properties:
@@ -3852,6 +3915,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -6611,6 +6686,8 @@ spec:
                     type: string
                 type: object
               type: array
+            estimatedDuration:
+              type: integer
             finishedAt:
               format: date-time
               type: string
@@ -6629,6 +6706,8 @@ spec:
                     type: boolean
                   displayName:
                     type: string
+                  estimatedDuration:
+                    type: integer
                   finishedAt:
                     format: date-time
                     type: string
@@ -6816,6 +6895,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -7161,6 +7252,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -7323,6 +7426,11 @@ spec:
                     type: string
                   storedTemplateID:
                     type: string
+                  synchronizationStatus:
+                    properties:
+                      waiting:
+                        type: string
+                    type: object
                   templateName:
                     type: string
                   templateRef:
@@ -7530,6 +7638,18 @@ spec:
                         type: object
                       http:
                         properties:
+                          headers:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
                           url:
                             type: string
                         required:
@@ -8713,6 +8833,18 @@ spec:
                         type: object
                       http:
                         properties:
+                          headers:
+                            items:
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                            type: array
                           url:
                             type: string
                         required:
@@ -8988,6 +9120,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -9859,6 +10003,18 @@ spec:
                                         type: object
                                       http:
                                         properties:
+                                          headers:
+                                            items:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                value:
+                                                  type: string
+                                              required:
+                                              - name
+                                              - value
+                                              type: object
+                                            type: array
                                           url:
                                             type: string
                                         required:
@@ -10803,6 +10959,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -10967,9 +11135,12 @@ spec:
                         type: object
                       key:
                         type: string
+                      maxAge:
+                        type: string
                     required:
                     - cache
                     - key
+                    - maxAge
                     type: object
                   metadata:
                     properties:
@@ -11228,6 +11399,18 @@ spec:
                               type: object
                             http:
                               properties:
+                                headers:
+                                  items:
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                  type: array
                                 url:
                                   type: string
                               required:
@@ -13665,6 +13848,18 @@ spec:
                             type: object
                           http:
                             properties:
+                              headers:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
                               url:
                                 type: string
                             required:
@@ -14522,6 +14717,18 @@ spec:
                             type: object
                           http:
                             properties:
+                              headers:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
                               url:
                                 type: string
                             required:
@@ -14797,6 +15004,18 @@ spec:
                                   type: object
                                 http:
                                   properties:
+                                    headers:
+                                      items:
+                                        properties:
+                                          name:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                        - name
+                                        - value
+                                        type: object
+                                      type: array
                                     url:
                                       type: string
                                   required:
@@ -15668,6 +15887,18 @@ spec:
                                             type: object
                                           http:
                                             properties:
+                                              headers:
+                                                items:
+                                                  properties:
+                                                    name:
+                                                      type: string
+                                                    value:
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  - value
+                                                  type: object
+                                                type: array
                                               url:
                                                 type: string
                                             required:
@@ -16612,6 +16843,18 @@ spec:
                                   type: object
                                 http:
                                   properties:
+                                    headers:
+                                      items:
+                                        properties:
+                                          name:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                        - name
+                                        - value
+                                        type: object
+                                      type: array
                                     url:
                                       type: string
                                   required:
@@ -16776,9 +17019,12 @@ spec:
                             type: object
                           key:
                             type: string
+                          maxAge:
+                            type: string
                         required:
                         - cache
                         - key
+                        - maxAge
                         type: object
                       metadata:
                         properties:
@@ -17037,6 +17283,18 @@ spec:
                                   type: object
                                 http:
                                   properties:
+                                    headers:
+                                      items:
+                                        properties:
+                                          name:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                        - name
+                                        - value
+                                        type: object
+                                      type: array
                                     url:
                                       type: string
                                   required:

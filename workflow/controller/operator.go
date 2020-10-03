@@ -43,8 +43,10 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
+	"github.com/argoproj/argo/workflow/controller/estimation"
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/metrics"
+	argosync "github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
@@ -63,6 +65,8 @@ type wfOperationCtx struct {
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
+	// estimate duration
+	estimator estimation.Estimator
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams common.Parameters
@@ -247,6 +251,7 @@ func (woc *wfOperationCtx) operate() {
 			}}
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -490,6 +495,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
+	resource.UpdateResourceDurations(woc.wf)
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
@@ -834,7 +840,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToGlobalScope(node.Outputs)
 				if node.MemoizationStatus != nil {
-					c := *woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
+					c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
 					err := c.Save(node.MemoizationStatus.Key, node.ID, node.Outputs)
 					if err != nil {
 						woc.log.WithFields(log.Fields{"nodeID": node.ID}).WithError(err).Error("Failed to save node outputs to cache")
@@ -964,6 +970,10 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 		}
 		switch node.Phase {
 		case wfv1.NodePending, wfv1.NodeRunning:
+			if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+				// Do not include pending nodes that are waiting for a lock
+				continue
+			}
 			activePods++
 		}
 	}
@@ -1489,30 +1499,47 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	// If memoization is on, check if node output exists in cache
-	if resolvedTmpl.Memoize != nil && node == nil {
-		// return cacheEntry struct instead of wfv1.Outputs
-		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
-		if c == nil {
-			err := fmt.Errorf("Cache could not be found or created")
+	if node == nil && processedTmpl.Memoize != nil {
+		memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+		if memoizationCache == nil {
+			err := fmt.Errorf("cache could not be found or created")
 			woc.log.WithFields(log.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
-		entry, err := (*c).Load(processedTmpl.Memoize.Key)
+
+		entry, err := memoizationCache.Load(processedTmpl.Memoize.Key)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
-		hit := false
-		outputs := &wfv1.Outputs{}
-		if entry != nil {
-			hit = true
-			outputs = entry.Outputs
+
+		hit := entry.Hit()
+		var outputs *wfv1.Outputs
+		if processedTmpl.Memoize.MaxAge != "" {
+			maxAge, err := time.ParseDuration(processedTmpl.Memoize.MaxAge)
+			if err != nil {
+				err := fmt.Errorf("invalid maxAge: %s", err)
+				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
+			}
+			maxAgeOutputs, ok := entry.GetOutputsWithMaxAge(maxAge)
+			if !ok {
+				// The outputs are expired, so this cache entry is not hit
+				hit = false
+			}
+			outputs = maxAgeOutputs
+		} else {
+			outputs = entry.GetOutputs()
 		}
-		memStat := &wfv1.MemoizationStatus{
+
+		memoizationStatus := &wfv1.MemoizationStatus{
 			Hit:       hit,
 			Key:       processedTmpl.Memoize.Key,
 			CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
 		}
-		node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memStat)
+		if hit {
+			node = woc.initializeCacheHitNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memoizationStatus)
+		} else {
+			node = woc.initializeCacheNode(nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, memoizationStatus)
+		}
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
@@ -1520,7 +1547,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil {
 		if node.Fulfilled() {
 			if processedTmpl.Synchronization != nil {
-				woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, processedTmpl.Synchronization)
+				woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1538,6 +1565,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			node.EstimatedDuration = woc.estimateNodeDuration(node.Name)
 			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
@@ -1565,8 +1593,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	if processedTmpl.Synchronization != nil {
-		priority, creationTime := getWfPriority(woc.wf)
-		lockAcquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), priority, creationTime, processedTmpl.Synchronization)
+		lockAcquired, wfUpdated, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 		}
@@ -1574,16 +1601,22 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			if node == nil {
 				node = woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 			}
-			return node, nil
-		}
-
-		woc.updated = wfUpdate
-		if lockAcquired && wfUpdate {
+			lockName, err := argosync.GetLockName(processedTmpl.Synchronization, woc.wf.Namespace)
+			if err != nil {
+				// If an error were to be returned here, it would have been caught by TryAcquire. If it didn't, then it is
+				// unexpected behavior and is a bug.
+				panic("bug: GetLockName should not return an error after a call to TryAcquire")
+			}
+			return woc.markNodeWaitingForLock(node.Name, lockName.EncodeName()), nil
+		} else {
+			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 			if node != nil {
 				node.Message = ""
+				node = woc.markNodeWaitingForLock(node.Name, "")
 			}
-			woc.log.Infof("Node %s acquired synchronization lock", nodeName)
 		}
+
+		woc.updated = wfUpdated
 	}
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
@@ -1666,7 +1699,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node = woc.markNodeError(nodeName, err)
 
 		if processedTmpl.Synchronization != nil {
-			woc.controller.syncManager.Release(woc.wf, node.ID, woc.wf.Namespace, processedTmpl.Synchronization)
+			woc.controller.syncManager.Release(woc.wf, node.ID, processedTmpl.Synchronization)
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
@@ -1761,6 +1794,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
 		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
+		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1789,7 +1823,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
 			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
 			err := woc.deletePDBResource()
 			if err != nil {
@@ -1809,6 +1842,22 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			woc.updated = true
 		}
 	}
+}
+
+// get a predictor, this maybe null implementation in the case of rare error
+func (woc *wfOperationCtx) getEstimator() estimation.Estimator {
+	if woc.estimator == nil {
+		woc.estimator, _ = woc.controller.estimatorFactory.NewEstimator(woc.wf)
+	}
+	return woc.estimator
+}
+
+func (woc *wfOperationCtx) estimateWorkflowDuration() wfv1.EstimatedDuration {
+	return woc.getEstimator().EstimateWorkflowDuration()
+}
+
+func (woc *wfOperationCtx) estimateNodeDuration(nodeName string) wfv1.EstimatedDuration {
+	return woc.getEstimator().EstimateNodeDuration(nodeName)
 }
 
 func (woc *wfOperationCtx) hasDaemonNodes() bool {
@@ -1872,24 +1921,25 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
-// Creates a node status that's completely initialized and marked as finished
-func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
+// Creates a node status that is or will be chaced
+func (woc *wfOperationCtx) initializeCacheNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
 	if resolvedTmpl.Memoize == nil {
-		err := fmt.Errorf("Cannot initialize a cached node from a non-memoized template")
+		err := fmt.Errorf("cannot initialize a cached node from a non-memoized template")
 		woc.log.WithFields(log.Fields{"namespace": woc.wf.Namespace, "wfName": woc.wf.Name}).WithError(err)
 		panic(err)
 	}
 	woc.log.Debug("Initializing cached node ", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
-	nodePhase := wfv1.NodePending
-	if memStat.Hit {
-		nodePhase = wfv1.NodeSucceeded
-	}
-	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, nodePhase, messages...)
+	node := woc.initializeExecutableNode(nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, messages...)
 	node.MemoizationStatus = memStat
-	if memStat.Hit {
-		node.Outputs = outputs
-		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-	}
+	return node
+}
+
+// Creates a node status that has been cached, completely initialized, and marked as finished
+func (woc *wfOperationCtx) initializeCacheHitNode(nodeName string, resolvedTmpl *wfv1.Template, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, messages ...string) *wfv1.NodeStatus {
+	node := woc.initializeCacheNode(nodeName, resolvedTmpl, templateScope, orgTmpl, boundaryID, memStat, messages...)
+	node.Phase = wfv1.NodeSucceeded
+	node.Outputs = outputs
+	node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 	return node
 }
 
@@ -1903,15 +1953,16 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	}
 
 	node := wfv1.NodeStatus{
-		ID:            nodeID,
-		Name:          nodeName,
-		TemplateName:  orgTmpl.GetTemplateName(),
-		TemplateRef:   orgTmpl.GetTemplateRef(),
-		TemplateScope: templateScope,
-		Type:          nodeType,
-		BoundaryID:    boundaryID,
-		Phase:         phase,
-		StartedAt:     metav1.Time{Time: time.Now().UTC()},
+		ID:                nodeID,
+		Name:              nodeName,
+		TemplateName:      orgTmpl.GetTemplateName(),
+		TemplateRef:       orgTmpl.GetTemplateRef(),
+		TemplateScope:     templateScope,
+		Type:              nodeType,
+		BoundaryID:        boundaryID,
+		Phase:             phase,
+		StartedAt:         metav1.Time{Time: time.Now().UTC()},
+		EstimatedDuration: woc.estimateNodeDuration(nodeName),
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -2006,6 +2057,29 @@ func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.Nod
 	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
 	node := woc.wf.GetNodeByName(nodeName)
 	return woc.markNodePhase(nodeName, wfv1.NodePending, fmt.Sprintf("Pending %s", time.Since(node.StartedAt.Time)))
+}
+
+// markNodeWaitingForLock is a convenience method to mark that a node is waiting for a lock
+func (woc *wfOperationCtx) markNodeWaitingForLock(nodeName string, lockName string) *wfv1.NodeStatus {
+	node := woc.wf.GetNodeByName(nodeName)
+	if node == nil {
+		return node
+	}
+
+	if node.SynchronizationStatus == nil {
+		node.SynchronizationStatus = &wfv1.NodeSynchronizationStatus{}
+	}
+
+	if lockName == "" {
+		// If we are no longer waiting for a lock, nil out the sync status
+		node.SynchronizationStatus = nil
+	} else {
+		node.SynchronizationStatus.Waiting = lockName
+	}
+
+	woc.wf.Status.Nodes[node.ID] = *node
+	woc.updated = true
+	return node
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
@@ -3037,19 +3111,20 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		}
 	}
 
-	//In WorkflowTemplateRef scenario, we need to merge the Workflow Default, Workflow spec and storedWorkflowspec for execWf.
+	//In WorkflowTemplateRef scenario, we need to merge the  Workflow spec, :StoredWorkflowspec and Workflow Default for execWf.
+	// Overlay
 	targetWf := wfv1.Workflow{Spec: *woc.wf.Spec.DeepCopy()}
-	err := woc.controller.setWorkflowDefaults(&targetWf)
+
+	err := wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
+	if err != nil {
+		return nil, executionParameters, err
+	}
+
+	err = woc.controller.setWorkflowDefaults(&targetWf)
 	if err != nil {
 		log.WithFields(log.Fields{"key": woc.wf.Name, "error": err}).Warn("Failed to apply default workflow values")
 		return nil, executionParameters, err
 	}
-
-	err = wfutil.MergeTo(&wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec}, &targetWf)
-	if err != nil {
-		return nil, executionParameters, err
-	}
-
 	// Setting the merged workflow to executable workflow
 	woc.execWf = &targetWf
 

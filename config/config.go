@@ -113,7 +113,7 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
-// ArtifactRepository represents a artifact repository in which a controller will store its artifacts
+// ArtifactRepository represents an artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
 	// ArchiveLogs enables log archiving
 	ArchiveLogs *bool `json:"archiveLogs,omitempty"`

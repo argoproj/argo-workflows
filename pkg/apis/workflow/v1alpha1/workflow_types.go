@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo/util/slice"
+
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -65,6 +67,15 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
 )
+
+func (t NodeType) IsLeaf() bool {
+	switch t {
+	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
+		return true
+	default:
+		return false
+	}
+}
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
@@ -953,6 +964,7 @@ type TemplateRef struct {
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
+	// DEPRECATED: This value is not used anymore and is ignored
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
@@ -964,6 +976,23 @@ type Synchronization struct {
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 	// Mutex holds the Mutex lock details
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+type SynchronizationType string
+
+const (
+	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
+	SynchronizationTypeMutex     SynchronizationType = "Mutex"
+	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
+)
+
+func (s *Synchronization) GetType() SynchronizationType {
+	if s.Semaphore != nil {
+		return SynchronizationTypeSemaphore
+	} else if s.Mutex != nil {
+		return SynchronizationTypeMutex
+	}
+	return SynchronizationTypeUnknown
 }
 
 // SemaphoreRef is a reference of Semaphore
@@ -1060,6 +1089,9 @@ type WorkflowStatus struct {
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
@@ -1094,54 +1126,6 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
-}
-
-type SemaphoreStatus struct {
-	// Holding stores the list of resource acquired synchronization lock for workflows.
-	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders.
-	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
-}
-
-type SemaphoreHolding struct {
-	// Semaphore stores the semaphore name.
-	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Holders stores the list of current holder names in the workflow.
-	// +listType=atomic
-	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
-}
-
-// MutexHolding describes the mutex and the object which is holding it.
-type MutexHolding struct {
-	// Reference for the mutex
-	// e.g: ${namespace}/mutex/${mutexName}
-	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
-	// Holder is a reference to the object which holds the Mutex.
-	// Holding Scenario:
-	//   1. Current workflow's NodeID which is holding the lock.
-	//      e.g: ${NodeID}
-	// Waiting Scenario:
-	//   1. Current workflow or other workflow NodeID which is holding the lock.
-	//      e.g: ${WorkflowName}/${NodeID}
-	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
-}
-
-// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
-type MutexStatus struct {
-	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
-	// +listType=atomic
-	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
-	// +listType=atomic
-	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
-}
-
-// SynchronizationStatus stores the status of semaphore and mutex.
-type SynchronizationStatus struct {
-	// Semaphore stores this workflow's Semaphore holder details
-	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Mutex stores this workflow's mutex holder details
-	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1208,10 +1192,14 @@ func (in ResourceDuration) String() string {
 type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
 func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
-	for n, d := range o {
-		in[n] += d
+	res := ResourcesDuration{}
+	for n, d := range in {
+		res[n] += d
 	}
-	return in
+	for n, d := range o {
+		res[n] += d
+	}
+	return res
 }
 
 func (in ResourcesDuration) String() string {
@@ -1365,6 +1353,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// EstimatedDuration in seconds.
+	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
+
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
@@ -1402,14 +1393,9 @@ type NodeStatus struct {
 
 	// MemoizationStatus holds information about cached nodes
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
-}
 
-func (n Nodes) GetResourcesDuration() ResourcesDuration {
-	i := ResourcesDuration{}
-	for _, status := range n {
-		i = i.Add(status.ResourcesDuration)
-	}
-	return i
+	// SynchronizationStatus is the synchronization status of the node
+	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
@@ -1461,6 +1447,13 @@ func (n NodeStatus) Completed() bool {
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
+func (ws *WorkflowStatus) GetDuration() time.Duration {
+	if ws.FinishedAt.IsZero() {
+		return 0
+	}
+	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
 }
 
 // Pending returns whether or not the node is in pending state
@@ -1529,6 +1522,17 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+func (n NodeStatus) GetDuration() time.Duration {
+	if n.FinishedAt.IsZero() {
+		return 0
+	}
+	return n.FinishedAt.Sub(n.StartedAt.Time)
+}
+
+func (in *NodeStatus) IsLeaf() bool {
+	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1697,10 +1701,22 @@ func (r *RawArtifact) HasLocation() bool {
 	return r != nil
 }
 
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+type Header struct {
+	// Name is the header name
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// Value is the literal value to use for the header
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
+
+	// Headers are an optional list of headers to send with HTTP requests for artifacts
+	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
 }
 
 func (h *HTTPArtifact) HasLocation() bool {
@@ -2272,18 +2288,219 @@ type Counter struct {
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
-// Memoization
+// Memoization enables caching for the Outputs of the template
 type Memoize struct {
-	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	// Key is the key to use as the caching key
+	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	// Cache sets and configures the kind of cache
 	Cache *Cache `json:"cache" protobuf:"bytes,2,opt,name=cache"`
+	// MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+	// than the MaxAge, it will be ignored.
+	MaxAge string `json:"maxAge" protobuf:"bytes,3,opt,name=maxAge"`
 }
 
+// MemoizationStatus is the status of this memoized node
 type MemoizationStatus struct {
-	Hit       bool   `json:"hit" protobuf:"bytes,1,opt,name=hit"`
-	Key       string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// Hit indicates whether this node was created from a cache entry
+	Hit bool `json:"hit" protobuf:"bytes,1,opt,name=hit"`
+	// Key is the name of the key used for this node's cache
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// Cache is the name of the cache that was used
 	CacheName string `json:"cacheName" protobuf:"bytes,3,opt,name=cacheName"`
 }
 
+// Cache is the configuration for the type of cache to be used
 type Cache struct {
+	// ConfigMap sets a ConfigMap-based cache
 	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
+}
+
+type SynchronizationAction interface {
+	LockWaiting(holderKey, lockKey string, currentHolders []string) bool
+	LockAcquired(holderKey, lockKey string, currentHolders []string) bool
+	LockReleased(holderKey, lockKey string) bool
+}
+
+type SemaphoreHolding struct {
+	// Semaphore stores the semaphore name.
+	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Holders stores the list of current holder names in the workflow.
+	// +listType=atomic
+	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
+}
+
+type SemaphoreStatus struct {
+	// Holding stores the list of resource acquired synchronization lock for workflows.
+	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting indicates the list of current synchronization lock holders.
+	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+
+var _ SynchronizationAction = &SemaphoreStatus{}
+
+func (ss *SemaphoreStatus) GetHolding(semaphoreName string) (int, SemaphoreHolding) {
+	for i, holder := range ss.Holding {
+		if holder.Semaphore == semaphoreName {
+			return i, holder
+		}
+	}
+	return -1, SemaphoreHolding{}
+}
+
+func (ss *SemaphoreStatus) GetWaiting(semaphoreName string) (int, SemaphoreHolding) {
+	for i, holder := range ss.Waiting {
+		if holder.Semaphore == semaphoreName {
+			return i, holder
+		}
+	}
+	return -1, SemaphoreHolding{}
+}
+
+func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
+	i, semaphoreWaiting := ss.GetWaiting(lockKey)
+	if i < 0 {
+		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: currentHolders})
+	} else {
+		semaphoreWaiting.Holders = currentHolders
+		ss.Waiting[i] = semaphoreWaiting
+	}
+	return true
+}
+
+func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
+	i, semaphoreHolding := ss.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i < 0 {
+		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
+		return true
+	} else if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
+		ss.Holding[i] = semaphoreHolding
+		return true
+	}
+	return false
+}
+
+func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
+	i, semaphoreHolding := ss.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i >= 0 {
+		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+		ss.Holding[i] = semaphoreHolding
+		return true
+	}
+	return false
+}
+
+// MutexHolding describes the mutex and the object which is holding it.
+type MutexHolding struct {
+	// Reference for the mutex
+	// e.g: ${namespace}/mutex/${mutexName}
+	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	// Holder is a reference to the object which holds the Mutex.
+	// Holding Scenario:
+	//   1. Current workflow's NodeID which is holding the lock.
+	//      e.g: ${NodeID}
+	// Waiting Scenario:
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//      e.g: ${WorkflowName}/${NodeID}
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
+}
+
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+type MutexStatus struct {
+	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
+	// +listType=atomic
+	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+	// +listType=atomic
+	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+
+var _ SynchronizationAction = &MutexStatus{}
+
+func (ms *MutexStatus) GetHolding(mutexName string) (int, MutexHolding) {
+	for i, holder := range ms.Holding {
+		if holder.Mutex == mutexName {
+			return i, holder
+		}
+	}
+	return -1, MutexHolding{}
+}
+
+func (ms *MutexStatus) GetWaiting(mutexName string) (int, MutexHolding) {
+	for i, holder := range ms.Waiting {
+		if holder.Mutex == mutexName {
+			return i, holder
+		}
+	}
+	return -1, MutexHolding{}
+}
+
+func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
+	if len(currentHolders) == 0 {
+		return false
+	}
+
+	i, mutexWaiting := ms.GetWaiting(lockKey)
+	if i < 0 {
+		ms.Waiting = append(ms.Waiting, MutexHolding{Mutex: lockKey, Holder: currentHolders[0]})
+		return true
+	} else if mutexWaiting.Holder != currentHolders[0] {
+		mutexWaiting.Holder = currentHolders[0]
+		ms.Waiting[i] = mutexWaiting
+		return true
+	}
+	return false
+}
+
+func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
+	i, mutexHolding := ms.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i < 0 {
+		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
+		return true
+	} else if mutexHolding.Holder != holdingName {
+		mutexHolding.Holder = holdingName
+		ms.Holding[i] = mutexHolding
+		return true
+	}
+	return false
+}
+
+func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
+	i, _ := ms.GetHolding(lockKey)
+	if i >= 0 {
+		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
+		return true
+	}
+	return false
+}
+
+// SynchronizationStatus stores the status of semaphore and mutex.
+type SynchronizationStatus struct {
+	// Semaphore stores this workflow's Semaphore holder details
+	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex stores this workflow's mutex holder details
+	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
+	switch syncType {
+	case SynchronizationTypeSemaphore:
+		return ss.Semaphore
+	case SynchronizationTypeMutex:
+		return ss.Mutex
+	default:
+		panic("invalid syncType in GetStatus")
+	}
+}
+
+// NodeSynchronizationStatus stores the status of a node
+type NodeSynchronizationStatus struct {
+	// Waiting is the name of the lock that this node is waiting for
+	Waiting string `json:"waiting,omitempty" protobuf:"bytes,1,opt,name=waiting"`
 }

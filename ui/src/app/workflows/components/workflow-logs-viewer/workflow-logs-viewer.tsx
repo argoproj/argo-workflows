@@ -1,7 +1,8 @@
 import * as React from 'react';
 
-import {Subscription} from 'rxjs';
+import {Observable, Subscription} from 'rxjs';
 import * as models from '../../../../models';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
@@ -16,14 +17,17 @@ interface WorkflowLogsViewerProps {
 
 interface WorkflowLogsViewerState {
     error?: Error;
+    loaded: boolean;
     lines: string[];
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
-    private subscription: Subscription = null;
+    private subscription: Subscription | null = null;
+
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
-        this.state = {lines: []};
+
+        this.state = {lines: [], loaded: false};
     }
 
     public componentDidMount(): void {
@@ -47,29 +51,22 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     <i className='fa fa-box' /> {this.props.nodeId}/{this.props.container}
                     {this.state.lines.length > 0 && <small className='muted'> {this.state.lines.length} line(s)</small>}
                 </p>
+
+                {this.state.error && <ErrorNotice error={this.state.error} onReload={() => this.refreshStream()} />}
                 <div className='white-box'>
-                    {this.state.error && (
-                        <p>
-                            <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
-                        </p>
-                    )}
-                    {!this.state.error && this.state.lines.length === 0 && this.isCurrentNodeRunningOrPending() && (
+                    {this.isWaitingForData() && (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
                     )}
-                    {!this.state.error && this.state.lines.length === 0 && !this.isCurrentNodeRunningOrPending() && <p>Pod did not output any logs.</p>}
+                    {!this.state.error && this.podHasNoLogs() && <p>Pod did not output any logs.</p>}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
                             <FullHeightLogsViewer
                                 source={{
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
-                                    loadLogs: () => {
-                                        return services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(log => {
-                                            return log ? log + '\n' : '';
-                                        });
-                                    },
-                                    shouldRepeat: () => this.isCurrentNodeRunningOrPending()
+                                    loadLogs: () => Observable.from(this.state.lines),
+                                    shouldRepeat: () => false
                                 }}
                             />
                         </div>
@@ -97,21 +94,29 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
 
     private refreshStream(): void {
         this.ensureUnsubscribed();
+
+        this.setState({lines: [], loaded: false, error: undefined});
+
         this.subscription = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
             log => {
-                if (log) {
-                    this.setState(state => {
-                        log.split('\n').forEach(line => {
-                            state.lines.push(line);
-                        });
-                        return state;
-                    });
-                }
+                this.setState(state => {
+                    const newState = {...state, loaded: true};
+                    newState.lines.push(log + '\n');
+                    return newState;
+                });
             },
             error => {
-                this.setState({error});
+                this.setState({error, loaded: true});
             }
         );
+    }
+
+    private podHasNoLogs() {
+        return !this.isWaitingForData() && this.state.lines.length === 0;
+    }
+
+    private isWaitingForData() {
+        return this.state.lines.length === 0 && (this.isCurrentNodeRunningOrPending() || !this.state.loaded);
     }
 
     private isCurrentNodeRunningOrPending(): boolean {

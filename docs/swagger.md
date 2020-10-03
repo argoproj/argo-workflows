@@ -1,5 +1,5 @@
-# Argo
-Argo
+# Argo Server API
+You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`
 
 ## Version: latest
 
@@ -842,9 +842,11 @@ Backoff is a backoff strategy to use within retryStrategy
 
 #### io.argoproj.workflow.v1alpha1.Cache
 
+Cache is the configuration for the type of cache to be used
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) |  | Yes |
+| configMap | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) | ConfigMap sets a ConfigMap-based cache | Yes |
 
 #### io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate
 
@@ -1096,7 +1098,17 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
+| headers | [ [io.argoproj.workflow.v1alpha1.Header](#io.argoproj.workflow.v1alpha1.header) ] | Headers are an optional list of headers to send with HTTP requests for artifacts | No |
 | url | string | URL of the artifact | Yes |
+
+#### io.argoproj.workflow.v1alpha1.Header
+
+Header indicate a key-value request header to be used when fetching artifacts over HTTP
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| name | string | Name is the header name | Yes |
+| value | string | Value is the literal value to use for the header | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Histogram
 
@@ -1157,20 +1169,23 @@ A link to another app.
 
 #### io.argoproj.workflow.v1alpha1.MemoizationStatus
 
+MemoizationStatus is the status of this memoized node
+
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| cacheName | string |  | Yes |
-| hit | boolean |  | Yes |
-| key | string |  | Yes |
+| cacheName | string | Cache is the name of the cache that was used | Yes |
+| hit | boolean | Hit indicates whether this node was created from a cache entry | Yes |
+| key | string | Key is the name of the key used for this node's cache | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Memoize
 
-Memoization
+Memoization enables caching for the Outputs of the template
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) |  | Yes |
-| key | string |  | Yes |
+| cache | [io.argoproj.workflow.v1alpha1.Cache](#io.argoproj.workflow.v1alpha1.cache) | Cache sets and configures the kind of cache | Yes |
+| key | string | Key is the key to use as the caching key | Yes |
+| maxAge | string | MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored. | Yes |
 
 #### io.argoproj.workflow.v1alpha1.Metadata
 
@@ -1234,6 +1249,7 @@ NodeStatus contains status information about an individual node in the workflow
 | children | [ string ] | Children is a list of child node IDs | No |
 | daemoned | boolean | Daemoned tracks whether or not this node was daemoned and need to be terminated | No |
 | displayName | string | DisplayName is a human readable representation of the node. Unique within a template boundary | No |
+| estimatedDuration | integer | EstimatedDuration in seconds. | No |
 | finishedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this node completed | No |
 | hostNodeName | string | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | No |
 | id | string | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | Yes |
@@ -1248,11 +1264,20 @@ NodeStatus contains status information about an individual node in the workflow
 | resourcesDuration | object | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. | No |
 | startedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this node started | No |
 | storedTemplateID | string | StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore. | No |
+| synchronizationStatus | [io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus](#io.argoproj.workflow.v1alpha1.nodesynchronizationstatus) | SynchronizationStatus is the synchronization status of the node | No |
 | templateName | string | TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup) | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup) | No |
 | templateScope | string | TemplateScope is the template scope in which the template of this node was retrieved. | No |
 | type | string | Type indicates type of node | Yes |
 | workflowTemplateName | string | WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore. | No |
+
+#### io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus
+
+NodeSynchronizationStatus stores the status of a node
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| waiting | string | Waiting is the name of the lock that this node is waiting for | No |
 
 #### io.argoproj.workflow.v1alpha1.NoneStrategy
 
@@ -1564,7 +1589,7 @@ TemplateRef is a reference of template resource.
 | ---- | ---- | ----------- | -------- |
 | clusterScope | boolean | ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate). | No |
 | name | string | Name is the resource name of the template. | No |
-| runtimeResolution | boolean | RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. | No |
+| runtimeResolution | boolean | RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored | No |
 | template | string | Template is the name of referred template in the resource. | No |
 
 #### io.argoproj.workflow.v1alpha1.UpdateCronWorkflowRequest
@@ -1792,6 +1817,7 @@ WorkflowStatus contains overall status information about a workflow
 | ---- | ---- | ----------- | -------- |
 | compressedNodes | string | Compressed and base64 decoded Nodes map | No |
 | conditions | [ [io.argoproj.workflow.v1alpha1.Condition](#io.argoproj.workflow.v1alpha1.condition) ] | Conditions is a list of conditions the Workflow may have | No |
+| estimatedDuration | integer | EstimatedDuration in seconds. | No |
 | finishedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this workflow completed | No |
 | message | string | A human readable message indicating details about why the workflow is in this condition. | No |
 | nodes | object | Nodes is a mapping between a node ID and the node's status. | No |
