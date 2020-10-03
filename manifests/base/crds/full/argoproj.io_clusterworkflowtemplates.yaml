@@ -597,17 +597,17 @@ spec:
                   items:
                     properties:
                       default:
-                        type: string
+                        type: number
                       globalName:
                         type: string
                       name:
                         type: string
                       value:
-                        type: string
+                        type: number
                       valueFrom:
                         properties:
                           default:
-                            type: string
+                            type: number
                           event:
                             type: string
                           jqFilter:
@@ -1753,17 +1753,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: string
+                              type: number
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: string
+                              type: number
                             valueFrom:
                               properties:
                                 default:
-                                  type: string
+                                  type: number
                                 event:
                                   type: string
                                 jqFilter:
@@ -2636,17 +2636,17 @@ spec:
                                   items:
                                     properties:
                                       default:
-                                        type: string
+                                        type: number
                                       globalName:
                                         type: string
                                       name:
                                         type: string
                                       value:
-                                        type: string
+                                        type: number
                                       valueFrom:
                                         properties:
                                           default:
-                                            type: string
+                                            type: number
                                           event:
                                             type: string
                                           jqFilter:
@@ -3592,17 +3592,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: string
+                              type: number
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: string
+                              type: number
                             valueFrom:
                               properties:
                                 default:
-                                  type: string
+                                  type: number
                                 event:
                                   type: string
                                 jqFilter:
@@ -4034,17 +4034,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: string
+                              type: number
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: string
+                              type: number
                             valueFrom:
                               properties:
                                 default:
-                                  type: string
+                                  type: number
                                 event:
                                   type: string
                                 jqFilter:

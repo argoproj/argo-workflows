@@ -8,6 +8,7 @@ import (
 
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
+// +kubebuilder:validation:Type=number
 type Int64OrString struct {
 	Value string `json:"-" protobuf:"bytes,1,opt,name=value"`
 }

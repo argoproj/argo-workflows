@@ -2333,10 +2333,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
+|`default`|[`Int64OrString`](#int64orstring)|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|[`Int64OrString`](#int64orstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -3590,6 +3590,23 @@ S3Artifact is the location of an S3 artifact
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
+## Int64OrString
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
+
+- [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
+
+- [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-parameter.yaml)
+</details>
+
 ## ValueFrom
 
 ValueFrom describes a location in which to obtain the value to a parameter
@@ -3634,7 +3651,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|[`Int64OrString`](#int64orstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|

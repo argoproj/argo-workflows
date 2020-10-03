@@ -480,6 +480,7 @@ message Inputs {
 
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
+// +kubebuilder:validation:Type=number
 message Int64OrString {
   optional string value = 1;
 }
