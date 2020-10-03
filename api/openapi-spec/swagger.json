@@ -11,8 +11,8 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Argo",
-    "title": "Argo",
+    "description": "You can get examples of requests and responses by using the CLI with `--gloglevel=9`, e.g. `argo list --gloglevel=9`",
+    "title": "Argo Server API",
     "version": "latest"
   },
   "paths": {
@@ -2126,12 +2126,14 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Cache": {
+      "description": "Cache is the configuration for the type of cache to be used",
       "type": "object",
       "required": [
         "configMap"
       ],
       "properties": {
         "configMap": {
+          "description": "ConfigMap sets a ConfigMap-based cache",
           "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
         }
       }
@@ -2681,8 +2683,33 @@
         "url"
       ],
       "properties": {
+        "headers": {
+          "description": "Headers are an optional list of headers to send with HTTP requests for artifacts",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
+          }
+        },
         "url": {
           "description": "URL of the artifact",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Header": {
+      "description": "Header indicate a key-value request header to be used when fetching artifacts over HTTP",
+      "type": "object",
+      "required": [
+        "name",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "description": "Name is the header name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the header",
           "type": "string"
         }
       }
@@ -2797,6 +2824,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.MemoizationStatus": {
+      "description": "MemoizationStatus is the status of this memoized node",
       "type": "object",
       "required": [
         "hit",
@@ -2805,28 +2833,38 @@
       ],
       "properties": {
         "cacheName": {
+          "description": "Cache is the name of the cache that was used",
           "type": "string"
         },
         "hit": {
+          "description": "Hit indicates whether this node was created from a cache entry",
           "type": "boolean"
         },
         "key": {
+          "description": "Key is the name of the key used for this node's cache",
           "type": "string"
         }
       }
     },
     "io.argoproj.workflow.v1alpha1.Memoize": {
-      "description": "Memoization",
+      "description": "Memoization enables caching for the Outputs of the template",
       "type": "object",
       "required": [
         "key",
-        "cache"
+        "cache",
+        "maxAge"
       ],
       "properties": {
         "cache": {
+          "description": "Cache sets and configures the kind of cache",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache"
         },
         "key": {
+          "description": "Key is the key to use as the caching key",
+          "type": "string"
+        },
+        "maxAge": {
+          "description": "MaxAge is the maximum age (e.g. \"180s\", \"24h\") of an entry that is still considered valid. If an entry is older than the MaxAge, it will be ignored.",
           "type": "string"
         }
       }
@@ -2955,6 +2993,11 @@
           "description": "DisplayName is a human readable representation of the node. Unique within a template boundary",
           "type": "string"
         },
+        "estimatedDuration": {
+          "description": "EstimatedDuration in seconds.",
+          "type": "integer",
+          "format": "int32"
+        },
         "finishedAt": {
           "description": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
@@ -3018,6 +3061,10 @@
           "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
           "type": "string"
         },
+        "synchronizationStatus": {
+          "description": "SynchronizationStatus is the synchronization status of the node",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus"
+        },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
           "type": "string"
@@ -3036,6 +3083,16 @@
         },
         "workflowTemplateName": {
           "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus": {
+      "description": "NodeSynchronizationStatus stores the status of a node",
+      "type": "object",
+      "properties": {
+        "waiting": {
+          "description": "Waiting is the name of the lock that this node is waiting for",
           "type": "string"
         }
       }
@@ -3861,7 +3918,7 @@
           "type": "string"
         },
         "runtimeResolution": {
-          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.",
+          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored",
           "type": "boolean"
         },
         "template": {
@@ -4508,6 +4565,11 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           }
+        },
+        "estimatedDuration": {
+          "description": "EstimatedDuration in seconds.",
+          "type": "integer",
+          "format": "int32"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",

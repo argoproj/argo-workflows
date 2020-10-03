@@ -146,7 +146,9 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+// Cache is the configuration for the type of cache to be used
 message Cache {
+  // ConfigMap sets a ConfigMap-based cache
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMap = 1;
 }
 
@@ -442,6 +444,18 @@ message HDFSKrbConfig {
 message HTTPArtifact {
   // URL of the artifact
   optional string url = 1;
+
+  // Headers are an optional list of headers to send with HTTP requests for artifacts
+  repeated Header headers = 2;
+}
+
+// Header indicate a key-value request header to be used when fetching artifacts over HTTP
+message Header {
+  // Name is the header name
+  optional string name = 1;
+
+  // Value is the literal value to use for the header
+  optional string value = 2;
 }
 
 // Histogram is a Histogram prometheus metric
@@ -489,19 +503,29 @@ message Link {
   optional string url = 3;
 }
 
+// MemoizationStatus is the status of this memoized node
 message MemoizationStatus {
+  // Hit indicates whether this node was created from a cache entry
   optional bool hit = 1;
 
+  // Key is the name of the key used for this node's cache
   optional string key = 2;
 
+  // Cache is the name of the cache that was used
   optional string cacheName = 3;
 }
 
-// Memoization
+// Memoization enables caching for the Outputs of the template
 message Memoize {
+  // Key is the key to use as the caching key
   optional string key = 1;
 
+  // Cache sets and configures the kind of cache
   optional Cache cache = 2;
+
+  // MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
+  // than the MaxAge, it will be ignored.
+  optional string maxAge = 3;
 }
 
 // Pod metdata
@@ -607,6 +631,9 @@ message NodeStatus {
   // Time at which this node completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
+  // EstimatedDuration in seconds.
+  optional int64 estimatedDuration = 24;
+
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
   map<string, int64> resourcesDuration = 21;
 
@@ -644,6 +671,15 @@ message NodeStatus {
 
   // MemoizationStatus holds information about cached nodes
   optional MemoizationStatus memoizationStatus = 23;
+
+  // SynchronizationStatus is the synchronization status of the node
+  optional NodeSynchronizationStatus synchronizationStatus = 25;
+}
+
+// NodeSynchronizationStatus stores the status of a node
+message NodeSynchronizationStatus {
+  // Waiting is the name of the lock that this node is waiting for
+  optional string waiting = 1;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -1123,6 +1159,7 @@ message TemplateRef {
 
   // RuntimeResolution skips validation at creation time.
   // By enabling this option, you can create the referred workflow template before the actual runtime.
+  // DEPRECATED: This value is not used anymore and is ignored
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
@@ -1413,6 +1450,9 @@ message WorkflowStatus {
 
   // Time at which this workflow completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
+
+  // EstimatedDuration in seconds.
+  optional int64 estimatedDuration = 16;
 
   // A human readable message indicating details about why the workflow is in this condition.
   optional string message = 4;

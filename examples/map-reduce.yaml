@@ -1,0 +1,162 @@
+# This workflow demonstrates a basic map-reduce.
+# This requires you have a artifact repository configured.
+#
+# Notes:
+# - You'll need to have an user namespaced artifact repository set-up to save intermediate results for this workflow.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: map-reduce-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: numParts
+        value: "4"
+      - name: numGroups
+        value: "2"
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: split
+            template: split
+            arguments:
+              parameters:
+                - name: numParts
+                  value: "{{workflow.parameters.numParts}}"
+          - name: map
+            template: map
+            arguments:
+              parameters:
+                - name: partId
+                  value: '{{item}}'
+                - name: numGroups
+                  value: '{{workflow.parameters.numGroups}}'
+              artifacts:
+                - name: parts
+                  from: '{{tasks.split.outputs.artifacts.parts}}'
+            dependencies:
+              - split
+            withParam: '{{tasks.split.outputs.result}}'
+          - name: reduce
+            template: reduce
+            arguments:
+              parameters:
+                - name: group
+                  value: '{{item}}'
+            dependencies:
+              - map
+            withSequence:
+              count: "{{workflow.parameters.numGroups}}"
+    # The `split` task creates a number of "parts". Each part has a unique ID (e.g. part-0, part-1).
+    # This task writes the part IDs to stdout (so that the `map` task can be expanded to have one task per part).
+    # And, it writes one "part file" for each of pieces of processing that needs doing, into to single directory
+    # which is then saved a output artifact.
+    - name: split
+      inputs:
+        parameters:
+          - name: numParts
+      script:
+        image: python:alpine3.6
+        command:
+          - python
+        source: |
+          import json
+          import os
+          import sys
+          os.mkdir("/tmp/parts")
+          partIds = list(map(lambda x: "part-" + str(x), range({{inputs.parameters.numParts}})))
+          for i, partId in enumerate(partIds, start=1):
+            with open("/tmp/parts/" + partId + ".json", "w") as out:
+              json.dump({"foo": i}, out)
+          json.dump(partIds, sys.stdout)
+      outputs:
+        artifacts:
+          - name: parts
+            path: /tmp/parts
+    # One `map` per part ID is started. Finds its own "part file" under `/tmp/parts/${partId}`.
+    # Each `map` task has an output artifact saved with a unique name for the part into to a common "results directory".
+    - name: map
+      inputs:
+        parameters:
+          - name: partId
+          - name: numGroups
+        artifacts:
+          - name: parts
+            path: /tmp/parts
+      script:
+        image: python:alpine3.6
+        command:
+          - python
+        source: |
+          import json
+          import os
+          import sys
+          partId = "{{inputs.parameters.partId}}"
+          numGroups = {{inputs.parameters.numGroups}}
+          os.mkdir("/tmp/results")
+          with open("/tmp/parts/" + partId + ".json") as f:
+            part = json.load(f)
+            with open("/tmp/results/" + partId + ".json", "w") as out:
+              json.dump({"bar": part["foo"] * 2, "group": part["foo"] % numGroups}, out)
+      outputs:
+        artifacts:
+          - name: result
+            path: /tmp/results/{{inputs.parameters.partId}}.json
+            archive:
+              none: { }
+            s3:
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+              key: "{{workflow.name}}/results/{{inputs.parameters.partId}}.json"
+    # The `reduce` task takes the "results directory" and returns a single result.
+    - name: reduce
+      inputs:
+        parameters:
+          - name: group
+        artifacts:
+          - name: result
+            path: /tmp/results
+            s3:
+              bucket: my-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+              key: "{{workflow.name}}/results"
+      script:
+        image: python:alpine3.6
+        command:
+          - python
+        source: |
+          import json
+          import os
+          import sys
+          total = 0
+          group = "{{inputs.parameters.group}}"
+          os.mkdir("/tmp/totals/")
+          for f in list(map(lambda x: open("/tmp/results/" + x), os.listdir("/tmp/results"))):
+            result = json.load(f)
+            if result["group"] == group:
+              total = total + result["bar"]
+          with open("/tmp/totals/" + group, "w") as f:
+            f.write(str(total))
+            f.close()
+      outputs:
+        parameters:
+          - name: total-{{inputs.parameters.group}}
+            globalName: total-{{inputs.parameters.group}}
+            valueFrom:
+              path: /tmp/totals/{{inputs.parameters.group}}

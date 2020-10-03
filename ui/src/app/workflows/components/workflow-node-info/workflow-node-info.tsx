@@ -1,8 +1,9 @@
-import {Duration, Tabs, Ticker} from 'argo-ui';
+import {Tabs, Ticker} from 'argo-ui';
 import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
@@ -61,11 +62,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
         {
             title: 'DURATION',
-            value: (
-                <Ticker disabled={props.workflow.status && props.workflow.status.phase !== models.NODE_PHASE.RUNNING}>
-                    {now => <Duration durationMs={nodeDuration(props.node, now)} />}
-                </Ticker>
-            )
+            value: <Ticker>{now => <DurationPanel duration={nodeDuration(props.node, now)} phase={props.node.phase} estimatedDuration={props.node.estimatedDuration} />}</Ticker>
         },
         {
             title: 'MEMOIZATION',

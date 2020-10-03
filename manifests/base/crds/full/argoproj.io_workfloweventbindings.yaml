@@ -215,6 +215,18 @@ spec:
                             type: object
                           http:
                             properties:
+                              headers:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
                               url:
                                 type: string
                             required:
