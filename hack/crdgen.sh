@@ -8,6 +8,11 @@ add_header() {
   mv tmp "$1"
 }
 
+if [ "$(ls -t manifests/base/crds/full/*.yaml | head -n1)" -nt "$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'deepcopy\|generated\|test'| head -n1)" ]; then
+  echo "skipping CRDs: no changes"
+  exit
+fi
+
 echo "Generating CRDs"
 controller-gen crd:trivialVersions=true,maxDescLen=0 paths=./pkg/apis/... output:dir=manifests/base/crds/full
 

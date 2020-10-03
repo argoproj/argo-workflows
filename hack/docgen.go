@@ -364,6 +364,7 @@ func removeContents(dir string) error {
 }
 
 func generateDocs() {
+	println("generating docs/cli")
 	cmd := commands.NewCommand()
 	cmd.DisableAutoGenTag = true
 	err := removeContents("docs/cli")
@@ -374,6 +375,7 @@ func generateDocs() {
 	if err != nil {
 		panic(err)
 	}
+	println("generating docs/fields.md")
 	c := NewDocGeneratorContext()
 	err = ioutil.WriteFile("docs/fields.md", []byte(c.generate()), 0644)
 	if err != nil {

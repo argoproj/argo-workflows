@@ -1,4 +1,7 @@
-SHELL=/bin/bash -o pipefail
+export SHELL:=/bin/bash
+export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
+
+.ONESHELL:
 
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64
@@ -131,6 +134,9 @@ status:
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
+server/static/files.go: $(GOPATH)/bin/staticfiles
+	go generate ./server/static
+
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
 dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
@@ -138,14 +144,13 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo: $(CLI_PKGS)
-	go generate ./server/static
+dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: $(CLI_PKGS)
+dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 argo-server.crt: argo-server.key
@@ -205,7 +210,7 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 .PHONY: codegen
 codegen: proto swagger manifests docs $(GOPATH)/bin/mockery
-	env STATIC_FILES=$(STATIC_FILES) go generate ./...
+	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
 $(GOPATH)/bin/staticfiles:
 	go get bou.ke/staticfiles
@@ -222,31 +227,44 @@ $(GOPATH)/bin/mockery:
 crds: $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
 
-vendor:
+$(GOPATH)/bin/controller-gen:
+	trap 'rm -Rf vendor' EXIT
 	go mod vendor
-
-$(GOPATH)/bin/controller-gen: vendor
 	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
 
-$(GOPATH)/bin/go-to-protobuf: vendor
+$(GOPATH)/bin/go-to-protobuf:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
 
-$(GOPATH)/bin/protoc-gen-gogo: vendor
+$(GOPATH)/bin/protoc-gen-gogo:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
 
-$(GOPATH)/bin/protoc-gen-gogofast: vendor
+$(GOPATH)/bin/protoc-gen-gogofast:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
 
-$(GOPATH)/bin/protoc-gen-grpc-gateway: vendor
+$(GOPATH)/bin/protoc-gen-grpc-gateway:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 
-$(GOPATH)/bin/protoc-gen-swagger: vendor
+$(GOPATH)/bin/protoc-gen-swagger:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
-$(GOPATH)/bin/openapi-gen: vendor
+$(GOPATH)/bin/openapi-gen:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
 
-$(GOPATH)/bin/swagger: vendor
+$(GOPATH)/bin/swagger:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
 	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
 
 $(GOPATH)/bin/goimports:
@@ -295,8 +313,7 @@ endif
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test:
-	go generate ./server/static
+test: server/static/files.go
 	env KUBECONFIG=/dev/null go test ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
@@ -418,8 +435,11 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
+dist/hack: $(shell find hack)
+	go build -o dist/hack ./hack 
+
+pkg/apiclient/_.secondary.swagger.json: dist/hack pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	./dist/hack secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
@@ -432,8 +452,8 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
-dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json dist/hack
+	./dist/hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
@@ -448,8 +468,8 @@ docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
-docs: api/openapi-spec/swagger.json docs/swagger.md
-	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
+docs: api/openapi-spec/swagger.json docs/swagger.md dist/hack
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= ./dist/hack docgen
 
 # pre-push
 
