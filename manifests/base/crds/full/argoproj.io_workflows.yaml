@@ -567,6 +567,8 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            type: boolean
                           endpoint:
                             type: string
                           insecure:
@@ -1425,6 +1427,8 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            type: boolean
                           endpoint:
                             type: string
                           insecure:
@@ -1723,6 +1727,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -2606,6 +2612,8 @@ spec:
                                             type: object
                                           bucket:
                                             type: string
+                                          createBucketIfNotPresent:
+                                            type: boolean
                                           endpoint:
                                             type: string
                                           insecure:
@@ -3562,6 +3570,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -4002,6 +4012,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -6982,6 +6994,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -7339,6 +7353,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -7725,6 +7741,8 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            type: boolean
                           endpoint:
                             type: string
                           insecure:
@@ -8909,6 +8927,8 @@ spec:
                             type: object
                           bucket:
                             type: string
+                          createBucketIfNotPresent:
+                            type: boolean
                           endpoint:
                             type: string
                           insecure:
@@ -9207,6 +9227,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -10090,6 +10112,8 @@ spec:
                                             type: object
                                           bucket:
                                             type: string
+                                          createBucketIfNotPresent:
+                                            type: boolean
                                           endpoint:
                                             type: string
                                           insecure:
@@ -11046,6 +11070,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -11486,6 +11512,8 @@ spec:
                                   type: object
                                 bucket:
                                   type: string
+                                createBucketIfNotPresent:
+                                  type: boolean
                                 endpoint:
                                   type: string
                                 insecure:
@@ -13935,6 +13963,8 @@ spec:
                                 type: object
                               bucket:
                                 type: string
+                              createBucketIfNotPresent:
+                                type: boolean
                               endpoint:
                                 type: string
                               insecure:
@@ -14793,6 +14823,8 @@ spec:
                                 type: object
                               bucket:
                                 type: string
+                              createBucketIfNotPresent:
+                                type: boolean
                               endpoint:
                                 type: string
                               insecure:
@@ -15091,6 +15123,8 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      type: boolean
                                     endpoint:
                                       type: string
                                     insecure:
@@ -15974,6 +16008,8 @@ spec:
                                                 type: object
                                               bucket:
                                                 type: string
+                                              createBucketIfNotPresent:
+                                                type: boolean
                                               endpoint:
                                                 type: string
                                               insecure:
@@ -16930,6 +16966,8 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      type: boolean
                                     endpoint:
                                       type: string
                                     insecure:
@@ -17370,6 +17408,8 @@ spec:
                                       type: object
                                     bucket:
                                       type: string
+                                    createBucketIfNotPresent:
+                                      type: boolean
                                     endpoint:
                                       type: string
                                     insecure:
