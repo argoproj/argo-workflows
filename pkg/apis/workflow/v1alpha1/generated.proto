@@ -26,6 +26,8 @@ message ArchiveStrategy {
   optional TarStrategy tar = 1;
 
   optional NoneStrategy none = 2;
+
+  optional ZipStrategy zip = 3;
 }
 
 // Arguments to a template
@@ -1559,5 +1561,9 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
+}
+
+// ZipStrategy will unzip zipped input artifacts
+message ZipStrategy {
 }
 
