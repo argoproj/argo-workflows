@@ -3040,9 +3040,6 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 	}
 	wftSpec := specHolder.GetWorkflowSpec()
 
-	// Supporting TTLSecondsAfterFinished in TTLStrategy
-	wfutil.ConstructTTLStrategy(wftSpec)
-
 	return wftSpec, nil
 }
 

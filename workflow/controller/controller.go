@@ -148,15 +148,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	var defaultTTLStrategy *wfv1.TTLStrategy
-
-	if wfc.Config.WorkflowDefaults != nil {
-		// Supporting TTLSecondsAfterFinished in TTLStrategy
-		util.ConstructTTLStrategy(&wfc.Config.WorkflowDefaults.Spec)
-
-		defaultTTLStrategy = wfc.Config.WorkflowDefaults.Spec.TTLStrategy
-	}
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, defaultTTLStrategy)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, wfc.Config.WorkflowDefaults.Spec.GetTTLStrategy())
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)

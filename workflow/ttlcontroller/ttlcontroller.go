@@ -246,13 +246,12 @@ func getTTLStrategy(wf *wfv1.Workflow, defaultTTLStrategy *wfv1.TTLStrategy) *wf
 		ttlStrategy = defaultTTLStrategy
 	}
 	// TTLStrategy from WorkflowTemplate
-	if wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
-		ttlStrategy = wf.Status.StoredWorkflowSpec.TTLStrategy
+	if wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
+		ttlStrategy = wf.Status.StoredWorkflowSpec.GetTTLStrategy()
 	}
 	//TTLStrategy from Workflow
-	if wf.Spec.TTLStrategy != nil {
-		ttlStrategy = wf.Spec.TTLStrategy
+	if wf.Spec.GetTTLStrategy() != nil {
+		ttlStrategy = wf.Spec.GetTTLStrategy()
 	}
-
 	return ttlStrategy
 }

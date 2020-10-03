@@ -354,6 +354,18 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	return wfs.VolumeClaimGC
 }
 
+func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
+	if wfs.TTLSecondsAfterFinished != nil {
+		if wfs.TTLStrategy == nil {
+			ttlstrategy := TTLStrategy{SecondsAfterCompletion: wfs.TTLSecondsAfterFinished}
+			wfs.TTLStrategy = &ttlstrategy
+		} else if wfs.TTLStrategy.SecondsAfterCompletion == nil {
+			wfs.TTLStrategy.SecondsAfterCompletion = wfs.TTLSecondsAfterFinished
+		}
+	}
+	return wfs.TTLStrategy
+}
+
 type ShutdownStrategy string
 
 const (
