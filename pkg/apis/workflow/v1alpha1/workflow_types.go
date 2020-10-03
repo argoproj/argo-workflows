@@ -1560,6 +1560,9 @@ type S3Bucket struct {
 
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
+
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket (for output artifacts) if it does not exist
+	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,9,opt,name=createBucketIfNotPresent"`
 }
 
 // S3Artifact is the location of an S3 artifact
