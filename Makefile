@@ -300,7 +300,7 @@ $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.27.0
 
 .PHONY: lint
-lint: $(GOPATH)/bin/golangci-lint
+lint: staticfiles $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
