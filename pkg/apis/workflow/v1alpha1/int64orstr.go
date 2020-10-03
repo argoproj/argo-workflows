@@ -8,10 +8,12 @@ import (
 
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-type Int64OrString string
+type Int64OrString struct {
+	Value string `json:"-" protobuf:"bytes,1,opt,name=value"`
+}
 
 func ParseInt64OrString(val interface{}) Int64OrString {
-	return Int64OrString(fmt.Sprintf("%v", val))
+	return Int64OrString{Value: fmt.Sprintf("%v", val)}
 }
 
 func Int64OrStringPtr(val interface{}) *Int64OrString {
@@ -23,19 +25,19 @@ func (i *Int64OrString) UnmarshalJSON(value []byte) error {
 	if value[0] == '"' {
 		x := ""
 		err := json.Unmarshal(value, &x)
-		*i = Int64OrString(x)
+		i.Value = x
 		return err
 	}
 	x := 0
 	err := json.Unmarshal(value, &x)
-	*i = Int64OrString(strconv.Itoa(x))
+	i.Value = strconv.Itoa(x)
 	return err
 }
 
 func (i Int64OrString) MarshalJSON() ([]byte, error) {
-	intVal, err := strconv.ParseInt(string(i), 10, 64)
+	intVal, err := strconv.ParseInt(i.Value, 10, 64)
 	if err != nil {
-		return json.Marshal(string(i))
+		return json.Marshal(i.Value)
 	}
 	return json.Marshal(intVal)
 }
@@ -49,5 +51,5 @@ func (i Int64OrString) OpenAPISchemaFormat() string {
 }
 
 func (i Int64OrString) String() string {
-	return string(i)
+	return i.Value
 }

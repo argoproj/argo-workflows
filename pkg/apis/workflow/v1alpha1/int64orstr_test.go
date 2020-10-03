@@ -7,9 +7,22 @@ import (
 )
 
 func TestInt64OrString(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		x := Int64OrStringPtr("")
+		data, err := x.MarshalJSON()
+		if assert.NoError(t, err) {
+			assert.Equal(t, `""`, string(data), "string value has quotes")
+		}
+		i := Int64OrStringPtr("")
+		err = i.UnmarshalJSON([]byte(`""`))
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int64OrStringPtr(""), i)
+		}
+		assert.Equal(t, "", i.String(), "string value does not have quotes")
+	})
 	t.Run("String", func(t *testing.T) {
-		n := Int64OrStringPtr("my-string")
-		data, err := n.MarshalJSON()
+		x := Int64OrStringPtr("my-string")
+		data, err := x.MarshalJSON()
 		if assert.NoError(t, err) {
 			assert.Equal(t, `"my-string"`, string(data), "string value has quotes")
 		}
@@ -20,9 +33,22 @@ func TestInt64OrString(t *testing.T) {
 		}
 		assert.Equal(t, "my-string", i.String(), "string value does not have quotes")
 	})
+	t.Run("StringNumber", func(t *testing.T) {
+		x := Int64OrStringPtr("1")
+		data, err := x.MarshalJSON()
+		if assert.NoError(t, err) {
+			assert.Equal(t, "1", string(data), "number value has quotes")
+		}
+		i := Int64OrStringPtr("")
+		err = i.UnmarshalJSON([]byte(`"1"`))
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int64OrStringPtr("1"), i)
+		}
+		assert.Equal(t, "1", i.String(), "number value does not have quotes")
+	})
 	t.Run("LargeNumber", func(t *testing.T) {
-		n := ParseInt64OrString(881217801864)
-		data, err := n.MarshalJSON()
+		x := ParseInt64OrString(881217801864)
+		data, err := x.MarshalJSON()
 		if assert.NoError(t, err) {
 			assert.Equal(t, "881217801864", string(data))
 		}
