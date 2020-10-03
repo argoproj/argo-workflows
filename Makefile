@@ -99,7 +99,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
+CLI_DOCS         := $(shell find docs/cli -type f)
 
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -437,11 +437,8 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-dist/hack: $(shell find hack) staticfiles
-	go build -o dist/hack ./hack 
-
-pkg/apiclient/_.secondary.swagger.json: dist/hack pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	./dist/hack secondaryswaggergen
+pkg/apiclient/_.secondary.swagger.json: pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	go run ./hack/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
@@ -454,8 +451,8 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
-dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json dist/hack
-	./dist/hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json 
+	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
@@ -470,8 +467,11 @@ docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
-docs: api/openapi-spec/swagger.json docs/swagger.md dist/hack
-	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= ./dist/hack docgen
+docs: api/openapi-spec/swagger.json docs/swagger.md $(CLI_DOCS)
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
+
+$(CLI_DOCS): $(CLI_PKGS)
+	go run ./hack/cli
 
 # pre-push
 
