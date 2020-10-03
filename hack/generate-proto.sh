@@ -4,6 +4,7 @@ set -eu -o pipefail
 trap 'rm -Rf vendor' EXIT
 
 if [ "$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated' | head -n1)" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
+  echo "running go-to-protobuf"
   [ -e vendor ] || go mod vendor
   ${GOPATH}/bin/go-to-protobuf \
     --go-header-file=./hack/custom-boilerplate.go.txt \
@@ -20,7 +21,7 @@ find pkg -name '*.proto' ! -name generated.proto | while read -r f; do
     echo "skipping protoc $f: no changes"
     continue
   fi
-  echo $f
+  echo "running protoc $f"
   [ -e vendor ] || go mod vendor
   protoc \
     -I /usr/local/include \
