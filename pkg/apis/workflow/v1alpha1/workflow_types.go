@@ -1569,9 +1569,9 @@ type S3Bucket struct {
 	CreateBucketIfNotPresent CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
 }
 
-// CreateS3BucketOptions the options
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
 type CreateS3BucketOptions struct {
-	// Enabled tells the driver to whether to a ttempt to create the S3 bucket or not
+	// Enabled tells the driver whether to attempt to create the S3 bucket or not
 	Enabled bool `json:"enabled,omitempty" protobuf:"varint,1,opt,name=enabled"`
 
 	// Region Bucket location
