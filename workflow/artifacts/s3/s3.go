@@ -119,11 +119,11 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 						ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
 					})
 					if err != nil {
-						return false, err
+						log.Warnf("Failed to create bucket: %v", outputArtifact.S3.Bucket)
+						return false, nil
 					}
 				} else {
-					log.Warnf("Failed to save output artifact because bucket does not exist: %v", outputArtifact.S3.Bucket)
-					return false, nil
+					return false, errors.Errorf(errors.CodeBadRequest, "Failed to save output artifact because bucket does not exist: %v", outputArtifact.S3.Bucket)
 				}
 			}
 
