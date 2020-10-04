@@ -3962,12 +3962,12 @@ Header indicate a key-value request header to be used when fetching artifacts ov
 
 ## CreateS3BucketOptions
 
-CreateS3BucketOptions the options
+CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`enabled`|`boolean`|Enabled tells the driver to whether to a ttempt to create the S3 bucket or not|
+|`enabled`|`boolean`|Enabled tells the driver whether to attempt to create the S3 bucket or not|
 |`objectLocking`|`boolean`|ObjectLocking Enable object locking|
 |`region`|`string`|Region Bucket location|
 

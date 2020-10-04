@@ -719,12 +719,12 @@ func schema_pkg_apis_workflow_v1alpha1_CreateS3BucketOptions(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "CreateS3BucketOptions the options",
+				Description: "CreateS3BucketOptions options used to determine automatic automatic bucket-creation process",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"enabled": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enabled tells the driver to whether to a ttempt to create the S3 bucket or not",
+							Description: "Enabled tells the driver whether to attempt to create the S3 bucket or not",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

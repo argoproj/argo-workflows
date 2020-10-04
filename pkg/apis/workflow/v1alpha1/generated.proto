@@ -199,9 +199,9 @@ message Counter {
   optional string value = 1;
 }
 
-// CreateS3BucketOptions the options
+// CreateS3BucketOptions options used to determine automatic automatic bucket-creation process
 message CreateS3BucketOptions {
-  // Enabled tells the driver to whether to a ttempt to create the S3 bucket or not
+  // Enabled tells the driver whether to attempt to create the S3 bucket or not
   optional bool enabled = 1;
 
   // Region Bucket location
