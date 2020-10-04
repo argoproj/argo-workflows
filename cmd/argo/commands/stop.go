@@ -50,8 +50,9 @@ func NewStopCommand() *cobra.Command {
 
 			if stopArgs.labelSelector != "" || stopArgs.fieldSelector != "" {
 				listed, err := listWorkflows(ctx, serviceClient, listFlags{
-					labels: stopArgs.labelSelector,
-					fields: stopArgs.fieldSelector,
+					namespace: namespace,
+					labels:    stopArgs.labelSelector,
+					fields:    stopArgs.fieldSelector,
 				})
 				errors.CheckError(err)
 

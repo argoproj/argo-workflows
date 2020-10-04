@@ -47,8 +47,9 @@ func NewResumeCommand() *cobra.Command {
 
 			if resumeArgs.labelSelector != "" || resumeArgs.fieldSelector != "" {
 				listed, err := listWorkflows(ctx, serviceClient, listFlags{
-					labels: resumeArgs.labelSelector,
-					fields: resumeArgs.fieldSelector,
+					namespace: namespace,
+					labels:    resumeArgs.labelSelector,
+					fields:    resumeArgs.fieldSelector,
 				})
 				errors.CheckError(err)
 

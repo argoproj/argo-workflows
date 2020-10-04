@@ -40,8 +40,9 @@ func NewTerminateCommand() *cobra.Command {
 
 			if terminateArgs.labelSelector != "" || terminateArgs.fieldSelector != "" {
 				listed, err := listWorkflows(ctx, serviceClient, listFlags{
-					labels: terminateArgs.labelSelector,
-					fields: terminateArgs.fieldSelector,
+					namespace: namespace,
+					labels:    terminateArgs.labelSelector,
+					fields:    terminateArgs.fieldSelector,
 				})
 				errors.CheckError(err)
 

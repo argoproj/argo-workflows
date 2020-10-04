@@ -677,7 +677,7 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 		})
 }
 
-func (s *CLISuite) TestRetryByLabelSelector() {
+func (s *CLIWithServerSuite) TestRetryByLabelSelector() {
 	s.testNeedsOffloading()
 	var retryTime corev1.Time
 

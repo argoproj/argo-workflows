@@ -64,8 +64,9 @@ func NewRetryCommand() *cobra.Command {
 
 			if retryOps.labelSelector != "" || retryOps.fieldSelector != "" {
 				listed, err := listWorkflows(ctx, serviceClient, listFlags{
-					labels: retryOps.labelSelector,
-					fields: retryOps.fieldSelector,
+					namespace: namespace,
+					labels:    retryOps.labelSelector,
+					fields:    retryOps.fieldSelector,
 				})
 				errors.CheckError(err)
 
