@@ -109,7 +109,8 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 			if outputArtifact.S3.CreateBucketIfNotPresent.Enabled {
 				bucketExists, err := s3cli.BucketExists(outputArtifact.S3.Bucket)
 				if err != nil {
-					return false, err
+					log.Warnf("Failed to check if bucket exists: %v", outputArtifact.S3.Bucket)
+					return false, nil
 				}
 
 				if !bucketExists {
