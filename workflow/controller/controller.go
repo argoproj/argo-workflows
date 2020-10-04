@@ -94,7 +94,7 @@ type WorkflowController struct {
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	estimatorFactory      estimation.EstimatorFactory
-	syncManager           *sync.SyncManager
+	syncManager           *sync.Manager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
@@ -221,7 +221,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 // Create and initialize the Synchronization Manager
 func (wfc *WorkflowController) createSynchronizationManager() error {
-	syncLimitConfig := func(lockKey string) (int, error) {
+	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
 			return 0, err
@@ -233,14 +233,16 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 
 		value, found := configMap.Data[lockName.Key]
 		if !found {
-			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Sync configuration Key")
+			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.Key))
 		}
 		return strconv.Atoi(value)
 	}
 
-	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
+	nextWorkflow := func(key string) {
 		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
-	})
+	}
+
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
 
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
@@ -254,7 +256,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(wfList)
+	wfc.syncManager.Initialize(wfList.Items)
 	return nil
 }
 
@@ -508,8 +510,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	if wf.Spec.Synchronization != nil {
-		priority, creationTime := getWfPriority(woc.wf)
-		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Synchronization)
+		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", woc.wf.Spec.Synchronization)
 		if err != nil {
 			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
 			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
