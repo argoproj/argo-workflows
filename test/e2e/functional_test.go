@@ -680,18 +680,6 @@ func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
 		})
 }
 
-func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationDisabled() {
-	s.Given().
-		Workflow("@expectedfailures/output-artifact-with-s3-bucket-creation-disabled.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow().
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
-		})
-}
-
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
