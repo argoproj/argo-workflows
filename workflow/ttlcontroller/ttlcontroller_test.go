@@ -621,7 +621,7 @@ func TestGetTTLStrategy(t *testing.T) {
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 	})
 
-	t.Run("TTLInWfwithWorkflowTemplate" , func(t *testing.T) {
+	t.Run("TTLInWfwithWorkflowTemplate", func(t *testing.T) {
 		wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
 		ttl := getTTLStrategy(wf1, defaultTTLStrategy)
 		assert.NotNil(t, ttl)
@@ -632,7 +632,7 @@ func TestGetTTLStrategy(t *testing.T) {
 		ttl = getTTLStrategy(wf1, nil)
 		assert.Nil(t, ttl)
 	})
-	t.Run("TTLwithWorkflowTemplate" , func(t *testing.T) {
+	t.Run("TTLwithWorkflowTemplate", func(t *testing.T) {
 		wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
 		wf2.Spec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = &twenty
