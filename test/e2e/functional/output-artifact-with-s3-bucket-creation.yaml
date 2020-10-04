@@ -3,6 +3,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: output-artifact-with-s3-bucket-creation-
+  labels:
+    argo-e2e: true
 spec:
   entrypoint: output-artifact-with-s3-bucket-creation
   templates:
@@ -19,15 +21,14 @@ spec:
       outputs:
         artifacts:
           - name: hello-art
-            optional: true
             path: /tmp/hello_world.txt
             s3:
-              bucket: bucket-that-does-not-exist
+              bucket: bucket-that-does-not-exist-1
               key: my-outputs/hello_world.txt.tgz
               endpoint: minio:9000
               insecure: true
               createBucketIfNotPresent:
-                enabled: false
+                enabled: true
               accessKeySecret:
                 name: my-minio-cred
                 key: accesskey
