@@ -6,21 +6,24 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ghodss/yaml"
 	cron "github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/pkg/rand"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/pkg/rand"
 )
 
 type backfillOpts struct {
+	cronWfName string
 	name       string
 	startDate  string
 	endDate    string
@@ -44,15 +47,17 @@ func NewBackfillCommand() *cobra.Command {
 			if cliOps.name == "" {
 				cliOps.name = rand.RandString(5)
 			}
+
+			cliOps.cronWfName = args[0]
 			return backfillCronWorkflow(args[0], cliOps)
 		},
 	}
 	command.Flags().StringVar(&cliOps.name, "name", "", "Backfill name")
 	command.Flags().StringVar(&cliOps.startDate, "start", "", "Start date")
 	command.Flags().StringVar(&cliOps.endDate, "end", "", "End Date")
-	command.Flags().BoolVar(&cliOps.parallel, "parallel", false, "")
-	command.Flags().StringVar(&cliOps.argName, "argname", "cronscheduletime", "Schedule time argument name")
-	command.Flags().StringVar(&cliOps.dateFormat, "format", time.RFC822, "Date format for workflow argument value")
+	command.Flags().BoolVar(&cliOps.parallel, "parallel", false, "Enabled all backfile workflows run parallel")
+	command.Flags().StringVar(&cliOps.argName, "argname", "cronScheduleTime", "Schedule time argument name for workflow")
+	command.Flags().StringVar(&cliOps.dateFormat, "format", time.RFC822, "Date format for Schedule time value")
 
 	return command
 }
@@ -73,6 +78,7 @@ func backfillCronWorkflow(cronWFName string, cliOps backfillOpts) error {
 		}
 	} else {
 		endTime = time.Now()
+		cliOps.endDate = endTime.Format(time.RFC822)
 	}
 
 	ctx, apiClient := client.NewAPIClient()
@@ -94,8 +100,8 @@ func backfillCronWorkflow(cronWFName string, cliOps backfillOpts) error {
 	priority := int32(math.MaxInt32)
 	var scheList []string
 	wf := common.ConvertCronWorkflowToWorkflow(cronWF)
-	paramArg := "{{input.parameters.scheduletime}}"
-	wf.GenerateName = cronWF.Name + "-backfill-" + cliOps.name + "-"
+	paramArg := `{{inputs.parameters.backfillscheduletime}}`
+	wf.GenerateName = cronWF.Name + "-backfill-" + strings.ToLower(cliOps.name) + "-"
 	param := v1alpha1.Parameter{
 		Name:  cliOps.argName,
 		Value: &paramArg,
@@ -116,12 +122,18 @@ func backfillCronWorkflow(cronWFName string, cliOps backfillOpts) error {
 		}
 	}
 	wfJsonByte, err := json.Marshal(wf)
+	if err != nil {
+		return err
+	}
 	yamlbyte, err := yaml.JSONToYAML(wfJsonByte)
 	if err != nil {
 		return err
 	}
 	wfYamlStr := "apiVersion: argoproj.io/v1alpha1 \n" + string(yamlbyte)
-	return CreateMonitorWf(wfYamlStr, client.Namespace(), scheList, wfClient, ctx)
+	if len(scheList) > 0 {
+		return CreateMonitorWf(ctx, wfYamlStr, client.Namespace(), scheList, wfClient, cliOps)
+	}
+	return nil
 }
 
 var backfillWf = `{
@@ -143,7 +155,7 @@ var backfillWf = `{
                      "arguments": {
                         "parameters": [
                            {
-                              "name": "cronscheduletime",
+                              "name": "backfillscheduletime",
                               "value": "{{item}}"
                            }
                         ],
@@ -158,7 +170,7 @@ var backfillWf = `{
             "inputs": {
                "parameters": [
                   {
-                     "name": "cronscheduletime"
+                     "name": "backfillscheduletime"
                   }
                ]
             },
@@ -172,28 +184,56 @@ var backfillWf = `{
 }
 `
 
-func CreateMonitorWf(wf, namespace string, scheTime []string, wfClient workflow.WorkflowServiceClient, ctx context.Context) error {
-	const max_wf_count = 1000
+func CreateMonitorWf(ctx context.Context, wf, namespace string, scheTime []string, wfClient workflow.WorkflowServiceClient, cliOps backfillOpts) error {
+	const maxWfCount = 1000
 	var monitorWfObj v1alpha1.Workflow
 	err := json.Unmarshal([]byte(backfillWf), &monitorWfObj)
 	if err != nil {
 		return err
 	}
-	fmt.Println(len(scheTime))
-	count := len(scheTime) / max_wf_count
+	TotalScheCount := len(scheTime)
+	iterCount := int(float64(len(scheTime)/maxWfCount)) + 1
 	startIdx := 0
-	for i := 0; i < count; i++ {
-
+	var endIdx int
+	var wfNames []string
+	for i := 0; i < iterCount; i++ {
 		tmpl := monitorWfObj.GetTemplateByName("create-workflow")
-		scheTimeByte, err := json.Marshal(scheTime[startIdx : startIdx+max_wf_count])
+		if (TotalScheCount - i*maxWfCount) < maxWfCount {
+			endIdx = TotalScheCount
+		} else {
+			endIdx = startIdx + maxWfCount
+		}
+		scheTimeByte, err := json.Marshal(scheTime[startIdx:endIdx])
+		startIdx = endIdx
 		if err != nil {
+
 			return err
 		}
-		tmpl.Resource.Manifest = wf
+		tmpl.Resource.Manifest = fmt.Sprint(wf)
 		stepTmpl := monitorWfObj.GetTemplateByName("main")
 		stepTmpl.Steps[0].Steps[0].WithParam = string(scheTimeByte)
 		c, err := wfClient.CreateWorkflow(ctx, &workflow.WorkflowCreateRequest{Namespace: namespace, Workflow: &monitorWfObj})
-		fmt.Println(c.Namespace + "/" + c.Name)
+		if err != nil {
+			return err
+		}
+		wfNames = append(wfNames, c.Name)
 	}
+	printBackFillOutput(wfNames, len(scheTime), cliOps)
 	return nil
+}
+
+func printBackFillOutput(wfNames []string, totalSches int, cliOps backfillOpts) {
+	fmt.Printf("Created %s Backfill task for Cronworkflow %s \n", cliOps.name, cliOps.cronWfName)
+	fmt.Printf("==================================================\n")
+	fmt.Printf("Backfill Period :\n")
+	fmt.Printf("Start Time : %s \n", cliOps.startDate)
+	fmt.Printf("End Time : %s \n", cliOps.endDate)
+	fmt.Printf("Total Backfill Schedule: %d \n", totalSches)
+	fmt.Printf("==================================================\n")
+	fmt.Printf("Backfill Workflows: \n")
+	fmt.Printf("   NAMESPACE\t WORKFLOW: \n")
+	namespace := client.Namespace()
+	for idx, wfName := range wfNames {
+		fmt.Printf("%d. %s \t %s \n", idx+1, namespace, wfName)
+	}
 }

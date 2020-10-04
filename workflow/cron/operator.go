@@ -77,6 +77,14 @@ func (woc *cronWfOperationCtx) Run() {
 	}
 
 	wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
+	// Add argument for schedule time
+	scheTime := time.Now().Format(time.RFC822)
+	param := v1alpha1.Parameter{
+		Name:  "cronScheduleTime",
+		Value: &scheTime,
+	}
+
+	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, param)
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
