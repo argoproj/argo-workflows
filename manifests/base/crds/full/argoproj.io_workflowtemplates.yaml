@@ -559,7 +559,14 @@ spec:
                           bucket:
                             type: string
                           createBucketIfNotPresent:
-                            type: boolean
+                            properties:
+                              enabled:
+                                type: boolean
+                              objectLocking:
+                                type: boolean
+                              region:
+                                type: string
+                            type: object
                           endpoint:
                             type: string
                           insecure:
@@ -1419,7 +1426,14 @@ spec:
                           bucket:
                             type: string
                           createBucketIfNotPresent:
-                            type: boolean
+                            properties:
+                              enabled:
+                                type: boolean
+                              objectLocking:
+                                type: boolean
+                              region:
+                                type: string
+                            type: object
                           endpoint:
                             type: string
                           insecure:
@@ -1721,7 +1735,14 @@ spec:
                                 bucket:
                                   type: string
                                 createBucketIfNotPresent:
-                                  type: boolean
+                                  properties:
+                                    enabled:
+                                      type: boolean
+                                    objectLocking:
+                                      type: boolean
+                                    region:
+                                      type: string
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -2608,7 +2629,14 @@ spec:
                                           bucket:
                                             type: string
                                           createBucketIfNotPresent:
-                                            type: boolean
+                                            properties:
+                                              enabled:
+                                                type: boolean
+                                              objectLocking:
+                                                type: boolean
+                                              region:
+                                                type: string
+                                            type: object
                                           endpoint:
                                             type: string
                                           insecure:
@@ -3568,7 +3596,14 @@ spec:
                                 bucket:
                                   type: string
                                 createBucketIfNotPresent:
-                                  type: boolean
+                                  properties:
+                                    enabled:
+                                      type: boolean
+                                    objectLocking:
+                                      type: boolean
+                                    region:
+                                      type: string
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
@@ -4012,7 +4047,14 @@ spec:
                                 bucket:
                                   type: string
                                 createBucketIfNotPresent:
-                                  type: boolean
+                                  properties:
+                                    enabled:
+                                      type: boolean
+                                    objectLocking:
+                                      type: boolean
+                                    region:
+                                      type: string
+                                  type: object
                                 endpoint:
                                   type: string
                                 insecure:
