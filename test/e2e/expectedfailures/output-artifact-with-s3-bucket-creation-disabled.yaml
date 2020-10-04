@@ -2,35 +2,36 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-with-s3-bucket-creation-
+  generateName: output-artifact-with-s3-bucket-creation-disabled-
+  labels:
+    argo-e2e: true
 spec:
-  entrypoint: output-artifact-with-s3-bucket-creation
+  entrypoint: output-artifact-with-s3-bucket-creation-disabled
   templates:
-    - name: output-artifact-with-s3-bucket-creation
+    - name: output-artifact-with-s3-bucket-creation-disabled
       steps:
         - - name: generate-artifact
             template: whalesay
 
     - name: whalesay
-      container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
-      outputs:
-        artifacts:
-          - name: hello-art
-            optional: true
-            path: /tmp/hello_world.txt
-            s3:
-              bucket: bucket-that-does-not-exist
-              key: my-outputs/hello_world.txt.tgz
-              endpoint: minio:9000
-              insecure: true
-              createBucketIfNotPresent:
-                enabled: false
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
+        container:
+          image: argoproj/argosay:v1
+          command: [ sh, -c ]
+          args: [ "sleep 1; cowsay hello world | tee /tmp/hello_world.txt" ]
+        outputs:
+          artifacts:
+            - name: hello-art
+              path: /tmp/hello_world.txt
+              s3:
+                bucket: bucket-that-does-not-exist-2
+                key: my-outputs/hello_world.txt.tgz
+                endpoint: minio:9000
+                insecure: true
+                createBucketIfNotPresent:
+                  enabled: false
+                accessKeySecret:
+                  name: my-minio-cred
+                  key: accesskey
+                secretKeySecret:
+                  name: my-minio-cred
+                  key: secretkey
