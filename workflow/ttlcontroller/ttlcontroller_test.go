@@ -221,7 +221,7 @@ status:
       name: start
       outputs: {}
     ttlStrategy:
-      secondsAfterCompletion: 20
+      secondsAfterCompletion: 10
 `
 var wftRefWithTTLinWF = `
 apiVersion: argoproj.io/v1alpha1
@@ -638,7 +638,7 @@ func TestGetTTLStrategy(t *testing.T) {
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = &twenty
 		ttl := getTTLStrategy(wf2, defaultTTLStrategy)
 		assert.NotNil(t, ttl)
-		assert.Equal(t, twenty, *ttl.SecondsAfterCompletion)
+		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
 		ttl = getTTLStrategy(wf2, nil)
