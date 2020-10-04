@@ -688,7 +688,7 @@ func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationDisabled() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeError, status.Phase)
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 		})
 }
 
