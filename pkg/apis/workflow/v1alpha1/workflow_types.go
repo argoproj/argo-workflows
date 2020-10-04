@@ -1565,8 +1565,20 @@ type S3Bucket struct {
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 
-	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket (for output artifacts) if it does not exist
-	CreateBucketIfNotPresent bool `json:"createBucketIfNotPresent,omitempty" protobuf:"varint,9,opt,name=createBucketIfNotPresent"`
+	// CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist
+	CreateBucketIfNotPresent CreateS3BucketOptions `json:"createBucketIfNotPresent,omitempty" protobuf:"bytes,9,opt,name=createBucketIfNotPresent"`
+}
+
+// CreateS3BucketOptions the options
+type CreateS3BucketOptions struct {
+	// Enabled tells the driver to whether to a ttempt to create the S3 bucket or not
+	Enabled bool `json:"enabled,omitempty" protobuf:"varint,1,opt,name=enabled"`
+
+	// Region Bucket location
+	Region string `json:"region,omitempty" protobuf:"varint,2,opt,name=region"`
+
+	// ObjectLocking Enable object locking
+	ObjectLocking bool `json:"objectLocking,omitempty" protobuf:"varint,3,opt,name=objectLocking"`
 }
 
 // S3Artifact is the location of an S3 artifact
