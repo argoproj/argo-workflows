@@ -692,7 +692,6 @@ func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationDisabled() {
 		})
 }
 
-
 func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
