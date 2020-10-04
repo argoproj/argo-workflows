@@ -931,6 +931,16 @@ Counter is a Counter prometheus metric
 | cronWorkflow | [io.argoproj.workflow.v1alpha1.CronWorkflow](#io.argoproj.workflow.v1alpha1.cronworkflow) |  | No |
 | namespace | string |  | No |
 
+#### io.argoproj.workflow.v1alpha1.CreateS3BucketOptions
+
+CreateS3BucketOptions the options
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| enabled | boolean | Enabled tells the driver to whether to a ttempt to create the S3 bucket or not | No |
+| objectLocking | boolean | ObjectLocking Enable object locking | No |
+| region | string | Region Bucket location | No |
+
 #### io.argoproj.workflow.v1alpha1.CronWorkflow
 
 CronWorkflow is the definition of a scheduled workflow resource
@@ -1391,6 +1401,7 @@ S3Artifact is the location of an S3 artifact
 | ---- | ---- | ----------- | -------- |
 | accessKeySecret | [io.k8s.api.core.v1.SecretKeySelector](#io.k8s.api.core.v1.secretkeyselector) | AccessKeySecret is the secret selector to the bucket's access key | Yes |
 | bucket | string | Bucket is the name of the bucket | Yes |
+| createBucketIfNotPresent | [io.argoproj.workflow.v1alpha1.CreateS3BucketOptions](#io.argoproj.workflow.v1alpha1.creates3bucketoptions) | CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist | No |
 | endpoint | string | Endpoint is the hostname of the bucket endpoint | Yes |
 | insecure | boolean | Insecure will connect to the service with TLS | No |
 | key | string | Key is the key in the bucket where the artifact resides | Yes |

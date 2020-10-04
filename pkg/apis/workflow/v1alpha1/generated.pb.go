@@ -4,17 +4,25 @@
 package v1alpha1
 
 import (
+	encoding_json "encoding/json"
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
+
 	io "io"
+
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+	k8s_io_api_core_v1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/policy/v1beta1"
+	k8s_io_apimachinery_pkg_apis_meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v11 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/apimachinery/pkg/runtime"
-	_ "k8s.io/apimachinery/pkg/runtime/schema"
-	intstr "k8s.io/apimachinery/pkg/util/intstr"
+
 	math "math"
 	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
+
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -28,35 +36,21 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Amount represent a numeric amount.
-// +kubebuilder:validation:Type=number
-type Amount struct {
-	Value                *string  `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Amount) Reset()         { *m = Amount{} }
-func (m *Amount) String() string { return proto.CompactTextString(m) }
-func (*Amount) ProtoMessage()    {}
+func (m *Amount) Reset()      { *m = Amount{} }
+func (*Amount) ProtoMessage() {}
 func (*Amount) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{0}
+	return fileDescriptor_c23edafa7e7ea072, []int{0}
 }
 func (m *Amount) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Amount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Amount.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Amount) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Amount.Merge(m, src)
@@ -70,43 +64,21 @@ func (m *Amount) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Amount proto.InternalMessageInfo
 
-func (m *Amount) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
-// ArchiveStrategy describes how to archive files/directory when saving artifacts
-type ArchiveStrategy struct {
-	Tar                  *TarStrategy  `protobuf:"bytes,1,opt,name=tar" json:"tar,omitempty"`
-	None                 *NoneStrategy `protobuf:"bytes,2,opt,name=none" json:"none,omitempty"`
-	Zip                  *ZipStrategy  `protobuf:"bytes,3,opt,name=zip" json:"zip,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
-}
-
-func (m *ArchiveStrategy) Reset()         { *m = ArchiveStrategy{} }
-func (m *ArchiveStrategy) String() string { return proto.CompactTextString(m) }
-func (*ArchiveStrategy) ProtoMessage()    {}
+func (m *ArchiveStrategy) Reset()      { *m = ArchiveStrategy{} }
+func (*ArchiveStrategy) ProtoMessage() {}
 func (*ArchiveStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{1}
+	return fileDescriptor_c23edafa7e7ea072, []int{1}
 }
 func (m *ArchiveStrategy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ArchiveStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ArchiveStrategy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ArchiveStrategy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ArchiveStrategy.Merge(m, src)
@@ -120,62 +92,21 @@ func (m *ArchiveStrategy) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ArchiveStrategy proto.InternalMessageInfo
 
-func (m *ArchiveStrategy) GetTar() *TarStrategy {
-	if m != nil {
-		return m.Tar
-	}
-	return nil
-}
-
-func (m *ArchiveStrategy) GetNone() *NoneStrategy {
-	if m != nil {
-		return m.None
-	}
-	return nil
-}
-
-func (m *ArchiveStrategy) GetZip() *ZipStrategy {
-	if m != nil {
-		return m.Zip
-	}
-	return nil
-}
-
-// Arguments to a template
-type Arguments struct {
-	// Parameters is the list of parameters to pass to the template or workflow
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Parameters []*Parameter `protobuf:"bytes,1,rep,name=parameters" json:"parameters,omitempty"`
-	// Artifacts is the list of artifacts to pass to the template or workflow
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Artifacts            []*Artifact `protobuf:"bytes,2,rep,name=artifacts" json:"artifacts,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
-}
-
-func (m *Arguments) Reset()         { *m = Arguments{} }
-func (m *Arguments) String() string { return proto.CompactTextString(m) }
-func (*Arguments) ProtoMessage()    {}
+func (m *Arguments) Reset()      { *m = Arguments{} }
+func (*Arguments) ProtoMessage() {}
 func (*Arguments) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{2}
+	return fileDescriptor_c23edafa7e7ea072, []int{2}
 }
 func (m *Arguments) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Arguments) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Arguments.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Arguments) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Arguments.Merge(m, src)
@@ -189,69 +120,21 @@ func (m *Arguments) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Arguments proto.InternalMessageInfo
 
-func (m *Arguments) GetParameters() []*Parameter {
-	if m != nil {
-		return m.Parameters
-	}
-	return nil
-}
-
-func (m *Arguments) GetArtifacts() []*Artifact {
-	if m != nil {
-		return m.Artifacts
-	}
-	return nil
-}
-
-// Artifact indicates an artifact to place at a specified path
-type Artifact struct {
-	// name of the artifact. must be unique within a template's inputs/outputs.
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Path is the container path to the artifact
-	Path *string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
-	// mode bits to use on this file, must be a value between 0 and 0777
-	// set when loading input artifacts.
-	Mode *int32 `protobuf:"varint,3,opt,name=mode" json:"mode,omitempty"`
-	// From allows an artifact to reference an artifact from a previous step
-	From *string `protobuf:"bytes,4,opt,name=from" json:"from,omitempty"`
-	// ArtifactLocation contains the location of the artifact
-	ArtifactLocation *ArtifactLocation `protobuf:"bytes,5,opt,name=artifactLocation" json:"artifactLocation,omitempty"`
-	// GlobalName exports an output artifact to the global scope, making it available as
-	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
-	GlobalName *string `protobuf:"bytes,6,opt,name=globalName" json:"globalName,omitempty"`
-	// Archive controls how the artifact will be saved to the artifact repository.
-	Archive *ArchiveStrategy `protobuf:"bytes,7,opt,name=archive" json:"archive,omitempty"`
-	// Make Artifacts optional, if Artifacts doesn't generate or exist
-	Optional *bool `protobuf:"varint,8,opt,name=optional" json:"optional,omitempty"`
-	// SubPath allows an artifact to be sourced from a subpath within the specified source
-	SubPath *string `protobuf:"bytes,9,opt,name=subPath" json:"subPath,omitempty"`
-	// If mode is set, apply the permission recursively into the artifact if it is a folder
-	RecurseMode          *bool    `protobuf:"varint,10,opt,name=recurseMode" json:"recurseMode,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Artifact) Reset()         { *m = Artifact{} }
-func (m *Artifact) String() string { return proto.CompactTextString(m) }
-func (*Artifact) ProtoMessage()    {}
+func (m *Artifact) Reset()      { *m = Artifact{} }
+func (*Artifact) ProtoMessage() {}
 func (*Artifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{3}
+	return fileDescriptor_c23edafa7e7ea072, []int{3}
 }
 func (m *Artifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Artifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Artifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Artifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Artifact.Merge(m, src)
@@ -265,124 +148,21 @@ func (m *Artifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Artifact proto.InternalMessageInfo
 
-func (m *Artifact) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Artifact) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *Artifact) GetMode() int32 {
-	if m != nil && m.Mode != nil {
-		return *m.Mode
-	}
-	return 0
-}
-
-func (m *Artifact) GetFrom() string {
-	if m != nil && m.From != nil {
-		return *m.From
-	}
-	return ""
-}
-
-func (m *Artifact) GetArtifactLocation() *ArtifactLocation {
-	if m != nil {
-		return m.ArtifactLocation
-	}
-	return nil
-}
-
-func (m *Artifact) GetGlobalName() string {
-	if m != nil && m.GlobalName != nil {
-		return *m.GlobalName
-	}
-	return ""
-}
-
-func (m *Artifact) GetArchive() *ArchiveStrategy {
-	if m != nil {
-		return m.Archive
-	}
-	return nil
-}
-
-func (m *Artifact) GetOptional() bool {
-	if m != nil && m.Optional != nil {
-		return *m.Optional
-	}
-	return false
-}
-
-func (m *Artifact) GetSubPath() string {
-	if m != nil && m.SubPath != nil {
-		return *m.SubPath
-	}
-	return ""
-}
-
-func (m *Artifact) GetRecurseMode() bool {
-	if m != nil && m.RecurseMode != nil {
-		return *m.RecurseMode
-	}
-	return false
-}
-
-// ArtifactLocation describes a location for a single or multiple artifacts.
-// It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
-// It is also used to describe the location of multiple artifacts such as the archive location
-// of a single workflow step, which the executor will use as a default location to store its files.
-type ArtifactLocation struct {
-	// ArchiveLogs indicates if the container logs should be archived
-	ArchiveLogs *bool `protobuf:"varint,1,opt,name=archiveLogs" json:"archiveLogs,omitempty"`
-	// S3 contains S3 artifact location details
-	S3 *S3Artifact `protobuf:"bytes,2,opt,name=s3" json:"s3,omitempty"`
-	// Git contains git artifact location details
-	Git *GitArtifact `protobuf:"bytes,3,opt,name=git" json:"git,omitempty"`
-	// HTTP contains HTTP artifact location details
-	Http *HTTPArtifact `protobuf:"bytes,4,opt,name=http" json:"http,omitempty"`
-	// Artifactory contains artifactory artifact location details
-	Artifactory *ArtifactoryArtifact `protobuf:"bytes,5,opt,name=artifactory" json:"artifactory,omitempty"`
-	// HDFS contains HDFS artifact location details
-	Hdfs *HDFSArtifact `protobuf:"bytes,6,opt,name=hdfs" json:"hdfs,omitempty"`
-	// Raw contains raw artifact location details
-	Raw *RawArtifact `protobuf:"bytes,7,opt,name=raw" json:"raw,omitempty"`
-	// OSS contains OSS artifact location details
-	Oss *OSSArtifact `protobuf:"bytes,8,opt,name=oss" json:"oss,omitempty"`
-	// GCS contains GCS artifact location details
-	Gcs                  *GCSArtifact `protobuf:"bytes,9,opt,name=gcs" json:"gcs,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
-}
-
-func (m *ArtifactLocation) Reset()         { *m = ArtifactLocation{} }
-func (m *ArtifactLocation) String() string { return proto.CompactTextString(m) }
-func (*ArtifactLocation) ProtoMessage()    {}
+func (m *ArtifactLocation) Reset()      { *m = ArtifactLocation{} }
+func (*ArtifactLocation) ProtoMessage() {}
 func (*ArtifactLocation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{4}
+	return fileDescriptor_c23edafa7e7ea072, []int{4}
 }
 func (m *ArtifactLocation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ArtifactLocation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ArtifactLocation.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ArtifactLocation) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ArtifactLocation.Merge(m, src)
@@ -396,97 +176,21 @@ func (m *ArtifactLocation) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ArtifactLocation proto.InternalMessageInfo
 
-func (m *ArtifactLocation) GetArchiveLogs() bool {
-	if m != nil && m.ArchiveLogs != nil {
-		return *m.ArchiveLogs
-	}
-	return false
-}
-
-func (m *ArtifactLocation) GetS3() *S3Artifact {
-	if m != nil {
-		return m.S3
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetGit() *GitArtifact {
-	if m != nil {
-		return m.Git
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetHttp() *HTTPArtifact {
-	if m != nil {
-		return m.Http
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetArtifactory() *ArtifactoryArtifact {
-	if m != nil {
-		return m.Artifactory
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetHdfs() *HDFSArtifact {
-	if m != nil {
-		return m.Hdfs
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetRaw() *RawArtifact {
-	if m != nil {
-		return m.Raw
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetOss() *OSSArtifact {
-	if m != nil {
-		return m.Oss
-	}
-	return nil
-}
-
-func (m *ArtifactLocation) GetGcs() *GCSArtifact {
-	if m != nil {
-		return m.Gcs
-	}
-	return nil
-}
-
-type ArtifactRepositoryRef struct {
-	ConfigMap            *string  `protobuf:"bytes,1,opt,name=configMap" json:"configMap,omitempty"`
-	Key                  *string  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ArtifactRepositoryRef) Reset()         { *m = ArtifactRepositoryRef{} }
-func (m *ArtifactRepositoryRef) String() string { return proto.CompactTextString(m) }
-func (*ArtifactRepositoryRef) ProtoMessage()    {}
+func (m *ArtifactRepositoryRef) Reset()      { *m = ArtifactRepositoryRef{} }
+func (*ArtifactRepositoryRef) ProtoMessage() {}
 func (*ArtifactRepositoryRef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{5}
+	return fileDescriptor_c23edafa7e7ea072, []int{5}
 }
 func (m *ArtifactRepositoryRef) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ArtifactRepositoryRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ArtifactRepositoryRef.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ArtifactRepositoryRef) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ArtifactRepositoryRef.Merge(m, src)
@@ -500,50 +204,21 @@ func (m *ArtifactRepositoryRef) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ArtifactRepositoryRef proto.InternalMessageInfo
 
-func (m *ArtifactRepositoryRef) GetConfigMap() string {
-	if m != nil && m.ConfigMap != nil {
-		return *m.ConfigMap
-	}
-	return ""
-}
-
-func (m *ArtifactRepositoryRef) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-// ArtifactoryArtifact is the location of an artifactory artifact
-type ArtifactoryArtifact struct {
-	// URL of the artifact
-	Url                  *string          `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
-	ArtifactoryAuth      *ArtifactoryAuth `protobuf:"bytes,2,opt,name=artifactoryAuth" json:"artifactoryAuth,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
-}
-
-func (m *ArtifactoryArtifact) Reset()         { *m = ArtifactoryArtifact{} }
-func (m *ArtifactoryArtifact) String() string { return proto.CompactTextString(m) }
-func (*ArtifactoryArtifact) ProtoMessage()    {}
+func (m *ArtifactoryArtifact) Reset()      { *m = ArtifactoryArtifact{} }
+func (*ArtifactoryArtifact) ProtoMessage() {}
 func (*ArtifactoryArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{6}
+	return fileDescriptor_c23edafa7e7ea072, []int{6}
 }
 func (m *ArtifactoryArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ArtifactoryArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ArtifactoryArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ArtifactoryArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ArtifactoryArtifact.Merge(m, src)
@@ -557,51 +232,21 @@ func (m *ArtifactoryArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ArtifactoryArtifact proto.InternalMessageInfo
 
-func (m *ArtifactoryArtifact) GetUrl() string {
-	if m != nil && m.Url != nil {
-		return *m.Url
-	}
-	return ""
-}
-
-func (m *ArtifactoryArtifact) GetArtifactoryAuth() *ArtifactoryAuth {
-	if m != nil {
-		return m.ArtifactoryAuth
-	}
-	return nil
-}
-
-// ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
-type ArtifactoryAuth struct {
-	// UsernameSecret is the secret selector to the repository username
-	UsernameSecret *v1.SecretKeySelector `protobuf:"bytes,1,opt,name=usernameSecret" json:"usernameSecret,omitempty"`
-	// PasswordSecret is the secret selector to the repository password
-	PasswordSecret       *v1.SecretKeySelector `protobuf:"bytes,2,opt,name=passwordSecret" json:"passwordSecret,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
-}
-
-func (m *ArtifactoryAuth) Reset()         { *m = ArtifactoryAuth{} }
-func (m *ArtifactoryAuth) String() string { return proto.CompactTextString(m) }
-func (*ArtifactoryAuth) ProtoMessage()    {}
+func (m *ArtifactoryAuth) Reset()      { *m = ArtifactoryAuth{} }
+func (*ArtifactoryAuth) ProtoMessage() {}
 func (*ArtifactoryAuth) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{7}
+	return fileDescriptor_c23edafa7e7ea072, []int{7}
 }
 func (m *ArtifactoryAuth) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ArtifactoryAuth) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ArtifactoryAuth.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ArtifactoryAuth) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ArtifactoryAuth.Merge(m, src)
@@ -615,53 +260,21 @@ func (m *ArtifactoryAuth) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ArtifactoryAuth proto.InternalMessageInfo
 
-func (m *ArtifactoryAuth) GetUsernameSecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.UsernameSecret
-	}
-	return nil
-}
-
-func (m *ArtifactoryAuth) GetPasswordSecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.PasswordSecret
-	}
-	return nil
-}
-
-// Backoff is a backoff strategy to use within retryStrategy
-type Backoff struct {
-	// Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
-	Duration *string `protobuf:"bytes,1,opt,name=duration" json:"duration,omitempty"`
-	// Factor is a factor to multiply the base duration after each failed retry
-	Factor *intstr.IntOrString `protobuf:"bytes,2,opt,name=factor" json:"factor,omitempty"`
-	// MaxDuration is the maximum amount of time allowed for the backoff strategy
-	MaxDuration          *string  `protobuf:"bytes,3,opt,name=maxDuration" json:"maxDuration,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Backoff) Reset()         { *m = Backoff{} }
-func (m *Backoff) String() string { return proto.CompactTextString(m) }
-func (*Backoff) ProtoMessage()    {}
+func (m *Backoff) Reset()      { *m = Backoff{} }
+func (*Backoff) ProtoMessage() {}
 func (*Backoff) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{8}
+	return fileDescriptor_c23edafa7e7ea072, []int{8}
 }
 func (m *Backoff) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Backoff) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Backoff.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Backoff) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Backoff.Merge(m, src)
@@ -675,56 +288,21 @@ func (m *Backoff) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Backoff proto.InternalMessageInfo
 
-func (m *Backoff) GetDuration() string {
-	if m != nil && m.Duration != nil {
-		return *m.Duration
-	}
-	return ""
-}
-
-func (m *Backoff) GetFactor() *intstr.IntOrString {
-	if m != nil {
-		return m.Factor
-	}
-	return nil
-}
-
-func (m *Backoff) GetMaxDuration() string {
-	if m != nil && m.MaxDuration != nil {
-		return *m.MaxDuration
-	}
-	return ""
-}
-
-// Cache is the configuration for the type of cache to be used
-type Cache struct {
-	// ConfigMap sets a ConfigMap-based cache
-	ConfigMap            *v1.ConfigMapKeySelector `protobuf:"bytes,1,opt,name=configMap" json:"configMap,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
-	XXX_unrecognized     []byte                   `json:"-"`
-	XXX_sizecache        int32                    `json:"-"`
-}
-
-func (m *Cache) Reset()         { *m = Cache{} }
-func (m *Cache) String() string { return proto.CompactTextString(m) }
-func (*Cache) ProtoMessage()    {}
+func (m *Cache) Reset()      { *m = Cache{} }
+func (*Cache) ProtoMessage() {}
 func (*Cache) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{9}
+	return fileDescriptor_c23edafa7e7ea072, []int{9}
 }
 func (m *Cache) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Cache) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Cache.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Cache) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Cache.Merge(m, src)
@@ -738,47 +316,21 @@ func (m *Cache) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Cache proto.InternalMessageInfo
 
-func (m *Cache) GetConfigMap() *v1.ConfigMapKeySelector {
-	if m != nil {
-		return m.ConfigMap
-	}
-	return nil
-}
-
-// ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
-// +genclient
-// +genclient:noStatus
-// +genclient:nonNamespaced
-// +kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ClusterWorkflowTemplate struct {
-	Metadata             *v11.ObjectMeta       `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Spec                 *WorkflowTemplateSpec `protobuf:"bytes,2,opt,name=spec" json:"spec,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
-}
-
-func (m *ClusterWorkflowTemplate) Reset()         { *m = ClusterWorkflowTemplate{} }
-func (m *ClusterWorkflowTemplate) String() string { return proto.CompactTextString(m) }
-func (*ClusterWorkflowTemplate) ProtoMessage()    {}
+func (m *ClusterWorkflowTemplate) Reset()      { *m = ClusterWorkflowTemplate{} }
+func (*ClusterWorkflowTemplate) ProtoMessage() {}
 func (*ClusterWorkflowTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{10}
+	return fileDescriptor_c23edafa7e7ea072, []int{10}
 }
 func (m *ClusterWorkflowTemplate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ClusterWorkflowTemplate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ClusterWorkflowTemplate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ClusterWorkflowTemplate) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ClusterWorkflowTemplate.Merge(m, src)
@@ -792,50 +344,21 @@ func (m *ClusterWorkflowTemplate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ClusterWorkflowTemplate proto.InternalMessageInfo
 
-func (m *ClusterWorkflowTemplate) GetMetadata() *v11.ObjectMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *ClusterWorkflowTemplate) GetSpec() *WorkflowTemplateSpec {
-	if m != nil {
-		return m.Spec
-	}
-	return nil
-}
-
-// ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ClusterWorkflowTemplateList struct {
-	Metadata             *v11.ListMeta              `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Items                []*ClusterWorkflowTemplate `protobuf:"bytes,2,rep,name=items" json:"items,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
-	XXX_unrecognized     []byte                     `json:"-"`
-	XXX_sizecache        int32                      `json:"-"`
-}
-
-func (m *ClusterWorkflowTemplateList) Reset()         { *m = ClusterWorkflowTemplateList{} }
-func (m *ClusterWorkflowTemplateList) String() string { return proto.CompactTextString(m) }
-func (*ClusterWorkflowTemplateList) ProtoMessage()    {}
+func (m *ClusterWorkflowTemplateList) Reset()      { *m = ClusterWorkflowTemplateList{} }
+func (*ClusterWorkflowTemplateList) ProtoMessage() {}
 func (*ClusterWorkflowTemplateList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{11}
+	return fileDescriptor_c23edafa7e7ea072, []int{11}
 }
 func (m *ClusterWorkflowTemplateList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ClusterWorkflowTemplateList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ClusterWorkflowTemplateList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ClusterWorkflowTemplateList) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ClusterWorkflowTemplateList.Merge(m, src)
@@ -849,52 +372,21 @@ func (m *ClusterWorkflowTemplateList) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ClusterWorkflowTemplateList proto.InternalMessageInfo
 
-func (m *ClusterWorkflowTemplateList) GetMetadata() *v11.ListMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *ClusterWorkflowTemplateList) GetItems() []*ClusterWorkflowTemplate {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-type Condition struct {
-	// Type is the type of condition
-	Type *string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
-	// Status is the status of the condition
-	Status *string `protobuf:"bytes,2,opt,name=status" json:"status,omitempty"`
-	// Message is the condition message
-	Message              *string  `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Condition) Reset()         { *m = Condition{} }
-func (m *Condition) String() string { return proto.CompactTextString(m) }
-func (*Condition) ProtoMessage()    {}
+func (m *Condition) Reset()      { *m = Condition{} }
+func (*Condition) ProtoMessage() {}
 func (*Condition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{12}
+	return fileDescriptor_c23edafa7e7ea072, []int{12}
 }
 func (m *Condition) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Condition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Condition.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Condition) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Condition.Merge(m, src)
@@ -908,59 +400,21 @@ func (m *Condition) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Condition proto.InternalMessageInfo
 
-func (m *Condition) GetType() string {
-	if m != nil && m.Type != nil {
-		return *m.Type
-	}
-	return ""
-}
-
-func (m *Condition) GetStatus() string {
-	if m != nil && m.Status != nil {
-		return *m.Status
-	}
-	return ""
-}
-
-func (m *Condition) GetMessage() string {
-	if m != nil && m.Message != nil {
-		return *m.Message
-	}
-	return ""
-}
-
-// ContinueOn defines if a workflow should continue even if a task or step fails/errors.
-// It can be specified if the workflow should continue when the pod errors, fails or both.
-type ContinueOn struct {
-	// +optional
-	Error *bool `protobuf:"varint,1,opt,name=error" json:"error,omitempty"`
-	// +optional
-	Failed               *bool    `protobuf:"varint,2,opt,name=failed" json:"failed,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ContinueOn) Reset()         { *m = ContinueOn{} }
-func (m *ContinueOn) String() string { return proto.CompactTextString(m) }
-func (*ContinueOn) ProtoMessage()    {}
+func (m *ContinueOn) Reset()      { *m = ContinueOn{} }
+func (*ContinueOn) ProtoMessage() {}
 func (*ContinueOn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{13}
+	return fileDescriptor_c23edafa7e7ea072, []int{13}
 }
 func (m *ContinueOn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ContinueOn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ContinueOn.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ContinueOn) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ContinueOn.Merge(m, src)
@@ -974,49 +428,21 @@ func (m *ContinueOn) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ContinueOn proto.InternalMessageInfo
 
-func (m *ContinueOn) GetError() bool {
-	if m != nil && m.Error != nil {
-		return *m.Error
-	}
-	return false
-}
-
-func (m *ContinueOn) GetFailed() bool {
-	if m != nil && m.Failed != nil {
-		return *m.Failed
-	}
-	return false
-}
-
-// Counter is a Counter prometheus metric
-type Counter struct {
-	// Value is the value of the metric
-	Value                *string  `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Counter) Reset()         { *m = Counter{} }
-func (m *Counter) String() string { return proto.CompactTextString(m) }
-func (*Counter) ProtoMessage()    {}
+func (m *Counter) Reset()      { *m = Counter{} }
+func (*Counter) ProtoMessage() {}
 func (*Counter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{14}
+	return fileDescriptor_c23edafa7e7ea072, []int{14}
 }
 func (m *Counter) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Counter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Counter.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Counter) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Counter.Merge(m, src)
@@ -1030,47 +456,49 @@ func (m *Counter) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Counter proto.InternalMessageInfo
 
-func (m *Counter) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
+func (m *CreateS3BucketOptions) Reset()      { *m = CreateS3BucketOptions{} }
+func (*CreateS3BucketOptions) ProtoMessage() {}
+func (*CreateS3BucketOptions) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c23edafa7e7ea072, []int{15}
+}
+func (m *CreateS3BucketOptions) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateS3BucketOptions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
-	return ""
+	return b[:n], nil
+}
+func (m *CreateS3BucketOptions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateS3BucketOptions.Merge(m, src)
+}
+func (m *CreateS3BucketOptions) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateS3BucketOptions) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateS3BucketOptions.DiscardUnknown(m)
 }
 
-// CronWorkflow is the definition of a scheduled workflow resource
-// +genclient
-// +genclient:noStatus
-// +kubebuilder:resource:shortName=cwf;cronwf
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type CronWorkflow struct {
-	Metadata             *v11.ObjectMeta     `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Spec                 *CronWorkflowSpec   `protobuf:"bytes,2,opt,name=spec" json:"spec,omitempty"`
-	Status               *CronWorkflowStatus `protobuf:"bytes,3,opt,name=status" json:"status,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
-}
+var xxx_messageInfo_CreateS3BucketOptions proto.InternalMessageInfo
 
-func (m *CronWorkflow) Reset()         { *m = CronWorkflow{} }
-func (m *CronWorkflow) String() string { return proto.CompactTextString(m) }
-func (*CronWorkflow) ProtoMessage()    {}
+func (m *CronWorkflow) Reset()      { *m = CronWorkflow{} }
+func (*CronWorkflow) ProtoMessage() {}
 func (*CronWorkflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{15}
+	return fileDescriptor_c23edafa7e7ea072, []int{16}
 }
 func (m *CronWorkflow) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *CronWorkflow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CronWorkflow.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *CronWorkflow) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CronWorkflow.Merge(m, src)
@@ -1084,57 +512,21 @@ func (m *CronWorkflow) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CronWorkflow proto.InternalMessageInfo
 
-func (m *CronWorkflow) GetMetadata() *v11.ObjectMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *CronWorkflow) GetSpec() *CronWorkflowSpec {
-	if m != nil {
-		return m.Spec
-	}
-	return nil
-}
-
-func (m *CronWorkflow) GetStatus() *CronWorkflowStatus {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
-// CronWorkflowList is list of CronWorkflow resources
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type CronWorkflowList struct {
-	Metadata             *v11.ListMeta   `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Items                []*CronWorkflow `protobuf:"bytes,2,rep,name=items" json:"items,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *CronWorkflowList) Reset()         { *m = CronWorkflowList{} }
-func (m *CronWorkflowList) String() string { return proto.CompactTextString(m) }
-func (*CronWorkflowList) ProtoMessage()    {}
+func (m *CronWorkflowList) Reset()      { *m = CronWorkflowList{} }
+func (*CronWorkflowList) ProtoMessage() {}
 func (*CronWorkflowList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{16}
+	return fileDescriptor_c23edafa7e7ea072, []int{17}
 }
 func (m *CronWorkflowList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *CronWorkflowList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CronWorkflowList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *CronWorkflowList) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CronWorkflowList.Merge(m, src)
@@ -1148,66 +540,21 @@ func (m *CronWorkflowList) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CronWorkflowList proto.InternalMessageInfo
 
-func (m *CronWorkflowList) GetMetadata() *v11.ListMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *CronWorkflowList) GetItems() []*CronWorkflow {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-// CronWorkflowSpec is the specification of a CronWorkflow
-type CronWorkflowSpec struct {
-	// WorkflowSpec is the spec of the workflow to be run
-	WorkflowSpec *WorkflowSpec `protobuf:"bytes,1,opt,name=workflowSpec" json:"workflowSpec,omitempty"`
-	// Schedule is a schedule to run the Workflow in Cron format
-	Schedule *string `protobuf:"bytes,2,opt,name=schedule" json:"schedule,omitempty"`
-	// ConcurrencyPolicy is the K8s-style concurrency policy that will be used
-	ConcurrencyPolicy *string `protobuf:"bytes,3,opt,name=concurrencyPolicy" json:"concurrencyPolicy,omitempty"`
-	// Suspend is a flag that will stop new CronWorkflows from running if set to true
-	Suspend *bool `protobuf:"varint,4,opt,name=suspend" json:"suspend,omitempty"`
-	// StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
-	// original scheduled time if it is missed.
-	StartingDeadlineSeconds *int64 `protobuf:"varint,5,opt,name=startingDeadlineSeconds" json:"startingDeadlineSeconds,omitempty"`
-	// SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
-	SuccessfulJobsHistoryLimit *int32 `protobuf:"varint,6,opt,name=successfulJobsHistoryLimit" json:"successfulJobsHistoryLimit,omitempty"`
-	// FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
-	FailedJobsHistoryLimit *int32 `protobuf:"varint,7,opt,name=failedJobsHistoryLimit" json:"failedJobsHistoryLimit,omitempty"`
-	// Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
-	Timezone *string `protobuf:"bytes,8,opt,name=timezone" json:"timezone,omitempty"`
-	// WorkflowMetadata contains some metadata of the workflow to be run
-	WorkflowMeta         *v11.ObjectMeta `protobuf:"bytes,9,opt,name=workflowMeta" json:"workflowMeta,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *CronWorkflowSpec) Reset()         { *m = CronWorkflowSpec{} }
-func (m *CronWorkflowSpec) String() string { return proto.CompactTextString(m) }
-func (*CronWorkflowSpec) ProtoMessage()    {}
+func (m *CronWorkflowSpec) Reset()      { *m = CronWorkflowSpec{} }
+func (*CronWorkflowSpec) ProtoMessage() {}
 func (*CronWorkflowSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{17}
+	return fileDescriptor_c23edafa7e7ea072, []int{18}
 }
 func (m *CronWorkflowSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *CronWorkflowSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CronWorkflowSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *CronWorkflowSpec) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CronWorkflowSpec.Merge(m, src)
@@ -1221,102 +568,21 @@ func (m *CronWorkflowSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CronWorkflowSpec proto.InternalMessageInfo
 
-func (m *CronWorkflowSpec) GetWorkflowSpec() *WorkflowSpec {
-	if m != nil {
-		return m.WorkflowSpec
-	}
-	return nil
-}
-
-func (m *CronWorkflowSpec) GetSchedule() string {
-	if m != nil && m.Schedule != nil {
-		return *m.Schedule
-	}
-	return ""
-}
-
-func (m *CronWorkflowSpec) GetConcurrencyPolicy() string {
-	if m != nil && m.ConcurrencyPolicy != nil {
-		return *m.ConcurrencyPolicy
-	}
-	return ""
-}
-
-func (m *CronWorkflowSpec) GetSuspend() bool {
-	if m != nil && m.Suspend != nil {
-		return *m.Suspend
-	}
-	return false
-}
-
-func (m *CronWorkflowSpec) GetStartingDeadlineSeconds() int64 {
-	if m != nil && m.StartingDeadlineSeconds != nil {
-		return *m.StartingDeadlineSeconds
-	}
-	return 0
-}
-
-func (m *CronWorkflowSpec) GetSuccessfulJobsHistoryLimit() int32 {
-	if m != nil && m.SuccessfulJobsHistoryLimit != nil {
-		return *m.SuccessfulJobsHistoryLimit
-	}
-	return 0
-}
-
-func (m *CronWorkflowSpec) GetFailedJobsHistoryLimit() int32 {
-	if m != nil && m.FailedJobsHistoryLimit != nil {
-		return *m.FailedJobsHistoryLimit
-	}
-	return 0
-}
-
-func (m *CronWorkflowSpec) GetTimezone() string {
-	if m != nil && m.Timezone != nil {
-		return *m.Timezone
-	}
-	return ""
-}
-
-func (m *CronWorkflowSpec) GetWorkflowMeta() *v11.ObjectMeta {
-	if m != nil {
-		return m.WorkflowMeta
-	}
-	return nil
-}
-
-// CronWorkflowStatus is the status of a CronWorkflow
-type CronWorkflowStatus struct {
-	// Active is a list of active workflows stemming from this CronWorkflow
-	Active []*v1.ObjectReference `protobuf:"bytes,1,rep,name=active" json:"active,omitempty"`
-	// LastScheduleTime is the last time the CronWorkflow was scheduled
-	LastScheduledTime *v11.Time `protobuf:"bytes,2,opt,name=lastScheduledTime" json:"lastScheduledTime,omitempty"`
-	// Conditions is a list of conditions the CronWorkflow may have
-	Conditions           []*Condition `protobuf:"bytes,3,rep,name=conditions" json:"conditions,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
-}
-
-func (m *CronWorkflowStatus) Reset()         { *m = CronWorkflowStatus{} }
-func (m *CronWorkflowStatus) String() string { return proto.CompactTextString(m) }
-func (*CronWorkflowStatus) ProtoMessage()    {}
+func (m *CronWorkflowStatus) Reset()      { *m = CronWorkflowStatus{} }
+func (*CronWorkflowStatus) ProtoMessage() {}
 func (*CronWorkflowStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{18}
+	return fileDescriptor_c23edafa7e7ea072, []int{19}
 }
 func (m *CronWorkflowStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *CronWorkflowStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CronWorkflowStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *CronWorkflowStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CronWorkflowStatus.Merge(m, src)
@@ -1330,82 +596,21 @@ func (m *CronWorkflowStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CronWorkflowStatus proto.InternalMessageInfo
 
-func (m *CronWorkflowStatus) GetActive() []*v1.ObjectReference {
-	if m != nil {
-		return m.Active
-	}
-	return nil
-}
-
-func (m *CronWorkflowStatus) GetLastScheduledTime() *v11.Time {
-	if m != nil {
-		return m.LastScheduledTime
-	}
-	return nil
-}
-
-func (m *CronWorkflowStatus) GetConditions() []*Condition {
-	if m != nil {
-		return m.Conditions
-	}
-	return nil
-}
-
-// DAGTask represents a node in the graph during DAG execution
-type DAGTask struct {
-	// Name is the name of the target
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Name of template to execute
-	Template *string `protobuf:"bytes,2,opt,name=template" json:"template,omitempty"`
-	// Arguments are the parameter and artifact arguments to the template
-	Arguments *Arguments `protobuf:"bytes,3,opt,name=arguments" json:"arguments,omitempty"`
-	// TemplateRef is the reference to the template resource to execute.
-	TemplateRef *TemplateRef `protobuf:"bytes,4,opt,name=templateRef" json:"templateRef,omitempty"`
-	// Dependencies are name of other targets which this depends on
-	Dependencies []string `protobuf:"bytes,5,rep,name=dependencies" json:"dependencies,omitempty"`
-	// WithItems expands a task into multiple parallel tasks from the items in the list
-	WithItems []*Item `protobuf:"bytes,6,rep,name=withItems" json:"withItems,omitempty"`
-	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
-	// which is expected to be a JSON list.
-	WithParam *string `protobuf:"bytes,7,opt,name=withParam" json:"withParam,omitempty"`
-	// WithSequence expands a task into a numeric sequence
-	WithSequence *Sequence `protobuf:"bytes,8,opt,name=withSequence" json:"withSequence,omitempty"`
-	// When is an expression in which the task should conditionally execute
-	When *string `protobuf:"bytes,9,opt,name=when" json:"when,omitempty"`
-	// ContinueOn makes argo to proceed with the following step even if this step fails.
-	// Errors and Failed states can be specified
-	ContinueOn *ContinueOn `protobuf:"bytes,10,opt,name=continueOn" json:"continueOn,omitempty"`
-	// OnExit is a template reference which is invoked at the end of the
-	// template, irrespective of the success, failure, or error of the
-	// primary template.
-	OnExit *string `protobuf:"bytes,11,opt,name=onExit" json:"onExit,omitempty"`
-	// Depends are name of other targets which this depends on
-	Depends              *string  `protobuf:"bytes,12,opt,name=depends" json:"depends,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *DAGTask) Reset()         { *m = DAGTask{} }
-func (m *DAGTask) String() string { return proto.CompactTextString(m) }
-func (*DAGTask) ProtoMessage()    {}
+func (m *DAGTask) Reset()      { *m = DAGTask{} }
+func (*DAGTask) ProtoMessage() {}
 func (*DAGTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{19}
+	return fileDescriptor_c23edafa7e7ea072, []int{20}
 }
 func (m *DAGTask) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *DAGTask) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DAGTask.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *DAGTask) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DAGTask.Merge(m, src)
@@ -1419,130 +624,21 @@ func (m *DAGTask) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DAGTask proto.InternalMessageInfo
 
-func (m *DAGTask) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *DAGTask) GetTemplate() string {
-	if m != nil && m.Template != nil {
-		return *m.Template
-	}
-	return ""
-}
-
-func (m *DAGTask) GetArguments() *Arguments {
-	if m != nil {
-		return m.Arguments
-	}
-	return nil
-}
-
-func (m *DAGTask) GetTemplateRef() *TemplateRef {
-	if m != nil {
-		return m.TemplateRef
-	}
-	return nil
-}
-
-func (m *DAGTask) GetDependencies() []string {
-	if m != nil {
-		return m.Dependencies
-	}
-	return nil
-}
-
-func (m *DAGTask) GetWithItems() []*Item {
-	if m != nil {
-		return m.WithItems
-	}
-	return nil
-}
-
-func (m *DAGTask) GetWithParam() string {
-	if m != nil && m.WithParam != nil {
-		return *m.WithParam
-	}
-	return ""
-}
-
-func (m *DAGTask) GetWithSequence() *Sequence {
-	if m != nil {
-		return m.WithSequence
-	}
-	return nil
-}
-
-func (m *DAGTask) GetWhen() string {
-	if m != nil && m.When != nil {
-		return *m.When
-	}
-	return ""
-}
-
-func (m *DAGTask) GetContinueOn() *ContinueOn {
-	if m != nil {
-		return m.ContinueOn
-	}
-	return nil
-}
-
-func (m *DAGTask) GetOnExit() string {
-	if m != nil && m.OnExit != nil {
-		return *m.OnExit
-	}
-	return ""
-}
-
-func (m *DAGTask) GetDepends() string {
-	if m != nil && m.Depends != nil {
-		return *m.Depends
-	}
-	return ""
-}
-
-// DAGTemplate is a template subtype for directed acyclic graph templates
-type DAGTemplate struct {
-	// Target are one or more names of targets to execute in a DAG
-	Target *string `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
-	// Tasks are a list of DAG tasks
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Tasks []*DAGTask `protobuf:"bytes,2,rep,name=tasks" json:"tasks,omitempty"`
-	// This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
-	// as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed
-	// before failing the DAG itself.
-	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
-	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
-	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
-	FailFast             *bool    `protobuf:"varint,3,opt,name=failFast" json:"failFast,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *DAGTemplate) Reset()         { *m = DAGTemplate{} }
-func (m *DAGTemplate) String() string { return proto.CompactTextString(m) }
-func (*DAGTemplate) ProtoMessage()    {}
+func (m *DAGTemplate) Reset()      { *m = DAGTemplate{} }
+func (*DAGTemplate) ProtoMessage() {}
 func (*DAGTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{20}
+	return fileDescriptor_c23edafa7e7ea072, []int{21}
 }
 func (m *DAGTemplate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *DAGTemplate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_DAGTemplate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *DAGTemplate) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DAGTemplate.Merge(m, src)
@@ -1556,55 +652,21 @@ func (m *DAGTemplate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DAGTemplate proto.InternalMessageInfo
 
-func (m *DAGTemplate) GetTarget() string {
-	if m != nil && m.Target != nil {
-		return *m.Target
-	}
-	return ""
-}
-
-func (m *DAGTemplate) GetTasks() []*DAGTask {
-	if m != nil {
-		return m.Tasks
-	}
-	return nil
-}
-
-func (m *DAGTemplate) GetFailFast() bool {
-	if m != nil && m.FailFast != nil {
-		return *m.FailFast
-	}
-	return false
-}
-
-type Event struct {
-	// Selector (https://github.com/antonmedv/expr) that we must must match the event. E.g. `payload.message == "test"`
-	Selector             *string  `protobuf:"bytes,1,opt,name=selector" json:"selector,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Event) Reset()         { *m = Event{} }
-func (m *Event) String() string { return proto.CompactTextString(m) }
-func (*Event) ProtoMessage()    {}
+func (m *Event) Reset()      { *m = Event{} }
+func (*Event) ProtoMessage() {}
 func (*Event) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{21}
+	return fileDescriptor_c23edafa7e7ea072, []int{22}
 }
 func (m *Event) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Event) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Event.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Event) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Event.Merge(m, src)
@@ -1618,42 +680,21 @@ func (m *Event) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Event proto.InternalMessageInfo
 
-func (m *Event) GetSelector() string {
-	if m != nil && m.Selector != nil {
-		return *m.Selector
-	}
-	return ""
-}
-
-// ExecutorConfig holds configurations of an executor container.
-type ExecutorConfig struct {
-	// ServiceAccountName specifies the service account name of the executor container.
-	ServiceAccountName   *string  `protobuf:"bytes,1,opt,name=serviceAccountName" json:"serviceAccountName,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ExecutorConfig) Reset()         { *m = ExecutorConfig{} }
-func (m *ExecutorConfig) String() string { return proto.CompactTextString(m) }
-func (*ExecutorConfig) ProtoMessage()    {}
+func (m *ExecutorConfig) Reset()      { *m = ExecutorConfig{} }
+func (*ExecutorConfig) ProtoMessage() {}
 func (*ExecutorConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{22}
+	return fileDescriptor_c23edafa7e7ea072, []int{23}
 }
 func (m *ExecutorConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ExecutorConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ExecutorConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ExecutorConfig) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ExecutorConfig.Merge(m, src)
@@ -1667,43 +708,21 @@ func (m *ExecutorConfig) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ExecutorConfig proto.InternalMessageInfo
 
-func (m *ExecutorConfig) GetServiceAccountName() string {
-	if m != nil && m.ServiceAccountName != nil {
-		return *m.ServiceAccountName
-	}
-	return ""
-}
-
-// GCSArtifact is the location of a GCS artifact
-type GCSArtifact struct {
-	GCSBucket *GCSBucket `protobuf:"bytes,1,opt,name=gCSBucket" json:"gCSBucket,omitempty"`
-	// Key is the path in the bucket where the artifact resides
-	Key                  *string  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *GCSArtifact) Reset()         { *m = GCSArtifact{} }
-func (m *GCSArtifact) String() string { return proto.CompactTextString(m) }
-func (*GCSArtifact) ProtoMessage()    {}
+func (m *GCSArtifact) Reset()      { *m = GCSArtifact{} }
+func (*GCSArtifact) ProtoMessage() {}
 func (*GCSArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{23}
+	return fileDescriptor_c23edafa7e7ea072, []int{24}
 }
 func (m *GCSArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *GCSArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GCSArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *GCSArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GCSArtifact.Merge(m, src)
@@ -1717,51 +736,21 @@ func (m *GCSArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GCSArtifact proto.InternalMessageInfo
 
-func (m *GCSArtifact) GetGCSBucket() *GCSBucket {
-	if m != nil {
-		return m.GCSBucket
-	}
-	return nil
-}
-
-func (m *GCSArtifact) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-// GCSBucket contains the access information for interfacring with a GCS bucket
-type GCSBucket struct {
-	// Bucket is the name of the bucket
-	Bucket *string `protobuf:"bytes,1,opt,name=bucket" json:"bucket,omitempty"`
-	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
-	ServiceAccountKeySecret *v1.SecretKeySelector `protobuf:"bytes,2,opt,name=serviceAccountKeySecret" json:"serviceAccountKeySecret,omitempty"`
-	XXX_NoUnkeyedLiteral    struct{}              `json:"-"`
-	XXX_unrecognized        []byte                `json:"-"`
-	XXX_sizecache           int32                 `json:"-"`
-}
-
-func (m *GCSBucket) Reset()         { *m = GCSBucket{} }
-func (m *GCSBucket) String() string { return proto.CompactTextString(m) }
-func (*GCSBucket) ProtoMessage()    {}
+func (m *GCSBucket) Reset()      { *m = GCSBucket{} }
+func (*GCSBucket) ProtoMessage() {}
 func (*GCSBucket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{24}
+	return fileDescriptor_c23edafa7e7ea072, []int{25}
 }
 func (m *GCSBucket) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *GCSBucket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GCSBucket.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *GCSBucket) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GCSBucket.Merge(m, src)
@@ -1775,51 +764,21 @@ func (m *GCSBucket) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GCSBucket proto.InternalMessageInfo
 
-func (m *GCSBucket) GetBucket() string {
-	if m != nil && m.Bucket != nil {
-		return *m.Bucket
-	}
-	return ""
-}
-
-func (m *GCSBucket) GetServiceAccountKeySecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.ServiceAccountKeySecret
-	}
-	return nil
-}
-
-// Gauge is a Gauge prometheus metric
-type Gauge struct {
-	// Value is the value of the metric
-	Value *string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
-	// Realtime emits this metric in real time if applicable
-	Realtime             *bool    `protobuf:"varint,2,opt,name=realtime" json:"realtime,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Gauge) Reset()         { *m = Gauge{} }
-func (m *Gauge) String() string { return proto.CompactTextString(m) }
-func (*Gauge) ProtoMessage()    {}
+func (m *Gauge) Reset()      { *m = Gauge{} }
+func (*Gauge) ProtoMessage() {}
 func (*Gauge) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{25}
+	return fileDescriptor_c23edafa7e7ea072, []int{26}
 }
 func (m *Gauge) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Gauge) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Gauge.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Gauge) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Gauge.Merge(m, src)
@@ -1833,64 +792,21 @@ func (m *Gauge) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Gauge proto.InternalMessageInfo
 
-func (m *Gauge) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
-func (m *Gauge) GetRealtime() bool {
-	if m != nil && m.Realtime != nil {
-		return *m.Realtime
-	}
-	return false
-}
-
-// GitArtifact is the location of an git artifact
-type GitArtifact struct {
-	// Repo is the git repository
-	Repo *string `protobuf:"bytes,1,opt,name=repo" json:"repo,omitempty"`
-	// Revision is the git commit, tag, branch to checkout
-	Revision *string `protobuf:"bytes,2,opt,name=revision" json:"revision,omitempty"`
-	// Depth specifies clones/fetches should be shallow and include the given
-	// number of commits from the branch tip
-	Depth *uint64 `protobuf:"varint,3,opt,name=depth" json:"depth,omitempty"`
-	// Fetch specifies a number of refs that should be fetched before checkout
-	Fetch []string `protobuf:"bytes,4,rep,name=fetch" json:"fetch,omitempty"`
-	// UsernameSecret is the secret selector to the repository username
-	UsernameSecret *v1.SecretKeySelector `protobuf:"bytes,5,opt,name=usernameSecret" json:"usernameSecret,omitempty"`
-	// PasswordSecret is the secret selector to the repository password
-	PasswordSecret *v1.SecretKeySelector `protobuf:"bytes,6,opt,name=passwordSecret" json:"passwordSecret,omitempty"`
-	// SSHPrivateKeySecret is the secret selector to the repository ssh private key
-	SshPrivateKeySecret *v1.SecretKeySelector `protobuf:"bytes,7,opt,name=sshPrivateKeySecret" json:"sshPrivateKeySecret,omitempty"`
-	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
-	InsecureIgnoreHostKey *bool    `protobuf:"varint,8,opt,name=insecureIgnoreHostKey" json:"insecureIgnoreHostKey,omitempty"`
-	XXX_NoUnkeyedLiteral  struct{} `json:"-"`
-	XXX_unrecognized      []byte   `json:"-"`
-	XXX_sizecache         int32    `json:"-"`
-}
-
-func (m *GitArtifact) Reset()         { *m = GitArtifact{} }
-func (m *GitArtifact) String() string { return proto.CompactTextString(m) }
-func (*GitArtifact) ProtoMessage()    {}
+func (m *GitArtifact) Reset()      { *m = GitArtifact{} }
+func (*GitArtifact) ProtoMessage() {}
 func (*GitArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{26}
+	return fileDescriptor_c23edafa7e7ea072, []int{27}
 }
 func (m *GitArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *GitArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_GitArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *GitArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GitArtifact.Merge(m, src)
@@ -1904,94 +820,21 @@ func (m *GitArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GitArtifact proto.InternalMessageInfo
 
-func (m *GitArtifact) GetRepo() string {
-	if m != nil && m.Repo != nil {
-		return *m.Repo
-	}
-	return ""
-}
-
-func (m *GitArtifact) GetRevision() string {
-	if m != nil && m.Revision != nil {
-		return *m.Revision
-	}
-	return ""
-}
-
-func (m *GitArtifact) GetDepth() uint64 {
-	if m != nil && m.Depth != nil {
-		return *m.Depth
-	}
-	return 0
-}
-
-func (m *GitArtifact) GetFetch() []string {
-	if m != nil {
-		return m.Fetch
-	}
-	return nil
-}
-
-func (m *GitArtifact) GetUsernameSecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.UsernameSecret
-	}
-	return nil
-}
-
-func (m *GitArtifact) GetPasswordSecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.PasswordSecret
-	}
-	return nil
-}
-
-func (m *GitArtifact) GetSshPrivateKeySecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.SshPrivateKeySecret
-	}
-	return nil
-}
-
-func (m *GitArtifact) GetInsecureIgnoreHostKey() bool {
-	if m != nil && m.InsecureIgnoreHostKey != nil {
-		return *m.InsecureIgnoreHostKey
-	}
-	return false
-}
-
-// HDFSArtifact is the location of an HDFS artifact
-type HDFSArtifact struct {
-	HDFSConfig *HDFSConfig `protobuf:"bytes,1,opt,name=hDFSConfig" json:"hDFSConfig,omitempty"`
-	// Path is a file path in HDFS
-	Path *string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
-	// Force copies a file forcibly even if it exists (default: false)
-	Force                *bool    `protobuf:"varint,3,opt,name=force" json:"force,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *HDFSArtifact) Reset()         { *m = HDFSArtifact{} }
-func (m *HDFSArtifact) String() string { return proto.CompactTextString(m) }
-func (*HDFSArtifact) ProtoMessage()    {}
+func (m *HDFSArtifact) Reset()      { *m = HDFSArtifact{} }
+func (*HDFSArtifact) ProtoMessage() {}
 func (*HDFSArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{27}
+	return fileDescriptor_c23edafa7e7ea072, []int{28}
 }
 func (m *HDFSArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HDFSArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HDFSArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HDFSArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HDFSArtifact.Merge(m, src)
@@ -2005,60 +848,21 @@ func (m *HDFSArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HDFSArtifact proto.InternalMessageInfo
 
-func (m *HDFSArtifact) GetHDFSConfig() *HDFSConfig {
-	if m != nil {
-		return m.HDFSConfig
-	}
-	return nil
-}
-
-func (m *HDFSArtifact) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *HDFSArtifact) GetForce() bool {
-	if m != nil && m.Force != nil {
-		return *m.Force
-	}
-	return false
-}
-
-// HDFSConfig is configurations for HDFS
-type HDFSConfig struct {
-	HDFSKrbConfig *HDFSKrbConfig `protobuf:"bytes,1,opt,name=hDFSKrbConfig" json:"hDFSKrbConfig,omitempty"`
-	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `protobuf:"bytes,2,rep,name=addresses" json:"addresses,omitempty"`
-	// HDFSUser is the user to access HDFS file system.
-	// It is ignored if either ccache or keytab is used.
-	HdfsUser             *string  `protobuf:"bytes,3,opt,name=hdfsUser" json:"hdfsUser,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *HDFSConfig) Reset()         { *m = HDFSConfig{} }
-func (m *HDFSConfig) String() string { return proto.CompactTextString(m) }
-func (*HDFSConfig) ProtoMessage()    {}
+func (m *HDFSConfig) Reset()      { *m = HDFSConfig{} }
+func (*HDFSConfig) ProtoMessage() {}
 func (*HDFSConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{28}
+	return fileDescriptor_c23edafa7e7ea072, []int{29}
 }
 func (m *HDFSConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HDFSConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HDFSConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HDFSConfig) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HDFSConfig.Merge(m, src)
@@ -2072,72 +876,21 @@ func (m *HDFSConfig) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HDFSConfig proto.InternalMessageInfo
 
-func (m *HDFSConfig) GetHDFSKrbConfig() *HDFSKrbConfig {
-	if m != nil {
-		return m.HDFSKrbConfig
-	}
-	return nil
-}
-
-func (m *HDFSConfig) GetAddresses() []string {
-	if m != nil {
-		return m.Addresses
-	}
-	return nil
-}
-
-func (m *HDFSConfig) GetHdfsUser() string {
-	if m != nil && m.HdfsUser != nil {
-		return *m.HdfsUser
-	}
-	return ""
-}
-
-// HDFSKrbConfig is auth configurations for Kerberos
-type HDFSKrbConfig struct {
-	// KrbCCacheSecret is the secret selector for Kerberos ccache
-	// Either ccache or keytab can be set to use Kerberos.
-	KrbCCacheSecret *v1.SecretKeySelector `protobuf:"bytes,1,opt,name=krbCCacheSecret" json:"krbCCacheSecret,omitempty"`
-	// KrbKeytabSecret is the secret selector for Kerberos keytab
-	// Either ccache or keytab can be set to use Kerberos.
-	KrbKeytabSecret *v1.SecretKeySelector `protobuf:"bytes,2,opt,name=krbKeytabSecret" json:"krbKeytabSecret,omitempty"`
-	// KrbUsername is the Kerberos username used with Kerberos keytab
-	// It must be set if keytab is used.
-	KrbUsername *string `protobuf:"bytes,3,opt,name=krbUsername" json:"krbUsername,omitempty"`
-	// KrbRealm is the Kerberos realm used with Kerberos keytab
-	// It must be set if keytab is used.
-	KrbRealm *string `protobuf:"bytes,4,opt,name=krbRealm" json:"krbRealm,omitempty"`
-	// KrbConfig is the configmap selector for Kerberos config as string
-	// It must be set if either ccache or keytab is used.
-	KrbConfigConfigMap *v1.ConfigMapKeySelector `protobuf:"bytes,5,opt,name=krbConfigConfigMap" json:"krbConfigConfigMap,omitempty"`
-	// KrbServicePrincipalName is the principal name of Kerberos service
-	// It must be set if either ccache or keytab is used.
-	KrbServicePrincipalName *string  `protobuf:"bytes,6,opt,name=krbServicePrincipalName" json:"krbServicePrincipalName,omitempty"`
-	XXX_NoUnkeyedLiteral    struct{} `json:"-"`
-	XXX_unrecognized        []byte   `json:"-"`
-	XXX_sizecache           int32    `json:"-"`
-}
-
-func (m *HDFSKrbConfig) Reset()         { *m = HDFSKrbConfig{} }
-func (m *HDFSKrbConfig) String() string { return proto.CompactTextString(m) }
-func (*HDFSKrbConfig) ProtoMessage()    {}
+func (m *HDFSKrbConfig) Reset()      { *m = HDFSKrbConfig{} }
+func (*HDFSKrbConfig) ProtoMessage() {}
 func (*HDFSKrbConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{29}
+	return fileDescriptor_c23edafa7e7ea072, []int{30}
 }
 func (m *HDFSKrbConfig) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HDFSKrbConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HDFSKrbConfig.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HDFSKrbConfig) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HDFSKrbConfig.Merge(m, src)
@@ -2151,79 +904,21 @@ func (m *HDFSKrbConfig) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HDFSKrbConfig proto.InternalMessageInfo
 
-func (m *HDFSKrbConfig) GetKrbCCacheSecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.KrbCCacheSecret
-	}
-	return nil
-}
-
-func (m *HDFSKrbConfig) GetKrbKeytabSecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.KrbKeytabSecret
-	}
-	return nil
-}
-
-func (m *HDFSKrbConfig) GetKrbUsername() string {
-	if m != nil && m.KrbUsername != nil {
-		return *m.KrbUsername
-	}
-	return ""
-}
-
-func (m *HDFSKrbConfig) GetKrbRealm() string {
-	if m != nil && m.KrbRealm != nil {
-		return *m.KrbRealm
-	}
-	return ""
-}
-
-func (m *HDFSKrbConfig) GetKrbConfigConfigMap() *v1.ConfigMapKeySelector {
-	if m != nil {
-		return m.KrbConfigConfigMap
-	}
-	return nil
-}
-
-func (m *HDFSKrbConfig) GetKrbServicePrincipalName() string {
-	if m != nil && m.KrbServicePrincipalName != nil {
-		return *m.KrbServicePrincipalName
-	}
-	return ""
-}
-
-// HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
-type HTTPArtifact struct {
-	// URL of the artifact
-	Url *string `protobuf:"bytes,1,opt,name=url" json:"url,omitempty"`
-	// Headers are an optional list of headers to send with HTTP requests for artifacts
-	Headers              []*Header `protobuf:"bytes,2,rep,name=headers" json:"headers,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
-}
-
-func (m *HTTPArtifact) Reset()         { *m = HTTPArtifact{} }
-func (m *HTTPArtifact) String() string { return proto.CompactTextString(m) }
-func (*HTTPArtifact) ProtoMessage()    {}
+func (m *HTTPArtifact) Reset()      { *m = HTTPArtifact{} }
+func (*HTTPArtifact) ProtoMessage() {}
 func (*HTTPArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{30}
+	return fileDescriptor_c23edafa7e7ea072, []int{31}
 }
 func (m *HTTPArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *HTTPArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_HTTPArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *HTTPArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_HTTPArtifact.Merge(m, src)
@@ -2237,51 +932,21 @@ func (m *HTTPArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_HTTPArtifact proto.InternalMessageInfo
 
-func (m *HTTPArtifact) GetUrl() string {
-	if m != nil && m.Url != nil {
-		return *m.Url
-	}
-	return ""
-}
-
-func (m *HTTPArtifact) GetHeaders() []*Header {
-	if m != nil {
-		return m.Headers
-	}
-	return nil
-}
-
-// Header indicate a key-value request header to be used when fetching artifacts over HTTP
-type Header struct {
-	// Name is the header name
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Value is the literal value to use for the header
-	Value                *string  `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Header) Reset()         { *m = Header{} }
-func (m *Header) String() string { return proto.CompactTextString(m) }
-func (*Header) ProtoMessage()    {}
+func (m *Header) Reset()      { *m = Header{} }
+func (*Header) ProtoMessage() {}
 func (*Header) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{31}
+	return fileDescriptor_c23edafa7e7ea072, []int{32}
 }
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Header) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Header.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Header) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Header.Merge(m, src)
@@ -2295,51 +960,21 @@ func (m *Header) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Header proto.InternalMessageInfo
 
-func (m *Header) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Header) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
-// Histogram is a Histogram prometheus metric
-type Histogram struct {
-	// Value is the value of the metric
-	Value *string `protobuf:"bytes,3,opt,name=value" json:"value,omitempty"`
-	// Buckets is a list of bucket divisors for the histogram
-	Buckets              []*Amount `protobuf:"bytes,4,rep,name=buckets" json:"buckets,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
-}
-
-func (m *Histogram) Reset()         { *m = Histogram{} }
-func (m *Histogram) String() string { return proto.CompactTextString(m) }
-func (*Histogram) ProtoMessage()    {}
+func (m *Histogram) Reset()      { *m = Histogram{} }
+func (*Histogram) ProtoMessage() {}
 func (*Histogram) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{32}
+	return fileDescriptor_c23edafa7e7ea072, []int{33}
 }
 func (m *Histogram) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Histogram) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Histogram.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Histogram) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Histogram.Merge(m, src)
@@ -2353,55 +988,21 @@ func (m *Histogram) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Histogram proto.InternalMessageInfo
 
-func (m *Histogram) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
-func (m *Histogram) GetBuckets() []*Amount {
-	if m != nil {
-		return m.Buckets
-	}
-	return nil
-}
-
-// Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
-type Inputs struct {
-	// Parameters are a list of parameters passed as inputs
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Parameters []*Parameter `protobuf:"bytes,1,rep,name=parameters" json:"parameters,omitempty"`
-	// Artifact are a list of artifacts passed as inputs
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Artifacts            []*Artifact `protobuf:"bytes,2,rep,name=artifacts" json:"artifacts,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
-}
-
-func (m *Inputs) Reset()         { *m = Inputs{} }
-func (m *Inputs) String() string { return proto.CompactTextString(m) }
-func (*Inputs) ProtoMessage()    {}
+func (m *Inputs) Reset()      { *m = Inputs{} }
+func (*Inputs) ProtoMessage() {}
 func (*Inputs) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{33}
+	return fileDescriptor_c23edafa7e7ea072, []int{34}
 }
 func (m *Inputs) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Inputs) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Inputs.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Inputs) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Inputs.Merge(m, src)
@@ -2415,52 +1016,21 @@ func (m *Inputs) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Inputs proto.InternalMessageInfo
 
-func (m *Inputs) GetParameters() []*Parameter {
-	if m != nil {
-		return m.Parameters
-	}
-	return nil
-}
-
-func (m *Inputs) GetArtifacts() []*Artifact {
-	if m != nil {
-		return m.Artifacts
-	}
-	return nil
-}
-
-// Item expands a single workflow step into multiple parallel steps
-// The value of Item can be a map, string, bool, or number
-//
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=object
-type Item struct {
-	Value                []byte   `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Item) Reset()         { *m = Item{} }
-func (m *Item) String() string { return proto.CompactTextString(m) }
-func (*Item) ProtoMessage()    {}
+func (m *Item) Reset()      { *m = Item{} }
+func (*Item) ProtoMessage() {}
 func (*Item) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{34}
+	return fileDescriptor_c23edafa7e7ea072, []int{35}
 }
 func (m *Item) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Item) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Item.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Item) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Item.Merge(m, src)
@@ -2474,48 +1044,21 @@ func (m *Item) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Item proto.InternalMessageInfo
 
-func (m *Item) GetValue() []byte {
-	if m != nil {
-		return m.Value
-	}
-	return nil
-}
-
-// A link to another app.
-// +patchStrategy=merge
-// +patchMergeKey=name
-type Link struct {
-	// The name of the link, E.g. "Workflow Logs" or "Pod Logs"
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Either "workflow" or "pod"
-	Scope *string `protobuf:"bytes,2,opt,name=scope" json:"scope,omitempty"`
-	// The URL. May contain "${metadata.namespace}", "${metadata.name}", "${status.startedAt}" and "${status.finishedAt}".
-	Url                  *string  `protobuf:"bytes,3,opt,name=url" json:"url,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Link) Reset()         { *m = Link{} }
-func (m *Link) String() string { return proto.CompactTextString(m) }
-func (*Link) ProtoMessage()    {}
+func (m *Link) Reset()      { *m = Link{} }
+func (*Link) ProtoMessage() {}
 func (*Link) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{35}
+	return fileDescriptor_c23edafa7e7ea072, []int{36}
 }
 func (m *Link) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Link) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Link.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Link) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Link.Merge(m, src)
@@ -2529,60 +1072,21 @@ func (m *Link) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Link proto.InternalMessageInfo
 
-func (m *Link) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Link) GetScope() string {
-	if m != nil && m.Scope != nil {
-		return *m.Scope
-	}
-	return ""
-}
-
-func (m *Link) GetUrl() string {
-	if m != nil && m.Url != nil {
-		return *m.Url
-	}
-	return ""
-}
-
-// MemoizationStatus is the status of this memoized node
-type MemoizationStatus struct {
-	// Hit indicates whether this node was created from a cache entry
-	Hit *bool `protobuf:"varint,1,opt,name=hit" json:"hit,omitempty"`
-	// Key is the name of the key used for this node's cache
-	Key *string `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	// Cache is the name of the cache that was used
-	CacheName            *string  `protobuf:"bytes,3,opt,name=cacheName" json:"cacheName,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *MemoizationStatus) Reset()         { *m = MemoizationStatus{} }
-func (m *MemoizationStatus) String() string { return proto.CompactTextString(m) }
-func (*MemoizationStatus) ProtoMessage()    {}
+func (m *MemoizationStatus) Reset()      { *m = MemoizationStatus{} }
+func (*MemoizationStatus) ProtoMessage() {}
 func (*MemoizationStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{36}
+	return fileDescriptor_c23edafa7e7ea072, []int{37}
 }
 func (m *MemoizationStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *MemoizationStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MemoizationStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *MemoizationStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MemoizationStatus.Merge(m, src)
@@ -2596,61 +1100,21 @@ func (m *MemoizationStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MemoizationStatus proto.InternalMessageInfo
 
-func (m *MemoizationStatus) GetHit() bool {
-	if m != nil && m.Hit != nil {
-		return *m.Hit
-	}
-	return false
-}
-
-func (m *MemoizationStatus) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-func (m *MemoizationStatus) GetCacheName() string {
-	if m != nil && m.CacheName != nil {
-		return *m.CacheName
-	}
-	return ""
-}
-
-// Memoization enables caching for the Outputs of the template
-type Memoize struct {
-	// Key is the key to use as the caching key
-	Key *string `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
-	// Cache sets and configures the kind of cache
-	Cache *Cache `protobuf:"bytes,2,opt,name=cache" json:"cache,omitempty"`
-	// MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
-	// than the MaxAge, it will be ignored.
-	MaxAge               *string  `protobuf:"bytes,3,opt,name=maxAge" json:"maxAge,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Memoize) Reset()         { *m = Memoize{} }
-func (m *Memoize) String() string { return proto.CompactTextString(m) }
-func (*Memoize) ProtoMessage()    {}
+func (m *Memoize) Reset()      { *m = Memoize{} }
+func (*Memoize) ProtoMessage() {}
 func (*Memoize) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{37}
+	return fileDescriptor_c23edafa7e7ea072, []int{38}
 }
 func (m *Memoize) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Memoize) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Memoize.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Memoize) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Memoize.Merge(m, src)
@@ -2664,56 +1128,21 @@ func (m *Memoize) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Memoize proto.InternalMessageInfo
 
-func (m *Memoize) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-func (m *Memoize) GetCache() *Cache {
-	if m != nil {
-		return m.Cache
-	}
-	return nil
-}
-
-func (m *Memoize) GetMaxAge() string {
-	if m != nil && m.MaxAge != nil {
-		return *m.MaxAge
-	}
-	return ""
-}
-
-// Pod metdata
-type Metadata struct {
-	Annotations          map[string]string `protobuf:"bytes,1,rep,name=annotations" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Labels               map[string]string `protobuf:"bytes,2,rep,name=labels" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
-}
-
-func (m *Metadata) Reset()         { *m = Metadata{} }
-func (m *Metadata) String() string { return proto.CompactTextString(m) }
-func (*Metadata) ProtoMessage()    {}
+func (m *Metadata) Reset()      { *m = Metadata{} }
+func (*Metadata) ProtoMessage() {}
 func (*Metadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{38}
+	return fileDescriptor_c23edafa7e7ea072, []int{39}
 }
 func (m *Metadata) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Metadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Metadata.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Metadata) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Metadata.Merge(m, src)
@@ -2727,49 +1156,21 @@ func (m *Metadata) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Metadata proto.InternalMessageInfo
 
-func (m *Metadata) GetAnnotations() map[string]string {
-	if m != nil {
-		return m.Annotations
-	}
-	return nil
-}
-
-func (m *Metadata) GetLabels() map[string]string {
-	if m != nil {
-		return m.Labels
-	}
-	return nil
-}
-
-// MetricLabel is a single label for a prometheus metric
-type MetricLabel struct {
-	Key                  *string  `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
-	Value                *string  `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *MetricLabel) Reset()         { *m = MetricLabel{} }
-func (m *MetricLabel) String() string { return proto.CompactTextString(m) }
-func (*MetricLabel) ProtoMessage()    {}
+func (m *MetricLabel) Reset()      { *m = MetricLabel{} }
+func (*MetricLabel) ProtoMessage() {}
 func (*MetricLabel) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{39}
+	return fileDescriptor_c23edafa7e7ea072, []int{40}
 }
 func (m *MetricLabel) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *MetricLabel) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MetricLabel.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *MetricLabel) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MetricLabel.Merge(m, src)
@@ -2783,49 +1184,21 @@ func (m *MetricLabel) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MetricLabel proto.InternalMessageInfo
 
-func (m *MetricLabel) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-func (m *MetricLabel) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
-// Metrics are a list of metrics emitted from a Workflow/Template
-type Metrics struct {
-	// Prometheus is a list of prometheus metrics to be emitted
-	Prometheus           []*Prometheus `protobuf:"bytes,1,rep,name=prometheus" json:"prometheus,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
-}
-
-func (m *Metrics) Reset()         { *m = Metrics{} }
-func (m *Metrics) String() string { return proto.CompactTextString(m) }
-func (*Metrics) ProtoMessage()    {}
+func (m *Metrics) Reset()      { *m = Metrics{} }
+func (*Metrics) ProtoMessage() {}
 func (*Metrics) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{40}
+	return fileDescriptor_c23edafa7e7ea072, []int{41}
 }
 func (m *Metrics) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Metrics) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Metrics.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Metrics) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Metrics.Merge(m, src)
@@ -2839,42 +1212,21 @@ func (m *Metrics) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Metrics proto.InternalMessageInfo
 
-func (m *Metrics) GetPrometheus() []*Prometheus {
-	if m != nil {
-		return m.Prometheus
-	}
-	return nil
-}
-
-// Mutex holds Mutex configuration
-type Mutex struct {
-	// name of the mutex
-	Name                 *string  `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Mutex) Reset()         { *m = Mutex{} }
-func (m *Mutex) String() string { return proto.CompactTextString(m) }
-func (*Mutex) ProtoMessage()    {}
+func (m *Mutex) Reset()      { *m = Mutex{} }
+func (*Mutex) ProtoMessage() {}
 func (*Mutex) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{41}
+	return fileDescriptor_c23edafa7e7ea072, []int{42}
 }
 func (m *Mutex) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Mutex) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Mutex.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Mutex) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Mutex.Merge(m, src)
@@ -2888,51 +1240,21 @@ func (m *Mutex) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Mutex proto.InternalMessageInfo
 
-func (m *Mutex) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-// MutexHolding describes the mutex and the object which is holding it.
-type MutexHolding struct {
-	// Reference for the mutex
-	// e.g: ${namespace}/mutex/${mutexName}
-	Mutex *string `protobuf:"bytes,1,opt,name=mutex" json:"mutex,omitempty"`
-	// Holder is a reference to the object which holds the Mutex.
-	// Holding Scenario:
-	//   1. Current workflow's NodeID which is holding the lock.
-	//      e.g: ${NodeID}
-	// Waiting Scenario:
-	//   1. Current workflow or other workflow NodeID which is holding the lock.
-	//      e.g: ${WorkflowName}/${NodeID}
-	Holder               *string  `protobuf:"bytes,2,opt,name=holder" json:"holder,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *MutexHolding) Reset()         { *m = MutexHolding{} }
-func (m *MutexHolding) String() string { return proto.CompactTextString(m) }
-func (*MutexHolding) ProtoMessage()    {}
+func (m *MutexHolding) Reset()      { *m = MutexHolding{} }
+func (*MutexHolding) ProtoMessage() {}
 func (*MutexHolding) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{42}
+	return fileDescriptor_c23edafa7e7ea072, []int{43}
 }
 func (m *MutexHolding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *MutexHolding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MutexHolding.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *MutexHolding) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MutexHolding.Merge(m, src)
@@ -2946,53 +1268,21 @@ func (m *MutexHolding) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MutexHolding proto.InternalMessageInfo
 
-func (m *MutexHolding) GetMutex() string {
-	if m != nil && m.Mutex != nil {
-		return *m.Mutex
-	}
-	return ""
-}
-
-func (m *MutexHolding) GetHolder() string {
-	if m != nil && m.Holder != nil {
-		return *m.Holder
-	}
-	return ""
-}
-
-// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
-type MutexStatus struct {
-	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
-	// +listType=atomic
-	Holding []*MutexHolding `protobuf:"bytes,1,rep,name=holding" json:"holding,omitempty"`
-	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
-	// +listType=atomic
-	Waiting              []*MutexHolding `protobuf:"bytes,2,rep,name=waiting" json:"waiting,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *MutexStatus) Reset()         { *m = MutexStatus{} }
-func (m *MutexStatus) String() string { return proto.CompactTextString(m) }
-func (*MutexStatus) ProtoMessage()    {}
+func (m *MutexStatus) Reset()      { *m = MutexStatus{} }
+func (*MutexStatus) ProtoMessage() {}
 func (*MutexStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{43}
+	return fileDescriptor_c23edafa7e7ea072, []int{44}
 }
 func (m *MutexStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *MutexStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MutexStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *MutexStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MutexStatus.Merge(m, src)
@@ -3006,114 +1296,21 @@ func (m *MutexStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MutexStatus proto.InternalMessageInfo
 
-func (m *MutexStatus) GetHolding() []*MutexHolding {
-	if m != nil {
-		return m.Holding
-	}
-	return nil
-}
-
-func (m *MutexStatus) GetWaiting() []*MutexHolding {
-	if m != nil {
-		return m.Waiting
-	}
-	return nil
-}
-
-// NodeStatus contains status information about an individual node in the workflow
-type NodeStatus struct {
-	// ID is a unique identifier of a node within the worklow
-	// It is implemented as a hash of the node name, which makes the ID deterministic
-	Id *string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	// Name is unique name in the node tree used to generate the node ID
-	Name *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	// DisplayName is a human readable representation of the node. Unique within a template boundary
-	DisplayName *string `protobuf:"bytes,3,opt,name=displayName" json:"displayName,omitempty"`
-	// Type indicates type of node
-	Type *string `protobuf:"bytes,4,opt,name=type" json:"type,omitempty"`
-	// TemplateName is the template name which this node corresponds to.
-	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
-	TemplateName *string `protobuf:"bytes,5,opt,name=templateName" json:"templateName,omitempty"`
-	// TemplateRef is the reference to the template resource which this node corresponds to.
-	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
-	TemplateRef *TemplateRef `protobuf:"bytes,6,opt,name=templateRef" json:"templateRef,omitempty"`
-	// StoredTemplateID is the ID of stored template.
-	// DEPRECATED: This value is not used anymore.
-	StoredTemplateID *string `protobuf:"bytes,18,opt,name=storedTemplateID" json:"storedTemplateID,omitempty"`
-	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	// DEPRECATED: This value is not used anymore.
-	WorkflowTemplateName *string `protobuf:"bytes,19,opt,name=workflowTemplateName" json:"workflowTemplateName,omitempty"`
-	// TemplateScope is the template scope in which the template of this node was retrieved.
-	TemplateScope *string `protobuf:"bytes,20,opt,name=templateScope" json:"templateScope,omitempty"`
-	// Phase a simple, high-level summary of where the node is in its lifecycle.
-	// Can be used as a state machine.
-	Phase *string `protobuf:"bytes,7,opt,name=phase" json:"phase,omitempty"`
-	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
-	BoundaryID *string `protobuf:"bytes,8,opt,name=boundaryID" json:"boundaryID,omitempty"`
-	// A human readable message indicating details about why the node is in this condition.
-	Message *string `protobuf:"bytes,9,opt,name=message" json:"message,omitempty"`
-	// Time at which this node started
-	StartedAt *v11.Time `protobuf:"bytes,10,opt,name=startedAt" json:"startedAt,omitempty"`
-	// Time at which this node completed
-	FinishedAt *v11.Time `protobuf:"bytes,11,opt,name=finishedAt" json:"finishedAt,omitempty"`
-	// EstimatedDuration in seconds.
-	EstimatedDuration *int64 `protobuf:"varint,24,opt,name=estimatedDuration" json:"estimatedDuration,omitempty"`
-	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
-	ResourcesDuration map[string]int64 `protobuf:"bytes,21,rep,name=resourcesDuration" json:"resourcesDuration,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	// PodIP captures the IP of the pod for daemoned steps
-	PodIP *string `protobuf:"bytes,12,opt,name=podIP" json:"podIP,omitempty"`
-	// Daemoned tracks whether or not this node was daemoned and need to be terminated
-	Daemoned *bool `protobuf:"varint,13,opt,name=daemoned" json:"daemoned,omitempty"`
-	// Inputs captures input parameter values and artifact locations supplied to this template invocation
-	Inputs *Inputs `protobuf:"bytes,14,opt,name=inputs" json:"inputs,omitempty"`
-	// Outputs captures output parameter values and artifact locations produced by this template invocation
-	Outputs *Outputs `protobuf:"bytes,15,opt,name=outputs" json:"outputs,omitempty"`
-	// Children is a list of child node IDs
-	Children []string `protobuf:"bytes,16,rep,name=children" json:"children,omitempty"`
-	// OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.
-	// For every invocation of a template, there are nodes which we considered as "outbound". Essentially,
-	// these are last nodes in the execution sequence to run, before the template is considered completed.
-	// These nodes are then connected as parents to a following step.
-	//
-	// In the case of single pod steps (i.e. container, script, resource templates), this list will be nil
-	// since the pod itself is already considered the "outbound" node.
-	// In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children).
-	// In the case of steps, outbound nodes are all the containers involved in the last step group.
-	// NOTE: since templates are composable, the list of outbound nodes are carried upwards when
-	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
-	// a template, will be a superset of the outbound nodes of its last children.
-	OutboundNodes []string `protobuf:"bytes,17,rep,name=outboundNodes" json:"outboundNodes,omitempty"`
-	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
-	HostNodeName *string `protobuf:"bytes,22,opt,name=hostNodeName" json:"hostNodeName,omitempty"`
-	// MemoizationStatus holds information about cached nodes
-	MemoizationStatus *MemoizationStatus `protobuf:"bytes,23,opt,name=memoizationStatus" json:"memoizationStatus,omitempty"`
-	// SynchronizationStatus is the synchronization status of the node
-	SynchronizationStatus *NodeSynchronizationStatus `protobuf:"bytes,25,opt,name=synchronizationStatus" json:"synchronizationStatus,omitempty"`
-	XXX_NoUnkeyedLiteral  struct{}                   `json:"-"`
-	XXX_unrecognized      []byte                     `json:"-"`
-	XXX_sizecache         int32                      `json:"-"`
-}
-
-func (m *NodeStatus) Reset()         { *m = NodeStatus{} }
-func (m *NodeStatus) String() string { return proto.CompactTextString(m) }
-func (*NodeStatus) ProtoMessage()    {}
+func (m *NodeStatus) Reset()      { *m = NodeStatus{} }
+func (*NodeStatus) ProtoMessage() {}
 func (*NodeStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{44}
+	return fileDescriptor_c23edafa7e7ea072, []int{45}
 }
 func (m *NodeStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *NodeStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_NodeStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *NodeStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_NodeStatus.Merge(m, src)
@@ -3127,210 +1324,21 @@ func (m *NodeStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_NodeStatus proto.InternalMessageInfo
 
-func (m *NodeStatus) GetId() string {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetDisplayName() string {
-	if m != nil && m.DisplayName != nil {
-		return *m.DisplayName
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetType() string {
-	if m != nil && m.Type != nil {
-		return *m.Type
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetTemplateName() string {
-	if m != nil && m.TemplateName != nil {
-		return *m.TemplateName
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetTemplateRef() *TemplateRef {
-	if m != nil {
-		return m.TemplateRef
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetStoredTemplateID() string {
-	if m != nil && m.StoredTemplateID != nil {
-		return *m.StoredTemplateID
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetWorkflowTemplateName() string {
-	if m != nil && m.WorkflowTemplateName != nil {
-		return *m.WorkflowTemplateName
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetTemplateScope() string {
-	if m != nil && m.TemplateScope != nil {
-		return *m.TemplateScope
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetPhase() string {
-	if m != nil && m.Phase != nil {
-		return *m.Phase
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetBoundaryID() string {
-	if m != nil && m.BoundaryID != nil {
-		return *m.BoundaryID
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetMessage() string {
-	if m != nil && m.Message != nil {
-		return *m.Message
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetStartedAt() *v11.Time {
-	if m != nil {
-		return m.StartedAt
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetFinishedAt() *v11.Time {
-	if m != nil {
-		return m.FinishedAt
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetEstimatedDuration() int64 {
-	if m != nil && m.EstimatedDuration != nil {
-		return *m.EstimatedDuration
-	}
-	return 0
-}
-
-func (m *NodeStatus) GetResourcesDuration() map[string]int64 {
-	if m != nil {
-		return m.ResourcesDuration
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetPodIP() string {
-	if m != nil && m.PodIP != nil {
-		return *m.PodIP
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetDaemoned() bool {
-	if m != nil && m.Daemoned != nil {
-		return *m.Daemoned
-	}
-	return false
-}
-
-func (m *NodeStatus) GetInputs() *Inputs {
-	if m != nil {
-		return m.Inputs
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetOutputs() *Outputs {
-	if m != nil {
-		return m.Outputs
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetChildren() []string {
-	if m != nil {
-		return m.Children
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetOutboundNodes() []string {
-	if m != nil {
-		return m.OutboundNodes
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetHostNodeName() string {
-	if m != nil && m.HostNodeName != nil {
-		return *m.HostNodeName
-	}
-	return ""
-}
-
-func (m *NodeStatus) GetMemoizationStatus() *MemoizationStatus {
-	if m != nil {
-		return m.MemoizationStatus
-	}
-	return nil
-}
-
-func (m *NodeStatus) GetSynchronizationStatus() *NodeSynchronizationStatus {
-	if m != nil {
-		return m.SynchronizationStatus
-	}
-	return nil
-}
-
-// NodeSynchronizationStatus stores the status of a node
-type NodeSynchronizationStatus struct {
-	// Waiting is the name of the lock that this node is waiting for
-	Waiting              *string  `protobuf:"bytes,1,opt,name=waiting" json:"waiting,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *NodeSynchronizationStatus) Reset()         { *m = NodeSynchronizationStatus{} }
-func (m *NodeSynchronizationStatus) String() string { return proto.CompactTextString(m) }
-func (*NodeSynchronizationStatus) ProtoMessage()    {}
+func (m *NodeSynchronizationStatus) Reset()      { *m = NodeSynchronizationStatus{} }
+func (*NodeSynchronizationStatus) ProtoMessage() {}
 func (*NodeSynchronizationStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{45}
+	return fileDescriptor_c23edafa7e7ea072, []int{46}
 }
 func (m *NodeSynchronizationStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *NodeSynchronizationStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_NodeSynchronizationStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *NodeSynchronizationStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_NodeSynchronizationStatus.Merge(m, src)
@@ -3344,42 +1352,21 @@ func (m *NodeSynchronizationStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_NodeSynchronizationStatus proto.InternalMessageInfo
 
-func (m *NodeSynchronizationStatus) GetWaiting() string {
-	if m != nil && m.Waiting != nil {
-		return *m.Waiting
-	}
-	return ""
-}
-
-// NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
-// files. Note that if the artifact is a directory, the artifact driver must support the ability to
-// save/load the directory appropriately.
-type NoneStrategy struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *NoneStrategy) Reset()         { *m = NoneStrategy{} }
-func (m *NoneStrategy) String() string { return proto.CompactTextString(m) }
-func (*NoneStrategy) ProtoMessage()    {}
+func (m *NoneStrategy) Reset()      { *m = NoneStrategy{} }
+func (*NoneStrategy) ProtoMessage() {}
 func (*NoneStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{46}
+	return fileDescriptor_c23edafa7e7ea072, []int{47}
 }
 func (m *NoneStrategy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *NoneStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_NoneStrategy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *NoneStrategy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_NoneStrategy.Merge(m, src)
@@ -3393,36 +1380,21 @@ func (m *NoneStrategy) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_NoneStrategy proto.InternalMessageInfo
 
-// OSSArtifact is the location of an Alibaba Cloud OSS artifact
-type OSSArtifact struct {
-	OSSBucket *OSSBucket `protobuf:"bytes,1,opt,name=oSSBucket" json:"oSSBucket,omitempty"`
-	// Key is the path in the bucket where the artifact resides
-	Key                  *string  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *OSSArtifact) Reset()         { *m = OSSArtifact{} }
-func (m *OSSArtifact) String() string { return proto.CompactTextString(m) }
-func (*OSSArtifact) ProtoMessage()    {}
+func (m *OSSArtifact) Reset()      { *m = OSSArtifact{} }
+func (*OSSArtifact) ProtoMessage() {}
 func (*OSSArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{47}
+	return fileDescriptor_c23edafa7e7ea072, []int{48}
 }
 func (m *OSSArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *OSSArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_OSSArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *OSSArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_OSSArtifact.Merge(m, src)
@@ -3436,55 +1408,21 @@ func (m *OSSArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_OSSArtifact proto.InternalMessageInfo
 
-func (m *OSSArtifact) GetOSSBucket() *OSSBucket {
-	if m != nil {
-		return m.OSSBucket
-	}
-	return nil
-}
-
-func (m *OSSArtifact) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-// OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
-type OSSBucket struct {
-	// Endpoint is the hostname of the bucket endpoint
-	Endpoint *string `protobuf:"bytes,1,opt,name=endpoint" json:"endpoint,omitempty"`
-	// Bucket is the name of the bucket
-	Bucket *string `protobuf:"bytes,2,opt,name=bucket" json:"bucket,omitempty"`
-	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret *v1.SecretKeySelector `protobuf:"bytes,3,opt,name=accessKeySecret" json:"accessKeySecret,omitempty"`
-	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret      *v1.SecretKeySelector `protobuf:"bytes,4,opt,name=secretKeySecret" json:"secretKeySecret,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
-}
-
-func (m *OSSBucket) Reset()         { *m = OSSBucket{} }
-func (m *OSSBucket) String() string { return proto.CompactTextString(m) }
-func (*OSSBucket) ProtoMessage()    {}
+func (m *OSSBucket) Reset()      { *m = OSSBucket{} }
+func (*OSSBucket) ProtoMessage() {}
 func (*OSSBucket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{48}
+	return fileDescriptor_c23edafa7e7ea072, []int{49}
 }
 func (m *OSSBucket) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *OSSBucket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_OSSBucket.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *OSSBucket) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_OSSBucket.Merge(m, src)
@@ -3498,73 +1436,21 @@ func (m *OSSBucket) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_OSSBucket proto.InternalMessageInfo
 
-func (m *OSSBucket) GetEndpoint() string {
-	if m != nil && m.Endpoint != nil {
-		return *m.Endpoint
-	}
-	return ""
-}
-
-func (m *OSSBucket) GetBucket() string {
-	if m != nil && m.Bucket != nil {
-		return *m.Bucket
-	}
-	return ""
-}
-
-func (m *OSSBucket) GetAccessKeySecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.AccessKeySecret
-	}
-	return nil
-}
-
-func (m *OSSBucket) GetSecretKeySecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.SecretKeySecret
-	}
-	return nil
-}
-
-// Outputs hold parameters, artifacts, and results from a step
-type Outputs struct {
-	// Parameters holds the list of output parameters produced by a step
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Parameters []*Parameter `protobuf:"bytes,1,rep,name=parameters" json:"parameters,omitempty"`
-	// Artifacts holds the list of output artifacts produced by a step
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Artifacts []*Artifact `protobuf:"bytes,2,rep,name=artifacts" json:"artifacts,omitempty"`
-	// Result holds the result (stdout) of a script template
-	Result *string `protobuf:"bytes,3,opt,name=result" json:"result,omitempty"`
-	// ExitCode holds the exit code of a script template
-	ExitCode             *string  `protobuf:"bytes,4,opt,name=exitCode" json:"exitCode,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Outputs) Reset()         { *m = Outputs{} }
-func (m *Outputs) String() string { return proto.CompactTextString(m) }
-func (*Outputs) ProtoMessage()    {}
+func (m *Outputs) Reset()      { *m = Outputs{} }
+func (*Outputs) ProtoMessage() {}
 func (*Outputs) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{49}
+	return fileDescriptor_c23edafa7e7ea072, []int{50}
 }
 func (m *Outputs) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Outputs) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Outputs.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Outputs) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Outputs.Merge(m, src)
@@ -3578,62 +1464,21 @@ func (m *Outputs) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Outputs proto.InternalMessageInfo
 
-func (m *Outputs) GetParameters() []*Parameter {
-	if m != nil {
-		return m.Parameters
-	}
-	return nil
-}
-
-func (m *Outputs) GetArtifacts() []*Artifact {
-	if m != nil {
-		return m.Artifacts
-	}
-	return nil
-}
-
-func (m *Outputs) GetResult() string {
-	if m != nil && m.Result != nil {
-		return *m.Result
-	}
-	return ""
-}
-
-func (m *Outputs) GetExitCode() string {
-	if m != nil && m.ExitCode != nil {
-		return *m.ExitCode
-	}
-	return ""
-}
-
-// +kubebuilder:validation:Type=array
-type ParallelSteps struct {
-	Steps                []*WorkflowStep `protobuf:"bytes,1,rep,name=steps" json:"steps,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *ParallelSteps) Reset()         { *m = ParallelSteps{} }
-func (m *ParallelSteps) String() string { return proto.CompactTextString(m) }
-func (*ParallelSteps) ProtoMessage()    {}
+func (m *ParallelSteps) Reset()      { *m = ParallelSteps{} }
+func (*ParallelSteps) ProtoMessage() {}
 func (*ParallelSteps) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{50}
+	return fileDescriptor_c23edafa7e7ea072, []int{51}
 }
 func (m *ParallelSteps) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ParallelSteps) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ParallelSteps.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ParallelSteps) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ParallelSteps.Merge(m, src)
@@ -3647,52 +1492,21 @@ func (m *ParallelSteps) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ParallelSteps proto.InternalMessageInfo
 
-func (m *ParallelSteps) GetSteps() []*WorkflowStep {
-	if m != nil {
-		return m.Steps
-	}
-	return nil
-}
-
-// Parameter indicate a passed string parameter to a service template with an optional default value
-type Parameter struct {
-	// Name is the parameter name
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *string `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
-	// Value is the literal value to use for the parameter.
-	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *string `protobuf:"bytes,3,opt,name=value" json:"value,omitempty"`
-	// ValueFrom is the source for the output parameter's value
-	ValueFrom *ValueFrom `protobuf:"bytes,4,opt,name=valueFrom" json:"valueFrom,omitempty"`
-	// GlobalName exports an output parameter to the global scope, making it available as
-	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
-	GlobalName           *string  `protobuf:"bytes,5,opt,name=globalName" json:"globalName,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Parameter) Reset()         { *m = Parameter{} }
-func (m *Parameter) String() string { return proto.CompactTextString(m) }
-func (*Parameter) ProtoMessage()    {}
+func (m *Parameter) Reset()      { *m = Parameter{} }
+func (*Parameter) ProtoMessage() {}
 func (*Parameter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{51}
+	return fileDescriptor_c23edafa7e7ea072, []int{52}
 }
 func (m *Parameter) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Parameter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Parameter.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Parameter) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Parameter.Merge(m, src)
@@ -3706,70 +1520,21 @@ func (m *Parameter) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Parameter proto.InternalMessageInfo
 
-func (m *Parameter) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Parameter) GetDefault() string {
-	if m != nil && m.Default != nil {
-		return *m.Default
-	}
-	return ""
-}
-
-func (m *Parameter) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
-func (m *Parameter) GetValueFrom() *ValueFrom {
-	if m != nil {
-		return m.ValueFrom
-	}
-	return nil
-}
-
-func (m *Parameter) GetGlobalName() string {
-	if m != nil && m.GlobalName != nil {
-		return *m.GlobalName
-	}
-	return ""
-}
-
-// PodGC describes how to delete completed pods as they complete
-type PodGC struct {
-	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
-	Strategy             *string  `protobuf:"bytes,1,opt,name=strategy" json:"strategy,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *PodGC) Reset()         { *m = PodGC{} }
-func (m *PodGC) String() string { return proto.CompactTextString(m) }
-func (*PodGC) ProtoMessage()    {}
+func (m *PodGC) Reset()      { *m = PodGC{} }
+func (*PodGC) ProtoMessage() {}
 func (*PodGC) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{52}
+	return fileDescriptor_c23edafa7e7ea072, []int{53}
 }
 func (m *PodGC) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *PodGC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_PodGC.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *PodGC) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_PodGC.Merge(m, src)
@@ -3783,54 +1548,21 @@ func (m *PodGC) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PodGC proto.InternalMessageInfo
 
-func (m *PodGC) GetStrategy() string {
-	if m != nil && m.Strategy != nil {
-		return *m.Strategy
-	}
-	return ""
-}
-
-// Prometheus is a prometheus metric to be emitted
-type Prometheus struct {
-	// Name is the name of the metric
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Labels is a list of metric labels
-	Labels []*MetricLabel `protobuf:"bytes,2,rep,name=labels" json:"labels,omitempty"`
-	// Help is a string that describes the metric
-	Help *string `protobuf:"bytes,3,opt,name=help" json:"help,omitempty"`
-	// When is a conditional statement that decides when to emit the metric
-	When *string `protobuf:"bytes,4,opt,name=when" json:"when,omitempty"`
-	// Gauge is a gauge metric
-	Gauge *Gauge `protobuf:"bytes,5,opt,name=gauge" json:"gauge,omitempty"`
-	// Histogram is a histogram metric
-	Histogram *Histogram `protobuf:"bytes,6,opt,name=histogram" json:"histogram,omitempty"`
-	// Counter is a counter metric
-	Counter              *Counter `protobuf:"bytes,7,opt,name=counter" json:"counter,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Prometheus) Reset()         { *m = Prometheus{} }
-func (m *Prometheus) String() string { return proto.CompactTextString(m) }
-func (*Prometheus) ProtoMessage()    {}
+func (m *Prometheus) Reset()      { *m = Prometheus{} }
+func (*Prometheus) ProtoMessage() {}
 func (*Prometheus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{53}
+	return fileDescriptor_c23edafa7e7ea072, []int{54}
 }
 func (m *Prometheus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Prometheus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Prometheus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Prometheus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Prometheus.Merge(m, src)
@@ -3844,84 +1576,21 @@ func (m *Prometheus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Prometheus proto.InternalMessageInfo
 
-func (m *Prometheus) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Prometheus) GetLabels() []*MetricLabel {
-	if m != nil {
-		return m.Labels
-	}
-	return nil
-}
-
-func (m *Prometheus) GetHelp() string {
-	if m != nil && m.Help != nil {
-		return *m.Help
-	}
-	return ""
-}
-
-func (m *Prometheus) GetWhen() string {
-	if m != nil && m.When != nil {
-		return *m.When
-	}
-	return ""
-}
-
-func (m *Prometheus) GetGauge() *Gauge {
-	if m != nil {
-		return m.Gauge
-	}
-	return nil
-}
-
-func (m *Prometheus) GetHistogram() *Histogram {
-	if m != nil {
-		return m.Histogram
-	}
-	return nil
-}
-
-func (m *Prometheus) GetCounter() *Counter {
-	if m != nil {
-		return m.Counter
-	}
-	return nil
-}
-
-// RawArtifact allows raw string content to be placed as an artifact in a container
-type RawArtifact struct {
-	// Data is the string contents of the artifact
-	Data                 *string  `protobuf:"bytes,1,opt,name=data" json:"data,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RawArtifact) Reset()         { *m = RawArtifact{} }
-func (m *RawArtifact) String() string { return proto.CompactTextString(m) }
-func (*RawArtifact) ProtoMessage()    {}
+func (m *RawArtifact) Reset()      { *m = RawArtifact{} }
+func (*RawArtifact) ProtoMessage() {}
 func (*RawArtifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{54}
+	return fileDescriptor_c23edafa7e7ea072, []int{55}
 }
 func (m *RawArtifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *RawArtifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RawArtifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *RawArtifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_RawArtifact.Merge(m, src)
@@ -3935,62 +1604,21 @@ func (m *RawArtifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RawArtifact proto.InternalMessageInfo
 
-func (m *RawArtifact) GetData() string {
-	if m != nil && m.Data != nil {
-		return *m.Data
-	}
-	return ""
-}
-
-// ResourceTemplate is a template subtype to manipulate kubernetes resources
-type ResourceTemplate struct {
-	// Action is the action to perform to the resource.
-	// Must be one of: get, create, apply, delete, replace, patch
-	Action *string `protobuf:"bytes,1,opt,name=action" json:"action,omitempty"`
-	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
-	// Must be one of: strategic, merge, json
-	MergeStrategy *string `protobuf:"bytes,2,opt,name=mergeStrategy" json:"mergeStrategy,omitempty"`
-	// Manifest contains the kubernetes manifest
-	Manifest *string `protobuf:"bytes,3,opt,name=manifest" json:"manifest,omitempty"`
-	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
-	SetOwnerReference *bool `protobuf:"varint,4,opt,name=setOwnerReference" json:"setOwnerReference,omitempty"`
-	// SuccessCondition is a label selector expression which describes the conditions
-	// of the k8s resource in which it is acceptable to proceed to the following step
-	SuccessCondition *string `protobuf:"bytes,5,opt,name=successCondition" json:"successCondition,omitempty"`
-	// FailureCondition is a label selector expression which describes the conditions
-	// of the k8s resource in which the step was considered failed
-	FailureCondition *string `protobuf:"bytes,6,opt,name=failureCondition" json:"failureCondition,omitempty"`
-	// Flags is a set of additional options passed to kubectl before submitting a resource
-	// I.e. to disable resource validation:
-	// flags: [
-	// 	"--validate=false"  # disable resource validation
-	// ]
-	Flags                []string `protobuf:"bytes,7,rep,name=flags" json:"flags,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ResourceTemplate) Reset()         { *m = ResourceTemplate{} }
-func (m *ResourceTemplate) String() string { return proto.CompactTextString(m) }
-func (*ResourceTemplate) ProtoMessage()    {}
+func (m *ResourceTemplate) Reset()      { *m = ResourceTemplate{} }
+func (*ResourceTemplate) ProtoMessage() {}
 func (*ResourceTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{55}
+	return fileDescriptor_c23edafa7e7ea072, []int{56}
 }
 func (m *ResourceTemplate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ResourceTemplate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ResourceTemplate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ResourceTemplate) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ResourceTemplate.Merge(m, src)
@@ -4004,88 +1632,21 @@ func (m *ResourceTemplate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ResourceTemplate proto.InternalMessageInfo
 
-func (m *ResourceTemplate) GetAction() string {
-	if m != nil && m.Action != nil {
-		return *m.Action
-	}
-	return ""
-}
-
-func (m *ResourceTemplate) GetMergeStrategy() string {
-	if m != nil && m.MergeStrategy != nil {
-		return *m.MergeStrategy
-	}
-	return ""
-}
-
-func (m *ResourceTemplate) GetManifest() string {
-	if m != nil && m.Manifest != nil {
-		return *m.Manifest
-	}
-	return ""
-}
-
-func (m *ResourceTemplate) GetSetOwnerReference() bool {
-	if m != nil && m.SetOwnerReference != nil {
-		return *m.SetOwnerReference
-	}
-	return false
-}
-
-func (m *ResourceTemplate) GetSuccessCondition() string {
-	if m != nil && m.SuccessCondition != nil {
-		return *m.SuccessCondition
-	}
-	return ""
-}
-
-func (m *ResourceTemplate) GetFailureCondition() string {
-	if m != nil && m.FailureCondition != nil {
-		return *m.FailureCondition
-	}
-	return ""
-}
-
-func (m *ResourceTemplate) GetFlags() []string {
-	if m != nil {
-		return m.Flags
-	}
-	return nil
-}
-
-// RetryStrategy provides controls on how to retry a workflow step
-type RetryStrategy struct {
-	// Limit is the maximum number of attempts when retrying a container
-	Limit *intstr.IntOrString `protobuf:"bytes,1,opt,name=limit" json:"limit,omitempty"`
-	// RetryPolicy is a policy of NodePhase statuses that will be retried
-	RetryPolicy *string `protobuf:"bytes,2,opt,name=retryPolicy" json:"retryPolicy,omitempty"`
-	// Backoff is a backoff strategy
-	Backoff              *Backoff `protobuf:"bytes,3,opt,name=backoff" json:"backoff,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RetryStrategy) Reset()         { *m = RetryStrategy{} }
-func (m *RetryStrategy) String() string { return proto.CompactTextString(m) }
-func (*RetryStrategy) ProtoMessage()    {}
+func (m *RetryStrategy) Reset()      { *m = RetryStrategy{} }
+func (*RetryStrategy) ProtoMessage() {}
 func (*RetryStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{56}
+	return fileDescriptor_c23edafa7e7ea072, []int{57}
 }
 func (m *RetryStrategy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *RetryStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RetryStrategy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *RetryStrategy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_RetryStrategy.Merge(m, src)
@@ -4099,57 +1660,21 @@ func (m *RetryStrategy) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RetryStrategy proto.InternalMessageInfo
 
-func (m *RetryStrategy) GetLimit() *intstr.IntOrString {
-	if m != nil {
-		return m.Limit
-	}
-	return nil
-}
-
-func (m *RetryStrategy) GetRetryPolicy() string {
-	if m != nil && m.RetryPolicy != nil {
-		return *m.RetryPolicy
-	}
-	return ""
-}
-
-func (m *RetryStrategy) GetBackoff() *Backoff {
-	if m != nil {
-		return m.Backoff
-	}
-	return nil
-}
-
-// S3Artifact is the location of an S3 artifact
-type S3Artifact struct {
-	S3Bucket *S3Bucket `protobuf:"bytes,1,opt,name=s3Bucket" json:"s3Bucket,omitempty"`
-	// Key is the key in the bucket where the artifact resides
-	Key                  *string  `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *S3Artifact) Reset()         { *m = S3Artifact{} }
-func (m *S3Artifact) String() string { return proto.CompactTextString(m) }
-func (*S3Artifact) ProtoMessage()    {}
+func (m *S3Artifact) Reset()      { *m = S3Artifact{} }
+func (*S3Artifact) ProtoMessage() {}
 func (*S3Artifact) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{57}
+	return fileDescriptor_c23edafa7e7ea072, []int{58}
 }
 func (m *S3Artifact) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *S3Artifact) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_S3Artifact.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *S3Artifact) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_S3Artifact.Merge(m, src)
@@ -4163,63 +1688,21 @@ func (m *S3Artifact) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_S3Artifact proto.InternalMessageInfo
 
-func (m *S3Artifact) GetS3Bucket() *S3Bucket {
-	if m != nil {
-		return m.S3Bucket
-	}
-	return nil
-}
-
-func (m *S3Artifact) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-// S3Bucket contains the access information required for interfacing with an S3 bucket
-type S3Bucket struct {
-	// Endpoint is the hostname of the bucket endpoint
-	Endpoint *string `protobuf:"bytes,1,opt,name=endpoint" json:"endpoint,omitempty"`
-	// Bucket is the name of the bucket
-	Bucket *string `protobuf:"bytes,2,opt,name=bucket" json:"bucket,omitempty"`
-	// Region contains the optional bucket region
-	Region *string `protobuf:"bytes,3,opt,name=region" json:"region,omitempty"`
-	// Insecure will connect to the service with TLS
-	Insecure *bool `protobuf:"varint,4,opt,name=insecure" json:"insecure,omitempty"`
-	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret *v1.SecretKeySelector `protobuf:"bytes,5,opt,name=accessKeySecret" json:"accessKeySecret,omitempty"`
-	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret *v1.SecretKeySelector `protobuf:"bytes,6,opt,name=secretKeySecret" json:"secretKeySecret,omitempty"`
-	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
-	RoleARN *string `protobuf:"bytes,7,opt,name=roleARN" json:"roleARN,omitempty"`
-	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
-	UseSDKCreds          *bool    `protobuf:"varint,8,opt,name=useSDKCreds" json:"useSDKCreds,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *S3Bucket) Reset()         { *m = S3Bucket{} }
-func (m *S3Bucket) String() string { return proto.CompactTextString(m) }
-func (*S3Bucket) ProtoMessage()    {}
+func (m *S3Bucket) Reset()      { *m = S3Bucket{} }
+func (*S3Bucket) ProtoMessage() {}
 func (*S3Bucket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{58}
+	return fileDescriptor_c23edafa7e7ea072, []int{59}
 }
 func (m *S3Bucket) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *S3Bucket) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_S3Bucket.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *S3Bucket) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_S3Bucket.Merge(m, src)
@@ -4233,92 +1716,21 @@ func (m *S3Bucket) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_S3Bucket proto.InternalMessageInfo
 
-func (m *S3Bucket) GetEndpoint() string {
-	if m != nil && m.Endpoint != nil {
-		return *m.Endpoint
-	}
-	return ""
-}
-
-func (m *S3Bucket) GetBucket() string {
-	if m != nil && m.Bucket != nil {
-		return *m.Bucket
-	}
-	return ""
-}
-
-func (m *S3Bucket) GetRegion() string {
-	if m != nil && m.Region != nil {
-		return *m.Region
-	}
-	return ""
-}
-
-func (m *S3Bucket) GetInsecure() bool {
-	if m != nil && m.Insecure != nil {
-		return *m.Insecure
-	}
-	return false
-}
-
-func (m *S3Bucket) GetAccessKeySecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.AccessKeySecret
-	}
-	return nil
-}
-
-func (m *S3Bucket) GetSecretKeySecret() *v1.SecretKeySelector {
-	if m != nil {
-		return m.SecretKeySecret
-	}
-	return nil
-}
-
-func (m *S3Bucket) GetRoleARN() string {
-	if m != nil && m.RoleARN != nil {
-		return *m.RoleARN
-	}
-	return ""
-}
-
-func (m *S3Bucket) GetUseSDKCreds() bool {
-	if m != nil && m.UseSDKCreds != nil {
-		return *m.UseSDKCreds
-	}
-	return false
-}
-
-// ScriptTemplate is a template subtype to enable scripting through code steps
-type ScriptTemplate struct {
-	Container *v1.Container `protobuf:"bytes,1,opt,name=container" json:"container,omitempty"`
-	// Source contains the source code of the script to execute
-	Source               *string  `protobuf:"bytes,2,opt,name=source" json:"source,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ScriptTemplate) Reset()         { *m = ScriptTemplate{} }
-func (m *ScriptTemplate) String() string { return proto.CompactTextString(m) }
-func (*ScriptTemplate) ProtoMessage()    {}
+func (m *ScriptTemplate) Reset()      { *m = ScriptTemplate{} }
+func (*ScriptTemplate) ProtoMessage() {}
 func (*ScriptTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{59}
+	return fileDescriptor_c23edafa7e7ea072, []int{60}
 }
 func (m *ScriptTemplate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ScriptTemplate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ScriptTemplate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ScriptTemplate) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ScriptTemplate.Merge(m, src)
@@ -4332,51 +1744,21 @@ func (m *ScriptTemplate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ScriptTemplate proto.InternalMessageInfo
 
-func (m *ScriptTemplate) GetContainer() *v1.Container {
-	if m != nil {
-		return m.Container
-	}
-	return nil
-}
-
-func (m *ScriptTemplate) GetSource() string {
-	if m != nil && m.Source != nil {
-		return *m.Source
-	}
-	return ""
-}
-
-type SemaphoreHolding struct {
-	// Semaphore stores the semaphore name.
-	Semaphore *string `protobuf:"bytes,1,opt,name=semaphore" json:"semaphore,omitempty"`
-	// Holders stores the list of current holder names in the workflow.
-	// +listType=atomic
-	Holders              []string `protobuf:"bytes,2,rep,name=holders" json:"holders,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *SemaphoreHolding) Reset()         { *m = SemaphoreHolding{} }
-func (m *SemaphoreHolding) String() string { return proto.CompactTextString(m) }
-func (*SemaphoreHolding) ProtoMessage()    {}
+func (m *SemaphoreHolding) Reset()      { *m = SemaphoreHolding{} }
+func (*SemaphoreHolding) ProtoMessage() {}
 func (*SemaphoreHolding) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{60}
+	return fileDescriptor_c23edafa7e7ea072, []int{61}
 }
 func (m *SemaphoreHolding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SemaphoreHolding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SemaphoreHolding.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SemaphoreHolding) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SemaphoreHolding.Merge(m, src)
@@ -4390,49 +1772,21 @@ func (m *SemaphoreHolding) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SemaphoreHolding proto.InternalMessageInfo
 
-func (m *SemaphoreHolding) GetSemaphore() string {
-	if m != nil && m.Semaphore != nil {
-		return *m.Semaphore
-	}
-	return ""
-}
-
-func (m *SemaphoreHolding) GetHolders() []string {
-	if m != nil {
-		return m.Holders
-	}
-	return nil
-}
-
-// SemaphoreRef is a reference of Semaphore
-type SemaphoreRef struct {
-	// ConfigMapKeyRef is configmap selector for Semaphore configuration
-	ConfigMapKeyRef      *v1.ConfigMapKeySelector `protobuf:"bytes,1,opt,name=configMapKeyRef" json:"configMapKeyRef,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
-	XXX_unrecognized     []byte                   `json:"-"`
-	XXX_sizecache        int32                    `json:"-"`
-}
-
-func (m *SemaphoreRef) Reset()         { *m = SemaphoreRef{} }
-func (m *SemaphoreRef) String() string { return proto.CompactTextString(m) }
-func (*SemaphoreRef) ProtoMessage()    {}
+func (m *SemaphoreRef) Reset()      { *m = SemaphoreRef{} }
+func (*SemaphoreRef) ProtoMessage() {}
 func (*SemaphoreRef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{61}
+	return fileDescriptor_c23edafa7e7ea072, []int{62}
 }
 func (m *SemaphoreRef) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SemaphoreRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SemaphoreRef.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SemaphoreRef) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SemaphoreRef.Merge(m, src)
@@ -4446,43 +1800,21 @@ func (m *SemaphoreRef) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SemaphoreRef proto.InternalMessageInfo
 
-func (m *SemaphoreRef) GetConfigMapKeyRef() *v1.ConfigMapKeySelector {
-	if m != nil {
-		return m.ConfigMapKeyRef
-	}
-	return nil
-}
-
-type SemaphoreStatus struct {
-	// Holding stores the list of resource acquired synchronization lock for workflows.
-	Holding []*SemaphoreHolding `protobuf:"bytes,1,rep,name=holding" json:"holding,omitempty"`
-	// Waiting indicates the list of current synchronization lock holders.
-	Waiting              []*SemaphoreHolding `protobuf:"bytes,2,rep,name=waiting" json:"waiting,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
-}
-
-func (m *SemaphoreStatus) Reset()         { *m = SemaphoreStatus{} }
-func (m *SemaphoreStatus) String() string { return proto.CompactTextString(m) }
-func (*SemaphoreStatus) ProtoMessage()    {}
+func (m *SemaphoreStatus) Reset()      { *m = SemaphoreStatus{} }
+func (*SemaphoreStatus) ProtoMessage() {}
 func (*SemaphoreStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{62}
+	return fileDescriptor_c23edafa7e7ea072, []int{63}
 }
 func (m *SemaphoreStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SemaphoreStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SemaphoreStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SemaphoreStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SemaphoreStatus.Merge(m, src)
@@ -4496,55 +1828,21 @@ func (m *SemaphoreStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SemaphoreStatus proto.InternalMessageInfo
 
-func (m *SemaphoreStatus) GetHolding() []*SemaphoreHolding {
-	if m != nil {
-		return m.Holding
-	}
-	return nil
-}
-
-func (m *SemaphoreStatus) GetWaiting() []*SemaphoreHolding {
-	if m != nil {
-		return m.Waiting
-	}
-	return nil
-}
-
-// Sequence expands a workflow step into numeric range
-type Sequence struct {
-	// Count is number of elements in the sequence (default: 0). Not to be used with end
-	Count *intstr.IntOrString `protobuf:"bytes,1,opt,name=count" json:"count,omitempty"`
-	// Number at which to start the sequence (default: 0)
-	Start *intstr.IntOrString `protobuf:"bytes,2,opt,name=start" json:"start,omitempty"`
-	// Number at which to end the sequence (default: 0). Not to be used with Count
-	End *intstr.IntOrString `protobuf:"bytes,3,opt,name=end" json:"end,omitempty"`
-	// Format is a printf format string to format the value in the sequence
-	Format               *string  `protobuf:"bytes,4,opt,name=format" json:"format,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Sequence) Reset()         { *m = Sequence{} }
-func (m *Sequence) String() string { return proto.CompactTextString(m) }
-func (*Sequence) ProtoMessage()    {}
+func (m *Sequence) Reset()      { *m = Sequence{} }
+func (*Sequence) ProtoMessage() {}
 func (*Sequence) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{63}
+	return fileDescriptor_c23edafa7e7ea072, []int{64}
 }
 func (m *Sequence) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Sequence) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Sequence.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Sequence) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Sequence.Merge(m, src)
@@ -4558,64 +1856,21 @@ func (m *Sequence) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Sequence proto.InternalMessageInfo
 
-func (m *Sequence) GetCount() *intstr.IntOrString {
-	if m != nil {
-		return m.Count
-	}
-	return nil
-}
-
-func (m *Sequence) GetStart() *intstr.IntOrString {
-	if m != nil {
-		return m.Start
-	}
-	return nil
-}
-
-func (m *Sequence) GetEnd() *intstr.IntOrString {
-	if m != nil {
-		return m.End
-	}
-	return nil
-}
-
-func (m *Sequence) GetFormat() string {
-	if m != nil && m.Format != nil {
-		return *m.Format
-	}
-	return ""
-}
-
-type Submit struct {
-	// WorkflowTemplateRef the workflow template to submit
-	WorkflowTemplateRef *WorkflowTemplateRef `protobuf:"bytes,1,opt,name=workflowTemplateRef" json:"workflowTemplateRef,omitempty"`
-	// Arguments extracted from the event and then set as arguments to the workflow created.
-	Arguments            *Arguments `protobuf:"bytes,2,opt,name=arguments" json:"arguments,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
-	XXX_unrecognized     []byte     `json:"-"`
-	XXX_sizecache        int32      `json:"-"`
-}
-
-func (m *Submit) Reset()         { *m = Submit{} }
-func (m *Submit) String() string { return proto.CompactTextString(m) }
-func (*Submit) ProtoMessage()    {}
+func (m *Submit) Reset()      { *m = Submit{} }
+func (*Submit) ProtoMessage() {}
 func (*Submit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{64}
+	return fileDescriptor_c23edafa7e7ea072, []int{65}
 }
 func (m *Submit) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Submit) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Submit.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Submit) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Submit.Merge(m, src)
@@ -4629,67 +1884,21 @@ func (m *Submit) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Submit proto.InternalMessageInfo
 
-func (m *Submit) GetWorkflowTemplateRef() *WorkflowTemplateRef {
-	if m != nil {
-		return m.WorkflowTemplateRef
-	}
-	return nil
-}
-
-func (m *Submit) GetArguments() *Arguments {
-	if m != nil {
-		return m.Arguments
-	}
-	return nil
-}
-
-// SubmitOpts are workflow submission options
-type SubmitOpts struct {
-	// Name overrides metadata.name
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// GenerateName overrides metadata.generateName
-	GenerateName *string `protobuf:"bytes,2,opt,name=generateName" json:"generateName,omitempty"`
-	// Entrypoint overrides spec.entrypoint
-	Entrypoint *string `protobuf:"bytes,4,opt,name=entrypoint" json:"entrypoint,omitempty"`
-	// Parameters passes input parameters to workflow
-	Parameters []string `protobuf:"bytes,5,rep,name=parameters" json:"parameters,omitempty"`
-	// ParameterFile holds a reference to a parameter file. This option is not supported in API
-	ParameterFile *string `protobuf:"bytes,6,opt,name=parameterFile" json:"parameterFile,omitempty"`
-	// ServiceAccount runs all pods in the workflow using specified ServiceAccount.
-	ServiceAccount *string `protobuf:"bytes,7,opt,name=serviceAccount" json:"serviceAccount,omitempty"`
-	// DryRun validates the workflow on the client-side without creating it. This option is not supported in API
-	DryRun *bool `protobuf:"varint,8,opt,name=dryRun" json:"dryRun,omitempty"`
-	// ServerDryRun validates the workflow on the server-side without creating it
-	ServerDryRun *bool `protobuf:"varint,9,opt,name=serverDryRun" json:"serverDryRun,omitempty"`
-	// Labels adds to metadata.labels
-	Labels *string `protobuf:"bytes,10,opt,name=labels" json:"labels,omitempty"`
-	// OwnerReference creates a metadata.ownerReference
-	OwnerReference       *v11.OwnerReference `protobuf:"bytes,11,opt,name=ownerReference" json:"ownerReference,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
-}
-
-func (m *SubmitOpts) Reset()         { *m = SubmitOpts{} }
-func (m *SubmitOpts) String() string { return proto.CompactTextString(m) }
-func (*SubmitOpts) ProtoMessage()    {}
+func (m *SubmitOpts) Reset()      { *m = SubmitOpts{} }
+func (*SubmitOpts) ProtoMessage() {}
 func (*SubmitOpts) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{65}
+	return fileDescriptor_c23edafa7e7ea072, []int{66}
 }
 func (m *SubmitOpts) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SubmitOpts) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SubmitOpts.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SubmitOpts) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SubmitOpts.Merge(m, src)
@@ -4703,103 +1912,21 @@ func (m *SubmitOpts) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SubmitOpts proto.InternalMessageInfo
 
-func (m *SubmitOpts) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *SubmitOpts) GetGenerateName() string {
-	if m != nil && m.GenerateName != nil {
-		return *m.GenerateName
-	}
-	return ""
-}
-
-func (m *SubmitOpts) GetEntrypoint() string {
-	if m != nil && m.Entrypoint != nil {
-		return *m.Entrypoint
-	}
-	return ""
-}
-
-func (m *SubmitOpts) GetParameters() []string {
-	if m != nil {
-		return m.Parameters
-	}
-	return nil
-}
-
-func (m *SubmitOpts) GetParameterFile() string {
-	if m != nil && m.ParameterFile != nil {
-		return *m.ParameterFile
-	}
-	return ""
-}
-
-func (m *SubmitOpts) GetServiceAccount() string {
-	if m != nil && m.ServiceAccount != nil {
-		return *m.ServiceAccount
-	}
-	return ""
-}
-
-func (m *SubmitOpts) GetDryRun() bool {
-	if m != nil && m.DryRun != nil {
-		return *m.DryRun
-	}
-	return false
-}
-
-func (m *SubmitOpts) GetServerDryRun() bool {
-	if m != nil && m.ServerDryRun != nil {
-		return *m.ServerDryRun
-	}
-	return false
-}
-
-func (m *SubmitOpts) GetLabels() string {
-	if m != nil && m.Labels != nil {
-		return *m.Labels
-	}
-	return ""
-}
-
-func (m *SubmitOpts) GetOwnerReference() *v11.OwnerReference {
-	if m != nil {
-		return m.OwnerReference
-	}
-	return nil
-}
-
-// SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
-type SuppliedValueFrom struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *SuppliedValueFrom) Reset()         { *m = SuppliedValueFrom{} }
-func (m *SuppliedValueFrom) String() string { return proto.CompactTextString(m) }
-func (*SuppliedValueFrom) ProtoMessage()    {}
+func (m *SuppliedValueFrom) Reset()      { *m = SuppliedValueFrom{} }
+func (*SuppliedValueFrom) ProtoMessage() {}
 func (*SuppliedValueFrom) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{66}
+	return fileDescriptor_c23edafa7e7ea072, []int{67}
 }
 func (m *SuppliedValueFrom) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SuppliedValueFrom) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SuppliedValueFrom.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SuppliedValueFrom) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SuppliedValueFrom.Merge(m, src)
@@ -4813,35 +1940,21 @@ func (m *SuppliedValueFrom) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SuppliedValueFrom proto.InternalMessageInfo
 
-// SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
-type SuspendTemplate struct {
-	// Duration is the seconds to wait before automatically resuming a template
-	Duration             *string  `protobuf:"bytes,1,opt,name=duration" json:"duration,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *SuspendTemplate) Reset()         { *m = SuspendTemplate{} }
-func (m *SuspendTemplate) String() string { return proto.CompactTextString(m) }
-func (*SuspendTemplate) ProtoMessage()    {}
+func (m *SuspendTemplate) Reset()      { *m = SuspendTemplate{} }
+func (*SuspendTemplate) ProtoMessage() {}
 func (*SuspendTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{67}
+	return fileDescriptor_c23edafa7e7ea072, []int{68}
 }
 func (m *SuspendTemplate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SuspendTemplate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SuspendTemplate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SuspendTemplate) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SuspendTemplate.Merge(m, src)
@@ -4855,44 +1968,21 @@ func (m *SuspendTemplate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SuspendTemplate proto.InternalMessageInfo
 
-func (m *SuspendTemplate) GetDuration() string {
-	if m != nil && m.Duration != nil {
-		return *m.Duration
-	}
-	return ""
-}
-
-// Synchronization holds synchronization lock configuration
-type Synchronization struct {
-	// Semaphore holds the Semaphore configuration
-	Semaphore *SemaphoreRef `protobuf:"bytes,1,opt,name=semaphore" json:"semaphore,omitempty"`
-	// Mutex holds the Mutex lock details
-	Mutex                *Mutex   `protobuf:"bytes,2,opt,name=mutex" json:"mutex,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Synchronization) Reset()         { *m = Synchronization{} }
-func (m *Synchronization) String() string { return proto.CompactTextString(m) }
-func (*Synchronization) ProtoMessage()    {}
+func (m *Synchronization) Reset()      { *m = Synchronization{} }
+func (*Synchronization) ProtoMessage() {}
 func (*Synchronization) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{68}
+	return fileDescriptor_c23edafa7e7ea072, []int{69}
 }
 func (m *Synchronization) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Synchronization) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Synchronization.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Synchronization) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Synchronization.Merge(m, src)
@@ -4906,51 +1996,21 @@ func (m *Synchronization) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Synchronization proto.InternalMessageInfo
 
-func (m *Synchronization) GetSemaphore() *SemaphoreRef {
-	if m != nil {
-		return m.Semaphore
-	}
-	return nil
-}
-
-func (m *Synchronization) GetMutex() *Mutex {
-	if m != nil {
-		return m.Mutex
-	}
-	return nil
-}
-
-// SynchronizationStatus stores the status of semaphore and mutex.
-type SynchronizationStatus struct {
-	// Semaphore stores this workflow's Semaphore holder details
-	Semaphore *SemaphoreStatus `protobuf:"bytes,1,opt,name=semaphore" json:"semaphore,omitempty"`
-	// Mutex stores this workflow's mutex holder details
-	Mutex                *MutexStatus `protobuf:"bytes,2,opt,name=mutex" json:"mutex,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
-}
-
-func (m *SynchronizationStatus) Reset()         { *m = SynchronizationStatus{} }
-func (m *SynchronizationStatus) String() string { return proto.CompactTextString(m) }
-func (*SynchronizationStatus) ProtoMessage()    {}
+func (m *SynchronizationStatus) Reset()      { *m = SynchronizationStatus{} }
+func (*SynchronizationStatus) ProtoMessage() {}
 func (*SynchronizationStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{69}
+	return fileDescriptor_c23edafa7e7ea072, []int{70}
 }
 func (m *SynchronizationStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *SynchronizationStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_SynchronizationStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *SynchronizationStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SynchronizationStatus.Merge(m, src)
@@ -4964,53 +2024,21 @@ func (m *SynchronizationStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SynchronizationStatus proto.InternalMessageInfo
 
-func (m *SynchronizationStatus) GetSemaphore() *SemaphoreStatus {
-	if m != nil {
-		return m.Semaphore
-	}
-	return nil
-}
-
-func (m *SynchronizationStatus) GetMutex() *MutexStatus {
-	if m != nil {
-		return m.Mutex
-	}
-	return nil
-}
-
-// TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
-type TTLStrategy struct {
-	// SecondsAfterCompletion is the number of seconds to live after completion
-	SecondsAfterCompletion *int32 `protobuf:"varint,1,opt,name=secondsAfterCompletion" json:"secondsAfterCompletion,omitempty"`
-	// SecondsAfterSuccess is the number of seconds to live after success
-	SecondsAfterSuccess *int32 `protobuf:"varint,2,opt,name=secondsAfterSuccess" json:"secondsAfterSuccess,omitempty"`
-	// SecondsAfterFailure is the number of seconds to live after failure
-	SecondsAfterFailure  *int32   `protobuf:"varint,3,opt,name=secondsAfterFailure" json:"secondsAfterFailure,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TTLStrategy) Reset()         { *m = TTLStrategy{} }
-func (m *TTLStrategy) String() string { return proto.CompactTextString(m) }
-func (*TTLStrategy) ProtoMessage()    {}
+func (m *TTLStrategy) Reset()      { *m = TTLStrategy{} }
+func (*TTLStrategy) ProtoMessage() {}
 func (*TTLStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{70}
+	return fileDescriptor_c23edafa7e7ea072, []int{71}
 }
 func (m *TTLStrategy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *TTLStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TTLStrategy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *TTLStrategy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_TTLStrategy.Merge(m, src)
@@ -5024,57 +2052,21 @@ func (m *TTLStrategy) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TTLStrategy proto.InternalMessageInfo
 
-func (m *TTLStrategy) GetSecondsAfterCompletion() int32 {
-	if m != nil && m.SecondsAfterCompletion != nil {
-		return *m.SecondsAfterCompletion
-	}
-	return 0
-}
-
-func (m *TTLStrategy) GetSecondsAfterSuccess() int32 {
-	if m != nil && m.SecondsAfterSuccess != nil {
-		return *m.SecondsAfterSuccess
-	}
-	return 0
-}
-
-func (m *TTLStrategy) GetSecondsAfterFailure() int32 {
-	if m != nil && m.SecondsAfterFailure != nil {
-		return *m.SecondsAfterFailure
-	}
-	return 0
-}
-
-// TarStrategy will tar and gzip the file or directory when saving
-type TarStrategy struct {
-	// CompressionLevel specifies the gzip compression level to use for the artifact.
-	// Defaults to gzip.DefaultCompression.
-	CompressionLevel     *int32   `protobuf:"varint,1,opt,name=compressionLevel" json:"compressionLevel,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TarStrategy) Reset()         { *m = TarStrategy{} }
-func (m *TarStrategy) String() string { return proto.CompactTextString(m) }
-func (*TarStrategy) ProtoMessage()    {}
+func (m *TarStrategy) Reset()      { *m = TarStrategy{} }
+func (*TarStrategy) ProtoMessage() {}
 func (*TarStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{71}
+	return fileDescriptor_c23edafa7e7ea072, []int{72}
 }
 func (m *TarStrategy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *TarStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TarStrategy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *TarStrategy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_TarStrategy.Merge(m, src)
@@ -5088,145 +2080,21 @@ func (m *TarStrategy) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TarStrategy proto.InternalMessageInfo
 
-func (m *TarStrategy) GetCompressionLevel() int32 {
-	if m != nil && m.CompressionLevel != nil {
-		return *m.CompressionLevel
-	}
-	return 0
-}
-
-// Template is a reusable and composable unit of execution in a workflow
-type Template struct {
-	// Name is the name of the template
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Template is the name of the template which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	Template *string `protobuf:"bytes,2,opt,name=template" json:"template,omitempty"`
-	// Arguments hold arguments to the template.
-	// DEPRECATED: This field is not used.
-	Arguments *Arguments `protobuf:"bytes,3,opt,name=arguments" json:"arguments,omitempty"`
-	// TemplateRef is the reference to the template resource which is used as the base of this template.
-	// DEPRECATED: This field is not used.
-	TemplateRef *TemplateRef `protobuf:"bytes,4,opt,name=templateRef" json:"templateRef,omitempty"`
-	// Inputs describe what inputs parameters and artifacts are supplied to this template
-	Inputs *Inputs `protobuf:"bytes,5,opt,name=inputs" json:"inputs,omitempty"`
-	// Outputs describe the parameters and artifacts that this template produces
-	Outputs *Outputs `protobuf:"bytes,6,opt,name=outputs" json:"outputs,omitempty"`
-	// NodeSelector is a selector to schedule this step of the workflow to be
-	// run on the selected node(s). Overrides the selector set at the workflow level.
-	NodeSelector map[string]string `protobuf:"bytes,7,rep,name=nodeSelector" json:"nodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Affinity sets the pod's scheduling constraints
-	// Overrides the affinity set at the workflow level (if any)
-	Affinity *v1.Affinity `protobuf:"bytes,8,opt,name=affinity" json:"affinity,omitempty"`
-	// Metdata sets the pods's metadata, i.e. annotations and labels
-	Metadata *Metadata `protobuf:"bytes,9,opt,name=metadata" json:"metadata,omitempty"`
-	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
-	Daemon *bool `protobuf:"varint,10,opt,name=daemon" json:"daemon,omitempty"`
-	// Steps define a series of sequential/parallel workflow steps
-	Steps []*ParallelSteps `protobuf:"bytes,11,rep,name=steps" json:"steps,omitempty"`
-	// Container is the main container image to run in the pod
-	Container *v1.Container `protobuf:"bytes,12,opt,name=container" json:"container,omitempty"`
-	// Script runs a portion of code against an interpreter
-	Script *ScriptTemplate `protobuf:"bytes,13,opt,name=script" json:"script,omitempty"`
-	// Resource template subtype which can run k8s resources
-	Resource *ResourceTemplate `protobuf:"bytes,14,opt,name=resource" json:"resource,omitempty"`
-	// DAG template subtype which runs a DAG
-	Dag *DAGTemplate `protobuf:"bytes,15,opt,name=dag" json:"dag,omitempty"`
-	// Suspend template subtype which can suspend a workflow when reaching the step
-	Suspend *SuspendTemplate `protobuf:"bytes,16,opt,name=suspend" json:"suspend,omitempty"`
-	// Volumes is a list of volumes that can be mounted by containers in a template.
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Volumes []*v1.Volume `protobuf:"bytes,17,rep,name=volumes" json:"volumes,omitempty"`
-	// InitContainers is a list of containers which run before the main container.
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	InitContainers []*UserContainer `protobuf:"bytes,18,rep,name=initContainers" json:"initContainers,omitempty"`
-	// Sidecars is a list of containers which run alongside the main container
-	// Sidecars are automatically killed when the main container completes
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Sidecars []*UserContainer `protobuf:"bytes,19,rep,name=sidecars" json:"sidecars,omitempty"`
-	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
-	// Can be overridden by individual items in Outputs. If omitted, will use the default
-	// artifact repository location configured in the controller, appended with the
-	// <workflowname>/<nodename> in the key.
-	ArchiveLocation *ArtifactLocation `protobuf:"bytes,20,opt,name=archiveLocation" json:"archiveLocation,omitempty"`
-	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
-	// before the system actively tries to terminate the pod; value must be positive integer
-	// This field is only applicable to container and script templates.
-	ActiveDeadlineSeconds *intstr.IntOrString `protobuf:"bytes,21,opt,name=activeDeadlineSeconds" json:"activeDeadlineSeconds,omitempty"`
-	// RetryStrategy describes how to retry a template when it fails
-	RetryStrategy *RetryStrategy `protobuf:"bytes,22,opt,name=retryStrategy" json:"retryStrategy,omitempty"`
-	// Parallelism limits the max total parallel pods that can execute at the same time within the
-	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
-	// pods created by those templates will not be counted towards this total.
-	Parallelism *int64 `protobuf:"varint,23,opt,name=parallelism" json:"parallelism,omitempty"`
-	// Tolerations to apply to workflow pods.
-	// +patchStrategy=merge
-	// +patchMergeKey=key
-	Tolerations []*v1.Toleration `protobuf:"bytes,24,rep,name=tolerations" json:"tolerations,omitempty"`
-	// If specified, the pod will be dispatched by specified scheduler.
-	// Or it will be dispatched by workflow scope scheduler if specified.
-	// If neither specified, the pod will be dispatched by default scheduler.
-	// +optional
-	SchedulerName *string `protobuf:"bytes,25,opt,name=schedulerName" json:"schedulerName,omitempty"`
-	// PriorityClassName to apply to workflow pods.
-	PriorityClassName *string `protobuf:"bytes,26,opt,name=priorityClassName" json:"priorityClassName,omitempty"`
-	// Priority to apply to workflow pods.
-	Priority *int32 `protobuf:"varint,27,opt,name=priority" json:"priority,omitempty"`
-	// ServiceAccountName to apply to workflow pods
-	ServiceAccountName *string `protobuf:"bytes,28,opt,name=serviceAccountName" json:"serviceAccountName,omitempty"`
-	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `protobuf:"varint,32,opt,name=automountServiceAccountToken" json:"automountServiceAccountToken,omitempty"`
-	// Executor holds configurations of the executor container.
-	Executor *ExecutorConfig `protobuf:"bytes,33,opt,name=executor" json:"executor,omitempty"`
-	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
-	// +patchStrategy=merge
-	// +patchMergeKey=ip
-	HostAliases []*v1.HostAlias `protobuf:"bytes,29,rep,name=hostAliases" json:"hostAliases,omitempty"`
-	// SecurityContext holds pod-level security attributes and common container settings.
-	// Optional: Defaults to empty.  See type description for default values of each field.
-	// +optional
-	SecurityContext *v1.PodSecurityContext `protobuf:"bytes,30,opt,name=securityContext" json:"securityContext,omitempty"`
-	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
-	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch *string `protobuf:"bytes,31,opt,name=podSpecPatch" json:"podSpecPatch,omitempty"`
-	// Metrics are a list of metrics emitted from this template
-	Metrics *Metrics `protobuf:"bytes,35,opt,name=metrics" json:"metrics,omitempty"`
-	// Synchronization holds synchronization lock configuration for this template
-	Synchronization *Synchronization `protobuf:"bytes,36,opt,name=synchronization" json:"synchronization,omitempty"`
-	// Memoize allows templates to use outputs generated from already executed templates
-	Memoize *Memoize `protobuf:"bytes,37,opt,name=memoize" json:"memoize,omitempty"`
-	// Timout allows to set the total node execution timeout duration counting from the node's start time.
-	// This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates.
-	Timeout              *string  `protobuf:"bytes,38,opt,name=timeout" json:"timeout,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Template) Reset()         { *m = Template{} }
-func (m *Template) String() string { return proto.CompactTextString(m) }
-func (*Template) ProtoMessage()    {}
+func (m *Template) Reset()      { *m = Template{} }
+func (*Template) ProtoMessage() {}
 func (*Template) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{72}
+	return fileDescriptor_c23edafa7e7ea072, []int{73}
 }
 func (m *Template) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Template) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Template.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Template) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Template.Merge(m, src)
@@ -5240,302 +2108,21 @@ func (m *Template) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Template proto.InternalMessageInfo
 
-func (m *Template) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *Template) GetTemplate() string {
-	if m != nil && m.Template != nil {
-		return *m.Template
-	}
-	return ""
-}
-
-func (m *Template) GetArguments() *Arguments {
-	if m != nil {
-		return m.Arguments
-	}
-	return nil
-}
-
-func (m *Template) GetTemplateRef() *TemplateRef {
-	if m != nil {
-		return m.TemplateRef
-	}
-	return nil
-}
-
-func (m *Template) GetInputs() *Inputs {
-	if m != nil {
-		return m.Inputs
-	}
-	return nil
-}
-
-func (m *Template) GetOutputs() *Outputs {
-	if m != nil {
-		return m.Outputs
-	}
-	return nil
-}
-
-func (m *Template) GetNodeSelector() map[string]string {
-	if m != nil {
-		return m.NodeSelector
-	}
-	return nil
-}
-
-func (m *Template) GetAffinity() *v1.Affinity {
-	if m != nil {
-		return m.Affinity
-	}
-	return nil
-}
-
-func (m *Template) GetMetadata() *Metadata {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *Template) GetDaemon() bool {
-	if m != nil && m.Daemon != nil {
-		return *m.Daemon
-	}
-	return false
-}
-
-func (m *Template) GetSteps() []*ParallelSteps {
-	if m != nil {
-		return m.Steps
-	}
-	return nil
-}
-
-func (m *Template) GetContainer() *v1.Container {
-	if m != nil {
-		return m.Container
-	}
-	return nil
-}
-
-func (m *Template) GetScript() *ScriptTemplate {
-	if m != nil {
-		return m.Script
-	}
-	return nil
-}
-
-func (m *Template) GetResource() *ResourceTemplate {
-	if m != nil {
-		return m.Resource
-	}
-	return nil
-}
-
-func (m *Template) GetDag() *DAGTemplate {
-	if m != nil {
-		return m.Dag
-	}
-	return nil
-}
-
-func (m *Template) GetSuspend() *SuspendTemplate {
-	if m != nil {
-		return m.Suspend
-	}
-	return nil
-}
-
-func (m *Template) GetVolumes() []*v1.Volume {
-	if m != nil {
-		return m.Volumes
-	}
-	return nil
-}
-
-func (m *Template) GetInitContainers() []*UserContainer {
-	if m != nil {
-		return m.InitContainers
-	}
-	return nil
-}
-
-func (m *Template) GetSidecars() []*UserContainer {
-	if m != nil {
-		return m.Sidecars
-	}
-	return nil
-}
-
-func (m *Template) GetArchiveLocation() *ArtifactLocation {
-	if m != nil {
-		return m.ArchiveLocation
-	}
-	return nil
-}
-
-func (m *Template) GetActiveDeadlineSeconds() *intstr.IntOrString {
-	if m != nil {
-		return m.ActiveDeadlineSeconds
-	}
-	return nil
-}
-
-func (m *Template) GetRetryStrategy() *RetryStrategy {
-	if m != nil {
-		return m.RetryStrategy
-	}
-	return nil
-}
-
-func (m *Template) GetParallelism() int64 {
-	if m != nil && m.Parallelism != nil {
-		return *m.Parallelism
-	}
-	return 0
-}
-
-func (m *Template) GetTolerations() []*v1.Toleration {
-	if m != nil {
-		return m.Tolerations
-	}
-	return nil
-}
-
-func (m *Template) GetSchedulerName() string {
-	if m != nil && m.SchedulerName != nil {
-		return *m.SchedulerName
-	}
-	return ""
-}
-
-func (m *Template) GetPriorityClassName() string {
-	if m != nil && m.PriorityClassName != nil {
-		return *m.PriorityClassName
-	}
-	return ""
-}
-
-func (m *Template) GetPriority() int32 {
-	if m != nil && m.Priority != nil {
-		return *m.Priority
-	}
-	return 0
-}
-
-func (m *Template) GetServiceAccountName() string {
-	if m != nil && m.ServiceAccountName != nil {
-		return *m.ServiceAccountName
-	}
-	return ""
-}
-
-func (m *Template) GetAutomountServiceAccountToken() bool {
-	if m != nil && m.AutomountServiceAccountToken != nil {
-		return *m.AutomountServiceAccountToken
-	}
-	return false
-}
-
-func (m *Template) GetExecutor() *ExecutorConfig {
-	if m != nil {
-		return m.Executor
-	}
-	return nil
-}
-
-func (m *Template) GetHostAliases() []*v1.HostAlias {
-	if m != nil {
-		return m.HostAliases
-	}
-	return nil
-}
-
-func (m *Template) GetSecurityContext() *v1.PodSecurityContext {
-	if m != nil {
-		return m.SecurityContext
-	}
-	return nil
-}
-
-func (m *Template) GetPodSpecPatch() string {
-	if m != nil && m.PodSpecPatch != nil {
-		return *m.PodSpecPatch
-	}
-	return ""
-}
-
-func (m *Template) GetMetrics() *Metrics {
-	if m != nil {
-		return m.Metrics
-	}
-	return nil
-}
-
-func (m *Template) GetSynchronization() *Synchronization {
-	if m != nil {
-		return m.Synchronization
-	}
-	return nil
-}
-
-func (m *Template) GetMemoize() *Memoize {
-	if m != nil {
-		return m.Memoize
-	}
-	return nil
-}
-
-func (m *Template) GetTimeout() string {
-	if m != nil && m.Timeout != nil {
-		return *m.Timeout
-	}
-	return ""
-}
-
-// TemplateRef is a reference of template resource.
-type TemplateRef struct {
-	// Name is the resource name of the template.
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Template is the name of referred template in the resource.
-	Template *string `protobuf:"bytes,2,opt,name=template" json:"template,omitempty"`
-	// RuntimeResolution skips validation at creation time.
-	// By enabling this option, you can create the referred workflow template before the actual runtime.
-	// DEPRECATED: This value is not used anymore and is ignored
-	RuntimeResolution *bool `protobuf:"varint,3,opt,name=runtimeResolution" json:"runtimeResolution,omitempty"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
-	ClusterScope         *bool    `protobuf:"varint,4,opt,name=clusterScope" json:"clusterScope,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TemplateRef) Reset()         { *m = TemplateRef{} }
-func (m *TemplateRef) String() string { return proto.CompactTextString(m) }
-func (*TemplateRef) ProtoMessage()    {}
+func (m *TemplateRef) Reset()      { *m = TemplateRef{} }
+func (*TemplateRef) ProtoMessage() {}
 func (*TemplateRef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{73}
+	return fileDescriptor_c23edafa7e7ea072, []int{74}
 }
 func (m *TemplateRef) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *TemplateRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_TemplateRef.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *TemplateRef) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_TemplateRef.Merge(m, src)
@@ -5549,67 +2136,21 @@ func (m *TemplateRef) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TemplateRef proto.InternalMessageInfo
 
-func (m *TemplateRef) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *TemplateRef) GetTemplate() string {
-	if m != nil && m.Template != nil {
-		return *m.Template
-	}
-	return ""
-}
-
-func (m *TemplateRef) GetRuntimeResolution() bool {
-	if m != nil && m.RuntimeResolution != nil {
-		return *m.RuntimeResolution
-	}
-	return false
-}
-
-func (m *TemplateRef) GetClusterScope() bool {
-	if m != nil && m.ClusterScope != nil {
-		return *m.ClusterScope
-	}
-	return false
-}
-
-// UserContainer is a container specified by a user.
-type UserContainer struct {
-	Container *v1.Container `protobuf:"bytes,1,opt,name=container" json:"container,omitempty"`
-	// MirrorVolumeMounts will mount the same volumes specified in the main container
-	// to the container (including artifacts), at the same mountPaths. This enables
-	// dind daemon to partially see the same filesystem as the main container in
-	// order to use features such as docker volume binding
-	MirrorVolumeMounts   *bool    `protobuf:"varint,2,opt,name=mirrorVolumeMounts" json:"mirrorVolumeMounts,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *UserContainer) Reset()         { *m = UserContainer{} }
-func (m *UserContainer) String() string { return proto.CompactTextString(m) }
-func (*UserContainer) ProtoMessage()    {}
+func (m *UserContainer) Reset()      { *m = UserContainer{} }
+func (*UserContainer) ProtoMessage() {}
 func (*UserContainer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{74}
+	return fileDescriptor_c23edafa7e7ea072, []int{75}
 }
 func (m *UserContainer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *UserContainer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_UserContainer.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *UserContainer) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_UserContainer.Merge(m, src)
@@ -5623,62 +2164,21 @@ func (m *UserContainer) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UserContainer proto.InternalMessageInfo
 
-func (m *UserContainer) GetContainer() *v1.Container {
-	if m != nil {
-		return m.Container
-	}
-	return nil
-}
-
-func (m *UserContainer) GetMirrorVolumeMounts() bool {
-	if m != nil && m.MirrorVolumeMounts != nil {
-		return *m.MirrorVolumeMounts
-	}
-	return false
-}
-
-// ValueFrom describes a location in which to obtain the value to a parameter
-type ValueFrom struct {
-	// Path in the container to retrieve an output parameter value from in container templates
-	Path *string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
-	// JSONPath of a resource to retrieve an output parameter value from in resource templates
-	JsonPath *string `protobuf:"bytes,2,opt,name=jsonPath" json:"jsonPath,omitempty"`
-	// JQFilter expression against the resource object in resource templates
-	JqFilter *string `protobuf:"bytes,3,opt,name=jqFilter" json:"jqFilter,omitempty"`
-	// Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`
-	Event *string `protobuf:"bytes,7,opt,name=event" json:"event,omitempty"`
-	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
-	// (e.g. '{{steps.mystep.outputs.myparam}}')
-	Parameter *string `protobuf:"bytes,4,opt,name=parameter" json:"parameter,omitempty"`
-	// Supplied value to be filled in directly, either through the CLI, API, etc.
-	Supplied *SuppliedValueFrom `protobuf:"bytes,6,opt,name=supplied" json:"supplied,omitempty"`
-	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default              *string  `protobuf:"bytes,5,opt,name=default" json:"default,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ValueFrom) Reset()         { *m = ValueFrom{} }
-func (m *ValueFrom) String() string { return proto.CompactTextString(m) }
-func (*ValueFrom) ProtoMessage()    {}
+func (m *ValueFrom) Reset()      { *m = ValueFrom{} }
+func (*ValueFrom) ProtoMessage() {}
 func (*ValueFrom) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{75}
+	return fileDescriptor_c23edafa7e7ea072, []int{76}
 }
 func (m *ValueFrom) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ValueFrom) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ValueFrom.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ValueFrom) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ValueFrom.Merge(m, src)
@@ -5692,89 +2192,21 @@ func (m *ValueFrom) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ValueFrom proto.InternalMessageInfo
 
-func (m *ValueFrom) GetPath() string {
-	if m != nil && m.Path != nil {
-		return *m.Path
-	}
-	return ""
-}
-
-func (m *ValueFrom) GetJsonPath() string {
-	if m != nil && m.JsonPath != nil {
-		return *m.JsonPath
-	}
-	return ""
-}
-
-func (m *ValueFrom) GetJqFilter() string {
-	if m != nil && m.JqFilter != nil {
-		return *m.JqFilter
-	}
-	return ""
-}
-
-func (m *ValueFrom) GetEvent() string {
-	if m != nil && m.Event != nil {
-		return *m.Event
-	}
-	return ""
-}
-
-func (m *ValueFrom) GetParameter() string {
-	if m != nil && m.Parameter != nil {
-		return *m.Parameter
-	}
-	return ""
-}
-
-func (m *ValueFrom) GetSupplied() *SuppliedValueFrom {
-	if m != nil {
-		return m.Supplied
-	}
-	return nil
-}
-
-func (m *ValueFrom) GetDefault() string {
-	if m != nil && m.Default != nil {
-		return *m.Default
-	}
-	return ""
-}
-
-type Version struct {
-	Version              *string  `protobuf:"bytes,1,opt,name=version" json:"version,omitempty"`
-	BuildDate            *string  `protobuf:"bytes,2,opt,name=buildDate" json:"buildDate,omitempty"`
-	GitCommit            *string  `protobuf:"bytes,3,opt,name=gitCommit" json:"gitCommit,omitempty"`
-	GitTag               *string  `protobuf:"bytes,4,opt,name=gitTag" json:"gitTag,omitempty"`
-	GitTreeState         *string  `protobuf:"bytes,5,opt,name=gitTreeState" json:"gitTreeState,omitempty"`
-	GoVersion            *string  `protobuf:"bytes,6,opt,name=goVersion" json:"goVersion,omitempty"`
-	Compiler             *string  `protobuf:"bytes,7,opt,name=compiler" json:"compiler,omitempty"`
-	Platform             *string  `protobuf:"bytes,8,opt,name=platform" json:"platform,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Version) Reset()         { *m = Version{} }
-func (m *Version) String() string { return proto.CompactTextString(m) }
-func (*Version) ProtoMessage()    {}
+func (m *Version) Reset()      { *m = Version{} }
+func (*Version) ProtoMessage() {}
 func (*Version) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{76}
+	return fileDescriptor_c23edafa7e7ea072, []int{77}
 }
 func (m *Version) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Version) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Version.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Version) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Version.Merge(m, src)
@@ -5788,91 +2220,21 @@ func (m *Version) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Version proto.InternalMessageInfo
 
-func (m *Version) GetVersion() string {
-	if m != nil && m.Version != nil {
-		return *m.Version
-	}
-	return ""
-}
-
-func (m *Version) GetBuildDate() string {
-	if m != nil && m.BuildDate != nil {
-		return *m.BuildDate
-	}
-	return ""
-}
-
-func (m *Version) GetGitCommit() string {
-	if m != nil && m.GitCommit != nil {
-		return *m.GitCommit
-	}
-	return ""
-}
-
-func (m *Version) GetGitTag() string {
-	if m != nil && m.GitTag != nil {
-		return *m.GitTag
-	}
-	return ""
-}
-
-func (m *Version) GetGitTreeState() string {
-	if m != nil && m.GitTreeState != nil {
-		return *m.GitTreeState
-	}
-	return ""
-}
-
-func (m *Version) GetGoVersion() string {
-	if m != nil && m.GoVersion != nil {
-		return *m.GoVersion
-	}
-	return ""
-}
-
-func (m *Version) GetCompiler() string {
-	if m != nil && m.Compiler != nil {
-		return *m.Compiler
-	}
-	return ""
-}
-
-func (m *Version) GetPlatform() string {
-	if m != nil && m.Platform != nil {
-		return *m.Platform
-	}
-	return ""
-}
-
-// VolumeClaimGC describes how to delete volumes from completed Workflows
-type VolumeClaimGC struct {
-	// Strategy is the strategy to use. One of "OnWorkflowCompletion", "OnWorkflowSuccess"
-	Strategy             *string  `protobuf:"bytes,1,opt,name=strategy" json:"strategy,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *VolumeClaimGC) Reset()         { *m = VolumeClaimGC{} }
-func (m *VolumeClaimGC) String() string { return proto.CompactTextString(m) }
-func (*VolumeClaimGC) ProtoMessage()    {}
+func (m *VolumeClaimGC) Reset()      { *m = VolumeClaimGC{} }
+func (*VolumeClaimGC) ProtoMessage() {}
 func (*VolumeClaimGC) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{77}
+	return fileDescriptor_c23edafa7e7ea072, []int{78}
 }
 func (m *VolumeClaimGC) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *VolumeClaimGC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_VolumeClaimGC.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *VolumeClaimGC) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_VolumeClaimGC.Merge(m, src)
@@ -5886,49 +2248,21 @@ func (m *VolumeClaimGC) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_VolumeClaimGC proto.InternalMessageInfo
 
-func (m *VolumeClaimGC) GetStrategy() string {
-	if m != nil && m.Strategy != nil {
-		return *m.Strategy
-	}
-	return ""
-}
-
-// Workflow is the definition of a workflow resource
-// +genclient
-// +genclient:noStatus
-// +kubebuilder:resource:shortName=wf
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.phase",description="Status of the workflow"
-// +kubebuilder:printcolumn:name="Age",type="date",format="date-time",JSONPath=".status.startedAt",description="When the workflow was started"
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type Workflow struct {
-	Metadata             *v11.ObjectMeta `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Spec                 *WorkflowSpec   `protobuf:"bytes,2,opt,name=spec" json:"spec,omitempty"`
-	Status               *WorkflowStatus `protobuf:"bytes,3,opt,name=status" json:"status,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *Workflow) Reset()         { *m = Workflow{} }
-func (m *Workflow) String() string { return proto.CompactTextString(m) }
-func (*Workflow) ProtoMessage()    {}
+func (m *Workflow) Reset()      { *m = Workflow{} }
+func (*Workflow) ProtoMessage() {}
 func (*Workflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{78}
+	return fileDescriptor_c23edafa7e7ea072, []int{79}
 }
 func (m *Workflow) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *Workflow) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Workflow.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *Workflow) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_Workflow.Merge(m, src)
@@ -5942,60 +2276,21 @@ func (m *Workflow) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Workflow proto.InternalMessageInfo
 
-func (m *Workflow) GetMetadata() *v11.ObjectMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *Workflow) GetSpec() *WorkflowSpec {
-	if m != nil {
-		return m.Spec
-	}
-	return nil
-}
-
-func (m *Workflow) GetStatus() *WorkflowStatus {
-	if m != nil {
-		return m.Status
-	}
-	return nil
-}
-
-// WorkflowEventBinding is the definition of an event resource
-// +genclient
-// +genclient:noStatus
-// +kubebuilder:resource:shortName=wfeb
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type WorkflowEventBinding struct {
-	Metadata             *v11.ObjectMeta           `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Spec                 *WorkflowEventBindingSpec `protobuf:"bytes,2,opt,name=spec" json:"spec,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
-	XXX_unrecognized     []byte                    `json:"-"`
-	XXX_sizecache        int32                     `json:"-"`
-}
-
-func (m *WorkflowEventBinding) Reset()         { *m = WorkflowEventBinding{} }
-func (m *WorkflowEventBinding) String() string { return proto.CompactTextString(m) }
-func (*WorkflowEventBinding) ProtoMessage()    {}
+func (m *WorkflowEventBinding) Reset()      { *m = WorkflowEventBinding{} }
+func (*WorkflowEventBinding) ProtoMessage() {}
 func (*WorkflowEventBinding) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{79}
+	return fileDescriptor_c23edafa7e7ea072, []int{80}
 }
 func (m *WorkflowEventBinding) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowEventBinding) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowEventBinding.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowEventBinding) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowEventBinding.Merge(m, src)
@@ -6009,51 +2304,21 @@ func (m *WorkflowEventBinding) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowEventBinding proto.InternalMessageInfo
 
-func (m *WorkflowEventBinding) GetMetadata() *v11.ObjectMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *WorkflowEventBinding) GetSpec() *WorkflowEventBindingSpec {
-	if m != nil {
-		return m.Spec
-	}
-	return nil
-}
-
-// WorkflowEventBindingList is list of event resources
-// +kubebuilder:resource:shortName=wfebs
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type WorkflowEventBindingList struct {
-	Metadata             *v11.ListMeta           `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Items                []*WorkflowEventBinding `protobuf:"bytes,2,rep,name=items" json:"items,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
-	XXX_unrecognized     []byte                  `json:"-"`
-	XXX_sizecache        int32                   `json:"-"`
-}
-
-func (m *WorkflowEventBindingList) Reset()         { *m = WorkflowEventBindingList{} }
-func (m *WorkflowEventBindingList) String() string { return proto.CompactTextString(m) }
-func (*WorkflowEventBindingList) ProtoMessage()    {}
+func (m *WorkflowEventBindingList) Reset()      { *m = WorkflowEventBindingList{} }
+func (*WorkflowEventBindingList) ProtoMessage() {}
 func (*WorkflowEventBindingList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{80}
+	return fileDescriptor_c23edafa7e7ea072, []int{81}
 }
 func (m *WorkflowEventBindingList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowEventBindingList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowEventBindingList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowEventBindingList) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowEventBindingList.Merge(m, src)
@@ -6067,50 +2332,21 @@ func (m *WorkflowEventBindingList) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowEventBindingList proto.InternalMessageInfo
 
-func (m *WorkflowEventBindingList) GetMetadata() *v11.ListMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *WorkflowEventBindingList) GetItems() []*WorkflowEventBinding {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-type WorkflowEventBindingSpec struct {
-	// Event is the event to bind to
-	Event *Event `protobuf:"bytes,1,opt,name=event" json:"event,omitempty"`
-	// Submit is the workflow template to submit
-	Submit               *Submit  `protobuf:"bytes,2,opt,name=submit" json:"submit,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *WorkflowEventBindingSpec) Reset()         { *m = WorkflowEventBindingSpec{} }
-func (m *WorkflowEventBindingSpec) String() string { return proto.CompactTextString(m) }
-func (*WorkflowEventBindingSpec) ProtoMessage()    {}
+func (m *WorkflowEventBindingSpec) Reset()      { *m = WorkflowEventBindingSpec{} }
+func (*WorkflowEventBindingSpec) ProtoMessage() {}
 func (*WorkflowEventBindingSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{81}
+	return fileDescriptor_c23edafa7e7ea072, []int{82}
 }
 func (m *WorkflowEventBindingSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowEventBindingSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowEventBindingSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowEventBindingSpec) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowEventBindingSpec.Merge(m, src)
@@ -6124,50 +2360,21 @@ func (m *WorkflowEventBindingSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowEventBindingSpec proto.InternalMessageInfo
 
-func (m *WorkflowEventBindingSpec) GetEvent() *Event {
-	if m != nil {
-		return m.Event
-	}
-	return nil
-}
-
-func (m *WorkflowEventBindingSpec) GetSubmit() *Submit {
-	if m != nil {
-		return m.Submit
-	}
-	return nil
-}
-
-// WorkflowList is list of Workflow resources
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type WorkflowList struct {
-	Metadata             *v11.ListMeta `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Items                []*Workflow   `protobuf:"bytes,2,rep,name=items" json:"items,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
-}
-
-func (m *WorkflowList) Reset()         { *m = WorkflowList{} }
-func (m *WorkflowList) String() string { return proto.CompactTextString(m) }
-func (*WorkflowList) ProtoMessage()    {}
+func (m *WorkflowList) Reset()      { *m = WorkflowList{} }
+func (*WorkflowList) ProtoMessage() {}
 func (*WorkflowList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{82}
+	return fileDescriptor_c23edafa7e7ea072, []int{83}
 }
 func (m *WorkflowList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowList) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowList.Merge(m, src)
@@ -6181,170 +2388,21 @@ func (m *WorkflowList) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowList proto.InternalMessageInfo
 
-func (m *WorkflowList) GetMetadata() *v11.ListMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *WorkflowList) GetItems() []*Workflow {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-// WorkflowSpec is the specification of a Workflow.
-type WorkflowSpec struct {
-	// Templates is a list of workflow templates used in a workflow
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Templates []*Template `protobuf:"bytes,1,rep,name=templates" json:"templates,omitempty"`
-	// Entrypoint is a template reference to the starting point of the workflow.
-	Entrypoint *string `protobuf:"bytes,2,opt,name=entrypoint" json:"entrypoint,omitempty"`
-	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
-	// Parameters are referencable globally using the 'workflow' variable prefix.
-	// e.g. {{workflow.parameters.myparam}}
-	Arguments *Arguments `protobuf:"bytes,3,opt,name=arguments" json:"arguments,omitempty"`
-	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
-	ServiceAccountName *string `protobuf:"bytes,4,opt,name=serviceAccountName" json:"serviceAccountName,omitempty"`
-	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `protobuf:"varint,28,opt,name=automountServiceAccountToken" json:"automountServiceAccountToken,omitempty"`
-	// Executor holds configurations of executor containers of the workflow.
-	Executor *ExecutorConfig `protobuf:"bytes,29,opt,name=executor" json:"executor,omitempty"`
-	// Volumes is a list of volumes that can be mounted by containers in a workflow.
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	Volumes []*v1.Volume `protobuf:"bytes,5,rep,name=volumes" json:"volumes,omitempty"`
-	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
-	// The Workflow controller will create the claims at the beginning of the workflow
-	// and delete the claims upon completion of the workflow
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	VolumeClaimTemplates []*v1.PersistentVolumeClaim `protobuf:"bytes,6,rep,name=volumeClaimTemplates" json:"volumeClaimTemplates,omitempty"`
-	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
-	Parallelism *int64 `protobuf:"varint,7,opt,name=parallelism" json:"parallelism,omitempty"`
-	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
-	ArtifactRepositoryRef *ArtifactRepositoryRef `protobuf:"bytes,8,opt,name=artifactRepositoryRef" json:"artifactRepositoryRef,omitempty"`
-	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow
-	Suspend *bool `protobuf:"varint,9,opt,name=suspend" json:"suspend,omitempty"`
-	// NodeSelector is a selector which will result in all pods of the workflow
-	// to be scheduled on the selected node(s). This is able to be overridden by
-	// a nodeSelector specified in the template.
-	NodeSelector map[string]string `protobuf:"bytes,10,rep,name=nodeSelector" json:"nodeSelector,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Affinity sets the scheduling constraints for all pods in the workflow.
-	// Can be overridden by an affinity specified in the template
-	Affinity *v1.Affinity `protobuf:"bytes,11,opt,name=affinity" json:"affinity,omitempty"`
-	// Tolerations to apply to workflow pods.
-	// +patchStrategy=merge
-	// +patchMergeKey=key
-	Tolerations []*v1.Toleration `protobuf:"bytes,12,rep,name=tolerations" json:"tolerations,omitempty"`
-	// ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
-	// in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
-	// can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.
-	// More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-	// +patchStrategy=merge
-	// +patchMergeKey=name
-	ImagePullSecrets []*v1.LocalObjectReference `protobuf:"bytes,13,rep,name=imagePullSecrets" json:"imagePullSecrets,omitempty"`
-	// Host networking requested for this workflow pod. Default to false.
-	HostNetwork *bool `protobuf:"varint,14,opt,name=hostNetwork" json:"hostNetwork,omitempty"`
-	// Set DNS policy for the pod.
-	// Defaults to "ClusterFirst".
-	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
-	// DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
-	// To have DNS options set along with hostNetwork, you have to specify DNS policy
-	// explicitly to 'ClusterFirstWithHostNet'.
-	DnsPolicy *string `protobuf:"bytes,15,opt,name=dnsPolicy" json:"dnsPolicy,omitempty"`
-	// PodDNSConfig defines the DNS parameters of a pod in addition to
-	// those generated from DNSPolicy.
-	DnsConfig *v1.PodDNSConfig `protobuf:"bytes,16,opt,name=dnsConfig" json:"dnsConfig,omitempty"`
-	// OnExit is a template reference which is invoked at the end of the
-	// workflow, irrespective of the success, failure, or error of the
-	// primary workflow.
-	OnExit *string `protobuf:"bytes,17,opt,name=onExit" json:"onExit,omitempty"`
-	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
-	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
-	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
-	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
-	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
-	TtlSecondsAfterFinished *int32 `protobuf:"varint,18,opt,name=ttlSecondsAfterFinished" json:"ttlSecondsAfterFinished,omitempty"`
-	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
-	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
-	// deleted after the time to live expires. If this field is unset,
-	// the controller config map will hold the default values.
-	TtlStrategy *TTLStrategy `protobuf:"bytes,30,opt,name=ttlStrategy" json:"ttlStrategy,omitempty"`
-	// Optional duration in seconds relative to the workflow start time which the workflow is
-	// allowed to run before the controller terminates the workflow. A value of zero is used to
-	// terminate a Running workflow
-	ActiveDeadlineSeconds *int64 `protobuf:"varint,19,opt,name=activeDeadlineSeconds" json:"activeDeadlineSeconds,omitempty"`
-	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
-	Priority *int32 `protobuf:"varint,20,opt,name=priority" json:"priority,omitempty"`
-	// Set scheduler name for all pods.
-	// Will be overridden if container/script template's scheduler name is set.
-	// Default scheduler will be used if neither specified.
-	// +optional
-	SchedulerName *string `protobuf:"bytes,21,opt,name=schedulerName" json:"schedulerName,omitempty"`
-	// PodGC describes the strategy to use when to deleting completed pods
-	PodGC *PodGC `protobuf:"bytes,22,opt,name=podGC" json:"podGC,omitempty"`
-	// PriorityClassName to apply to workflow pods.
-	PodPriorityClassName *string `protobuf:"bytes,23,opt,name=podPriorityClassName" json:"podPriorityClassName,omitempty"`
-	// Priority to apply to workflow pods.
-	PodPriority *int32 `protobuf:"varint,24,opt,name=podPriority" json:"podPriority,omitempty"`
-	// +patchStrategy=merge
-	// +patchMergeKey=ip
-	HostAliases []*v1.HostAlias `protobuf:"bytes,25,rep,name=hostAliases" json:"hostAliases,omitempty"`
-	// SecurityContext holds pod-level security attributes and common container settings.
-	// Optional: Defaults to empty.  See type description for default values of each field.
-	// +optional
-	SecurityContext *v1.PodSecurityContext `protobuf:"bytes,26,opt,name=securityContext" json:"securityContext,omitempty"`
-	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
-	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch *string `protobuf:"bytes,27,opt,name=podSpecPatch" json:"podSpecPatch,omitempty"`
-	// PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
-	// Controller will automatically add the selector with workflow name, if selector is empty.
-	// Optional: Defaults to empty.
-	// +optional
-	PodDisruptionBudget *v1beta1.PodDisruptionBudgetSpec `protobuf:"bytes,31,opt,name=podDisruptionBudget" json:"podDisruptionBudget,omitempty"`
-	// Metrics are a list of metrics emitted from this Workflow
-	Metrics *Metrics `protobuf:"bytes,32,opt,name=metrics" json:"metrics,omitempty"`
-	// Shutdown will shutdown the workflow according to its ShutdownStrategy
-	Shutdown *string `protobuf:"bytes,33,opt,name=shutdown" json:"shutdown,omitempty"`
-	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
-	WorkflowTemplateRef *WorkflowTemplateRef `protobuf:"bytes,34,opt,name=workflowTemplateRef" json:"workflowTemplateRef,omitempty"`
-	// Synchronization holds synchronization lock configuration for this Workflow
-	Synchronization *Synchronization `protobuf:"bytes,35,opt,name=synchronization" json:"synchronization,omitempty"`
-	// VolumeClaimGC describes the strategy to use when to deleting volumes from completed workflows
-	VolumeClaimGC *VolumeClaimGC `protobuf:"bytes,36,opt,name=volumeClaimGC" json:"volumeClaimGC,omitempty"`
-	// RetryStrategy for all templates in the workflow.
-	RetryStrategy        *RetryStrategy `protobuf:"bytes,37,opt,name=retryStrategy" json:"retryStrategy,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *WorkflowSpec) Reset()         { *m = WorkflowSpec{} }
-func (m *WorkflowSpec) String() string { return proto.CompactTextString(m) }
-func (*WorkflowSpec) ProtoMessage()    {}
+func (m *WorkflowSpec) Reset()      { *m = WorkflowSpec{} }
+func (*WorkflowSpec) ProtoMessage() {}
 func (*WorkflowSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{83}
+	return fileDescriptor_c23edafa7e7ea072, []int{84}
 }
 func (m *WorkflowSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowSpec) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowSpec.Merge(m, src)
@@ -6358,324 +2416,21 @@ func (m *WorkflowSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowSpec proto.InternalMessageInfo
 
-func (m *WorkflowSpec) GetTemplates() []*Template {
-	if m != nil {
-		return m.Templates
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetEntrypoint() string {
-	if m != nil && m.Entrypoint != nil {
-		return *m.Entrypoint
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetArguments() *Arguments {
-	if m != nil {
-		return m.Arguments
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetServiceAccountName() string {
-	if m != nil && m.ServiceAccountName != nil {
-		return *m.ServiceAccountName
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetAutomountServiceAccountToken() bool {
-	if m != nil && m.AutomountServiceAccountToken != nil {
-		return *m.AutomountServiceAccountToken
-	}
-	return false
-}
-
-func (m *WorkflowSpec) GetExecutor() *ExecutorConfig {
-	if m != nil {
-		return m.Executor
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetVolumes() []*v1.Volume {
-	if m != nil {
-		return m.Volumes
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetVolumeClaimTemplates() []*v1.PersistentVolumeClaim {
-	if m != nil {
-		return m.VolumeClaimTemplates
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetParallelism() int64 {
-	if m != nil && m.Parallelism != nil {
-		return *m.Parallelism
-	}
-	return 0
-}
-
-func (m *WorkflowSpec) GetArtifactRepositoryRef() *ArtifactRepositoryRef {
-	if m != nil {
-		return m.ArtifactRepositoryRef
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetSuspend() bool {
-	if m != nil && m.Suspend != nil {
-		return *m.Suspend
-	}
-	return false
-}
-
-func (m *WorkflowSpec) GetNodeSelector() map[string]string {
-	if m != nil {
-		return m.NodeSelector
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetAffinity() *v1.Affinity {
-	if m != nil {
-		return m.Affinity
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetTolerations() []*v1.Toleration {
-	if m != nil {
-		return m.Tolerations
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetImagePullSecrets() []*v1.LocalObjectReference {
-	if m != nil {
-		return m.ImagePullSecrets
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetHostNetwork() bool {
-	if m != nil && m.HostNetwork != nil {
-		return *m.HostNetwork
-	}
-	return false
-}
-
-func (m *WorkflowSpec) GetDnsPolicy() string {
-	if m != nil && m.DnsPolicy != nil {
-		return *m.DnsPolicy
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetDnsConfig() *v1.PodDNSConfig {
-	if m != nil {
-		return m.DnsConfig
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetOnExit() string {
-	if m != nil && m.OnExit != nil {
-		return *m.OnExit
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetTtlSecondsAfterFinished() int32 {
-	if m != nil && m.TtlSecondsAfterFinished != nil {
-		return *m.TtlSecondsAfterFinished
-	}
-	return 0
-}
-
-func (m *WorkflowSpec) GetTtlStrategy() *TTLStrategy {
-	if m != nil {
-		return m.TtlStrategy
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetActiveDeadlineSeconds() int64 {
-	if m != nil && m.ActiveDeadlineSeconds != nil {
-		return *m.ActiveDeadlineSeconds
-	}
-	return 0
-}
-
-func (m *WorkflowSpec) GetPriority() int32 {
-	if m != nil && m.Priority != nil {
-		return *m.Priority
-	}
-	return 0
-}
-
-func (m *WorkflowSpec) GetSchedulerName() string {
-	if m != nil && m.SchedulerName != nil {
-		return *m.SchedulerName
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetPodGC() *PodGC {
-	if m != nil {
-		return m.PodGC
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetPodPriorityClassName() string {
-	if m != nil && m.PodPriorityClassName != nil {
-		return *m.PodPriorityClassName
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetPodPriority() int32 {
-	if m != nil && m.PodPriority != nil {
-		return *m.PodPriority
-	}
-	return 0
-}
-
-func (m *WorkflowSpec) GetHostAliases() []*v1.HostAlias {
-	if m != nil {
-		return m.HostAliases
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetSecurityContext() *v1.PodSecurityContext {
-	if m != nil {
-		return m.SecurityContext
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetPodSpecPatch() string {
-	if m != nil && m.PodSpecPatch != nil {
-		return *m.PodSpecPatch
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetPodDisruptionBudget() *v1beta1.PodDisruptionBudgetSpec {
-	if m != nil {
-		return m.PodDisruptionBudget
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetMetrics() *Metrics {
-	if m != nil {
-		return m.Metrics
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetShutdown() string {
-	if m != nil && m.Shutdown != nil {
-		return *m.Shutdown
-	}
-	return ""
-}
-
-func (m *WorkflowSpec) GetWorkflowTemplateRef() *WorkflowTemplateRef {
-	if m != nil {
-		return m.WorkflowTemplateRef
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetSynchronization() *Synchronization {
-	if m != nil {
-		return m.Synchronization
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
-	if m != nil {
-		return m.VolumeClaimGC
-	}
-	return nil
-}
-
-func (m *WorkflowSpec) GetRetryStrategy() *RetryStrategy {
-	if m != nil {
-		return m.RetryStrategy
-	}
-	return nil
-}
-
-// WorkflowStatus contains overall status information about a workflow
-type WorkflowStatus struct {
-	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
-	Phase *string `protobuf:"bytes,1,opt,name=phase" json:"phase,omitempty"`
-	// Time at which this workflow started
-	StartedAt *v11.Time `protobuf:"bytes,2,opt,name=startedAt" json:"startedAt,omitempty"`
-	// Time at which this workflow completed
-	FinishedAt *v11.Time `protobuf:"bytes,3,opt,name=finishedAt" json:"finishedAt,omitempty"`
-	// EstimatedDuration in seconds.
-	EstimatedDuration *int64 `protobuf:"varint,16,opt,name=estimatedDuration" json:"estimatedDuration,omitempty"`
-	// A human readable message indicating details about why the workflow is in this condition.
-	Message *string `protobuf:"bytes,4,opt,name=message" json:"message,omitempty"`
-	// Compressed and base64 decoded Nodes map
-	CompressedNodes *string `protobuf:"bytes,5,opt,name=compressedNodes" json:"compressedNodes,omitempty"`
-	// Nodes is a mapping between a node ID and the node's status.
-	Nodes map[string]*NodeStatus `protobuf:"bytes,6,rep,name=nodes" json:"nodes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.
-	// This will actually be populated with a hash of the offloaded data.
-	OffloadNodeStatusVersion *string `protobuf:"bytes,10,opt,name=offloadNodeStatusVersion" json:"offloadNodeStatusVersion,omitempty"`
-	// StoredTemplates is a mapping between a template ref and the node's status.
-	StoredTemplates map[string]*Template `protobuf:"bytes,9,rep,name=storedTemplates" json:"storedTemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
-	// The contents of this list are drained at the end of the workflow.
-	PersistentVolumeClaims []*v1.Volume `protobuf:"bytes,7,rep,name=persistentVolumeClaims" json:"persistentVolumeClaims,omitempty"`
-	// Outputs captures output values and artifact locations produced by the workflow via global outputs
-	Outputs *Outputs `protobuf:"bytes,8,opt,name=outputs" json:"outputs,omitempty"`
-	// Conditions is a list of conditions the Workflow may have
-	Conditions []*Condition `protobuf:"bytes,13,rep,name=conditions" json:"conditions,omitempty"`
-	// ResourcesDuration is the total for the workflow
-	ResourcesDuration map[string]int64 `protobuf:"bytes,12,rep,name=resourcesDuration" json:"resourcesDuration,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
-	StoredWorkflowTemplateSpec *WorkflowSpec `protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec" json:"storedWorkflowTemplateSpec,omitempty"`
-	// Synchronization stores the status of synchronization locks
-	Synchronization      *SynchronizationStatus `protobuf:"bytes,15,opt,name=synchronization" json:"synchronization,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
-	XXX_unrecognized     []byte                 `json:"-"`
-	XXX_sizecache        int32                  `json:"-"`
-}
-
-func (m *WorkflowStatus) Reset()         { *m = WorkflowStatus{} }
-func (m *WorkflowStatus) String() string { return proto.CompactTextString(m) }
-func (*WorkflowStatus) ProtoMessage()    {}
+func (m *WorkflowStatus) Reset()      { *m = WorkflowStatus{} }
+func (*WorkflowStatus) ProtoMessage() {}
 func (*WorkflowStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{84}
+	return fileDescriptor_c23edafa7e7ea072, []int{85}
 }
 func (m *WorkflowStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowStatus.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowStatus) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowStatus.Merge(m, src)
@@ -6689,162 +2444,21 @@ func (m *WorkflowStatus) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowStatus proto.InternalMessageInfo
 
-func (m *WorkflowStatus) GetPhase() string {
-	if m != nil && m.Phase != nil {
-		return *m.Phase
-	}
-	return ""
-}
-
-func (m *WorkflowStatus) GetStartedAt() *v11.Time {
-	if m != nil {
-		return m.StartedAt
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetFinishedAt() *v11.Time {
-	if m != nil {
-		return m.FinishedAt
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetEstimatedDuration() int64 {
-	if m != nil && m.EstimatedDuration != nil {
-		return *m.EstimatedDuration
-	}
-	return 0
-}
-
-func (m *WorkflowStatus) GetMessage() string {
-	if m != nil && m.Message != nil {
-		return *m.Message
-	}
-	return ""
-}
-
-func (m *WorkflowStatus) GetCompressedNodes() string {
-	if m != nil && m.CompressedNodes != nil {
-		return *m.CompressedNodes
-	}
-	return ""
-}
-
-func (m *WorkflowStatus) GetNodes() map[string]*NodeStatus {
-	if m != nil {
-		return m.Nodes
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetOffloadNodeStatusVersion() string {
-	if m != nil && m.OffloadNodeStatusVersion != nil {
-		return *m.OffloadNodeStatusVersion
-	}
-	return ""
-}
-
-func (m *WorkflowStatus) GetStoredTemplates() map[string]*Template {
-	if m != nil {
-		return m.StoredTemplates
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetPersistentVolumeClaims() []*v1.Volume {
-	if m != nil {
-		return m.PersistentVolumeClaims
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetOutputs() *Outputs {
-	if m != nil {
-		return m.Outputs
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetConditions() []*Condition {
-	if m != nil {
-		return m.Conditions
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetResourcesDuration() map[string]int64 {
-	if m != nil {
-		return m.ResourcesDuration
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetStoredWorkflowTemplateSpec() *WorkflowSpec {
-	if m != nil {
-		return m.StoredWorkflowTemplateSpec
-	}
-	return nil
-}
-
-func (m *WorkflowStatus) GetSynchronization() *SynchronizationStatus {
-	if m != nil {
-		return m.Synchronization
-	}
-	return nil
-}
-
-// WorkflowStep is a reference to a template to execute in a series of step
-type WorkflowStep struct {
-	// Name of the step
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Template is the name of the template to execute as the step
-	Template *string `protobuf:"bytes,2,opt,name=template" json:"template,omitempty"`
-	// Arguments hold arguments to the template
-	Arguments *Arguments `protobuf:"bytes,3,opt,name=arguments" json:"arguments,omitempty"`
-	// TemplateRef is the reference to the template resource to execute as the step.
-	TemplateRef *TemplateRef `protobuf:"bytes,4,opt,name=templateRef" json:"templateRef,omitempty"`
-	// WithItems expands a step into multiple parallel steps from the items in the list
-	WithItems []*Item `protobuf:"bytes,5,rep,name=withItems" json:"withItems,omitempty"`
-	// WithParam expands a step into multiple parallel steps from the value in the parameter,
-	// which is expected to be a JSON list.
-	WithParam *string `protobuf:"bytes,6,opt,name=withParam" json:"withParam,omitempty"`
-	// WithSequence expands a step into a numeric sequence
-	WithSequence *Sequence `protobuf:"bytes,7,opt,name=withSequence" json:"withSequence,omitempty"`
-	// When is an expression in which the step should conditionally execute
-	When *string `protobuf:"bytes,8,opt,name=when" json:"when,omitempty"`
-	// ContinueOn makes argo to proceed with the following step even if this step fails.
-	// Errors and Failed states can be specified
-	ContinueOn *ContinueOn `protobuf:"bytes,9,opt,name=continueOn" json:"continueOn,omitempty"`
-	// OnExit is a template reference which is invoked at the end of the
-	// template, irrespective of the success, failure, or error of the
-	// primary template.
-	OnExit               *string  `protobuf:"bytes,11,opt,name=onExit" json:"onExit,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *WorkflowStep) Reset()         { *m = WorkflowStep{} }
-func (m *WorkflowStep) String() string { return proto.CompactTextString(m) }
-func (*WorkflowStep) ProtoMessage()    {}
+func (m *WorkflowStep) Reset()      { *m = WorkflowStep{} }
+func (*WorkflowStep) ProtoMessage() {}
 func (*WorkflowStep) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{85}
+	return fileDescriptor_c23edafa7e7ea072, []int{86}
 }
 func (m *WorkflowStep) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowStep) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowStep.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowStep) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowStep.Merge(m, src)
@@ -6858,109 +2472,21 @@ func (m *WorkflowStep) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowStep proto.InternalMessageInfo
 
-func (m *WorkflowStep) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *WorkflowStep) GetTemplate() string {
-	if m != nil && m.Template != nil {
-		return *m.Template
-	}
-	return ""
-}
-
-func (m *WorkflowStep) GetArguments() *Arguments {
-	if m != nil {
-		return m.Arguments
-	}
-	return nil
-}
-
-func (m *WorkflowStep) GetTemplateRef() *TemplateRef {
-	if m != nil {
-		return m.TemplateRef
-	}
-	return nil
-}
-
-func (m *WorkflowStep) GetWithItems() []*Item {
-	if m != nil {
-		return m.WithItems
-	}
-	return nil
-}
-
-func (m *WorkflowStep) GetWithParam() string {
-	if m != nil && m.WithParam != nil {
-		return *m.WithParam
-	}
-	return ""
-}
-
-func (m *WorkflowStep) GetWithSequence() *Sequence {
-	if m != nil {
-		return m.WithSequence
-	}
-	return nil
-}
-
-func (m *WorkflowStep) GetWhen() string {
-	if m != nil && m.When != nil {
-		return *m.When
-	}
-	return ""
-}
-
-func (m *WorkflowStep) GetContinueOn() *ContinueOn {
-	if m != nil {
-		return m.ContinueOn
-	}
-	return nil
-}
-
-func (m *WorkflowStep) GetOnExit() string {
-	if m != nil && m.OnExit != nil {
-		return *m.OnExit
-	}
-	return ""
-}
-
-// WorkflowTemplate is the definition of a workflow template resource
-// +genclient
-// +genclient:noStatus
-// +kubebuilder:resource:shortName=wftmpl
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type WorkflowTemplate struct {
-	Metadata             *v11.ObjectMeta       `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Spec                 *WorkflowTemplateSpec `protobuf:"bytes,2,opt,name=spec" json:"spec,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
-}
-
-func (m *WorkflowTemplate) Reset()         { *m = WorkflowTemplate{} }
-func (m *WorkflowTemplate) String() string { return proto.CompactTextString(m) }
-func (*WorkflowTemplate) ProtoMessage()    {}
+func (m *WorkflowTemplate) Reset()      { *m = WorkflowTemplate{} }
+func (*WorkflowTemplate) ProtoMessage() {}
 func (*WorkflowTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{86}
+	return fileDescriptor_c23edafa7e7ea072, []int{87}
 }
 func (m *WorkflowTemplate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowTemplate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowTemplate.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowTemplate) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowTemplate.Merge(m, src)
@@ -6974,50 +2500,21 @@ func (m *WorkflowTemplate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowTemplate proto.InternalMessageInfo
 
-func (m *WorkflowTemplate) GetMetadata() *v11.ObjectMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *WorkflowTemplate) GetSpec() *WorkflowTemplateSpec {
-	if m != nil {
-		return m.Spec
-	}
-	return nil
-}
-
-// WorkflowTemplateList is list of WorkflowTemplate resources
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type WorkflowTemplateList struct {
-	Metadata             *v11.ListMeta       `protobuf:"bytes,1,opt,name=metadata" json:"metadata,omitempty"`
-	Items                []*WorkflowTemplate `protobuf:"bytes,2,rep,name=items" json:"items,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
-}
-
-func (m *WorkflowTemplateList) Reset()         { *m = WorkflowTemplateList{} }
-func (m *WorkflowTemplateList) String() string { return proto.CompactTextString(m) }
-func (*WorkflowTemplateList) ProtoMessage()    {}
+func (m *WorkflowTemplateList) Reset()      { *m = WorkflowTemplateList{} }
+func (*WorkflowTemplateList) ProtoMessage() {}
 func (*WorkflowTemplateList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{87}
+	return fileDescriptor_c23edafa7e7ea072, []int{88}
 }
 func (m *WorkflowTemplateList) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowTemplateList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowTemplateList.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowTemplateList) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowTemplateList.Merge(m, src)
@@ -7031,51 +2528,21 @@ func (m *WorkflowTemplateList) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowTemplateList proto.InternalMessageInfo
 
-func (m *WorkflowTemplateList) GetMetadata() *v11.ListMeta {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
-func (m *WorkflowTemplateList) GetItems() []*WorkflowTemplate {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
-type WorkflowTemplateRef struct {
-	// Name is the resource name of the workflow template.
-	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
-	ClusterScope         *bool    `protobuf:"varint,2,opt,name=clusterScope" json:"clusterScope,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *WorkflowTemplateRef) Reset()         { *m = WorkflowTemplateRef{} }
-func (m *WorkflowTemplateRef) String() string { return proto.CompactTextString(m) }
-func (*WorkflowTemplateRef) ProtoMessage()    {}
+func (m *WorkflowTemplateRef) Reset()      { *m = WorkflowTemplateRef{} }
+func (*WorkflowTemplateRef) ProtoMessage() {}
 func (*WorkflowTemplateRef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{88}
+	return fileDescriptor_c23edafa7e7ea072, []int{89}
 }
 func (m *WorkflowTemplateRef) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowTemplateRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowTemplateRef.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowTemplateRef) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowTemplateRef.Merge(m, src)
@@ -7089,50 +2556,21 @@ func (m *WorkflowTemplateRef) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowTemplateRef proto.InternalMessageInfo
 
-func (m *WorkflowTemplateRef) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
-
-func (m *WorkflowTemplateRef) GetClusterScope() bool {
-	if m != nil && m.ClusterScope != nil {
-		return *m.ClusterScope
-	}
-	return false
-}
-
-// WorkflowTemplateSpec is a spec of WorkflowTemplate.
-type WorkflowTemplateSpec struct {
-	WorkflowSpec *WorkflowSpec `protobuf:"bytes,1,opt,name=workflowSpec" json:"workflowSpec,omitempty"`
-	// WorkflowMetadata contains some metadata of the workflow to be refer
-	WorkflowMeta         *v11.ObjectMeta `protobuf:"bytes,2,opt,name=workflowMeta" json:"workflowMeta,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *WorkflowTemplateSpec) Reset()         { *m = WorkflowTemplateSpec{} }
-func (m *WorkflowTemplateSpec) String() string { return proto.CompactTextString(m) }
-func (*WorkflowTemplateSpec) ProtoMessage()    {}
+func (m *WorkflowTemplateSpec) Reset()      { *m = WorkflowTemplateSpec{} }
+func (*WorkflowTemplateSpec) ProtoMessage() {}
 func (*WorkflowTemplateSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{89}
+	return fileDescriptor_c23edafa7e7ea072, []int{90}
 }
 func (m *WorkflowTemplateSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *WorkflowTemplateSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowTemplateSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *WorkflowTemplateSpec) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowTemplateSpec.Merge(m, src)
@@ -7146,47 +2584,21 @@ func (m *WorkflowTemplateSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkflowTemplateSpec proto.InternalMessageInfo
 
-func (m *WorkflowTemplateSpec) GetWorkflowSpec() *WorkflowSpec {
-	if m != nil {
-		return m.WorkflowSpec
-	}
-	return nil
-}
-
-func (m *WorkflowTemplateSpec) GetWorkflowMeta() *v11.ObjectMeta {
-	if m != nil {
-		return m.WorkflowMeta
-	}
-	return nil
-}
-
-// ZipStrategy will unzip zipped input artifacts
-type ZipStrategy struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ZipStrategy) Reset()         { *m = ZipStrategy{} }
-func (m *ZipStrategy) String() string { return proto.CompactTextString(m) }
-func (*ZipStrategy) ProtoMessage()    {}
+func (m *ZipStrategy) Reset()      { *m = ZipStrategy{} }
+func (*ZipStrategy) ProtoMessage() {}
 func (*ZipStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_271ec8e8bc601009, []int{90}
+	return fileDescriptor_c23edafa7e7ea072, []int{91}
 }
 func (m *ZipStrategy) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
 func (m *ZipStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ZipStrategy.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+	b = b[:cap(b)]
+	n, err := m.MarshalToSizedBuffer(b)
+	if err != nil {
+		return nil, err
 	}
+	return b[:n], nil
 }
 func (m *ZipStrategy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ZipStrategy.Merge(m, src)
@@ -7216,6 +2628,7 @@ func init() {
 	proto.RegisterType((*Condition)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition")
 	proto.RegisterType((*ContinueOn)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn")
 	proto.RegisterType((*Counter)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter")
+	proto.RegisterType((*CreateS3BucketOptions)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CreateS3BucketOptions")
 	proto.RegisterType((*CronWorkflow)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflow")
 	proto.RegisterType((*CronWorkflowList)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowList")
 	proto.RegisterType((*CronWorkflowSpec)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowSpec")
@@ -7248,7 +2661,7 @@ func init() {
 	proto.RegisterType((*MutexHolding)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MutexHolding")
 	proto.RegisterType((*MutexStatus)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MutexStatus")
 	proto.RegisterType((*NodeStatus)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus")
-	proto.RegisterMapType((map[string]int64)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus.ResourcesDurationEntry")
+	proto.RegisterMapType((ResourcesDuration)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus.ResourcesDurationEntry")
 	proto.RegisterType((*NodeSynchronizationStatus)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeSynchronizationStatus")
 	proto.RegisterType((*NoneStrategy)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy")
 	proto.RegisterType((*OSSArtifact)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact")
@@ -7291,9 +2704,9 @@ func init() {
 	proto.RegisterType((*WorkflowSpec)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec")
 	proto.RegisterMapType((map[string]string)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec.NodeSelectorEntry")
 	proto.RegisterType((*WorkflowStatus)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus")
-	proto.RegisterMapType((map[string]*NodeStatus)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus.NodesEntry")
-	proto.RegisterMapType((map[string]int64)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus.ResourcesDurationEntry")
-	proto.RegisterMapType((map[string]*Template)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus.StoredTemplatesEntry")
+	proto.RegisterMapType((Nodes)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus.NodesEntry")
+	proto.RegisterMapType((ResourcesDuration)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus.ResourcesDurationEntry")
+	proto.RegisterMapType((map[string]Template)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus.StoredTemplatesEntry")
 	proto.RegisterType((*WorkflowStep)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStep")
 	proto.RegisterType((*WorkflowTemplate)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate")
 	proto.RegisterType((*WorkflowTemplateList)(nil), "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList")
@@ -7303,356 +2716,473 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("pkg/apis/workflow/v1alpha1/generated.proto", fileDescriptor_271ec8e8bc601009)
+	proto.RegisterFile("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto", fileDescriptor_c23edafa7e7ea072)
 }
 
-var fileDescriptor_271ec8e8bc601009 = []byte{
-	// 5516 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe4, 0x5c, 0x4b, 0x70, 0x1c, 0xc7,
-	0x79, 0xae, 0x5d, 0x60, 0x81, 0xdd, 0x7f, 0x01, 0x02, 0x68, 0xbe, 0x56, 0x10, 0x4d, 0xd3, 0x23,
-	0xdb, 0x45, 0x3b, 0x0a, 0x68, 0x91, 0x8a, 0x4b, 0x0f, 0x8b, 0x22, 0x08, 0x10, 0x24, 0x25, 0x92,
-	0x40, 0x7a, 0x41, 0x4a, 0x96, 0x64, 0xb1, 0x06, 0x33, 0xbd, 0xbb, 0x43, 0xcc, 0xce, 0x8c, 0xba,
-	0x7b, 0x00, 0x42, 0x15, 0x57, 0x45, 0x89, 0x52, 0xe5, 0x54, 0x52, 0x95, 0xe4, 0x90, 0x38, 0xb9,
-	0xe5, 0x92, 0x43, 0x92, 0x83, 0x73, 0xcb, 0xd1, 0x95, 0xaa, 0x38, 0xf2, 0xc5, 0x55, 0x4e, 0xf9,
-	0x96, 0x53, 0xa2, 0x4b, 0x8e, 0xa9, 0x5c, 0x7c, 0xc8, 0x29, 0xd5, 0xaf, 0x79, 0xed, 0xac, 0x44,
-	0xcc, 0x2e, 0x55, 0xa5, 0xf2, 0x6d, 0xfa, 0xf5, 0xf5, 0xeb, 0xef, 0xee, 0xff, 0xff, 0xfa, 0xef,
-	0x81, 0x6f, 0x47, 0xfb, 0xfd, 0x4b, 0x76, 0xe4, 0xb1, 0x4b, 0x87, 0x21, 0xdd, 0xef, 0xf9, 0xe1,
-	0xe1, 0xa5, 0x83, 0x17, 0x6c, 0x3f, 0x1a, 0xd8, 0x2f, 0x5c, 0xea, 0x93, 0x80, 0x50, 0x9b, 0x13,
-	0x77, 0x2d, 0xa2, 0x21, 0x0f, 0xd1, 0x95, 0xbe, 0xc7, 0x07, 0xf1, 0xde, 0x9a, 0x13, 0x0e, 0xd7,
-	0x6c, 0xda, 0x0f, 0x23, 0x1a, 0x3e, 0x92, 0x1f, 0x6b, 0xd1, 0x7e, 0x7f, 0x4d, 0x80, 0xac, 0x19,
-	0x90, 0x35, 0x03, 0xb2, 0x6a, 0xed, 0xbf, 0xc4, 0xd6, 0xbc, 0x50, 0xd4, 0x71, 0xc9, 0x09, 0x29,
-	0xb9, 0x74, 0x30, 0x02, 0xbc, 0xfa, 0xad, 0x4c, 0x9e, 0x28, 0xf4, 0x3d, 0xe7, 0xe8, 0xd2, 0xc1,
-	0x0b, 0x7b, 0x84, 0x8f, 0xb6, 0x61, 0xf5, 0xc5, 0x34, 0xeb, 0xd0, 0x76, 0x06, 0x5e, 0x40, 0xe8,
-	0xd1, 0xa5, 0xa4, 0x0f, 0x43, 0xc2, 0xed, 0xb2, 0x0a, 0x2e, 0x8d, 0x2b, 0x45, 0xe3, 0x80, 0x7b,
-	0x43, 0x32, 0x52, 0xe0, 0xbb, 0x9f, 0x57, 0x80, 0x39, 0x03, 0x32, 0xb4, 0x47, 0xca, 0x5d, 0x19,
-	0x57, 0x2e, 0xe6, 0x9e, 0x7f, 0xc9, 0x0b, 0x38, 0xe3, 0xb4, 0x58, 0xc8, 0x3a, 0x0f, 0x73, 0xeb,
-	0xc3, 0x30, 0x0e, 0x38, 0x3a, 0x05, 0x8d, 0x03, 0xdb, 0x8f, 0x49, 0xa7, 0x76, 0xa1, 0x76, 0xb1,
-	0x85, 0x55, 0xc0, 0xfa, 0xf3, 0x3a, 0x2c, 0xad, 0x53, 0x67, 0xe0, 0x1d, 0x90, 0x2e, 0x17, 0x05,
-	0xfb, 0x47, 0x08, 0xc3, 0x0c, 0xb7, 0xa9, 0xcc, 0xd7, 0xbe, 0x7c, 0x6d, 0xad, 0xc2, 0xcc, 0xac,
-	0xed, 0xda, 0xd4, 0xc0, 0x61, 0x01, 0x86, 0xee, 0xc3, 0x6c, 0x10, 0x06, 0xa4, 0x53, 0x97, 0xa0,
-	0xeb, 0x95, 0x40, 0xef, 0x85, 0x41, 0xd2, 0x48, 0x2c, 0xe1, 0x44, 0x53, 0x3f, 0xf4, 0xa2, 0xce,
-	0xcc, 0x04, 0x4d, 0x7d, 0xc7, 0x8b, 0xd2, 0xa6, 0x7e, 0xe8, 0x45, 0xd6, 0xcf, 0x6b, 0xd0, 0x5a,
-	0xa7, 0xfd, 0x78, 0x48, 0x02, 0xce, 0xd0, 0xfb, 0x00, 0x91, 0x4d, 0xed, 0x21, 0xe1, 0x84, 0xb2,
-	0x4e, 0xed, 0xc2, 0xcc, 0xc5, 0xf6, 0xe5, 0xab, 0x95, 0x2a, 0xda, 0x31, 0x30, 0x38, 0x83, 0x88,
-	0xde, 0x85, 0x96, 0x4d, 0xb9, 0xd7, 0xb3, 0x1d, 0xce, 0x3a, 0x75, 0x09, 0xff, 0x5a, 0x25, 0xf8,
-	0x75, 0x8d, 0x82, 0x53, 0x3c, 0xeb, 0xef, 0x66, 0xa0, 0x69, 0xe2, 0x11, 0x82, 0xd9, 0xc0, 0x1e,
-	0x9a, 0xf9, 0x97, 0xdf, 0x22, 0x2e, 0xb2, 0xf9, 0x40, 0x4e, 0x4b, 0x0b, 0xcb, 0x6f, 0x11, 0x37,
-	0x0c, 0x5d, 0x22, 0x07, 0xb5, 0x81, 0xe5, 0xb7, 0x88, 0xeb, 0xd1, 0x70, 0xd8, 0x99, 0x55, 0xf9,
-	0xc4, 0x37, 0xfa, 0x00, 0x96, 0x4d, 0x4d, 0x77, 0x42, 0xc7, 0xe6, 0x5e, 0x18, 0x74, 0x1a, 0x72,
-	0x22, 0x6e, 0x4c, 0xd4, 0x01, 0x03, 0x86, 0x47, 0xe0, 0xd1, 0x79, 0x80, 0xbe, 0x1f, 0xee, 0xd9,
-	0xfe, 0x3d, 0xd1, 0x91, 0x39, 0xd9, 0x98, 0x4c, 0x0c, 0x7a, 0x1f, 0xe6, 0x6d, 0x25, 0xcc, 0x9d,
-	0x79, 0xd9, 0x92, 0xcd, 0x8a, 0x2d, 0xc9, 0x2d, 0x08, 0x6c, 0x40, 0xd1, 0x2a, 0x34, 0xc3, 0x48,
-	0xb4, 0xc4, 0xf6, 0x3b, 0xcd, 0x0b, 0xb5, 0x8b, 0x4d, 0x9c, 0x84, 0x51, 0x07, 0xe6, 0x59, 0xbc,
-	0xb7, 0x23, 0x46, 0xb3, 0x25, 0x1b, 0x66, 0x82, 0xe8, 0x02, 0xb4, 0x29, 0x71, 0x62, 0xca, 0xc8,
-	0x5d, 0x31, 0xae, 0x20, 0x0b, 0x66, 0xa3, 0xac, 0xff, 0x69, 0xc0, 0x72, 0xb1, 0xfb, 0xa2, 0x98,
-	0xae, 0xf7, 0x4e, 0xd8, 0x67, 0x72, 0xda, 0x9a, 0x38, 0x1b, 0x85, 0xb6, 0xa1, 0xce, 0xae, 0xe8,
-	0x25, 0xf5, 0x7a, 0xa5, 0x9e, 0x76, 0xaf, 0x24, 0x62, 0x53, 0x67, 0x57, 0xc4, 0x72, 0xea, 0x7b,
-	0x7c, 0xa2, 0xe5, 0x74, 0xd3, 0xe3, 0x09, 0xa4, 0x00, 0x13, 0x2b, 0x7f, 0xc0, 0x79, 0x24, 0x45,
-	0xa7, 0xea, 0xca, 0xbf, 0xb5, 0xbb, 0xbb, 0x93, 0xa0, 0x4a, 0x38, 0xf4, 0x48, 0x8c, 0x8e, 0x8a,
-	0x09, 0xe9, 0x91, 0x16, 0xbc, 0x5b, 0x13, 0x09, 0x5e, 0x48, 0x8f, 0x92, 0x4a, 0xb2, 0xe0, 0xb2,
-	0x0b, 0x6e, 0x8f, 0x49, 0x81, 0xab, 0xdc, 0x85, 0xcd, 0xad, 0x6e, 0xa6, 0x0b, 0x6e, 0x8f, 0x89,
-	0xd1, 0xa6, 0xf6, 0xa1, 0x96, 0xd4, 0x6a, 0xa3, 0x8d, 0xed, 0xc3, 0x74, 0xb4, 0xa9, 0x7d, 0x28,
-	0x30, 0x43, 0xc6, 0xa4, 0x70, 0x56, 0xc5, 0xdc, 0xee, 0xa6, 0x0d, 0x15, 0x60, 0x52, 0x2a, 0x1c,
-	0x26, 0xa5, 0xba, 0xb2, 0x54, 0x6c, 0x64, 0x30, 0xfb, 0x0e, 0xb3, 0x6e, 0xc2, 0xe9, 0x24, 0x82,
-	0x44, 0x21, 0xf3, 0xc4, 0x40, 0x63, 0xd2, 0x43, 0xe7, 0xa0, 0xe5, 0x84, 0x41, 0xcf, 0xeb, 0xdf,
-	0xb5, 0x23, 0xbd, 0x55, 0xa5, 0x11, 0x68, 0x19, 0x66, 0xf6, 0xc9, 0x91, 0xde, 0xae, 0xc4, 0xa7,
-	0xf5, 0xe3, 0x1a, 0x9c, 0x2c, 0x99, 0x40, 0x91, 0x33, 0xa6, 0xbe, 0x46, 0x10, 0x9f, 0x28, 0x80,
-	0xa5, 0xcc, 0xa4, 0xae, 0xc7, 0x7a, 0xdb, 0xab, 0xbe, 0x49, 0xe4, 0xb0, 0x70, 0x11, 0xdc, 0xfa,
-	0x49, 0x4d, 0x1c, 0xad, 0xb9, 0x38, 0x74, 0x17, 0x4e, 0xc4, 0x8c, 0x50, 0xb1, 0xf7, 0x76, 0x89,
-	0x43, 0x09, 0xd7, 0xa7, 0xec, 0x37, 0xd6, 0xd4, 0xe1, 0x2e, 0x2a, 0x5b, 0x13, 0xaa, 0xcc, 0xda,
-	0xc1, 0x0b, 0x6b, 0x2a, 0xc7, 0x9b, 0xe4, 0xa8, 0x4b, 0x7c, 0x22, 0x30, 0x70, 0xa1, 0xb0, 0x80,
-	0x8b, 0x6c, 0xc6, 0x0e, 0x43, 0xea, 0x6a, 0xb8, 0xfa, 0xb1, 0xe0, 0xf2, 0x85, 0xad, 0xbf, 0xa8,
-	0xc1, 0xfc, 0x75, 0xdb, 0xd9, 0x0f, 0x7b, 0x3d, 0xb1, 0xd5, 0xb9, 0x31, 0x55, 0xbb, 0xba, 0x1a,
-	0xc4, 0x24, 0x8c, 0x6e, 0xc1, 0x9c, 0xea, 0x94, 0xae, 0xee, 0x3b, 0x99, 0xea, 0x12, 0xd5, 0x44,
-	0x8e, 0x9d, 0x50, 0x4d, 0xd6, 0x94, 0x6a, 0xb2, 0x76, 0x3b, 0xe0, 0xdb, 0x42, 0x2b, 0xf0, 0x82,
-	0x3e, 0xd6, 0xe5, 0xc5, 0x1e, 0x37, 0xb4, 0x1f, 0x6f, 0x9a, 0x8a, 0x66, 0x64, 0x45, 0xd9, 0x28,
-	0x6b, 0x1b, 0x1a, 0x1b, 0xb6, 0x33, 0x20, 0x68, 0xab, 0x28, 0x18, 0xed, 0xcb, 0x17, 0xcb, 0xba,
-	0xb9, 0x61, 0x32, 0x65, 0x7b, 0x9a, 0x16, 0xb5, 0xfe, 0xad, 0x06, 0x67, 0x37, 0xfc, 0x98, 0x71,
-	0x42, 0xdf, 0xd2, 0x93, 0xba, 0x4b, 0x86, 0x91, 0x6f, 0x73, 0x82, 0xee, 0x40, 0x53, 0xa8, 0x79,
-	0xae, 0xcd, 0x6d, 0x5d, 0xc5, 0xf8, 0xae, 0x49, 0xb1, 0x10, 0xb9, 0x45, 0xa5, 0xdb, 0x7b, 0x8f,
-	0x88, 0xc3, 0xef, 0x12, 0x6e, 0xe3, 0x04, 0x01, 0xfd, 0x00, 0x66, 0x59, 0x44, 0x1c, 0x3d, 0x48,
-	0xb7, 0x2b, 0x49, 0x59, 0xb1, 0x89, 0xdd, 0x88, 0x38, 0x58, 0xc2, 0x5a, 0xbf, 0xa8, 0xc1, 0xb3,
-	0x63, 0x3a, 0x72, 0xc7, 0x63, 0x1c, 0xbd, 0x31, 0xd2, 0x99, 0xb5, 0x27, 0xeb, 0x8c, 0x28, 0x5d,
-	0xe8, 0xca, 0x1e, 0x34, 0x3c, 0x4e, 0x86, 0x46, 0x43, 0xb9, 0x53, 0xa9, 0x2f, 0x63, 0x1a, 0x8b,
-	0x15, 0xb4, 0xf5, 0xbb, 0xd0, 0xda, 0x08, 0x03, 0xd7, 0x93, 0x22, 0x86, 0x60, 0x96, 0x1f, 0x45,
-	0x89, 0xb2, 0x22, 0xbe, 0xd1, 0x19, 0x98, 0x63, 0xdc, 0xe6, 0x31, 0xd3, 0xeb, 0x5f, 0x87, 0xc4,
-	0xc9, 0x3b, 0x24, 0x8c, 0xd9, 0x7d, 0xa2, 0x05, 0xc8, 0x04, 0xad, 0x57, 0x00, 0x36, 0xc2, 0x80,
-	0x7b, 0x41, 0x4c, 0xb6, 0x03, 0xa1, 0x01, 0x13, 0x4a, 0x43, 0xaa, 0x8f, 0x52, 0x15, 0x10, 0xa8,
-	0x3d, 0xdb, 0xf3, 0x89, 0x2b, 0x51, 0x9b, 0x58, 0x87, 0xac, 0xaf, 0xc2, 0xfc, 0x86, 0x50, 0x9c,
-	0x09, 0x1d, 0xa3, 0x3a, 0xff, 0x75, 0x1d, 0x16, 0x36, 0x68, 0x18, 0x98, 0xfe, 0x4c, 0x59, 0x7a,
-	0xbe, 0x9f, 0x93, 0x9e, 0x6a, 0x2a, 0x55, 0xb6, 0x79, 0xa9, 0xe4, 0xa0, 0x87, 0xc9, 0x40, 0xaa,
-	0x93, 0xfe, 0xe6, 0xe4, 0xe0, 0x12, 0xce, 0xcc, 0x88, 0xf5, 0xcf, 0x35, 0x58, 0xce, 0x26, 0x4f,
-	0x5d, 0x1e, 0xdf, 0xca, 0xcb, 0xe3, 0xfa, 0xc4, 0x1d, 0x30, 0x42, 0xf8, 0xd1, 0x6c, 0xbe, 0xe5,
-	0x62, 0xd4, 0x10, 0x81, 0x85, 0xc3, 0x4c, 0x58, 0xb7, 0x7e, 0x7d, 0xa2, 0x05, 0x2d, 0xa7, 0x23,
-	0x07, 0x2b, 0xb6, 0x5c, 0x61, 0xfa, 0xb9, 0xb1, 0x4f, 0xb4, 0x84, 0x27, 0x61, 0xf4, 0x3c, 0xac,
-	0x38, 0x61, 0xe0, 0xc4, 0x94, 0x92, 0xc0, 0x39, 0xda, 0x91, 0x86, 0xac, 0x96, 0xf6, 0xd1, 0x04,
-	0xa5, 0x8b, 0xb2, 0x88, 0x04, 0xae, 0x54, 0xbb, 0x9a, 0xd8, 0x04, 0xd1, 0x4b, 0x70, 0x96, 0x71,
-	0x71, 0x52, 0x05, 0xfd, 0x4d, 0x62, 0xbb, 0xbe, 0x17, 0x88, 0xb3, 0x24, 0x0c, 0x5c, 0x26, 0x55,
-	0xa8, 0x19, 0x3c, 0x2e, 0x19, 0x5d, 0x85, 0x55, 0x16, 0x3b, 0x0e, 0x61, 0xac, 0x17, 0xfb, 0x6f,
-	0x84, 0x7b, 0xec, 0x96, 0xc7, 0xc4, 0xb9, 0x76, 0xc7, 0x1b, 0x7a, 0x5c, 0xaa, 0x46, 0x0d, 0xfc,
-	0x19, 0x39, 0xd0, 0x77, 0xe1, 0x8c, 0x5a, 0x59, 0x23, 0x65, 0xe7, 0x65, 0xd9, 0x31, 0xa9, 0x62,
-	0x54, 0x84, 0x55, 0xfc, 0xa1, 0xb0, 0x1e, 0x9b, 0x6a, 0x54, 0x4c, 0x18, 0xed, 0xa6, 0x13, 0x23,
-	0x04, 0x44, 0xab, 0x28, 0xc7, 0x5f, 0x75, 0x39, 0x14, 0xeb, 0x4f, 0xea, 0x80, 0x46, 0x85, 0x1b,
-	0xbd, 0x0a, 0x73, 0xb6, 0xc3, 0x85, 0x6d, 0xa1, 0xac, 0xc0, 0xe7, 0xca, 0x4e, 0x1f, 0x05, 0x8a,
-	0x49, 0x8f, 0x88, 0xf9, 0x20, 0x58, 0x17, 0x41, 0x6f, 0xc3, 0x8a, 0x6f, 0x33, 0xde, 0xd5, 0xf3,
-	0xe9, 0xee, 0x7a, 0x43, 0x63, 0x0c, 0x7f, 0xfb, 0xc9, 0x9a, 0x2b, 0x4a, 0xe0, 0x51, 0x10, 0x61,
-	0xa0, 0x3a, 0x66, 0xdb, 0x14, 0x0b, 0xba, 0xba, 0x81, 0x9a, 0xec, 0xbe, 0x38, 0x83, 0x68, 0xfd,
-	0x6d, 0x03, 0xe6, 0x37, 0xd7, 0x6f, 0xee, 0xda, 0x6c, 0xbf, 0xd4, 0x84, 0x14, 0xf3, 0xa3, 0x77,
-	0x72, 0x23, 0xb5, 0x26, 0x8c, 0xde, 0x13, 0xc6, 0xad, 0xb6, 0xa4, 0xf5, 0x5e, 0x73, 0xb5, 0xa2,
-	0xb2, 0xa5, 0x51, 0x70, 0x0a, 0x88, 0xf6, 0xa0, 0x6d, 0x6a, 0xc2, 0xa4, 0xa7, 0x0d, 0x8c, 0x8a,
-	0x7c, 0x45, 0x8a, 0x83, 0xb3, 0xa0, 0xc8, 0x82, 0x05, 0x97, 0x88, 0x95, 0x43, 0x02, 0xc7, 0x23,
-	0x62, 0x91, 0xcc, 0x5c, 0x6c, 0xe1, 0x5c, 0x1c, 0x7a, 0x0b, 0x5a, 0x87, 0x1e, 0x1f, 0xdc, 0x96,
-	0x1b, 0xd2, 0x9c, 0x9c, 0x80, 0x97, 0x2b, 0xb5, 0x42, 0x20, 0xe0, 0x14, 0x4b, 0xe8, 0xc2, 0x22,
-	0x20, 0x89, 0x03, 0xb9, 0x4a, 0x5a, 0x38, 0x8d, 0x40, 0x36, 0x2c, 0x88, 0x40, 0x97, 0x7c, 0x10,
-	0x0b, 0x51, 0xd3, 0x3a, 0x7f, 0x35, 0xf2, 0xc0, 0x80, 0xe0, 0x1c, 0xa4, 0x98, 0xef, 0xc3, 0x01,
-	0x09, 0xb4, 0x41, 0x2b, 0xbf, 0xd1, 0x43, 0x29, 0x6f, 0xfa, 0x4c, 0x95, 0xc6, 0x6c, 0x55, 0xe3,
-	0x33, 0x3d, 0x9a, 0x71, 0x06, 0x52, 0x1c, 0xc8, 0x61, 0x70, 0xe3, 0xb1, 0xc7, 0x3b, 0x6d, 0x75,
-	0xcc, 0xab, 0x90, 0xd8, 0xd4, 0xd4, 0xb0, 0xb3, 0xce, 0x82, 0x3a, 0xe6, 0x75, 0xd0, 0xfa, 0xcb,
-	0x1a, 0xb4, 0x85, 0x88, 0x1a, 0xb1, 0x3b, 0x03, 0x73, 0xdc, 0xa6, 0x7d, 0xad, 0x5d, 0xb7, 0xb0,
-	0x0e, 0x21, 0x0c, 0x0d, 0x6e, 0xb3, 0x7d, 0x73, 0x6a, 0x7c, 0xaf, 0x52, 0xab, 0xf5, 0x5a, 0xc0,
-	0x0a, 0x4a, 0x88, 0xbf, 0xd8, 0xb8, 0xb6, 0x6c, 0xa6, 0xec, 0xe6, 0x26, 0x4e, 0xc2, 0xd6, 0x73,
-	0xd0, 0xb8, 0x71, 0x40, 0x02, 0xb9, 0x87, 0x31, 0xad, 0x8a, 0x1a, 0x65, 0xda, 0x84, 0xad, 0x6b,
-	0x70, 0xe2, 0xc6, 0x63, 0xe2, 0xc4, 0x3c, 0xa4, 0x4a, 0x75, 0x45, 0x6b, 0x80, 0x18, 0xa1, 0x07,
-	0x9e, 0x43, 0xd6, 0x1d, 0x47, 0xa8, 0x20, 0xf7, 0xd2, 0x35, 0x57, 0x92, 0x62, 0xfd, 0x10, 0xda,
-	0x19, 0xfb, 0x4a, 0x2c, 0xba, 0xfe, 0x46, 0xf7, 0x7a, 0xec, 0xec, 0x27, 0xe6, 0xc5, 0xd5, 0xaa,
-	0x46, 0x9b, 0x42, 0xc1, 0x29, 0x60, 0x89, 0x05, 0xf6, 0x71, 0x0d, 0x5a, 0x49, 0x56, 0x31, 0xf6,
-	0x7b, 0x69, 0xd5, 0x2d, 0xac, 0x43, 0xe8, 0x21, 0x9c, 0xcd, 0x37, 0x5d, 0xaa, 0xe7, 0xc7, 0xb7,
-	0x59, 0xc6, 0xa1, 0x58, 0x2f, 0x43, 0xe3, 0xa6, 0x1d, 0xf7, 0x49, 0xb9, 0xb6, 0x26, 0xa6, 0x80,
-	0x12, 0xdb, 0xe7, 0x66, 0xdf, 0x6d, 0xe2, 0x24, 0x6c, 0xfd, 0xd5, 0x0c, 0xb4, 0x33, 0xbc, 0x85,
-	0x10, 0x7b, 0x4a, 0xa2, 0xd0, 0x6c, 0x73, 0xe2, 0x5b, 0x95, 0x3f, 0xf0, 0x98, 0x30, 0x53, 0xf4,
-	0x36, 0x67, 0xc2, 0xa2, 0x46, 0x97, 0x44, 0x7c, 0x20, 0x05, 0x60, 0x16, 0xab, 0x80, 0x88, 0xed,
-	0x11, 0xee, 0x0c, 0x3a, 0xb3, 0x72, 0xcf, 0x50, 0x81, 0x12, 0x0b, 0xb0, 0x31, 0x5d, 0x0b, 0x70,
-	0x6e, 0x02, 0x0b, 0x10, 0xbd, 0x05, 0x27, 0x19, 0x1b, 0xec, 0x50, 0xef, 0xc0, 0xe6, 0x24, 0x9d,
-	0xa1, 0xf9, 0xe3, 0x60, 0x96, 0x21, 0xa0, 0x17, 0xe1, 0xb4, 0x17, 0x30, 0xe2, 0xc4, 0x94, 0xdc,
-	0xee, 0x07, 0x21, 0x25, 0xb7, 0x42, 0x26, 0x4a, 0x69, 0x1a, 0xad, 0x3c, 0xd1, 0xfa, 0x9b, 0x1a,
-	0x2c, 0x64, 0x89, 0x13, 0xb1, 0xf9, 0x0c, 0x36, 0xb7, 0xba, 0x6a, 0xa1, 0x68, 0xe1, 0x7e, 0xbd,
-	0x32, 0x1f, 0xa3, 0x60, 0x70, 0x06, 0xb2, 0x94, 0x10, 0x15, 0x13, 0x19, 0x52, 0x87, 0xe8, 0xf5,
-	0xad, 0x02, 0xd6, 0x3f, 0xd5, 0x00, 0x52, 0x10, 0x34, 0x80, 0x45, 0x01, 0xf3, 0x26, 0xdd, 0xcb,
-	0x35, 0xee, 0x7a, 0xe5, 0xc6, 0x25, 0x48, 0x38, 0x0f, 0x2c, 0x4e, 0x05, 0xdb, 0x75, 0x29, 0x61,
-	0x8c, 0xa8, 0x9d, 0xac, 0x85, 0xd3, 0x08, 0x21, 0xa7, 0x03, 0xb7, 0xc7, 0xee, 0x33, 0x42, 0xb5,
-	0x7e, 0x98, 0x84, 0xad, 0x3f, 0x9c, 0x81, 0xc5, 0x1c, 0x34, 0xda, 0x86, 0xa5, 0x7d, 0xba, 0xb7,
-	0x21, 0x2d, 0xec, 0x2a, 0x84, 0x44, 0xb1, 0xb4, 0x06, 0x7c, 0x93, 0x1c, 0x71, 0x7b, 0xaf, 0xca,
-	0xf2, 0x2e, 0x96, 0x46, 0x17, 0xa0, 0xbd, 0x4f, 0xf7, 0xee, 0x6b, 0xa9, 0x37, 0x0c, 0x41, 0x26,
-	0x4a, 0xf4, 0x78, 0x9f, 0xee, 0x61, 0x62, 0xfb, 0x86, 0x9f, 0x4e, 0xc2, 0xe8, 0x6d, 0x40, 0xfb,
-	0xa6, 0xb3, 0x09, 0x31, 0xa0, 0x57, 0xdc, 0x93, 0xb3, 0x07, 0x25, 0x18, 0x42, 0x91, 0xde, 0xa7,
-	0x7b, 0x5d, 0xb5, 0x19, 0xed, 0x50, 0x2f, 0x70, 0xbc, 0x28, 0xc7, 0x4b, 0x8f, 0x4b, 0xb6, 0x0e,
-	0x61, 0x21, 0xcb, 0x67, 0x96, 0x30, 0x55, 0xf7, 0x61, 0x7e, 0x40, 0x6c, 0x97, 0x50, 0x73, 0x52,
-	0xbd, 0x5a, 0x4d, 0x8a, 0x24, 0x06, 0x36, 0x58, 0xd6, 0x65, 0x98, 0x53, 0x51, 0xa5, 0x7a, 0x5c,
-	0xb2, 0x6d, 0xd6, 0xb3, 0x46, 0xee, 0x63, 0x68, 0x49, 0x6d, 0xbc, 0x2f, 0x34, 0x8e, 0x24, 0xcb,
-	0x4c, 0x76, 0x67, 0xbd, 0x0f, 0xf3, 0x6a, 0x8f, 0x67, 0x72, 0xa7, 0xab, 0xda, 0x5a, 0x75, 0x4d,
-	0x85, 0x0d, 0x96, 0xf5, 0xb3, 0x1a, 0xcc, 0xdd, 0x0e, 0xa2, 0xf8, 0xcb, 0x7e, 0x07, 0x73, 0x0e,
-	0x66, 0x85, 0x36, 0x97, 0x3f, 0x96, 0x16, 0xcc, 0xf8, 0x5e, 0x87, 0xd9, 0x3b, 0x5e, 0xb0, 0x3f,
-	0x6e, 0x46, 0x98, 0x13, 0x46, 0xc9, 0x8c, 0xc8, 0x80, 0x11, 0x97, 0x99, 0x44, 0x5c, 0xac, 0xfb,
-	0xb0, 0x72, 0x97, 0x0c, 0x43, 0xef, 0x43, 0xc9, 0x98, 0x69, 0x6b, 0x65, 0x19, 0x66, 0x06, 0x1e,
-	0xd7, 0x54, 0x87, 0xf8, 0x1c, 0x3d, 0xb9, 0x25, 0xd7, 0x2a, 0xd6, 0xee, 0xbd, 0x74, 0x65, 0xa5,
-	0x11, 0xd6, 0x1f, 0xd5, 0x60, 0x5e, 0xe1, 0x12, 0x53, 0xb6, 0x96, 0x96, 0xdd, 0x81, 0x86, 0xcc,
-	0xaa, 0x97, 0xf7, 0x2b, 0xd5, 0x34, 0x40, 0x81, 0x80, 0x15, 0x90, 0xd0, 0x1c, 0x86, 0xf6, 0xe3,
-	0xf5, 0x84, 0xc5, 0xd1, 0x21, 0xeb, 0x3f, 0xea, 0xd0, 0xbc, 0x6b, 0x0c, 0xff, 0x08, 0xda, 0x76,
-	0x10, 0x84, 0xdc, 0x56, 0xe6, 0x8e, 0x92, 0x85, 0x7b, 0x95, 0x2a, 0x37, 0x98, 0x6b, 0xeb, 0x29,
-	0xe0, 0x8d, 0x80, 0xd3, 0x23, 0x9c, 0xad, 0x02, 0xd9, 0x30, 0xe7, 0xdb, 0x7b, 0xc4, 0x37, 0x92,
-	0x71, 0x7b, 0xb2, 0xca, 0xee, 0x48, 0x2c, 0x55, 0x8f, 0x06, 0x5e, 0xbd, 0x0a, 0xcb, 0xc5, 0x36,
-	0x94, 0x8c, 0x78, 0xe9, 0x02, 0x7d, 0xa5, 0xfe, 0x52, 0x6d, 0xf5, 0x65, 0x68, 0x67, 0x60, 0x8f,
-	0x53, 0xd4, 0xfa, 0x1d, 0x68, 0xdf, 0x25, 0x9c, 0x7a, 0x8e, 0x04, 0x78, 0xd2, 0xa2, 0xd6, 0x23,
-	0x21, 0x1a, 0xa2, 0x18, 0x13, 0x47, 0x72, 0x44, 0xc3, 0x21, 0xe1, 0x03, 0x12, 0x9b, 0x09, 0xa9,
-	0x76, 0x24, 0xef, 0x24, 0x30, 0x38, 0x03, 0x69, 0x3d, 0x0b, 0x8d, 0xbb, 0x31, 0x27, 0x8f, 0xcb,
-	0xd6, 0x88, 0xf5, 0x3d, 0x58, 0x90, 0x89, 0xb7, 0x42, 0xdf, 0xf5, 0x82, 0xbe, 0x68, 0xee, 0x50,
-	0x84, 0x8d, 0xf2, 0x27, 0x03, 0x42, 0xb4, 0x06, 0xa1, 0xef, 0x12, 0x6a, 0x98, 0x43, 0x15, 0xb2,
-	0x3e, 0xa9, 0x41, 0x5b, 0x16, 0xd7, 0x8b, 0xe6, 0x5d, 0x98, 0x1f, 0x28, 0x20, 0xdd, 0x91, 0x6a,
-	0x1c, 0x4f, 0xb6, 0x45, 0xd8, 0x20, 0x0a, 0xf0, 0x43, 0xdb, 0xe3, 0x02, 0xbc, 0x3e, 0x35, 0x70,
-	0x8d, 0x68, 0xfd, 0xb8, 0x0d, 0x70, 0x2f, 0x74, 0x89, 0xee, 0xc8, 0x09, 0xa8, 0x7b, 0xae, 0x1e,
-	0x83, 0xba, 0xe7, 0x26, 0x43, 0x57, 0xcf, 0x6c, 0x2f, 0x17, 0xa0, 0xed, 0x7a, 0x2c, 0xf2, 0xed,
-	0xa3, 0xcc, 0xfa, 0xcf, 0x46, 0x25, 0x24, 0xec, 0x6c, 0x86, 0x84, 0xb5, 0x60, 0xc1, 0xd8, 0xc7,
-	0xb2, 0x58, 0x43, 0xa6, 0xe5, 0xe2, 0x8a, 0x86, 0xf9, 0xdc, 0xd3, 0x30, 0xcc, 0xbf, 0x0d, 0xcb,
-	0x8c, 0x87, 0x94, 0xb8, 0x26, 0xc7, 0xed, 0xcd, 0x0e, 0x92, 0x6d, 0x19, 0x89, 0x47, 0x97, 0xe1,
-	0xd4, 0x61, 0x81, 0x74, 0x96, 0x6d, 0x3f, 0x29, 0xf3, 0x97, 0xa6, 0xa1, 0xaf, 0xc3, 0xa2, 0xa9,
-	0xae, 0x2b, 0x37, 0xe1, 0x53, 0x32, 0x73, 0x3e, 0x52, 0x88, 0x5b, 0x34, 0xb0, 0x19, 0xd1, 0xd6,
-	0xb9, 0x0a, 0xa0, 0xf3, 0x00, 0x7b, 0x61, 0x1c, 0xb8, 0x36, 0x3d, 0xba, 0xbd, 0xa9, 0x49, 0xab,
-	0x4c, 0x4c, 0x96, 0xb0, 0x6e, 0xe5, 0x08, 0x6b, 0x74, 0x0b, 0x5a, 0x92, 0x7f, 0x23, 0xee, 0x3a,
-	0xd7, 0xb6, 0xf5, 0x71, 0xe8, 0xa1, 0xb4, 0x30, 0x7a, 0x03, 0xa0, 0xe7, 0x05, 0x1e, 0x1b, 0x48,
-	0xa8, 0xf6, 0xb1, 0xa1, 0x32, 0xa5, 0xd1, 0xf3, 0xb0, 0x42, 0x18, 0xf7, 0x86, 0x36, 0x27, 0x6e,
-	0x72, 0x57, 0xd3, 0x91, 0x74, 0xe1, 0x68, 0x02, 0xfa, 0xb8, 0x06, 0x2b, 0x94, 0xb0, 0x30, 0xa6,
-	0x0e, 0x61, 0x49, 0xf6, 0xd3, 0x52, 0xe4, 0x1f, 0x54, 0x74, 0xfc, 0x30, 0x82, 0xbd, 0x86, 0x8b,
-	0xc0, 0x6a, 0x27, 0x1d, 0xad, 0x50, 0x4e, 0x4d, 0xe8, 0xde, 0xde, 0xd1, 0x64, 0x81, 0x0a, 0xc8,
-	0x6b, 0x2d, 0x9b, 0x0c, 0xc3, 0x80, 0xb8, 0x9d, 0x45, 0x65, 0x06, 0x9a, 0x30, 0xea, 0xc2, 0x9c,
-	0x27, 0x15, 0x8e, 0xce, 0x09, 0x39, 0x5c, 0xd5, 0xf4, 0x18, 0xa5, 0xb3, 0x60, 0x0d, 0x85, 0x1e,
-	0xc0, 0x7c, 0x18, 0x73, 0x89, 0xba, 0x24, 0x51, 0xab, 0xb1, 0x0e, 0xdb, 0x0a, 0x03, 0x1b, 0x30,
-	0xd1, 0x11, 0x67, 0xe0, 0xf9, 0x2e, 0x25, 0x41, 0x67, 0x59, 0x1a, 0x01, 0x49, 0x58, 0xc8, 0x6e,
-	0x18, 0x73, 0x29, 0x70, 0x62, 0xe8, 0x58, 0x67, 0x45, 0x66, 0xc8, 0x47, 0x8a, 0x95, 0x3c, 0x08,
-	0x19, 0x17, 0x01, 0xb9, 0x1a, 0xce, 0xa8, 0x95, 0x9c, 0x8d, 0x43, 0x1c, 0x56, 0x86, 0x45, 0xd5,
-	0xa2, 0x73, 0x56, 0xf6, 0x63, 0xab, 0xe2, 0x39, 0x58, 0x40, 0xc3, 0xa3, 0x15, 0x08, 0x09, 0x3a,
-	0xcd, 0x8e, 0x02, 0x67, 0x40, 0xc3, 0x20, 0x5f, 0xf5, 0x33, 0xb2, 0xea, 0x7b, 0xd5, 0xa5, 0xa8,
-	0x0c, 0x15, 0x97, 0x57, 0xb6, 0xba, 0x09, 0x67, 0xca, 0xc5, 0xed, 0xf3, 0x8e, 0xc9, 0x99, 0xfc,
-	0x09, 0xfb, 0xcc, 0xd8, 0x9a, 0xc5, 0x4e, 0x60, 0xce, 0x04, 0x05, 0x96, 0x6c, 0xe8, 0x27, 0x60,
-	0x21, 0xeb, 0xef, 0x64, 0xfd, 0x10, 0xda, 0x99, 0x8b, 0x79, 0xf4, 0x1e, 0xb4, 0xc2, 0xee, 0x34,
-	0x48, 0x9e, 0xed, 0x6e, 0x42, 0xf2, 0x24, 0x80, 0x25, 0x24, 0xcf, 0x7f, 0xd5, 0xa0, 0x95, 0x64,
-	0x15, 0xc2, 0x47, 0x02, 0x37, 0x0a, 0xbd, 0xc0, 0xd0, 0x3c, 0x49, 0x38, 0x43, 0x00, 0xd5, 0x73,
-	0x04, 0xd0, 0x36, 0x2c, 0xd9, 0xf2, 0x72, 0x20, 0xa5, 0x15, 0x66, 0x8e, 0x65, 0x19, 0x16, 0x4a,
-	0x0b, 0x40, 0x96, 0xe6, 0x92, 0x80, 0xb3, 0xc7, 0x02, 0x2c, 0x94, 0xb6, 0xfe, 0xaf, 0x06, 0xf3,
-	0x7a, 0x9d, 0x7d, 0xa9, 0x4d, 0x0e, 0x31, 0x05, 0x94, 0xb0, 0xd8, 0xe7, 0x46, 0x93, 0x56, 0x21,
-	0x39, 0x6d, 0x8f, 0x3d, 0xbe, 0x11, 0xba, 0xe6, 0x4c, 0x4f, 0xc2, 0xd6, 0x00, 0x16, 0x45, 0x4b,
-	0x7d, 0x9f, 0xf8, 0x5d, 0x4e, 0x22, 0x86, 0xde, 0x82, 0x06, 0x13, 0x1f, 0x13, 0x69, 0x42, 0xe9,
-	0x15, 0x0a, 0x89, 0xb0, 0xc2, 0xb3, 0x7e, 0x51, 0x83, 0x56, 0x32, 0x28, 0xa5, 0x86, 0x8f, 0x64,
-	0x7a, 0x7b, 0xb6, 0xe8, 0x40, 0xdd, 0x30, 0xbd, 0x32, 0x38, 0xc6, 0x02, 0x7d, 0x0f, 0x5a, 0xf2,
-	0x63, 0xcb, 0xb8, 0xa8, 0x55, 0x9d, 0xab, 0x07, 0x06, 0x05, 0xa7, 0x80, 0x05, 0xa7, 0xb3, 0x46,
-	0xd1, 0xe9, 0xcc, 0x7a, 0x0e, 0x1a, 0x3b, 0xa1, 0x7b, 0x73, 0x43, 0xb2, 0xbc, 0x7a, 0xb9, 0x26,
-	0x2c, 0xaf, 0x59, 0xbe, 0xff, 0x30, 0x03, 0x90, 0xea, 0xb7, 0xa5, 0xbd, 0x7e, 0xbb, 0x60, 0x68,
-	0x5c, 0xab, 0x6a, 0x68, 0x18, 0x6d, 0xde, 0xd8, 0x17, 0xa2, 0xb6, 0x01, 0xf1, 0x23, 0x3d, 0x68,
-	0xf2, 0x3b, 0xa1, 0xf6, 0x67, 0x33, 0xd4, 0xfe, 0x0e, 0x34, 0xfa, 0x76, 0xdc, 0x27, 0x9a, 0x20,
-	0xa9, 0x66, 0xd3, 0x49, 0x12, 0x16, 0x2b, 0x20, 0x31, 0x33, 0x03, 0x43, 0x1f, 0x68, 0x3d, 0xb0,
-	0xda, 0xcc, 0x24, 0x24, 0x04, 0x4e, 0x01, 0xc5, 0xd9, 0xea, 0xa8, 0x2b, 0x7a, 0xcd, 0x50, 0x7e,
-	0xaf, 0xe2, 0x3d, 0x84, 0xc4, 0xc0, 0x06, 0xcc, 0xfa, 0x1a, 0xb4, 0x33, 0x8e, 0x55, 0x62, 0xa8,
-	0x92, 0x4b, 0xeb, 0x16, 0x96, 0xdf, 0xd6, 0x8f, 0xea, 0xb0, 0x6c, 0x0e, 0x87, 0xec, 0xbd, 0x83,
-	0xed, 0x64, 0x3c, 0x66, 0x74, 0x48, 0x9c, 0xc7, 0x43, 0x42, 0xfb, 0xc9, 0x66, 0xae, 0xa5, 0x3a,
-	0x1f, 0x29, 0xc4, 0x67, 0x68, 0x07, 0x5e, 0x8f, 0x30, 0xb3, 0x6e, 0x93, 0xb0, 0xd0, 0xc0, 0x18,
-	0xe1, 0xdb, 0x87, 0x01, 0xa1, 0xc9, 0xdd, 0xa2, 0xbe, 0xda, 0x1d, 0x4d, 0x90, 0xba, 0xb1, 0xba,
-	0x88, 0x4d, 0xae, 0xf4, 0xb4, 0xdc, 0x8e, 0xc4, 0x8b, 0xbc, 0x3d, 0xdb, 0xf3, 0x63, 0x4a, 0xd2,
-	0xbc, 0x8a, 0xc0, 0x1a, 0x89, 0x97, 0x44, 0xa8, 0x6f, 0xf7, 0x59, 0x67, 0x5e, 0x33, 0xda, 0x22,
-	0x60, 0xfd, 0x7b, 0x0d, 0x16, 0x31, 0xe1, 0xf4, 0x28, 0xe9, 0xc9, 0x16, 0x34, 0x7c, 0x79, 0xb3,
-	0x5b, 0xab, 0xe8, 0x1e, 0xa4, 0x8a, 0x2b, 0xc7, 0x49, 0x4e, 0xcd, 0x75, 0xb7, 0x1a, 0xb5, 0x6c,
-	0x94, 0x90, 0x80, 0x3d, 0xe5, 0xb0, 0xa4, 0x0f, 0x93, 0x6a, 0x12, 0xa0, 0x9d, 0x9e, 0xb0, 0x01,
-	0xb3, 0x8e, 0x00, 0x52, 0xd7, 0x48, 0xf4, 0x7d, 0x68, 0xb2, 0x2b, 0xb9, 0xb3, 0xb6, 0xe2, 0x2d,
-	0x9b, 0x06, 0xc1, 0x09, 0x5c, 0xc9, 0x49, 0xfb, 0xcb, 0x3a, 0x34, 0x4d, 0xc6, 0x4a, 0x07, 0xad,
-	0xdc, 0xfd, 0xfb, 0xa9, 0x3b, 0x95, 0x0e, 0x09, 0x2c, 0xc3, 0xb2, 0x6b, 0xd1, 0x49, 0xc2, 0x65,
-	0x87, 0x73, 0x63, 0xda, 0x87, 0xf3, 0xdc, 0x24, 0x87, 0xb3, 0x38, 0x13, 0x68, 0xe8, 0x93, 0x75,
-	0x7c, 0x4f, 0xdb, 0x5a, 0x26, 0x28, 0xa4, 0x24, 0x66, 0xa4, 0xbb, 0xf9, 0xe6, 0x06, 0x25, 0x2e,
-	0xd3, 0x17, 0x0a, 0xd9, 0x28, 0x8b, 0xc0, 0x89, 0xae, 0x43, 0xbd, 0x88, 0x27, 0x2b, 0xf5, 0x55,
-	0xe9, 0x4c, 0xc6, 0x6d, 0x21, 0x8a, 0x7a, 0x4a, 0xbf, 0x32, 0x86, 0x0e, 0x56, 0x99, 0x70, 0x9a,
-	0x5f, 0xfa, 0x21, 0xc9, 0x85, 0x9f, 0xf8, 0x21, 0xc9, 0x90, 0xf5, 0x06, 0x2c, 0x77, 0xc9, 0xd0,
-	0x8e, 0x06, 0xf2, 0x06, 0x43, 0x19, 0xfd, 0xe7, 0xa0, 0xc5, 0x4c, 0x9c, 0x71, 0x67, 0x4c, 0x22,
-	0x44, 0xa7, 0x14, 0x13, 0x61, 0x88, 0x7c, 0x13, 0xb4, 0xf6, 0x60, 0x21, 0xc1, 0x12, 0xe6, 0x2e,
-	0x86, 0x25, 0x27, 0x43, 0x4d, 0x0b, 0xb3, 0xfa, 0xb8, 0x3e, 0x70, 0x45, 0x00, 0xeb, 0x57, 0x35,
-	0x58, 0x4a, 0x2a, 0xd1, 0x0a, 0xe9, 0xc3, 0x22, 0x03, 0x72, 0xa3, 0xe2, 0x7d, 0x72, 0x7e, 0x1c,
-	0x52, 0x16, 0xe4, 0x61, 0x91, 0x05, 0x99, 0x56, 0x05, 0x46, 0x71, 0xfe, 0x75, 0x0d, 0x9a, 0xc9,
-	0x05, 0xf6, 0x16, 0x34, 0xe4, 0xa6, 0x5e, 0x7d, 0x27, 0x92, 0xc5, 0x05, 0x8e, 0x34, 0xad, 0x2b,
-	0x3b, 0x3c, 0xaa, 0xe2, 0xe8, 0x3a, 0xcc, 0x90, 0xc0, 0xd5, 0x7b, 0xd5, 0xf1, 0x51, 0x44, 0x61,
-	0xe9, 0xb0, 0x16, 0xd2, 0xa1, 0xcd, 0xf5, 0xd9, 0xad, 0x43, 0xd6, 0xa7, 0x35, 0x98, 0xeb, 0xc6,
-	0x7b, 0x62, 0xe3, 0xfc, 0x10, 0x4e, 0x16, 0x49, 0x8d, 0x54, 0x62, 0x6e, 0x4d, 0xc5, 0x11, 0x11,
-	0x93, 0x1e, 0x2e, 0xab, 0x24, 0xef, 0xf3, 0x51, 0x9f, 0xb2, 0xcf, 0x87, 0xf5, 0xf1, 0x0c, 0x80,
-	0xea, 0xe4, 0x76, 0xc4, 0xcb, 0xf5, 0x28, 0x0b, 0x16, 0xcc, 0x2b, 0x98, 0x7b, 0x29, 0xe7, 0x95,
-	0x8b, 0x13, 0x3a, 0x1d, 0x11, 0x96, 0x9c, 0xda, 0x59, 0xd5, 0x38, 0x66, 0x62, 0x44, 0x7a, 0x46,
-	0xfd, 0x57, 0x4e, 0x1f, 0x59, 0xf5, 0xfd, 0xeb, 0xb0, 0x98, 0x84, 0xb6, 0x3c, 0xdf, 0xdc, 0xf9,
-	0xe4, 0x23, 0xd1, 0x37, 0xe1, 0x44, 0xfe, 0xb6, 0x5a, 0x6f, 0x5d, 0x85, 0x58, 0x31, 0xa3, 0x2e,
-	0x3d, 0xc2, 0x71, 0xa0, 0x37, 0x2f, 0x1d, 0x12, 0x3d, 0x11, 0x39, 0x09, 0xdd, 0x54, 0xa9, 0x2d,
-	0x99, 0x9a, 0x8b, 0x13, 0x65, 0xb5, 0xd6, 0x08, 0x4a, 0x1a, 0xb4, 0xce, 0xf7, 0x1e, 0x9c, 0x08,
-	0xf3, 0xea, 0x82, 0xe2, 0x80, 0x5e, 0x7c, 0x42, 0xe7, 0xa8, 0x5c, 0x59, 0x5c, 0xc0, 0xb2, 0x4e,
-	0xc2, 0x4a, 0x37, 0x8e, 0x22, 0xdf, 0x23, 0x6e, 0xa2, 0x33, 0x5b, 0xbf, 0x0d, 0x4b, 0x5d, 0xe5,
-	0x66, 0x96, 0xec, 0xb3, 0x9f, 0xe1, 0x45, 0x6c, 0xfd, 0xab, 0xd8, 0x7e, 0xf2, 0x56, 0x31, 0x7a,
-	0x58, 0xdc, 0x2e, 0xab, 0x1a, 0x1e, 0xd9, 0xcd, 0x33, 0xbb, 0xe3, 0xee, 0x18, 0x7e, 0x78, 0x92,
-	0x6b, 0x0b, 0x49, 0xc1, 0x6a, 0x6e, 0x59, 0xec, 0xa2, 0xa7, 0xcb, 0x8d, 0xfb, 0xbd, 0xd1, 0xce,
-	0x6c, 0x4e, 0xd6, 0x19, 0xcd, 0x57, 0x64, 0xfa, 0xf3, 0x20, 0xdf, 0x9f, 0x6b, 0xd5, 0xfb, 0xa3,
-	0xb1, 0x75, 0xaf, 0xfe, 0xbe, 0x06, 0xed, 0xdd, 0xdd, 0x3b, 0x89, 0x4a, 0xf7, 0x5d, 0x38, 0xc3,
-	0x94, 0x23, 0xe0, 0x7a, 0x8f, 0x13, 0xba, 0x11, 0x0e, 0x23, 0x9f, 0x24, 0xd3, 0xda, 0xc0, 0x63,
-	0x52, 0xd1, 0x77, 0xe0, 0x64, 0x36, 0xa5, 0xab, 0xd4, 0x4f, 0xd9, 0xda, 0x06, 0x2e, 0x4b, 0x2a,
-	0x96, 0xd8, 0x52, 0x4a, 0xa8, 0x7e, 0x8d, 0x54, 0x96, 0x64, 0xbd, 0x0c, 0xed, 0xcc, 0x7b, 0x33,
-	0xa1, 0xd1, 0x3a, 0xe1, 0x30, 0xa2, 0x84, 0x31, 0x2f, 0x0c, 0xee, 0x90, 0x03, 0xe2, 0xeb, 0x46,
-	0x8e, 0xc4, 0x5b, 0xbf, 0x3e, 0x0d, 0xcd, 0x44, 0x58, 0x7f, 0xf3, 0xbc, 0xdb, 0x52, 0xc6, 0xb3,
-	0xf1, 0x54, 0x18, 0xcf, 0xb9, 0x69, 0x32, 0x9e, 0x0c, 0x16, 0x82, 0xd0, 0x25, 0x46, 0x9f, 0x91,
-	0x46, 0x48, 0xfb, 0xf2, 0xf6, 0x44, 0x23, 0xa2, 0x48, 0x41, 0x8d, 0xa8, 0xa8, 0xe4, 0x5c, 0x25,
-	0xe8, 0x25, 0x68, 0xda, 0xbd, 0x9e, 0x17, 0x78, 0xfc, 0x48, 0x3b, 0xd8, 0x9d, 0x2b, 0x53, 0xb8,
-	0xd6, 0x75, 0x1e, 0x9c, 0xe4, 0x16, 0x46, 0x43, 0xe2, 0xee, 0xdc, 0x9a, 0xc0, 0x68, 0x30, 0x37,
-	0x87, 0x19, 0xef, 0x67, 0x71, 0x5e, 0x48, 0xd2, 0x5a, 0xbf, 0x25, 0xd3, 0x21, 0xf4, 0xb6, 0xa1,
-	0x6c, 0xda, 0x72, 0x68, 0xae, 0x57, 0xe6, 0xab, 0x12, 0x16, 0x48, 0x73, 0x36, 0x79, 0x7d, 0x79,
-	0xe1, 0x98, 0xfa, 0xf2, 0xbb, 0x30, 0xc7, 0xa4, 0xfa, 0x2d, 0x19, 0xf7, 0xf6, 0xe5, 0x8d, 0x6a,
-	0x9b, 0x60, 0x4e, 0x83, 0xc7, 0x1a, 0x12, 0xd9, 0xd0, 0x34, 0xdc, 0xbf, 0xa6, 0xed, 0xab, 0x29,
-	0x94, 0x45, 0x63, 0x1e, 0x27, 0xb0, 0x08, 0xc3, 0x8c, 0x6b, 0xf7, 0x35, 0x7d, 0x7f, 0xad, 0xb2,
-	0xd3, 0xa0, 0x01, 0x16, 0x60, 0xe8, 0xfd, 0xd4, 0x43, 0x7b, 0x79, 0x92, 0x93, 0x21, 0x7f, 0xde,
-	0xa6, 0x7e, 0xde, 0x2f, 0xc2, 0xfc, 0x41, 0xe8, 0xc7, 0x43, 0x4d, 0xfe, 0xb7, 0x2f, 0xaf, 0x96,
-	0x4d, 0xd7, 0x03, 0x99, 0x05, 0x9b, 0xac, 0xe8, 0x11, 0x9c, 0x10, 0xc2, 0x9b, 0xcc, 0x22, 0xeb,
-	0xa0, 0x09, 0x24, 0xe9, 0x3e, 0x13, 0x47, 0x81, 0x11, 0x88, 0x02, 0x32, 0x7a, 0x1f, 0x9a, 0xcc,
-	0x73, 0x89, 0x63, 0x53, 0xd6, 0x39, 0x39, 0xb5, 0x5a, 0x12, 0x4c, 0x14, 0xc2, 0x52, 0xf2, 0x56,
-	0x52, 0xbf, 0x4e, 0x3d, 0x35, 0xcd, 0xd7, 0xa9, 0x45, 0x74, 0xd4, 0x83, 0xd3, 0xca, 0xd9, 0xbb,
-	0xe8, 0x58, 0x7f, 0xba, 0xa2, 0xb6, 0x5f, 0x0e, 0x87, 0x06, 0xb0, 0x48, 0xb3, 0x74, 0x8b, 0xbc,
-	0xb8, 0xa9, 0x3a, 0x7a, 0x39, 0xe2, 0x06, 0xe7, 0x81, 0x85, 0x65, 0x1d, 0xe9, 0xdd, 0xc0, 0x63,
-	0x43, 0x79, 0xef, 0x33, 0x83, 0xb3, 0x51, 0xe8, 0x1a, 0xb4, 0x79, 0xe8, 0x13, 0xaa, 0xdd, 0x31,
-	0x3a, 0x72, 0x1e, 0xcf, 0x97, 0x89, 0xda, 0x6e, 0x92, 0x0d, 0x67, 0x8b, 0x08, 0x4d, 0xda, 0x3c,
-	0x72, 0xa0, 0x52, 0x5d, 0x7f, 0x46, 0x69, 0xd2, 0xb9, 0x48, 0xf4, 0x3c, 0xac, 0x44, 0xd4, 0x0b,
-	0xa9, 0xc7, 0x8f, 0x36, 0x7c, 0x9b, 0x31, 0x99, 0x73, 0x55, 0x3d, 0x7f, 0x18, 0x49, 0x10, 0x87,
-	0xb6, 0x89, 0xec, 0x3c, 0x2b, 0x4f, 0xfe, 0x24, 0x3c, 0xc6, 0xb9, 0xf6, 0xdc, 0x38, 0xe7, 0x5a,
-	0x74, 0x1d, 0xce, 0xd9, 0x31, 0x0f, 0xa5, 0x73, 0x52, 0x37, 0x97, 0xbc, 0x1b, 0xee, 0x93, 0xa0,
-	0x73, 0x41, 0xee, 0xc0, 0x9f, 0x99, 0x07, 0x3d, 0x84, 0x26, 0xd1, 0x2e, 0xbe, 0x9d, 0xaf, 0x4d,
-	0xb0, 0x05, 0xe6, 0xfd, 0x84, 0x71, 0x02, 0x8a, 0x5e, 0x87, 0xf6, 0x20, 0x64, 0x7c, 0xdd, 0xf7,
-	0x6c, 0x46, 0x58, 0xe7, 0x2b, 0x72, 0x1a, 0x4a, 0x37, 0xe8, 0x5b, 0x26, 0x1b, 0xce, 0x96, 0x40,
-	0x3b, 0x92, 0xae, 0x89, 0xe5, 0x30, 0x86, 0x01, 0x27, 0x8f, 0x79, 0xe7, 0xbc, 0x6c, 0xe8, 0x37,
-	0xcb, 0x40, 0x76, 0x42, 0xb7, 0x9b, 0xcf, 0x8d, 0x8b, 0xc5, 0x85, 0xed, 0x12, 0x85, 0x6e, 0x37,
-	0x22, 0xce, 0x8e, 0xcd, 0x9d, 0x41, 0xe7, 0xab, 0xca, 0x0a, 0xcb, 0xc6, 0x09, 0x4d, 0x61, 0xa8,
-	0xbc, 0x48, 0x3a, 0xcf, 0x4d, 0xa0, 0x29, 0x68, 0x4f, 0x14, 0x6c, 0xc0, 0x50, 0x00, 0x4b, 0x85,
-	0x1b, 0xbd, 0xce, 0xd7, 0x27, 0xd9, 0x64, 0xf3, 0x58, 0xb8, 0x08, 0xae, 0xfa, 0x21, 0x1d, 0xa5,
-	0x3a, 0xdf, 0x98, 0xa8, 0x1f, 0x12, 0x03, 0x1b, 0x30, 0xd4, 0x81, 0x79, 0xee, 0x0d, 0x49, 0x18,
-	0xf3, 0xce, 0x37, 0x15, 0xe7, 0xa5, 0x83, 0xab, 0xaf, 0xc3, 0xca, 0x88, 0xe6, 0x72, 0x2c, 0xbf,
-	0x9f, 0x3f, 0x13, 0xfa, 0x7d, 0x46, 0x13, 0x3c, 0xae, 0xee, 0xfb, 0x3c, 0xac, 0xe8, 0xdf, 0x55,
-	0x88, 0x83, 0xd3, 0x8f, 0x93, 0xe7, 0x9b, 0x4d, 0x3c, 0x9a, 0x20, 0x84, 0xc1, 0x51, 0x8f, 0xff,
-	0x94, 0x2f, 0x85, 0xa2, 0x1f, 0x73, 0x71, 0xd6, 0xef, 0xc1, 0x62, 0x6e, 0x2b, 0x9f, 0x8c, 0xa3,
-	0x5b, 0x03, 0x34, 0xf4, 0x28, 0x0d, 0xa9, 0x3a, 0xe2, 0xee, 0x8a, 0xc5, 0xc8, 0xb4, 0xe3, 0x77,
-	0x49, 0x8a, 0xf5, 0xc7, 0x75, 0x68, 0x25, 0x96, 0x6c, 0xe2, 0x05, 0x5c, 0xcb, 0x78, 0x01, 0xaf,
-	0x42, 0xf3, 0x11, 0x0b, 0x83, 0x9d, 0xd4, 0x3b, 0x38, 0x09, 0xcb, 0xb4, 0x0f, 0xb6, 0x3c, 0x9f,
-	0xa7, 0x4e, 0xb7, 0x26, 0x2c, 0x5f, 0x1d, 0x1e, 0x90, 0xc4, 0xf6, 0x57, 0x01, 0x74, 0x0e, 0x5a,
-	0x09, 0x57, 0xa0, 0xf9, 0x87, 0x34, 0x02, 0xed, 0x41, 0x93, 0x69, 0xf3, 0x5a, 0xeb, 0xd0, 0x5b,
-	0x15, 0xd5, 0x83, 0x82, 0x8d, 0x8e, 0x13, 0xdc, 0xec, 0x25, 0x5b, 0x23, 0x77, 0xc9, 0x66, 0xfd,
-	0x6f, 0x0d, 0xe6, 0x1f, 0x10, 0x2a, 0x5d, 0xdb, 0x3b, 0x30, 0x7f, 0xa0, 0x3e, 0xcd, 0x05, 0xb5,
-	0x0e, 0x8a, 0x1e, 0xec, 0xc5, 0x9e, 0xef, 0x6e, 0xa6, 0xe2, 0x91, 0x46, 0x88, 0xd4, 0xbe, 0x38,
-	0xee, 0x87, 0x43, 0xcf, 0xdc, 0x66, 0xa4, 0x11, 0x42, 0x81, 0xed, 0x7b, 0x7c, 0xd7, 0xee, 0x1b,
-	0x0a, 0x4b, 0x85, 0x24, 0x75, 0xe3, 0xf1, 0x5d, 0x4a, 0xa4, 0xa5, 0x9b, 0x38, 0x17, 0x65, 0xe3,
-	0x24, 0x72, 0xa8, 0x9b, 0xa7, 0x69, 0x97, 0x34, 0x42, 0xba, 0x45, 0x84, 0xc3, 0xc8, 0xf3, 0xf5,
-	0x9d, 0x50, 0x0b, 0x27, 0x61, 0x79, 0x2c, 0xf8, 0x36, 0xef, 0x85, 0x74, 0x68, 0x5e, 0x92, 0x99,
-	0xb0, 0xf5, 0x5b, 0xb0, 0xa8, 0xe4, 0x61, 0xc3, 0xb7, 0xbd, 0xe1, 0xe7, 0x5c, 0xe6, 0xfd, 0x69,
-	0x1d, 0x9a, 0x4f, 0xe9, 0xd5, 0xe7, 0xfd, 0xdc, 0xab, 0xcf, 0x29, 0x3c, 0x31, 0x54, 0x2f, 0x3e,
-	0xdf, 0x2d, 0xbc, 0xf8, 0xdc, 0x98, 0xf0, 0x36, 0x37, 0xf7, 0xda, 0xf3, 0x93, 0x1a, 0x9c, 0x32,
-	0x49, 0xf2, 0xbd, 0xcb, 0x75, 0x2f, 0x90, 0x5c, 0xef, 0x74, 0x87, 0xc6, 0xce, 0x0d, 0xcd, 0xdd,
-	0x89, 0x7a, 0x90, 0x6d, 0x66, 0xe6, 0x49, 0xf5, 0x27, 0x35, 0xe8, 0x94, 0x65, 0x99, 0xfa, 0xfb,
-	0xd5, 0x87, 0xf9, 0xf7, 0xab, 0xb7, 0xa7, 0xd6, 0x19, 0xf3, 0x8e, 0xf5, 0x5f, 0xc6, 0xf4, 0x44,
-	0x3e, 0x34, 0xdd, 0x31, 0x5b, 0x52, 0x6d, 0x02, 0x12, 0x4c, 0xa2, 0x9a, 0xed, 0xac, 0x0b, 0x73,
-	0x4c, 0xb2, 0xb2, 0x7a, 0x76, 0x5e, 0xad, 0xb8, 0x5d, 0x09, 0x08, 0xac, 0xa1, 0xac, 0x9f, 0xd4,
-	0x60, 0xe1, 0xa9, 0xbd, 0x20, 0xee, 0xe6, 0x67, 0xe0, 0xb5, 0x89, 0x66, 0xc0, 0x8c, 0xfa, 0xcf,
-	0x4e, 0xa5, 0x2d, 0xee, 0xaa, 0x75, 0xd7, 0x32, 0x47, 0xa6, 0x71, 0xa4, 0x78, 0x6d, 0x32, 0x0a,
-	0x27, 0xc5, 0x2b, 0x90, 0xd8, 0xf5, 0x11, 0x12, 0xfb, 0xe9, 0xf2, 0x53, 0xe5, 0x8a, 0xf4, 0x6c,
-	0x65, 0x45, 0xfa, 0xdc, 0x31, 0x15, 0xe9, 0xaf, 0x3c, 0x0d, 0x45, 0x3a, 0x63, 0x36, 0x37, 0x9e,
-	0xdc, 0x6c, 0xfe, 0x01, 0x9c, 0x3a, 0x48, 0x0f, 0x8f, 0xdd, 0x64, 0xc2, 0xd5, 0x5b, 0xd0, 0x6f,
-	0x95, 0xaa, 0xd0, 0xe2, 0xbc, 0x62, 0x9c, 0x04, 0x3c, 0x73, 0xec, 0xe0, 0x52, 0x98, 0xa2, 0x19,
-	0x36, 0x3f, 0x6a, 0x86, 0xfd, 0x7e, 0x0d, 0x4e, 0xdb, 0x65, 0xbf, 0x53, 0xd1, 0x9c, 0xd5, 0x1b,
-	0x93, 0xb9, 0x16, 0x65, 0x11, 0x71, 0x79, 0x45, 0xd9, 0x27, 0xe7, 0xad, 0xfc, 0x93, 0xf3, 0xc3,
-	0x02, 0x6f, 0x07, 0x72, 0x54, 0xba, 0x13, 0x1f, 0x6d, 0xc7, 0xe2, 0xee, 0xda, 0xc7, 0xe2, 0xee,
-	0x0a, 0x66, 0xed, 0xc2, 0xf1, 0xcd, 0xda, 0x5d, 0x58, 0xf6, 0x86, 0x76, 0x9f, 0xec, 0xc4, 0xbe,
-	0xaf, 0x6e, 0xb0, 0x59, 0x67, 0x51, 0xc2, 0x94, 0x5e, 0xd8, 0xde, 0x09, 0x1d, 0xdb, 0x2f, 0xbe,
-	0x1d, 0x1f, 0x41, 0x10, 0x92, 0x20, 0xdd, 0x33, 0x09, 0x17, 0x43, 0x23, 0xf9, 0xae, 0x26, 0xce,
-	0x46, 0x09, 0xed, 0xc8, 0x0d, 0x98, 0x76, 0x98, 0x58, 0x52, 0xda, 0x51, 0x12, 0x81, 0xae, 0xca,
-	0x54, 0xfd, 0x40, 0x4d, 0xf1, 0x4e, 0x17, 0xc6, 0x18, 0x78, 0x9b, 0xf7, 0xcc, 0xf3, 0xb8, 0xb4,
-	0x48, 0xe6, 0x69, 0xee, 0x4a, 0xee, 0x69, 0xee, 0x4b, 0x70, 0x96, 0x73, 0xbf, 0x9b, 0xe5, 0xe6,
-	0xb5, 0xf7, 0xb0, 0xf4, 0xc9, 0x6e, 0xe0, 0x71, 0xc9, 0x92, 0xe5, 0xe6, 0x7e, 0x42, 0x65, 0x9c,
-	0x9f, 0x84, 0xe5, 0x4e, 0xaf, 0x2b, 0x70, 0x16, 0x14, 0xbd, 0x38, 0x8e, 0x98, 0x39, 0x29, 0x57,
-	0xd2, 0x18, 0x9a, 0x25, 0x4b, 0x22, 0x9c, 0x2a, 0x90, 0x08, 0x23, 0xa4, 0xc5, 0xe9, 0x32, 0xd2,
-	0x62, 0x47, 0x7a, 0x20, 0xdf, 0xdc, 0xd0, 0x04, 0x4d, 0xb5, 0x63, 0x56, 0xba, 0x96, 0x61, 0x05,
-	0x84, 0x2e, 0xc3, 0xa9, 0x28, 0x74, 0x77, 0x46, 0x98, 0x90, 0xb3, 0xca, 0x91, 0xbd, 0x2c, 0x4d,
-	0xee, 0x1e, 0x69, 0xbc, 0x74, 0xdb, 0x6e, 0xe0, 0x6c, 0x54, 0x91, 0x3d, 0x78, 0x66, 0x1a, 0xec,
-	0xc1, 0xea, 0x74, 0xd9, 0x83, 0x67, 0x4b, 0xd8, 0x03, 0x17, 0x4e, 0x46, 0xa1, 0xbb, 0xe9, 0x31,
-	0x1a, 0xcb, 0x7f, 0xb0, 0x5d, 0x8f, 0xdd, 0x3e, 0xe1, 0x92, 0x68, 0x68, 0x5f, 0xbe, 0x9c, 0xad,
-	0x59, 0xfd, 0xf7, 0x71, 0x4d, 0xff, 0xf7, 0x51, 0x4a, 0x77, 0xa1, 0x94, 0xd4, 0x01, 0xcb, 0xe0,
-	0xb2, 0x1c, 0xc5, 0x85, 0x69, 0x72, 0x14, 0xc2, 0xbe, 0x18, 0xc4, 0xdc, 0x0d, 0x0f, 0x03, 0xc9,
-	0x09, 0x09, 0xfb, 0x42, 0x87, 0xc7, 0x5d, 0xdf, 0x5b, 0x5f, 0xc4, 0xf5, 0x7d, 0x09, 0x77, 0xf2,
-	0xdc, 0xd3, 0xe4, 0x4e, 0x06, 0xb0, 0x78, 0x90, 0x35, 0xbc, 0x34, 0x53, 0x53, 0x8d, 0xcd, 0xcc,
-	0x99, 0x70, 0x38, 0x0f, 0x3c, 0xca, 0x9b, 0x7e, 0xe3, 0x29, 0xf1, 0xa6, 0x93, 0xb3, 0x33, 0xff,
-	0xb8, 0x00, 0x27, 0x0a, 0x7f, 0x1f, 0x49, 0x5e, 0x9a, 0xd4, 0xb2, 0x2f, 0x4d, 0x72, 0xef, 0x45,
-	0xea, 0xd3, 0x7b, 0x2f, 0x32, 0x33, 0xfd, 0xf7, 0x22, 0xcb, 0xe3, 0xde, 0x8b, 0x64, 0x5e, 0xc3,
-	0xcc, 0xe6, 0x5f, 0xc3, 0x5c, 0x84, 0x25, 0x73, 0x63, 0x4b, 0xf4, 0x4b, 0x06, 0xc5, 0x08, 0x14,
-	0xa3, 0x91, 0x0b, 0x8d, 0x40, 0xa6, 0xcf, 0x4d, 0xf0, 0x20, 0x30, 0x3f, 0xe2, 0x52, 0xbd, 0xd0,
-	0x0f, 0xf5, 0x14, 0x38, 0x7a, 0x05, 0x3a, 0x61, 0xaf, 0xe7, 0x87, 0xb6, 0x9b, 0xbe, 0x48, 0x31,
-	0x4c, 0x84, 0xf2, 0xbe, 0x18, 0x9b, 0x8e, 0xfe, 0xa0, 0x06, 0x4b, 0xf9, 0x87, 0x49, 0xac, 0xd3,
-	0x92, 0x8d, 0x7d, 0x7b, 0x1a, 0x8d, 0xed, 0xe6, 0xa1, 0x55, 0xb3, 0x8b, 0x15, 0x22, 0x0c, 0x67,
-	0xa2, 0x32, 0xc5, 0x93, 0xe9, 0xcb, 0xd4, 0xcf, 0xd2, 0x76, 0xc7, 0x94, 0xcc, 0x5e, 0xf7, 0x36,
-	0xa7, 0x79, 0xdd, 0x9b, 0xff, 0xaf, 0xcd, 0xe2, 0xb4, 0xff, 0x6b, 0x83, 0x7e, 0x54, 0xfa, 0x4c,
-	0x49, 0xa9, 0x7a, 0xef, 0x4c, 0x63, 0x4a, 0x9e, 0xfc, 0xa9, 0xd2, 0x47, 0x35, 0x58, 0x55, 0x53,
-	0x55, 0xf6, 0xbb, 0x37, 0x7d, 0xad, 0x39, 0x05, 0x2e, 0xe8, 0x33, 0x2a, 0x41, 0x7c, 0x74, 0xdf,
-	0x5f, 0x9a, 0xc0, 0x76, 0x28, 0x7f, 0x68, 0x53, 0xac, 0x62, 0xf5, 0x48, 0xbd, 0x5a, 0x1c, 0xfb,
-	0x70, 0xf5, 0x7e, 0x76, 0x8b, 0xac, 0xfa, 0xae, 0x34, 0x5d, 0x8c, 0xd9, 0x47, 0xb3, 0x1f, 0xd5,
-	0xe0, 0x54, 0xd9, 0xaa, 0x29, 0x69, 0x45, 0x37, 0xdf, 0x8a, 0x09, 0x2d, 0xf8, 0x4c, 0x1b, 0xa6,
-	0xf3, 0xc2, 0xe8, 0xbf, 0x67, 0x33, 0xac, 0x03, 0x27, 0xd1, 0x6f, 0xa0, 0x23, 0x4b, 0xee, 0x17,
-	0x4c, 0x8d, 0xa7, 0xf5, 0x0b, 0xa6, 0xb9, 0xcf, 0xfb, 0x05, 0xd3, 0xfc, 0xd3, 0xfb, 0x05, 0x53,
-	0x73, 0xec, 0x2f, 0x98, 0x5a, 0x5f, 0xd8, 0x2f, 0x98, 0xac, 0x9f, 0xd6, 0x60, 0xf9, 0xcb, 0xfd,
-	0xd3, 0xcc, 0x9f, 0x66, 0xb8, 0xea, 0xa7, 0xf6, 0xb7, 0xcc, 0x77, 0xf3, 0xdc, 0xe2, 0x8d, 0xe9,
-	0x68, 0xec, 0x9a, 0x63, 0xbc, 0x0b, 0x27, 0x4b, 0x94, 0xf9, 0x71, 0x9e, 0xb0, 0xb9, 0x6b, 0xb7,
-	0x7a, 0xc9, 0xb5, 0xdb, 0xaf, 0x4a, 0x06, 0xe4, 0x8b, 0xfc, 0xe9, 0x61, 0xf1, 0x17, 0x7e, 0xf5,
-	0xa9, 0xfc, 0xc2, 0x6f, 0x11, 0xda, 0x99, 0xff, 0xba, 0x5f, 0x3f, 0xf3, 0xf3, 0x4f, 0xcf, 0xd7,
-	0x7e, 0xf9, 0xe9, 0xf9, 0xda, 0x7f, 0x7e, 0x7a, 0xbe, 0xf6, 0x4e, 0xd3, 0xb4, 0xeb, 0xff, 0x03,
-	0x00, 0x00, 0xff, 0xff, 0x56, 0x16, 0x94, 0xd4, 0xa2, 0x60, 0x00, 0x00,
+var fileDescriptor_c23edafa7e7ea072 = []byte{
+	// 7381 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x7d, 0x4b, 0x6c, 0x24, 0xd7,
+	0x75, 0xa8, 0x8a, 0x64, 0x93, 0xcd, 0xd3, 0xe4, 0x90, 0xbc, 0xf3, 0x6b, 0x51, 0xa3, 0xe1, 0xb8,
+	0x64, 0x09, 0xa3, 0xf7, 0x64, 0xd2, 0x9a, 0xb1, 0xde, 0x93, 0x2d, 0xeb, 0xc3, 0xe6, 0x6f, 0xa8,
+	0x19, 0x7e, 0x74, 0x9a, 0x33, 0xf3, 0xac, 0x11, 0xa4, 0x57, 0xec, 0xbe, 0xdd, 0x5d, 0xc3, 0xee,
+	0xaa, 0x56, 0x55, 0x35, 0x29, 0x4a, 0x09, 0x22, 0x1b, 0x31, 0x1c, 0xc7, 0x31, 0x92, 0xc0, 0xb0,
+	0xa3, 0xc0, 0x08, 0x92, 0x4d, 0xe0, 0x2c, 0x9c, 0x55, 0x90, 0x6c, 0x02, 0x78, 0x11, 0x24, 0x81,
+	0x63, 0x20, 0x80, 0xb3, 0x8a, 0x17, 0x06, 0x6d, 0x31, 0x1b, 0x1b, 0x89, 0x63, 0x64, 0x61, 0x24,
+	0x18, 0x04, 0x48, 0x70, 0xbf, 0xf5, 0xe9, 0xea, 0x19, 0x4e, 0x35, 0x67, 0x60, 0xc4, 0xde, 0x75,
+	0x9d, 0x73, 0xee, 0x39, 0xf7, 0x7f, 0xcf, 0xef, 0xde, 0x86, 0x85, 0xba, 0x1d, 0x34, 0x3a, 0xdb,
+	0xb3, 0x15, 0xb7, 0x35, 0x67, 0x79, 0x75, 0xb7, 0xed, 0xb9, 0xb7, 0xf9, 0x8f, 0xb9, 0xf6, 0x4e,
+	0x7d, 0xce, 0x6a, 0xdb, 0xfe, 0xdc, 0x9e, 0xeb, 0xed, 0xd4, 0x9a, 0xee, 0xde, 0xdc, 0xee, 0xb3,
+	0x56, 0xb3, 0xdd, 0xb0, 0x9e, 0x9d, 0xab, 0x53, 0x87, 0x7a, 0x56, 0x40, 0xab, 0xb3, 0x6d, 0xcf,
+	0x0d, 0x5c, 0x72, 0x39, 0x64, 0x32, 0xab, 0x98, 0xf0, 0x1f, 0xb3, 0xed, 0x9d, 0xfa, 0x2c, 0x63,
+	0x32, 0xab, 0x98, 0xcc, 0x2a, 0x26, 0xd3, 0x1f, 0x8b, 0x48, 0xae, 0xbb, 0x4c, 0x20, 0xe3, 0xb5,
+	0xdd, 0xa9, 0xf1, 0x2f, 0xfe, 0xc1, 0x7f, 0x09, 0x19, 0xd3, 0xe6, 0xce, 0xf3, 0xfe, 0xac, 0xed,
+	0xb2, 0x2a, 0xcd, 0x55, 0x5c, 0x8f, 0xce, 0xed, 0x76, 0xd5, 0x63, 0xfa, 0xe9, 0x08, 0x4d, 0xdb,
+	0x6d, 0xda, 0x95, 0xfd, 0xb9, 0xdd, 0x67, 0xb7, 0x69, 0xd0, 0x5d, 0xe5, 0xe9, 0x4f, 0x84, 0xa4,
+	0x2d, 0xab, 0xd2, 0xb0, 0x1d, 0xea, 0xed, 0x87, 0x4d, 0x6e, 0xd1, 0xc0, 0x4a, 0x13, 0x30, 0xd7,
+	0xab, 0x94, 0xd7, 0x71, 0x02, 0xbb, 0x45, 0xbb, 0x0a, 0xfc, 0x9f, 0x7b, 0x15, 0xf0, 0x2b, 0x0d,
+	0xda, 0xb2, 0xba, 0xca, 0x5d, 0xee, 0x55, 0xae, 0x13, 0xd8, 0xcd, 0x39, 0xdb, 0x09, 0xfc, 0xc0,
+	0x4b, 0x16, 0x32, 0x97, 0x60, 0x78, 0xbe, 0xe5, 0x76, 0x9c, 0x80, 0xbc, 0x00, 0xb9, 0x5d, 0xab,
+	0xd9, 0xa1, 0x45, 0xe3, 0x82, 0x71, 0x71, 0xb4, 0xf4, 0xe4, 0xb7, 0x0f, 0x66, 0x1e, 0x39, 0x3c,
+	0x98, 0xc9, 0xdd, 0x60, 0xc0, 0x3b, 0x07, 0x33, 0xa7, 0xa8, 0x53, 0x71, 0xab, 0xb6, 0x53, 0x9f,
+	0xbb, 0xed, 0xbb, 0xce, 0xec, 0x7a, 0xa7, 0xb5, 0x4d, 0x3d, 0x14, 0x65, 0xcc, 0x6f, 0x0e, 0xc0,
+	0xc4, 0xbc, 0x57, 0x69, 0xd8, 0xbb, 0xb4, 0x1c, 0x30, 0xfe, 0xf5, 0x7d, 0x72, 0x0b, 0x06, 0x03,
+	0xcb, 0xe3, 0xec, 0x0a, 0x97, 0x5e, 0x99, 0xcd, 0x30, 0xde, 0xb3, 0x5b, 0x96, 0xa7, 0xd8, 0x95,
+	0x46, 0x0e, 0x0f, 0x66, 0x06, 0xb7, 0x2c, 0x0f, 0x19, 0x57, 0xf2, 0x16, 0x0c, 0x39, 0xae, 0x43,
+	0x8b, 0x03, 0x9c, 0xfb, 0x7c, 0x26, 0xee, 0xeb, 0xae, 0xa3, 0x6b, 0x5b, 0xca, 0x1f, 0x1e, 0xcc,
+	0x0c, 0x31, 0x08, 0x72, 0xc6, 0xac, 0xf6, 0xef, 0xda, 0xed, 0xe2, 0x60, 0x1f, 0xb5, 0x7f, 0xdd,
+	0x6e, 0xc7, 0x6b, 0xff, 0xba, 0xdd, 0x46, 0xc6, 0xd5, 0xfc, 0xa9, 0x01, 0xa3, 0xf3, 0x5e, 0xbd,
+	0xd3, 0xa2, 0x4e, 0xe0, 0x13, 0x0f, 0xa0, 0x6d, 0x79, 0x56, 0x8b, 0x06, 0xd4, 0xf3, 0x8b, 0xc6,
+	0x85, 0xc1, 0x8b, 0x85, 0x4b, 0x2f, 0x65, 0x92, 0xb8, 0xa9, 0xd8, 0x94, 0x88, 0x1c, 0x3e, 0xd0,
+	0x20, 0x1f, 0x23, 0x52, 0x88, 0x03, 0xa3, 0x96, 0x17, 0xd8, 0x35, 0xab, 0x12, 0xf8, 0xc5, 0x01,
+	0x2e, 0xf2, 0xc5, 0x4c, 0x22, 0xe7, 0x25, 0x97, 0xd2, 0x94, 0x94, 0x38, 0xaa, 0x20, 0x3e, 0x86,
+	0x22, 0xcc, 0xbf, 0x1f, 0x82, 0xbc, 0x42, 0x90, 0x0b, 0x30, 0xe4, 0x58, 0x2d, 0x35, 0xd3, 0xc6,
+	0x64, 0xc1, 0xa1, 0x75, 0xab, 0xc5, 0x7a, 0xdf, 0x6a, 0x51, 0x46, 0xd1, 0xb6, 0x82, 0x06, 0x1f,
+	0xde, 0x08, 0xc5, 0xa6, 0x15, 0x34, 0x90, 0x63, 0xc8, 0x39, 0x18, 0x6a, 0xb9, 0x55, 0xca, 0x07,
+	0x28, 0x27, 0x46, 0x6f, 0xcd, 0xad, 0x52, 0xe4, 0x50, 0x56, 0xbe, 0xe6, 0xb9, 0xad, 0xe2, 0x50,
+	0xbc, 0xfc, 0xb2, 0xe7, 0xb6, 0x90, 0x63, 0xc8, 0x97, 0x0c, 0x98, 0x54, 0xd5, 0xbb, 0xe6, 0x56,
+	0xac, 0xc0, 0x76, 0x9d, 0x62, 0x8e, 0x8f, 0xf6, 0x52, 0x5f, 0x1d, 0xa1, 0x98, 0x95, 0x8a, 0x52,
+	0xea, 0x64, 0x12, 0x83, 0x5d, 0x82, 0xc9, 0x25, 0x80, 0x7a, 0xd3, 0xdd, 0xb6, 0x9a, 0xac, 0x0f,
+	0x8a, 0xc3, 0xbc, 0xd6, 0x7a, 0x08, 0x57, 0x34, 0x06, 0x23, 0x54, 0x64, 0x07, 0x46, 0x2c, 0xb1,
+	0xe4, 0x8a, 0x23, 0xbc, 0xde, 0x8b, 0x19, 0xeb, 0x1d, 0x5b, 0xb6, 0xa5, 0xc2, 0xe1, 0xc1, 0xcc,
+	0x88, 0x04, 0xa2, 0x92, 0x40, 0x9e, 0x81, 0xbc, 0xdb, 0x66, 0x55, 0xb5, 0x9a, 0xc5, 0xfc, 0x05,
+	0xe3, 0x62, 0xbe, 0x34, 0x29, 0xab, 0x97, 0xdf, 0x90, 0x70, 0xd4, 0x14, 0xe4, 0x69, 0x18, 0xf1,
+	0x3b, 0xdb, 0x6c, 0xb4, 0x8a, 0xa3, 0xbc, 0x2d, 0x13, 0x92, 0x78, 0xa4, 0x2c, 0xc0, 0xa8, 0xf0,
+	0xe4, 0x39, 0x28, 0x78, 0xb4, 0xd2, 0xf1, 0x7c, 0xca, 0x86, 0xaf, 0x08, 0x9c, 0xf7, 0x49, 0x49,
+	0x5e, 0xc0, 0x10, 0x85, 0x51, 0x3a, 0xf3, 0x1f, 0x86, 0xa1, 0xab, 0x5f, 0xc9, 0xb3, 0x50, 0x90,
+	0xf5, 0xbd, 0xe6, 0xd6, 0x7d, 0x3e, 0xbd, 0xf2, 0xa5, 0x09, 0xc6, 0x67, 0x3e, 0x04, 0x63, 0x94,
+	0x86, 0xdc, 0x84, 0x01, 0xff, 0xb2, 0xdc, 0x45, 0x5e, 0xce, 0xd4, 0x7f, 0xe5, 0xcb, 0x7a, 0x09,
+	0x0c, 0x1f, 0x1e, 0xcc, 0x0c, 0x94, 0x2f, 0xe3, 0x80, 0x7f, 0x99, 0xed, 0x1f, 0x75, 0x3b, 0xe8,
+	0x6b, 0xff, 0x58, 0xb1, 0x03, 0xcd, 0x9a, 0xef, 0x1f, 0x2b, 0x76, 0x80, 0x8c, 0x2b, 0xdb, 0xfd,
+	0x1a, 0x41, 0xd0, 0xe6, 0xd3, 0x3b, 0xeb, 0xee, 0x77, 0x65, 0x6b, 0x6b, 0x53, 0xb3, 0xe7, 0xeb,
+	0x87, 0x41, 0x90, 0x33, 0x26, 0xef, 0xb1, 0x9e, 0x14, 0x38, 0xd7, 0xdb, 0x97, 0xeb, 0xe2, 0x4a,
+	0x5f, 0xeb, 0xc2, 0xf5, 0xf6, 0xb5, 0x38, 0x39, 0x26, 0x1a, 0x81, 0x51, 0x69, 0xbc, 0x75, 0xd5,
+	0x9a, 0xcf, 0x97, 0x41, 0xe6, 0xd6, 0x2d, 0x2e, 0x97, 0x13, 0xad, 0x5b, 0x5c, 0x2e, 0x23, 0x67,
+	0xcc, 0xc6, 0xc6, 0xb3, 0xf6, 0xe4, 0xaa, 0xc9, 0x36, 0x36, 0x68, 0xed, 0xc5, 0xc7, 0x06, 0xad,
+	0x3d, 0x64, 0x5c, 0x19, 0x73, 0xd7, 0xf7, 0xf9, 0x22, 0xc9, 0xca, 0x7c, 0xa3, 0x5c, 0x8e, 0x33,
+	0xdf, 0x28, 0x97, 0x91, 0x71, 0xe5, 0xb3, 0xaa, 0xe2, 0xf3, 0x45, 0x95, 0x79, 0x56, 0x2d, 0x24,
+	0x98, 0xaf, 0x2c, 0x94, 0x91, 0x71, 0x35, 0xeb, 0x70, 0x5a, 0x61, 0x90, 0xb6, 0x5d, 0xdf, 0xe6,
+	0x43, 0x43, 0x6b, 0x64, 0x0e, 0x46, 0x2b, 0xae, 0x53, 0xb3, 0xeb, 0x6b, 0x56, 0x5b, 0x6e, 0xda,
+	0x7a, 0xb7, 0x5f, 0x50, 0x08, 0x0c, 0x69, 0xc8, 0xe3, 0x30, 0xb8, 0x43, 0xf7, 0xe5, 0xee, 0x5d,
+	0x90, 0xa4, 0x83, 0x57, 0xe9, 0x3e, 0x32, 0xb8, 0xf9, 0x2d, 0x03, 0x4e, 0xa6, 0x4c, 0x0b, 0x56,
+	0xac, 0xe3, 0x35, 0xa5, 0x04, 0x5d, 0xec, 0x3a, 0x5e, 0x43, 0x06, 0x27, 0x5f, 0x30, 0x60, 0x22,
+	0x32, 0x4f, 0xe6, 0x3b, 0xf2, 0x80, 0xc8, 0xbe, 0xf3, 0xc5, 0x78, 0x95, 0xce, 0x4a, 0x89, 0x13,
+	0x09, 0x04, 0x26, 0xa5, 0x9a, 0xff, 0x68, 0x40, 0x92, 0x88, 0x58, 0x70, 0xa2, 0xe3, 0x53, 0x8f,
+	0x1d, 0x5f, 0x65, 0x5a, 0xf1, 0x68, 0x20, 0x35, 0x9f, 0x27, 0x67, 0x85, 0x5e, 0xc6, 0x6a, 0x31,
+	0xcb, 0xb4, 0xd0, 0xd9, 0xdd, 0x67, 0x67, 0x05, 0xc5, 0x55, 0xba, 0x5f, 0xa6, 0x4d, 0xca, 0x78,
+	0x94, 0xc8, 0xe1, 0xc1, 0xcc, 0x89, 0xeb, 0x31, 0x06, 0x98, 0x60, 0xc8, 0x44, 0xb4, 0x2d, 0xdf,
+	0xdf, 0x73, 0xbd, 0xaa, 0x14, 0x31, 0x70, 0xdf, 0x22, 0x36, 0x63, 0x0c, 0x30, 0xc1, 0xd0, 0xfc,
+	0x6b, 0x03, 0x46, 0x4a, 0x56, 0x65, 0xc7, 0xad, 0xd5, 0xd8, 0x9e, 0x5f, 0xed, 0x78, 0xe2, 0x64,
+	0x14, 0x63, 0xa2, 0xf7, 0xfc, 0x45, 0x09, 0x47, 0x4d, 0x41, 0xb6, 0x60, 0x58, 0x74, 0x87, 0xac,
+	0xd4, 0xc7, 0x23, 0x95, 0xd2, 0xfa, 0x28, 0x1f, 0x0e, 0xa6, 0x8f, 0xce, 0x0a, 0x7d, 0x74, 0x76,
+	0xd5, 0x09, 0x36, 0x98, 0x8e, 0x67, 0x3b, 0xf5, 0x12, 0x1c, 0x1e, 0xcc, 0x0c, 0x2f, 0x73, 0x1e,
+	0x28, 0x79, 0xb1, 0xe3, 0xa1, 0x65, 0xbd, 0xa3, 0xc4, 0xf1, 0xed, 0x74, 0x34, 0x3c, 0x1e, 0xd6,
+	0x42, 0x14, 0x46, 0xe9, 0xcc, 0x37, 0x21, 0xb7, 0x60, 0x55, 0x1a, 0x94, 0x5c, 0x4f, 0x4e, 0xdd,
+	0xc2, 0xa5, 0x8b, 0x69, 0xbd, 0xa5, 0xa7, 0x71, 0xb4, 0xc3, 0xc6, 0x7b, 0x4d, 0x70, 0xf3, 0x47,
+	0x06, 0x9c, 0x5d, 0x68, 0x76, 0xfc, 0x80, 0x7a, 0x37, 0xe5, 0xbc, 0xda, 0xa2, 0xad, 0x76, 0xd3,
+	0x0a, 0x28, 0xf9, 0xff, 0x90, 0x67, 0xb6, 0x40, 0xd5, 0x0a, 0x2c, 0x29, 0xb1, 0x77, 0x57, 0xf0,
+	0x99, 0xc9, 0xa8, 0x59, 0x1d, 0x36, 0xb6, 0x6f, 0xd3, 0x4a, 0xb0, 0x46, 0x03, 0x2b, 0x3c, 0xfb,
+	0x43, 0x18, 0x6a, 0xae, 0x64, 0x07, 0x86, 0xfc, 0x36, 0xad, 0xc8, 0x8e, 0x5e, 0xcd, 0x34, 0xf9,
+	0x93, 0xd5, 0x2e, 0xb7, 0x69, 0x25, 0x54, 0x94, 0xd8, 0x17, 0x72, 0x21, 0xe6, 0xbf, 0x1a, 0xf0,
+	0x58, 0x8f, 0xa6, 0x5e, 0xb3, 0xfd, 0x80, 0xbc, 0xd1, 0xd5, 0xdc, 0xd9, 0xa3, 0x35, 0x97, 0x95,
+	0xe6, 0x8d, 0xd5, 0xb3, 0x4a, 0x41, 0x22, 0x4d, 0x7d, 0x1b, 0x72, 0x76, 0x40, 0x5b, 0x4a, 0x47,
+	0xbd, 0x96, 0xa9, 0xad, 0x3d, 0xaa, 0x5f, 0x1a, 0x57, 0x36, 0xce, 0x2a, 0x13, 0x81, 0x42, 0x92,
+	0xf9, 0x77, 0x06, 0xb0, 0x41, 0xaf, 0xda, 0x52, 0xa7, 0x18, 0x0a, 0xf6, 0xdb, 0x4a, 0x57, 0x7d,
+	0x5c, 0x75, 0xd0, 0xd6, 0x7e, 0x9b, 0x19, 0x45, 0xe3, 0x9a, 0x90, 0x01, 0x90, 0x93, 0x92, 0x37,
+	0x61, 0xd8, 0x0f, 0xac, 0xa0, 0xe3, 0xcb, 0x0d, 0x70, 0x59, 0x16, 0x1a, 0x2e, 0x73, 0xe8, 0x9d,
+	0x83, 0x99, 0x23, 0x59, 0x92, 0xb3, 0x9a, 0xb7, 0x28, 0x87, 0x92, 0x2b, 0xd3, 0xae, 0x5a, 0xd4,
+	0xf7, 0xad, 0x3a, 0x95, 0xeb, 0x41, 0x6b, 0x57, 0x6b, 0x02, 0x8c, 0x0a, 0x6f, 0x7e, 0x06, 0x60,
+	0xc1, 0x75, 0x02, 0xdb, 0xe9, 0xd0, 0x0d, 0x87, 0x3c, 0x01, 0x39, 0xea, 0x79, 0xae, 0x27, 0x35,
+	0x23, 0xdd, 0xfc, 0x25, 0x06, 0x44, 0x81, 0x23, 0x4f, 0xb1, 0x75, 0x6c, 0x37, 0x69, 0x95, 0xd7,
+	0x3e, 0x5f, 0x3a, 0xa1, 0x6a, 0xbf, 0xcc, 0xa1, 0x28, 0xb1, 0xe6, 0x2c, 0x8c, 0x2c, 0x30, 0xc3,
+	0x91, 0x7a, 0x8c, 0x6f, 0xd4, 0x74, 0x1c, 0x8f, 0x99, 0x8e, 0xca, 0x44, 0xfc, 0x86, 0x01, 0xa7,
+	0x17, 0x3c, 0xca, 0xa6, 0xda, 0xe5, 0x52, 0xa7, 0xb2, 0x43, 0x03, 0xa1, 0x38, 0xf2, 0xf6, 0x50,
+	0xc7, 0xda, 0x66, 0x22, 0xa5, 0xca, 0xa6, 0xda, 0xb3, 0x24, 0xc0, 0xa8, 0xf0, 0xac, 0x72, 0x1e,
+	0xad, 0xb3, 0x9d, 0x40, 0x74, 0xad, 0xae, 0x1c, 0x72, 0x28, 0x4a, 0x2c, 0x79, 0x01, 0xc6, 0x5d,
+	0xbe, 0x72, 0xae, 0xb9, 0x95, 0x1d, 0xdb, 0xa9, 0xf3, 0x8e, 0xca, 0x97, 0x4e, 0x4b, 0xf2, 0xf1,
+	0x8d, 0x28, 0x12, 0xe3, 0xb4, 0xe6, 0x77, 0x06, 0x60, 0x6c, 0xc1, 0x73, 0x1d, 0x35, 0x5f, 0x1e,
+	0xc2, 0x8a, 0xae, 0xc7, 0x56, 0x74, 0x36, 0x03, 0x24, 0x5a, 0xe5, 0x5e, 0xab, 0x99, 0xb8, 0x7a,
+	0x6e, 0x0a, 0xcd, 0x74, 0xa5, 0x7f, 0x51, 0x9c, 0x5d, 0x38, 0x12, 0xf1, 0xc9, 0x6a, 0x7e, 0xcf,
+	0x80, 0xc9, 0x28, 0xf9, 0x43, 0xd8, 0x33, 0x6a, 0xf1, 0x3d, 0x63, 0xbe, 0xef, 0x26, 0xf6, 0xd8,
+	0x28, 0xfe, 0x33, 0x17, 0x6f, 0x1a, 0xeb, 0x66, 0x66, 0x57, 0x8e, 0xed, 0x45, 0x00, 0xb2, 0x7d,
+	0xf3, 0x7d, 0x6d, 0xd2, 0x7c, 0x38, 0x3f, 0x2a, 0x2b, 0x31, 0x16, 0x85, 0xde, 0x49, 0x7c, 0x63,
+	0x4c, 0x38, 0x3b, 0xc2, 0xfd, 0x4a, 0x83, 0x56, 0x3b, 0x4d, 0x2a, 0x57, 0x8c, 0xee, 0xb8, 0xb2,
+	0x84, 0xa3, 0xa6, 0x20, 0x6f, 0xc0, 0x54, 0xc5, 0x75, 0x2a, 0x1d, 0xcf, 0xa3, 0x4e, 0x65, 0x7f,
+	0x93, 0x7b, 0xc3, 0xe4, 0x16, 0x33, 0x2b, 0x8b, 0x4d, 0x2d, 0x24, 0x09, 0xee, 0xa4, 0x01, 0xb1,
+	0x9b, 0x91, 0x30, 0x0a, 0xfd, 0x36, 0x75, 0xaa, 0xdc, 0x6e, 0xc9, 0x47, 0x8d, 0x42, 0x0e, 0x46,
+	0x85, 0x27, 0xd7, 0xe1, 0xac, 0x1f, 0x30, 0xa5, 0xcb, 0xa9, 0x2f, 0x52, 0xab, 0xda, 0xb4, 0x1d,
+	0xa6, 0x02, 0xb9, 0x4e, 0xd5, 0xe7, 0xa6, 0xc8, 0x60, 0xe9, 0xb1, 0xc3, 0x83, 0x99, 0xb3, 0xe5,
+	0x74, 0x12, 0xec, 0x55, 0x96, 0xbc, 0x09, 0xd3, 0x7e, 0xa7, 0x52, 0xa1, 0xbe, 0x5f, 0xeb, 0x34,
+	0x5f, 0x75, 0xb7, 0xfd, 0x2b, 0xb6, 0xcf, 0xf4, 0xb7, 0x6b, 0x76, 0xcb, 0x0e, 0xb8, 0xb9, 0x91,
+	0x2b, 0x9d, 0x3f, 0x3c, 0x98, 0x99, 0x2e, 0xf7, 0xa4, 0xc2, 0xbb, 0x70, 0x20, 0x08, 0x67, 0xc4,
+	0xe6, 0xd8, 0xc5, 0x7b, 0x84, 0xf3, 0x9e, 0x3e, 0x3c, 0x98, 0x39, 0xb3, 0x9c, 0x4a, 0x81, 0x3d,
+	0x4a, 0xb2, 0x11, 0x0c, 0xec, 0x16, 0x7d, 0xd7, 0x75, 0x28, 0xb7, 0x29, 0x22, 0x23, 0xb8, 0x25,
+	0xe1, 0xa8, 0x29, 0xc8, 0xed, 0x70, 0xf2, 0xb1, 0x45, 0x21, 0x0d, 0x85, 0xfb, 0xdf, 0xad, 0x4e,
+	0x1d, 0x1e, 0xcc, 0x4c, 0xde, 0x8c, 0x70, 0x62, 0x0b, 0x0b, 0x63, 0xbc, 0xcd, 0xbf, 0x1d, 0x00,
+	0xd2, 0xbd, 0x11, 0x90, 0xab, 0x30, 0x6c, 0x55, 0x02, 0x7b, 0x97, 0x4a, 0x4f, 0xd6, 0x13, 0x69,
+	0xea, 0x96, 0x10, 0x85, 0xb4, 0x46, 0xd9, 0x0c, 0xa1, 0xe1, 0xee, 0x31, 0xcf, 0x8b, 0xa2, 0x64,
+	0x41, 0x5c, 0x98, 0x6a, 0x5a, 0x7e, 0xa0, 0xe6, 0x6a, 0x95, 0x35, 0x59, 0x6e, 0x92, 0xff, 0xeb,
+	0x68, 0x8d, 0x62, 0x25, 0x4a, 0xa7, 0xd9, 0xcc, 0xbd, 0x96, 0x64, 0x84, 0xdd, 0xbc, 0x89, 0x07,
+	0x50, 0x51, 0xc7, 0x2e, 0xdb, 0x23, 0xb3, 0xfb, 0xe2, 0xf4, 0xe9, 0x1d, 0x6e, 0xfd, 0x1a, 0xe4,
+	0x63, 0x44, 0x8a, 0xf9, 0x93, 0x61, 0x18, 0x59, 0x9c, 0x5f, 0xd9, 0xb2, 0xfc, 0x9d, 0x23, 0xb8,
+	0xc6, 0xd8, 0x84, 0x90, 0x0a, 0x4c, 0x72, 0x49, 0x2b, 0xc5, 0x06, 0x35, 0x05, 0x71, 0x61, 0xd4,
+	0x52, 0x8e, 0x46, 0xb9, 0xe5, 0xbf, 0x94, 0xd1, 0x58, 0x92, 0x5c, 0xa2, 0x8e, 0x3e, 0x09, 0xc2,
+	0x50, 0x06, 0xf1, 0xa1, 0xa0, 0x84, 0x23, 0xad, 0x49, 0x0f, 0x45, 0x46, 0xef, 0x6f, 0xc8, 0x47,
+	0x78, 0x0c, 0x22, 0x00, 0x8c, 0x4a, 0x21, 0x9f, 0x80, 0xb1, 0x2a, 0x65, 0x3b, 0x07, 0x75, 0x2a,
+	0x36, 0x65, 0x9b, 0xc4, 0x20, 0xeb, 0x17, 0xb6, 0x59, 0x2e, 0x46, 0xe0, 0x18, 0xa3, 0x22, 0xb7,
+	0x61, 0x74, 0xcf, 0x0e, 0x1a, 0x7c, 0x4f, 0x2f, 0x0e, 0xf3, 0xa1, 0xfe, 0x64, 0xa6, 0x8a, 0x32,
+	0x0e, 0x61, 0xb7, 0xdc, 0x54, 0x3c, 0x31, 0x64, 0xcf, 0x4c, 0x68, 0xf6, 0xc1, 0xbd, 0xb1, 0x7c,
+	0x37, 0x18, 0x8d, 0x17, 0xe0, 0x08, 0x0c, 0x69, 0x88, 0x0f, 0x63, 0xec, 0xa3, 0x4c, 0xdf, 0xee,
+	0xb0, 0x15, 0x22, 0xfd, 0x09, 0xd9, 0x7c, 0xb4, 0x8a, 0x89, 0xe8, 0x91, 0x9b, 0x11, 0xb6, 0x18,
+	0x13, 0xc2, 0x66, 0xdf, 0x5e, 0x83, 0x3a, 0xd2, 0x69, 0xa7, 0x67, 0xdf, 0xcd, 0x06, 0x75, 0x90,
+	0x63, 0x88, 0xcb, 0xd7, 0x87, 0x54, 0x28, 0xb9, 0xb7, 0x2e, 0xab, 0xdf, 0x2c, 0xd4, 0x4b, 0x4b,
+	0x27, 0xe4, 0xe2, 0x90, 0xdf, 0x18, 0x11, 0xc1, 0x34, 0x3e, 0xd7, 0x59, 0x7a, 0xc7, 0x0e, 0x8a,
+	0x85, 0xb8, 0xc6, 0xb7, 0xc1, 0xa1, 0x28, 0xb1, 0xec, 0x74, 0x11, 0x83, 0xeb, 0x17, 0xc7, 0xe2,
+	0x4a, 0xb1, 0x98, 0x01, 0x3e, 0x2a, 0xbc, 0xf9, 0x57, 0x06, 0x14, 0xd8, 0x7a, 0x53, 0x6b, 0xe4,
+	0x29, 0x18, 0x0e, 0x2c, 0xaf, 0x2e, 0x2d, 0xf6, 0x88, 0x88, 0x2d, 0x0e, 0x45, 0x89, 0x25, 0x16,
+	0xe4, 0x02, 0xcb, 0xdf, 0x51, 0x7a, 0xc5, 0xa7, 0x33, 0x35, 0x5b, 0x2e, 0xf4, 0x50, 0xa5, 0x60,
+	0x5f, 0x3e, 0x0a, 0xce, 0xe4, 0x22, 0xe4, 0xd9, 0x39, 0xb0, 0x6c, 0xf9, 0x81, 0x54, 0x59, 0xc7,
+	0xd8, 0xc2, 0x5e, 0x96, 0x30, 0xd4, 0x58, 0xf3, 0x39, 0xc8, 0x2d, 0xed, 0x52, 0x87, 0x1f, 0x10,
+	0xbe, 0x34, 0x58, 0x93, 0x56, 0xba, 0x32, 0x64, 0x51, 0x53, 0x98, 0x6f, 0xc0, 0x89, 0xa5, 0x77,
+	0x68, 0xa5, 0x13, 0xb8, 0x9e, 0x30, 0x6c, 0xc9, 0xab, 0x40, 0x7c, 0xea, 0xed, 0xda, 0x15, 0x3a,
+	0x5f, 0xa9, 0x30, 0x85, 0x7e, 0x3d, 0xdc, 0x7f, 0xa6, 0x25, 0x27, 0x52, 0xee, 0xa2, 0xc0, 0x94,
+	0x52, 0xe6, 0x1f, 0x18, 0x50, 0x88, 0xf8, 0x97, 0xd8, 0xee, 0x53, 0x5f, 0x28, 0x0b, 0x6d, 0x5f,
+	0x2a, 0x42, 0x2f, 0x65, 0x75, 0x5a, 0x09, 0x2e, 0xe1, 0xaa, 0xd1, 0x20, 0x0c, 0x65, 0xdc, 0xcb,
+	0xf1, 0xf4, 0x17, 0x06, 0x84, 0xe5, 0xd8, 0xb8, 0x6f, 0x87, 0x55, 0x8b, 0x8c, 0xbb, 0xe4, 0x2b,
+	0xb1, 0xe4, 0x7d, 0x03, 0xce, 0xc6, 0x1b, 0xcb, 0x9d, 0x04, 0xf7, 0xef, 0x80, 0x99, 0x91, 0x02,
+	0xce, 0x96, 0xd3, 0xb9, 0x61, 0x2f, 0x31, 0xe6, 0x0d, 0xc8, 0xad, 0x58, 0x9d, 0x3a, 0x3d, 0x92,
+	0xa9, 0xc5, 0x66, 0x91, 0x47, 0xad, 0x66, 0xa0, 0x0e, 0x4b, 0x39, 0x8b, 0x50, 0xc2, 0x50, 0x63,
+	0xcd, 0x6f, 0x0e, 0x41, 0x21, 0xe2, 0x66, 0x66, 0x1b, 0x80, 0x47, 0xdb, 0x6e, 0xf2, 0xf8, 0x41,
+	0xda, 0x76, 0x91, 0x63, 0xd8, 0x74, 0xf3, 0xe8, 0xae, 0xed, 0x87, 0x36, 0x98, 0x9e, 0x6e, 0x28,
+	0xe1, 0xa8, 0x29, 0xc8, 0x0c, 0xe4, 0xaa, 0xb4, 0x1d, 0x34, 0xf8, 0x64, 0x1e, 0x2a, 0x8d, 0xb2,
+	0xaa, 0x2e, 0x32, 0x00, 0x0a, 0x38, 0x23, 0xa8, 0xd1, 0xa0, 0xd2, 0x28, 0x0e, 0xf1, 0x2d, 0x9b,
+	0x13, 0x2c, 0x33, 0x00, 0x0a, 0x78, 0x8a, 0x5b, 0x2d, 0xf7, 0xe0, 0xdd, 0x6a, 0xc3, 0xc7, 0xec,
+	0x56, 0x23, 0x6d, 0x38, 0xe9, 0xfb, 0x8d, 0x4d, 0xcf, 0xde, 0xb5, 0x02, 0x1a, 0xce, 0x9e, 0x91,
+	0xfb, 0x91, 0x73, 0xf6, 0xf0, 0x60, 0xe6, 0x64, 0xb9, 0x7c, 0x25, 0xc9, 0x05, 0xd3, 0x58, 0x93,
+	0x32, 0x9c, 0xb6, 0x1d, 0x9f, 0x56, 0x3a, 0x1e, 0x5d, 0xad, 0x3b, 0xae, 0x47, 0xaf, 0xb8, 0x3e,
+	0x63, 0x27, 0xa3, 0x37, 0xca, 0x91, 0x71, 0x7a, 0x35, 0x8d, 0x08, 0xd3, 0xcb, 0x9a, 0xdf, 0x31,
+	0x60, 0x2c, 0xea, 0x59, 0x27, 0x3e, 0x40, 0x63, 0x71, 0xb9, 0x2c, 0xb6, 0x12, 0xb9, 0xc2, 0x5f,
+	0xce, 0xec, 0xb0, 0x17, 0x6c, 0x42, 0x7d, 0x29, 0x84, 0x61, 0x44, 0xcc, 0x11, 0x82, 0x83, 0x4f,
+	0x40, 0xae, 0xe6, 0x7a, 0x15, 0x2a, 0xf7, 0x50, 0xbd, 0x4a, 0x96, 0x19, 0x10, 0x05, 0xce, 0xfc,
+	0x91, 0x01, 0x11, 0x09, 0xe4, 0xd7, 0x60, 0x9c, 0xc9, 0xb8, 0xea, 0x6d, 0xc7, 0x5a, 0x53, 0xca,
+	0xdc, 0x1a, 0xcd, 0x29, 0x74, 0x3b, 0xc4, 0xc0, 0x18, 0x97, 0x47, 0xfe, 0x37, 0x8c, 0x5a, 0xd5,
+	0xaa, 0x47, 0x7d, 0x9f, 0x8a, 0x23, 0x66, 0x54, 0x38, 0x20, 0xe7, 0x15, 0x10, 0x43, 0x3c, 0x5b,
+	0x86, 0x8d, 0x6a, 0xcd, 0x67, 0x33, 0x5b, 0x5a, 0x68, 0x7a, 0x19, 0x32, 0x21, 0x0c, 0x8e, 0x9a,
+	0xc2, 0xfc, 0xf2, 0x10, 0xc4, 0x65, 0x93, 0x2a, 0x4c, 0xec, 0x78, 0xdb, 0x0b, 0xdc, 0x49, 0x9a,
+	0xc5, 0x5d, 0x7d, 0xf2, 0xf0, 0x60, 0x66, 0xe2, 0x6a, 0x9c, 0x03, 0x26, 0x59, 0x4a, 0x29, 0x57,
+	0xe9, 0x7e, 0x60, 0x6d, 0x67, 0xd9, 0x30, 0x95, 0x94, 0x28, 0x07, 0x4c, 0xb2, 0x24, 0xcf, 0x41,
+	0x61, 0xc7, 0xdb, 0x56, 0x8b, 0x3c, 0xe9, 0x23, 0xbe, 0x1a, 0xa2, 0x30, 0x4a, 0xc7, 0xba, 0x70,
+	0xc7, 0xdb, 0x66, 0x9b, 0xa2, 0x8a, 0x13, 0xeb, 0x2e, 0xbc, 0x2a, 0xe1, 0xa8, 0x29, 0x48, 0x1b,
+	0xc8, 0x8e, 0xea, 0x3d, 0xed, 0x12, 0x96, 0x7b, 0xd1, 0xd1, 0x3d, 0xca, 0x67, 0xd8, 0x61, 0x7a,
+	0xb5, 0x8b, 0x0f, 0xa6, 0xf0, 0x26, 0x9f, 0x81, 0xb3, 0x3b, 0xde, 0xb6, 0x3c, 0x2a, 0x36, 0x3d,
+	0xdb, 0xa9, 0xd8, 0xed, 0x58, 0x80, 0x58, 0x1f, 0x27, 0x57, 0xd3, 0xc9, 0xb0, 0x57, 0x79, 0xf3,
+	0xab, 0x6c, 0x1d, 0x47, 0xe2, 0x7f, 0xf7, 0x8a, 0xbc, 0xd4, 0x60, 0xa4, 0x41, 0xad, 0x2a, 0xf5,
+	0x94, 0xee, 0xf3, 0x42, 0xb6, 0x55, 0xc1, 0x79, 0x84, 0x9a, 0x99, 0xf8, 0xf6, 0x51, 0x31, 0x37,
+	0x37, 0x60, 0x58, 0xc0, 0x8e, 0x60, 0x07, 0xe9, 0x93, 0x70, 0xe0, 0x2e, 0x4e, 0xc7, 0x0f, 0x0c,
+	0x18, 0xe5, 0xe6, 0x74, 0x9d, 0xe9, 0xd4, 0xba, 0xc8, 0xe0, 0x5d, 0x0e, 0xcf, 0x1a, 0x8c, 0x88,
+	0x73, 0xdf, 0xe7, 0x67, 0x52, 0xd6, 0xb6, 0x8a, 0xac, 0x9a, 0xb0, 0xad, 0x42, 0xa7, 0xf0, 0x51,
+	0x31, 0x37, 0xff, 0xc5, 0x80, 0xe1, 0x55, 0xa7, 0xdd, 0xf9, 0x05, 0x49, 0x00, 0x59, 0x83, 0x21,
+	0x66, 0x09, 0xc5, 0xd3, 0x8c, 0xc6, 0x4a, 0x4f, 0x46, 0x53, 0x8c, 0x8a, 0xf1, 0x14, 0x23, 0xb4,
+	0xf6, 0x94, 0x43, 0x5b, 0x94, 0xf9, 0x54, 0xfe, 0x83, 0x3f, 0x9a, 0x79, 0xe4, 0xfd, 0xef, 0x5f,
+	0x78, 0xc4, 0x6c, 0xc2, 0xd0, 0x35, 0xdb, 0xd9, 0x39, 0xda, 0x3c, 0xf1, 0x2b, 0x6e, 0xbb, 0x6b,
+	0x9e, 0x94, 0x19, 0x10, 0x05, 0x4e, 0xcd, 0xff, 0xc1, 0xf4, 0xf9, 0x6f, 0x7e, 0xce, 0x80, 0xa9,
+	0x35, 0xda, 0x72, 0xed, 0x77, 0xad, 0xd0, 0x1f, 0xcf, 0x0a, 0x35, 0xec, 0x40, 0xfa, 0xac, 0x75,
+	0xa1, 0x2b, 0x76, 0x80, 0x0c, 0x7e, 0x0f, 0x5d, 0x94, 0x07, 0x55, 0xd9, 0x56, 0xb9, 0x1e, 0xee,
+	0x59, 0x61, 0x50, 0x55, 0x21, 0x30, 0xa4, 0x31, 0xff, 0xd4, 0x80, 0x11, 0x51, 0x09, 0xaa, 0x78,
+	0x1b, 0x3d, 0x78, 0xdf, 0x82, 0x1c, 0x2f, 0x27, 0x77, 0xdb, 0x4f, 0x65, 0x33, 0xd0, 0x18, 0x07,
+	0xa1, 0x91, 0xf1, 0x9f, 0x28, 0x78, 0x32, 0xb5, 0xb9, 0x65, 0xbd, 0x33, 0xaf, 0xa3, 0x0f, 0x5a,
+	0x6d, 0x5e, 0xe3, 0x50, 0x94, 0x58, 0xf3, 0xfd, 0x41, 0xc8, 0x2b, 0xd7, 0x11, 0xf9, 0xbc, 0x01,
+	0x05, 0xcb, 0x71, 0xdc, 0xc0, 0x12, 0x9e, 0x15, 0x31, 0xc9, 0xd7, 0x33, 0x55, 0x4c, 0x31, 0x9d,
+	0x9d, 0x0f, 0x19, 0x2e, 0x39, 0x81, 0xb7, 0x1f, 0x6e, 0xfa, 0x11, 0x0c, 0x46, 0xe5, 0x92, 0xb7,
+	0x61, 0xb8, 0x69, 0x6d, 0xd3, 0xa6, 0x9a, 0xf3, 0xab, 0xfd, 0xd5, 0xe0, 0x1a, 0xe7, 0x25, 0x84,
+	0xeb, 0x7e, 0x10, 0x40, 0x94, 0x82, 0xa6, 0x5f, 0x82, 0xc9, 0x64, 0x45, 0xc9, 0x64, 0x64, 0xfc,
+	0xc4, 0x90, 0x9d, 0x8a, 0x6d, 0x67, 0x6a, 0xc2, 0x0f, 0x3c, 0x6f, 0x4c, 0x7f, 0x12, 0x0a, 0x11,
+	0x31, 0xf7, 0x53, 0xd4, 0x7c, 0x0d, 0x0a, 0x6b, 0x34, 0xf0, 0xec, 0x0a, 0x67, 0x70, 0xaf, 0x59,
+	0x73, 0xa4, 0x1d, 0xf5, 0x5d, 0x36, 0x09, 0x19, 0x4b, 0x9f, 0xb8, 0x00, 0x6d, 0xcf, 0x6d, 0xd1,
+	0xa0, 0x41, 0x3b, 0x6a, 0x44, 0xb3, 0x29, 0x7f, 0x9b, 0x9a, 0x8d, 0xf0, 0x05, 0x84, 0xdf, 0x18,
+	0x11, 0x61, 0x3e, 0x0d, 0xb9, 0xb5, 0x4e, 0x40, 0xdf, 0xb9, 0xf7, 0xaa, 0x37, 0x6f, 0xc1, 0x18,
+	0x27, 0xbd, 0xe2, 0x36, 0xd9, 0x86, 0xc2, 0xda, 0xd6, 0x62, 0xdf, 0x49, 0xbb, 0x89, 0x13, 0xa1,
+	0xc0, 0xb1, 0x99, 0xdd, 0x70, 0x9b, 0x55, 0xea, 0x25, 0xa3, 0x4b, 0x57, 0x38, 0x14, 0x25, 0xd6,
+	0xfc, 0xb1, 0x01, 0x05, 0x5e, 0x50, 0x6e, 0x04, 0x4d, 0x18, 0x69, 0x08, 0x39, 0xb2, 0x17, 0xb2,
+	0x79, 0xfb, 0xa3, 0x15, 0x8e, 0x1c, 0x92, 0x02, 0x80, 0x4a, 0x04, 0x93, 0xb6, 0x67, 0xd9, 0x01,
+	0x93, 0x36, 0x70, 0xec, 0xd2, 0x6e, 0x0a, 0xce, 0xa8, 0x44, 0x98, 0x3f, 0x9b, 0x00, 0x58, 0x77,
+	0xab, 0x54, 0x36, 0x75, 0x1a, 0x06, 0xec, 0xaa, 0xec, 0x44, 0x90, 0x85, 0x06, 0x56, 0x17, 0x71,
+	0xc0, 0xae, 0xea, 0x51, 0x19, 0xe8, 0xb9, 0x17, 0x3f, 0x07, 0x85, 0xaa, 0xed, 0xb7, 0x9b, 0xd6,
+	0xfe, 0x7a, 0x8a, 0xa6, 0xb6, 0x18, 0xa2, 0x30, 0x4a, 0x47, 0x9e, 0x91, 0x31, 0x58, 0xa1, 0xa5,
+	0x15, 0x13, 0x31, 0xd8, 0x3c, 0xab, 0x5e, 0x24, 0xfc, 0xfa, 0x3c, 0x8c, 0x29, 0xdf, 0x20, 0x97,
+	0x92, 0xe3, 0xa5, 0x4e, 0xa9, 0xe8, 0xc9, 0x56, 0x04, 0x87, 0x31, 0xca, 0xa4, 0xef, 0x72, 0xf8,
+	0xa1, 0xf8, 0x2e, 0x17, 0x61, 0xd2, 0x0f, 0x5c, 0x8f, 0x56, 0x15, 0xc5, 0xea, 0x62, 0x91, 0xc4,
+	0x1a, 0x3a, 0x59, 0x4e, 0xe0, 0xb1, 0xab, 0x04, 0xd9, 0x84, 0x53, 0x7b, 0x89, 0xf0, 0x36, 0x6f,
+	0xfc, 0x49, 0xce, 0xe9, 0x9c, 0xe4, 0x74, 0xea, 0x66, 0x0a, 0x0d, 0xa6, 0x96, 0x24, 0x2f, 0xc0,
+	0xb8, 0xaa, 0x26, 0x3f, 0x2a, 0x8b, 0xa7, 0x38, 0x2b, 0x6d, 0xcb, 0x6c, 0x45, 0x91, 0x18, 0xa7,
+	0x25, 0x1f, 0x87, 0x5c, 0xbb, 0x61, 0xf9, 0x54, 0xba, 0x3a, 0x95, 0x1f, 0x29, 0xb7, 0xc9, 0x80,
+	0x77, 0x0e, 0x66, 0x46, 0xd9, 0x98, 0xf1, 0x0f, 0x14, 0x84, 0xe4, 0x12, 0xc0, 0xb6, 0xdb, 0x71,
+	0xaa, 0x96, 0xb7, 0xbf, 0xba, 0x28, 0x23, 0x1d, 0x5a, 0x87, 0x29, 0x69, 0x0c, 0x46, 0xa8, 0xa2,
+	0x81, 0xf0, 0xd1, 0xbb, 0x07, 0xc2, 0xc9, 0x2d, 0x18, 0xe5, 0x51, 0x21, 0x5a, 0x9d, 0x0f, 0xa4,
+	0xdb, 0xf2, 0x7e, 0x02, 0x08, 0xfa, 0x64, 0x2e, 0x2b, 0x26, 0x18, 0xf2, 0x23, 0x6f, 0x02, 0xd4,
+	0x6c, 0xc7, 0xf6, 0x1b, 0x9c, 0x7b, 0xe1, 0xbe, 0xb9, 0xeb, 0x76, 0x2e, 0x6b, 0x2e, 0x18, 0xe1,
+	0x48, 0xde, 0x80, 0x29, 0xea, 0x07, 0x76, 0xcb, 0x0a, 0x68, 0x55, 0xa7, 0xc2, 0x14, 0x79, 0x20,
+	0x4c, 0xc7, 0xe5, 0x96, 0x92, 0x04, 0x77, 0xd2, 0x80, 0xd8, 0xcd, 0x88, 0xfc, 0xb3, 0x01, 0x53,
+	0x1e, 0xf5, 0xdd, 0x8e, 0x57, 0xa1, 0xbe, 0x66, 0x7f, 0x9a, 0x6f, 0x2d, 0x37, 0x32, 0x26, 0x56,
+	0xab, 0xfd, 0x62, 0x16, 0x93, 0x8c, 0xc5, 0x59, 0x49, 0x55, 0xb5, 0xbb, 0xf0, 0x77, 0xd2, 0x80,
+	0x9f, 0xfb, 0xc1, 0xcc, 0x4c, 0x77, 0x2e, 0xbf, 0x66, 0xce, 0xe6, 0xeb, 0x6f, 0xfe, 0x60, 0x66,
+	0x52, 0x7d, 0x87, 0xad, 0xed, 0x6a, 0x17, 0x3b, 0x08, 0xda, 0x6e, 0x75, 0x75, 0x53, 0x7a, 0x89,
+	0xf5, 0x41, 0xb0, 0xc9, 0x80, 0x28, 0x70, 0xe4, 0x22, 0xe4, 0xab, 0x16, 0x6d, 0xb9, 0x0e, 0xad,
+	0x16, 0xc7, 0x43, 0x07, 0xda, 0xa2, 0x84, 0xa1, 0xc6, 0x92, 0xb7, 0x60, 0xd8, 0xe6, 0x4a, 0x7c,
+	0xf1, 0x04, 0x1f, 0xf6, 0x6c, 0xc6, 0x82, 0xb0, 0x03, 0x44, 0x02, 0x94, 0xf8, 0x8d, 0x92, 0x2d,
+	0xa9, 0xc0, 0x88, 0xdb, 0x09, 0xb8, 0x84, 0x09, 0x2e, 0x21, 0x9b, 0xdb, 0x79, 0x43, 0xf0, 0x10,
+	0xd9, 0xbd, 0xf2, 0x03, 0x15, 0x67, 0xd6, 0xde, 0x4a, 0xc3, 0x6e, 0x56, 0x3d, 0xea, 0x14, 0x27,
+	0xb9, 0xe7, 0x81, 0xb7, 0x77, 0x41, 0xc2, 0x50, 0x63, 0xc9, 0xff, 0x85, 0x71, 0xb7, 0x13, 0xf0,
+	0x35, 0xc8, 0x46, 0xd9, 0x2f, 0x4e, 0x71, 0xf2, 0x29, 0x9e, 0x54, 0x11, 0x45, 0x60, 0x9c, 0x8e,
+	0xed, 0xca, 0x0d, 0xd7, 0x0f, 0xd8, 0x07, 0xdf, 0x98, 0xce, 0xc4, 0x77, 0xe5, 0x2b, 0x11, 0x1c,
+	0xc6, 0x28, 0xc9, 0x97, 0x0c, 0x98, 0x6a, 0x25, 0x95, 0xef, 0xe2, 0x59, 0xde, 0x19, 0xcb, 0x19,
+	0xd5, 0xb7, 0x04, 0x37, 0x11, 0x20, 0xec, 0x02, 0x63, 0xb7, 0x5c, 0xf2, 0x87, 0x06, 0x9c, 0xf6,
+	0xf7, 0x9d, 0x4a, 0xc3, 0x73, 0x9d, 0x78, 0x8d, 0x1e, 0xe5, 0x35, 0x5a, 0xcf, 0xbe, 0x62, 0xd2,
+	0xb8, 0x96, 0x1e, 0x3d, 0x3c, 0x98, 0x39, 0x9d, 0x8a, 0xc2, 0xf4, 0x7a, 0x4c, 0x2f, 0xc2, 0x99,
+	0xf4, 0x55, 0x77, 0x2f, 0xd5, 0x71, 0x30, 0xaa, 0x3a, 0x2e, 0xc3, 0xa3, 0x3d, 0x2b, 0xc5, 0x36,
+	0x5e, 0xa5, 0x82, 0x18, 0xf1, 0x8d, 0xb7, 0x4b, 0x7f, 0x38, 0x01, 0x63, 0xd1, 0x7b, 0x16, 0x3c,
+	0x44, 0x10, 0xc9, 0x6f, 0x25, 0x2e, 0x8c, 0xba, 0xe5, 0xe3, 0x08, 0x11, 0x6c, 0x94, 0xbb, 0x42,
+	0x04, 0x1a, 0x84, 0xa1, 0x8c, 0x7b, 0x85, 0x08, 0xfe, 0x7c, 0x00, 0xc2, 0x72, 0xe4, 0x19, 0xc8,
+	0x53, 0xa7, 0xda, 0x76, 0x6d, 0x27, 0x48, 0x06, 0x57, 0x96, 0x24, 0x1c, 0x35, 0x45, 0x24, 0xa0,
+	0x30, 0x70, 0xd7, 0x80, 0x42, 0x03, 0x26, 0x2c, 0x9e, 0x44, 0x10, 0x7a, 0x82, 0x07, 0xef, 0xcb,
+	0x13, 0xac, 0x13, 0x55, 0xe3, 0x5c, 0x30, 0xc9, 0x96, 0x49, 0xf2, 0xc3, 0xe2, 0x5c, 0xd2, 0x50,
+	0x26, 0x49, 0xe5, 0x38, 0x17, 0x4c, 0xb2, 0x35, 0xff, 0x72, 0x00, 0xd4, 0xbe, 0xf2, 0x8b, 0xe0,
+	0xcf, 0x20, 0x26, 0x0c, 0x7b, 0xd4, 0xef, 0x34, 0x03, 0xa9, 0xc5, 0x82, 0xc8, 0x42, 0x63, 0x10,
+	0x94, 0x18, 0xb6, 0xad, 0xd2, 0x77, 0xec, 0x60, 0xc1, 0xad, 0x2a, 0xdd, 0x95, 0x6f, 0xab, 0x4b,
+	0x12, 0x86, 0x1a, 0x6b, 0xee, 0xc1, 0x38, 0x6b, 0x57, 0xb3, 0x49, 0x9b, 0xe5, 0x80, 0xb6, 0x7d,
+	0x52, 0x83, 0x9c, 0xcf, 0x7e, 0xf4, 0x65, 0x50, 0x84, 0x99, 0x19, 0xb4, 0x1d, 0x71, 0x7c, 0x30,
+	0xbe, 0x28, 0xd8, 0x9b, 0x5f, 0x1b, 0x80, 0x51, 0xdd, 0xa3, 0x47, 0xf0, 0xa6, 0x3c, 0x09, 0x23,
+	0x55, 0x5a, 0xb3, 0x58, 0xbb, 0xe5, 0x0a, 0x12, 0x21, 0x56, 0x0e, 0x42, 0x85, 0x23, 0x33, 0x71,
+	0x4f, 0xdb, 0x68, 0x97, 0x97, 0x6d, 0x07, 0x46, 0xf9, 0x8f, 0x65, 0x75, 0x4b, 0x27, 0xeb, 0x0c,
+	0xb9, 0xa1, 0xb8, 0x08, 0x67, 0xb9, 0xfe, 0xc4, 0x90, 0x7f, 0xe2, 0x76, 0x4d, 0xee, 0x28, 0xb7,
+	0x6b, 0xcc, 0x65, 0x60, 0x2a, 0xc1, 0xca, 0x02, 0x79, 0x11, 0xf2, 0xbe, 0xdc, 0xbc, 0x64, 0xbf,
+	0x7c, 0x44, 0xc7, 0x57, 0x25, 0xfc, 0xce, 0xc1, 0xcc, 0x38, 0x27, 0x56, 0x00, 0xd4, 0x45, 0xcc,
+	0x2f, 0x0c, 0x41, 0xc4, 0x9c, 0x3d, 0x42, 0x0f, 0x57, 0x13, 0x1e, 0x8a, 0x57, 0xb2, 0x7a, 0x28,
+	0x94, 0xd9, 0x2f, 0xa6, 0x66, 0xdc, 0x29, 0xc1, 0xea, 0xd1, 0xa0, 0xcd, 0xb6, 0x1c, 0x1f, 0x5d,
+	0x8f, 0x2b, 0xb4, 0xd9, 0x46, 0x8e, 0xd1, 0xb9, 0x00, 0x43, 0x3d, 0x73, 0x01, 0x6e, 0x41, 0xae,
+	0x6e, 0x75, 0xea, 0x54, 0x7a, 0xc1, 0xb3, 0x79, 0x99, 0x78, 0x58, 0x53, 0x4c, 0x10, 0xfe, 0x13,
+	0x05, 0x4f, 0x36, 0x41, 0x1a, 0xca, 0x71, 0x2b, 0x2d, 0xb1, 0x6c, 0x13, 0x44, 0xbb, 0x7f, 0xc5,
+	0x04, 0xd1, 0x9f, 0x18, 0xf2, 0x67, 0x4a, 0x56, 0x45, 0xe4, 0xb2, 0xca, 0x90, 0xdc, 0xa7, 0x33,
+	0xa6, 0x34, 0x70, 0x1e, 0x62, 0x4d, 0xc8, 0x0f, 0x54, 0x9c, 0xcd, 0x39, 0x28, 0x44, 0x6e, 0x8d,
+	0xb0, 0xfe, 0xd5, 0xf9, 0x8f, 0x91, 0xfe, 0x5d, 0xb4, 0x02, 0x0b, 0x39, 0xc6, 0xfc, 0xfa, 0x20,
+	0x68, 0x95, 0x36, 0x9a, 0xac, 0x60, 0x55, 0x22, 0x29, 0xf9, 0xb1, 0xcc, 0x29, 0xd7, 0x41, 0x89,
+	0x65, 0xe6, 0x5b, 0x8b, 0x7a, 0x75, 0x7d, 0xf0, 0xca, 0xe5, 0xaa, 0xcd, 0xb7, 0xb5, 0x28, 0x12,
+	0xe3, 0xb4, 0xec, 0xd8, 0x6b, 0x59, 0x8e, 0x5d, 0xa3, 0x7e, 0x90, 0x8c, 0x2e, 0xad, 0x49, 0x38,
+	0x6a, 0x0a, 0xb2, 0x02, 0x53, 0x3e, 0x0d, 0x36, 0xf6, 0x1c, 0xea, 0xe9, 0x8c, 0x2e, 0x99, 0xe2,
+	0xf7, 0xa8, 0xd2, 0xf3, 0xcb, 0x49, 0x02, 0xec, 0x2e, 0xc3, 0x4d, 0x61, 0x91, 0x5d, 0xa7, 0x33,
+	0xa5, 0xe4, 0x6a, 0x0d, 0x4d, 0xe1, 0x04, 0x1e, 0xbb, 0x4a, 0x30, 0x2e, 0x35, 0xcb, 0x6e, 0x76,
+	0x3c, 0x1a, 0x72, 0x19, 0x8e, 0x73, 0x59, 0x4e, 0xe0, 0xb1, 0xab, 0x04, 0x0f, 0x4c, 0x37, 0xad,
+	0xba, 0x5f, 0x1c, 0x89, 0x04, 0xa6, 0x19, 0x00, 0x05, 0xdc, 0xfc, 0x60, 0x00, 0xc6, 0x91, 0x06,
+	0xde, 0xbe, 0xee, 0xb5, 0xd7, 0x20, 0xd7, 0xe4, 0xd9, 0x7e, 0x46, 0xc6, 0x0b, 0x10, 0x5c, 0x88,
+	0x48, 0x07, 0x14, 0x9c, 0xc8, 0x22, 0x14, 0x3c, 0x26, 0x43, 0xe6, 0x62, 0x8a, 0x31, 0x34, 0xc3,
+	0xdb, 0x71, 0x1a, 0x75, 0x27, 0xfe, 0x89, 0xd1, 0x62, 0xc4, 0x81, 0x91, 0x6d, 0x71, 0xa7, 0x43,
+	0xea, 0x19, 0xd9, 0xa6, 0xb7, 0xbc, 0x17, 0xc2, 0x83, 0x58, 0xea, 0x92, 0xc8, 0x9d, 0xf0, 0x27,
+	0x2a, 0x21, 0xe6, 0x07, 0x06, 0x40, 0x78, 0x2d, 0x8e, 0xec, 0x40, 0xde, 0xbf, 0x1c, 0xd3, 0xf0,
+	0x32, 0xa6, 0x31, 0x49, 0x26, 0x91, 0x04, 0x17, 0x09, 0x41, 0x2d, 0xe0, 0x5e, 0xea, 0xdd, 0x57,
+	0x72, 0xa0, 0x4b, 0x3d, 0x20, 0xed, 0x2e, 0xcc, 0x51, 0x1f, 0xbc, 0x6b, 0x8e, 0xfa, 0x45, 0xc8,
+	0xab, 0x28, 0xbb, 0x5c, 0x2d, 0x5c, 0x3b, 0x50, 0x01, 0x79, 0xd4, 0xd8, 0x34, 0x7d, 0x31, 0xf7,
+	0xd0, 0xf4, 0xc5, 0xe1, 0x07, 0xa2, 0x2f, 0x32, 0x13, 0xc2, 0x73, 0x9b, 0x74, 0x1e, 0xd7, 0xa5,
+	0x8f, 0x48, 0x9b, 0x10, 0x28, 0xc0, 0xa8, 0xf0, 0xe4, 0x39, 0x28, 0x74, 0x7c, 0x5a, 0x5e, 0xbc,
+	0xba, 0xe0, 0xd1, 0xaa, 0x2f, 0x13, 0x18, 0xb4, 0xd7, 0xf0, 0x7a, 0x88, 0xc2, 0x28, 0x1d, 0xf9,
+	0x13, 0x03, 0x8a, 0x15, 0x7e, 0xe1, 0x40, 0x0c, 0xd0, 0x6a, 0x6d, 0xdd, 0x0d, 0x36, 0x3d, 0xea,
+	0x53, 0x27, 0x90, 0x89, 0xb1, 0xaf, 0x66, 0x4c, 0x0d, 0x4f, 0xb9, 0xc5, 0x50, 0xba, 0x20, 0x2b,
+	0x54, 0x5c, 0xe8, 0x21, 0x13, 0x7b, 0xd6, 0xc6, 0xfc, 0x0d, 0x03, 0x4e, 0x94, 0x2b, 0x9e, 0xdd,
+	0x0e, 0xf4, 0x3e, 0xbf, 0xce, 0x2f, 0x2e, 0x05, 0x16, 0xdb, 0x35, 0xe4, 0xaa, 0x79, 0xbc, 0x47,
+	0x98, 0x59, 0x10, 0xc5, 0xae, 0xe4, 0x09, 0x10, 0x86, 0x2c, 0xd8, 0xac, 0x14, 0x27, 0x49, 0x72,
+	0xf6, 0x96, 0x39, 0x14, 0x25, 0xd6, 0xbc, 0x0d, 0x93, 0x65, 0xda, 0xb2, 0xda, 0x0d, 0x9e, 0xf6,
+	0x21, 0x3c, 0xce, 0x73, 0x30, 0xea, 0x2b, 0x58, 0xf2, 0xfe, 0x9f, 0x26, 0xc6, 0x90, 0x86, 0x69,
+	0x89, 0xc2, 0x55, 0xae, 0x12, 0x19, 0x0a, 0xca, 0x93, 0x2d, 0xc2, 0xbd, 0xe2, 0x87, 0xb9, 0x07,
+	0x63, 0x61, 0x71, 0x5a, 0x23, 0x75, 0x98, 0xa8, 0x44, 0xa2, 0xe6, 0x48, 0x6b, 0xf7, 0x7d, 0x65,
+	0x8b, 0x67, 0x0c, 0x2c, 0xc4, 0x99, 0x60, 0x92, 0xab, 0xf9, 0x33, 0x03, 0x26, 0xb4, 0x64, 0x69,
+	0xd3, 0xb6, 0x93, 0x4e, 0xfc, 0xa5, 0x8c, 0xb9, 0x96, 0xf1, 0xce, 0xbb, 0x8b, 0x23, 0xbf, 0x9d,
+	0x74, 0xe4, 0x1f, 0xb7, 0xc4, 0x2e, 0x63, 0xfc, 0x8f, 0x07, 0x20, 0xaf, 0x93, 0x3d, 0x5f, 0x83,
+	0x1c, 0x57, 0x4d, 0xfa, 0x3b, 0xae, 0xb8, 0x9a, 0x83, 0x82, 0x13, 0x63, 0xc9, 0xbd, 0xa2, 0x99,
+	0xaf, 0x00, 0x8e, 0x0a, 0x03, 0xc5, 0xf2, 0x02, 0x14, 0x9c, 0xc8, 0x55, 0x18, 0xa4, 0x4e, 0x55,
+	0x9e, 0x5b, 0xf7, 0xcf, 0x90, 0xdf, 0x70, 0x5d, 0x72, 0xaa, 0xc8, 0xb8, 0xf0, 0xbb, 0x4d, 0xae,
+	0xd7, 0xb2, 0x02, 0xa9, 0xd5, 0x86, 0x77, 0x9b, 0x38, 0x14, 0x25, 0xd6, 0xfc, 0xed, 0x01, 0x18,
+	0x2e, 0x77, 0xb6, 0xd9, 0x09, 0xfc, 0x7b, 0x06, 0x9c, 0x4c, 0xfa, 0xc7, 0xc3, 0x89, 0x79, 0xe5,
+	0x58, 0xee, 0xde, 0x21, 0xad, 0x95, 0x1e, 0x93, 0x55, 0x39, 0x99, 0x82, 0xc4, 0xb4, 0x1a, 0x30,
+	0x0d, 0x39, 0x4c, 0xed, 0x1e, 0x38, 0x96, 0xd4, 0xee, 0xf1, 0x5e, 0x69, 0xdd, 0xe6, 0xdf, 0x0c,
+	0x01, 0x88, 0x1e, 0xd9, 0x68, 0x07, 0x47, 0x31, 0x63, 0x9e, 0x87, 0x31, 0xf5, 0xd6, 0xc8, 0x7a,
+	0x18, 0x14, 0xd2, 0xfe, 0xbe, 0x95, 0x08, 0x0e, 0x63, 0x94, 0xcc, 0x5a, 0xa3, 0x4e, 0xe0, 0xed,
+	0x8b, 0x73, 0x79, 0x28, 0x6e, 0xad, 0x2d, 0x69, 0x0c, 0x46, 0xa8, 0xc8, 0x6c, 0xcc, 0xe3, 0x20,
+	0xd2, 0xbf, 0x4f, 0xdc, 0xc5, 0x5b, 0xf0, 0x02, 0x8c, 0xeb, 0xaf, 0x65, 0xbb, 0xa9, 0x32, 0x6a,
+	0xb4, 0x76, 0xbc, 0x19, 0x45, 0x62, 0x9c, 0x96, 0xbc, 0x04, 0x27, 0xe2, 0x79, 0x9a, 0xf2, 0x04,
+	0x3b, 0x23, 0x4b, 0x9f, 0x88, 0xa7, 0x77, 0x62, 0x82, 0x9a, 0xcd, 0xc2, 0xaa, 0xb7, 0x8f, 0x1d,
+	0x47, 0x1e, 0x65, 0x7a, 0x16, 0x2e, 0x72, 0x28, 0x4a, 0x2c, 0xeb, 0x42, 0x56, 0x92, 0x7a, 0x02,
+	0xce, 0xcf, 0xac, 0x7c, 0xd8, 0x85, 0xe5, 0x08, 0x0e, 0x63, 0x94, 0x4c, 0x82, 0xb4, 0x21, 0x21,
+	0x3e, 0xcf, 0x13, 0x56, 0x60, 0x1b, 0x4e, 0xb8, 0x71, 0xb5, 0x5d, 0x04, 0x2f, 0x3e, 0x71, 0xc4,
+	0x0b, 0x23, 0xb1, 0xb2, 0x22, 0x11, 0x32, 0xa1, 0xe5, 0x27, 0xf8, 0x9b, 0x27, 0x61, 0xaa, 0xdc,
+	0x69, 0xb7, 0x9b, 0x36, 0xad, 0x6a, 0x53, 0xdd, 0x7c, 0x19, 0x26, 0xe4, 0x15, 0x20, 0x7d, 0xfc,
+	0xdd, 0xd7, 0xdd, 0x63, 0xf3, 0x80, 0xed, 0xe7, 0x71, 0x4f, 0x25, 0x71, 0x92, 0x87, 0x56, 0x56,
+	0x2f, 0x4a, 0xf4, 0x88, 0x12, 0x2b, 0x24, 0xf5, 0xcc, 0xbb, 0xa5, 0x22, 0xcc, 0xfd, 0xe4, 0x5c,
+	0xf0, 0xa0, 0xac, 0xd8, 0x05, 0xa3, 0x91, 0x69, 0xf3, 0x27, 0x06, 0xa4, 0x3b, 0x81, 0xc9, 0xdb,
+	0xdd, 0xcd, 0x5c, 0xec, 0xaf, 0x99, 0xd2, 0xf1, 0xdc, 0xbb, 0xa5, 0x56, 0xbc, 0xa5, 0xaf, 0x64,
+	0x6f, 0xa9, 0x14, 0xd5, 0xdd, 0xde, 0x7f, 0x37, 0xa0, 0xb0, 0xb5, 0x75, 0x4d, 0x9b, 0x56, 0x08,
+	0x67, 0x7c, 0x71, 0x89, 0x6b, 0xbe, 0x16, 0x50, 0x6f, 0xc1, 0x6d, 0xb5, 0x9b, 0x54, 0x4f, 0x0e,
+	0x79, 0xb3, 0xaa, 0x9c, 0x4a, 0x81, 0x3d, 0x4a, 0x92, 0x55, 0x38, 0x19, 0xc5, 0x48, 0xcb, 0x92,
+	0x37, 0x2a, 0x27, 0x93, 0x6d, 0xbb, 0xd1, 0x98, 0x56, 0x26, 0xc9, 0x4a, 0x9a, 0x97, 0xf2, 0x6d,
+	0x9a, 0x2e, 0x56, 0x12, 0x8d, 0x69, 0x65, 0xcc, 0x0d, 0x28, 0x44, 0x5e, 0x3d, 0x22, 0xaf, 0xc0,
+	0x64, 0xc5, 0x6d, 0xb5, 0x3d, 0xea, 0xfb, 0xb6, 0xeb, 0x5c, 0xa3, 0xbb, 0xb4, 0x29, 0x9b, 0xcc,
+	0xaf, 0x68, 0x2d, 0x24, 0x70, 0xd8, 0x45, 0x6d, 0xfe, 0xd9, 0x63, 0xa0, 0x2f, 0x06, 0xfd, 0xf2,
+	0x7a, 0x51, 0xa6, 0x10, 0x7d, 0x45, 0x07, 0xf9, 0x72, 0xfd, 0x07, 0xf9, 0xf4, 0x5e, 0x9c, 0x08,
+	0xf4, 0xd5, 0xc3, 0x40, 0xdf, 0xf0, 0x31, 0x04, 0xfa, 0xb4, 0x12, 0xd8, 0x15, 0xec, 0xfb, 0xa2,
+	0x01, 0x63, 0x8e, 0x5b, 0xa5, 0x4a, 0x67, 0xe6, 0x1e, 0x8e, 0xc2, 0xa5, 0x8d, 0xbe, 0x3a, 0x51,
+	0x44, 0xb0, 0x24, 0x47, 0x11, 0xe3, 0xd5, 0x07, 0x55, 0x14, 0x85, 0x31, 0xd1, 0x64, 0x19, 0xf2,
+	0x56, 0xad, 0x66, 0x3b, 0x76, 0xb0, 0x2f, 0x6f, 0x38, 0x9d, 0x4b, 0x53, 0xf5, 0xe7, 0x25, 0x8d,
+	0xb0, 0x90, 0xd5, 0x17, 0xea, 0xb2, 0x64, 0x27, 0x72, 0xa1, 0x78, 0xb4, 0x0f, 0x17, 0x83, 0x4a,
+	0xec, 0x8a, 0xf8, 0xbb, 0xd4, 0xe5, 0xc7, 0xf0, 0x7e, 0xb1, 0x09, 0xc3, 0x22, 0xfe, 0x2b, 0x5f,
+	0x2b, 0xe2, 0xfe, 0x55, 0x11, 0x1b, 0x46, 0x89, 0x21, 0x75, 0xe5, 0xbf, 0x2f, 0xf0, 0xce, 0x2d,
+	0x65, 0x8e, 0x7e, 0xe8, 0x90, 0x40, 0xba, 0x03, 0x9f, 0xbc, 0x1a, 0xb5, 0x13, 0xc7, 0x8e, 0x62,
+	0x27, 0x8e, 0xf7, 0xb4, 0x11, 0xeb, 0x30, 0xec, 0x73, 0x2b, 0x94, 0x07, 0xbd, 0x0b, 0x97, 0x16,
+	0xb2, 0x1d, 0x24, 0x31, 0x43, 0x56, 0xf4, 0x8e, 0x80, 0xa1, 0x64, 0x4f, 0x5c, 0xc8, 0xab, 0xc8,
+	0xbc, 0x8c, 0x9b, 0x67, 0x33, 0x7d, 0x92, 0xde, 0x51, 0x75, 0xcf, 0x45, 0x40, 0x51, 0x0b, 0x21,
+	0xb7, 0x60, 0xb0, 0x6a, 0xd5, 0x65, 0x04, 0xfd, 0x95, 0xcc, 0x17, 0xb7, 0x94, 0x18, 0x6e, 0x55,
+	0x2c, 0xce, 0xaf, 0x20, 0xe3, 0x4a, 0x76, 0xc2, 0x8b, 0xcd, 0x93, 0xfd, 0x1c, 0xc0, 0x71, 0x15,
+	0x48, 0xd8, 0xcc, 0x5d, 0x57, 0xa3, 0x97, 0x60, 0x64, 0xd7, 0x6d, 0x76, 0x5a, 0x32, 0xf4, 0x5e,
+	0xb8, 0x34, 0x9d, 0x36, 0xda, 0x37, 0x38, 0x49, 0xb8, 0x09, 0x88, 0x6f, 0x1f, 0x55, 0x59, 0xf2,
+	0x39, 0x03, 0x4e, 0xb0, 0xa5, 0xa3, 0xe7, 0x81, 0x5f, 0x24, 0x7d, 0xcc, 0xd4, 0xeb, 0x3e, 0x3b,
+	0x5a, 0xd5, 0x0c, 0xd3, 0x8a, 0xf0, 0x6a, 0x4c, 0x02, 0x26, 0x24, 0x92, 0x36, 0xe4, 0x7d, 0xbb,
+	0x4a, 0x2b, 0x96, 0xe7, 0x17, 0x4f, 0x1e, 0x9b, 0xf4, 0xd0, 0x3b, 0x28, 0x79, 0xa3, 0x96, 0x42,
+	0x7e, 0x9d, 0x3f, 0x21, 0x24, 0x9f, 0xff, 0x92, 0x8f, 0xbe, 0x9d, 0x3a, 0xce, 0x47, 0xdf, 0x4e,
+	0x8a, 0xf7, 0x83, 0x62, 0x12, 0x30, 0x29, 0x92, 0x7c, 0xd6, 0x80, 0xd3, 0xe2, 0x86, 0x73, 0xf2,
+	0x7a, 0xfb, 0xe9, 0x8c, 0x76, 0x2e, 0x4f, 0x13, 0x98, 0x4f, 0x63, 0x89, 0xe9, 0x92, 0xc8, 0x7b,
+	0x30, 0xee, 0x45, 0xdd, 0xd7, 0x3c, 0x23, 0x23, 0xeb, 0x08, 0xc4, 0x1c, 0xe1, 0x22, 0x1b, 0x24,
+	0x06, 0xc2, 0xb8, 0x2c, 0xf2, 0x2c, 0x14, 0xda, 0x72, 0x73, 0xb3, 0xfd, 0x16, 0x4f, 0xe6, 0x18,
+	0x14, 0x87, 0xf0, 0x66, 0x08, 0xc6, 0x28, 0x0d, 0xb9, 0x0e, 0x85, 0xc0, 0x6d, 0x52, 0x4f, 0x26,
+	0x10, 0x17, 0xf9, 0x7c, 0x39, 0x9f, 0x36, 0xf9, 0xb7, 0x34, 0x59, 0xe8, 0x25, 0x0c, 0x61, 0x3e,
+	0x46, 0xf9, 0x30, 0x4b, 0x50, 0xbd, 0x7f, 0xe0, 0x71, 0x43, 0xf5, 0xd1, 0xb8, 0x25, 0x58, 0x8e,
+	0x22, 0x31, 0x4e, 0x4b, 0x56, 0x60, 0xaa, 0xed, 0xd9, 0xae, 0x67, 0x07, 0xfb, 0x0b, 0x4d, 0xcb,
+	0xf7, 0x39, 0x83, 0x69, 0xce, 0x40, 0x47, 0x3e, 0x36, 0x93, 0x04, 0xd8, 0x5d, 0x86, 0x5c, 0x84,
+	0xbc, 0x02, 0x16, 0x1f, 0xe3, 0xea, 0x1d, 0xdf, 0xc9, 0x54, 0x59, 0xd4, 0xd8, 0x1e, 0xd7, 0x35,
+	0xcf, 0x65, 0xb9, 0xae, 0x49, 0xaa, 0x70, 0xce, 0xea, 0x04, 0x2e, 0xbf, 0xa9, 0x10, 0x2f, 0xb2,
+	0xe5, 0xee, 0x50, 0xa7, 0x78, 0x81, 0x1f, 0x6f, 0x17, 0x0e, 0x0f, 0x66, 0xce, 0xcd, 0xdf, 0x85,
+	0x0e, 0xef, 0xca, 0x85, 0xb4, 0x20, 0x4f, 0xe5, 0x95, 0xd3, 0xe2, 0x47, 0xfa, 0x38, 0x57, 0xe2,
+	0xf7, 0x56, 0x55, 0x28, 0x5d, 0xc0, 0x50, 0x8b, 0x20, 0x5b, 0x50, 0x68, 0xb8, 0x7e, 0x30, 0xdf,
+	0xb4, 0x2d, 0x9f, 0xfa, 0xc5, 0xc7, 0xf9, 0x3c, 0x49, 0x3d, 0x12, 0xaf, 0x28, 0xb2, 0x70, 0x9a,
+	0x5c, 0x09, 0x4b, 0x62, 0x94, 0x0d, 0xa1, 0xdc, 0x31, 0xde, 0xe1, 0xa3, 0xe6, 0x3a, 0x01, 0x7d,
+	0x27, 0x28, 0x9e, 0xe7, 0x6d, 0x79, 0x2a, 0x8d, 0xf3, 0xa6, 0x5b, 0x2d, 0xc7, 0xa9, 0xc5, 0xc6,
+	0x90, 0x00, 0x62, 0x92, 0x27, 0x33, 0xf9, 0xdb, 0x6e, 0xb5, 0xdc, 0xa6, 0x95, 0x4d, 0x2b, 0xa8,
+	0x34, 0x8a, 0x33, 0x71, 0xaf, 0xc9, 0x66, 0x04, 0x87, 0x31, 0x4a, 0x52, 0x81, 0x91, 0x96, 0xc8,
+	0xcb, 0x2e, 0x3e, 0xd1, 0x87, 0xfa, 0x28, 0x73, 0xbb, 0xc5, 0xe1, 0x23, 0x3f, 0x50, 0x71, 0x26,
+	0x5f, 0x33, 0x60, 0x22, 0x91, 0x74, 0x54, 0xfc, 0x68, 0x3f, 0x47, 0x5e, 0x9c, 0x57, 0xe9, 0x29,
+	0xde, 0x49, 0x71, 0xe0, 0x9d, 0x6e, 0x10, 0x26, 0x2b, 0x21, 0x5a, 0xcf, 0xaf, 0x46, 0x14, 0x9f,
+	0xec, 0xab, 0xf5, 0x9c, 0x87, 0x6a, 0x3d, 0xff, 0x40, 0xc5, 0x99, 0x3c, 0x0d, 0x23, 0x81, 0xdd,
+	0xa2, 0x6e, 0x27, 0x28, 0x3e, 0x15, 0x0f, 0x59, 0x6c, 0x09, 0x30, 0x2a, 0xfc, 0xf4, 0xcb, 0x30,
+	0xd5, 0xa5, 0x10, 0xdf, 0x57, 0xe6, 0xfe, 0x0f, 0x99, 0x01, 0x1c, 0x31, 0x41, 0x8e, 0xdb, 0x70,
+	0x5b, 0x81, 0x29, 0xf9, 0x9c, 0x30, 0xd3, 0x96, 0x9a, 0x1d, 0xfd, 0xba, 0x5a, 0x24, 0x66, 0x8b,
+	0x49, 0x02, 0xec, 0x2e, 0xc3, 0x66, 0x6c, 0x45, 0x3c, 0xaf, 0x25, 0xb2, 0x84, 0x87, 0xe2, 0x4e,
+	0xaa, 0x85, 0x08, 0x0e, 0x63, 0x94, 0xe6, 0x37, 0x0c, 0x18, 0x8f, 0x9d, 0xdc, 0xc7, 0x1e, 0xf3,
+	0x58, 0x06, 0xd2, 0xb2, 0x3d, 0xcf, 0xf5, 0x84, 0xfa, 0xb3, 0xc6, 0xf6, 0x24, 0x5f, 0xde, 0x88,
+	0xe6, 0x37, 0xf1, 0xd6, 0xba, 0xb0, 0x98, 0x52, 0xc2, 0xfc, 0x8f, 0x01, 0x08, 0x13, 0x4b, 0xf4,
+	0xf5, 0x53, 0xa3, 0xe7, 0xf5, 0xd3, 0x67, 0x20, 0x7f, 0xdb, 0x77, 0x9d, 0xcd, 0xf0, 0x92, 0xaa,
+	0x1e, 0x8a, 0x57, 0xcb, 0x1b, 0xeb, 0x9c, 0x52, 0x53, 0x70, 0xea, 0xb7, 0x97, 0xed, 0x66, 0xd0,
+	0x7d, 0x95, 0xf3, 0xd5, 0xd7, 0x04, 0x1c, 0x35, 0x05, 0x7f, 0xc3, 0x6b, 0x97, 0x6a, 0x9f, 0x63,
+	0xf8, 0x86, 0x17, 0x03, 0xa2, 0xc0, 0x91, 0x39, 0x18, 0xd5, 0x2e, 0x4b, 0xe9, 0x41, 0xd5, 0x3d,
+	0xa5, 0x5d, 0x9b, 0x18, 0xd2, 0x70, 0x4d, 0x4c, 0xba, 0xe5, 0xa4, 0xf5, 0xb9, 0x9c, 0x51, 0x87,
+	0x4d, 0xf8, 0xf6, 0xc4, 0x36, 0xad, 0xc0, 0xa8, 0xa5, 0x44, 0x13, 0x89, 0x72, 0xbd, 0x13, 0x89,
+	0xcc, 0xcf, 0x0f, 0xc2, 0xc8, 0x0d, 0xea, 0xf1, 0xcb, 0xe4, 0x4f, 0xc3, 0xc8, 0xae, 0xf8, 0x99,
+	0xcc, 0x3a, 0x94, 0x14, 0xa8, 0xf0, 0xac, 0x03, 0xb6, 0x3b, 0x76, 0xb3, 0xba, 0x18, 0xae, 0x06,
+	0xdd, 0x01, 0x25, 0x85, 0xc0, 0x90, 0x86, 0x15, 0xa8, 0x33, 0xdd, 0xb4, 0xd5, 0xb2, 0x83, 0xe4,
+	0x6d, 0xac, 0x15, 0x85, 0xc0, 0x90, 0x86, 0x3c, 0x05, 0xc3, 0x75, 0x3b, 0xd8, 0xb2, 0xea, 0xc9,
+	0x50, 0xc2, 0x0a, 0x87, 0xa2, 0xc4, 0x72, 0x3f, 0xb8, 0x1d, 0x6c, 0x79, 0x94, 0xfb, 0xd5, 0xba,
+	0x6e, 0x23, 0xac, 0x44, 0x70, 0x18, 0xa3, 0xe4, 0x55, 0x72, 0x65, 0xcb, 0xa4, 0x7f, 0x3a, 0xac,
+	0x92, 0x42, 0x60, 0x48, 0xc3, 0x26, 0x52, 0xc5, 0x6d, 0xb5, 0xed, 0xa6, 0x4c, 0x63, 0x89, 0x4c,
+	0xa4, 0x05, 0x09, 0x47, 0x4d, 0xc1, 0xa8, 0xd9, 0x56, 0x50, 0x73, 0xbd, 0x56, 0xf2, 0x61, 0xa1,
+	0x4d, 0x09, 0x47, 0x4d, 0x61, 0xde, 0x80, 0x71, 0xb1, 0x24, 0x16, 0x9a, 0x96, 0xdd, 0x5a, 0x59,
+	0x20, 0x4b, 0x5d, 0x69, 0x51, 0x4f, 0xa7, 0xa4, 0x45, 0x9d, 0x8e, 0x15, 0x4a, 0x49, 0x8f, 0xfa,
+	0xd6, 0x00, 0xe4, 0x1f, 0xe2, 0x3b, 0x6b, 0x95, 0xd8, 0x3b, 0x6b, 0xc7, 0xf0, 0x28, 0x57, 0xda,
+	0x1b, 0x6b, 0x3b, 0x89, 0x37, 0xd6, 0x16, 0xfa, 0x4c, 0xde, 0xbb, 0xeb, 0xfb, 0x6a, 0x3f, 0x36,
+	0x40, 0xdf, 0xea, 0xe0, 0x7b, 0x40, 0xc9, 0x76, 0x78, 0x74, 0xf1, 0xc1, 0x77, 0xa6, 0x1b, 0xeb,
+	0xcc, 0xb5, 0xbe, 0x5a, 0x19, 0xad, 0x7a, 0xcf, 0xa7, 0x28, 0x7f, 0x64, 0x40, 0x31, 0xad, 0xc0,
+	0x43, 0x78, 0x53, 0xce, 0x89, 0xbf, 0x29, 0xb7, 0x7a, 0x6c, 0x8d, 0xed, 0xf1, 0xb6, 0xdc, 0xf7,
+	0x7b, 0x34, 0x95, 0xbf, 0xea, 0xf6, 0x96, 0x3a, 0x03, 0x8c, 0x3e, 0x42, 0x0d, 0x82, 0x6b, 0xfa,
+	0xf9, 0xf1, 0x16, 0x0c, 0xfb, 0x3c, 0xd8, 0x27, 0xc7, 0xf6, 0x85, 0x8c, 0x87, 0x01, 0x63, 0x21,
+	0x1d, 0x40, 0xfc, 0x37, 0x4a, 0xb6, 0xe6, 0x77, 0x0d, 0x18, 0x7b, 0x88, 0x2f, 0x02, 0x6e, 0xc7,
+	0x47, 0xef, 0xc5, 0xbe, 0x46, 0xaf, 0xc7, 0x88, 0x7d, 0xf5, 0x31, 0x88, 0xbd, 0xc4, 0x47, 0x1c,
+	0x18, 0x55, 0xea, 0x96, 0x4a, 0xe3, 0x7d, 0xb1, 0x2f, 0x1f, 0x6b, 0xb8, 0xfd, 0x2b, 0x88, 0x8f,
+	0xa1, 0x88, 0x44, 0xdc, 0x74, 0xe0, 0x48, 0x71, 0xd3, 0x87, 0xee, 0xbf, 0x4f, 0x37, 0x5f, 0x87,
+	0x1e, 0x88, 0xf9, 0x7a, 0xee, 0xd8, 0xcd, 0xd7, 0xc7, 0x1f, 0xbc, 0xf9, 0x1a, 0xf1, 0xef, 0xe5,
+	0xfa, 0xf0, 0xef, 0xbd, 0x07, 0xa7, 0x76, 0xc3, 0xa3, 0x57, 0xcf, 0x17, 0xf9, 0xcc, 0xd9, 0xd3,
+	0xa9, 0x46, 0x2b, 0x53, 0x23, 0xfc, 0x80, 0x3a, 0x41, 0xe4, 0xd0, 0x0e, 0xaf, 0x0e, 0xde, 0x48,
+	0x61, 0x87, 0xa9, 0x42, 0x92, 0xde, 0x9d, 0x91, 0x23, 0x78, 0x77, 0xbe, 0x6e, 0xc0, 0x69, 0x2b,
+	0xed, 0xf1, 0x71, 0x19, 0x16, 0x78, 0xb5, 0x2f, 0xf7, 0x5c, 0x8c, 0xa3, 0xf4, 0x95, 0xa5, 0xa1,
+	0x30, 0xbd, 0x0e, 0x4c, 0x59, 0x55, 0x1e, 0x5e, 0x11, 0x84, 0x4f, 0xf7, 0xcd, 0x7e, 0x39, 0x19,
+	0x59, 0x01, 0xde, 0xdb, 0xe5, 0xbe, 0xd5, 0x8c, 0x63, 0x88, 0xae, 0x14, 0xfa, 0x88, 0xae, 0x24,
+	0x5c, 0x6f, 0x63, 0xc7, 0xe4, 0x7a, 0x73, 0x60, 0xd2, 0x6e, 0x59, 0x75, 0xba, 0xd9, 0x69, 0x36,
+	0x45, 0x56, 0xa0, 0x5f, 0x1c, 0xe7, 0xbc, 0x53, 0xf3, 0xbd, 0xae, 0xb9, 0x15, 0xab, 0x99, 0x7c,
+	0x38, 0x52, 0xa7, 0xf4, 0xae, 0x26, 0x38, 0x61, 0x17, 0x6f, 0x36, 0x2d, 0xf9, 0xc5, 0x32, 0x1a,
+	0xb0, 0xde, 0xe6, 0x81, 0x07, 0xf9, 0xf7, 0x10, 0x57, 0x42, 0x30, 0x46, 0x69, 0xc8, 0x55, 0x18,
+	0xad, 0x3a, 0xbe, 0xcc, 0xbe, 0x9d, 0xe0, 0xbb, 0xd4, 0xc7, 0xd8, 0xde, 0xb6, 0xb8, 0x5e, 0xd6,
+	0x79, 0xb7, 0xe7, 0x52, 0x6e, 0x26, 0x6a, 0x3c, 0x86, 0xe5, 0xc9, 0x1a, 0x67, 0x26, 0x5f, 0x17,
+	0x12, 0x91, 0x82, 0x0b, 0x3d, 0xbc, 0x47, 0x8b, 0xeb, 0xea, 0x31, 0xa4, 0x71, 0x29, 0x4e, 0xbe,
+	0x19, 0x14, 0x72, 0x88, 0xbc, 0x8c, 0x37, 0x75, 0xd7, 0x97, 0xf1, 0xae, 0xc3, 0xd9, 0x20, 0x68,
+	0xc6, 0x02, 0xd0, 0xf2, 0x6a, 0x29, 0xbf, 0x67, 0x9c, 0x13, 0x8f, 0xa9, 0x6e, 0x6d, 0x5d, 0x4b,
+	0x23, 0xc1, 0x5e, 0x65, 0x79, 0x24, 0x36, 0x68, 0x6a, 0xef, 0xf1, 0xf9, 0x7e, 0x22, 0xb1, 0x61,
+	0xa4, 0x5f, 0x46, 0x62, 0x43, 0x00, 0x46, 0xa5, 0x90, 0x8d, 0x5e, 0x7e, 0xf3, 0x93, 0x7c, 0x8f,
+	0xb9, 0x7f, 0x2f, 0x78, 0xd4, 0xf1, 0x7a, 0xea, 0xae, 0x8e, 0xd7, 0x2e, 0x47, 0xf1, 0xe9, 0xfb,
+	0x70, 0x14, 0xdf, 0xe2, 0xb7, 0x4e, 0x57, 0x16, 0xa4, 0x93, 0x3d, 0x9b, 0xc6, 0xc6, 0xaf, 0x98,
+	0x88, 0x64, 0x09, 0xfe, 0x13, 0x05, 0x4f, 0xb2, 0x09, 0xa7, 0xda, 0x6e, 0xb5, 0xcb, 0xcf, 0xcc,
+	0xbd, 0xea, 0x91, 0xbb, 0xdf, 0x9b, 0x29, 0x34, 0x98, 0x5a, 0x92, 0x6f, 0xe0, 0x21, 0x9c, 0x5f,
+	0x35, 0xce, 0xc9, 0x0d, 0x3c, 0x04, 0x63, 0x94, 0x26, 0xe9, 0x76, 0x7d, 0xf4, 0x81, 0xb9, 0x5d,
+	0xa7, 0x1f, 0x82, 0xdb, 0xf5, 0xb1, 0x23, 0xbb, 0x5d, 0x7f, 0x15, 0x4e, 0xb6, 0xdd, 0xea, 0xa2,
+	0xed, 0x7b, 0x1d, 0x9e, 0x07, 0x5c, 0xea, 0x54, 0xeb, 0x34, 0xe0, 0x7e, 0xdb, 0xc2, 0xa5, 0x4b,
+	0xd1, 0x4a, 0x8a, 0x3f, 0x17, 0x9b, 0x95, 0x7f, 0x2e, 0xc6, 0x17, 0x79, 0xa2, 0x14, 0xb7, 0x7b,
+	0x78, 0xb6, 0x48, 0x0a, 0x12, 0xd3, 0xe4, 0x44, 0xbd, 0xbe, 0x17, 0x1e, 0x98, 0xd7, 0xf7, 0x15,
+	0xc8, 0xfb, 0x8d, 0x4e, 0x50, 0x75, 0xf7, 0x1c, 0xee, 0xc0, 0x1f, 0xd5, 0x4f, 0x51, 0xe7, 0xcb,
+	0x12, 0x7e, 0xe7, 0x60, 0x66, 0x52, 0xfd, 0x8e, 0x58, 0xf9, 0x12, 0x42, 0xbe, 0xd2, 0x23, 0x89,
+	0xd2, 0x3c, 0xe6, 0x24, 0xca, 0xb3, 0xf7, 0x95, 0x40, 0x99, 0xe6, 0xcd, 0x7e, 0xe2, 0xe7, 0xc1,
+	0x9b, 0xfd, 0x5b, 0x06, 0x8c, 0xef, 0x46, 0x1d, 0x27, 0xd2, 0xc9, 0x9e, 0x2d, 0x36, 0x17, 0x73,
+	0xc1, 0x94, 0x4c, 0xb6, 0x57, 0xc5, 0x40, 0x77, 0x92, 0x00, 0x8c, 0x0b, 0xef, 0x8e, 0x14, 0x3e,
+	0xf9, 0xf0, 0x22, 0x85, 0xfd, 0x7b, 0xd2, 0xff, 0x6d, 0x02, 0x4e, 0x24, 0x9e, 0xa8, 0xd6, 0xaf,
+	0x53, 0x18, 0x47, 0x7d, 0x9d, 0x22, 0xf6, 0x7c, 0xc4, 0xc0, 0x03, 0x7d, 0x3e, 0x62, 0xf0, 0xe1,
+	0x3c, 0x1f, 0x31, 0x79, 0x5c, 0xcf, 0x47, 0x44, 0x1e, 0xe1, 0x18, 0xba, 0xc7, 0x23, 0x1c, 0xf3,
+	0x30, 0xa1, 0xd2, 0xd3, 0xa8, 0x7c, 0x3e, 0x40, 0xb8, 0x43, 0xf5, 0xb5, 0x91, 0x85, 0x38, 0x1a,
+	0x93, 0xf4, 0xe4, 0x57, 0x20, 0xe7, 0xf0, 0x82, 0xc3, 0x7d, 0x3c, 0x20, 0x15, 0x9f, 0x0e, 0x5c,
+	0xb9, 0x96, 0x6f, 0x38, 0xa9, 0xcc, 0x85, 0x1c, 0x87, 0xdd, 0x51, 0x3f, 0x50, 0x08, 0x25, 0x6f,
+	0x40, 0xd1, 0xad, 0xd5, 0x9a, 0xae, 0x55, 0x0d, 0x9f, 0xb8, 0x50, 0x1e, 0x5a, 0x91, 0x69, 0xab,
+	0x6f, 0x81, 0x6c, 0xf4, 0xa0, 0xc3, 0x9e, 0x1c, 0x98, 0x0d, 0x34, 0x11, 0x7f, 0xd8, 0xc5, 0x2f,
+	0x8e, 0xf2, 0x66, 0xfe, 0xbf, 0xe3, 0x68, 0x66, 0xfc, 0x15, 0x19, 0xd9, 0xe0, 0xf0, 0xc2, 0x4e,
+	0x1c, 0x8b, 0xc9, 0x9a, 0x10, 0x0f, 0xce, 0xb4, 0xd3, 0x2c, 0x44, 0x5f, 0xe6, 0x8f, 0xdd, 0xcd,
+	0x4e, 0x3d, 0x2f, 0xa5, 0x9c, 0x49, 0xb5, 0x31, 0x7d, 0xec, 0xc1, 0x39, 0xfa, 0xf8, 0x45, 0xfe,
+	0x81, 0x3d, 0x7e, 0x11, 0x7f, 0xf2, 0x7d, 0xfc, 0x61, 0x3c, 0xf9, 0x4e, 0x7e, 0x9a, 0xfa, 0xe6,
+	0x8a, 0x30, 0xac, 0x5e, 0x3f, 0x8e, 0xc1, 0xfe, 0xb9, 0x7b, 0x77, 0xe5, 0xf7, 0x0d, 0x98, 0x16,
+	0x53, 0x2a, 0xed, 0x9f, 0x87, 0x64, 0x16, 0xd8, 0x31, 0x38, 0xe4, 0x79, 0x5c, 0xaf, 0x1c, 0x13,
+	0xc4, 0x3d, 0xc8, 0x77, 0x11, 0x4e, 0xbe, 0x98, 0xa2, 0x08, 0x4c, 0xf4, 0xe1, 0x76, 0x48, 0x7f,
+	0xc9, 0xe3, 0xe4, 0xe1, 0x11, 0xce, 0xfe, 0xe9, 0x7d, 0xf1, 0xdc, 0x56, 0xcf, 0xc7, 0xde, 0xae,
+	0x47, 0x0f, 0xba, 0xac, 0xef, 0xad, 0x85, 0x7b, 0x4f, 0xf4, 0xa1, 0xb9, 0xcf, 0x1a, 0x70, 0x2a,
+	0x6d, 0x93, 0x48, 0xa9, 0x45, 0x39, 0x5e, 0x8b, 0xfe, 0xfc, 0x9a, 0xd1, 0x3a, 0x1c, 0xcf, 0xe3,
+	0x25, 0xbf, 0x3b, 0x1c, 0xf1, 0xc5, 0x06, 0xb4, 0xfd, 0xcb, 0xbc, 0xe7, 0x4c, 0x79, 0xcf, 0xb1,
+	0x3f, 0x48, 0xc8, 0x3d, 0xc4, 0x3f, 0x48, 0x18, 0xce, 0xf0, 0x07, 0x09, 0x23, 0x0f, 0xf3, 0x0f,
+	0x12, 0xf2, 0x47, 0xfc, 0x83, 0x84, 0xd1, 0x9f, 0x9b, 0x3f, 0x48, 0x30, 0x3f, 0x34, 0x60, 0xf2,
+	0x7f, 0xfa, 0x7f, 0xd5, 0xfd, 0x30, 0x12, 0x0c, 0x7d, 0x88, 0x7f, 0x52, 0x77, 0x3b, 0x1e, 0x5e,
+	0x5a, 0x3a, 0x96, 0x46, 0xf6, 0x08, 0x33, 0xbd, 0x0d, 0x69, 0x06, 0xee, 0xd1, 0x2e, 0xe4, 0xc5,
+	0x12, 0x75, 0x06, 0x8e, 0x9c, 0xa8, 0xf3, 0x5f, 0x29, 0xbd, 0xca, 0xcf, 0xcd, 0xf7, 0x1e, 0xd4,
+	0x5f, 0x5d, 0x9d, 0x4a, 0xfb, 0xab, 0xab, 0xc4, 0x5f, 0x5b, 0x25, 0xff, 0xea, 0x68, 0xe0, 0x01,
+	0xfe, 0xd5, 0xd1, 0x38, 0x14, 0xa2, 0x7f, 0xe6, 0x3d, 0xfb, 0xed, 0x0f, 0xcf, 0x3f, 0xf2, 0xdd,
+	0x0f, 0xcf, 0x3f, 0xf2, 0xbd, 0x0f, 0xcf, 0x3f, 0xf2, 0xfe, 0xe1, 0x79, 0xe3, 0xdb, 0x87, 0xe7,
+	0x8d, 0xef, 0x1e, 0x9e, 0x37, 0xbe, 0x77, 0x78, 0xde, 0xf8, 0xe1, 0xe1, 0x79, 0xe3, 0x77, 0xfe,
+	0xe9, 0xfc, 0x23, 0xaf, 0xe7, 0x55, 0xdb, 0xfe, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x27, 0xbe, 0xa9,
+	0xb5, 0x31, 0x7f, 0x00, 0x00,
 }
 
 func (m *Amount) Marshal() (dAtA []byte, err error) {
@@ -7675,17 +3205,11 @@ func (m *Amount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Value != nil {
-		i -= len(*m.Value)
-		copy(dAtA[i:], *m.Value)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Value)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Value)
+	copy(dAtA[i:], m.Value)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Value)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -7709,10 +3233,6 @@ func (m *ArchiveStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Zip != nil {
 		{
 			size, err := m.Zip.MarshalToSizedBuffer(dAtA[:i])
@@ -7772,10 +3292,6 @@ func (m *Arguments) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Artifacts) > 0 {
 		for iNdEx := len(m.Artifacts) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -7827,37 +3343,27 @@ func (m *Artifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i--
+	if m.RecurseMode {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.RecurseMode != nil {
-		i--
-		if *m.RecurseMode {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x50
+	i--
+	dAtA[i] = 0x50
+	i -= len(m.SubPath)
+	copy(dAtA[i:], m.SubPath)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.SubPath)))
+	i--
+	dAtA[i] = 0x4a
+	i--
+	if m.Optional {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.SubPath != nil {
-		i -= len(*m.SubPath)
-		copy(dAtA[i:], *m.SubPath)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SubPath)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.Optional != nil {
-		i--
-		if *m.Optional {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
+	i--
+	dAtA[i] = 0x40
 	if m.Archive != nil {
 		{
 			size, err := m.Archive.MarshalToSizedBuffer(dAtA[:i])
@@ -7870,51 +3376,41 @@ func (m *Artifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	if m.GlobalName != nil {
-		i -= len(*m.GlobalName)
-		copy(dAtA[i:], *m.GlobalName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GlobalName)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.ArtifactLocation != nil {
-		{
-			size, err := m.ArtifactLocation.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.GlobalName)
+	copy(dAtA[i:], m.GlobalName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GlobalName)))
+	i--
+	dAtA[i] = 0x32
+	{
+		size, err := m.ArtifactLocation.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x2a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.From != nil {
-		i -= len(*m.From)
-		copy(dAtA[i:], *m.From)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.From)))
-		i--
-		dAtA[i] = 0x22
-	}
+	i--
+	dAtA[i] = 0x2a
+	i -= len(m.From)
+	copy(dAtA[i:], m.From)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.From)))
+	i--
+	dAtA[i] = 0x22
 	if m.Mode != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Mode))
 		i--
 		dAtA[i] = 0x18
 	}
-	if m.Path != nil {
-		i -= len(*m.Path)
-		copy(dAtA[i:], *m.Path)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Path)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Path)
+	copy(dAtA[i:], m.Path)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Path)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -7938,13 +3434,9 @@ func (m *ArtifactLocation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Gcs != nil {
+	if m.GCS != nil {
 		{
-			size, err := m.Gcs.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.GCS.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -7954,9 +3446,9 @@ func (m *ArtifactLocation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x4a
 	}
-	if m.Oss != nil {
+	if m.OSS != nil {
 		{
-			size, err := m.Oss.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.OSS.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -7978,9 +3470,9 @@ func (m *ArtifactLocation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	if m.Hdfs != nil {
+	if m.HDFS != nil {
 		{
-			size, err := m.Hdfs.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.HDFS.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -8002,9 +3494,9 @@ func (m *ArtifactLocation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x2a
 	}
-	if m.Http != nil {
+	if m.HTTP != nil {
 		{
-			size, err := m.Http.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.HTTP.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -8071,24 +3563,16 @@ func (m *ArtifactRepositoryRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.ConfigMap != nil {
-		i -= len(*m.ConfigMap)
-		copy(dAtA[i:], *m.ConfigMap)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ConfigMap)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.ConfigMap)
+	copy(dAtA[i:], m.ConfigMap)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ConfigMap)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8112,29 +3596,21 @@ func (m *ArtifactoryArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.ArtifactoryAuth != nil {
-		{
-			size, err := m.ArtifactoryAuth.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ArtifactoryAuth.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Url != nil {
-		i -= len(*m.Url)
-		copy(dAtA[i:], *m.Url)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Url)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.URL)
+	copy(dAtA[i:], m.URL)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.URL)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8158,10 +3634,6 @@ func (m *ArtifactoryAuth) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.PasswordSecret != nil {
 		{
 			size, err := m.PasswordSecret.MarshalToSizedBuffer(dAtA[:i])
@@ -8209,17 +3681,11 @@ func (m *Backoff) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.MaxDuration != nil {
-		i -= len(*m.MaxDuration)
-		copy(dAtA[i:], *m.MaxDuration)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.MaxDuration)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	i -= len(m.MaxDuration)
+	copy(dAtA[i:], m.MaxDuration)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.MaxDuration)))
+	i--
+	dAtA[i] = 0x1a
 	if m.Factor != nil {
 		{
 			size, err := m.Factor.MarshalToSizedBuffer(dAtA[:i])
@@ -8232,13 +3698,11 @@ func (m *Backoff) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Duration != nil {
-		i -= len(*m.Duration)
-		copy(dAtA[i:], *m.Duration)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Duration)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Duration)
+	copy(dAtA[i:], m.Duration)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Duration)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8262,10 +3726,6 @@ func (m *Cache) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.ConfigMap != nil {
 		{
 			size, err := m.ConfigMap.MarshalToSizedBuffer(dAtA[:i])
@@ -8301,34 +3761,26 @@ func (m *ClusterWorkflowTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Spec != nil {
-		{
-			size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8352,10 +3804,6 @@ func (m *ClusterWorkflowTemplateList) MarshalToSizedBuffer(dAtA []byte) (int, er
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Items) > 0 {
 		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -8370,18 +3818,16 @@ func (m *ClusterWorkflowTemplateList) MarshalToSizedBuffer(dAtA []byte) (int, er
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8405,31 +3851,21 @@ func (m *Condition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Message != nil {
-		i -= len(*m.Message)
-		copy(dAtA[i:], *m.Message)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Message)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Status != nil {
-		i -= len(*m.Status)
-		copy(dAtA[i:], *m.Status)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Status)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Type != nil {
-		i -= len(*m.Type)
-		copy(dAtA[i:], *m.Type)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Type)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Message)
+	copy(dAtA[i:], m.Message)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Status)
+	copy(dAtA[i:], m.Status)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Status)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Type)
+	copy(dAtA[i:], m.Type)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8453,30 +3889,22 @@ func (m *ContinueOn) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i--
+	if m.Failed {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.Failed != nil {
-		i--
-		if *m.Failed {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
+	i--
+	dAtA[i] = 0x10
+	i--
+	if m.Error {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.Error != nil {
-		i--
-		if *m.Error {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x8
-	}
+	i--
+	dAtA[i] = 0x8
 	return len(dAtA) - i, nil
 }
 
@@ -8500,17 +3928,55 @@ func (m *Counter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i -= len(m.Value)
+	copy(dAtA[i:], m.Value)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Value)))
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateS3BucketOptions) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
 	}
-	if m.Value != nil {
-		i -= len(*m.Value)
-		copy(dAtA[i:], *m.Value)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Value)))
-		i--
-		dAtA[i] = 0xa
+	return dAtA[:n], nil
+}
+
+func (m *CreateS3BucketOptions) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateS3BucketOptions) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	i--
+	if m.ObjectLocking {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
+	i--
+	dAtA[i] = 0x18
+	i -= len(m.Region)
+	copy(dAtA[i:], m.Region)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Region)))
+	i--
+	dAtA[i] = 0x12
+	i--
+	if m.Enabled {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x8
 	return len(dAtA) - i, nil
 }
 
@@ -8534,46 +4000,36 @@ func (m *CronWorkflow) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Spec != nil {
-		{
-			size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8597,10 +4053,6 @@ func (m *CronWorkflowList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Items) > 0 {
 		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -8615,18 +4067,16 @@ func (m *CronWorkflowList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8650,13 +4100,9 @@ func (m *CronWorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.WorkflowMeta != nil {
+	if m.WorkflowMetadata != nil {
 		{
-			size, err := m.WorkflowMeta.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.WorkflowMetadata.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -8666,13 +4112,11 @@ func (m *CronWorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x4a
 	}
-	if m.Timezone != nil {
-		i -= len(*m.Timezone)
-		copy(dAtA[i:], *m.Timezone)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Timezone)))
-		i--
-		dAtA[i] = 0x42
-	}
+	i -= len(m.Timezone)
+	copy(dAtA[i:], m.Timezone)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Timezone)))
+	i--
+	dAtA[i] = 0x42
 	if m.FailedJobsHistoryLimit != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.FailedJobsHistoryLimit))
 		i--
@@ -8688,42 +4132,34 @@ func (m *CronWorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x28
 	}
-	if m.Suspend != nil {
-		i--
-		if *m.Suspend {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
+	i--
+	if m.Suspend {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x20
+	i -= len(m.ConcurrencyPolicy)
+	copy(dAtA[i:], m.ConcurrencyPolicy)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ConcurrencyPolicy)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Schedule)
+	copy(dAtA[i:], m.Schedule)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Schedule)))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.WorkflowSpec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x20
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.ConcurrencyPolicy != nil {
-		i -= len(*m.ConcurrencyPolicy)
-		copy(dAtA[i:], *m.ConcurrencyPolicy)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ConcurrencyPolicy)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Schedule != nil {
-		i -= len(*m.Schedule)
-		copy(dAtA[i:], *m.Schedule)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Schedule)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.WorkflowSpec != nil {
-		{
-			size, err := m.WorkflowSpec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8747,10 +4183,6 @@ func (m *CronWorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Conditions) > 0 {
 		for iNdEx := len(m.Conditions) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -8814,24 +4246,16 @@ func (m *DAGTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Depends != nil {
-		i -= len(*m.Depends)
-		copy(dAtA[i:], *m.Depends)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Depends)))
-		i--
-		dAtA[i] = 0x62
-	}
-	if m.OnExit != nil {
-		i -= len(*m.OnExit)
-		copy(dAtA[i:], *m.OnExit)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.OnExit)))
-		i--
-		dAtA[i] = 0x5a
-	}
+	i -= len(m.Depends)
+	copy(dAtA[i:], m.Depends)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Depends)))
+	i--
+	dAtA[i] = 0x62
+	i -= len(m.OnExit)
+	copy(dAtA[i:], m.OnExit)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.OnExit)))
+	i--
+	dAtA[i] = 0x5a
 	if m.ContinueOn != nil {
 		{
 			size, err := m.ContinueOn.MarshalToSizedBuffer(dAtA[:i])
@@ -8844,13 +4268,11 @@ func (m *DAGTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x52
 	}
-	if m.When != nil {
-		i -= len(*m.When)
-		copy(dAtA[i:], *m.When)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.When)))
-		i--
-		dAtA[i] = 0x4a
-	}
+	i -= len(m.When)
+	copy(dAtA[i:], m.When)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.When)))
+	i--
+	dAtA[i] = 0x4a
 	if m.WithSequence != nil {
 		{
 			size, err := m.WithSequence.MarshalToSizedBuffer(dAtA[:i])
@@ -8863,13 +4285,11 @@ func (m *DAGTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x42
 	}
-	if m.WithParam != nil {
-		i -= len(*m.WithParam)
-		copy(dAtA[i:], *m.WithParam)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.WithParam)))
-		i--
-		dAtA[i] = 0x3a
-	}
+	i -= len(m.WithParam)
+	copy(dAtA[i:], m.WithParam)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.WithParam)))
+	i--
+	dAtA[i] = 0x3a
 	if len(m.WithItems) > 0 {
 		for iNdEx := len(m.WithItems) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -8905,32 +4325,26 @@ func (m *DAGTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if m.Arguments != nil {
-		{
-			size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Template != nil {
-		i -= len(*m.Template)
-		copy(dAtA[i:], *m.Template)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Template)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Template)
+	copy(dAtA[i:], m.Template)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Template)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -8954,10 +4368,6 @@ func (m *DAGTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.FailFast != nil {
 		i--
 		if *m.FailFast {
@@ -8982,13 +4392,11 @@ func (m *DAGTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Target != nil {
-		i -= len(*m.Target)
-		copy(dAtA[i:], *m.Target)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Target)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Target)
+	copy(dAtA[i:], m.Target)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Target)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9012,17 +4420,11 @@ func (m *Event) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Selector != nil {
-		i -= len(*m.Selector)
-		copy(dAtA[i:], *m.Selector)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Selector)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Selector)
+	copy(dAtA[i:], m.Selector)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Selector)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9046,17 +4448,11 @@ func (m *ExecutorConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.ServiceAccountName != nil {
-		i -= len(*m.ServiceAccountName)
-		copy(dAtA[i:], *m.ServiceAccountName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ServiceAccountName)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.ServiceAccountName)
+	copy(dAtA[i:], m.ServiceAccountName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ServiceAccountName)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9080,29 +4476,21 @@ func (m *GCSArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.GCSBucket != nil {
-		{
-			size, err := m.GCSBucket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.GCSBucket.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9126,29 +4514,21 @@ func (m *GCSBucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.ServiceAccountKeySecret != nil {
-		{
-			size, err := m.ServiceAccountKeySecret.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ServiceAccountKeySecret.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Bucket != nil {
-		i -= len(*m.Bucket)
-		copy(dAtA[i:], *m.Bucket)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Bucket)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Bucket)
+	copy(dAtA[i:], m.Bucket)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Bucket)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9172,10 +4552,6 @@ func (m *Gauge) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Realtime != nil {
 		i--
 		if *m.Realtime {
@@ -9186,13 +4562,11 @@ func (m *Gauge) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x10
 	}
-	if m.Value != nil {
-		i -= len(*m.Value)
-		copy(dAtA[i:], *m.Value)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Value)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Value)
+	copy(dAtA[i:], m.Value)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Value)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9216,23 +4590,17 @@ func (m *GitArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i--
+	if m.InsecureIgnoreHostKey {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.InsecureIgnoreHostKey != nil {
-		i--
-		if *m.InsecureIgnoreHostKey {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.SshPrivateKeySecret != nil {
+	i--
+	dAtA[i] = 0x40
+	if m.SSHPrivateKeySecret != nil {
 		{
-			size, err := m.SshPrivateKeySecret.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.SSHPrivateKeySecret.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -9280,20 +4648,16 @@ func (m *GitArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	if m.Revision != nil {
-		i -= len(*m.Revision)
-		copy(dAtA[i:], *m.Revision)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Revision)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Repo != nil {
-		i -= len(*m.Repo)
-		copy(dAtA[i:], *m.Repo)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Repo)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Revision)
+	copy(dAtA[i:], m.Revision)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Revision)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Repo)
+	copy(dAtA[i:], m.Repo)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Repo)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9317,39 +4681,29 @@ func (m *HDFSArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i--
+	if m.Force {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.Force != nil {
-		i--
-		if *m.Force {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
+	i--
+	dAtA[i] = 0x18
+	i -= len(m.Path)
+	copy(dAtA[i:], m.Path)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Path)))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.HDFSConfig.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x18
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Path != nil {
-		i -= len(*m.Path)
-		copy(dAtA[i:], *m.Path)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Path)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.HDFSConfig != nil {
-		{
-			size, err := m.HDFSConfig.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9373,17 +4727,11 @@ func (m *HDFSConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.HdfsUser != nil {
-		i -= len(*m.HdfsUser)
-		copy(dAtA[i:], *m.HdfsUser)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.HdfsUser)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	i -= len(m.HDFSUser)
+	copy(dAtA[i:], m.HDFSUser)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.HDFSUser)))
+	i--
+	dAtA[i] = 0x1a
 	if len(m.Addresses) > 0 {
 		for iNdEx := len(m.Addresses) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.Addresses[iNdEx])
@@ -9393,18 +4741,16 @@ func (m *HDFSConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.HDFSKrbConfig != nil {
-		{
-			size, err := m.HDFSKrbConfig.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.HDFSKrbConfig.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9428,17 +4774,11 @@ func (m *HDFSKrbConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.KrbServicePrincipalName != nil {
-		i -= len(*m.KrbServicePrincipalName)
-		copy(dAtA[i:], *m.KrbServicePrincipalName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.KrbServicePrincipalName)))
-		i--
-		dAtA[i] = 0x32
-	}
+	i -= len(m.KrbServicePrincipalName)
+	copy(dAtA[i:], m.KrbServicePrincipalName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.KrbServicePrincipalName)))
+	i--
+	dAtA[i] = 0x32
 	if m.KrbConfigConfigMap != nil {
 		{
 			size, err := m.KrbConfigConfigMap.MarshalToSizedBuffer(dAtA[:i])
@@ -9451,20 +4791,16 @@ func (m *HDFSKrbConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x2a
 	}
-	if m.KrbRealm != nil {
-		i -= len(*m.KrbRealm)
-		copy(dAtA[i:], *m.KrbRealm)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.KrbRealm)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.KrbUsername != nil {
-		i -= len(*m.KrbUsername)
-		copy(dAtA[i:], *m.KrbUsername)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.KrbUsername)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	i -= len(m.KrbRealm)
+	copy(dAtA[i:], m.KrbRealm)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.KrbRealm)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.KrbUsername)
+	copy(dAtA[i:], m.KrbUsername)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.KrbUsername)))
+	i--
+	dAtA[i] = 0x1a
 	if m.KrbKeytabSecret != nil {
 		{
 			size, err := m.KrbKeytabSecret.MarshalToSizedBuffer(dAtA[:i])
@@ -9512,10 +4848,6 @@ func (m *HTTPArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Headers) > 0 {
 		for iNdEx := len(m.Headers) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -9530,13 +4862,11 @@ func (m *HTTPArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Url != nil {
-		i -= len(*m.Url)
-		copy(dAtA[i:], *m.Url)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Url)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.URL)
+	copy(dAtA[i:], m.URL)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.URL)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9560,24 +4890,16 @@ func (m *Header) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Value != nil {
-		i -= len(*m.Value)
-		copy(dAtA[i:], *m.Value)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Value)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Value)
+	copy(dAtA[i:], m.Value)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Value)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9601,10 +4923,6 @@ func (m *Histogram) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Buckets) > 0 {
 		for iNdEx := len(m.Buckets) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -9619,13 +4937,11 @@ func (m *Histogram) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x22
 		}
 	}
-	if m.Value != nil {
-		i -= len(*m.Value)
-		copy(dAtA[i:], *m.Value)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Value)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	i -= len(m.Value)
+	copy(dAtA[i:], m.Value)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Value)))
+	i--
+	dAtA[i] = 0x1a
 	return len(dAtA) - i, nil
 }
 
@@ -9649,10 +4965,6 @@ func (m *Inputs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Artifacts) > 0 {
 		for iNdEx := len(m.Artifacts) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -9704,10 +5016,6 @@ func (m *Item) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Value != nil {
 		i -= len(m.Value)
 		copy(dAtA[i:], m.Value)
@@ -9738,31 +5046,21 @@ func (m *Link) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Url != nil {
-		i -= len(*m.Url)
-		copy(dAtA[i:], *m.Url)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Url)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Scope != nil {
-		i -= len(*m.Scope)
-		copy(dAtA[i:], *m.Scope)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Scope)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.URL)
+	copy(dAtA[i:], m.URL)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.URL)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Scope)
+	copy(dAtA[i:], m.Scope)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Scope)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9786,34 +5084,24 @@ func (m *MemoizationStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i -= len(m.CacheName)
+	copy(dAtA[i:], m.CacheName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CacheName)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0x12
+	i--
+	if m.Hit {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.CacheName != nil {
-		i -= len(*m.CacheName)
-		copy(dAtA[i:], *m.CacheName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.CacheName)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Hit != nil {
-		i--
-		if *m.Hit {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x8
-	}
+	i--
+	dAtA[i] = 0x8
 	return len(dAtA) - i, nil
 }
 
@@ -9837,17 +5125,11 @@ func (m *Memoize) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.MaxAge != nil {
-		i -= len(*m.MaxAge)
-		copy(dAtA[i:], *m.MaxAge)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.MaxAge)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	i -= len(m.MaxAge)
+	copy(dAtA[i:], m.MaxAge)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.MaxAge)))
+	i--
+	dAtA[i] = 0x1a
 	if m.Cache != nil {
 		{
 			size, err := m.Cache.MarshalToSizedBuffer(dAtA[:i])
@@ -9860,13 +5142,11 @@ func (m *Memoize) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9890,22 +5170,23 @@ func (m *Metadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Labels) > 0 {
+		keysForLabels := make([]string, 0, len(m.Labels))
 		for k := range m.Labels {
-			v := m.Labels[k]
+			keysForLabels = append(keysForLabels, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForLabels)
+		for iNdEx := len(keysForLabels) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Labels[string(keysForLabels[iNdEx])]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
 			i = encodeVarintGenerated(dAtA, i, uint64(len(v)))
 			i--
 			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i -= len(keysForLabels[iNdEx])
+			copy(dAtA[i:], keysForLabels[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForLabels[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -9914,17 +5195,22 @@ func (m *Metadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.Annotations) > 0 {
+		keysForAnnotations := make([]string, 0, len(m.Annotations))
 		for k := range m.Annotations {
-			v := m.Annotations[k]
+			keysForAnnotations = append(keysForAnnotations, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForAnnotations)
+		for iNdEx := len(keysForAnnotations) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Annotations[string(keysForAnnotations[iNdEx])]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
 			i = encodeVarintGenerated(dAtA, i, uint64(len(v)))
 			i--
 			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i -= len(keysForAnnotations[iNdEx])
+			copy(dAtA[i:], keysForAnnotations[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForAnnotations[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -9955,24 +5241,16 @@ func (m *MetricLabel) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Value != nil {
-		i -= len(*m.Value)
-		copy(dAtA[i:], *m.Value)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Value)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Value)
+	copy(dAtA[i:], m.Value)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Value)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -9996,10 +5274,6 @@ func (m *Metrics) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Prometheus) > 0 {
 		for iNdEx := len(m.Prometheus) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -10037,17 +5311,11 @@ func (m *Mutex) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10071,24 +5339,16 @@ func (m *MutexHolding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Holder != nil {
-		i -= len(*m.Holder)
-		copy(dAtA[i:], *m.Holder)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Holder)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Mutex != nil {
-		i -= len(*m.Mutex)
-		copy(dAtA[i:], *m.Mutex)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Mutex)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Holder)
+	copy(dAtA[i:], m.Holder)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Holder)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Mutex)
+	copy(dAtA[i:], m.Mutex)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Mutex)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10112,10 +5372,6 @@ func (m *MutexStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Waiting) > 0 {
 		for iNdEx := len(m.Waiting) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -10167,10 +5423,6 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.SynchronizationStatus != nil {
 		{
 			size, err := m.SynchronizationStatus.MarshalToSizedBuffer(dAtA[:i])
@@ -10185,13 +5437,11 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xca
 	}
-	if m.EstimatedDuration != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.EstimatedDuration))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xc0
-	}
+	i = encodeVarintGenerated(dAtA, i, uint64(m.EstimatedDuration))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xc0
 	if m.MemoizationStatus != nil {
 		{
 			size, err := m.MemoizationStatus.MarshalToSizedBuffer(dAtA[:i])
@@ -10206,25 +5456,28 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xba
 	}
-	if m.HostNodeName != nil {
-		i -= len(*m.HostNodeName)
-		copy(dAtA[i:], *m.HostNodeName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.HostNodeName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xb2
-	}
+	i -= len(m.HostNodeName)
+	copy(dAtA[i:], m.HostNodeName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.HostNodeName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xb2
 	if len(m.ResourcesDuration) > 0 {
+		keysForResourcesDuration := make([]string, 0, len(m.ResourcesDuration))
 		for k := range m.ResourcesDuration {
-			v := m.ResourcesDuration[k]
+			keysForResourcesDuration = append(keysForResourcesDuration, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForResourcesDuration)
+		for iNdEx := len(keysForResourcesDuration) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.ResourcesDuration[k8s_io_api_core_v1.ResourceName(keysForResourcesDuration[iNdEx])]
 			baseI := i
 			i = encodeVarintGenerated(dAtA, i, uint64(v))
 			i--
 			dAtA[i] = 0x10
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i -= len(keysForResourcesDuration[iNdEx])
+			copy(dAtA[i:], keysForResourcesDuration[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForResourcesDuration[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -10234,33 +5487,27 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xaa
 		}
 	}
-	if m.TemplateScope != nil {
-		i -= len(*m.TemplateScope)
-		copy(dAtA[i:], *m.TemplateScope)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.TemplateScope)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xa2
-	}
-	if m.WorkflowTemplateName != nil {
-		i -= len(*m.WorkflowTemplateName)
-		copy(dAtA[i:], *m.WorkflowTemplateName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.WorkflowTemplateName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x9a
-	}
-	if m.StoredTemplateID != nil {
-		i -= len(*m.StoredTemplateID)
-		copy(dAtA[i:], *m.StoredTemplateID)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.StoredTemplateID)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x92
-	}
+	i -= len(m.TemplateScope)
+	copy(dAtA[i:], m.TemplateScope)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.TemplateScope)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xa2
+	i -= len(m.WorkflowTemplateName)
+	copy(dAtA[i:], m.WorkflowTemplateName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.WorkflowTemplateName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0x9a
+	i -= len(m.StoredTemplateID)
+	copy(dAtA[i:], m.StoredTemplateID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.StoredTemplateID)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0x92
 	if len(m.OutboundNodes) > 0 {
 		for iNdEx := len(m.OutboundNodes) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.OutboundNodes[iNdEx])
@@ -10317,58 +5564,46 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x68
 	}
-	if m.PodIP != nil {
-		i -= len(*m.PodIP)
-		copy(dAtA[i:], *m.PodIP)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.PodIP)))
-		i--
-		dAtA[i] = 0x62
-	}
-	if m.FinishedAt != nil {
-		{
-			size, err := m.FinishedAt.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.PodIP)
+	copy(dAtA[i:], m.PodIP)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PodIP)))
+	i--
+	dAtA[i] = 0x62
+	{
+		size, err := m.FinishedAt.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x5a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.StartedAt != nil {
-		{
-			size, err := m.StartedAt.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x5a
+	{
+		size, err := m.StartedAt.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x52
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Message != nil {
-		i -= len(*m.Message)
-		copy(dAtA[i:], *m.Message)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Message)))
-		i--
-		dAtA[i] = 0x4a
-	}
-	if m.BoundaryID != nil {
-		i -= len(*m.BoundaryID)
-		copy(dAtA[i:], *m.BoundaryID)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.BoundaryID)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.Phase != nil {
-		i -= len(*m.Phase)
-		copy(dAtA[i:], *m.Phase)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Phase)))
-		i--
-		dAtA[i] = 0x3a
-	}
+	i--
+	dAtA[i] = 0x52
+	i -= len(m.Message)
+	copy(dAtA[i:], m.Message)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
+	i--
+	dAtA[i] = 0x4a
+	i -= len(m.BoundaryID)
+	copy(dAtA[i:], m.BoundaryID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.BoundaryID)))
+	i--
+	dAtA[i] = 0x42
+	i -= len(m.Phase)
+	copy(dAtA[i:], m.Phase)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Phase)))
+	i--
+	dAtA[i] = 0x3a
 	if m.TemplateRef != nil {
 		{
 			size, err := m.TemplateRef.MarshalToSizedBuffer(dAtA[:i])
@@ -10381,41 +5616,31 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x32
 	}
-	if m.TemplateName != nil {
-		i -= len(*m.TemplateName)
-		copy(dAtA[i:], *m.TemplateName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.TemplateName)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.Type != nil {
-		i -= len(*m.Type)
-		copy(dAtA[i:], *m.Type)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Type)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.DisplayName != nil {
-		i -= len(*m.DisplayName)
-		copy(dAtA[i:], *m.DisplayName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.DisplayName)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Id != nil {
-		i -= len(*m.Id)
-		copy(dAtA[i:], *m.Id)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Id)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.TemplateName)
+	copy(dAtA[i:], m.TemplateName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.TemplateName)))
+	i--
+	dAtA[i] = 0x2a
+	i -= len(m.Type)
+	copy(dAtA[i:], m.Type)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.DisplayName)
+	copy(dAtA[i:], m.DisplayName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.DisplayName)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.ID)
+	copy(dAtA[i:], m.ID)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ID)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10439,17 +5664,11 @@ func (m *NodeSynchronizationStatus) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Waiting != nil {
-		i -= len(*m.Waiting)
-		copy(dAtA[i:], *m.Waiting)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Waiting)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Waiting)
+	copy(dAtA[i:], m.Waiting)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Waiting)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10473,10 +5692,6 @@ func (m *NoneStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -10500,29 +5715,21 @@ func (m *OSSArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.OSSBucket != nil {
-		{
-			size, err := m.OSSBucket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.OSSBucket.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10546,48 +5753,36 @@ func (m *OSSBucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.SecretKeySecret != nil {
-		{
-			size, err := m.SecretKeySecret.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.SecretKeySecret.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x22
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.AccessKeySecret != nil {
-		{
-			size, err := m.AccessKeySecret.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x22
+	{
+		size, err := m.AccessKeySecret.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Bucket != nil {
-		i -= len(*m.Bucket)
-		copy(dAtA[i:], *m.Bucket)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Bucket)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Endpoint != nil {
-		i -= len(*m.Endpoint)
-		copy(dAtA[i:], *m.Endpoint)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Endpoint)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Bucket)
+	copy(dAtA[i:], m.Bucket)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Bucket)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Endpoint)
+	copy(dAtA[i:], m.Endpoint)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Endpoint)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10611,10 +5806,6 @@ func (m *Outputs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.ExitCode != nil {
 		i -= len(*m.ExitCode)
 		copy(dAtA[i:], *m.ExitCode)
@@ -10680,10 +5871,6 @@ func (m *ParallelSteps) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Steps) > 0 {
 		for iNdEx := len(m.Steps) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -10721,17 +5908,11 @@ func (m *Parameter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.GlobalName != nil {
-		i -= len(*m.GlobalName)
-		copy(dAtA[i:], *m.GlobalName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GlobalName)))
-		i--
-		dAtA[i] = 0x2a
-	}
+	i -= len(m.GlobalName)
+	copy(dAtA[i:], m.GlobalName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GlobalName)))
+	i--
+	dAtA[i] = 0x2a
 	if m.ValueFrom != nil {
 		{
 			size, err := m.ValueFrom.MarshalToSizedBuffer(dAtA[:i])
@@ -10758,13 +5939,11 @@ func (m *Parameter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10788,17 +5967,11 @@ func (m *PodGC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Strategy != nil {
-		i -= len(*m.Strategy)
-		copy(dAtA[i:], *m.Strategy)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Strategy)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Strategy)
+	copy(dAtA[i:], m.Strategy)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Strategy)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10822,10 +5995,6 @@ func (m *Prometheus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Counter != nil {
 		{
 			size, err := m.Counter.MarshalToSizedBuffer(dAtA[:i])
@@ -10862,20 +6031,16 @@ func (m *Prometheus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x2a
 	}
-	if m.When != nil {
-		i -= len(*m.When)
-		copy(dAtA[i:], *m.When)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.When)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Help != nil {
-		i -= len(*m.Help)
-		copy(dAtA[i:], *m.Help)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Help)))
-		i--
-		dAtA[i] = 0x1a
-	}
+	i -= len(m.When)
+	copy(dAtA[i:], m.When)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.When)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.Help)
+	copy(dAtA[i:], m.Help)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Help)))
+	i--
+	dAtA[i] = 0x1a
 	if len(m.Labels) > 0 {
 		for iNdEx := len(m.Labels) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -10890,13 +6055,11 @@ func (m *Prometheus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10920,17 +6083,11 @@ func (m *RawArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Data != nil {
-		i -= len(*m.Data)
-		copy(dAtA[i:], *m.Data)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Data)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Data)
+	copy(dAtA[i:], m.Data)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Data)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -10954,10 +6111,6 @@ func (m *ResourceTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Flags) > 0 {
 		for iNdEx := len(m.Flags) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.Flags[iNdEx])
@@ -10967,51 +6120,39 @@ func (m *ResourceTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x3a
 		}
 	}
-	if m.FailureCondition != nil {
-		i -= len(*m.FailureCondition)
-		copy(dAtA[i:], *m.FailureCondition)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.FailureCondition)))
-		i--
-		dAtA[i] = 0x32
+	i -= len(m.FailureCondition)
+	copy(dAtA[i:], m.FailureCondition)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.FailureCondition)))
+	i--
+	dAtA[i] = 0x32
+	i -= len(m.SuccessCondition)
+	copy(dAtA[i:], m.SuccessCondition)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.SuccessCondition)))
+	i--
+	dAtA[i] = 0x2a
+	i--
+	if m.SetOwnerReference {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.SuccessCondition != nil {
-		i -= len(*m.SuccessCondition)
-		copy(dAtA[i:], *m.SuccessCondition)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SuccessCondition)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.SetOwnerReference != nil {
-		i--
-		if *m.SetOwnerReference {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Manifest != nil {
-		i -= len(*m.Manifest)
-		copy(dAtA[i:], *m.Manifest)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Manifest)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.MergeStrategy != nil {
-		i -= len(*m.MergeStrategy)
-		copy(dAtA[i:], *m.MergeStrategy)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.MergeStrategy)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Action != nil {
-		i -= len(*m.Action)
-		copy(dAtA[i:], *m.Action)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Action)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x20
+	i -= len(m.Manifest)
+	copy(dAtA[i:], m.Manifest)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Manifest)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.MergeStrategy)
+	copy(dAtA[i:], m.MergeStrategy)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.MergeStrategy)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Action)
+	copy(dAtA[i:], m.Action)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Action)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11035,10 +6176,6 @@ func (m *RetryStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Backoff != nil {
 		{
 			size, err := m.Backoff.MarshalToSizedBuffer(dAtA[:i])
@@ -11051,13 +6188,11 @@ func (m *RetryStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	if m.RetryPolicy != nil {
-		i -= len(*m.RetryPolicy)
-		copy(dAtA[i:], *m.RetryPolicy)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.RetryPolicy)))
-		i--
-		dAtA[i] = 0x12
-	}
+	i -= len(m.RetryPolicy)
+	copy(dAtA[i:], m.RetryPolicy)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RetryPolicy)))
+	i--
+	dAtA[i] = 0x12
 	if m.Limit != nil {
 		{
 			size, err := m.Limit.MarshalToSizedBuffer(dAtA[:i])
@@ -11093,29 +6228,21 @@ func (m *S3Artifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Key != nil {
-		i -= len(*m.Key)
-		copy(dAtA[i:], *m.Key)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Key)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.S3Bucket != nil {
-		{
-			size, err := m.S3Bucket.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.Key)
+	copy(dAtA[i:], m.Key)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Key)))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.S3Bucket.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11139,51 +6266,49 @@ func (m *S3Bucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.UseSDKCreds != nil {
-		i--
-		if *m.UseSDKCreds {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
+	{
+		size, err := m.CreateBucketIfNotPresent.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x40
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.RoleARN != nil {
-		i -= len(*m.RoleARN)
-		copy(dAtA[i:], *m.RoleARN)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.RoleARN)))
-		i--
-		dAtA[i] = 0x3a
+	i--
+	dAtA[i] = 0x4a
+	i--
+	if m.UseSDKCreds {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.SecretKeySecret != nil {
-		{
-			size, err := m.SecretKeySecret.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x40
+	i -= len(m.RoleARN)
+	copy(dAtA[i:], m.RoleARN)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RoleARN)))
+	i--
+	dAtA[i] = 0x3a
+	{
+		size, err := m.SecretKeySecret.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x32
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.AccessKeySecret != nil {
-		{
-			size, err := m.AccessKeySecret.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x32
+	{
+		size, err := m.AccessKeySecret.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x2a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x2a
 	if m.Insecure != nil {
 		i--
 		if *m.Insecure {
@@ -11194,27 +6319,21 @@ func (m *S3Bucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x20
 	}
-	if m.Region != nil {
-		i -= len(*m.Region)
-		copy(dAtA[i:], *m.Region)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Region)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.Bucket != nil {
-		i -= len(*m.Bucket)
-		copy(dAtA[i:], *m.Bucket)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Bucket)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Endpoint != nil {
-		i -= len(*m.Endpoint)
-		copy(dAtA[i:], *m.Endpoint)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Endpoint)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Region)
+	copy(dAtA[i:], m.Region)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Region)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Bucket)
+	copy(dAtA[i:], m.Bucket)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Bucket)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Endpoint)
+	copy(dAtA[i:], m.Endpoint)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Endpoint)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11238,29 +6357,21 @@ func (m *ScriptTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Source != nil {
-		i -= len(*m.Source)
-		copy(dAtA[i:], *m.Source)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Source)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Container != nil {
-		{
-			size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.Source)
+	copy(dAtA[i:], m.Source)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Source)))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11284,10 +6395,6 @@ func (m *SemaphoreHolding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Holders) > 0 {
 		for iNdEx := len(m.Holders) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.Holders[iNdEx])
@@ -11297,13 +6404,11 @@ func (m *SemaphoreHolding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Semaphore != nil {
-		i -= len(*m.Semaphore)
-		copy(dAtA[i:], *m.Semaphore)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Semaphore)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Semaphore)
+	copy(dAtA[i:], m.Semaphore)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Semaphore)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11327,10 +6432,6 @@ func (m *SemaphoreRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.ConfigMapKeyRef != nil {
 		{
 			size, err := m.ConfigMapKeyRef.MarshalToSizedBuffer(dAtA[:i])
@@ -11366,10 +6467,6 @@ func (m *SemaphoreStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Waiting) > 0 {
 		for iNdEx := len(m.Waiting) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -11421,17 +6518,11 @@ func (m *Sequence) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Format != nil {
-		i -= len(*m.Format)
-		copy(dAtA[i:], *m.Format)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Format)))
-		i--
-		dAtA[i] = 0x22
-	}
+	i -= len(m.Format)
+	copy(dAtA[i:], m.Format)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Format)))
+	i--
+	dAtA[i] = 0x22
 	if m.End != nil {
 		{
 			size, err := m.End.MarshalToSizedBuffer(dAtA[:i])
@@ -11491,10 +6582,6 @@ func (m *Submit) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Arguments != nil {
 		{
 			size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
@@ -11507,18 +6594,16 @@ func (m *Submit) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.WorkflowTemplateRef != nil {
-		{
-			size, err := m.WorkflowTemplateRef.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.WorkflowTemplateRef.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11542,10 +6627,6 @@ func (m *SubmitOpts) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.OwnerReference != nil {
 		{
 			size, err := m.OwnerReference.MarshalToSizedBuffer(dAtA[:i])
@@ -11558,47 +6639,37 @@ func (m *SubmitOpts) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x5a
 	}
-	if m.Labels != nil {
-		i -= len(*m.Labels)
-		copy(dAtA[i:], *m.Labels)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Labels)))
-		i--
-		dAtA[i] = 0x52
+	i -= len(m.Labels)
+	copy(dAtA[i:], m.Labels)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Labels)))
+	i--
+	dAtA[i] = 0x52
+	i--
+	if m.ServerDryRun {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.ServerDryRun != nil {
-		i--
-		if *m.ServerDryRun {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x48
+	i--
+	dAtA[i] = 0x48
+	i--
+	if m.DryRun {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.DryRun != nil {
-		i--
-		if *m.DryRun {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x40
-	}
-	if m.ServiceAccount != nil {
-		i -= len(*m.ServiceAccount)
-		copy(dAtA[i:], *m.ServiceAccount)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ServiceAccount)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if m.ParameterFile != nil {
-		i -= len(*m.ParameterFile)
-		copy(dAtA[i:], *m.ParameterFile)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ParameterFile)))
-		i--
-		dAtA[i] = 0x32
-	}
+	i--
+	dAtA[i] = 0x40
+	i -= len(m.ServiceAccount)
+	copy(dAtA[i:], m.ServiceAccount)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ServiceAccount)))
+	i--
+	dAtA[i] = 0x3a
+	i -= len(m.ParameterFile)
+	copy(dAtA[i:], m.ParameterFile)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ParameterFile)))
+	i--
+	dAtA[i] = 0x32
 	if len(m.Parameters) > 0 {
 		for iNdEx := len(m.Parameters) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.Parameters[iNdEx])
@@ -11608,27 +6679,21 @@ func (m *SubmitOpts) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x2a
 		}
 	}
-	if m.Entrypoint != nil {
-		i -= len(*m.Entrypoint)
-		copy(dAtA[i:], *m.Entrypoint)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Entrypoint)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.GenerateName != nil {
-		i -= len(*m.GenerateName)
-		copy(dAtA[i:], *m.GenerateName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GenerateName)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Entrypoint)
+	copy(dAtA[i:], m.Entrypoint)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Entrypoint)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.GenerateName)
+	copy(dAtA[i:], m.GenerateName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GenerateName)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11652,10 +6717,6 @@ func (m *SuppliedValueFrom) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -11679,17 +6740,11 @@ func (m *SuspendTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Duration != nil {
-		i -= len(*m.Duration)
-		copy(dAtA[i:], *m.Duration)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Duration)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Duration)
+	copy(dAtA[i:], m.Duration)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Duration)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11713,10 +6768,6 @@ func (m *Synchronization) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Mutex != nil {
 		{
 			size, err := m.Mutex.MarshalToSizedBuffer(dAtA[:i])
@@ -11764,10 +6815,6 @@ func (m *SynchronizationStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Mutex != nil {
 		{
 			size, err := m.Mutex.MarshalToSizedBuffer(dAtA[:i])
@@ -11815,10 +6862,6 @@ func (m *TTLStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.SecondsAfterFailure != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.SecondsAfterFailure))
 		i--
@@ -11857,10 +6900,6 @@ func (m *TarStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.CompressionLevel != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.CompressionLevel))
 		i--
@@ -11889,19 +6928,13 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Timeout != nil {
-		i -= len(*m.Timeout)
-		copy(dAtA[i:], *m.Timeout)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Timeout)))
-		i--
-		dAtA[i] = 0x2
-		i--
-		dAtA[i] = 0xb2
-	}
+	i -= len(m.Timeout)
+	copy(dAtA[i:], m.Timeout)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Timeout)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0xb2
 	if m.Memoize != nil {
 		{
 			size, err := m.Memoize.MarshalToSizedBuffer(dAtA[:i])
@@ -11970,15 +7003,13 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x80
 	}
-	if m.PodSpecPatch != nil {
-		i -= len(*m.PodSpecPatch)
-		copy(dAtA[i:], *m.PodSpecPatch)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.PodSpecPatch)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xfa
-	}
+	i -= len(m.PodSpecPatch)
+	copy(dAtA[i:], m.PodSpecPatch)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PodSpecPatch)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xfa
 	if m.SecurityContext != nil {
 		{
 			size, err := m.SecurityContext.MarshalToSizedBuffer(dAtA[:i])
@@ -12009,15 +7040,13 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xea
 		}
 	}
-	if m.ServiceAccountName != nil {
-		i -= len(*m.ServiceAccountName)
-		copy(dAtA[i:], *m.ServiceAccountName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ServiceAccountName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xe2
-	}
+	i -= len(m.ServiceAccountName)
+	copy(dAtA[i:], m.ServiceAccountName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ServiceAccountName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xe2
 	if m.Priority != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Priority))
 		i--
@@ -12025,24 +7054,20 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xd8
 	}
-	if m.PriorityClassName != nil {
-		i -= len(*m.PriorityClassName)
-		copy(dAtA[i:], *m.PriorityClassName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.PriorityClassName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xd2
-	}
-	if m.SchedulerName != nil {
-		i -= len(*m.SchedulerName)
-		copy(dAtA[i:], *m.SchedulerName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SchedulerName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xca
-	}
+	i -= len(m.PriorityClassName)
+	copy(dAtA[i:], m.PriorityClassName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PriorityClassName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xd2
+	i -= len(m.SchedulerName)
+	copy(dAtA[i:], m.SchedulerName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.SchedulerName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xca
 	if len(m.Tolerations) > 0 {
 		for iNdEx := len(m.Tolerations) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -12170,9 +7195,9 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x82
 	}
-	if m.Dag != nil {
+	if m.DAG != nil {
 		{
-			size, err := m.Dag.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.DAG.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -12242,18 +7267,16 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x50
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x4a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x4a
 	if m.Affinity != nil {
 		{
 			size, err := m.Affinity.MarshalToSizedBuffer(dAtA[:i])
@@ -12267,17 +7290,22 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x42
 	}
 	if len(m.NodeSelector) > 0 {
+		keysForNodeSelector := make([]string, 0, len(m.NodeSelector))
 		for k := range m.NodeSelector {
-			v := m.NodeSelector[k]
+			keysForNodeSelector = append(keysForNodeSelector, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+		for iNdEx := len(keysForNodeSelector) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.NodeSelector[string(keysForNodeSelector[iNdEx])]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
 			i = encodeVarintGenerated(dAtA, i, uint64(len(v)))
 			i--
 			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i -= len(keysForNodeSelector[iNdEx])
+			copy(dAtA[i:], keysForNodeSelector[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForNodeSelector[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -12285,30 +7313,26 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x3a
 		}
 	}
-	if m.Outputs != nil {
-		{
-			size, err := m.Outputs.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Outputs.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x32
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Inputs != nil {
-		{
-			size, err := m.Inputs.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x32
+	{
+		size, err := m.Inputs.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x2a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0x2a
 	if m.TemplateRef != nil {
 		{
 			size, err := m.TemplateRef.MarshalToSizedBuffer(dAtA[:i])
@@ -12321,32 +7345,26 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if m.Arguments != nil {
-		{
-			size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Template != nil {
-		i -= len(*m.Template)
-		copy(dAtA[i:], *m.Template)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Template)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Template)
+	copy(dAtA[i:], m.Template)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Template)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12370,44 +7388,32 @@ func (m *TemplateRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i--
+	if m.ClusterScope {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.ClusterScope != nil {
-		i--
-		if *m.ClusterScope {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x20
+	i--
+	dAtA[i] = 0x20
+	i--
+	if m.RuntimeResolution {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.RuntimeResolution != nil {
-		i--
-		if *m.RuntimeResolution {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.Template != nil {
-		i -= len(*m.Template)
-		copy(dAtA[i:], *m.Template)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Template)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x18
+	i -= len(m.Template)
+	copy(dAtA[i:], m.Template)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Template)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12431,10 +7437,6 @@ func (m *UserContainer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.MirrorVolumeMounts != nil {
 		i--
 		if *m.MirrorVolumeMounts {
@@ -12445,18 +7447,16 @@ func (m *UserContainer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x10
 	}
-	if m.Container != nil {
-		{
-			size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12480,17 +7480,11 @@ func (m *ValueFrom) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Event != nil {
-		i -= len(*m.Event)
-		copy(dAtA[i:], *m.Event)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Event)))
-		i--
-		dAtA[i] = 0x3a
-	}
+	i -= len(m.Event)
+	copy(dAtA[i:], m.Event)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Event)))
+	i--
+	dAtA[i] = 0x3a
 	if m.Supplied != nil {
 		{
 			size, err := m.Supplied.MarshalToSizedBuffer(dAtA[:i])
@@ -12510,34 +7504,26 @@ func (m *ValueFrom) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x2a
 	}
-	if m.Parameter != nil {
-		i -= len(*m.Parameter)
-		copy(dAtA[i:], *m.Parameter)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Parameter)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.JqFilter != nil {
-		i -= len(*m.JqFilter)
-		copy(dAtA[i:], *m.JqFilter)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.JqFilter)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.JsonPath != nil {
-		i -= len(*m.JsonPath)
-		copy(dAtA[i:], *m.JsonPath)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.JsonPath)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Path != nil {
-		i -= len(*m.Path)
-		copy(dAtA[i:], *m.Path)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Path)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Parameter)
+	copy(dAtA[i:], m.Parameter)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Parameter)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.JQFilter)
+	copy(dAtA[i:], m.JQFilter)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.JQFilter)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.JSONPath)
+	copy(dAtA[i:], m.JSONPath)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.JSONPath)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Path)
+	copy(dAtA[i:], m.Path)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Path)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12561,66 +7547,46 @@ func (m *Version) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Platform != nil {
-		i -= len(*m.Platform)
-		copy(dAtA[i:], *m.Platform)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Platform)))
-		i--
-		dAtA[i] = 0x42
-	}
-	if m.Compiler != nil {
-		i -= len(*m.Compiler)
-		copy(dAtA[i:], *m.Compiler)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Compiler)))
-		i--
-		dAtA[i] = 0x3a
-	}
-	if m.GoVersion != nil {
-		i -= len(*m.GoVersion)
-		copy(dAtA[i:], *m.GoVersion)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GoVersion)))
-		i--
-		dAtA[i] = 0x32
-	}
-	if m.GitTreeState != nil {
-		i -= len(*m.GitTreeState)
-		copy(dAtA[i:], *m.GitTreeState)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GitTreeState)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.GitTag != nil {
-		i -= len(*m.GitTag)
-		copy(dAtA[i:], *m.GitTag)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GitTag)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.GitCommit != nil {
-		i -= len(*m.GitCommit)
-		copy(dAtA[i:], *m.GitCommit)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.GitCommit)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if m.BuildDate != nil {
-		i -= len(*m.BuildDate)
-		copy(dAtA[i:], *m.BuildDate)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.BuildDate)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Version != nil {
-		i -= len(*m.Version)
-		copy(dAtA[i:], *m.Version)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Version)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Platform)
+	copy(dAtA[i:], m.Platform)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Platform)))
+	i--
+	dAtA[i] = 0x42
+	i -= len(m.Compiler)
+	copy(dAtA[i:], m.Compiler)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Compiler)))
+	i--
+	dAtA[i] = 0x3a
+	i -= len(m.GoVersion)
+	copy(dAtA[i:], m.GoVersion)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GoVersion)))
+	i--
+	dAtA[i] = 0x32
+	i -= len(m.GitTreeState)
+	copy(dAtA[i:], m.GitTreeState)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GitTreeState)))
+	i--
+	dAtA[i] = 0x2a
+	i -= len(m.GitTag)
+	copy(dAtA[i:], m.GitTag)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GitTag)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.GitCommit)
+	copy(dAtA[i:], m.GitCommit)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.GitCommit)))
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.BuildDate)
+	copy(dAtA[i:], m.BuildDate)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.BuildDate)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Version)
+	copy(dAtA[i:], m.Version)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Version)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12644,17 +7610,11 @@ func (m *VolumeClaimGC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Strategy != nil {
-		i -= len(*m.Strategy)
-		copy(dAtA[i:], *m.Strategy)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Strategy)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i -= len(m.Strategy)
+	copy(dAtA[i:], m.Strategy)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Strategy)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12678,46 +7638,36 @@ func (m *Workflow) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Status != nil {
-		{
-			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Spec != nil {
-		{
-			size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12741,34 +7691,26 @@ func (m *WorkflowEventBinding) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Spec != nil {
-		{
-			size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12792,10 +7734,6 @@ func (m *WorkflowEventBindingList) MarshalToSizedBuffer(dAtA []byte) (int, error
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Items) > 0 {
 		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -12810,18 +7748,16 @@ func (m *WorkflowEventBindingList) MarshalToSizedBuffer(dAtA []byte) (int, error
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12845,10 +7781,6 @@ func (m *WorkflowEventBindingSpec) MarshalToSizedBuffer(dAtA []byte) (int, error
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.Submit != nil {
 		{
 			size, err := m.Submit.MarshalToSizedBuffer(dAtA[:i])
@@ -12861,18 +7793,16 @@ func (m *WorkflowEventBindingSpec) MarshalToSizedBuffer(dAtA []byte) (int, error
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.Event != nil {
-		{
-			size, err := m.Event.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Event.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12896,10 +7826,6 @@ func (m *WorkflowList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Items) > 0 {
 		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -12914,18 +7840,16 @@ func (m *WorkflowList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -12949,10 +7873,6 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if m.RetryStrategy != nil {
 		{
 			size, err := m.RetryStrategy.MarshalToSizedBuffer(dAtA[:i])
@@ -13009,15 +7929,13 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x92
 	}
-	if m.Shutdown != nil {
-		i -= len(*m.Shutdown)
-		copy(dAtA[i:], *m.Shutdown)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Shutdown)))
-		i--
-		dAtA[i] = 0x2
-		i--
-		dAtA[i] = 0x8a
-	}
+	i -= len(m.Shutdown)
+	copy(dAtA[i:], m.Shutdown)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Shutdown)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0x8a
 	if m.Metrics != nil {
 		{
 			size, err := m.Metrics.MarshalToSizedBuffer(dAtA[:i])
@@ -13046,9 +7964,9 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xfa
 	}
-	if m.TtlStrategy != nil {
+	if m.TTLStrategy != nil {
 		{
-			size, err := m.TtlStrategy.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.TTLStrategy.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -13086,15 +8004,13 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xe0
 	}
-	if m.PodSpecPatch != nil {
-		i -= len(*m.PodSpecPatch)
-		copy(dAtA[i:], *m.PodSpecPatch)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.PodSpecPatch)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xda
-	}
+	i -= len(m.PodSpecPatch)
+	copy(dAtA[i:], m.PodSpecPatch)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PodSpecPatch)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xda
 	if m.SecurityContext != nil {
 		{
 			size, err := m.SecurityContext.MarshalToSizedBuffer(dAtA[:i])
@@ -13132,15 +8048,13 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xc0
 	}
-	if m.PodPriorityClassName != nil {
-		i -= len(*m.PodPriorityClassName)
-		copy(dAtA[i:], *m.PodPriorityClassName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.PodPriorityClassName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xba
-	}
+	i -= len(m.PodPriorityClassName)
+	copy(dAtA[i:], m.PodPriorityClassName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PodPriorityClassName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xba
 	if m.PodGC != nil {
 		{
 			size, err := m.PodGC.MarshalToSizedBuffer(dAtA[:i])
@@ -13155,15 +8069,13 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0xb2
 	}
-	if m.SchedulerName != nil {
-		i -= len(*m.SchedulerName)
-		copy(dAtA[i:], *m.SchedulerName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.SchedulerName)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0xaa
-	}
+	i -= len(m.SchedulerName)
+	copy(dAtA[i:], m.SchedulerName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.SchedulerName)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xaa
 	if m.Priority != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Priority))
 		i--
@@ -13178,25 +8090,23 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x98
 	}
-	if m.TtlSecondsAfterFinished != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.TtlSecondsAfterFinished))
+	if m.TTLSecondsAfterFinished != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.TTLSecondsAfterFinished))
 		i--
 		dAtA[i] = 0x1
 		i--
 		dAtA[i] = 0x90
 	}
-	if m.OnExit != nil {
-		i -= len(*m.OnExit)
-		copy(dAtA[i:], *m.OnExit)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.OnExit)))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x8a
-	}
-	if m.DnsConfig != nil {
+	i -= len(m.OnExit)
+	copy(dAtA[i:], m.OnExit)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.OnExit)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0x8a
+	if m.DNSConfig != nil {
 		{
-			size, err := m.DnsConfig.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.DNSConfig.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -13208,10 +8118,10 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x82
 	}
-	if m.DnsPolicy != nil {
-		i -= len(*m.DnsPolicy)
-		copy(dAtA[i:], *m.DnsPolicy)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.DnsPolicy)))
+	if m.DNSPolicy != nil {
+		i -= len(*m.DNSPolicy)
+		copy(dAtA[i:], *m.DNSPolicy)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.DNSPolicy)))
 		i--
 		dAtA[i] = 0x7a
 	}
@@ -13266,17 +8176,22 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		dAtA[i] = 0x5a
 	}
 	if len(m.NodeSelector) > 0 {
+		keysForNodeSelector := make([]string, 0, len(m.NodeSelector))
 		for k := range m.NodeSelector {
-			v := m.NodeSelector[k]
+			keysForNodeSelector = append(keysForNodeSelector, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+		for iNdEx := len(keysForNodeSelector) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.NodeSelector[string(keysForNodeSelector[iNdEx])]
 			baseI := i
 			i -= len(v)
 			copy(dAtA[i:], v)
 			i = encodeVarintGenerated(dAtA, i, uint64(len(v)))
 			i--
 			dAtA[i] = 0x12
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i -= len(keysForNodeSelector[iNdEx])
+			copy(dAtA[i:], keysForNodeSelector[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForNodeSelector[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -13339,32 +8254,26 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x2a
 		}
 	}
-	if m.ServiceAccountName != nil {
-		i -= len(*m.ServiceAccountName)
-		copy(dAtA[i:], *m.ServiceAccountName)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ServiceAccountName)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Arguments != nil {
-		{
-			size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.ServiceAccountName)
+	copy(dAtA[i:], m.ServiceAccountName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ServiceAccountName)))
+	i--
+	dAtA[i] = 0x22
+	{
+		size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Entrypoint != nil {
-		i -= len(*m.Entrypoint)
-		copy(dAtA[i:], *m.Entrypoint)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Entrypoint)))
-		i--
-		dAtA[i] = 0x12
-	}
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Entrypoint)
+	copy(dAtA[i:], m.Entrypoint)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Entrypoint)))
+	i--
+	dAtA[i] = 0x12
 	if len(m.Templates) > 0 {
 		for iNdEx := len(m.Templates) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -13402,17 +8311,11 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.EstimatedDuration != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.EstimatedDuration))
-		i--
-		dAtA[i] = 0x1
-		i--
-		dAtA[i] = 0x80
-	}
+	i = encodeVarintGenerated(dAtA, i, uint64(m.EstimatedDuration))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0x80
 	if m.Synchronization != nil {
 		{
 			size, err := m.Synchronization.MarshalToSizedBuffer(dAtA[:i])
@@ -13425,9 +8328,9 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x7a
 	}
-	if m.StoredWorkflowTemplateSpec != nil {
+	if m.StoredWorkflowSpec != nil {
 		{
-			size, err := m.StoredWorkflowTemplateSpec.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.StoredWorkflowSpec.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -13452,15 +8355,20 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.ResourcesDuration) > 0 {
+		keysForResourcesDuration := make([]string, 0, len(m.ResourcesDuration))
 		for k := range m.ResourcesDuration {
-			v := m.ResourcesDuration[k]
+			keysForResourcesDuration = append(keysForResourcesDuration, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForResourcesDuration)
+		for iNdEx := len(keysForResourcesDuration) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.ResourcesDuration[k8s_io_api_core_v1.ResourceName(keysForResourcesDuration[iNdEx])]
 			baseI := i
 			i = encodeVarintGenerated(dAtA, i, uint64(v))
 			i--
 			dAtA[i] = 0x10
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i -= len(keysForResourcesDuration[iNdEx])
+			copy(dAtA[i:], keysForResourcesDuration[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForResourcesDuration[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -13468,32 +8376,33 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x62
 		}
 	}
-	if m.OffloadNodeStatusVersion != nil {
-		i -= len(*m.OffloadNodeStatusVersion)
-		copy(dAtA[i:], *m.OffloadNodeStatusVersion)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.OffloadNodeStatusVersion)))
-		i--
-		dAtA[i] = 0x52
-	}
+	i -= len(m.OffloadNodeStatusVersion)
+	copy(dAtA[i:], m.OffloadNodeStatusVersion)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.OffloadNodeStatusVersion)))
+	i--
+	dAtA[i] = 0x52
 	if len(m.StoredTemplates) > 0 {
+		keysForStoredTemplates := make([]string, 0, len(m.StoredTemplates))
 		for k := range m.StoredTemplates {
-			v := m.StoredTemplates[k]
+			keysForStoredTemplates = append(keysForStoredTemplates, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForStoredTemplates)
+		for iNdEx := len(keysForStoredTemplates) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.StoredTemplates[string(keysForStoredTemplates[iNdEx])]
 			baseI := i
-			if v != nil {
-				{
-					size, err := v.MarshalToSizedBuffer(dAtA[:i])
-					if err != nil {
-						return 0, err
-					}
-					i -= size
-					i = encodeVarintGenerated(dAtA, i, uint64(size))
+			{
+				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
 				}
-				i--
-				dAtA[i] = 0x12
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForStoredTemplates[iNdEx])
+			copy(dAtA[i:], keysForStoredTemplates[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForStoredTemplates[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -13528,24 +8437,27 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.Nodes) > 0 {
+		keysForNodes := make([]string, 0, len(m.Nodes))
 		for k := range m.Nodes {
-			v := m.Nodes[k]
+			keysForNodes = append(keysForNodes, string(k))
+		}
+		github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+		for iNdEx := len(keysForNodes) - 1; iNdEx >= 0; iNdEx-- {
+			v := m.Nodes[string(keysForNodes[iNdEx])]
 			baseI := i
-			if v != nil {
-				{
-					size, err := v.MarshalToSizedBuffer(dAtA[:i])
-					if err != nil {
-						return 0, err
-					}
-					i -= size
-					i = encodeVarintGenerated(dAtA, i, uint64(size))
+			{
+				size, err := (&v).MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
 				}
-				i--
-				dAtA[i] = 0x12
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
-			i -= len(k)
-			copy(dAtA[i:], k)
-			i = encodeVarintGenerated(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(keysForNodes[iNdEx])
+			copy(dAtA[i:], keysForNodes[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(keysForNodes[iNdEx])))
 			i--
 			dAtA[i] = 0xa
 			i = encodeVarintGenerated(dAtA, i, uint64(baseI-i))
@@ -13553,51 +8465,41 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x32
 		}
 	}
-	if m.CompressedNodes != nil {
-		i -= len(*m.CompressedNodes)
-		copy(dAtA[i:], *m.CompressedNodes)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.CompressedNodes)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if m.Message != nil {
-		i -= len(*m.Message)
-		copy(dAtA[i:], *m.Message)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Message)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.FinishedAt != nil {
-		{
-			size, err := m.FinishedAt.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i -= len(m.CompressedNodes)
+	copy(dAtA[i:], m.CompressedNodes)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CompressedNodes)))
+	i--
+	dAtA[i] = 0x2a
+	i -= len(m.Message)
+	copy(dAtA[i:], m.Message)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Message)))
+	i--
+	dAtA[i] = 0x22
+	{
+		size, err := m.FinishedAt.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.StartedAt != nil {
-		{
-			size, err := m.StartedAt.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x1a
+	{
+		size, err := m.StartedAt.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Phase != nil {
-		i -= len(*m.Phase)
-		copy(dAtA[i:], *m.Phase)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Phase)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Phase)
+	copy(dAtA[i:], m.Phase)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Phase)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -13621,17 +8523,11 @@ func (m *WorkflowStep) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.OnExit != nil {
-		i -= len(*m.OnExit)
-		copy(dAtA[i:], *m.OnExit)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.OnExit)))
-		i--
-		dAtA[i] = 0x5a
-	}
+	i -= len(m.OnExit)
+	copy(dAtA[i:], m.OnExit)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.OnExit)))
+	i--
+	dAtA[i] = 0x5a
 	if m.ContinueOn != nil {
 		{
 			size, err := m.ContinueOn.MarshalToSizedBuffer(dAtA[:i])
@@ -13644,13 +8540,11 @@ func (m *WorkflowStep) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x4a
 	}
-	if m.When != nil {
-		i -= len(*m.When)
-		copy(dAtA[i:], *m.When)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.When)))
-		i--
-		dAtA[i] = 0x42
-	}
+	i -= len(m.When)
+	copy(dAtA[i:], m.When)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.When)))
+	i--
+	dAtA[i] = 0x42
 	if m.WithSequence != nil {
 		{
 			size, err := m.WithSequence.MarshalToSizedBuffer(dAtA[:i])
@@ -13663,13 +8557,11 @@ func (m *WorkflowStep) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x3a
 	}
-	if m.WithParam != nil {
-		i -= len(*m.WithParam)
-		copy(dAtA[i:], *m.WithParam)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.WithParam)))
-		i--
-		dAtA[i] = 0x32
-	}
+	i -= len(m.WithParam)
+	copy(dAtA[i:], m.WithParam)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.WithParam)))
+	i--
+	dAtA[i] = 0x32
 	if len(m.WithItems) > 0 {
 		for iNdEx := len(m.WithItems) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -13696,32 +8588,26 @@ func (m *WorkflowStep) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if m.Arguments != nil {
-		{
-			size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x1a
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Template != nil {
-		i -= len(*m.Template)
-		copy(dAtA[i:], *m.Template)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Template)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x1a
+	i -= len(m.Template)
+	copy(dAtA[i:], m.Template)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Template)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -13745,34 +8631,26 @@ func (m *WorkflowTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.Spec != nil {
-		{
-			size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0x12
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -13796,10 +8674,6 @@ func (m *WorkflowTemplateList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	if len(m.Items) > 0 {
 		for iNdEx := len(m.Items) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -13814,18 +8688,16 @@ func (m *WorkflowTemplateList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x12
 		}
 	}
-	if m.Metadata != nil {
-		{
-			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.ListMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -13849,27 +8721,19 @@ func (m *WorkflowTemplateRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
+	i--
+	if m.ClusterScope {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
-	if m.ClusterScope != nil {
-		i--
-		if *m.ClusterScope {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x10
-	}
-	if m.Name != nil {
-		i -= len(*m.Name)
-		copy(dAtA[i:], *m.Name)
-		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
+	i--
+	dAtA[i] = 0x10
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -13893,13 +8757,9 @@ func (m *WorkflowTemplateSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if m.WorkflowMeta != nil {
+	if m.WorkflowMetadata != nil {
 		{
-			size, err := m.WorkflowMeta.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.WorkflowMetadata.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -13909,18 +8769,16 @@ func (m *WorkflowTemplateSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.WorkflowSpec != nil {
-		{
-			size, err := m.WorkflowSpec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintGenerated(dAtA, i, uint64(size))
+	{
+		size, err := m.WorkflowSpec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
 		}
-		i--
-		dAtA[i] = 0xa
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -13944,10 +8802,6 @@ func (m *ZipStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
 	return len(dAtA) - i, nil
 }
 
@@ -13968,13 +8822,8 @@ func (m *Amount) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Value)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -13995,9 +8844,6 @@ func (m *ArchiveStrategy) Size() (n int) {
 	if m.Zip != nil {
 		l = m.Zip.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14020,9 +8866,6 @@ func (m *Arguments) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14032,46 +8875,27 @@ func (m *Artifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Path != nil {
-		l = len(*m.Path)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Path)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Mode != nil {
 		n += 1 + sovGenerated(uint64(*m.Mode))
 	}
-	if m.From != nil {
-		l = len(*m.From)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ArtifactLocation != nil {
-		l = m.ArtifactLocation.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.GlobalName != nil {
-		l = len(*m.GlobalName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.From)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.ArtifactLocation.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.GlobalName)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Archive != nil {
 		l = m.Archive.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Optional != nil {
-		n += 2
-	}
-	if m.SubPath != nil {
-		l = len(*m.SubPath)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.RecurseMode != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	n += 2
+	l = len(m.SubPath)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
 	return n
 }
 
@@ -14092,32 +8916,29 @@ func (m *ArtifactLocation) Size() (n int) {
 		l = m.Git.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Http != nil {
-		l = m.Http.Size()
+	if m.HTTP != nil {
+		l = m.HTTP.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if m.Artifactory != nil {
 		l = m.Artifactory.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Hdfs != nil {
-		l = m.Hdfs.Size()
+	if m.HDFS != nil {
+		l = m.HDFS.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if m.Raw != nil {
 		l = m.Raw.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Oss != nil {
-		l = m.Oss.Size()
+	if m.OSS != nil {
+		l = m.OSS.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Gcs != nil {
-		l = m.Gcs.Size()
+	if m.GCS != nil {
+		l = m.GCS.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14128,17 +8949,10 @@ func (m *ArtifactRepositoryRef) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.ConfigMap != nil {
-		l = len(*m.ConfigMap)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.ConfigMap)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14148,17 +8962,10 @@ func (m *ArtifactoryArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Url != nil {
-		l = len(*m.Url)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ArtifactoryAuth != nil {
-		l = m.ArtifactoryAuth.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.URL)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.ArtifactoryAuth.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14176,9 +8983,6 @@ func (m *ArtifactoryAuth) Size() (n int) {
 		l = m.PasswordSecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14188,21 +8992,14 @@ func (m *Backoff) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Duration != nil {
-		l = len(*m.Duration)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Duration)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Factor != nil {
 		l = m.Factor.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.MaxDuration != nil {
-		l = len(*m.MaxDuration)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.MaxDuration)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14216,9 +9013,6 @@ func (m *Cache) Size() (n int) {
 		l = m.ConfigMap.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14228,17 +9022,10 @@ func (m *ClusterWorkflowTemplate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Spec != nil {
-		l = m.Spec.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14248,18 +9035,13 @@ func (m *ClusterWorkflowTemplateList) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Items) > 0 {
 		for _, e := range m.Items {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14270,21 +9052,12 @@ func (m *Condition) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Type != nil {
-		l = len(*m.Type)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Status != nil {
-		l = len(*m.Status)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Message != nil {
-		l = len(*m.Message)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Type)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Status)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Message)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14294,15 +9067,8 @@ func (m *ContinueOn) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Error != nil {
-		n += 2
-	}
-	if m.Failed != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	n += 2
+	n += 2
 	return n
 }
 
@@ -14312,13 +9078,21 @@ func (m *Counter) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Value)
+	n += 1 + l + sovGenerated(uint64(l))
+	return n
+}
+
+func (m *CreateS3BucketOptions) Size() (n int) {
+	if m == nil {
+		return 0
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	var l int
+	_ = l
+	n += 2
+	l = len(m.Region)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
 	return n
 }
 
@@ -14328,21 +9102,12 @@ func (m *CronWorkflow) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Spec != nil {
-		l = m.Spec.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14352,18 +9117,13 @@ func (m *CronWorkflowList) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Items) > 0 {
 		for _, e := range m.Items {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14374,21 +9134,13 @@ func (m *CronWorkflowSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.WorkflowSpec != nil {
-		l = m.WorkflowSpec.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Schedule != nil {
-		l = len(*m.Schedule)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ConcurrencyPolicy != nil {
-		l = len(*m.ConcurrencyPolicy)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Suspend != nil {
-		n += 2
-	}
+	l = m.WorkflowSpec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Schedule)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.ConcurrencyPolicy)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
 	if m.StartingDeadlineSeconds != nil {
 		n += 1 + sovGenerated(uint64(*m.StartingDeadlineSeconds))
 	}
@@ -14398,16 +9150,11 @@ func (m *CronWorkflowSpec) Size() (n int) {
 	if m.FailedJobsHistoryLimit != nil {
 		n += 1 + sovGenerated(uint64(*m.FailedJobsHistoryLimit))
 	}
-	if m.Timezone != nil {
-		l = len(*m.Timezone)
+	l = len(m.Timezone)
+	n += 1 + l + sovGenerated(uint64(l))
+	if m.WorkflowMetadata != nil {
+		l = m.WorkflowMetadata.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.WorkflowMeta != nil {
-		l = m.WorkflowMeta.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14434,9 +9181,6 @@ func (m *CronWorkflowStatus) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14446,18 +9190,12 @@ func (m *DAGTask) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Template != nil {
-		l = len(*m.Template)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Arguments != nil {
-		l = m.Arguments.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Template)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Arguments.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.TemplateRef != nil {
 		l = m.TemplateRef.Size()
 		n += 1 + l + sovGenerated(uint64(l))
@@ -14474,33 +9212,22 @@ func (m *DAGTask) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.WithParam != nil {
-		l = len(*m.WithParam)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.WithParam)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.WithSequence != nil {
 		l = m.WithSequence.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.When != nil {
-		l = len(*m.When)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.When)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.ContinueOn != nil {
 		l = m.ContinueOn.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.OnExit != nil {
-		l = len(*m.OnExit)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Depends != nil {
-		l = len(*m.Depends)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.OnExit)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Depends)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14510,10 +9237,8 @@ func (m *DAGTemplate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Target != nil {
-		l = len(*m.Target)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Target)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Tasks) > 0 {
 		for _, e := range m.Tasks {
 			l = e.Size()
@@ -14522,9 +9247,6 @@ func (m *DAGTemplate) Size() (n int) {
 	}
 	if m.FailFast != nil {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14535,13 +9257,8 @@ func (m *Event) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Selector != nil {
-		l = len(*m.Selector)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Selector)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14551,13 +9268,8 @@ func (m *ExecutorConfig) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.ServiceAccountName != nil {
-		l = len(*m.ServiceAccountName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.ServiceAccountName)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14567,17 +9279,10 @@ func (m *GCSArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.GCSBucket != nil {
-		l = m.GCSBucket.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.GCSBucket.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14587,17 +9292,10 @@ func (m *GCSBucket) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Bucket != nil {
-		l = len(*m.Bucket)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ServiceAccountKeySecret != nil {
-		l = m.ServiceAccountKeySecret.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Bucket)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.ServiceAccountKeySecret.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14607,15 +9305,10 @@ func (m *Gauge) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Value)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Realtime != nil {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14626,14 +9319,10 @@ func (m *GitArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Repo != nil {
-		l = len(*m.Repo)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Revision != nil {
-		l = len(*m.Revision)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Repo)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Revision)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Depth != nil {
 		n += 1 + sovGenerated(uint64(*m.Depth))
 	}
@@ -14651,16 +9340,11 @@ func (m *GitArtifact) Size() (n int) {
 		l = m.PasswordSecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.SshPrivateKeySecret != nil {
-		l = m.SshPrivateKeySecret.Size()
+	if m.SSHPrivateKeySecret != nil {
+		l = m.SSHPrivateKeySecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.InsecureIgnoreHostKey != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	n += 2
 	return n
 }
 
@@ -14670,20 +9354,11 @@ func (m *HDFSArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.HDFSConfig != nil {
-		l = m.HDFSConfig.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Path != nil {
-		l = len(*m.Path)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Force != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.HDFSConfig.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Path)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
 	return n
 }
 
@@ -14693,23 +9368,16 @@ func (m *HDFSConfig) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.HDFSKrbConfig != nil {
-		l = m.HDFSKrbConfig.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.HDFSKrbConfig.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Addresses) > 0 {
 		for _, s := range m.Addresses {
 			l = len(s)
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.HdfsUser != nil {
-		l = len(*m.HdfsUser)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.HDFSUser)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14727,25 +9395,16 @@ func (m *HDFSKrbConfig) Size() (n int) {
 		l = m.KrbKeytabSecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.KrbUsername != nil {
-		l = len(*m.KrbUsername)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.KrbRealm != nil {
-		l = len(*m.KrbRealm)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.KrbUsername)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.KrbRealm)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.KrbConfigConfigMap != nil {
 		l = m.KrbConfigConfigMap.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.KrbServicePrincipalName != nil {
-		l = len(*m.KrbServicePrincipalName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.KrbServicePrincipalName)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14755,18 +9414,13 @@ func (m *HTTPArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Url != nil {
-		l = len(*m.Url)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.URL)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Headers) > 0 {
 		for _, e := range m.Headers {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14777,17 +9431,10 @@ func (m *Header) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Value)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14797,18 +9444,13 @@ func (m *Histogram) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Value)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Buckets) > 0 {
 		for _, e := range m.Buckets {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -14831,9 +9473,6 @@ func (m *Inputs) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14847,9 +9486,6 @@ func (m *Item) Size() (n int) {
 		l = len(m.Value)
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14859,21 +9495,12 @@ func (m *Link) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Scope != nil {
-		l = len(*m.Scope)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Url != nil {
-		l = len(*m.Url)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Scope)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.URL)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14883,20 +9510,11 @@ func (m *MemoizationStatus) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Hit != nil {
-		n += 2
-	}
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.CacheName != nil {
-		l = len(*m.CacheName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	n += 2
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.CacheName)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14906,21 +9524,14 @@ func (m *Memoize) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Cache != nil {
 		l = m.Cache.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.MaxAge != nil {
-		l = len(*m.MaxAge)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.MaxAge)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14946,9 +9557,6 @@ func (m *Metadata) Size() (n int) {
 			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14958,17 +9566,10 @@ func (m *MetricLabel) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Value)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14984,9 +9585,6 @@ func (m *Metrics) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -14996,13 +9594,8 @@ func (m *Mutex) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15012,17 +9605,10 @@ func (m *MutexHolding) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Mutex != nil {
-		l = len(*m.Mutex)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Holder != nil {
-		l = len(*m.Holder)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Mutex)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Holder)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15044,9 +9630,6 @@ func (m *MutexStatus) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15056,54 +9639,32 @@ func (m *NodeStatus) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Id != nil {
-		l = len(*m.Id)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.DisplayName != nil {
-		l = len(*m.DisplayName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Type != nil {
-		l = len(*m.Type)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.TemplateName != nil {
-		l = len(*m.TemplateName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.ID)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.DisplayName)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Type)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.TemplateName)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.TemplateRef != nil {
 		l = m.TemplateRef.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Phase != nil {
-		l = len(*m.Phase)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.BoundaryID != nil {
-		l = len(*m.BoundaryID)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Message != nil {
-		l = len(*m.Message)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.StartedAt != nil {
-		l = m.StartedAt.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.FinishedAt != nil {
-		l = m.FinishedAt.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.PodIP != nil {
-		l = len(*m.PodIP)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Phase)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.BoundaryID)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Message)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.StartedAt.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.FinishedAt.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.PodIP)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Daemoned != nil {
 		n += 2
 	}
@@ -15127,18 +9688,12 @@ func (m *NodeStatus) Size() (n int) {
 			n += 2 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.StoredTemplateID != nil {
-		l = len(*m.StoredTemplateID)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
-	if m.WorkflowTemplateName != nil {
-		l = len(*m.WorkflowTemplateName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
-	if m.TemplateScope != nil {
-		l = len(*m.TemplateScope)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.StoredTemplateID)
+	n += 2 + l + sovGenerated(uint64(l))
+	l = len(m.WorkflowTemplateName)
+	n += 2 + l + sovGenerated(uint64(l))
+	l = len(m.TemplateScope)
+	n += 2 + l + sovGenerated(uint64(l))
 	if len(m.ResourcesDuration) > 0 {
 		for k, v := range m.ResourcesDuration {
 			_ = k
@@ -15147,23 +9702,16 @@ func (m *NodeStatus) Size() (n int) {
 			n += mapEntrySize + 2 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
-	if m.HostNodeName != nil {
-		l = len(*m.HostNodeName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.HostNodeName)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.MemoizationStatus != nil {
 		l = m.MemoizationStatus.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.EstimatedDuration != nil {
-		n += 2 + sovGenerated(uint64(*m.EstimatedDuration))
-	}
+	n += 2 + sovGenerated(uint64(m.EstimatedDuration))
 	if m.SynchronizationStatus != nil {
 		l = m.SynchronizationStatus.Size()
 		n += 2 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15174,13 +9722,8 @@ func (m *NodeSynchronizationStatus) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Waiting != nil {
-		l = len(*m.Waiting)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Waiting)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15190,9 +9733,6 @@ func (m *NoneStrategy) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15202,17 +9742,10 @@ func (m *OSSArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.OSSBucket != nil {
-		l = m.OSSBucket.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.OSSBucket.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15222,25 +9755,14 @@ func (m *OSSBucket) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Endpoint != nil {
-		l = len(*m.Endpoint)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Bucket != nil {
-		l = len(*m.Bucket)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.AccessKeySecret != nil {
-		l = m.AccessKeySecret.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.SecretKeySecret != nil {
-		l = m.SecretKeySecret.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Endpoint)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Bucket)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.AccessKeySecret.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.SecretKeySecret.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15270,9 +9792,6 @@ func (m *Outputs) Size() (n int) {
 		l = len(*m.ExitCode)
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15288,9 +9807,6 @@ func (m *ParallelSteps) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15300,10 +9816,8 @@ func (m *Parameter) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Default != nil {
 		l = len(*m.Default)
 		n += 1 + l + sovGenerated(uint64(l))
@@ -15316,13 +9830,8 @@ func (m *Parameter) Size() (n int) {
 		l = m.ValueFrom.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.GlobalName != nil {
-		l = len(*m.GlobalName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.GlobalName)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15332,13 +9841,8 @@ func (m *PodGC) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Strategy != nil {
-		l = len(*m.Strategy)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Strategy)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15348,24 +9852,18 @@ func (m *Prometheus) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Labels) > 0 {
 		for _, e := range m.Labels {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.Help != nil {
-		l = len(*m.Help)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.When != nil {
-		l = len(*m.When)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Help)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.When)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Gauge != nil {
 		l = m.Gauge.Size()
 		n += 1 + l + sovGenerated(uint64(l))
@@ -15378,9 +9876,6 @@ func (m *Prometheus) Size() (n int) {
 		l = m.Counter.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15390,13 +9885,8 @@ func (m *RawArtifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Data != nil {
-		l = len(*m.Data)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Data)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15406,37 +9896,22 @@ func (m *ResourceTemplate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Action != nil {
-		l = len(*m.Action)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.MergeStrategy != nil {
-		l = len(*m.MergeStrategy)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Manifest != nil {
-		l = len(*m.Manifest)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.SetOwnerReference != nil {
-		n += 2
-	}
-	if m.SuccessCondition != nil {
-		l = len(*m.SuccessCondition)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.FailureCondition != nil {
-		l = len(*m.FailureCondition)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Action)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.MergeStrategy)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Manifest)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
+	l = len(m.SuccessCondition)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.FailureCondition)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Flags) > 0 {
 		for _, s := range m.Flags {
 			l = len(s)
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15451,16 +9926,11 @@ func (m *RetryStrategy) Size() (n int) {
 		l = m.Limit.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.RetryPolicy != nil {
-		l = len(*m.RetryPolicy)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.RetryPolicy)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Backoff != nil {
 		l = m.Backoff.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15471,17 +9941,10 @@ func (m *S3Artifact) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.S3Bucket != nil {
-		l = m.S3Bucket.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.S3Bucket.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Key)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15491,39 +9954,24 @@ func (m *S3Bucket) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Endpoint != nil {
-		l = len(*m.Endpoint)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Bucket != nil {
-		l = len(*m.Bucket)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Region != nil {
-		l = len(*m.Region)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Endpoint)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Bucket)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Region)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Insecure != nil {
 		n += 2
 	}
-	if m.AccessKeySecret != nil {
-		l = m.AccessKeySecret.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.SecretKeySecret != nil {
-		l = m.SecretKeySecret.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.RoleARN != nil {
-		l = len(*m.RoleARN)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.UseSDKCreds != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.AccessKeySecret.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.SecretKeySecret.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.RoleARN)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
+	l = m.CreateBucketIfNotPresent.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15533,17 +9981,10 @@ func (m *ScriptTemplate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Container != nil {
-		l = m.Container.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Source != nil {
-		l = len(*m.Source)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.Container.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Source)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15553,18 +9994,13 @@ func (m *SemaphoreHolding) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Semaphore != nil {
-		l = len(*m.Semaphore)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Semaphore)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Holders) > 0 {
 		for _, s := range m.Holders {
 			l = len(s)
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15578,9 +10014,6 @@ func (m *SemaphoreRef) Size() (n int) {
 	if m.ConfigMapKeyRef != nil {
 		l = m.ConfigMapKeyRef.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15603,9 +10036,6 @@ func (m *SemaphoreStatus) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15627,13 +10057,8 @@ func (m *Sequence) Size() (n int) {
 		l = m.End.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Format != nil {
-		l = len(*m.Format)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Format)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15643,16 +10068,11 @@ func (m *Submit) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.WorkflowTemplateRef != nil {
-		l = m.WorkflowTemplateRef.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.WorkflowTemplateRef.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Arguments != nil {
 		l = m.Arguments.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15663,48 +10083,29 @@ func (m *SubmitOpts) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.GenerateName != nil {
-		l = len(*m.GenerateName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Entrypoint != nil {
-		l = len(*m.Entrypoint)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.GenerateName)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Entrypoint)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Parameters) > 0 {
 		for _, s := range m.Parameters {
 			l = len(s)
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.ParameterFile != nil {
-		l = len(*m.ParameterFile)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ServiceAccount != nil {
-		l = len(*m.ServiceAccount)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.DryRun != nil {
-		n += 2
-	}
-	if m.ServerDryRun != nil {
-		n += 2
-	}
-	if m.Labels != nil {
-		l = len(*m.Labels)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.ParameterFile)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.ServiceAccount)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
+	n += 2
+	l = len(m.Labels)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.OwnerReference != nil {
 		l = m.OwnerReference.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15715,9 +10116,6 @@ func (m *SuppliedValueFrom) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15727,13 +10125,8 @@ func (m *SuspendTemplate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Duration != nil {
-		l = len(*m.Duration)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Duration)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15751,9 +10144,6 @@ func (m *Synchronization) Size() (n int) {
 		l = m.Mutex.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15770,9 +10160,6 @@ func (m *SynchronizationStatus) Size() (n int) {
 	if m.Mutex != nil {
 		l = m.Mutex.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -15792,9 +10179,6 @@ func (m *TTLStrategy) Size() (n int) {
 	if m.SecondsAfterFailure != nil {
 		n += 1 + sovGenerated(uint64(*m.SecondsAfterFailure))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15807,9 +10191,6 @@ func (m *TarStrategy) Size() (n int) {
 	if m.CompressionLevel != nil {
 		n += 1 + sovGenerated(uint64(*m.CompressionLevel))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -15819,30 +10200,20 @@ func (m *Template) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Template != nil {
-		l = len(*m.Template)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Arguments != nil {
-		l = m.Arguments.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Template)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Arguments.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.TemplateRef != nil {
 		l = m.TemplateRef.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Inputs != nil {
-		l = m.Inputs.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Outputs != nil {
-		l = m.Outputs.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.Inputs.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Outputs.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.NodeSelector) > 0 {
 		for k, v := range m.NodeSelector {
 			_ = k
@@ -15855,10 +10226,8 @@ func (m *Template) Size() (n int) {
 		l = m.Affinity.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.Metadata.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Daemon != nil {
 		n += 2
 	}
@@ -15880,8 +10249,8 @@ func (m *Template) Size() (n int) {
 		l = m.Resource.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Dag != nil {
-		l = m.Dag.Size()
+	if m.DAG != nil {
+		l = m.DAG.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if m.Suspend != nil {
@@ -15927,21 +10296,15 @@ func (m *Template) Size() (n int) {
 			n += 2 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.SchedulerName != nil {
-		l = len(*m.SchedulerName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
-	if m.PriorityClassName != nil {
-		l = len(*m.PriorityClassName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.SchedulerName)
+	n += 2 + l + sovGenerated(uint64(l))
+	l = len(m.PriorityClassName)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.Priority != nil {
 		n += 2 + sovGenerated(uint64(*m.Priority))
 	}
-	if m.ServiceAccountName != nil {
-		l = len(*m.ServiceAccountName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.ServiceAccountName)
+	n += 2 + l + sovGenerated(uint64(l))
 	if len(m.HostAliases) > 0 {
 		for _, e := range m.HostAliases {
 			l = e.Size()
@@ -15952,10 +10315,8 @@ func (m *Template) Size() (n int) {
 		l = m.SecurityContext.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.PodSpecPatch != nil {
-		l = len(*m.PodSpecPatch)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.PodSpecPatch)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.AutomountServiceAccountToken != nil {
 		n += 3
 	}
@@ -15975,13 +10336,8 @@ func (m *Template) Size() (n int) {
 		l = m.Memoize.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.Timeout != nil {
-		l = len(*m.Timeout)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Timeout)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -15991,23 +10347,12 @@ func (m *TemplateRef) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Template != nil {
-		l = len(*m.Template)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.RuntimeResolution != nil {
-		n += 2
-	}
-	if m.ClusterScope != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Template)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
+	n += 2
 	return n
 }
 
@@ -16017,15 +10362,10 @@ func (m *UserContainer) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Container != nil {
-		l = m.Container.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.Container.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.MirrorVolumeMounts != nil {
 		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -16036,22 +10376,14 @@ func (m *ValueFrom) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Path != nil {
-		l = len(*m.Path)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.JsonPath != nil {
-		l = len(*m.JsonPath)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.JqFilter != nil {
-		l = len(*m.JqFilter)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Parameter != nil {
-		l = len(*m.Parameter)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Path)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.JSONPath)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.JQFilter)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Parameter)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Default != nil {
 		l = len(*m.Default)
 		n += 1 + l + sovGenerated(uint64(l))
@@ -16060,13 +10392,8 @@ func (m *ValueFrom) Size() (n int) {
 		l = m.Supplied.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.Event != nil {
-		l = len(*m.Event)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Event)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16076,41 +10403,22 @@ func (m *Version) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Version != nil {
-		l = len(*m.Version)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.BuildDate != nil {
-		l = len(*m.BuildDate)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.GitCommit != nil {
-		l = len(*m.GitCommit)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.GitTag != nil {
-		l = len(*m.GitTag)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.GitTreeState != nil {
-		l = len(*m.GitTreeState)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.GoVersion != nil {
-		l = len(*m.GoVersion)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Compiler != nil {
-		l = len(*m.Compiler)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Platform != nil {
-		l = len(*m.Platform)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Version)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.BuildDate)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.GitCommit)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.GitTag)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.GitTreeState)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.GoVersion)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Compiler)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Platform)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16120,13 +10428,8 @@ func (m *VolumeClaimGC) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Strategy != nil {
-		l = len(*m.Strategy)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Strategy)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16136,21 +10439,12 @@ func (m *Workflow) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Spec != nil {
-		l = m.Spec.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Status != nil {
-		l = m.Status.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Status.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16160,17 +10454,10 @@ func (m *WorkflowEventBinding) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Spec != nil {
-		l = m.Spec.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16180,18 +10467,13 @@ func (m *WorkflowEventBindingList) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Items) > 0 {
 		for _, e := range m.Items {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -16202,16 +10484,11 @@ func (m *WorkflowEventBindingSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Event != nil {
-		l = m.Event.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.Event.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Submit != nil {
 		l = m.Submit.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -16222,18 +10499,13 @@ func (m *WorkflowList) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Items) > 0 {
 		for _, e := range m.Items {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -16250,18 +10522,12 @@ func (m *WorkflowSpec) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.Entrypoint != nil {
-		l = len(*m.Entrypoint)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Arguments != nil {
-		l = m.Arguments.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ServiceAccountName != nil {
-		l = len(*m.ServiceAccountName)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Entrypoint)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Arguments.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.ServiceAccountName)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Volumes) > 0 {
 		for _, e := range m.Volumes {
 			l = e.Size()
@@ -16311,20 +10577,18 @@ func (m *WorkflowSpec) Size() (n int) {
 	if m.HostNetwork != nil {
 		n += 2
 	}
-	if m.DnsPolicy != nil {
-		l = len(*m.DnsPolicy)
+	if m.DNSPolicy != nil {
+		l = len(*m.DNSPolicy)
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.DnsConfig != nil {
-		l = m.DnsConfig.Size()
+	if m.DNSConfig != nil {
+		l = m.DNSConfig.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.OnExit != nil {
-		l = len(*m.OnExit)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
-	if m.TtlSecondsAfterFinished != nil {
-		n += 2 + sovGenerated(uint64(*m.TtlSecondsAfterFinished))
+	l = len(m.OnExit)
+	n += 2 + l + sovGenerated(uint64(l))
+	if m.TTLSecondsAfterFinished != nil {
+		n += 2 + sovGenerated(uint64(*m.TTLSecondsAfterFinished))
 	}
 	if m.ActiveDeadlineSeconds != nil {
 		n += 2 + sovGenerated(uint64(*m.ActiveDeadlineSeconds))
@@ -16332,18 +10596,14 @@ func (m *WorkflowSpec) Size() (n int) {
 	if m.Priority != nil {
 		n += 2 + sovGenerated(uint64(*m.Priority))
 	}
-	if m.SchedulerName != nil {
-		l = len(*m.SchedulerName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.SchedulerName)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.PodGC != nil {
 		l = m.PodGC.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.PodPriorityClassName != nil {
-		l = len(*m.PodPriorityClassName)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.PodPriorityClassName)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.PodPriority != nil {
 		n += 2 + sovGenerated(uint64(*m.PodPriority))
 	}
@@ -16357,10 +10617,8 @@ func (m *WorkflowSpec) Size() (n int) {
 		l = m.SecurityContext.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.PodSpecPatch != nil {
-		l = len(*m.PodSpecPatch)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.PodSpecPatch)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.AutomountServiceAccountToken != nil {
 		n += 3
 	}
@@ -16368,8 +10626,8 @@ func (m *WorkflowSpec) Size() (n int) {
 		l = m.Executor.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.TtlStrategy != nil {
-		l = m.TtlStrategy.Size()
+	if m.TTLStrategy != nil {
+		l = m.TTLStrategy.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
 	if m.PodDisruptionBudget != nil {
@@ -16380,10 +10638,8 @@ func (m *WorkflowSpec) Size() (n int) {
 		l = m.Metrics.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.Shutdown != nil {
-		l = len(*m.Shutdown)
-		n += 2 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Shutdown)
+	n += 2 + l + sovGenerated(uint64(l))
 	if m.WorkflowTemplateRef != nil {
 		l = m.WorkflowTemplateRef.Size()
 		n += 2 + l + sovGenerated(uint64(l))
@@ -16400,9 +10656,6 @@ func (m *WorkflowSpec) Size() (n int) {
 		l = m.RetryStrategy.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -16412,36 +10665,22 @@ func (m *WorkflowStatus) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Phase != nil {
-		l = len(*m.Phase)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.StartedAt != nil {
-		l = m.StartedAt.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.FinishedAt != nil {
-		l = m.FinishedAt.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Message != nil {
-		l = len(*m.Message)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.CompressedNodes != nil {
-		l = len(*m.CompressedNodes)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Phase)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.StartedAt.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.FinishedAt.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Message)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.CompressedNodes)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Nodes) > 0 {
 		for k, v := range m.Nodes {
 			_ = k
 			_ = v
-			l = 0
-			if v != nil {
-				l = v.Size()
-				l += 1 + sovGenerated(uint64(l))
-			}
-			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + l
+			l = v.Size()
+			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + l + sovGenerated(uint64(l))
 			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
@@ -16459,19 +10698,13 @@ func (m *WorkflowStatus) Size() (n int) {
 		for k, v := range m.StoredTemplates {
 			_ = k
 			_ = v
-			l = 0
-			if v != nil {
-				l = v.Size()
-				l += 1 + sovGenerated(uint64(l))
-			}
-			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + l
+			l = v.Size()
+			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + l + sovGenerated(uint64(l))
 			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
-	if m.OffloadNodeStatusVersion != nil {
-		l = len(*m.OffloadNodeStatusVersion)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.OffloadNodeStatusVersion)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.ResourcesDuration) > 0 {
 		for k, v := range m.ResourcesDuration {
 			_ = k
@@ -16486,20 +10719,15 @@ func (m *WorkflowStatus) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.StoredWorkflowTemplateSpec != nil {
-		l = m.StoredWorkflowTemplateSpec.Size()
+	if m.StoredWorkflowSpec != nil {
+		l = m.StoredWorkflowSpec.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if m.Synchronization != nil {
 		l = m.Synchronization.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.EstimatedDuration != nil {
-		n += 2 + sovGenerated(uint64(*m.EstimatedDuration))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	n += 2 + sovGenerated(uint64(m.EstimatedDuration))
 	return n
 }
 
@@ -16509,18 +10737,12 @@ func (m *WorkflowStep) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Template != nil {
-		l = len(*m.Template)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Arguments != nil {
-		l = m.Arguments.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Template)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Arguments.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.TemplateRef != nil {
 		l = m.TemplateRef.Size()
 		n += 1 + l + sovGenerated(uint64(l))
@@ -16531,29 +10753,20 @@ func (m *WorkflowStep) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
-	if m.WithParam != nil {
-		l = len(*m.WithParam)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.WithParam)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.WithSequence != nil {
 		l = m.WithSequence.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.When != nil {
-		l = len(*m.When)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = len(m.When)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.ContinueOn != nil {
 		l = m.ContinueOn.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.OnExit != nil {
-		l = len(*m.OnExit)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.OnExit)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16563,17 +10776,10 @@ func (m *WorkflowTemplate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.Spec != nil {
-		l = m.Spec.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -16583,18 +10789,13 @@ func (m *WorkflowTemplateList) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Metadata != nil {
-		l = m.Metadata.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
+	l = m.ListMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Items) > 0 {
 		for _, e := range m.Items {
 			l = e.Size()
 			n += 1 + l + sovGenerated(uint64(l))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -16605,16 +10806,9 @@ func (m *WorkflowTemplateRef) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.ClusterScope != nil {
-		n += 2
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	n += 2
 	return n
 }
 
@@ -16624,16 +10818,11 @@ func (m *WorkflowTemplateSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.WorkflowSpec != nil {
-		l = m.WorkflowSpec.Size()
+	l = m.WorkflowSpec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	if m.WorkflowMetadata != nil {
+		l = m.WorkflowMetadata.Size()
 		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.WorkflowMeta != nil {
-		l = m.WorkflowMeta.Size()
-		n += 1 + l + sovGenerated(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -16644,9 +10833,6 @@ func (m *ZipStrategy) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
@@ -16655,6 +10841,1487 @@ func sovGenerated(x uint64) (n int) {
 }
 func sozGenerated(x uint64) (n int) {
 	return sovGenerated(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (this *Amount) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Amount{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ArchiveStrategy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ArchiveStrategy{`,
+		`Tar:` + strings.Replace(this.Tar.String(), "TarStrategy", "TarStrategy", 1) + `,`,
+		`None:` + strings.Replace(this.None.String(), "NoneStrategy", "NoneStrategy", 1) + `,`,
+		`Zip:` + strings.Replace(this.Zip.String(), "ZipStrategy", "ZipStrategy", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Arguments) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForParameters := "[]Parameter{"
+	for _, f := range this.Parameters {
+		repeatedStringForParameters += strings.Replace(strings.Replace(f.String(), "Parameter", "Parameter", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForParameters += "}"
+	repeatedStringForArtifacts := "[]Artifact{"
+	for _, f := range this.Artifacts {
+		repeatedStringForArtifacts += strings.Replace(strings.Replace(f.String(), "Artifact", "Artifact", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForArtifacts += "}"
+	s := strings.Join([]string{`&Arguments{`,
+		`Parameters:` + repeatedStringForParameters + `,`,
+		`Artifacts:` + repeatedStringForArtifacts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Artifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Artifact{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`Mode:` + valueToStringGenerated(this.Mode) + `,`,
+		`From:` + fmt.Sprintf("%v", this.From) + `,`,
+		`ArtifactLocation:` + strings.Replace(strings.Replace(this.ArtifactLocation.String(), "ArtifactLocation", "ArtifactLocation", 1), `&`, ``, 1) + `,`,
+		`GlobalName:` + fmt.Sprintf("%v", this.GlobalName) + `,`,
+		`Archive:` + strings.Replace(this.Archive.String(), "ArchiveStrategy", "ArchiveStrategy", 1) + `,`,
+		`Optional:` + fmt.Sprintf("%v", this.Optional) + `,`,
+		`SubPath:` + fmt.Sprintf("%v", this.SubPath) + `,`,
+		`RecurseMode:` + fmt.Sprintf("%v", this.RecurseMode) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ArtifactLocation) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ArtifactLocation{`,
+		`ArchiveLogs:` + valueToStringGenerated(this.ArchiveLogs) + `,`,
+		`S3:` + strings.Replace(this.S3.String(), "S3Artifact", "S3Artifact", 1) + `,`,
+		`Git:` + strings.Replace(this.Git.String(), "GitArtifact", "GitArtifact", 1) + `,`,
+		`HTTP:` + strings.Replace(this.HTTP.String(), "HTTPArtifact", "HTTPArtifact", 1) + `,`,
+		`Artifactory:` + strings.Replace(this.Artifactory.String(), "ArtifactoryArtifact", "ArtifactoryArtifact", 1) + `,`,
+		`HDFS:` + strings.Replace(this.HDFS.String(), "HDFSArtifact", "HDFSArtifact", 1) + `,`,
+		`Raw:` + strings.Replace(this.Raw.String(), "RawArtifact", "RawArtifact", 1) + `,`,
+		`OSS:` + strings.Replace(this.OSS.String(), "OSSArtifact", "OSSArtifact", 1) + `,`,
+		`GCS:` + strings.Replace(this.GCS.String(), "GCSArtifact", "GCSArtifact", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ArtifactRepositoryRef) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ArtifactRepositoryRef{`,
+		`ConfigMap:` + fmt.Sprintf("%v", this.ConfigMap) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ArtifactoryArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ArtifactoryArtifact{`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`ArtifactoryAuth:` + strings.Replace(strings.Replace(this.ArtifactoryAuth.String(), "ArtifactoryAuth", "ArtifactoryAuth", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ArtifactoryAuth) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ArtifactoryAuth{`,
+		`UsernameSecret:` + strings.Replace(fmt.Sprintf("%v", this.UsernameSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`PasswordSecret:` + strings.Replace(fmt.Sprintf("%v", this.PasswordSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Backoff) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Backoff{`,
+		`Duration:` + fmt.Sprintf("%v", this.Duration) + `,`,
+		`Factor:` + strings.Replace(fmt.Sprintf("%v", this.Factor), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`MaxDuration:` + fmt.Sprintf("%v", this.MaxDuration) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Cache) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Cache{`,
+		`ConfigMap:` + strings.Replace(fmt.Sprintf("%v", this.ConfigMap), "ConfigMapKeySelector", "v1.ConfigMapKeySelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ClusterWorkflowTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ClusterWorkflowTemplate{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v11.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "WorkflowTemplateSpec", "WorkflowTemplateSpec", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ClusterWorkflowTemplateList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForItems := "[]ClusterWorkflowTemplate{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "ClusterWorkflowTemplate", "ClusterWorkflowTemplate", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForItems += "}"
+	s := strings.Join([]string{`&ClusterWorkflowTemplateList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v11.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Condition) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Condition{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContinueOn) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContinueOn{`,
+		`Error:` + fmt.Sprintf("%v", this.Error) + `,`,
+		`Failed:` + fmt.Sprintf("%v", this.Failed) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Counter) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Counter{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateS3BucketOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateS3BucketOptions{`,
+		`Enabled:` + fmt.Sprintf("%v", this.Enabled) + `,`,
+		`Region:` + fmt.Sprintf("%v", this.Region) + `,`,
+		`ObjectLocking:` + fmt.Sprintf("%v", this.ObjectLocking) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronWorkflow) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CronWorkflow{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v11.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "CronWorkflowSpec", "CronWorkflowSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "CronWorkflowStatus", "CronWorkflowStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronWorkflowList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForItems := "[]CronWorkflow{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "CronWorkflow", "CronWorkflow", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForItems += "}"
+	s := strings.Join([]string{`&CronWorkflowList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v11.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronWorkflowSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CronWorkflowSpec{`,
+		`WorkflowSpec:` + strings.Replace(strings.Replace(this.WorkflowSpec.String(), "WorkflowSpec", "WorkflowSpec", 1), `&`, ``, 1) + `,`,
+		`Schedule:` + fmt.Sprintf("%v", this.Schedule) + `,`,
+		`ConcurrencyPolicy:` + fmt.Sprintf("%v", this.ConcurrencyPolicy) + `,`,
+		`Suspend:` + fmt.Sprintf("%v", this.Suspend) + `,`,
+		`StartingDeadlineSeconds:` + valueToStringGenerated(this.StartingDeadlineSeconds) + `,`,
+		`SuccessfulJobsHistoryLimit:` + valueToStringGenerated(this.SuccessfulJobsHistoryLimit) + `,`,
+		`FailedJobsHistoryLimit:` + valueToStringGenerated(this.FailedJobsHistoryLimit) + `,`,
+		`Timezone:` + fmt.Sprintf("%v", this.Timezone) + `,`,
+		`WorkflowMetadata:` + strings.Replace(fmt.Sprintf("%v", this.WorkflowMetadata), "ObjectMeta", "v11.ObjectMeta", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CronWorkflowStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForActive := "[]ObjectReference{"
+	for _, f := range this.Active {
+		repeatedStringForActive += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForActive += "}"
+	repeatedStringForConditions := "[]Condition{"
+	for _, f := range this.Conditions {
+		repeatedStringForConditions += strings.Replace(strings.Replace(f.String(), "Condition", "Condition", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForConditions += "}"
+	s := strings.Join([]string{`&CronWorkflowStatus{`,
+		`Active:` + repeatedStringForActive + `,`,
+		`LastScheduledTime:` + strings.Replace(fmt.Sprintf("%v", this.LastScheduledTime), "Time", "v11.Time", 1) + `,`,
+		`Conditions:` + repeatedStringForConditions + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DAGTask) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForWithItems := "[]Item{"
+	for _, f := range this.WithItems {
+		repeatedStringForWithItems += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForWithItems += "}"
+	s := strings.Join([]string{`&DAGTask{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Template:` + fmt.Sprintf("%v", this.Template) + `,`,
+		`Arguments:` + strings.Replace(strings.Replace(this.Arguments.String(), "Arguments", "Arguments", 1), `&`, ``, 1) + `,`,
+		`TemplateRef:` + strings.Replace(this.TemplateRef.String(), "TemplateRef", "TemplateRef", 1) + `,`,
+		`Dependencies:` + fmt.Sprintf("%v", this.Dependencies) + `,`,
+		`WithItems:` + repeatedStringForWithItems + `,`,
+		`WithParam:` + fmt.Sprintf("%v", this.WithParam) + `,`,
+		`WithSequence:` + strings.Replace(this.WithSequence.String(), "Sequence", "Sequence", 1) + `,`,
+		`When:` + fmt.Sprintf("%v", this.When) + `,`,
+		`ContinueOn:` + strings.Replace(this.ContinueOn.String(), "ContinueOn", "ContinueOn", 1) + `,`,
+		`OnExit:` + fmt.Sprintf("%v", this.OnExit) + `,`,
+		`Depends:` + fmt.Sprintf("%v", this.Depends) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DAGTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForTasks := "[]DAGTask{"
+	for _, f := range this.Tasks {
+		repeatedStringForTasks += strings.Replace(strings.Replace(f.String(), "DAGTask", "DAGTask", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForTasks += "}"
+	s := strings.Join([]string{`&DAGTemplate{`,
+		`Target:` + fmt.Sprintf("%v", this.Target) + `,`,
+		`Tasks:` + repeatedStringForTasks + `,`,
+		`FailFast:` + valueToStringGenerated(this.FailFast) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Event) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Event{`,
+		`Selector:` + fmt.Sprintf("%v", this.Selector) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExecutorConfig) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExecutorConfig{`,
+		`ServiceAccountName:` + fmt.Sprintf("%v", this.ServiceAccountName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GCSArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GCSArtifact{`,
+		`GCSBucket:` + strings.Replace(strings.Replace(this.GCSBucket.String(), "GCSBucket", "GCSBucket", 1), `&`, ``, 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GCSBucket) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GCSBucket{`,
+		`Bucket:` + fmt.Sprintf("%v", this.Bucket) + `,`,
+		`ServiceAccountKeySecret:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ServiceAccountKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Gauge) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Gauge{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`Realtime:` + valueToStringGenerated(this.Realtime) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GitArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GitArtifact{`,
+		`Repo:` + fmt.Sprintf("%v", this.Repo) + `,`,
+		`Revision:` + fmt.Sprintf("%v", this.Revision) + `,`,
+		`Depth:` + valueToStringGenerated(this.Depth) + `,`,
+		`Fetch:` + fmt.Sprintf("%v", this.Fetch) + `,`,
+		`UsernameSecret:` + strings.Replace(fmt.Sprintf("%v", this.UsernameSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`PasswordSecret:` + strings.Replace(fmt.Sprintf("%v", this.PasswordSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`SSHPrivateKeySecret:` + strings.Replace(fmt.Sprintf("%v", this.SSHPrivateKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`InsecureIgnoreHostKey:` + fmt.Sprintf("%v", this.InsecureIgnoreHostKey) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HDFSArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HDFSArtifact{`,
+		`HDFSConfig:` + strings.Replace(strings.Replace(this.HDFSConfig.String(), "HDFSConfig", "HDFSConfig", 1), `&`, ``, 1) + `,`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`Force:` + fmt.Sprintf("%v", this.Force) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HDFSConfig) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HDFSConfig{`,
+		`HDFSKrbConfig:` + strings.Replace(strings.Replace(this.HDFSKrbConfig.String(), "HDFSKrbConfig", "HDFSKrbConfig", 1), `&`, ``, 1) + `,`,
+		`Addresses:` + fmt.Sprintf("%v", this.Addresses) + `,`,
+		`HDFSUser:` + fmt.Sprintf("%v", this.HDFSUser) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HDFSKrbConfig) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HDFSKrbConfig{`,
+		`KrbCCacheSecret:` + strings.Replace(fmt.Sprintf("%v", this.KrbCCacheSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`KrbKeytabSecret:` + strings.Replace(fmt.Sprintf("%v", this.KrbKeytabSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`KrbUsername:` + fmt.Sprintf("%v", this.KrbUsername) + `,`,
+		`KrbRealm:` + fmt.Sprintf("%v", this.KrbRealm) + `,`,
+		`KrbConfigConfigMap:` + strings.Replace(fmt.Sprintf("%v", this.KrbConfigConfigMap), "ConfigMapKeySelector", "v1.ConfigMapKeySelector", 1) + `,`,
+		`KrbServicePrincipalName:` + fmt.Sprintf("%v", this.KrbServicePrincipalName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HTTPArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForHeaders := "[]Header{"
+	for _, f := range this.Headers {
+		repeatedStringForHeaders += strings.Replace(strings.Replace(f.String(), "Header", "Header", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForHeaders += "}"
+	s := strings.Join([]string{`&HTTPArtifact{`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`Headers:` + repeatedStringForHeaders + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Header) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Header{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Histogram) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForBuckets := "[]Amount{"
+	for _, f := range this.Buckets {
+		repeatedStringForBuckets += strings.Replace(strings.Replace(f.String(), "Amount", "Amount", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForBuckets += "}"
+	s := strings.Join([]string{`&Histogram{`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`Buckets:` + repeatedStringForBuckets + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Inputs) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForParameters := "[]Parameter{"
+	for _, f := range this.Parameters {
+		repeatedStringForParameters += strings.Replace(strings.Replace(f.String(), "Parameter", "Parameter", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForParameters += "}"
+	repeatedStringForArtifacts := "[]Artifact{"
+	for _, f := range this.Artifacts {
+		repeatedStringForArtifacts += strings.Replace(strings.Replace(f.String(), "Artifact", "Artifact", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForArtifacts += "}"
+	s := strings.Join([]string{`&Inputs{`,
+		`Parameters:` + repeatedStringForParameters + `,`,
+		`Artifacts:` + repeatedStringForArtifacts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Link) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Link{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Scope:` + fmt.Sprintf("%v", this.Scope) + `,`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MemoizationStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MemoizationStatus{`,
+		`Hit:` + fmt.Sprintf("%v", this.Hit) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`CacheName:` + fmt.Sprintf("%v", this.CacheName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Memoize) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Memoize{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Cache:` + strings.Replace(this.Cache.String(), "Cache", "Cache", 1) + `,`,
+		`MaxAge:` + fmt.Sprintf("%v", this.MaxAge) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Metadata) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForAnnotations := make([]string, 0, len(this.Annotations))
+	for k := range this.Annotations {
+		keysForAnnotations = append(keysForAnnotations, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAnnotations)
+	mapStringForAnnotations := "map[string]string{"
+	for _, k := range keysForAnnotations {
+		mapStringForAnnotations += fmt.Sprintf("%v: %v,", k, this.Annotations[k])
+	}
+	mapStringForAnnotations += "}"
+	keysForLabels := make([]string, 0, len(this.Labels))
+	for k := range this.Labels {
+		keysForLabels = append(keysForLabels, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForLabels)
+	mapStringForLabels := "map[string]string{"
+	for _, k := range keysForLabels {
+		mapStringForLabels += fmt.Sprintf("%v: %v,", k, this.Labels[k])
+	}
+	mapStringForLabels += "}"
+	s := strings.Join([]string{`&Metadata{`,
+		`Annotations:` + mapStringForAnnotations + `,`,
+		`Labels:` + mapStringForLabels + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MetricLabel) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MetricLabel{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Metrics) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForPrometheus := "[]*Prometheus{"
+	for _, f := range this.Prometheus {
+		repeatedStringForPrometheus += strings.Replace(f.String(), "Prometheus", "Prometheus", 1) + ","
+	}
+	repeatedStringForPrometheus += "}"
+	s := strings.Join([]string{`&Metrics{`,
+		`Prometheus:` + repeatedStringForPrometheus + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Mutex) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Mutex{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MutexHolding) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MutexHolding{`,
+		`Mutex:` + fmt.Sprintf("%v", this.Mutex) + `,`,
+		`Holder:` + fmt.Sprintf("%v", this.Holder) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MutexStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForHolding := "[]MutexHolding{"
+	for _, f := range this.Holding {
+		repeatedStringForHolding += strings.Replace(strings.Replace(f.String(), "MutexHolding", "MutexHolding", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForHolding += "}"
+	repeatedStringForWaiting := "[]MutexHolding{"
+	for _, f := range this.Waiting {
+		repeatedStringForWaiting += strings.Replace(strings.Replace(f.String(), "MutexHolding", "MutexHolding", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForWaiting += "}"
+	s := strings.Join([]string{`&MutexStatus{`,
+		`Holding:` + repeatedStringForHolding + `,`,
+		`Waiting:` + repeatedStringForWaiting + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForResourcesDuration := make([]string, 0, len(this.ResourcesDuration))
+	for k := range this.ResourcesDuration {
+		keysForResourcesDuration = append(keysForResourcesDuration, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForResourcesDuration)
+	mapStringForResourcesDuration := "ResourcesDuration{"
+	for _, k := range keysForResourcesDuration {
+		mapStringForResourcesDuration += fmt.Sprintf("%v: %v,", k, this.ResourcesDuration[k8s_io_api_core_v1.ResourceName(k)])
+	}
+	mapStringForResourcesDuration += "}"
+	s := strings.Join([]string{`&NodeStatus{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`DisplayName:` + fmt.Sprintf("%v", this.DisplayName) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`TemplateName:` + fmt.Sprintf("%v", this.TemplateName) + `,`,
+		`TemplateRef:` + strings.Replace(this.TemplateRef.String(), "TemplateRef", "TemplateRef", 1) + `,`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`BoundaryID:` + fmt.Sprintf("%v", this.BoundaryID) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`StartedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.StartedAt), "Time", "v11.Time", 1), `&`, ``, 1) + `,`,
+		`FinishedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FinishedAt), "Time", "v11.Time", 1), `&`, ``, 1) + `,`,
+		`PodIP:` + fmt.Sprintf("%v", this.PodIP) + `,`,
+		`Daemoned:` + valueToStringGenerated(this.Daemoned) + `,`,
+		`Inputs:` + strings.Replace(this.Inputs.String(), "Inputs", "Inputs", 1) + `,`,
+		`Outputs:` + strings.Replace(this.Outputs.String(), "Outputs", "Outputs", 1) + `,`,
+		`Children:` + fmt.Sprintf("%v", this.Children) + `,`,
+		`OutboundNodes:` + fmt.Sprintf("%v", this.OutboundNodes) + `,`,
+		`StoredTemplateID:` + fmt.Sprintf("%v", this.StoredTemplateID) + `,`,
+		`WorkflowTemplateName:` + fmt.Sprintf("%v", this.WorkflowTemplateName) + `,`,
+		`TemplateScope:` + fmt.Sprintf("%v", this.TemplateScope) + `,`,
+		`ResourcesDuration:` + mapStringForResourcesDuration + `,`,
+		`HostNodeName:` + fmt.Sprintf("%v", this.HostNodeName) + `,`,
+		`MemoizationStatus:` + strings.Replace(this.MemoizationStatus.String(), "MemoizationStatus", "MemoizationStatus", 1) + `,`,
+		`EstimatedDuration:` + fmt.Sprintf("%v", this.EstimatedDuration) + `,`,
+		`SynchronizationStatus:` + strings.Replace(this.SynchronizationStatus.String(), "NodeSynchronizationStatus", "NodeSynchronizationStatus", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeSynchronizationStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeSynchronizationStatus{`,
+		`Waiting:` + fmt.Sprintf("%v", this.Waiting) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NoneStrategy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NoneStrategy{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OSSArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OSSArtifact{`,
+		`OSSBucket:` + strings.Replace(strings.Replace(this.OSSBucket.String(), "OSSBucket", "OSSBucket", 1), `&`, ``, 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OSSBucket) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OSSBucket{`,
+		`Endpoint:` + fmt.Sprintf("%v", this.Endpoint) + `,`,
+		`Bucket:` + fmt.Sprintf("%v", this.Bucket) + `,`,
+		`AccessKeySecret:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.AccessKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1), `&`, ``, 1) + `,`,
+		`SecretKeySecret:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.SecretKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Outputs) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForParameters := "[]Parameter{"
+	for _, f := range this.Parameters {
+		repeatedStringForParameters += strings.Replace(strings.Replace(f.String(), "Parameter", "Parameter", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForParameters += "}"
+	repeatedStringForArtifacts := "[]Artifact{"
+	for _, f := range this.Artifacts {
+		repeatedStringForArtifacts += strings.Replace(strings.Replace(f.String(), "Artifact", "Artifact", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForArtifacts += "}"
+	s := strings.Join([]string{`&Outputs{`,
+		`Parameters:` + repeatedStringForParameters + `,`,
+		`Artifacts:` + repeatedStringForArtifacts + `,`,
+		`Result:` + valueToStringGenerated(this.Result) + `,`,
+		`ExitCode:` + valueToStringGenerated(this.ExitCode) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ParallelSteps) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForSteps := "[]WorkflowStep{"
+	for _, f := range this.Steps {
+		repeatedStringForSteps += strings.Replace(strings.Replace(f.String(), "WorkflowStep", "WorkflowStep", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForSteps += "}"
+	s := strings.Join([]string{`&ParallelSteps{`,
+		`Steps:` + repeatedStringForSteps + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Parameter) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Parameter{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Default:` + valueToStringGenerated(this.Default) + `,`,
+		`Value:` + valueToStringGenerated(this.Value) + `,`,
+		`ValueFrom:` + strings.Replace(this.ValueFrom.String(), "ValueFrom", "ValueFrom", 1) + `,`,
+		`GlobalName:` + fmt.Sprintf("%v", this.GlobalName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodGC) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodGC{`,
+		`Strategy:` + fmt.Sprintf("%v", this.Strategy) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Prometheus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForLabels := "[]*MetricLabel{"
+	for _, f := range this.Labels {
+		repeatedStringForLabels += strings.Replace(f.String(), "MetricLabel", "MetricLabel", 1) + ","
+	}
+	repeatedStringForLabels += "}"
+	s := strings.Join([]string{`&Prometheus{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Labels:` + repeatedStringForLabels + `,`,
+		`Help:` + fmt.Sprintf("%v", this.Help) + `,`,
+		`When:` + fmt.Sprintf("%v", this.When) + `,`,
+		`Gauge:` + strings.Replace(this.Gauge.String(), "Gauge", "Gauge", 1) + `,`,
+		`Histogram:` + strings.Replace(this.Histogram.String(), "Histogram", "Histogram", 1) + `,`,
+		`Counter:` + strings.Replace(this.Counter.String(), "Counter", "Counter", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RawArtifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RawArtifact{`,
+		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ResourceTemplate{`,
+		`Action:` + fmt.Sprintf("%v", this.Action) + `,`,
+		`MergeStrategy:` + fmt.Sprintf("%v", this.MergeStrategy) + `,`,
+		`Manifest:` + fmt.Sprintf("%v", this.Manifest) + `,`,
+		`SetOwnerReference:` + fmt.Sprintf("%v", this.SetOwnerReference) + `,`,
+		`SuccessCondition:` + fmt.Sprintf("%v", this.SuccessCondition) + `,`,
+		`FailureCondition:` + fmt.Sprintf("%v", this.FailureCondition) + `,`,
+		`Flags:` + fmt.Sprintf("%v", this.Flags) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RetryStrategy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RetryStrategy{`,
+		`Limit:` + strings.Replace(fmt.Sprintf("%v", this.Limit), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`RetryPolicy:` + fmt.Sprintf("%v", this.RetryPolicy) + `,`,
+		`Backoff:` + strings.Replace(this.Backoff.String(), "Backoff", "Backoff", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *S3Artifact) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&S3Artifact{`,
+		`S3Bucket:` + strings.Replace(strings.Replace(this.S3Bucket.String(), "S3Bucket", "S3Bucket", 1), `&`, ``, 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *S3Bucket) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&S3Bucket{`,
+		`Endpoint:` + fmt.Sprintf("%v", this.Endpoint) + `,`,
+		`Bucket:` + fmt.Sprintf("%v", this.Bucket) + `,`,
+		`Region:` + fmt.Sprintf("%v", this.Region) + `,`,
+		`Insecure:` + valueToStringGenerated(this.Insecure) + `,`,
+		`AccessKeySecret:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.AccessKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1), `&`, ``, 1) + `,`,
+		`SecretKeySecret:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.SecretKeySecret), "SecretKeySelector", "v1.SecretKeySelector", 1), `&`, ``, 1) + `,`,
+		`RoleARN:` + fmt.Sprintf("%v", this.RoleARN) + `,`,
+		`UseSDKCreds:` + fmt.Sprintf("%v", this.UseSDKCreds) + `,`,
+		`CreateBucketIfNotPresent:` + strings.Replace(strings.Replace(this.CreateBucketIfNotPresent.String(), "CreateS3BucketOptions", "CreateS3BucketOptions", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ScriptTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ScriptTemplate{`,
+		`Container:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Container), "Container", "v1.Container", 1), `&`, ``, 1) + `,`,
+		`Source:` + fmt.Sprintf("%v", this.Source) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SemaphoreHolding) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SemaphoreHolding{`,
+		`Semaphore:` + fmt.Sprintf("%v", this.Semaphore) + `,`,
+		`Holders:` + fmt.Sprintf("%v", this.Holders) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SemaphoreRef) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SemaphoreRef{`,
+		`ConfigMapKeyRef:` + strings.Replace(fmt.Sprintf("%v", this.ConfigMapKeyRef), "ConfigMapKeySelector", "v1.ConfigMapKeySelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SemaphoreStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForHolding := "[]SemaphoreHolding{"
+	for _, f := range this.Holding {
+		repeatedStringForHolding += strings.Replace(strings.Replace(f.String(), "SemaphoreHolding", "SemaphoreHolding", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForHolding += "}"
+	repeatedStringForWaiting := "[]SemaphoreHolding{"
+	for _, f := range this.Waiting {
+		repeatedStringForWaiting += strings.Replace(strings.Replace(f.String(), "SemaphoreHolding", "SemaphoreHolding", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForWaiting += "}"
+	s := strings.Join([]string{`&SemaphoreStatus{`,
+		`Holding:` + repeatedStringForHolding + `,`,
+		`Waiting:` + repeatedStringForWaiting + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Sequence) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Sequence{`,
+		`Count:` + strings.Replace(fmt.Sprintf("%v", this.Count), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`Start:` + strings.Replace(fmt.Sprintf("%v", this.Start), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`End:` + strings.Replace(fmt.Sprintf("%v", this.End), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`Format:` + fmt.Sprintf("%v", this.Format) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Submit) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Submit{`,
+		`WorkflowTemplateRef:` + strings.Replace(strings.Replace(this.WorkflowTemplateRef.String(), "WorkflowTemplateRef", "WorkflowTemplateRef", 1), `&`, ``, 1) + `,`,
+		`Arguments:` + strings.Replace(this.Arguments.String(), "Arguments", "Arguments", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SubmitOpts) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SubmitOpts{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`GenerateName:` + fmt.Sprintf("%v", this.GenerateName) + `,`,
+		`Entrypoint:` + fmt.Sprintf("%v", this.Entrypoint) + `,`,
+		`Parameters:` + fmt.Sprintf("%v", this.Parameters) + `,`,
+		`ParameterFile:` + fmt.Sprintf("%v", this.ParameterFile) + `,`,
+		`ServiceAccount:` + fmt.Sprintf("%v", this.ServiceAccount) + `,`,
+		`DryRun:` + fmt.Sprintf("%v", this.DryRun) + `,`,
+		`ServerDryRun:` + fmt.Sprintf("%v", this.ServerDryRun) + `,`,
+		`Labels:` + fmt.Sprintf("%v", this.Labels) + `,`,
+		`OwnerReference:` + strings.Replace(fmt.Sprintf("%v", this.OwnerReference), "OwnerReference", "v11.OwnerReference", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SuppliedValueFrom) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SuppliedValueFrom{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SuspendTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SuspendTemplate{`,
+		`Duration:` + fmt.Sprintf("%v", this.Duration) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Synchronization) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Synchronization{`,
+		`Semaphore:` + strings.Replace(this.Semaphore.String(), "SemaphoreRef", "SemaphoreRef", 1) + `,`,
+		`Mutex:` + strings.Replace(this.Mutex.String(), "Mutex", "Mutex", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SynchronizationStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SynchronizationStatus{`,
+		`Semaphore:` + strings.Replace(this.Semaphore.String(), "SemaphoreStatus", "SemaphoreStatus", 1) + `,`,
+		`Mutex:` + strings.Replace(this.Mutex.String(), "MutexStatus", "MutexStatus", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TTLStrategy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TTLStrategy{`,
+		`SecondsAfterCompletion:` + valueToStringGenerated(this.SecondsAfterCompletion) + `,`,
+		`SecondsAfterSuccess:` + valueToStringGenerated(this.SecondsAfterSuccess) + `,`,
+		`SecondsAfterFailure:` + valueToStringGenerated(this.SecondsAfterFailure) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TarStrategy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TarStrategy{`,
+		`CompressionLevel:` + valueToStringGenerated(this.CompressionLevel) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Template) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForSteps := "[]ParallelSteps{"
+	for _, f := range this.Steps {
+		repeatedStringForSteps += strings.Replace(strings.Replace(f.String(), "ParallelSteps", "ParallelSteps", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForSteps += "}"
+	repeatedStringForVolumes := "[]Volume{"
+	for _, f := range this.Volumes {
+		repeatedStringForVolumes += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForVolumes += "}"
+	repeatedStringForInitContainers := "[]UserContainer{"
+	for _, f := range this.InitContainers {
+		repeatedStringForInitContainers += strings.Replace(strings.Replace(f.String(), "UserContainer", "UserContainer", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForInitContainers += "}"
+	repeatedStringForSidecars := "[]UserContainer{"
+	for _, f := range this.Sidecars {
+		repeatedStringForSidecars += strings.Replace(strings.Replace(f.String(), "UserContainer", "UserContainer", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForSidecars += "}"
+	repeatedStringForTolerations := "[]Toleration{"
+	for _, f := range this.Tolerations {
+		repeatedStringForTolerations += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForTolerations += "}"
+	repeatedStringForHostAliases := "[]HostAlias{"
+	for _, f := range this.HostAliases {
+		repeatedStringForHostAliases += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForHostAliases += "}"
+	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
+	for k := range this.NodeSelector {
+		keysForNodeSelector = append(keysForNodeSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+	mapStringForNodeSelector := "map[string]string{"
+	for _, k := range keysForNodeSelector {
+		mapStringForNodeSelector += fmt.Sprintf("%v: %v,", k, this.NodeSelector[k])
+	}
+	mapStringForNodeSelector += "}"
+	s := strings.Join([]string{`&Template{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Template:` + fmt.Sprintf("%v", this.Template) + `,`,
+		`Arguments:` + strings.Replace(strings.Replace(this.Arguments.String(), "Arguments", "Arguments", 1), `&`, ``, 1) + `,`,
+		`TemplateRef:` + strings.Replace(this.TemplateRef.String(), "TemplateRef", "TemplateRef", 1) + `,`,
+		`Inputs:` + strings.Replace(strings.Replace(this.Inputs.String(), "Inputs", "Inputs", 1), `&`, ``, 1) + `,`,
+		`Outputs:` + strings.Replace(strings.Replace(this.Outputs.String(), "Outputs", "Outputs", 1), `&`, ``, 1) + `,`,
+		`NodeSelector:` + mapStringForNodeSelector + `,`,
+		`Affinity:` + strings.Replace(fmt.Sprintf("%v", this.Affinity), "Affinity", "v1.Affinity", 1) + `,`,
+		`Metadata:` + strings.Replace(strings.Replace(this.Metadata.String(), "Metadata", "Metadata", 1), `&`, ``, 1) + `,`,
+		`Daemon:` + valueToStringGenerated(this.Daemon) + `,`,
+		`Steps:` + repeatedStringForSteps + `,`,
+		`Container:` + strings.Replace(fmt.Sprintf("%v", this.Container), "Container", "v1.Container", 1) + `,`,
+		`Script:` + strings.Replace(this.Script.String(), "ScriptTemplate", "ScriptTemplate", 1) + `,`,
+		`Resource:` + strings.Replace(this.Resource.String(), "ResourceTemplate", "ResourceTemplate", 1) + `,`,
+		`DAG:` + strings.Replace(this.DAG.String(), "DAGTemplate", "DAGTemplate", 1) + `,`,
+		`Suspend:` + strings.Replace(this.Suspend.String(), "SuspendTemplate", "SuspendTemplate", 1) + `,`,
+		`Volumes:` + repeatedStringForVolumes + `,`,
+		`InitContainers:` + repeatedStringForInitContainers + `,`,
+		`Sidecars:` + repeatedStringForSidecars + `,`,
+		`ArchiveLocation:` + strings.Replace(this.ArchiveLocation.String(), "ArtifactLocation", "ArtifactLocation", 1) + `,`,
+		`ActiveDeadlineSeconds:` + strings.Replace(fmt.Sprintf("%v", this.ActiveDeadlineSeconds), "IntOrString", "intstr.IntOrString", 1) + `,`,
+		`RetryStrategy:` + strings.Replace(this.RetryStrategy.String(), "RetryStrategy", "RetryStrategy", 1) + `,`,
+		`Parallelism:` + valueToStringGenerated(this.Parallelism) + `,`,
+		`Tolerations:` + repeatedStringForTolerations + `,`,
+		`SchedulerName:` + fmt.Sprintf("%v", this.SchedulerName) + `,`,
+		`PriorityClassName:` + fmt.Sprintf("%v", this.PriorityClassName) + `,`,
+		`Priority:` + valueToStringGenerated(this.Priority) + `,`,
+		`ServiceAccountName:` + fmt.Sprintf("%v", this.ServiceAccountName) + `,`,
+		`HostAliases:` + repeatedStringForHostAliases + `,`,
+		`SecurityContext:` + strings.Replace(fmt.Sprintf("%v", this.SecurityContext), "PodSecurityContext", "v1.PodSecurityContext", 1) + `,`,
+		`PodSpecPatch:` + fmt.Sprintf("%v", this.PodSpecPatch) + `,`,
+		`AutomountServiceAccountToken:` + valueToStringGenerated(this.AutomountServiceAccountToken) + `,`,
+		`Executor:` + strings.Replace(this.Executor.String(), "ExecutorConfig", "ExecutorConfig", 1) + `,`,
+		`Metrics:` + strings.Replace(this.Metrics.String(), "Metrics", "Metrics", 1) + `,`,
+		`Synchronization:` + strings.Replace(this.Synchronization.String(), "Synchronization", "Synchronization", 1) + `,`,
+		`Memoize:` + strings.Replace(this.Memoize.String(), "Memoize", "Memoize", 1) + `,`,
+		`Timeout:` + fmt.Sprintf("%v", this.Timeout) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TemplateRef) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TemplateRef{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Template:` + fmt.Sprintf("%v", this.Template) + `,`,
+		`RuntimeResolution:` + fmt.Sprintf("%v", this.RuntimeResolution) + `,`,
+		`ClusterScope:` + fmt.Sprintf("%v", this.ClusterScope) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *UserContainer) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UserContainer{`,
+		`Container:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Container), "Container", "v1.Container", 1), `&`, ``, 1) + `,`,
+		`MirrorVolumeMounts:` + valueToStringGenerated(this.MirrorVolumeMounts) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ValueFrom) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ValueFrom{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`JSONPath:` + fmt.Sprintf("%v", this.JSONPath) + `,`,
+		`JQFilter:` + fmt.Sprintf("%v", this.JQFilter) + `,`,
+		`Parameter:` + fmt.Sprintf("%v", this.Parameter) + `,`,
+		`Default:` + valueToStringGenerated(this.Default) + `,`,
+		`Supplied:` + strings.Replace(this.Supplied.String(), "SuppliedValueFrom", "SuppliedValueFrom", 1) + `,`,
+		`Event:` + fmt.Sprintf("%v", this.Event) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Version) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Version{`,
+		`Version:` + fmt.Sprintf("%v", this.Version) + `,`,
+		`BuildDate:` + fmt.Sprintf("%v", this.BuildDate) + `,`,
+		`GitCommit:` + fmt.Sprintf("%v", this.GitCommit) + `,`,
+		`GitTag:` + fmt.Sprintf("%v", this.GitTag) + `,`,
+		`GitTreeState:` + fmt.Sprintf("%v", this.GitTreeState) + `,`,
+		`GoVersion:` + fmt.Sprintf("%v", this.GoVersion) + `,`,
+		`Compiler:` + fmt.Sprintf("%v", this.Compiler) + `,`,
+		`Platform:` + fmt.Sprintf("%v", this.Platform) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VolumeClaimGC) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VolumeClaimGC{`,
+		`Strategy:` + fmt.Sprintf("%v", this.Strategy) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Workflow) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Workflow{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v11.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "WorkflowSpec", "WorkflowSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "WorkflowStatus", "WorkflowStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowEventBinding) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&WorkflowEventBinding{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v11.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "WorkflowEventBindingSpec", "WorkflowEventBindingSpec", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowEventBindingList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForItems := "[]WorkflowEventBinding{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "WorkflowEventBinding", "WorkflowEventBinding", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForItems += "}"
+	s := strings.Join([]string{`&WorkflowEventBindingList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v11.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowEventBindingSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&WorkflowEventBindingSpec{`,
+		`Event:` + strings.Replace(strings.Replace(this.Event.String(), "Event", "Event", 1), `&`, ``, 1) + `,`,
+		`Submit:` + strings.Replace(this.Submit.String(), "Submit", "Submit", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForItems := "[]Workflow{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "Workflow", "Workflow", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForItems += "}"
+	s := strings.Join([]string{`&WorkflowList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v11.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForTemplates := "[]Template{"
+	for _, f := range this.Templates {
+		repeatedStringForTemplates += strings.Replace(strings.Replace(f.String(), "Template", "Template", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForTemplates += "}"
+	repeatedStringForVolumes := "[]Volume{"
+	for _, f := range this.Volumes {
+		repeatedStringForVolumes += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForVolumes += "}"
+	repeatedStringForVolumeClaimTemplates := "[]PersistentVolumeClaim{"
+	for _, f := range this.VolumeClaimTemplates {
+		repeatedStringForVolumeClaimTemplates += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForVolumeClaimTemplates += "}"
+	repeatedStringForTolerations := "[]Toleration{"
+	for _, f := range this.Tolerations {
+		repeatedStringForTolerations += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForTolerations += "}"
+	repeatedStringForImagePullSecrets := "[]LocalObjectReference{"
+	for _, f := range this.ImagePullSecrets {
+		repeatedStringForImagePullSecrets += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForImagePullSecrets += "}"
+	repeatedStringForHostAliases := "[]HostAlias{"
+	for _, f := range this.HostAliases {
+		repeatedStringForHostAliases += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForHostAliases += "}"
+	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
+	for k := range this.NodeSelector {
+		keysForNodeSelector = append(keysForNodeSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+	mapStringForNodeSelector := "map[string]string{"
+	for _, k := range keysForNodeSelector {
+		mapStringForNodeSelector += fmt.Sprintf("%v: %v,", k, this.NodeSelector[k])
+	}
+	mapStringForNodeSelector += "}"
+	s := strings.Join([]string{`&WorkflowSpec{`,
+		`Templates:` + repeatedStringForTemplates + `,`,
+		`Entrypoint:` + fmt.Sprintf("%v", this.Entrypoint) + `,`,
+		`Arguments:` + strings.Replace(strings.Replace(this.Arguments.String(), "Arguments", "Arguments", 1), `&`, ``, 1) + `,`,
+		`ServiceAccountName:` + fmt.Sprintf("%v", this.ServiceAccountName) + `,`,
+		`Volumes:` + repeatedStringForVolumes + `,`,
+		`VolumeClaimTemplates:` + repeatedStringForVolumeClaimTemplates + `,`,
+		`Parallelism:` + valueToStringGenerated(this.Parallelism) + `,`,
+		`ArtifactRepositoryRef:` + strings.Replace(this.ArtifactRepositoryRef.String(), "ArtifactRepositoryRef", "ArtifactRepositoryRef", 1) + `,`,
+		`Suspend:` + valueToStringGenerated(this.Suspend) + `,`,
+		`NodeSelector:` + mapStringForNodeSelector + `,`,
+		`Affinity:` + strings.Replace(fmt.Sprintf("%v", this.Affinity), "Affinity", "v1.Affinity", 1) + `,`,
+		`Tolerations:` + repeatedStringForTolerations + `,`,
+		`ImagePullSecrets:` + repeatedStringForImagePullSecrets + `,`,
+		`HostNetwork:` + valueToStringGenerated(this.HostNetwork) + `,`,
+		`DNSPolicy:` + valueToStringGenerated(this.DNSPolicy) + `,`,
+		`DNSConfig:` + strings.Replace(fmt.Sprintf("%v", this.DNSConfig), "PodDNSConfig", "v1.PodDNSConfig", 1) + `,`,
+		`OnExit:` + fmt.Sprintf("%v", this.OnExit) + `,`,
+		`TTLSecondsAfterFinished:` + valueToStringGenerated(this.TTLSecondsAfterFinished) + `,`,
+		`ActiveDeadlineSeconds:` + valueToStringGenerated(this.ActiveDeadlineSeconds) + `,`,
+		`Priority:` + valueToStringGenerated(this.Priority) + `,`,
+		`SchedulerName:` + fmt.Sprintf("%v", this.SchedulerName) + `,`,
+		`PodGC:` + strings.Replace(this.PodGC.String(), "PodGC", "PodGC", 1) + `,`,
+		`PodPriorityClassName:` + fmt.Sprintf("%v", this.PodPriorityClassName) + `,`,
+		`PodPriority:` + valueToStringGenerated(this.PodPriority) + `,`,
+		`HostAliases:` + repeatedStringForHostAliases + `,`,
+		`SecurityContext:` + strings.Replace(fmt.Sprintf("%v", this.SecurityContext), "PodSecurityContext", "v1.PodSecurityContext", 1) + `,`,
+		`PodSpecPatch:` + fmt.Sprintf("%v", this.PodSpecPatch) + `,`,
+		`AutomountServiceAccountToken:` + valueToStringGenerated(this.AutomountServiceAccountToken) + `,`,
+		`Executor:` + strings.Replace(this.Executor.String(), "ExecutorConfig", "ExecutorConfig", 1) + `,`,
+		`TTLStrategy:` + strings.Replace(this.TTLStrategy.String(), "TTLStrategy", "TTLStrategy", 1) + `,`,
+		`PodDisruptionBudget:` + strings.Replace(fmt.Sprintf("%v", this.PodDisruptionBudget), "PodDisruptionBudgetSpec", "v1beta1.PodDisruptionBudgetSpec", 1) + `,`,
+		`Metrics:` + strings.Replace(this.Metrics.String(), "Metrics", "Metrics", 1) + `,`,
+		`Shutdown:` + fmt.Sprintf("%v", this.Shutdown) + `,`,
+		`WorkflowTemplateRef:` + strings.Replace(this.WorkflowTemplateRef.String(), "WorkflowTemplateRef", "WorkflowTemplateRef", 1) + `,`,
+		`Synchronization:` + strings.Replace(this.Synchronization.String(), "Synchronization", "Synchronization", 1) + `,`,
+		`VolumeClaimGC:` + strings.Replace(this.VolumeClaimGC.String(), "VolumeClaimGC", "VolumeClaimGC", 1) + `,`,
+		`RetryStrategy:` + strings.Replace(this.RetryStrategy.String(), "RetryStrategy", "RetryStrategy", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForPersistentVolumeClaims := "[]Volume{"
+	for _, f := range this.PersistentVolumeClaims {
+		repeatedStringForPersistentVolumeClaims += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForPersistentVolumeClaims += "}"
+	repeatedStringForConditions := "[]Condition{"
+	for _, f := range this.Conditions {
+		repeatedStringForConditions += strings.Replace(strings.Replace(f.String(), "Condition", "Condition", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForConditions += "}"
+	keysForNodes := make([]string, 0, len(this.Nodes))
+	for k := range this.Nodes {
+		keysForNodes = append(keysForNodes, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodes)
+	mapStringForNodes := "Nodes{"
+	for _, k := range keysForNodes {
+		mapStringForNodes += fmt.Sprintf("%v: %v,", k, this.Nodes[k])
+	}
+	mapStringForNodes += "}"
+	keysForStoredTemplates := make([]string, 0, len(this.StoredTemplates))
+	for k := range this.StoredTemplates {
+		keysForStoredTemplates = append(keysForStoredTemplates, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForStoredTemplates)
+	mapStringForStoredTemplates := "map[string]Template{"
+	for _, k := range keysForStoredTemplates {
+		mapStringForStoredTemplates += fmt.Sprintf("%v: %v,", k, this.StoredTemplates[k])
+	}
+	mapStringForStoredTemplates += "}"
+	keysForResourcesDuration := make([]string, 0, len(this.ResourcesDuration))
+	for k := range this.ResourcesDuration {
+		keysForResourcesDuration = append(keysForResourcesDuration, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForResourcesDuration)
+	mapStringForResourcesDuration := "ResourcesDuration{"
+	for _, k := range keysForResourcesDuration {
+		mapStringForResourcesDuration += fmt.Sprintf("%v: %v,", k, this.ResourcesDuration[k8s_io_api_core_v1.ResourceName(k)])
+	}
+	mapStringForResourcesDuration += "}"
+	s := strings.Join([]string{`&WorkflowStatus{`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`StartedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.StartedAt), "Time", "v11.Time", 1), `&`, ``, 1) + `,`,
+		`FinishedAt:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.FinishedAt), "Time", "v11.Time", 1), `&`, ``, 1) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`CompressedNodes:` + fmt.Sprintf("%v", this.CompressedNodes) + `,`,
+		`Nodes:` + mapStringForNodes + `,`,
+		`PersistentVolumeClaims:` + repeatedStringForPersistentVolumeClaims + `,`,
+		`Outputs:` + strings.Replace(this.Outputs.String(), "Outputs", "Outputs", 1) + `,`,
+		`StoredTemplates:` + mapStringForStoredTemplates + `,`,
+		`OffloadNodeStatusVersion:` + fmt.Sprintf("%v", this.OffloadNodeStatusVersion) + `,`,
+		`ResourcesDuration:` + mapStringForResourcesDuration + `,`,
+		`Conditions:` + repeatedStringForConditions + `,`,
+		`StoredWorkflowSpec:` + strings.Replace(this.StoredWorkflowSpec.String(), "WorkflowSpec", "WorkflowSpec", 1) + `,`,
+		`Synchronization:` + strings.Replace(this.Synchronization.String(), "SynchronizationStatus", "SynchronizationStatus", 1) + `,`,
+		`EstimatedDuration:` + fmt.Sprintf("%v", this.EstimatedDuration) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowStep) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForWithItems := "[]Item{"
+	for _, f := range this.WithItems {
+		repeatedStringForWithItems += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForWithItems += "}"
+	s := strings.Join([]string{`&WorkflowStep{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Template:` + fmt.Sprintf("%v", this.Template) + `,`,
+		`Arguments:` + strings.Replace(strings.Replace(this.Arguments.String(), "Arguments", "Arguments", 1), `&`, ``, 1) + `,`,
+		`TemplateRef:` + strings.Replace(this.TemplateRef.String(), "TemplateRef", "TemplateRef", 1) + `,`,
+		`WithItems:` + repeatedStringForWithItems + `,`,
+		`WithParam:` + fmt.Sprintf("%v", this.WithParam) + `,`,
+		`WithSequence:` + strings.Replace(this.WithSequence.String(), "Sequence", "Sequence", 1) + `,`,
+		`When:` + fmt.Sprintf("%v", this.When) + `,`,
+		`ContinueOn:` + strings.Replace(this.ContinueOn.String(), "ContinueOn", "ContinueOn", 1) + `,`,
+		`OnExit:` + fmt.Sprintf("%v", this.OnExit) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&WorkflowTemplate{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v11.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "WorkflowTemplateSpec", "WorkflowTemplateSpec", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowTemplateList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForItems := "[]WorkflowTemplate{"
+	for _, f := range this.Items {
+		repeatedStringForItems += strings.Replace(strings.Replace(f.String(), "WorkflowTemplate", "WorkflowTemplate", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForItems += "}"
+	s := strings.Join([]string{`&WorkflowTemplateList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ListMeta), "ListMeta", "v11.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + repeatedStringForItems + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowTemplateRef) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&WorkflowTemplateRef{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`ClusterScope:` + fmt.Sprintf("%v", this.ClusterScope) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WorkflowTemplateSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&WorkflowTemplateSpec{`,
+		`WorkflowSpec:` + strings.Replace(strings.Replace(this.WorkflowSpec.String(), "WorkflowSpec", "WorkflowSpec", 1), `&`, ``, 1) + `,`,
+		`WorkflowMetadata:` + strings.Replace(fmt.Sprintf("%v", this.WorkflowMetadata), "ObjectMeta", "v11.ObjectMeta", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ZipStrategy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ZipStrategy{`,
+		`}`,
+	}, "")
+	return s
+}
+func valueToStringGenerated(v interface{}) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("*%v", pv)
 }
 func (m *Amount) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -16715,8 +12382,7 @@ func (m *Amount) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = encoding_json.Number(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -16733,7 +12399,6 @@ func (m *Amount) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -16895,7 +12560,6 @@ func (m *ArchiveStrategy) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -16963,7 +12627,7 @@ func (m *Arguments) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Parameters = append(m.Parameters, &Parameter{})
+			m.Parameters = append(m.Parameters, Parameter{})
 			if err := m.Parameters[len(m.Parameters)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -16997,7 +12661,7 @@ func (m *Arguments) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Artifacts = append(m.Artifacts, &Artifact{})
+			m.Artifacts = append(m.Artifacts, Artifact{})
 			if err := m.Artifacts[len(m.Artifacts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -17017,7 +12681,6 @@ func (m *Arguments) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -17086,8 +12749,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -17119,8 +12781,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Path = &s
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -17172,8 +12833,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.From = &s
+			m.From = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -17203,9 +12863,6 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.ArtifactLocation == nil {
-				m.ArtifactLocation = &ArtifactLocation{}
 			}
 			if err := m.ArtifactLocation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -17241,8 +12898,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GlobalName = &s
+			m.GlobalName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -17299,8 +12955,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Optional = &b
+			m.Optional = bool(v != 0)
 		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SubPath", wireType)
@@ -17331,8 +12986,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SubPath = &s
+			m.SubPath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 0 {
@@ -17353,8 +13007,7 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.RecurseMode = &b
+			m.RecurseMode = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -17370,7 +13023,6 @@ func (m *Artifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -17504,7 +13156,7 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Http", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field HTTP", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -17531,10 +13183,10 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Http == nil {
-				m.Http = &HTTPArtifact{}
+			if m.HTTP == nil {
+				m.HTTP = &HTTPArtifact{}
 			}
-			if err := m.Http.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.HTTP.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -17576,7 +13228,7 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Hdfs", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field HDFS", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -17603,10 +13255,10 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Hdfs == nil {
-				m.Hdfs = &HDFSArtifact{}
+			if m.HDFS == nil {
+				m.HDFS = &HDFSArtifact{}
 			}
-			if err := m.Hdfs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.HDFS.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -17648,7 +13300,7 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Oss", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field OSS", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -17675,16 +13327,16 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Oss == nil {
-				m.Oss = &OSSArtifact{}
+			if m.OSS == nil {
+				m.OSS = &OSSArtifact{}
 			}
-			if err := m.Oss.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.OSS.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Gcs", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field GCS", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -17711,10 +13363,10 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Gcs == nil {
-				m.Gcs = &GCSArtifact{}
+			if m.GCS == nil {
+				m.GCS = &GCSArtifact{}
 			}
-			if err := m.Gcs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.GCS.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -17733,7 +13385,6 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -17802,8 +13453,7 @@ func (m *ArtifactRepositoryRef) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ConfigMap = &s
+			m.ConfigMap = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -17835,8 +13485,7 @@ func (m *ArtifactRepositoryRef) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -17853,7 +13502,6 @@ func (m *ArtifactRepositoryRef) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -17894,7 +13542,7 @@ func (m *ArtifactoryArtifact) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Url", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -17922,8 +13570,7 @@ func (m *ArtifactoryArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Url = &s
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -17954,9 +13601,6 @@ func (m *ArtifactoryArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ArtifactoryAuth == nil {
-				m.ArtifactoryAuth = &ArtifactoryAuth{}
-			}
 			if err := m.ArtifactoryAuth.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -17976,7 +13620,6 @@ func (m *ArtifactoryArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18102,7 +13745,6 @@ func (m *ArtifactoryAuth) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18171,8 +13813,7 @@ func (m *Backoff) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Duration = &s
+			m.Duration = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -18240,8 +13881,7 @@ func (m *Backoff) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.MaxDuration = &s
+			m.MaxDuration = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -18258,7 +13898,6 @@ func (m *Backoff) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18348,7 +13987,6 @@ func (m *Cache) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18389,7 +14027,7 @@ func (m *ClusterWorkflowTemplate) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -18416,10 +14054,7 @@ func (m *ClusterWorkflowTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ObjectMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -18452,9 +14087,6 @@ func (m *ClusterWorkflowTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Spec == nil {
-				m.Spec = &WorkflowTemplateSpec{}
-			}
 			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -18474,7 +14106,6 @@ func (m *ClusterWorkflowTemplate) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18515,7 +14146,7 @@ func (m *ClusterWorkflowTemplateList) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -18542,10 +14173,7 @@ func (m *ClusterWorkflowTemplateList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ListMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -18578,7 +14206,7 @@ func (m *ClusterWorkflowTemplateList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Items = append(m.Items, &ClusterWorkflowTemplate{})
+			m.Items = append(m.Items, ClusterWorkflowTemplate{})
 			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -18598,7 +14226,6 @@ func (m *ClusterWorkflowTemplateList) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18667,8 +14294,7 @@ func (m *Condition) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Type = &s
+			m.Type = ConditionType(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -18700,8 +14326,7 @@ func (m *Condition) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Status = &s
+			m.Status = k8s_io_apimachinery_pkg_apis_meta_v1.ConditionStatus(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -18733,8 +14358,7 @@ func (m *Condition) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Message = &s
+			m.Message = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -18751,7 +14375,6 @@ func (m *Condition) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18809,8 +14432,7 @@ func (m *ContinueOn) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Error = &b
+			m.Error = bool(v != 0)
 		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Failed", wireType)
@@ -18830,8 +14452,7 @@ func (m *ContinueOn) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Failed = &b
+			m.Failed = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -18847,7 +14468,6 @@ func (m *ContinueOn) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -18916,8 +14536,7 @@ func (m *Counter) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -18934,7 +14553,131 @@ func (m *Counter) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateS3BucketOptions) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateS3BucketOptions: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateS3BucketOptions: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enabled", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Enabled = bool(v != 0)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Region", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Region = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectLocking", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ObjectLocking = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
 			iNdEx += skippy
 		}
 	}
@@ -18975,7 +14718,7 @@ func (m *CronWorkflow) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -19002,10 +14745,7 @@ func (m *CronWorkflow) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ObjectMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -19037,9 +14777,6 @@ func (m *CronWorkflow) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Spec == nil {
-				m.Spec = &CronWorkflowSpec{}
 			}
 			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -19074,9 +14811,6 @@ func (m *CronWorkflow) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Status == nil {
-				m.Status = &CronWorkflowStatus{}
-			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -19096,7 +14830,6 @@ func (m *CronWorkflow) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -19137,7 +14870,7 @@ func (m *CronWorkflowList) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -19164,10 +14897,7 @@ func (m *CronWorkflowList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ListMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -19200,7 +14930,7 @@ func (m *CronWorkflowList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Items = append(m.Items, &CronWorkflow{})
+			m.Items = append(m.Items, CronWorkflow{})
 			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -19220,7 +14950,6 @@ func (m *CronWorkflowList) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -19288,9 +15017,6 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.WorkflowSpec == nil {
-				m.WorkflowSpec = &WorkflowSpec{}
-			}
 			if err := m.WorkflowSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -19325,8 +15051,7 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Schedule = &s
+			m.Schedule = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -19358,8 +15083,7 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ConcurrencyPolicy = &s
+			m.ConcurrencyPolicy = ConcurrencyPolicy(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -19380,8 +15104,7 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Suspend = &b
+			m.Suspend = bool(v != 0)
 		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StartingDeadlineSeconds", wireType)
@@ -19472,12 +15195,11 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Timezone = &s
+			m.Timezone = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowMeta", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowMetadata", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -19504,10 +15226,10 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.WorkflowMeta == nil {
-				m.WorkflowMeta = &v11.ObjectMeta{}
+			if m.WorkflowMetadata == nil {
+				m.WorkflowMetadata = &v11.ObjectMeta{}
 			}
-			if err := m.WorkflowMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.WorkflowMetadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -19526,7 +15248,6 @@ func (m *CronWorkflowSpec) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -19594,7 +15315,7 @@ func (m *CronWorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Active = append(m.Active, &v1.ObjectReference{})
+			m.Active = append(m.Active, v1.ObjectReference{})
 			if err := m.Active[len(m.Active)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -19664,7 +15385,7 @@ func (m *CronWorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Conditions = append(m.Conditions, &Condition{})
+			m.Conditions = append(m.Conditions, Condition{})
 			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -19684,7 +15405,6 @@ func (m *CronWorkflowStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -19753,8 +15473,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -19786,8 +15505,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Template = &s
+			m.Template = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -19817,9 +15535,6 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Arguments == nil {
-				m.Arguments = &Arguments{}
 			}
 			if err := m.Arguments.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -19922,7 +15637,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.WithItems = append(m.WithItems, &Item{})
+			m.WithItems = append(m.WithItems, Item{})
 			if err := m.WithItems[len(m.WithItems)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -19957,8 +15672,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.WithParam = &s
+			m.WithParam = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -20026,8 +15740,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.When = &s
+			m.When = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
@@ -20095,8 +15808,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.OnExit = &s
+			m.OnExit = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
@@ -20128,8 +15840,7 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Depends = &s
+			m.Depends = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -20146,7 +15857,6 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20215,8 +15925,7 @@ func (m *DAGTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Target = &s
+			m.Target = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -20247,7 +15956,7 @@ func (m *DAGTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Tasks = append(m.Tasks, &DAGTask{})
+			m.Tasks = append(m.Tasks, DAGTask{})
 			if err := m.Tasks[len(m.Tasks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -20288,7 +15997,6 @@ func (m *DAGTemplate) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20357,8 +16065,7 @@ func (m *Event) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Selector = &s
+			m.Selector = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -20375,7 +16082,6 @@ func (m *Event) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20444,8 +16150,7 @@ func (m *ExecutorConfig) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ServiceAccountName = &s
+			m.ServiceAccountName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -20462,7 +16167,6 @@ func (m *ExecutorConfig) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20530,9 +16234,6 @@ func (m *GCSArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.GCSBucket == nil {
-				m.GCSBucket = &GCSBucket{}
-			}
 			if err := m.GCSBucket.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -20567,8 +16268,7 @@ func (m *GCSArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -20585,7 +16285,6 @@ func (m *GCSArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20654,8 +16353,7 @@ func (m *GCSBucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Bucket = &s
+			m.Bucket = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -20686,9 +16384,6 @@ func (m *GCSBucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ServiceAccountKeySecret == nil {
-				m.ServiceAccountKeySecret = &v1.SecretKeySelector{}
-			}
 			if err := m.ServiceAccountKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -20708,7 +16403,6 @@ func (m *GCSBucket) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20777,8 +16471,7 @@ func (m *Gauge) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -20816,7 +16509,6 @@ func (m *Gauge) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -20885,8 +16577,7 @@ func (m *GitArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Repo = &s
+			m.Repo = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -20918,8 +16609,7 @@ func (m *GitArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Revision = &s
+			m.Revision = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -21047,7 +16737,7 @@ func (m *GitArtifact) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SshPrivateKeySecret", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SSHPrivateKeySecret", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -21074,10 +16764,10 @@ func (m *GitArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.SshPrivateKeySecret == nil {
-				m.SshPrivateKeySecret = &v1.SecretKeySelector{}
+			if m.SSHPrivateKeySecret == nil {
+				m.SSHPrivateKeySecret = &v1.SecretKeySelector{}
 			}
-			if err := m.SshPrivateKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.SSHPrivateKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -21100,8 +16790,7 @@ func (m *GitArtifact) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.InsecureIgnoreHostKey = &b
+			m.InsecureIgnoreHostKey = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -21117,7 +16806,6 @@ func (m *GitArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -21185,9 +16873,6 @@ func (m *HDFSArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.HDFSConfig == nil {
-				m.HDFSConfig = &HDFSConfig{}
-			}
 			if err := m.HDFSConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -21222,8 +16907,7 @@ func (m *HDFSArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Path = &s
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -21244,8 +16928,7 @@ func (m *HDFSArtifact) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Force = &b
+			m.Force = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -21261,7 +16944,6 @@ func (m *HDFSArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -21329,9 +17011,6 @@ func (m *HDFSConfig) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.HDFSKrbConfig == nil {
-				m.HDFSKrbConfig = &HDFSKrbConfig{}
-			}
 			if err := m.HDFSKrbConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -21370,7 +17049,7 @@ func (m *HDFSConfig) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HdfsUser", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field HDFSUser", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -21398,8 +17077,7 @@ func (m *HDFSConfig) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.HdfsUser = &s
+			m.HDFSUser = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -21416,7 +17094,6 @@ func (m *HDFSConfig) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -21557,8 +17234,7 @@ func (m *HDFSKrbConfig) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.KrbUsername = &s
+			m.KrbUsername = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -21590,8 +17266,7 @@ func (m *HDFSKrbConfig) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.KrbRealm = &s
+			m.KrbRealm = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -21659,8 +17334,7 @@ func (m *HDFSKrbConfig) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.KrbServicePrincipalName = &s
+			m.KrbServicePrincipalName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -21677,7 +17351,6 @@ func (m *HDFSKrbConfig) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -21718,7 +17391,7 @@ func (m *HTTPArtifact) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Url", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -21746,8 +17419,7 @@ func (m *HTTPArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Url = &s
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -21778,7 +17450,7 @@ func (m *HTTPArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Headers = append(m.Headers, &Header{})
+			m.Headers = append(m.Headers, Header{})
 			if err := m.Headers[len(m.Headers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -21798,7 +17470,6 @@ func (m *HTTPArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -21867,8 +17538,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -21900,8 +17570,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -21918,7 +17587,6 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -21987,8 +17655,7 @@ func (m *Histogram) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -22019,7 +17686,7 @@ func (m *Histogram) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Buckets = append(m.Buckets, &Amount{})
+			m.Buckets = append(m.Buckets, Amount{})
 			if err := m.Buckets[len(m.Buckets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -22039,7 +17706,6 @@ func (m *Histogram) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -22107,7 +17773,7 @@ func (m *Inputs) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Parameters = append(m.Parameters, &Parameter{})
+			m.Parameters = append(m.Parameters, Parameter{})
 			if err := m.Parameters[len(m.Parameters)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -22141,7 +17807,7 @@ func (m *Inputs) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Artifacts = append(m.Artifacts, &Artifact{})
+			m.Artifacts = append(m.Artifacts, Artifact{})
 			if err := m.Artifacts[len(m.Artifacts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -22161,7 +17827,6 @@ func (m *Inputs) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -22249,7 +17914,6 @@ func (m *Item) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -22318,8 +17982,7 @@ func (m *Link) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -22351,12 +18014,11 @@ func (m *Link) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Scope = &s
+			m.Scope = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Url", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -22384,8 +18046,7 @@ func (m *Link) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Url = &s
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -22402,7 +18063,6 @@ func (m *Link) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -22460,8 +18120,7 @@ func (m *MemoizationStatus) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Hit = &b
+			m.Hit = bool(v != 0)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
@@ -22492,8 +18151,7 @@ func (m *MemoizationStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -22525,8 +18183,7 @@ func (m *MemoizationStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.CacheName = &s
+			m.CacheName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -22543,7 +18200,6 @@ func (m *MemoizationStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -22612,8 +18268,7 @@ func (m *Memoize) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -22681,8 +18336,7 @@ func (m *Memoize) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.MaxAge = &s
+			m.MaxAge = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -22699,7 +18353,6 @@ func (m *Memoize) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23007,7 +18660,6 @@ func (m *Metadata) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23076,8 +18728,7 @@ func (m *MetricLabel) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -23109,8 +18760,7 @@ func (m *MetricLabel) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -23127,7 +18777,6 @@ func (m *MetricLabel) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23215,7 +18864,6 @@ func (m *Metrics) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23284,8 +18932,7 @@ func (m *Mutex) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -23302,7 +18949,6 @@ func (m *Mutex) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23371,8 +19017,7 @@ func (m *MutexHolding) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Mutex = &s
+			m.Mutex = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -23404,8 +19049,7 @@ func (m *MutexHolding) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Holder = &s
+			m.Holder = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -23422,7 +19066,6 @@ func (m *MutexHolding) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23490,7 +19133,7 @@ func (m *MutexStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Holding = append(m.Holding, &MutexHolding{})
+			m.Holding = append(m.Holding, MutexHolding{})
 			if err := m.Holding[len(m.Holding)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -23524,7 +19167,7 @@ func (m *MutexStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Waiting = append(m.Waiting, &MutexHolding{})
+			m.Waiting = append(m.Waiting, MutexHolding{})
 			if err := m.Waiting[len(m.Waiting)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -23544,7 +19187,6 @@ func (m *MutexStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -23585,7 +19227,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -23613,8 +19255,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Id = &s
+			m.ID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -23646,8 +19287,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -23679,8 +19319,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.DisplayName = &s
+			m.DisplayName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -23712,8 +19351,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Type = &s
+			m.Type = NodeType(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -23745,8 +19383,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.TemplateName = &s
+			m.TemplateName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -23814,8 +19451,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Phase = &s
+			m.Phase = NodePhase(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -23847,8 +19483,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.BoundaryID = &s
+			m.BoundaryID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -23880,8 +19515,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Message = &s
+			m.Message = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
@@ -23911,9 +19545,6 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.StartedAt == nil {
-				m.StartedAt = &v11.Time{}
 			}
 			if err := m.StartedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -23947,9 +19578,6 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.FinishedAt == nil {
-				m.FinishedAt = &v11.Time{}
 			}
 			if err := m.FinishedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -23985,8 +19613,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.PodIP = &s
+			m.PodIP = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 13:
 			if wireType != 0 {
@@ -24175,8 +19802,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.StoredTemplateID = &s
+			m.StoredTemplateID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 19:
 			if wireType != 2 {
@@ -24208,8 +19834,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.WorkflowTemplateName = &s
+			m.WorkflowTemplateName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 20:
 			if wireType != 2 {
@@ -24241,8 +19866,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.TemplateScope = &s
+			m.TemplateScope = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 21:
 			if wireType != 2 {
@@ -24274,9 +19898,9 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ResourcesDuration == nil {
-				m.ResourcesDuration = make(map[string]int64)
+				m.ResourcesDuration = make(ResourcesDuration)
 			}
-			var mapkey string
+			var mapkey k8s_io_api_core_v1.ResourceName
 			var mapvalue int64
 			for iNdEx < postIndex {
 				entryPreIndex := iNdEx
@@ -24323,7 +19947,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					mapkey = k8s_io_api_core_v1.ResourceName(dAtA[iNdEx:postStringIndexmapkey])
 					iNdEx = postStringIndexmapkey
 				} else if fieldNum == 2 {
 					for shift := uint(0); ; shift += 7 {
@@ -24355,7 +19979,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.ResourcesDuration[mapkey] = mapvalue
+			m.ResourcesDuration[k8s_io_api_core_v1.ResourceName(mapkey)] = ((ResourceDuration)(mapvalue))
 			iNdEx = postIndex
 		case 22:
 			if wireType != 2 {
@@ -24387,8 +20011,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.HostNodeName = &s
+			m.HostNodeName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 23:
 			if wireType != 2 {
@@ -24430,7 +20053,7 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EstimatedDuration", wireType)
 			}
-			var v int64
+			m.EstimatedDuration = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGenerated
@@ -24440,12 +20063,11 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int64(b&0x7F) << shift
+				m.EstimatedDuration |= EstimatedDuration(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.EstimatedDuration = &v
 		case 25:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SynchronizationStatus", wireType)
@@ -24497,7 +20119,6 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -24566,8 +20187,7 @@ func (m *NodeSynchronizationStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Waiting = &s
+			m.Waiting = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -24584,7 +20204,6 @@ func (m *NodeSynchronizationStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -24638,7 +20257,6 @@ func (m *NoneStrategy) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -24706,9 +20324,6 @@ func (m *OSSArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.OSSBucket == nil {
-				m.OSSBucket = &OSSBucket{}
-			}
 			if err := m.OSSBucket.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -24743,8 +20358,7 @@ func (m *OSSArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -24761,7 +20375,6 @@ func (m *OSSArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -24830,8 +20443,7 @@ func (m *OSSBucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Endpoint = &s
+			m.Endpoint = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -24863,8 +20475,7 @@ func (m *OSSBucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Bucket = &s
+			m.Bucket = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -24894,9 +20505,6 @@ func (m *OSSBucket) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.AccessKeySecret == nil {
-				m.AccessKeySecret = &v1.SecretKeySelector{}
 			}
 			if err := m.AccessKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -24931,9 +20539,6 @@ func (m *OSSBucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.SecretKeySecret == nil {
-				m.SecretKeySecret = &v1.SecretKeySelector{}
-			}
 			if err := m.SecretKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -24953,7 +20558,6 @@ func (m *OSSBucket) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25021,7 +20625,7 @@ func (m *Outputs) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Parameters = append(m.Parameters, &Parameter{})
+			m.Parameters = append(m.Parameters, Parameter{})
 			if err := m.Parameters[len(m.Parameters)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -25055,7 +20659,7 @@ func (m *Outputs) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Artifacts = append(m.Artifacts, &Artifact{})
+			m.Artifacts = append(m.Artifacts, Artifact{})
 			if err := m.Artifacts[len(m.Artifacts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -25141,7 +20745,6 @@ func (m *Outputs) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25209,7 +20812,7 @@ func (m *ParallelSteps) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Steps = append(m.Steps, &WorkflowStep{})
+			m.Steps = append(m.Steps, WorkflowStep{})
 			if err := m.Steps[len(m.Steps)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -25229,7 +20832,6 @@ func (m *ParallelSteps) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25298,8 +20900,7 @@ func (m *Parameter) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -25433,8 +21034,7 @@ func (m *Parameter) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GlobalName = &s
+			m.GlobalName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -25451,7 +21051,6 @@ func (m *Parameter) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25520,8 +21119,7 @@ func (m *PodGC) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Strategy = &s
+			m.Strategy = PodGCStrategy(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -25538,7 +21136,6 @@ func (m *PodGC) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25607,8 +21204,7 @@ func (m *Prometheus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -25674,8 +21270,7 @@ func (m *Prometheus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Help = &s
+			m.Help = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -25707,8 +21302,7 @@ func (m *Prometheus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.When = &s
+			m.When = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -25833,7 +21427,6 @@ func (m *Prometheus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25902,8 +21495,7 @@ func (m *RawArtifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Data = &s
+			m.Data = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -25920,7 +21512,6 @@ func (m *RawArtifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -25989,8 +21580,7 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Action = &s
+			m.Action = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -26022,8 +21612,7 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.MergeStrategy = &s
+			m.MergeStrategy = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -26055,8 +21644,7 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Manifest = &s
+			m.Manifest = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -26077,8 +21665,7 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.SetOwnerReference = &b
+			m.SetOwnerReference = bool(v != 0)
 		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SuccessCondition", wireType)
@@ -26109,8 +21696,7 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SuccessCondition = &s
+			m.SuccessCondition = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -26142,8 +21728,7 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.FailureCondition = &s
+			m.FailureCondition = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -26192,7 +21777,6 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -26297,8 +21881,7 @@ func (m *RetryStrategy) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.RetryPolicy = &s
+			m.RetryPolicy = RetryPolicy(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -26351,7 +21934,6 @@ func (m *RetryStrategy) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -26419,9 +22001,6 @@ func (m *S3Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.S3Bucket == nil {
-				m.S3Bucket = &S3Bucket{}
-			}
 			if err := m.S3Bucket.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -26456,8 +22035,7 @@ func (m *S3Artifact) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -26474,7 +22052,6 @@ func (m *S3Artifact) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -26543,8 +22120,7 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Endpoint = &s
+			m.Endpoint = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -26576,8 +22152,7 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Bucket = &s
+			m.Bucket = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -26609,8 +22184,7 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Region = &s
+			m.Region = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 0 {
@@ -26662,9 +22236,6 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.AccessKeySecret == nil {
-				m.AccessKeySecret = &v1.SecretKeySelector{}
-			}
 			if err := m.AccessKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -26697,9 +22268,6 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.SecretKeySecret == nil {
-				m.SecretKeySecret = &v1.SecretKeySelector{}
 			}
 			if err := m.SecretKeySecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -26735,8 +22303,7 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.RoleARN = &s
+			m.RoleARN = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 0 {
@@ -26757,8 +22324,40 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.UseSDKCreds = &b
+			m.UseSDKCreds = bool(v != 0)
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateBucketIfNotPresent", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.CreateBucketIfNotPresent.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -26774,7 +22373,6 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -26842,9 +22440,6 @@ func (m *ScriptTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Container == nil {
-				m.Container = &v1.Container{}
-			}
 			if err := m.Container.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -26879,8 +22474,7 @@ func (m *ScriptTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Source = &s
+			m.Source = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -26897,7 +22491,6 @@ func (m *ScriptTemplate) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -26966,8 +22559,7 @@ func (m *SemaphoreHolding) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Semaphore = &s
+			m.Semaphore = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -27016,7 +22608,6 @@ func (m *SemaphoreHolding) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -27106,7 +22697,6 @@ func (m *SemaphoreRef) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -27174,7 +22764,7 @@ func (m *SemaphoreStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Holding = append(m.Holding, &SemaphoreHolding{})
+			m.Holding = append(m.Holding, SemaphoreHolding{})
 			if err := m.Holding[len(m.Holding)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -27208,7 +22798,7 @@ func (m *SemaphoreStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Waiting = append(m.Waiting, &SemaphoreHolding{})
+			m.Waiting = append(m.Waiting, SemaphoreHolding{})
 			if err := m.Waiting[len(m.Waiting)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -27228,7 +22818,6 @@ func (m *SemaphoreStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -27405,8 +22994,7 @@ func (m *Sequence) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Format = &s
+			m.Format = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -27423,7 +23011,6 @@ func (m *Sequence) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -27491,9 +23078,6 @@ func (m *Submit) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.WorkflowTemplateRef == nil {
-				m.WorkflowTemplateRef = &WorkflowTemplateRef{}
-			}
 			if err := m.WorkflowTemplateRef.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -27549,7 +23133,6 @@ func (m *Submit) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -27618,8 +23201,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -27651,8 +23233,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GenerateName = &s
+			m.GenerateName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -27684,8 +23265,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Entrypoint = &s
+			m.Entrypoint = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -27749,8 +23329,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ParameterFile = &s
+			m.ParameterFile = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -27782,8 +23361,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ServiceAccount = &s
+			m.ServiceAccount = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 0 {
@@ -27804,8 +23382,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.DryRun = &b
+			m.DryRun = bool(v != 0)
 		case 9:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ServerDryRun", wireType)
@@ -27825,8 +23402,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.ServerDryRun = &b
+			m.ServerDryRun = bool(v != 0)
 		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Labels", wireType)
@@ -27857,8 +23433,7 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Labels = &s
+			m.Labels = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 11:
 			if wireType != 2 {
@@ -27911,7 +23486,6 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -27965,7 +23539,6 @@ func (m *SuppliedValueFrom) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -28034,8 +23607,7 @@ func (m *SuspendTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Duration = &s
+			m.Duration = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -28052,7 +23624,6 @@ func (m *SuspendTemplate) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -28178,7 +23749,6 @@ func (m *Synchronization) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -28304,7 +23874,6 @@ func (m *SynchronizationStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -28418,7 +23987,6 @@ func (m *TTLStrategy) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -28492,7 +24060,6 @@ func (m *TarStrategy) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -28561,8 +24128,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -28594,8 +24160,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Template = &s
+			m.Template = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -28625,9 +24190,6 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Arguments == nil {
-				m.Arguments = &Arguments{}
 			}
 			if err := m.Arguments.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -28698,9 +24260,6 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Inputs == nil {
-				m.Inputs = &Inputs{}
-			}
 			if err := m.Inputs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -28733,9 +24292,6 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Outputs == nil {
-				m.Outputs = &Outputs{}
 			}
 			if err := m.Outputs.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -28933,9 +24489,6 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &Metadata{}
-			}
 			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -28990,7 +24543,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Steps = append(m.Steps, &ParallelSteps{})
+			m.Steps = append(m.Steps, ParallelSteps{})
 			if err := m.Steps[len(m.Steps)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -29105,7 +24658,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 15:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Dag", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DAG", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -29132,10 +24685,10 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Dag == nil {
-				m.Dag = &DAGTemplate{}
+			if m.DAG == nil {
+				m.DAG = &DAGTemplate{}
 			}
-			if err := m.Dag.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.DAG.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -29204,7 +24757,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Volumes = append(m.Volumes, &v1.Volume{})
+			m.Volumes = append(m.Volumes, v1.Volume{})
 			if err := m.Volumes[len(m.Volumes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -29238,7 +24791,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.InitContainers = append(m.InitContainers, &UserContainer{})
+			m.InitContainers = append(m.InitContainers, UserContainer{})
 			if err := m.InitContainers[len(m.InitContainers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -29272,7 +24825,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Sidecars = append(m.Sidecars, &UserContainer{})
+			m.Sidecars = append(m.Sidecars, UserContainer{})
 			if err := m.Sidecars[len(m.Sidecars)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -29434,7 +24987,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Tolerations = append(m.Tolerations, &v1.Toleration{})
+			m.Tolerations = append(m.Tolerations, v1.Toleration{})
 			if err := m.Tolerations[len(m.Tolerations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -29469,8 +25022,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SchedulerName = &s
+			m.SchedulerName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 26:
 			if wireType != 2 {
@@ -29502,8 +25054,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.PriorityClassName = &s
+			m.PriorityClassName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 27:
 			if wireType != 0 {
@@ -29555,8 +25106,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ServiceAccountName = &s
+			m.ServiceAccountName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 29:
 			if wireType != 2 {
@@ -29587,7 +25137,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.HostAliases = append(m.HostAliases, &v1.HostAlias{})
+			m.HostAliases = append(m.HostAliases, v1.HostAlias{})
 			if err := m.HostAliases[len(m.HostAliases)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -29658,8 +25208,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.PodSpecPatch = &s
+			m.PodSpecPatch = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 32:
 			if wireType != 0 {
@@ -29856,8 +25405,7 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Timeout = &s
+			m.Timeout = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -29874,7 +25422,6 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -29943,8 +25490,7 @@ func (m *TemplateRef) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -29976,8 +25522,7 @@ func (m *TemplateRef) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Template = &s
+			m.Template = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
@@ -29998,8 +25543,7 @@ func (m *TemplateRef) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.RuntimeResolution = &b
+			m.RuntimeResolution = bool(v != 0)
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ClusterScope", wireType)
@@ -30019,8 +25563,7 @@ func (m *TemplateRef) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.ClusterScope = &b
+			m.ClusterScope = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -30036,7 +25579,6 @@ func (m *TemplateRef) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -30104,9 +25646,6 @@ func (m *UserContainer) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Container == nil {
-				m.Container = &v1.Container{}
-			}
 			if err := m.Container.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -30147,7 +25686,6 @@ func (m *UserContainer) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -30216,12 +25754,11 @@ func (m *ValueFrom) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Path = &s
+			m.Path = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JsonPath", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field JSONPath", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -30249,12 +25786,11 @@ func (m *ValueFrom) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.JsonPath = &s
+			m.JSONPath = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field JqFilter", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field JQFilter", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -30282,8 +25818,7 @@ func (m *ValueFrom) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.JqFilter = &s
+			m.JQFilter = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -30315,8 +25850,7 @@ func (m *ValueFrom) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Parameter = &s
+			m.Parameter = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -30417,8 +25951,7 @@ func (m *ValueFrom) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Event = &s
+			m.Event = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -30435,7 +25968,6 @@ func (m *ValueFrom) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -30504,8 +26036,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Version = &s
+			m.Version = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -30537,8 +26068,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.BuildDate = &s
+			m.BuildDate = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -30570,8 +26100,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GitCommit = &s
+			m.GitCommit = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
@@ -30603,8 +26132,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GitTag = &s
+			m.GitTag = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -30636,8 +26164,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GitTreeState = &s
+			m.GitTreeState = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -30669,8 +26196,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.GoVersion = &s
+			m.GoVersion = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -30702,8 +26228,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Compiler = &s
+			m.Compiler = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -30735,8 +26260,7 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Platform = &s
+			m.Platform = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -30753,7 +26277,6 @@ func (m *Version) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -30822,8 +26345,7 @@ func (m *VolumeClaimGC) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Strategy = &s
+			m.Strategy = VolumeClaimGCStrategy(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -30840,7 +26362,6 @@ func (m *VolumeClaimGC) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -30881,7 +26402,7 @@ func (m *Workflow) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -30908,10 +26429,7 @@ func (m *Workflow) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ObjectMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -30943,9 +26461,6 @@ func (m *Workflow) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Spec == nil {
-				m.Spec = &WorkflowSpec{}
 			}
 			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -30980,9 +26495,6 @@ func (m *Workflow) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Status == nil {
-				m.Status = &WorkflowStatus{}
-			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31002,7 +26514,6 @@ func (m *Workflow) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -31043,7 +26554,7 @@ func (m *WorkflowEventBinding) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -31070,10 +26581,7 @@ func (m *WorkflowEventBinding) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ObjectMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -31106,9 +26614,6 @@ func (m *WorkflowEventBinding) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Spec == nil {
-				m.Spec = &WorkflowEventBindingSpec{}
-			}
 			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31128,7 +26633,6 @@ func (m *WorkflowEventBinding) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -31169,7 +26673,7 @@ func (m *WorkflowEventBindingList) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -31196,10 +26700,7 @@ func (m *WorkflowEventBindingList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ListMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -31232,7 +26733,7 @@ func (m *WorkflowEventBindingList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Items = append(m.Items, &WorkflowEventBinding{})
+			m.Items = append(m.Items, WorkflowEventBinding{})
 			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31252,7 +26753,6 @@ func (m *WorkflowEventBindingList) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -31320,9 +26820,6 @@ func (m *WorkflowEventBindingSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Event == nil {
-				m.Event = &Event{}
-			}
 			if err := m.Event.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31378,7 +26875,6 @@ func (m *WorkflowEventBindingSpec) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -31419,7 +26915,7 @@ func (m *WorkflowList) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -31446,10 +26942,7 @@ func (m *WorkflowList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ListMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -31482,7 +26975,7 @@ func (m *WorkflowList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Items = append(m.Items, &Workflow{})
+			m.Items = append(m.Items, Workflow{})
 			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31502,7 +26995,6 @@ func (m *WorkflowList) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -31570,7 +27062,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Templates = append(m.Templates, &Template{})
+			m.Templates = append(m.Templates, Template{})
 			if err := m.Templates[len(m.Templates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31605,8 +27097,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Entrypoint = &s
+			m.Entrypoint = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -31636,9 +27127,6 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Arguments == nil {
-				m.Arguments = &Arguments{}
 			}
 			if err := m.Arguments.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -31674,8 +27162,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.ServiceAccountName = &s
+			m.ServiceAccountName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -31706,7 +27193,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Volumes = append(m.Volumes, &v1.Volume{})
+			m.Volumes = append(m.Volumes, v1.Volume{})
 			if err := m.Volumes[len(m.Volumes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -31740,7 +27227,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.VolumeClaimTemplates = append(m.VolumeClaimTemplates, &v1.PersistentVolumeClaim{})
+			m.VolumeClaimTemplates = append(m.VolumeClaimTemplates, v1.PersistentVolumeClaim{})
 			if err := m.VolumeClaimTemplates[len(m.VolumeClaimTemplates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -32014,7 +27501,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Tolerations = append(m.Tolerations, &v1.Toleration{})
+			m.Tolerations = append(m.Tolerations, v1.Toleration{})
 			if err := m.Tolerations[len(m.Tolerations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -32048,7 +27535,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ImagePullSecrets = append(m.ImagePullSecrets, &v1.LocalObjectReference{})
+			m.ImagePullSecrets = append(m.ImagePullSecrets, v1.LocalObjectReference{})
 			if err := m.ImagePullSecrets[len(m.ImagePullSecrets)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -32076,7 +27563,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			m.HostNetwork = &b
 		case 15:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DnsPolicy", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DNSPolicy", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -32104,12 +27591,12 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.DnsPolicy = &s
+			s := k8s_io_api_core_v1.DNSPolicy(dAtA[iNdEx:postIndex])
+			m.DNSPolicy = &s
 			iNdEx = postIndex
 		case 16:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DnsConfig", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DNSConfig", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -32136,10 +27623,10 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.DnsConfig == nil {
-				m.DnsConfig = &v1.PodDNSConfig{}
+			if m.DNSConfig == nil {
+				m.DNSConfig = &v1.PodDNSConfig{}
 			}
-			if err := m.DnsConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.DNSConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -32173,12 +27660,11 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.OnExit = &s
+			m.OnExit = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 18:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TtlSecondsAfterFinished", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TTLSecondsAfterFinished", wireType)
 			}
 			var v int32
 			for shift := uint(0); ; shift += 7 {
@@ -32195,7 +27681,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.TtlSecondsAfterFinished = &v
+			m.TTLSecondsAfterFinished = &v
 		case 19:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ActiveDeadlineSeconds", wireType)
@@ -32266,8 +27752,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.SchedulerName = &s
+			m.SchedulerName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 22:
 			if wireType != 2 {
@@ -32335,8 +27820,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.PodPriorityClassName = &s
+			m.PodPriorityClassName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 24:
 			if wireType != 0 {
@@ -32387,7 +27871,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.HostAliases = append(m.HostAliases, &v1.HostAlias{})
+			m.HostAliases = append(m.HostAliases, v1.HostAlias{})
 			if err := m.HostAliases[len(m.HostAliases)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -32458,8 +27942,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.PodSpecPatch = &s
+			m.PodSpecPatch = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 28:
 			if wireType != 0 {
@@ -32520,7 +28003,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 30:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TtlStrategy", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TTLStrategy", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -32547,10 +28030,10 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.TtlStrategy == nil {
-				m.TtlStrategy = &TTLStrategy{}
+			if m.TTLStrategy == nil {
+				m.TTLStrategy = &TTLStrategy{}
 			}
-			if err := m.TtlStrategy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.TTLStrategy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -32656,8 +28139,7 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Shutdown = &s
+			m.Shutdown = ShutdownStrategy(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 34:
 			if wireType != 2 {
@@ -32818,7 +28300,6 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -32887,8 +28368,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Phase = &s
+			m.Phase = NodePhase(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -32918,9 +28398,6 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.StartedAt == nil {
-				m.StartedAt = &v11.Time{}
 			}
 			if err := m.StartedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -32954,9 +28431,6 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.FinishedAt == nil {
-				m.FinishedAt = &v11.Time{}
 			}
 			if err := m.FinishedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -32992,8 +28466,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Message = &s
+			m.Message = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
@@ -33025,8 +28498,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.CompressedNodes = &s
+			m.CompressedNodes = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -33058,10 +28530,10 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Nodes == nil {
-				m.Nodes = make(map[string]*NodeStatus)
+				m.Nodes = make(Nodes)
 			}
 			var mapkey string
-			var mapvalue *NodeStatus
+			mapvalue := &NodeStatus{}
 			for iNdEx < postIndex {
 				entryPreIndex := iNdEx
 				var wire uint64
@@ -33155,7 +28627,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.Nodes[mapkey] = mapvalue
+			m.Nodes[mapkey] = *mapvalue
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -33186,7 +28658,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.PersistentVolumeClaims = append(m.PersistentVolumeClaims, &v1.Volume{})
+			m.PersistentVolumeClaims = append(m.PersistentVolumeClaims, v1.Volume{})
 			if err := m.PersistentVolumeClaims[len(m.PersistentVolumeClaims)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -33257,10 +28729,10 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.StoredTemplates == nil {
-				m.StoredTemplates = make(map[string]*Template)
+				m.StoredTemplates = make(map[string]Template)
 			}
 			var mapkey string
-			var mapvalue *Template
+			mapvalue := &Template{}
 			for iNdEx < postIndex {
 				entryPreIndex := iNdEx
 				var wire uint64
@@ -33354,7 +28826,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.StoredTemplates[mapkey] = mapvalue
+			m.StoredTemplates[mapkey] = *mapvalue
 			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
@@ -33386,8 +28858,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.OffloadNodeStatusVersion = &s
+			m.OffloadNodeStatusVersion = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
@@ -33419,9 +28890,9 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ResourcesDuration == nil {
-				m.ResourcesDuration = make(map[string]int64)
+				m.ResourcesDuration = make(ResourcesDuration)
 			}
-			var mapkey string
+			var mapkey k8s_io_api_core_v1.ResourceName
 			var mapvalue int64
 			for iNdEx < postIndex {
 				entryPreIndex := iNdEx
@@ -33468,7 +28939,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
-					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					mapkey = k8s_io_api_core_v1.ResourceName(dAtA[iNdEx:postStringIndexmapkey])
 					iNdEx = postStringIndexmapkey
 				} else if fieldNum == 2 {
 					for shift := uint(0); ; shift += 7 {
@@ -33500,7 +28971,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.ResourcesDuration[mapkey] = mapvalue
+			m.ResourcesDuration[k8s_io_api_core_v1.ResourceName(mapkey)] = ((ResourceDuration)(mapvalue))
 			iNdEx = postIndex
 		case 13:
 			if wireType != 2 {
@@ -33531,14 +29002,14 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Conditions = append(m.Conditions, &Condition{})
+			m.Conditions = append(m.Conditions, Condition{})
 			if err := m.Conditions[len(m.Conditions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 14:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StoredWorkflowTemplateSpec", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field StoredWorkflowSpec", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -33565,10 +29036,10 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.StoredWorkflowTemplateSpec == nil {
-				m.StoredWorkflowTemplateSpec = &WorkflowSpec{}
+			if m.StoredWorkflowSpec == nil {
+				m.StoredWorkflowSpec = &WorkflowSpec{}
 			}
-			if err := m.StoredWorkflowTemplateSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.StoredWorkflowSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -33612,7 +29083,7 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field EstimatedDuration", wireType)
 			}
-			var v int64
+			m.EstimatedDuration = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGenerated
@@ -33622,12 +29093,11 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int64(b&0x7F) << shift
+				m.EstimatedDuration |= EstimatedDuration(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.EstimatedDuration = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -33643,7 +29113,6 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -33712,8 +29181,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -33745,8 +29213,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Template = &s
+			m.Template = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -33776,9 +29243,6 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Arguments == nil {
-				m.Arguments = &Arguments{}
 			}
 			if err := m.Arguments.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -33849,7 +29313,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.WithItems = append(m.WithItems, &Item{})
+			m.WithItems = append(m.WithItems, Item{})
 			if err := m.WithItems[len(m.WithItems)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -33884,8 +29348,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.WithParam = &s
+			m.WithParam = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -33953,8 +29416,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.When = &s
+			m.When = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -34022,8 +29484,7 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.OnExit = &s
+			m.OnExit = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -34040,7 +29501,6 @@ func (m *WorkflowStep) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -34081,7 +29541,7 @@ func (m *WorkflowTemplate) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -34108,10 +29568,7 @@ func (m *WorkflowTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ObjectMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -34144,9 +29601,6 @@ func (m *WorkflowTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Spec == nil {
-				m.Spec = &WorkflowTemplateSpec{}
-			}
 			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -34166,7 +29620,6 @@ func (m *WorkflowTemplate) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -34207,7 +29660,7 @@ func (m *WorkflowTemplateList) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -34234,10 +29687,7 @@ func (m *WorkflowTemplateList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Metadata == nil {
-				m.Metadata = &v11.ListMeta{}
-			}
-			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -34270,7 +29720,7 @@ func (m *WorkflowTemplateList) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Items = append(m.Items, &WorkflowTemplate{})
+			m.Items = append(m.Items, WorkflowTemplate{})
 			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -34290,7 +29740,6 @@ func (m *WorkflowTemplateList) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -34359,8 +29808,7 @@ func (m *WorkflowTemplateRef) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(dAtA[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -34381,8 +29829,7 @@ func (m *WorkflowTemplateRef) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.ClusterScope = &b
+			m.ClusterScope = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -34398,7 +29845,6 @@ func (m *WorkflowTemplateRef) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -34466,16 +29912,13 @@ func (m *WorkflowTemplateSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.WorkflowSpec == nil {
-				m.WorkflowSpec = &WorkflowSpec{}
-			}
 			if err := m.WorkflowSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowMeta", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowMetadata", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -34502,10 +29945,10 @@ func (m *WorkflowTemplateSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.WorkflowMeta == nil {
-				m.WorkflowMeta = &v11.ObjectMeta{}
+			if m.WorkflowMetadata == nil {
+				m.WorkflowMetadata = &v11.ObjectMeta{}
 			}
-			if err := m.WorkflowMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.WorkflowMetadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -34524,7 +29967,6 @@ func (m *WorkflowTemplateSpec) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -34578,7 +30020,6 @@ func (m *ZipStrategy) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
