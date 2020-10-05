@@ -222,3 +222,20 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 	assert.NotNil(t, spec.GetVolumeClaimGC())
 	assert.Equal(t, &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}, spec.GetVolumeClaimGC())
 }
+
+func TestGetTTLStrategy(t *testing.T) {
+	var ten int32 = 10
+	var twenty int32 = 20
+
+	spec := WorkflowSpec{TTLSecondsAfterFinished: &ten}
+	ttl := spec.GetTTLStrategy()
+	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+
+	spec = WorkflowSpec{TTLSecondsAfterFinished: &ten, TTLStrategy: &TTLStrategy{SecondsAfterCompletion: &twenty}}
+	ttl = spec.GetTTLStrategy()
+	assert.Equal(t, twenty, *ttl.SecondsAfterCompletion)
+
+	spec = WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: &twenty}}
+	ttl = spec.GetTTLStrategy()
+	assert.Equal(t, twenty, *ttl.SecondsAfterCompletion)
+}
