@@ -2039,42 +2039,36 @@
 <p>The release branch should be green in CI before you start.</p>
 <h2 id="release">Release<a class="headerlink" href="#release" title="Permanent link">&para;</a></h2>
 <p>To generate new manifests and perform basic checks:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make prepare-release VERSION=v2.7.2</span>
+<div class="codehilite"><pre><span></span><code><span class="err">make prepare-release VERSION=v2.11.2</span>
 </code></pre></div>
 
 
 <p>Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):</p>
-<div class="codehilite"><pre><span></span><code><span class="err">make publish-release K3D=false VERSION=v2.7.2</span>
+<div class="codehilite"><pre><span></span><code><span class="err">make publish-release K3D=false VERSION=v2.11.2</span>
 </code></pre></div>
 
 
 <ul>
 <li>[ ] Check the images were pushed successfully.</li>
+<li>[ ] Check the correct versions are printed.</li>
+<li>[ ] Check the executor was correctly built.</li>
 </ul>
-<div class="highlight"><pre><span></span><code>docker pull argoproj/workflow-controller:v2.7.2
-docker pull argoproj/argoexec:v2.7.2
-docker pull argoproj/argocli:v2.7.2
-</code></pre></div>
-
-<ul>
-<li>[ ] Check the correct versions are printed:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>docker run argoproj/workflow-controller:v2.7.2 version
-docker run argoproj/argoexec:v2.7.2 version
-docker run argoproj/argocli:v2.7.2 version
+<div class="highlight"><pre><span></span><code>docker run argoproj/workflow-controller:v2.11.2 version
+docker run argoproj/argoexec:v2.11.2 version
+docker run argoproj/argocli:v2.11.2 version
 </code></pre></div>
 
 <ul>
 <li>
-<p>[ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/v2.7.2/manifests/install.yaml</p>
+<p>[ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/v2.11.2/manifests/install.yaml</p>
 </li>
 <li>
-<p>[ ] Check the manifests apply: <code>kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo/v2.7.2/manifests/install.yaml</code></p>
+<p>[ ] Check the manifests apply: <code>kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo/v2.11.2/manifests/install.yaml</code></p>
 </li>
 </ul>
 <h3 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h3>
 <p>Create <a href="https://github.com/argoproj/argo/releases">the release</a> in Github. You can get some text for this using <a href="https://github.com/alexec/github-toolkit">Github Toolkit</a>:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">ght relnote v2.7.1..v2.7.2</span>
+<div class="codehilite"><pre><span></span><code><span class="err">ght relnote v2.7.1..v2.11.2</span>
 </code></pre></div>
 
 
@@ -2101,7 +2095,7 @@ git push -f origin stable
 <li>[ ] Update the Homebrew formula.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nb">export</span> <span class="nv">HOMEBREW_GITHUB_API_TOKEN</span><span class="o">=</span>******
-brew bump-formula-pr argo --version <span class="m">2</span>.7.2
+brew bump-formula-pr argo --version <span class="m">2</span>.11.2
 </code></pre></div>
 
 <ul>
@@ -2118,7 +2112,7 @@ brew bump-formula-pr argo --version <span class="m">2</span>.7.2
 </ul>
 <div class="highlight"><pre><span></span><code>git clone git@github.com:argoproj-labs/argo-client-java.git
 cd argo-client-java
-make publish VERSION=v2.7.2
+make publish VERSION=v2.11.2
 </code></pre></div>
 
 <ul>
