@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: argoproj/argocli:v2.11.1
+          image: argoproj/argocli:v2.11.2
           args: [server]
           ports:
             - name: web
