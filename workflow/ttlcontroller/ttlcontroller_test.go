@@ -10,7 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
@@ -338,6 +340,7 @@ status:
     ttlStrategy:
       secondsAfterCompletion: 60
 `
+var testConfig config.Config
 
 func newTTLController() *Controller {
 	clock := clock.NewFakeClock(time.Now())
@@ -349,6 +352,9 @@ func newTTLController() *Controller {
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
 		workqueue:    workqueue.NewDelayingQueue(),
+		configSuppliger: func() *config.Config {
+			return &testConfig
+		},
 	}
 }
 
@@ -644,4 +650,17 @@ func TestGetTTLStrategy(t *testing.T) {
 		ttl = getTTLStrategy(wf2, nil)
 		assert.Nil(t, ttl)
 	})
+}
+
+func TestGetDefaultTTLStrategy(t *testing.T) {
+	controller := newTTLController()
+	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}}}
+	ttl := controller.getDefaultTTLStrategy()
+	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
+	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(20)}}}
+	ttl = controller.getDefaultTTLStrategy()
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
+	testConfig = config.Config{WorkflowDefaults: nil}
+	ttl = controller.getDefaultTTLStrategy()
+	assert.Nil(t, ttl)
 }

@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	commonutil "github.com/argoproj/argo/util"
@@ -25,24 +26,26 @@ const (
 	workflowTTLResyncPeriod = 20 * time.Minute
 )
 
+type ConfigSupplier func() *config.Config
+
 type Controller struct {
-	wfclientset        wfclientset.Interface
-	wfInformer         cache.SharedIndexInformer
-	workqueue          workqueue.DelayingInterface
-	resyncPeriod       time.Duration
-	clock              clock.Clock
-	defaultTTLStrategy *wfv1.TTLStrategy
+	wfclientset     wfclientset.Interface
+	wfInformer      cache.SharedIndexInformer
+	workqueue       workqueue.DelayingInterface
+	resyncPeriod    time.Duration
+	clock           clock.Clock
+	configSuppliger ConfigSupplier
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, defaultTTLStrategy *wfv1.TTLStrategy) *Controller {
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, configSupplier ConfigSupplier) *Controller {
 	controller := &Controller{
-		wfclientset:        wfClientset,
-		wfInformer:         wfInformer,
-		workqueue:          workqueue.NewDelayingQueue(),
-		resyncPeriod:       workflowTTLResyncPeriod,
-		clock:              clock.RealClock{},
-		defaultTTLStrategy: defaultTTLStrategy,
+		wfclientset:     wfClientset,
+		wfInformer:      wfInformer,
+		workqueue:       workqueue.NewDelayingQueue(),
+		resyncPeriod:    workflowTTLResyncPeriod,
+		clock:           clock.RealClock{},
+		configSuppliger: configSupplier,
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -134,7 +137,7 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		return
 	}
 	now := c.clock.Now()
-	remaining, expiration := timeLeft(wf, &now, c.defaultTTLStrategy)
+	remaining, expiration := timeLeft(wf, &now, c.getDefaultTTLStrategy())
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
 	}
@@ -189,9 +192,16 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	return nil
 }
+func (c *Controller) getDefaultTTLStrategy() *wfv1.TTLStrategy {
+	wfDefault := c.configSuppliger().WorkflowDefaults
+	if wfDefault != nil {
+		return wfDefault.Spec.GetTTLStrategy()
+	}
+	return nil
+}
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	ttlStrategy := getTTLStrategy(wf, c.defaultTTLStrategy)
+	ttlStrategy := getTTLStrategy(wf, c.getDefaultTTLStrategy())
 
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
