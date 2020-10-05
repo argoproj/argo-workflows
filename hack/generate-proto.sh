@@ -3,7 +3,9 @@ set -eu -o pipefail
 
 trap 'rm -Rf vendor' EXIT
 
-if [ "$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated' | head -n1)" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
+oldest_output=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated' | tail -n1)
+
+if [ "$oldest_output" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
   echo "running go-to-protobuf"
   [ -e vendor ] || go mod vendor
   ${GOPATH}/bin/go-to-protobuf \
@@ -16,8 +18,10 @@ else
   echo "skipping go-to-protobuf: no changes"
 fi
 
-find pkg -name '*.proto' ! -name generated.proto | while read -r f; do
-  if [ "$(ls -t "$(dirname $f)"/*.pb.go | head -n1)" -nt $f ]; then
+find pkg -name '*.proto' | while read -r f; do
+  oldest_output=$(ls -t "$(dirname $f)"/*.pb.go | tail -n1)
+  swagger=$(echo $f | sed 's/.proto/.swagger.json/')
+  if [ "$oldest_output" -nt "$f" ] && [ -e "$swagger" ]; then
     echo "skipping protoc $f: no changes"
     continue
   fi

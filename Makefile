@@ -1,6 +1,7 @@
 export SHELL:=/bin/bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
+# This means we only one shell, and therefore you can use `trap` to clean-up
 .ONESHELL:
 
 OUTPUT_IMAGE_OS ?= linux
@@ -99,7 +100,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-CLI_DOCS         := $(shell ls -t docs/cli | head -n1)
+OLDEST_CLI_DOC    := $(shell ls -t docs/cli | tail -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -138,7 +139,9 @@ ui/dist/app/index.html: $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(STATIC_FILES),true)
+	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
+	# `yarn build` is slow, so we guard it with a recency check.
 	JOBS=max yarn --cwd ui build
 else
 	echo "Built without static files" > ui/dist/app/index.html
@@ -224,6 +227,7 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 .PHONY: codegen
 codegen: proto swagger manifests docs $(GOPATH)/bin/mockery
+	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
 
@@ -426,6 +430,15 @@ clean:
 
 # swagger
 
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.js: proto
+pkg/apiclient/cronworkflow/cron-workflow.swagger.json: proto
+pkg/apiclient/event/event.swagger.json: proto
+pkg/apiclient/info/info.swagger.json: proto
+pkg/apiclient/workflow/workflow.swagger.json: proto
+pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
+pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
+pkg/apis/workflow/v1alpha1/generated.swagger.json: proto
+
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
@@ -447,7 +460,8 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-pkg/apiclient/_.secondary.swagger.json: server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
 	go run ./hack/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
@@ -477,10 +491,10 @@ docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
-docs: api/openapi-spec/swagger.json docs/swagger.md $(CLI_DOCS)
+docs: api/openapi-spec/swagger.json docs/swagger.md $(OLDEST_CLI_DOC)
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
-$(CLI_DOCS): $(CLI_PKGS) server/static/files.go
+$(OLDEST_CLI_DOC): $(CLI_PKGS) server/static/files.go
 	go run ./hack/cli
 
 # pre-push
@@ -508,3 +522,6 @@ endif
 check-version-warning:
 	@if [[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+.*$  ]]; then echo -n "It looks like you're trying to use a SemVer version, but have not prepended it with a "v" (such as "v$(VERSION)"). The "v" is required for our releases. Do you wish to continue anyway? [y/N]" && read ans && [ $${ans:-N} = y ]; fi
 
+.PHONY: parse-examples
+parse-examples:
+	go run -tags fields ./hack parseexamples

@@ -1,7 +1,10 @@
 #!/bin/bash
 set -eu -o pipefail
 
-if [ "$(ls -t pkg/client/listers/workflow/v1alpha1/*.go | head -n1)" -nt "$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'generated\|test' | head -n1)" ]; then
+oldest_output=$(ls -t pkg/client/listers/workflow/v1alpha1/*.go | tail -n1)
+newest_input=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'generated\|test' | head -n1)
+
+if [ "$oldest_output" -nt "$newest_input" ]; then
   echo "skipping generate-groups.sh: no changes"
   exit
 fi
