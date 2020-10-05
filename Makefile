@@ -100,7 +100,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-OLDEST_CLI_DOC    := $(shell ls -t docs/cli | tail -n1)
+NEWEST_CLI_DOC    := $(shell ls -t docs/cli | head -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -226,7 +226,10 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: proto swagger manifests docs $(GOPATH)/bin/mockery
+codegen: proto swagger manifests gogenerate docs
+
+.PHONY: gogenerate
+gogenerate: $(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
@@ -430,15 +433,6 @@ clean:
 
 # swagger
 
-pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.js: proto
-pkg/apiclient/cronworkflow/cron-workflow.swagger.json: proto
-pkg/apiclient/event/event.swagger.json: proto
-pkg/apiclient/info/info.swagger.json: proto
-pkg/apiclient/workflow/workflow.swagger.json: proto
-pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
-pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
-pkg/apis/workflow/v1alpha1/generated.swagger.json: proto
-
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
@@ -491,10 +485,10 @@ docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
 	rm -rf package-lock.json package.json node_modules/
 
 .PHONY: docs
-docs: api/openapi-spec/swagger.json docs/swagger.md $(OLDEST_CLI_DOC)
+docs: api/openapi-spec/swagger.json docs/swagger.md $(NEWEST_CLI_DOC)
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
-$(OLDEST_CLI_DOC): $(CLI_PKGS) server/static/files.go
+$(NEWEST_CLI_DOC): $(CLI_PKGS) server/static/files.go
 	go run ./hack/cli
 
 # pre-push
