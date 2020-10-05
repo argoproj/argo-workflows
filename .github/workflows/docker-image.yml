@@ -15,52 +15,37 @@ jobs:
   build-linux:
     name: Build & Push Linux Docker Images
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [linux/amd64, linux/arm64]
-        target: [workflow-controller, argocli, argoexec]
     steps:
       - uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: crazy-max/ghaction-docker-buildx@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        id: cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.platform }}-${{ matrix.target }}-buildx-
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - name: Docker Login
+        uses: Azure/docker-login@v1
         with:
           username: ${{ secrets.DOCKERIO_USERNAME }}
           password: ${{ secrets.DOCKERIO_PASSWORD }}
-
-      - name: Docker Buildx
+      - name: Build & Push Linux Docker Images
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
-          PLATFORM: ${{ matrix.platform }}
-          TARGET: ${{ matrix.target }}
+        # https://github.com/marketplace/actions/docker-buildx#build-and-push-to-dockerhub
         run: |
+          /usr/bin/docker pull -q multiarch/qemu-user-static:latest
+          /usr/bin/docker run --rm --privileged multiarch/qemu-user-static:latest --reset -p yes --credential yes
+          /usr/bin/docker buildx create --name builder --driver docker-container --use
+          /usr/bin/docker buildx inspect --bootstrap
+
           tag=$(basename $GITHUB_REF)
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
-          tag_suffix=$(echo $PLATFORM | sed -r "s/\//-/g")
-          image_name="${DOCKERIO_ORG}/${TARGET}:${tag}-${tag_suffix}"
-
-          docker buildx build \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --output "type=image,push=true" \
-            --platform="${PLATFORM}" \
-            --target $TARGET \
-            --tag $image_name .
+          targets="workflow-controller argocli"
+          for target in $targets; do
+            docker buildx build \
+              --output "type=image,push=true" \
+              --platform="linux/amd64,linux/arm64" \
+              --target $target \
+              --tag "${DOCKERIO_ORG}/${target}:${tag}-linux" \
+              --tag "${DOCKERIO_ORG}/${target}:${tag}" .
+          done
+          /usr/bin/docker buildx rm builder
 
   build-windows:
     name: Build & Push Windows Docker Images
@@ -91,7 +76,7 @@ jobs:
           done
 
   push-images:
-    name: Push Multiplatform Images
+    name: Build & Push Multiplatform Images
     runs-on: ubuntu-latest
     needs: [build-linux, build-windows]
     steps:
@@ -105,6 +90,11 @@ jobs:
         env:
           DOCKERIO_ORG: ${{ secrets.DOCKERIO_ORG }}
         run: |
+          /usr/bin/docker pull -q multiarch/qemu-user-static:latest
+          /usr/bin/docker run --rm --privileged multiarch/qemu-user-static:latest --reset -p yes --credential yes
+          /usr/bin/docker buildx create --name builder --driver docker-container --use
+          /usr/bin/docker buildx inspect --bootstrap
+
           echo $(jq -c '. + { "experimental": "enabled" }' ${DOCKER_CONFIG}/config.json) > ${DOCKER_CONFIG}/config.json
 
           docker_org=$DOCKERIO_ORG
@@ -113,16 +103,23 @@ jobs:
           if [ $tag = "master" ]; then
             tag="latest"
           fi
-
-          targets="workflow-controller argoexec argocli"
+          targets="argoexec"
           for target in $targets; do
             image_name="${docker_org}/${target}:${tag}"
 
-            if [ $target = "argoexec" ]; then
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64 ${image_name}-windows
-            else
-              docker manifest create $image_name ${image_name}-linux-arm64 ${image_name}-linux-amd64
-            fi
+            docker buildx build \
+              --push \
+              --platform="linux/arm64" \
+              --target ${target} \
+              --tag "${image_name}-linux-arm64" .
+
+            docker buildx build \
+              --push \
+              --platform="linux/amd64" \
+              --target ${target} \
+              --tag "${image_name}-linux-amd64" .
+
+            docker manifest create $image_name ${image_name}-windows ${image_name}-linux-arm64 ${image_name}-linux-amd64
 
             docker manifest push $image_name
           done
