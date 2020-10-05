@@ -470,7 +470,7 @@ func TestRealtimeWorkflowMetricWithGlobalParameters(t *testing.T) {
 
 	woc.operate()
 
-	metricErrorDesc := wf.Spec.Metrics.Prometheus[0].GetDesc()
+	metricErrorDesc := woc.wf.Spec.Metrics.Prometheus[0].GetDesc()
 	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
 	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
