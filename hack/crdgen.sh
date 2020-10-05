@@ -8,10 +8,10 @@ add_header() {
   mv tmp "$1"
 }
 
-oldest_output=$(ls -t manifests/base/crds/full/*.yaml | tail -n1)
+newest_output=$(ls -t manifests/base/crds/full/*.yaml | head -n1)
 newest_input=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'deepcopy\|generated\|test'| head -n1)
 
-if [ "$oldest_output" -nt "$newest_input" ]; then
+if [ "$newest_output" -nt "$newest_input" ]; then
   echo "skipping CRDs: no changes"
   exit
 fi
