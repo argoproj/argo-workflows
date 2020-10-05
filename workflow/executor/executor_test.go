@@ -180,9 +180,11 @@ func TestIsTarball(t *testing.T) {
 		expectErr bool
 	}{
 		{"testdata/file", false, false},
+		{"testdata/file.zip", false, false},
 		{"testdata/file.tar", false, false},
 		{"testdata/file.gz", false, false},
 		{"testdata/file.tar.gz", true, false},
+		{"testdata/file.tgz", true, false},
 		{"testdata/not-found", false, true},
 	}
 
@@ -195,6 +197,42 @@ func TestIsTarball(t *testing.T) {
 		}
 		assert.Equal(t, test.isTarball, ok, test.path)
 	}
+}
+
+func TestUnzip(t *testing.T) {
+	zipPath := "testdata/file.zip"
+	destPath := "testdata/unzippedFile"
+
+	// test
+	err := unzip(zipPath, destPath)
+	assert.NoError(t, err)
+
+	// check unzipped file
+	fileInfo, err := os.Stat(destPath)
+	assert.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsRegular())
+
+	// cleanup
+	err = os.Remove(destPath)
+	assert.NoError(t, err)
+}
+
+func TestUntar(t *testing.T) {
+	tarPath := "testdata/file.tar.gz"
+	destPath := "testdata/untarredFile"
+
+	// test
+	err := untar(tarPath, destPath)
+	assert.NoError(t, err)
+
+	// check untarred file
+	fileInfo, err := os.Stat(destPath)
+	assert.NoError(t, err)
+	assert.True(t, fileInfo.Mode().IsRegular())
+
+	// cleanup
+	err = os.Remove(destPath)
+	assert.NoError(t, err)
 }
 
 func TestChmod(t *testing.T) {
