@@ -756,6 +756,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 | ---- | ---- | ----------- | -------- |
 | none | [io.argoproj.workflow.v1alpha1.NoneStrategy](#io.argoproj.workflow.v1alpha1.nonestrategy) |  | No |
 | tar | [io.argoproj.workflow.v1alpha1.TarStrategy](#io.argoproj.workflow.v1alpha1.tarstrategy) |  | No |
+| zip | [io.argoproj.workflow.v1alpha1.ZipStrategy](#io.argoproj.workflow.v1alpha1.zipstrategy) |  | No |
 
 #### io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse
 
@@ -1249,6 +1250,7 @@ NodeStatus contains status information about an individual node in the workflow
 | children | [ string ] | Children is a list of child node IDs | No |
 | daemoned | boolean | Daemoned tracks whether or not this node was daemoned and need to be terminated | No |
 | displayName | string | DisplayName is a human readable representation of the node. Unique within a template boundary | No |
+| estimatedDuration | integer | EstimatedDuration in seconds. | No |
 | finishedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this node completed | No |
 | hostNodeName | string | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable | No |
 | id | string | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | Yes |
@@ -1263,11 +1265,20 @@ NodeStatus contains status information about an individual node in the workflow
 | resourcesDuration | object | ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes. | No |
 | startedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this node started | No |
 | storedTemplateID | string | StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore. | No |
+| synchronizationStatus | [io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus](#io.argoproj.workflow.v1alpha1.nodesynchronizationstatus) | SynchronizationStatus is the synchronization status of the node | No |
 | templateName | string | TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup) | No |
 | templateRef | [io.argoproj.workflow.v1alpha1.TemplateRef](#io.argoproj.workflow.v1alpha1.templateref) | TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup) | No |
 | templateScope | string | TemplateScope is the template scope in which the template of this node was retrieved. | No |
 | type | string | Type indicates type of node | Yes |
 | workflowTemplateName | string | WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore. | No |
+
+#### io.argoproj.workflow.v1alpha1.NodeSynchronizationStatus
+
+NodeSynchronizationStatus stores the status of a node
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| waiting | string | Waiting is the name of the lock that this node is waiting for | No |
 
 #### io.argoproj.workflow.v1alpha1.NoneStrategy
 
@@ -1579,7 +1590,7 @@ TemplateRef is a reference of template resource.
 | ---- | ---- | ----------- | -------- |
 | clusterScope | boolean | ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate). | No |
 | name | string | Name is the resource name of the template. | No |
-| runtimeResolution | boolean | RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. | No |
+| runtimeResolution | boolean | RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime. DEPRECATED: This value is not used anymore and is ignored | No |
 | template | string | Template is the name of referred template in the resource. | No |
 
 #### io.argoproj.workflow.v1alpha1.UpdateCronWorkflowRequest
@@ -1807,6 +1818,7 @@ WorkflowStatus contains overall status information about a workflow
 | ---- | ---- | ----------- | -------- |
 | compressedNodes | string | Compressed and base64 decoded Nodes map | No |
 | conditions | [ [io.argoproj.workflow.v1alpha1.Condition](#io.argoproj.workflow.v1alpha1.condition) ] | Conditions is a list of conditions the Workflow may have | No |
+| estimatedDuration | integer | EstimatedDuration in seconds. | No |
 | finishedAt | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time at which this workflow completed | No |
 | message | string | A human readable message indicating details about why the workflow is in this condition. | No |
 | nodes | object | Nodes is a mapping between a node ID and the node's status. | No |
@@ -1981,6 +1993,14 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 | ---- | ---- | ----------- | -------- |
 | object | [io.argoproj.workflow.v1alpha1.Workflow](#io.argoproj.workflow.v1alpha1.workflow) |  | No |
 | type | string |  | No |
+
+#### io.argoproj.workflow.v1alpha1.ZipStrategy
+
+ZipStrategy will unzip zipped input artifacts
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| io.argoproj.workflow.v1alpha1.ZipStrategy | object | ZipStrategy will unzip zipped input artifacts |  |
 
 #### io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource
 

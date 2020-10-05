@@ -152,6 +152,8 @@ Workflow is the definition of a workflow resource
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -485,6 +487,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -660,6 +664,7 @@ WorkflowStatus contains overall status information about a workflow
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
+|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -830,6 +835,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -1138,6 +1145,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -1394,6 +1403,8 @@ Arguments to a template
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -1735,6 +1746,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -1971,6 +1984,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`children`|`Array< string >`|Children is a list of child node IDs|
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
+|`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
@@ -1985,6 +1999,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
+|`synchronizationStatus`|[`NodeSynchronizationStatus`](#nodesynchronizationstatus)|SynchronizationStatus is the synchronization status of the node|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
@@ -2030,6 +2045,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`k8s-orchestration.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2130,6 +2147,8 @@ Artifact indicates an artifact to place at a specified path
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-raw.yaml)
 
 - [`input-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/input-artifact-s3.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
 
@@ -2243,6 +2262,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2458,6 +2479,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
@@ -2609,6 +2632,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -2839,6 +2864,8 @@ Pod metdata
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -3029,6 +3056,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`dag-coinflip.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-coinflip.yaml)
 
 - [`loops-param-result.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-param-result.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
 
@@ -3293,7 +3322,7 @@ TemplateRef is a reference of template resource.
 |:----------:|:----------:|---------------|
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
-|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
+|~`runtimeResolution`~|~`boolean`~|~RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.~ DEPRECATED: This value is not used anymore and is ignored|
 |`template`|`string`|Template is the name of referred template in the resource.|
 
 ## MemoizationStatus
@@ -3306,6 +3335,15 @@ MemoizationStatus is the status of this memoized node
 |`cacheName`|`string`|Cache is the name of the cache that was used|
 |`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
 |`key`|`string`|Key is the name of the key used for this node's cache|
+
+## NodeSynchronizationStatus
+
+NodeSynchronizationStatus stores the status of a node
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`waiting`|`string`|Waiting is the name of the lock that this node is waiting for|
 
 ## MutexStatus
 
@@ -3357,6 +3395,8 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
 
@@ -3365,6 +3405,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 |:----------:|:----------:|---------------|
 |`none`|[`NoneStrategy`](#nonestrategy)|_No description available_|
 |`tar`|[`TarStrategy`](#tarstrategy)|_No description available_|
+|`zip`|[`ZipStrategy`](#zipstrategy)|_No description available_|
 
 ## ArtifactoryArtifact
 
@@ -3572,6 +3613,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -3715,6 +3758,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`loops-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-dag.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`parallelism-nested-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/parameter-aggregation-dag.yaml)
@@ -3834,6 +3879,8 @@ Sequence expands a workflow step into numeric range
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo/blob/master/examples/work-avoidance.yaml)
 </details>
 
@@ -3877,6 +3924,8 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 
 - [`artifact-passing-subpath.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-passing-subpath.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo/blob/master/examples/output-artifact-s3.yaml)
 </details>
 
@@ -3895,6 +3944,10 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## ZipStrategy
+
+ZipStrategy will unzip zipped input artifacts
 
 ## Header
 
@@ -4088,6 +4141,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
@@ -5269,6 +5324,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -5815,6 +5872,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-wait-wf.yaml)
 
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 
 - [`nested-workflow.yaml`](https://github.com/argoproj/argo/blob/master/examples/nested-workflow.yaml)
@@ -6283,6 +6342,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops-sequence.yaml)
 
 - [`loops.yaml`](https://github.com/argoproj/argo/blob/master/examples/loops.yaml)
+
+- [`map-reduce.yaml`](https://github.com/argoproj/argo/blob/master/examples/map-reduce.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 

@@ -6,7 +6,6 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +58,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		RedirectURL:  "https://dummy",
 	}
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
@@ -85,7 +84,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 		RedirectURL:  "https://dummy",
 	}
 	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 }
@@ -99,6 +98,6 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 		RedirectURL:  "https://dummy",
 	}
 	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
-	require.Error(t, err)
+	assert.Error(t, err)
 	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }

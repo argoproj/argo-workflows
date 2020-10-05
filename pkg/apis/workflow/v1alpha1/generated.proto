@@ -26,6 +26,8 @@ message ArchiveStrategy {
   optional TarStrategy tar = 1;
 
   optional NoneStrategy none = 2;
+
+  optional ZipStrategy zip = 3;
 }
 
 // Arguments to a template
@@ -629,6 +631,9 @@ message NodeStatus {
   // Time at which this node completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
+  // EstimatedDuration in seconds.
+  optional int64 estimatedDuration = 24;
+
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
   map<string, int64> resourcesDuration = 21;
 
@@ -666,6 +671,15 @@ message NodeStatus {
 
   // MemoizationStatus holds information about cached nodes
   optional MemoizationStatus memoizationStatus = 23;
+
+  // SynchronizationStatus is the synchronization status of the node
+  optional NodeSynchronizationStatus synchronizationStatus = 25;
+}
+
+// NodeSynchronizationStatus stores the status of a node
+message NodeSynchronizationStatus {
+  // Waiting is the name of the lock that this node is waiting for
+  optional string waiting = 1;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -1145,6 +1159,7 @@ message TemplateRef {
 
   // RuntimeResolution skips validation at creation time.
   // By enabling this option, you can create the referred workflow template before the actual runtime.
+  // DEPRECATED: This value is not used anymore and is ignored
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
@@ -1436,6 +1451,9 @@ message WorkflowStatus {
   // Time at which this workflow completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
 
+  // EstimatedDuration in seconds.
+  optional int64 estimatedDuration = 16;
+
   // A human readable message indicating details about why the workflow is in this condition.
   optional string message = 4;
 
@@ -1543,5 +1561,9 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
+}
+
+// ZipStrategy will unzip zipped input artifacts
+message ZipStrategy {
 }
 
