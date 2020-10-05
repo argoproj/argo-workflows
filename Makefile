@@ -1,4 +1,8 @@
-SHELL=/bin/bash -o pipefail
+export SHELL:=/bin/bash
+export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
+
+# This means we only one shell, and therefore you can use `trap` to clean-up
+.ONESHELL:
 
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64
@@ -96,8 +100,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-MOCK_FILES       := $(shell find persist server workflow pkg -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
-UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
+NEWEST_CLI_DOC    := $(shell ls -t docs/cli | head -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
@@ -132,19 +135,13 @@ status:
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
-ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
-	# Get UI dependencies
-	@mkdir -p ui/node_modules
-ifeq ($(STATIC_FILES),true)
-	JOBS=max yarn --cwd ui install
-endif
-	@mkdir -p ui/dist
-	touch ui/dist/node_modules.marker
-
-ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
+ui/dist/app/index.html: $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(STATIC_FILES),true)
+	# `yarn install` is fast (~2s), so you can call it safely.
+	JOBS=max yarn --cwd ui install
+	# `yarn build` is slow, so we guard it with a recency check.
 	JOBS=max yarn --cwd ui build
 else
 	echo "Built without static files" > ui/dist/app/index.html
@@ -231,6 +228,15 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 # generation
 
+.PHONY: codegen
+codegen: proto swagger manifests gogenerate docs
+
+.PHONY: gogenerate
+gogenerate: $(GOPATH)/bin/mockery $(GOPATH)/bin/easyjson
+	# `go generate ./...` takes around 10s, so we only run on specific packages.
+	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor ./pkg/apis/workflow/v1alpha1
+
+
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
 	tar zxvf dist/mockery.tar.gz mockery
@@ -239,40 +245,49 @@ $(GOPATH)/bin/mockery:
 	mv mockery $(GOPATH)/bin/mockery
 	mockery -version
 
-.PHONY: mocks
-mocks: $(GOPATH)/bin/mockery
-	./hack/update-mocks.sh $(MOCK_FILES)
-
-.PHONY: codegen
-codegen: status proto swagger manifests mocks docs $(GOPATH)/bin/easyjson
-	go generate ./...
-
 .PHONY: crds
 crds: $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
 
-# you cannot install a specific version using `go install`, so we do this business
-.PHONY: tools
-tools:
+$(GOPATH)/bin/controller-gen:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+
+$(GOPATH)/bin/go-to-protobuf:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+
+$(GOPATH)/bin/protoc-gen-gogo:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+
+$(GOPATH)/bin/protoc-gen-gogofast:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+
+$(GOPATH)/bin/protoc-gen-grpc-gateway:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+
+$(GOPATH)/bin/protoc-gen-swagger:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
+$(GOPATH)/bin/openapi-gen:
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+
+$(GOPATH)/bin/swagger:
+	trap 'rm -Rf vendor' EXIT
 	go mod vendor
 	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
-	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
-	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
-	rm -Rf vendor
-
-$(GOPATH)/bin/controller-gen: tools
-$(GOPATH)/bin/go-to-protobuf: tools
-$(GOPATH)/bin/protoc-gen-gogo: tools
-$(GOPATH)/bin/protoc-gen-gogofast: tools
-$(GOPATH)/bin/protoc-gen-grpc-gateway: tools
-$(GOPATH)/bin/protoc-gen-swagger: tools
-$(GOPATH)/bin/openapi-gen: tools
-$(GOPATH)/bin/swagger: tools
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
@@ -442,8 +457,9 @@ pkg/apiclient/workflow/workflow.swagger.json: proto
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
+pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
+	go run ./hack/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
@@ -456,24 +472,20 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
-dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
+	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
-/usr/local/bin/swagger-markdown:
-	npm install -g swagger-markdown
-
-docs/swagger.md: api/openapi-spec/swagger.json /usr/local/bin/swagger-markdown
-	swagger-markdown  -i api/openapi-spec/swagger.json -o docs/swagger.md
-	rm -rf package-lock.json package.json node_modules/
-
 .PHONY: docs
-docs: api/openapi-spec/swagger.json docs/swagger.md
+docs: api/openapi-spec/swagger.json $(NEWEST_CLI_DOC)
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
+
+$(NEWEST_CLI_DOC): $(CLI_PKGS) server/static/files.go
+	go run ./hack/cli
 
 # pre-push
 
