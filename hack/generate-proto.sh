@@ -3,9 +3,9 @@ set -eu -o pipefail
 
 trap 'rm -Rf vendor' EXIT
 
-newest_output=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated' | head -n1)
+newest_input=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated' | head -n1)
 
-if [ "$newest_output" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
+if [ "$newest_input" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
   echo "running go-to-protobuf"
   [ -e vendor ] || go mod vendor
   ${GOPATH}/bin/go-to-protobuf \
@@ -14,6 +14,7 @@ if [ "$newest_output" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
     --apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
     --proto-import ./vendor 2>&1 |
     grep -v 'warning: Import .* is unused'
+  touch pkg/apis/workflow/v1alpha1/generated.proto
 else
   echo "skipping go-to-protobuf: no changes"
 fi
@@ -36,6 +37,9 @@ find pkg -name '*.proto' | while read -r f; do
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $f 2>&1 |
       grep -v 'warning: Import .* is unused'
+    touch "${f/.proto/.pb.go}"
+    touch "${f/.proto/.swagger.json}"
+    [ -e ${f/.proto/.pb.gw.go} ] && touch "${f/.proto/.pb.gw.go}"
   else
     echo "skipping protoc $f: no changes"
   fi
