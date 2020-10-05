@@ -746,6 +746,7 @@ func (vgc VolumeClaimGC) GetStrategy() VolumeClaimGCStrategy {
 type ArchiveStrategy struct {
 	Tar  *TarStrategy  `json:"tar,omitempty" protobuf:"bytes,1,opt,name=tar"`
 	None *NoneStrategy `json:"none,omitempty" protobuf:"bytes,2,opt,name=none"`
+	Zip  *ZipStrategy  `json:"zip,omitempty" protobuf:"bytes,3,opt,name=zip"`
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
@@ -754,6 +755,9 @@ type TarStrategy struct {
 	// Defaults to gzip.DefaultCompression.
 	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
 }
+
+// ZipStrategy will unzip zipped input artifacts
+type ZipStrategy struct{}
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to

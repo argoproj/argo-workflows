@@ -3405,6 +3405,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 |:----------:|:----------:|---------------|
 |`none`|[`NoneStrategy`](#nonestrategy)|_No description available_|
 |`tar`|[`TarStrategy`](#tarstrategy)|_No description available_|
+|`zip`|[`ZipStrategy`](#zipstrategy)|_No description available_|
 
 ## ArtifactoryArtifact
 
@@ -3960,6 +3961,10 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## ZipStrategy
+
+ZipStrategy will unzip zipped input artifacts
 
 ## Header
 

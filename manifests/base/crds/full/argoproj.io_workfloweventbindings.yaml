@@ -48,6 +48,8 @@ spec:
                                     format: int32
                                     type: integer
                                 type: object
+                              zip:
+                                type: object
                             type: object
                           archiveLogs:
                             type: boolean
