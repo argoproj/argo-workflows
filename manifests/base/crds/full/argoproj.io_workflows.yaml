@@ -609,17 +609,17 @@ spec:
                   items:
                     properties:
                       default:
-                        type: number
+                        type: string
                       globalName:
                         type: string
                       name:
                         type: string
                       value:
-                        type: number
+                        type: string
                       valueFrom:
                         properties:
                           default:
-                            type: number
+                            type: string
                           event:
                             type: string
                           jqFilter:
@@ -1767,17 +1767,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -2652,17 +2652,17 @@ spec:
                                   items:
                                     properties:
                                       default:
-                                        type: number
+                                        type: string
                                       globalName:
                                         type: string
                                       name:
                                         type: string
                                       value:
-                                        type: number
+                                        type: string
                                       valueFrom:
                                         properties:
                                           default:
-                                            type: number
+                                            type: string
                                           event:
                                             type: string
                                           jqFilter:
@@ -3610,17 +3610,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -4054,17 +4054,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -7034,17 +7034,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -7395,17 +7395,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -7783,17 +7783,17 @@ spec:
                   items:
                     properties:
                       default:
-                        type: number
+                        type: string
                       globalName:
                         type: string
                       name:
                         type: string
                       value:
-                        type: number
+                        type: string
                       valueFrom:
                         properties:
                           default:
-                            type: number
+                            type: string
                           event:
                             type: string
                           jqFilter:
@@ -9265,17 +9265,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -10150,17 +10150,17 @@ spec:
                                   items:
                                     properties:
                                       default:
-                                        type: number
+                                        type: string
                                       globalName:
                                         type: string
                                       name:
                                         type: string
                                       value:
-                                        type: number
+                                        type: string
                                       valueFrom:
                                         properties:
                                           default:
-                                            type: number
+                                            type: string
                                           event:
                                             type: string
                                           jqFilter:
@@ -11108,17 +11108,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -11552,17 +11552,17 @@ spec:
                         items:
                           properties:
                             default:
-                              type: number
+                              type: string
                             globalName:
                               type: string
                             name:
                               type: string
                             value:
-                              type: number
+                              type: string
                             valueFrom:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 event:
                                   type: string
                                 jqFilter:
@@ -14001,17 +14001,17 @@ spec:
                       items:
                         properties:
                           default:
-                            type: number
+                            type: string
                           globalName:
                             type: string
                           name:
                             type: string
                           value:
-                            type: number
+                            type: string
                           valueFrom:
                             properties:
                               default:
-                                type: number
+                                type: string
                               event:
                                 type: string
                               jqFilter:
@@ -15159,17 +15159,17 @@ spec:
                             items:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 globalName:
                                   type: string
                                 name:
                                   type: string
                                 value:
-                                  type: number
+                                  type: string
                                 valueFrom:
                                   properties:
                                     default:
-                                      type: number
+                                      type: string
                                     event:
                                       type: string
                                     jqFilter:
@@ -16044,17 +16044,17 @@ spec:
                                       items:
                                         properties:
                                           default:
-                                            type: number
+                                            type: string
                                           globalName:
                                             type: string
                                           name:
                                             type: string
                                           value:
-                                            type: number
+                                            type: string
                                           valueFrom:
                                             properties:
                                               default:
-                                                type: number
+                                                type: string
                                               event:
                                                 type: string
                                               jqFilter:
@@ -17002,17 +17002,17 @@ spec:
                             items:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 globalName:
                                   type: string
                                 name:
                                   type: string
                                 value:
-                                  type: number
+                                  type: string
                                 valueFrom:
                                   properties:
                                     default:
-                                      type: number
+                                      type: string
                                     event:
                                       type: string
                                     jqFilter:
@@ -17446,17 +17446,17 @@ spec:
                             items:
                               properties:
                                 default:
-                                  type: number
+                                  type: string
                                 globalName:
                                   type: string
                                 name:
                                   type: string
                                 value:
-                                  type: number
+                                  type: string
                                 valueFrom:
                                   properties:
                                     default:
-                                      type: number
+                                      type: string
                                     event:
                                       type: string
                                     jqFilter:
