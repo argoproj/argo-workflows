@@ -158,6 +158,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
+		maxStackDepth:        defaultMaxStackDepth,
 	}
 	controller.podInformer = controller.newPodInformer()
 	return cancel, controller
