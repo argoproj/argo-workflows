@@ -52,8 +52,8 @@ func TestSwagger(t *testing.T) {
 	t.Run("io.argoproj.workflow.v1alpha1.Parameter", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Parameter"].(obj)
 		properties := definition["properties"].(obj)
-		assert.Equal(t, "#/definitions/io.argoproj.workflow.v1alpha1.Int64OrString", properties["default"].(obj)["$ref"])
-		assert.Equal(t, "#/definitions/io.argoproj.workflow.v1alpha1.Int64OrString", properties["value"].(obj)["$ref"])
+		assert.Equal(t, "string", properties["default"].(obj)["type"])
+		assert.Equal(t, "string", properties["value"].(obj)["type"])
 	})
 	t.Run("io.argoproj.workflow.v1alpha1.Histogram", func(t *testing.T) {
 		definition := definitions["io.argoproj.workflow.v1alpha1.Histogram"].(obj)

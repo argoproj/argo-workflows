@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,7 +10,7 @@ import (
 func TestInt64OrString(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		x := Int64OrStringPtr("")
-		data, err := x.MarshalJSON()
+		data, err := json.Marshal(x)
 		if assert.NoError(t, err) {
 			assert.Equal(t, `""`, string(data), "string value has quotes")
 		}
@@ -22,7 +23,7 @@ func TestInt64OrString(t *testing.T) {
 	})
 	t.Run("String", func(t *testing.T) {
 		x := Int64OrStringPtr("my-string")
-		data, err := x.MarshalJSON()
+		data, err := json.Marshal(x)
 		if assert.NoError(t, err) {
 			assert.Equal(t, `"my-string"`, string(data), "string value has quotes")
 		}
@@ -34,10 +35,10 @@ func TestInt64OrString(t *testing.T) {
 		assert.Equal(t, "my-string", i.String(), "string value does not have quotes")
 	})
 	t.Run("StringNumber", func(t *testing.T) {
-		x := Int64OrStringPtr("1")
-		data, err := x.MarshalJSON()
+		x := Int64OrStringPtr(1)
+		data, err := json.Marshal(x)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "1", string(data), "number value has quotes")
+			assert.Equal(t, "1", string(data), "number value does not have quotes")
 		}
 		i := Int64OrStringPtr("")
 		err = i.UnmarshalJSON([]byte(`"1"`))
@@ -48,7 +49,7 @@ func TestInt64OrString(t *testing.T) {
 	})
 	t.Run("LargeNumber", func(t *testing.T) {
 		x := ParseInt64OrString(881217801864)
-		data, err := x.MarshalJSON()
+		data, err := json.Marshal(x)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "881217801864", string(data))
 		}

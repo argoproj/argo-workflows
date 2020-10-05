@@ -47,7 +47,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Header":                      schema_pkg_apis_workflow_v1alpha1_Header(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram":                   schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":                      schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Int64OrString":               schema_pkg_apis_workflow_v1alpha1_Int64OrString(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                        schema_pkg_apis_workflow_v1alpha1_Item(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Link":                        schema_pkg_apis_workflow_v1alpha1_Link(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MemoizationStatus":           schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
@@ -1671,17 +1670,6 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_Int64OrString(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type:   Int64OrString{}.OpenAPISchemaType(),
-				Format: Int64OrString{}.OpenAPISchemaFormat(),
-			},
-		},
-	}
-}
-
 func schema_pkg_apis_workflow_v1alpha1_Item(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2423,13 +2411,15 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default is the default value to use for an input parameter if a value was not supplied",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Int64OrString"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Int64OrString"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"valueFrom": {
@@ -2450,7 +2440,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Int64OrString", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"},
 	}
 }
 
@@ -4120,14 +4110,15 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default specifies a value to be used if retrieving the value from the specified source fails",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Int64OrString"),
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Int64OrString", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuppliedValueFrom"},
 	}
 }
 

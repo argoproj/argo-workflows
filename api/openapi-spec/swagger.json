@@ -2773,10 +2773,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Int64OrString": {
-      "type": "string",
-      "format": "int-or-string"
-    },
     "io.argoproj.workflow.v1alpha1.Item": {
       "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number"
     },
@@ -3185,7 +3181,7 @@
       "properties": {
         "default": {
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Int64OrString"
+          "type": "string"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -3197,7 +3193,7 @@
         },
         "value": {
           "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Int64OrString"
+          "type": "string"
         },
         "valueFrom": {
           "description": "ValueFrom is the source for the output parameter's value",
@@ -4087,7 +4083,7 @@
       "properties": {
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Int64OrString"
+          "type": "string"
         },
         "event": {
           "description": "Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`",

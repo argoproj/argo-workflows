@@ -6,15 +6,10 @@ import (
 	"strconv"
 )
 
-// +protobuf=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=string
-type Int64OrString struct {
-	Value string `json:"-" protobuf:"bytes,1,opt,name=value"`
-}
+type Int64OrString string
 
 func ParseInt64OrString(val interface{}) Int64OrString {
-	return Int64OrString{Value: fmt.Sprintf("%v", val)}
+	return Int64OrString(fmt.Sprintf("%v", val))
 }
 
 func Int64OrStringPtr(val interface{}) *Int64OrString {
@@ -24,33 +19,25 @@ func Int64OrStringPtr(val interface{}) *Int64OrString {
 
 func (i *Int64OrString) UnmarshalJSON(value []byte) error {
 	if value[0] == '"' {
-		x := ""
-		err := json.Unmarshal(value, &x)
-		i.Value = x
+		v := ""
+		err := json.Unmarshal(value, &v)
+		*i = Int64OrString(v)
 		return err
 	}
-	x := 0
-	err := json.Unmarshal(value, &x)
-	i.Value = strconv.Itoa(x)
+	v := 0
+	err := json.Unmarshal(value, &v)
+	*i = Int64OrString(strconv.Itoa(v))
 	return err
 }
 
 func (i Int64OrString) MarshalJSON() ([]byte, error) {
-	intVal, err := strconv.ParseInt(i.Value, 10, 64)
+	v, err := strconv.ParseInt(string(i), 10, 64)
 	if err != nil {
-		return json.Marshal(i.Value)
+		return json.Marshal(string(i))
 	}
-	return json.Marshal(intVal)
-}
-
-func (i Int64OrString) OpenAPISchemaType() []string {
-	return []string{"string"}
-}
-
-func (i Int64OrString) OpenAPISchemaFormat() string {
-	return "int-or-string"
+	return json.Marshal(v)
 }
 
 func (i Int64OrString) String() string {
-	return i.Value
+	return string(i)
 }

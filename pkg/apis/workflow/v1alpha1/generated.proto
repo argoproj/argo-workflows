@@ -480,13 +480,6 @@ message Inputs {
   repeated Artifact artifacts = 2;
 }
 
-// +protobuf=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=string
-message Int64OrString {
-  optional string value = 1;
-}
-
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
@@ -748,11 +741,11 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
-  optional Int64OrString default = 2;
+  optional string default = 2;
 
   // Value is the literal value to use for the parameter.
   // If specified in the context of an input parameter, the value takes precedence over any passed values
-  optional Int64OrString value = 3;
+  optional string value = 3;
 
   // ValueFrom is the source for the output parameter's value
   optional ValueFrom valueFrom = 4;
@@ -1206,7 +1199,7 @@ message ValueFrom {
   optional SuppliedValueFrom supplied = 6;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
-  optional Int64OrString default = 5;
+  optional string default = 5;
 }
 
 message Version {
