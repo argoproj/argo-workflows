@@ -26,6 +26,8 @@ message ArchiveStrategy {
   optional TarStrategy tar = 1;
 
   optional NoneStrategy none = 2;
+
+  optional ZipStrategy zip = 3;
 }
 
 // Arguments to a template
@@ -669,6 +671,15 @@ message NodeStatus {
 
   // MemoizationStatus holds information about cached nodes
   optional MemoizationStatus memoizationStatus = 23;
+
+  // SynchronizationStatus is the synchronization status of the node
+  optional NodeSynchronizationStatus synchronizationStatus = 25;
+}
+
+// NodeSynchronizationStatus stores the status of a node
+message NodeSynchronizationStatus {
+  // Waiting is the name of the lock that this node is waiting for
+  optional string waiting = 1;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -1550,5 +1561,9 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
+}
+
+// ZipStrategy will unzip zipped input artifacts
+message ZipStrategy {
 }
 

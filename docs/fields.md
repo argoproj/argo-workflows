@@ -1999,6 +1999,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
+|`synchronizationStatus`|[`NodeSynchronizationStatus`](#nodesynchronizationstatus)|SynchronizationStatus is the synchronization status of the node|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
@@ -3335,6 +3336,15 @@ MemoizationStatus is the status of this memoized node
 |`hit`|`boolean`|Hit indicates whether this node was created from a cache entry|
 |`key`|`string`|Key is the name of the key used for this node's cache|
 
+## NodeSynchronizationStatus
+
+NodeSynchronizationStatus stores the status of a node
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`waiting`|`string`|Waiting is the name of the lock that this node is waiting for|
+
 ## MutexStatus
 
 MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
@@ -3395,6 +3405,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 |:----------:|:----------:|---------------|
 |`none`|[`NoneStrategy`](#nonestrategy)|_No description available_|
 |`tar`|[`TarStrategy`](#tarstrategy)|_No description available_|
+|`zip`|[`ZipStrategy`](#zipstrategy)|_No description available_|
 
 ## ArtifactoryArtifact
 
@@ -3933,6 +3944,10 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## ZipStrategy
+
+ZipStrategy will unzip zipped input artifacts
 
 ## Header
 
