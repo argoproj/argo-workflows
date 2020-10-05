@@ -73,6 +73,8 @@ type WorkflowExecutor struct {
 	errors []error
 }
 
+//go:generate mockery -name ContainerRuntimeExecutor
+
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
