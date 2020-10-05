@@ -28,7 +28,7 @@ Within a cluster can use instance ID to run N Argo instances within a cluster.
 
 Create one namespace for each Argo, e.g. `argo-i1`, `argo-i2`:.
 
-Edit [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) for each namespace to set an instance ID.
+Edit [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml) for each namespace to set an instance ID.
 
 ```
 apiVersion: v1
@@ -48,3 +48,9 @@ argo --instanceid i1 submit my-wf.yaml
 ```
 
 You do not need to have one instance ID per namespace, you could have many or few.
+
+### Maximum Recursion Depth
+
+In order to protect users against infinite recursion, the controller has a default maximum recursion depth of 150 calls to templates.
+If you need to increase this value, you may do so in the [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml) under
+`maxStackDepth`

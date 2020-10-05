@@ -5333,7 +5333,7 @@ func TestMaxDepth(t *testing.T) {
 	node := woc.wf.Status.Nodes["hello-world-713168755"]
 	if assert.NotNil(t, node) {
 		assert.Equal(t, wfv1.NodeError, node.Phase)
-		assert.Equal(t, "Maximum recursion depth exceeded", node.Message)
+		assert.Contains(t, node.Message, "Maximum recursion depth exceeded")
 	}
 
 	controller.maxStackDepth = 3

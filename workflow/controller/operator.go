@@ -38,6 +38,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 	errorsutil "github.com/argoproj/argo/util/errors"
+	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
@@ -113,7 +114,7 @@ var (
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
-	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, "Maximum recursion depth exceeded")
+	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. To increase this maximum value see %s", help.ConfigureMaximumRecursionDepth))
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
