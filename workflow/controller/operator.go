@@ -134,7 +134,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	woc := wfOperationCtx{
-		wf:      wf,
+		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
 		orig:    wf,
 		execWf:  wf,
 		updated: false,
@@ -3071,9 +3071,7 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	wftSpec := specHolder.GetWorkflowSpec()
-
-	return wftSpec, nil
+	return specHolder.GetWorkflowSpec(), nil
 }
 
 func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {
