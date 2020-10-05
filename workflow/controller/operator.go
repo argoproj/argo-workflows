@@ -913,7 +913,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// See processNodeRetries for more details.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			woc.wf.Status.Nodes[nodeID] = node
-			woc.log.Warnf("pod %s deleted", nodeID)
+			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+				WithField("node", node.Name).Error("Pod for node deleted")
 			woc.updated = true
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
@@ -1052,6 +1053,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newPhase = wfv1.NodeSucceeded
 		} else {
 			newPhase, message = inferFailedReason(pod)
+			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+				WithField("pod", pod.Name).Infof("Pod failed")
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
@@ -1059,6 +1062,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			// pod is being terminated
 			newPhase = wfv1.NodeError
 			message = "pod deleted during operation"
+			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+				WithField("pod", pod.Name).Error(message)
 		} else {
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
@@ -1088,7 +1093,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
-		log.Error(message)
+		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+			WithField("pod", pod.Name).Error(message)
 	}
 
 	if newDaemonStatus != nil {
@@ -1115,7 +1121,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		var outputs wfv1.Outputs
 		err := json.Unmarshal([]byte(outputStr), &outputs)
 		if err != nil {
-			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
+			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
+				WithField("pod", pod.Name).Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
 			node.Phase = wfv1.NodeError
 		} else {
 			node.Outputs = &outputs
