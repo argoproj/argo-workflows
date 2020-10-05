@@ -54,7 +54,7 @@ import (
 )
 
 const enoughTimeForInformerSync = 1 * time.Second
-const defaultMaxStackDepth = 500
+const defaultMaxStackDepth = 150
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {

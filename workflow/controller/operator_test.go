@@ -5277,3 +5277,81 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		}
 	})
 }
+
+var maxDepth = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: diamond
+  templates:
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: C}]
+      - name: D
+        dependencies: [B, C]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: D}]
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+`
+
+func TestMaxDepth(t *testing.T) {
+	wf := unmarshalWF(maxDepth)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	controller.maxStackDepth = 2
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes["hello-world-713168755"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodeError, node.Phase)
+		assert.Equal(t, "Maximum recursion depth exceeded", node.Message)
+	}
+
+	controller.maxStackDepth = 3
+	woc = newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	node = woc.wf.Status.Nodes["hello-world-713168755"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	}
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+}
