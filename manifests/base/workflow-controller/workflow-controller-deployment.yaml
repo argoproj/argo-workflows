@@ -24,6 +24,5 @@ spec:
             - argoproj/argoexec:latest
       securityContext:
         runAsNonRoot: true
-        runAsUser: 8737
       nodeSelector:
         kubernetes.io/os: linux

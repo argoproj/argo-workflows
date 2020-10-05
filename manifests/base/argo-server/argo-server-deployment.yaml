@@ -28,6 +28,5 @@ spec:
             periodSeconds: 20
       securityContext:
         runAsNonRoot: true
-        runAsUser: 8737
       nodeSelector:
         kubernetes.io/os: linux

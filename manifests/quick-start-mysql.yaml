@@ -650,7 +650,6 @@ spec:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
-        runAsUser: 8737
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -726,7 +725,6 @@ spec:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
-        runAsUser: 8737
       serviceAccountName: argo
 ---
 apiVersion: v1
