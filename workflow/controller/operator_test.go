@@ -4030,7 +4030,7 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	}
 	assert.NotNil(t, outputs)
 	assert.Equal(t, "hello", outputs.Parameters[0].Name)
-	assert.Equal(t, sampleOutput, *outputs.Parameters[0].Value)
+	assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.String())
 }
 
 func TestConfigMapCacheLoadNilOutputs(t *testing.T) {

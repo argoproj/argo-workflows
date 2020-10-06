@@ -49,7 +49,7 @@ func TestConfigMapCacheLoadHit(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.Len(t, outputs.Parameters, 1) {
 		assert.Equal(t, "hello", outputs.Parameters[0].Name)
-		assert.Equal(t, "foobar", outputs.Parameters[0].Value.String())
+		assert.Equal(t, sampleOutput, outputs.Parameters[0].Value.String())
 	}
 }
 
