@@ -662,7 +662,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay)
+						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -675,7 +675,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
 					if err == nil {
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay)
+						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(new)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -686,7 +686,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay)
+						wfc.wfQueue.Add(key)
 						wfc.throttler.Remove(key)
 					}
 				},
