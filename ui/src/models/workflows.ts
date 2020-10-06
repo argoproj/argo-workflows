@@ -565,10 +565,6 @@ export interface WorkflowStatus {
     estimatedDuration?: number;
 
     /**
-     * Progress as numerator/denominator.
-     */
-    progress?: string;
-    /**
      * A human readable message indicating details about why the workflow is in this condition.
      */
     message: string;
