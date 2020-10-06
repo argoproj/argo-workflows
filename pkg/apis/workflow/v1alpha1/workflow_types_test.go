@@ -224,18 +224,16 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 }
 
 func TestGetTTLStrategy(t *testing.T) {
-	var ten int32 = 10
-	var twenty int32 = 20
 
-	spec := WorkflowSpec{TTLSecondsAfterFinished: &ten}
+	spec := WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}
 	ttl := spec.GetTTLStrategy()
-	assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
+	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
 
-	spec = WorkflowSpec{TTLSecondsAfterFinished: &ten, TTLStrategy: &TTLStrategy{SecondsAfterCompletion: &twenty}}
+	spec = WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10), TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
 	ttl = spec.GetTTLStrategy()
-	assert.Equal(t, twenty, *ttl.SecondsAfterCompletion)
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
 
-	spec = WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: &twenty}}
+	spec = WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
 	ttl = spec.GetTTLStrategy()
-	assert.Equal(t, twenty, *ttl.SecondsAfterCompletion)
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
 }
