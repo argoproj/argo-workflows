@@ -38,7 +38,7 @@ func TestInt64OrString(t *testing.T) {
 		x := Int64OrStringPtr(1)
 		data, err := json.Marshal(x)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "1", string(data), "number value does not have quotes")
+			assert.Equal(t, `"1"`, string(data), "number value has quotes")
 		}
 		i := Int64OrStringPtr("")
 		err = i.UnmarshalJSON([]byte(`"1"`))
@@ -51,7 +51,7 @@ func TestInt64OrString(t *testing.T) {
 		x := ParseInt64OrString(881217801864)
 		data, err := json.Marshal(x)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "881217801864", string(data))
+			assert.Equal(t, `"881217801864"`, string(data))
 		}
 		i := Int64OrStringPtr("")
 		err = i.UnmarshalJSON([]byte("881217801864"))

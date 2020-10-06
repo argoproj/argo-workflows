@@ -31,11 +31,7 @@ func (i *Int64OrString) UnmarshalJSON(value []byte) error {
 }
 
 func (i Int64OrString) MarshalJSON() ([]byte, error) {
-	v, err := strconv.ParseInt(string(i), 10, 64)
-	if err != nil {
-		return json.Marshal(string(i))
-	}
-	return json.Marshal(v)
+	return json.Marshal(string(i))
 }
 
 func (i Int64OrString) String() string {
