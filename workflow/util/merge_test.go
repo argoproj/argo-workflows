@@ -46,5 +46,5 @@ func TestMergeWorkflows(t *testing.T) {
 	assert.Equal(t, "start", targetWf.Spec.Entrypoint)
 	assert.Equal(t, "argo1", targetWf.Spec.ServiceAccountName)
 	assert.Equal(t, "message", targetWf.Spec.Arguments.Parameters[0].Name)
-	assert.Equal(t, "patch", *targetWf.Spec.Arguments.Parameters[0].Value)
+	assert.Equal(t, "patch", targetWf.Spec.Arguments.Parameters[0].Value.String())
 }
