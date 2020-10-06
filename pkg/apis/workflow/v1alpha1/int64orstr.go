@@ -8,7 +8,7 @@ import (
 
 // This is similar to `intstr.IntOrString` (which should be called `intstr.Int32OrString`!!).
 // It intended just to tolerate unmarshalling int64. Therefore:
-// 
+//
 // * It's JSON type is just string, not `int-or-string`.
 // * It will unmarshall int64 (rather than only int32) and represents it as string.
 // * It will marshall back to string - marshalling is not symmetric.
