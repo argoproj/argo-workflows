@@ -2037,12 +2037,12 @@ Represents a Ceph Filesystem mount that lasts the lifetime of a pod Cephfs volum
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| monitors | [ string ] | Required: Monitors is a collection of Ceph monitors More info: <https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it> | Yes |
+| monitors | [ string ] | Required: Monitors is a collection of Ceph monitors More info: <https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it> | Yes |
 | path | string | Optional: Used as the mounted root, rather than the full Ceph tree, default is / | No |
-| readOnly | boolean | Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: <https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it> | No |
-| secretFile | string | Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret More info: <https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it> | No |
-| secretRef | [io.k8s.api.core.v1.LocalObjectReference](#io.k8s.api.core.v1.localobjectreference) | Optional: SecretRef is reference to the authentication secret for User, default is empty. More info: <https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it> | No |
-| user | string | Optional: User is the rados user name, default is admin More info: <https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it> | No |
+| readOnly | boolean | Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: <https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it> | No |
+| secretFile | string | Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret More info: <https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it> | No |
+| secretRef | [io.k8s.api.core.v1.LocalObjectReference](#io.k8s.api.core.v1.localobjectreference) | Optional: SecretRef is reference to the authentication secret for User, default is empty. More info: <https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it> | No |
+| user | string | Optional: User is the rados user name, default is admin More info: <https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it> | No |
 
 #### io.k8s.api.core.v1.CinderVolumeSource
 
@@ -2050,10 +2050,10 @@ Represents a cinder volume resource in Openstack. A Cinder volume must exist bef
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| fsType | string | Filesystem type to mount. Must be a filesystem type supported by the host operating system. Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. More info: <https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md> | No |
-| readOnly | boolean | Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: <https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md> | No |
+| fsType | string | Filesystem type to mount. Must be a filesystem type supported by the host operating system. Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. More info: <https://examples.k8s.io/mysql-cinder-pd/README.md> | No |
+| readOnly | boolean | Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: <https://examples.k8s.io/mysql-cinder-pd/README.md> | No |
 | secretRef | [io.k8s.api.core.v1.LocalObjectReference](#io.k8s.api.core.v1.localobjectreference) | Optional: points to a secret object containing parameters used to connect to OpenStack. | No |
-| volumeID | string | volume id used to identify the volume in cinder More info: <https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md> | Yes |
+| volumeID | string | volume id used to identify the volume in cinder. More info: <https://examples.k8s.io/mysql-cinder-pd/README.md> | Yes |
 
 #### io.k8s.api.core.v1.ConfigMapEnvSource
 
@@ -2120,6 +2120,7 @@ A single application container that you want to run within a pod.
 | readinessProbe | [io.k8s.api.core.v1.Probe](#io.k8s.api.core.v1.probe) | Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: <https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes> | No |
 | resources | [io.k8s.api.core.v1.ResourceRequirements](#io.k8s.api.core.v1.resourcerequirements) | Compute Resources required by this container. Cannot be updated. More info: <https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/> | No |
 | securityContext | [io.k8s.api.core.v1.SecurityContext](#io.k8s.api.core.v1.securitycontext) | Security options the pod should run with. More info: <https://kubernetes.io/docs/concepts/policy/security-context/> More info: <https://kubernetes.io/docs/tasks/configure-pod-container/security-context/> | No |
+| startupProbe | [io.k8s.api.core.v1.Probe](#io.k8s.api.core.v1.probe) | StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: <https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes> | No |
 | stdin | boolean | Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false. | No |
 | stdinOnce | boolean | Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false | No |
 | terminationMessagePath | string | Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated. | No |
@@ -2205,7 +2206,7 @@ EnvVarSource represents a source for the value of an EnvVar.
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | configMapKeyRef | [io.k8s.api.core.v1.ConfigMapKeySelector](#io.k8s.api.core.v1.configmapkeyselector) | Selects a key of a ConfigMap. | No |
-| fieldRef | [io.k8s.api.core.v1.ObjectFieldSelector](#io.k8s.api.core.v1.objectfieldselector) | Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP. | No |
+| fieldRef | [io.k8s.api.core.v1.ObjectFieldSelector](#io.k8s.api.core.v1.objectfieldselector) | Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs. | No |
 | resourceFieldRef | [io.k8s.api.core.v1.ResourceFieldSelector](#io.k8s.api.core.v1.resourcefieldselector) | Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported. | No |
 | secretKeyRef | [io.k8s.api.core.v1.SecretKeySelector](#io.k8s.api.core.v1.secretkeyselector) | Selects a key of a secret in the pod's namespace | No |
 
@@ -2216,15 +2217,15 @@ Event is a report of an event somewhere in the cluster.
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | action | string | What action was taken/failed regarding to the Regarding object. | No |
-| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#resources> | No |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
 | count | integer | The number of times this event has occurred. | No |
 | eventTime | [io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime](#io.k8s.apimachinery.pkg.apis.meta.v1.microtime) | Time when this Event was first observed. | No |
 | firstTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | The time at which the event was first recorded. (Time of server receipt is in TypeMeta.) | No |
 | involvedObject | [io.k8s.api.core.v1.ObjectReference](#io.k8s.api.core.v1.objectreference) | The object that this event is about. | Yes |
-| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
 | lastTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | The time at which the most recent occurrence of this event was recorded. | No |
 | message | string | A human-readable description of the status of this operation. | No |
-| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | Standard object's metadata. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata> | Yes |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | Standard object's metadata. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata> | Yes |
 | reason | string | This should be a short, machine understandable string that gives the reason for the transition into the object's current status. | No |
 | related | [io.k8s.api.core.v1.ObjectReference](#io.k8s.api.core.v1.objectreference) | Optional secondary object for more complex actions. | No |
 | reportingComponent | string | Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`. | No |
@@ -2324,9 +2325,9 @@ Represents a Glusterfs mount that lasts the lifetime of a pod. Glusterfs volumes
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| endpoints | string | EndpointsName is the endpoint name that details Glusterfs topology. More info: <https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md#create-a-pod> | Yes |
-| path | string | Path is the Glusterfs volume path. More info: <https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md#create-a-pod> | Yes |
-| readOnly | boolean | ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions. Defaults to false. More info: <https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md#create-a-pod> | No |
+| endpoints | string | EndpointsName is the endpoint name that details Glusterfs topology. More info: <https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod> | Yes |
+| path | string | Path is the Glusterfs volume path. More info: <https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod> | Yes |
+| readOnly | boolean | ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions. Defaults to false. More info: <https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod> | No |
 
 #### io.k8s.api.core.v1.HTTPGetAction
 
@@ -2412,7 +2413,7 @@ Lifecycle describes actions that the management system should take in response t
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | postStart | [io.k8s.api.core.v1.Handler](#io.k8s.api.core.v1.handler) | PostStart is called immediately after a container is created. If the handler fails, the container is terminated and restarted according to its restart policy. Other management of the container blocks until the hook completes. More info: <https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks> | No |
-| preStop | [io.k8s.api.core.v1.Handler](#io.k8s.api.core.v1.handler) | PreStop is called immediately before a container is terminated due to an API request or management event such as liveness probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: <https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks> | No |
+| preStop | [io.k8s.api.core.v1.Handler](#io.k8s.api.core.v1.handler) | PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: <https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks> | No |
 
 #### io.k8s.api.core.v1.LocalObjectReference
 
@@ -2485,10 +2486,10 @@ ObjectReference contains enough information to let you inspect or modify the ref
 | ---- | ---- | ----------- | -------- |
 | apiVersion | string | API version of the referent. | No |
 | fieldPath | string | If referring to a piece of an object instead of an entire object, this string should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2]. For example, if the object reference is to a container within a pod, this would take on a value like: "spec.containers{name}" (where "name" refers to the name of the container that triggered the event) or if no container name is specified "spec.containers[2]" (container with index 2 in this pod). This syntax is chosen only to have some well-defined way of referencing a part of an object. | No |
-| kind | string | Kind of the referent. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
+| kind | string | Kind of the referent. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
 | name | string | Name of the referent. More info: <https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names> | No |
 | namespace | string | Namespace of the referent. More info: <https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/> | No |
-| resourceVersion | string | Specific resourceVersion to which this reference is made, if any. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency> | No |
+| resourceVersion | string | Specific resourceVersion to which this reference is made, if any. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency> | No |
 | uid | string | UID of the referent. More info: <https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids> | No |
 
 #### io.k8s.api.core.v1.PersistentVolumeClaim
@@ -2497,9 +2498,9 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#resources> | No |
-| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
-| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | Standard object's metadata. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata> | No |
+| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources> | No |
+| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
+| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.objectmeta) | Standard object's metadata. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata> | No |
 | spec | [io.k8s.api.core.v1.PersistentVolumeClaimSpec](#io.k8s.api.core.v1.persistentvolumeclaimspec) | Spec defines the desired characteristics of a volume requested by a pod author. More info: <https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims> | No |
 | status | [io.k8s.api.core.v1.PersistentVolumeClaimStatus](#io.k8s.api.core.v1.persistentvolumeclaimstatus) | Status represents the current information/status of a persistent volume claim. Read-only. More info: <https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims> | No |
 
@@ -2619,7 +2620,7 @@ PodSecurityContext holds pod-level security attributes and common container sett
 | seLinuxOptions | [io.k8s.api.core.v1.SELinuxOptions](#io.k8s.api.core.v1.selinuxoptions) | The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. | No |
 | supplementalGroups | [ long ] | A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container. | No |
 | sysctls | [ [io.k8s.api.core.v1.Sysctl](#io.k8s.api.core.v1.sysctl) ] | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. | No |
-| windowsOptions | [io.k8s.api.core.v1.WindowsSecurityContextOptions](#io.k8s.api.core.v1.windowssecuritycontextoptions) | Windows security options. | No |
+| windowsOptions | [io.k8s.api.core.v1.WindowsSecurityContextOptions](#io.k8s.api.core.v1.windowssecuritycontextoptions) | The Windows specific settings applied to all containers. If unspecified, the options within a container's SecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. | No |
 
 #### io.k8s.api.core.v1.PortworxVolumeSource
 
@@ -2651,7 +2652,7 @@ Probe describes a health check to be performed against a container to determine 
 | httpGet | [io.k8s.api.core.v1.HTTPGetAction](#io.k8s.api.core.v1.httpgetaction) | HTTPGet specifies the http request to perform. | No |
 | initialDelaySeconds | integer | Number of seconds after the container has started before liveness probes are initiated. More info: <https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes> | No |
 | periodSeconds | integer | How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1. | No |
-| successThreshold | integer | Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness. Minimum value is 1. | No |
+| successThreshold | integer | Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1. | No |
 | tcpSocket | [io.k8s.api.core.v1.TCPSocketAction](#io.k8s.api.core.v1.tcpsocketaction) | TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported | No |
 | timeoutSeconds | integer | Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: <https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes> | No |
 
@@ -2684,13 +2685,13 @@ Represents a Rados Block Device mount that lasts the lifetime of a pod. RBD volu
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | fsType | string | Filesystem type of the volume that you want to mount. Tip: Ensure that the filesystem type is supported by the host operating system. Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified. More info: <https://kubernetes.io/docs/concepts/storage/volumes#rbd> | No |
-| image | string | The rados image name. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | Yes |
-| keyring | string | Keyring is the path to key ring for RBDUser. Default is /etc/ceph/keyring. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | No |
-| monitors | [ string ] | A collection of Ceph monitors. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | Yes |
-| pool | string | The rados pool name. Default is rbd. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | No |
-| readOnly | boolean | ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | No |
-| secretRef | [io.k8s.api.core.v1.LocalObjectReference](#io.k8s.api.core.v1.localobjectreference) | SecretRef is name of the authentication secret for RBDUser. If provided overrides keyring. Default is nil. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | No |
-| user | string | The rados user name. Default is admin. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it> | No |
+| image | string | The rados image name. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | Yes |
+| keyring | string | Keyring is the path to key ring for RBDUser. Default is /etc/ceph/keyring. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | No |
+| monitors | [ string ] | A collection of Ceph monitors. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | Yes |
+| pool | string | The rados pool name. Default is rbd. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | No |
+| readOnly | boolean | ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | No |
+| secretRef | [io.k8s.api.core.v1.LocalObjectReference](#io.k8s.api.core.v1.localobjectreference) | SecretRef is name of the authentication secret for RBDUser. If provided overrides keyring. Default is nil. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | No |
+| user | string | The rados user name. Default is admin. More info: <https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it> | No |
 
 #### io.k8s.api.core.v1.ResourceFieldSelector
 
@@ -2800,7 +2801,7 @@ SecurityContext holds security configuration that will be applied to a container
 | runAsNonRoot | boolean | Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. | No |
 | runAsUser | long | The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. | No |
 | seLinuxOptions | [io.k8s.api.core.v1.SELinuxOptions](#io.k8s.api.core.v1.selinuxoptions) | The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. | No |
-| windowsOptions | [io.k8s.api.core.v1.WindowsSecurityContextOptions](#io.k8s.api.core.v1.windowssecuritycontextoptions) | Windows security options. | No |
+| windowsOptions | [io.k8s.api.core.v1.WindowsSecurityContextOptions](#io.k8s.api.core.v1.windowssecuritycontextoptions) | The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. | No |
 
 #### io.k8s.api.core.v1.ServiceAccountTokenProjection
 
@@ -2874,7 +2875,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 | azureDisk | [io.k8s.api.core.v1.AzureDiskVolumeSource](#io.k8s.api.core.v1.azurediskvolumesource) | AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod. | No |
 | azureFile | [io.k8s.api.core.v1.AzureFileVolumeSource](#io.k8s.api.core.v1.azurefilevolumesource) | AzureFile represents an Azure File Service mount on the host and bind mount to the pod. | No |
 | cephfs | [io.k8s.api.core.v1.CephFSVolumeSource](#io.k8s.api.core.v1.cephfsvolumesource) | CephFS represents a Ceph FS mount on the host that shares a pod's lifetime | No |
-| cinder | [io.k8s.api.core.v1.CinderVolumeSource](#io.k8s.api.core.v1.cindervolumesource) | Cinder represents a cinder volume attached and mounted on kubelets host machine More info: <https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md> | No |
+| cinder | [io.k8s.api.core.v1.CinderVolumeSource](#io.k8s.api.core.v1.cindervolumesource) | Cinder represents a cinder volume attached and mounted on kubelets host machine. More info: <https://examples.k8s.io/mysql-cinder-pd/README.md> | No |
 | configMap | [io.k8s.api.core.v1.ConfigMapVolumeSource](#io.k8s.api.core.v1.configmapvolumesource) | ConfigMap represents a configMap that should populate this volume | No |
 | csi | [io.k8s.api.core.v1.CSIVolumeSource](#io.k8s.api.core.v1.csivolumesource) | CSI (Container Storage Interface) represents storage that is handled by an external CSI driver (Alpha feature). | No |
 | downwardAPI | [io.k8s.api.core.v1.DownwardAPIVolumeSource](#io.k8s.api.core.v1.downwardapivolumesource) | DownwardAPI represents downward API about the pod that should populate this volume | No |
@@ -2884,9 +2885,9 @@ Volume represents a named volume in a pod that may be accessed by any container 
 | flocker | [io.k8s.api.core.v1.FlockerVolumeSource](#io.k8s.api.core.v1.flockervolumesource) | Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running | No |
 | gcePersistentDisk | [io.k8s.api.core.v1.GCEPersistentDiskVolumeSource](#io.k8s.api.core.v1.gcepersistentdiskvolumesource) | GCEPersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: <https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk> | No |
 | gitRepo | [io.k8s.api.core.v1.GitRepoVolumeSource](#io.k8s.api.core.v1.gitrepovolumesource) | GitRepo represents a git repository at a particular revision. DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container. | No |
-| glusterfs | [io.k8s.api.core.v1.GlusterfsVolumeSource](#io.k8s.api.core.v1.glusterfsvolumesource) | Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: <https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md> | No |
+| glusterfs | [io.k8s.api.core.v1.GlusterfsVolumeSource](#io.k8s.api.core.v1.glusterfsvolumesource) | Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: <https://examples.k8s.io/volumes/glusterfs/README.md> | No |
 | hostPath | [io.k8s.api.core.v1.HostPathVolumeSource](#io.k8s.api.core.v1.hostpathvolumesource) | HostPath represents a pre-existing file or directory on the host machine that is directly exposed to the container. This is generally used for system agents or other privileged things that are allowed to see the host machine. Most containers will NOT need this. More info: <https://kubernetes.io/docs/concepts/storage/volumes#hostpath> | No |
-| iscsi | [io.k8s.api.core.v1.ISCSIVolumeSource](#io.k8s.api.core.v1.iscsivolumesource) | ISCSI represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: <https://releases.k8s.io/HEAD/examples/volumes/iscsi/README.md> | No |
+| iscsi | [io.k8s.api.core.v1.ISCSIVolumeSource](#io.k8s.api.core.v1.iscsivolumesource) | ISCSI represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: <https://examples.k8s.io/volumes/iscsi/README.md> | No |
 | name | string | Volume's name. Must be a DNS_LABEL and unique within the pod. More info: <https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names> | Yes |
 | nfs | [io.k8s.api.core.v1.NFSVolumeSource](#io.k8s.api.core.v1.nfsvolumesource) | NFS represents an NFS mount on the host that shares a pod's lifetime More info: <https://kubernetes.io/docs/concepts/storage/volumes#nfs> | No |
 | persistentVolumeClaim | [io.k8s.api.core.v1.PersistentVolumeClaimVolumeSource](#io.k8s.api.core.v1.persistentvolumeclaimvolumesource) | PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace. More info: <https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims> | No |
@@ -2894,7 +2895,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 | portworxVolume | [io.k8s.api.core.v1.PortworxVolumeSource](#io.k8s.api.core.v1.portworxvolumesource) | PortworxVolume represents a portworx volume attached and mounted on kubelets host machine | No |
 | projected | [io.k8s.api.core.v1.ProjectedVolumeSource](#io.k8s.api.core.v1.projectedvolumesource) | Items for all in one resources secrets, configmaps, and downward API | No |
 | quobyte | [io.k8s.api.core.v1.QuobyteVolumeSource](#io.k8s.api.core.v1.quobytevolumesource) | Quobyte represents a Quobyte mount on the host that shares a pod's lifetime | No |
-| rbd | [io.k8s.api.core.v1.RBDVolumeSource](#io.k8s.api.core.v1.rbdvolumesource) | RBD represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: <https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md> | No |
+| rbd | [io.k8s.api.core.v1.RBDVolumeSource](#io.k8s.api.core.v1.rbdvolumesource) | RBD represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: <https://examples.k8s.io/volumes/rbd/README.md> | No |
 | scaleIO | [io.k8s.api.core.v1.ScaleIOVolumeSource](#io.k8s.api.core.v1.scaleiovolumesource) | ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes. | No |
 | secret | [io.k8s.api.core.v1.SecretVolumeSource](#io.k8s.api.core.v1.secretvolumesource) | Secret represents a secret that should populate this volume. More info: <https://kubernetes.io/docs/concepts/storage/volumes#secret> | No |
 | storageos | [io.k8s.api.core.v1.StorageOSVolumeSource](#io.k8s.api.core.v1.storageosvolumesource) | StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes. | No |
@@ -2920,7 +2921,7 @@ VolumeMount describes a mounting of a Volume within a container.
 | name | string | This must match the Name of a Volume. | Yes |
 | readOnly | boolean | Mounted read-only if true, read-write otherwise (false or unspecified). Defaults to false. | No |
 | subPath | string | Path within the volume from which the container's volume should be mounted. Defaults to "" (volume's root). | No |
-| subPathExpr | string | Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive. This field is beta in 1.15. | No |
+| subPathExpr | string | Expanded path within the volume from which the container's volume should be mounted. Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment. Defaults to "" (volume's root). SubPathExpr and SubPath are mutually exclusive. | No |
 
 #### io.k8s.api.core.v1.VolumeProjection
 
@@ -2961,6 +2962,7 @@ WindowsSecurityContextOptions contain Windows-specific options and credentials.
 | ---- | ---- | ----------- | -------- |
 | gmsaCredentialSpec | string | GMSACredentialSpec is where the GMSA admission webhook (<https://github.com/kubernetes-sigs/windows-gmsa>) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field. This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag. | No |
 | gmsaCredentialSpecName | string | GMSACredentialSpecName is the name of the GMSA credential spec to use. This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag. | No |
+| runAsUserName | string | The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. This field is beta-level and may be disabled with the WindowsRunAsUserName feature flag. | No |
 
 #### io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec
 
@@ -2974,7 +2976,7 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 
 #### io.k8s.apimachinery.pkg.api.resource.Quantity
 
-Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and Int64() accessors.
+Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.
 
 The serialization format is:
 
@@ -3008,7 +3010,7 @@ This format is intended to make it difficult to use these numbers without writin
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| io.k8s.apimachinery.pkg.api.resource.Quantity | string | Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and Int64() accessors.  The serialization format is:  <quantity>        ::= <signedNumber><suffix>   (Note that <suffix> may be empty, from the "" case in <decimalSI>.) <digit>           ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits> <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>            ::= "+" | "-" <signedNumber>    ::= <number> | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei   (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html) <decimalSI>       ::= m | "" | k | M | G | T | P | E   (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.) <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>  No matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.  When a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.  Before serializing, Quantity will be put in "canonical form". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:   a. No precision is lost   b. No fractional digits will be emitted   c. The exponent (or suffix) is as large as possible. The sign will be omitted unless the number is negative.  Examples:   1.5 will be serialized as "1500m"   1.5Gi will be serialized as "1536Mi"  Note that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.  Non-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)  This format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation. |  |
+| io.k8s.apimachinery.pkg.api.resource.Quantity | string | Quantity is a fixed-point representation of a number. It provides convenient marshaling/unmarshaling in JSON and YAML, in addition to String() and AsInt64() accessors.  The serialization format is:  <quantity>        ::= <signedNumber><suffix>   (Note that <suffix> may be empty, from the "" case in <decimalSI>.) <digit>           ::= 0 | 1 | ... | 9 <digits>          ::= <digit> | <digit><digits> <number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits> <sign>            ::= "+" | "-" <signedNumber>    ::= <number> | <sign><number> <suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI> <binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei   (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html) <decimalSI>       ::= m | "" | k | M | G | T | P | E   (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.) <decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>  No matter which of the three exponent forms is used, no quantity may represent a number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal places. Numbers larger or more precise will be capped or rounded up. (E.g.: 0.1m will rounded up to 1m.) This may be extended in the future if we require larger or smaller quantities.  When a Quantity is parsed from a string, it will remember the type of suffix it had, and will use the same type again when it is serialized.  Before serializing, Quantity will be put in "canonical form". This means that Exponent/suffix will be adjusted up or down (with a corresponding increase or decrease in Mantissa) such that:   a. No precision is lost   b. No fractional digits will be emitted   c. The exponent (or suffix) is as large as possible. The sign will be omitted unless the number is negative.  Examples:   1.5 will be serialized as "1500m"   1.5Gi will be serialized as "1536Mi"  Note that the quantity will NEVER be internally represented by a floating point number. That is the whole point of this exercise.  Non-canonical values will still parse as long as they are well formed, but will be re-emitted in their canonical form. (So always use canonical form, or don't diff.)  This format is intended to make it difficult to use these numbers without writing some sort of special handling code in the hopes that that will cause implementors to also use a fixed point implementation. |  |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions
 
@@ -3019,30 +3021,17 @@ CreateOptions may be provided when creating an API object.
 | dryRun | [ string ] |  | No |
 | fieldManager | string |  | No |
 
-#### io.k8s.apimachinery.pkg.apis.meta.v1.Fields
+#### io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1
 
-Fields stores a set of fields in a data structure like a Trie. To understand how this is used, see: <https://github.com/kubernetes-sigs/structured-merge-diff>
+FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.
 
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| io.k8s.apimachinery.pkg.apis.meta.v1.Fields | object | Fields stores a set of fields in a data structure like a Trie. To understand how this is used, see: <https://github.com/kubernetes-sigs/structured-merge-diff> |  |
+Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.
 
-#### io.k8s.apimachinery.pkg.apis.meta.v1.Initializer
-
-Initializer is information about an initializer that has not yet completed.
+The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
-| name | string | name of the process that is responsible for initializing this object. | Yes |
-
-#### io.k8s.apimachinery.pkg.apis.meta.v1.Initializers
-
-Initializers tracks the progress of initialization.
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| pending | [ [io.k8s.apimachinery.pkg.apis.meta.v1.Initializer](#io.k8s.apimachinery.pkg.apis.meta.v1.initializer) ] | Pending is a list of initializers that must execute in order before this object is visible. When the last pending initializer is removed, and no failing result is set, the initializers struct will be set to nil and the object is considered as initialized and visible to all clients. | Yes |
-| result | [io.k8s.apimachinery.pkg.apis.meta.v1.Status](#io.k8s.apimachinery.pkg.apis.meta.v1.status) | If result is set with the Failure field, the object will be persisted to storage and then deleted, ensuring that other clients can observe the deletion. | No |
+| io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1 | object | FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.  Each key is either a '.' representing the field itself, and will always map to an empty set, or a string representing a sub-field or item. The string will follow one of these four formats: 'f:<name>', where <name> is the name of a field in a struct, or key in a map 'v:<value>', where <value> is the exact json formatted value of a list item 'i:<index>', where <index> is position of a item in a list 'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values If a key maps to an empty Fields value, the field that key represents is part of the set.  The exact format is defined in sigs.k8s.io/structured-merge-diff |  |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector
 
@@ -3070,9 +3059,9 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | continue | string | continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message. | No |
-| remainingItemCount | long | remainingItemCount is the number of subsequent items in the list which are not included in this list response. If the list request contained label or field selectors, then the number of remaining items is unknown and the field will be left unset and omitted during serialization. If the list is complete (either because it is not chunking or because this is the last chunk), then there are no more remaining items and this field will be left unset and omitted during serialization. Servers older than v1.15 do not set this field. The intended use of the remainingItemCount is *estimating* the size of a collection. Clients should not rely on the remainingItemCount to be set or to be exact.  This field is alpha and can be changed or removed without notice. | No |
-| resourceVersion | string | String that identifies the server's internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency> | No |
-| selfLink | string | selfLink is a URL representing this object. Populated by the system. Read-only. | No |
+| remainingItemCount | long | remainingItemCount is the number of subsequent items in the list which are not included in this list response. If the list request contained label or field selectors, then the number of remaining items is unknown and the field will be left unset and omitted during serialization. If the list is complete (either because it is not chunking or because this is the last chunk), then there are no more remaining items and this field will be left unset and omitted during serialization. Servers older than v1.15 do not set this field. The intended use of the remainingItemCount is *estimating* the size of a collection. Clients should not rely on the remainingItemCount to be set or to be exact. | No |
+| resourceVersion | string | String that identifies the server's internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency> | No |
+| selfLink | string | selfLink is a URL representing this object. Populated by the system. Read-only.  DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release. | No |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry
 
@@ -3081,7 +3070,8 @@ ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the res
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | apiVersion | string | APIVersion defines the version of this resource that this field set applies to. The format is "group/version" just like the top-level APIVersion field. It is necessary to track the version of a field set because it cannot be automatically converted. | No |
-| fields | [io.k8s.apimachinery.pkg.apis.meta.v1.Fields](#io.k8s.apimachinery.pkg.apis.meta.v1.fields) | Fields identifies a set of fields. | No |
+| fieldsType | string | FieldsType is the discriminator for the different fields format and version. There is currently only one possible value: "FieldsV1" | No |
+| fieldsV1 | [io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1](#io.k8s.apimachinery.pkg.apis.meta.v1.fieldsv1) | FieldsV1 holds the first JSON version format as described in the "FieldsV1" type. | No |
 | manager | string | Manager is an identifier of the workflow managing these fields. | No |
 | operation | string | Operation is the type of operation which lead to this ManagedFieldsEntry being created. The only valid values for this field are 'Apply' and 'Update'. | No |
 | time | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply' | No |
@@ -3102,20 +3092,19 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 | ---- | ---- | ----------- | -------- |
 | annotations | object | Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: <http://kubernetes.io/docs/user-guide/annotations> | No |
 | clusterName | string | The name of the cluster which the object belongs to. This is used to distinguish resources with same name and namespace in different clusters. This field is not set anywhere right now and apiserver is going to ignore it if set in create or update request. | No |
-| creationTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.  Populated by the system. Read-only. Null for lists. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata> | No |
+| creationTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | CreationTimestamp is a timestamp representing the server time when this object was created. It is not guaranteed to be set in happens-before order across separate operations. Clients may not set this value. It is represented in RFC3339 form and is in UTC.  Populated by the system. Read-only. Null for lists. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata> | No |
 | deletionGracePeriodSeconds | long | Number of seconds allowed for this object to gracefully terminate before it will be removed from the system. Only set when deletionTimestamp is also set. May only be shortened. Read-only. | No |
-| deletionTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.  Populated by the system when a graceful deletion is requested. Read-only. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata> | No |
-| finalizers | [ string ] | Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed. | No |
-| generateName | string | GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server.  If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header).  Applied only if Name is not specified. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#idempotency> | No |
+| deletionTimestamp | [io.k8s.apimachinery.pkg.apis.meta.v1.Time](#io.k8s.apimachinery.pkg.apis.meta.v1.time) | DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This field is set by the server when a graceful deletion is requested by the user, and is not directly settable by a client. The resource is expected to be deleted (no longer visible from resource lists, and not reachable by name) after the time in this field, once the finalizers list is empty. As long as the finalizers list contains items, deletion is blocked. Once the deletionTimestamp is set, this value may not be unset or be set further into the future, although it may be shortened or the resource may be deleted prior to this time. For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react by sending a graceful termination signal to the containers in the pod. After that 30 seconds, the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup, remove the pod from the API. In the presence of network partitions, this object may still exist after this timestamp, until an administrator or automated process can determine the resource is fully terminated. If not set, graceful deletion of the object has not been requested.  Populated by the system when a graceful deletion is requested. Read-only. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata> | No |
+| finalizers | [ string ] | Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed. Finalizers may be processed and removed in any order.  Order is NOT enforced because it introduces significant risk of stuck finalizers. finalizers is a shared field, any actor with permission can reorder it. If the finalizer list is processed in order, then this can lead to a situation in which the component responsible for the first finalizer in the list is waiting for a signal (field value, external system, or other) produced by a component responsible for a finalizer later in the list, resulting in a deadlock. Without enforced ordering finalizers are free to order amongst themselves and are not vulnerable to ordering changes in the list. | No |
+| generateName | string | GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server.  If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header).  Applied only if Name is not specified. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency> | No |
 | generation | long | A sequence number representing a specific generation of the desired state. Populated by the system. Read-only. | No |
-| initializers | [io.k8s.apimachinery.pkg.apis.meta.v1.Initializers](#io.k8s.apimachinery.pkg.apis.meta.v1.initializers) | An initializer is a controller which enforces some system invariant at object creation time. This field is a list of initializers that have not yet acted on this object. If nil or empty, this object has been completely initialized. Otherwise, the object is considered uninitialized and is hidden (in list/watch and get calls) from clients that haven't explicitly asked to observe uninitialized objects.  When an object is created, the system will populate this list with the current set of initializers. Only privileged users may set or modify this list. Once it is empty, it may not be modified further by any user.  DEPRECATED - initializers are an alpha field and will be removed in v1.15. | No |
 | labels | object | Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: <http://kubernetes.io/docs/user-guide/labels> | No |
-| managedFields | [ [io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry](#io.k8s.apimachinery.pkg.apis.meta.v1.managedfieldsentry) ] | ManagedFields maps workflow-id and version to the set of fields that are managed by that workflow. This is mostly for internal housekeeping, and users typically shouldn't need to set or understand this field. A workflow can be the user's name, a controller's name, or the name of a specific apply path like "ci-cd". The set of fields is always in the version that the workflow used when modifying the object.  This field is alpha and can be changed or removed without notice. | No |
+| managedFields | [ [io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry](#io.k8s.apimachinery.pkg.apis.meta.v1.managedfieldsentry) ] | ManagedFields maps workflow-id and version to the set of fields that are managed by that workflow. This is mostly for internal housekeeping, and users typically shouldn't need to set or understand this field. A workflow can be the user's name, a controller's name, or the name of a specific apply path like "ci-cd". The set of fields is always in the version that the workflow used when modifying the object. | No |
 | name | string | Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: <http://kubernetes.io/docs/user-guide/identifiers#names> | No |
 | namespace | string | Namespace defines the space within each name must be unique. An empty namespace is equivalent to the "default" namespace, but "default" is the canonical representation. Not all objects are required to be scoped to a namespace - the value of this field for those objects will be empty.  Must be a DNS_LABEL. Cannot be updated. More info: <http://kubernetes.io/docs/user-guide/namespaces> | No |
 | ownerReferences | [ [io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference](#io.k8s.apimachinery.pkg.apis.meta.v1.ownerreference) ] | List of objects depended by this object. If ALL objects in the list have been deleted, this object will be garbage collected. If this object is managed by a controller, then an entry in this list will point to this controller, with the controller field set to true. There cannot be more than one managing controller. | No |
-| resourceVersion | string | An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.  Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency> | No |
-| selfLink | string | SelfLink is a URL representing this object. Populated by the system. Read-only. | No |
+| resourceVersion | string | An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. May be used for optimistic concurrency, change detection, and the watch operation on a resource or set of resources. Clients must treat these values as opaque and passed unmodified back to the server. They may only be valid for a particular resource or set of resources.  Populated by the system. Read-only. Value must be treated as opaque by clients and . More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency> | No |
+| selfLink | string | SelfLink is a URL representing this object. Populated by the system. Read-only.  DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release. | No |
 | uid | string | UID is the unique in time and space value for this object. It is typically generated by the server on successful creation of a resource and is not allowed to change on PUT operations.  Populated by the system. Read-only. More info: <http://kubernetes.io/docs/user-guide/identifiers#uids> | No |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference
@@ -3127,24 +3116,9 @@ OwnerReference contains enough information to let you identify an owning object.
 | apiVersion | string | API version of the referent. | Yes |
 | blockOwnerDeletion | boolean | If true, AND if the owner has the "foregroundDeletion" finalizer, then the owner cannot be deleted from the key-value store until this reference is removed. Defaults to false. To set this field, a user needs "delete" permission of the owner, otherwise 422 (Unprocessable Entity) will be returned. | No |
 | controller | boolean | If true, this reference points to the managing controller. | No |
-| kind | string | Kind of the referent. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | Yes |
+| kind | string | Kind of the referent. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | Yes |
 | name | string | Name of the referent. More info: <http://kubernetes.io/docs/user-guide/identifiers#names> | Yes |
 | uid | string | UID of the referent. More info: <http://kubernetes.io/docs/user-guide/identifiers#uids> | Yes |
-
-#### io.k8s.apimachinery.pkg.apis.meta.v1.Status
-
-Status is a return value for calls that don't return other objects.
-
-| Name | Type | Description | Required |
-| ---- | ---- | ----------- | -------- |
-| apiVersion | string | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#resources> | No |
-| code | integer | Suggested HTTP return code for this status, 0 if not set. | No |
-| details | [io.k8s.apimachinery.pkg.apis.meta.v1.StatusDetails](#io.k8s.apimachinery.pkg.apis.meta.v1.statusdetails) | Extended data associated with the reason.  Each reason may define its own extended details. This field is optional and the data returned is not guaranteed to conform to any schema except that defined by the reason type. | No |
-| kind | string | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
-| message | string | A human-readable description of the status of this operation. | No |
-| metadata | [io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta](#io.k8s.apimachinery.pkg.apis.meta.v1.listmeta) | Standard list metadata. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
-| reason | string | A machine-readable description of why this operation is in the "Failure" status. If this value is empty there is no information available. A Reason clarifies an HTTP status code but does not override it. | No |
-| status | string | Status of the operation. One of: "Success" or "Failure". More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status> | No |
 
 #### io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause
 
@@ -3164,7 +3138,7 @@ StatusDetails is a set of additional properties that MAY be set by the server to
 | ---- | ---- | ----------- | -------- |
 | causes | [ [io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause](#io.k8s.apimachinery.pkg.apis.meta.v1.statuscause) ] | The Causes array includes more details associated with the StatusReason failure. Not all StatusReasons may provide detailed causes. | No |
 | group | string | The group attribute of the resource associated with the status StatusReason. | No |
-| kind | string | The kind attribute of the resource associated with the status StatusReason. On some operations may differ from the requested resource Kind. More info: <https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds> | No |
+| kind | string | The kind attribute of the resource associated with the status StatusReason. On some operations may differ from the requested resource Kind. More info: <https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds> | No |
 | name | string | The name attribute of the resource associated with the status StatusReason (when there is a single name which can be described). | No |
 | retryAfterSeconds | integer | If specified, the time in seconds before the operation should be retried. Some errors may indicate the client must take an alternate action - for those errors this field may indicate how long to wait before taking the alternate action. | No |
 | uid | string | UID of the resource. (when there is a single resource which can be described). More info: <http://kubernetes.io/docs/user-guide/identifiers#uids> | No |
