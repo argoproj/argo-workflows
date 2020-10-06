@@ -1933,7 +1933,7 @@ spec:
       ServiceAccountName: ""
   automountServiceAccountToken: false
   executor:
-    ServiceAccountName: foo
+    serviceAccountName: foo
 `
 
 var validAutomountServiceAccountTokenUseTmplLevel = `
@@ -1948,7 +1948,7 @@ spec:
     container:
       image: alpine:latest
     executor:
-      ServiceAccountName: foo
+      serviceAccountName: foo
   automountServiceAccountToken: false
 `
 
@@ -2275,7 +2275,7 @@ spec:
         - name: invalid.metric.name
           help: "invalid"
           gauge:
-            value: 1
+            value: "1"
     container:
       image: docker/whalesay:latest
 `

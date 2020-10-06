@@ -15536,7 +15536,7 @@ func easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(in *jl
 		case "displayName":
 			out.DisplayName = string(in.String())
 		case "type":
-			out.Type = NodeType(in.String())
+			out.Type = NodeType(in.StringIntern())
 		case "templateName":
 			out.TemplateName = string(in.String())
 		case "templateRef":
@@ -15556,7 +15556,7 @@ func easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(in *jl
 		case "templateScope":
 			out.TemplateScope = string(in.String())
 		case "phase":
-			out.Phase = NodePhase(in.String())
+			out.Phase = NodePhase(in.StringIntern())
 		case "boundaryID":
 			out.BoundaryID = string(in.String())
 		case "message":

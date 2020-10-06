@@ -1322,7 +1322,7 @@ type NodeStatus struct {
 	DisplayName string `json:"displayName,omitempty" protobuf:"bytes,3,opt,name=displayName"`
 
 	// Type indicates type of node
-	Type NodeType `json:"type" protobuf:"bytes,4,opt,name=type,casttype=NodeType"`
+	Type NodeType `json:"type,intern" protobuf:"bytes,4,opt,name=type,casttype=NodeType"` // nolint:staticcheck
 
 	// TemplateName is the template name which this node corresponds to.
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
@@ -1345,7 +1345,7 @@ type NodeStatus struct {
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
-	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,7,opt,name=phase,casttype=NodePhase"`
+	Phase NodePhase `json:"phase,omitempty,intern" protobuf:"bytes,7,opt,name=phase,casttype=NodePhase"` // nolint:staticcheck
 
 	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
 	BoundaryID string `json:"boundaryID,omitempty" protobuf:"bytes,8,opt,name=boundaryID"`

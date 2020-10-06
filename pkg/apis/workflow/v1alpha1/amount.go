@@ -28,6 +28,6 @@ func (a Amount) OpenAPISchemaFormat() string {
 	return ""
 }
 
-func (a *Amount) Float64() (float64, error) {
+func (a Amount) Float64() (float64, error) {
 	return strconv.ParseFloat(string(a.Value), 64)
 }

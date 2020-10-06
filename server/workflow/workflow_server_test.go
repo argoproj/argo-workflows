@@ -434,7 +434,7 @@ const workflowtmpl = `
   },
   "spec": {
 	"workflowMetadata": {
-	 "Labels": {
+	 "labels": {
 		"labelTest": "test"
 	 },
 	 "annotations": {
@@ -519,7 +519,7 @@ const clusterworkflowtmpl = `
   },
   "spec": {
 	"workflowMetadata": {
-	 "Labels": {
+	 "labels": {
 		"labelTest": "test"
 	 },
 	 "annotations": {
