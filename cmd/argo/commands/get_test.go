@@ -109,16 +109,6 @@ func TestStatusToNodeFieldSelector(t *testing.T) {
 }
 
 func Test_printWorkflowHelper(t *testing.T) {
-	t.Run("Progress", func(t *testing.T) {
-		var wf wfv1.Workflow
-		testutil.MustUnmarshallYAML(`
-status:
-  phase: Running
-  progress: 1/2
-`, &wf)
-		output := printWorkflowHelper(&wf, getFlags{})
-		assert.Regexp(t, `Progress: *1/2`, output)
-	})
 	t.Run("EstimatedDuration", func(t *testing.T) {
 		var wf wfv1.Workflow
 		testutil.MustUnmarshallYAML(`

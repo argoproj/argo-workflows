@@ -46,8 +46,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                             estimatedDuration={props.workflow.status.estimatedDuration}
                         />
                     )
-                },
-                {title: 'Progress', value: props.workflow.status.progress || '-'}
+                }
             ];
             const creator = props.workflow.metadata.labels[labels.creator];
             if (creator) {

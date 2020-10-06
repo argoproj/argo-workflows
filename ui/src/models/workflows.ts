@@ -460,11 +460,6 @@ export interface NodeStatus {
     estimatedDuration?: number;
 
     /**
-     * Progress as numerator/denominator.
-     */
-    progress?: string;
-
-    /**
      * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
