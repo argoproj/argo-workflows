@@ -1484,11 +1484,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	node := woc.wf.GetNodeByName(nodeName)
 
-	// performance enhancement: this cannot change, so just return
-	if node != nil && node.Fulfilled() {
-		return node, nil
-	}
-
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(orgTmpl)
