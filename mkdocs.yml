@@ -113,7 +113,6 @@ nav:
           - argo version: cli/argo_version.md
           - argo wait: cli/argo_wait.md
           - argo watch: cli/argo_watch.md
-      - API Reference: swagger.md
   - Operator Manual:
       - installation.md
       - Configuration:
