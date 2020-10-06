@@ -1,10 +1,11 @@
 package config
 
 import (
+	"time"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"time"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth/sso"
@@ -92,8 +93,8 @@ type Config struct {
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
-	//configurable initial delay https://github.com/argoproj/argo/issues/4107
-	InitialDelay  time.Duration `json:"initialDelay,omitempty"`
+	//Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC
+	InitialDelay time.Duration `json:"initialDelay,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
