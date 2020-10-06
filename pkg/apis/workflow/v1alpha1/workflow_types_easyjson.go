@@ -13069,7 +13069,9 @@ func easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(in *jl
 		}
 		switch key {
 		case "duration":
-			out.Duration = string(in.String())
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Duration).UnmarshalJSON(data))
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -13088,7 +13090,7 @@ func easyjson147b50d1EncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(out *j
 		const prefix string = ",\"duration\":"
 		first = false
 		out.RawString(prefix[1:])
-		out.String(string(in.Duration))
+		out.Raw((in.Duration).MarshalJSON())
 	}
 	out.RawByte('}')
 }

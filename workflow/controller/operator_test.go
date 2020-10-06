@@ -2982,7 +2982,7 @@ kind: Workflow
 metadata:
   name: invalid-spec
 spec:
-  entrypoint: 123
+  entrypoint: "123"
 `: {
 			"Normal WorkflowRunning Workflow Running",
 			"Warning WorkflowFailed invalid spec: template name '123' undefined",
@@ -3084,7 +3084,7 @@ metadata:
   name: my-pdb-wf
 spec:
   entrypoint: main
-  poddisruptionbudget:
+  podDisruptionBudget:
     minavailable: 100%
   templates:
   - name: main
@@ -3098,11 +3098,13 @@ func TestPDBCreation(t *testing.T) {
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.Equal(t, pdb.Name, wf.Name)
-	woc.markWorkflowSuccess()
-	_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
-	assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
+	pdb, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	if assert.NoError(t, err) {
+		assert.Equal(t, pdb.Name, wf.Name)
+		woc.markWorkflowSuccess()
+		_, err := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+		assert.EqualError(t, err, "poddisruptionbudgets.policy \"my-pdb-wf\" not found")
+	}
 }
 
 func TestPDBCreationRaceDelete(t *testing.T) {
