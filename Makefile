@@ -58,6 +58,10 @@ endif
 ifeq ($(STATIC_FILES),false)
 AUTH_MODE             := client
 endif
+# Which mode to run in:
+# * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
+# * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
+RUN_MODE              := local
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
@@ -379,6 +383,11 @@ $(GOPATH)/bin/goreman:
 .PHONY: start
 start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
+ifeq ($(RUN_MODE),kubernetes)
+	$(MAKE) controller-image cli-image
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+endif
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
@@ -388,7 +397,9 @@ endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
+ifeq ($(RUN_MODE),local)
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+endif
 
 .PHONY: wait
 wait:

@@ -13,14 +13,16 @@ spec:
     spec:
       serviceAccountName: argo
       containers:
-      - name: workflow-controller
-        image: argoproj/workflow-controller:latest
-        command:
-        - workflow-controller
-        args:
-        - --configmap
-        - workflow-controller-configmap
-        - --executor-image
-        - argoproj/argoexec:latest
+        - name: workflow-controller
+          image: argoproj/workflow-controller:latest
+          command:
+            - workflow-controller
+          args:
+            - --configmap
+            - workflow-controller-configmap
+            - --executor-image
+            - argoproj/argoexec:latest
+      securityContext:
+        runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
