@@ -73,6 +73,8 @@ type WorkflowExecutor struct {
 	errors []error
 }
 
+//go:generate mockery -name ContainerRuntimeExecutor
+
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
 	// GetFileContents returns the file contents of a file in a container as a string
@@ -479,19 +481,19 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output string
+		var output *wfv1.Int64OrString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				output = fileContents
+				output = wfv1.Int64OrStringPtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -500,18 +502,18 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				output = string(data)
+				output = wfv1.Int64OrStringPtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		output = strings.TrimSuffix(output, "\n")
-		we.Template.Outputs.Parameters[i].Value = &output
+		output = wfv1.Int64OrStringPtr(strings.TrimSuffix(output.String(), "\n"))
+		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
