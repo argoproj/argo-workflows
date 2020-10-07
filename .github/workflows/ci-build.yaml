@@ -114,10 +114,6 @@ jobs:
           sudo find /usr/local/include -type d | xargs sudo chmod a+rx
           rm -f $PROTOC_ZIP
           ls /usr/local/include/google/protobuf/
-      - name: Install `swagger-markdown`
-        run: |
-          sudo chmod a+rw /usr/local/bin /usr/local/lib /usr/local/lib/node_modules
-          make /usr/local/bin/swagger-markdown
       - name: Make codegen
         env:
           GOPATH: /home/runner/go
