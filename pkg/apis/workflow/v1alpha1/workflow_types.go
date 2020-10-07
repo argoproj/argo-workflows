@@ -127,6 +127,25 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 	return out
 }
 
+// GetTTLStrategy return TTLStrategy based on Order of precedence:
+//1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+func (w *Workflow) GetTTLStrategy(defaultTTLStrategy *TTLStrategy) *TTLStrategy {
+	var ttlStrategy *TTLStrategy
+	// TTLStrategy from Workflow default from Config
+	if defaultTTLStrategy != nil {
+		ttlStrategy = defaultTTLStrategy
+	}
+	// TTLStrategy from WorkflowTemplate
+	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
+	}
+	//TTLStrategy from Workflow
+	if w.Spec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Spec.GetTTLStrategy()
+	}
+	return ttlStrategy
+}
+
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
@@ -320,6 +339,18 @@ type WorkflowSpec struct {
 
 	// Synchronization holds synchronization lock configuration for this Workflow
 	Synchronization *Synchronization `json:"synchronization,omitempty" protobuf:"bytes,35,opt,name=synchronization,casttype=Synchronization"`
+}
+
+func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
+	if wfs.TTLSecondsAfterFinished != nil {
+		if wfs.TTLStrategy == nil {
+			ttlstrategy := TTLStrategy{SecondsAfterCompletion: wfs.TTLSecondsAfterFinished}
+			wfs.TTLStrategy = &ttlstrategy
+		} else if wfs.TTLStrategy.SecondsAfterCompletion == nil {
+			wfs.TTLStrategy.SecondsAfterCompletion = wfs.TTLSecondsAfterFinished
+		}
+	}
+	return wfs.TTLStrategy
 }
 
 type ShutdownStrategy string

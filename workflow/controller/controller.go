@@ -141,7 +141,9 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
+		return &wfc.Config
+	})
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
