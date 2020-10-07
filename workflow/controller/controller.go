@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/metrics/pkg/client/clientset/versioned"
-	podmetrics "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
+	podmetrics "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1alpha1"
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
@@ -101,7 +101,7 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
-	metricsInterface      podmetrics.MetricsV1beta1Interface
+	metricsInterface      podmetrics.MetricsV1alpha1Interface // kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
 }
 
 const (
@@ -134,7 +134,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
-		metricsInterface:           versioned.NewForConfigOrDie(restConfig).MetricsV1beta1(),
+		metricsInterface:           versioned.NewForConfigOrDie(restConfig).MetricsV1alpha1(),
 	}
 
 	wfc.UpdateConfig()

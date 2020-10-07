@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/record"
+	metricskfake "k8s.io/metrics/pkg/client/clientset/versioned/fake"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -158,6 +159,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		eventRecorderManager: &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(16)},
 		archiveLabelSelector: labels.Everything(),
 		cacheFactory:         controllercache.NewCacheFactory(kube, "default"),
+		metricsInterface:     metricskfake.NewSimpleClientset().MetricsV1alpha1(),
 	}
 	controller.podInformer = controller.newPodInformer()
 	return cancel, controller
