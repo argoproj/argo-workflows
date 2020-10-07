@@ -129,7 +129,7 @@ func (v ClusterWorkflowTemplateList) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ClusterWorkflowTemplateList) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data, CoerceToString: false}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
@@ -303,7 +303,7 @@ func (v ClusterWorkflowTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ClusterWorkflowTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data, CoerceToString: false}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonAa42d34bDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(&r, v)
 	return r.Error()
 }
