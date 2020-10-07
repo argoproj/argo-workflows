@@ -1,8 +1,6 @@
 package config
 
 import (
-	"time"
-
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -94,7 +92,7 @@ type Config struct {
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
 	//Adding configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
-	InitialDelay time.Duration `json:"initialDelay,omitempty"`
+	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
