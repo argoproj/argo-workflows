@@ -1460,18 +1460,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2048,7 +2036,6 @@ so only one workflow instance will be executed at given time even multiple workf
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;hello</span><span class="nv"> </span><span class="s">world&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 <h3 id="template-level-synchronization">Template-level Synchronization<a class="headerlink" href="#template-level-synchronization" title="Permanent link">&para;</a></h3>
 <p>Template-level synchronization limits parallel execution of the template across workflows, if template have same synchronization reference. 
 In this example, <code>acquire-lock</code> template has synchronization reference of <code>template</code> key which is configured as rate limit 2, 

@@ -1447,18 +1447,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2030,7 +2018,6 @@ spec:
         - name: uuid
     suspend: {}
 </code></pre></div>
-
 <p>In this case the <code>job-cmd</code> parameter can be a command that makes an http call via curl to an endpoint that returns a job uuid. More sophisticated submission and parsing of submission output could be done with something like a Python script step.</p>
 <p>On job completion the external job would need to call either resume if successful:</p>
 <p>You may need  an <a href="../access-token/">access token</a>.</p>
@@ -2063,7 +2050,6 @@ curl --request PUT \
 <p>Instead you need to use the <code>--restart-successful</code> option, eg if using the template from above:</p>
 <div class="highlight"><pre><span></span><code>argo retry &lt;WORKFLOWNAME&gt; --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
 </code></pre></div>
-
 <p>See also:</p>
 <ul>
 <li><a href="../access-token/">access token</a></li>

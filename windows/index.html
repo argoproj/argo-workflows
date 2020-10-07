@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2045,7 +2033,6 @@
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;echo&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Windows</span><span class="nv"> </span><span class="s">Container!&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 <p>You can run this example and get the logs:
 <div class="highlight"><pre><span></span><code>$ argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-windows.yaml
 $ argo logs hello-windows-s9kk5
@@ -2106,7 +2093,6 @@ hello-hybrid-plqpp-764774907: Hello from Linux Container!
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;cmd&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;/c&quot;</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;dir</span><span class="nv"> </span><span class="s">C:\\message&quot;</span><span class="p p-Indicator">]</span>   <span class="c1"># List the C:\message directory</span>
 </code></pre></div>
-
 <p>Remember that <a href="https://kubernetes.io/docs/setup/production-environment/windows/intro-windows-in-kubernetes/#storage">volume mounts on Windows can only target a directory</a> in the container, and not an individual file.</p>
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <ul>

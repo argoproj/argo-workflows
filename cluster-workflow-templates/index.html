@@ -1494,18 +1494,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2098,7 +2086,6 @@ can be created cluster scoped like <code>ClusterRole</code> and can be accessed 
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 <h2 id="referencing-other-clusterworkflowtemplates">Referencing other <code>ClusterWorkflowTemplates</code><a class="headerlink" href="#referencing-other-clusterworkflowtemplates" title="Permanent link">&para;</a></h2>
 <p>You can reference <code>templates</code> from another <code>ClusterWorkflowTemplates</code> using a <code>templateRef</code> field with <code>clusterScope: true</code> .
 Just as how you reference other <code>templates</code> within the same <code>Workflow</code>, you should do so from a <code>steps</code> or <code>dag</code> template.</p>
@@ -2179,11 +2166,9 @@ Here is an example for creating <code>ClusterWorkflowTemplate</code> as Workflow
 <p>You can create some example templates as follows:</p>
 <div class="highlight"><pre><span></span><code>argo cluster-template create https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/clustertemplates.yaml
 </code></pre></div>
-
 <p>The submit a workflow using one of those templates:</p>
 <div class="highlight"><pre><span></span><code>argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml
 </code></pre></div>
-
 <blockquote>
 <p>2.7 and after</p>
 <p>The submit a <code>ClusterWorkflowTemplate</code> as a <code>Workflow</code>:

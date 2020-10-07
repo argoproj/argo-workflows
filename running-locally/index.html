@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2008,7 +1996,6 @@
 <span class="err">cat $(k3d kubeconfig get k3s-default) &gt;&gt; ~/.kube/config</span>
 </code></pre></div>
 
-
 <p>Alternatively, you can use <a href="https://github.com/kubernetes/minikube">Minikube</a> to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via <code>minikube start</code>, your kube config will use Minikube's context automatically.</p>
 <p>Add to /etc/hosts:</p>
 <div class="codehilite"><pre><span></span><code><span class="err">127.0.0.1 dex</span>
@@ -2017,16 +2004,13 @@
 <span class="err">127.0.0.1 mysql</span>
 </code></pre></div>
 
-
 <p>To install into the “argo” namespace of your cluster: Argo, MinIO (for saving artifacts and logs) and Postgres (for offloading or archiving):</p>
 <div class="codehilite"><pre><span></span><code><span class="err">make start</span>
 </code></pre></div>
 
-
 <p>If you prefer MySQL:</p>
 <div class="codehilite"><pre><span></span><code><span class="err">make start DB=mysql</span>
 </code></pre></div>
-
 
 <p>You’ll now have</p>
 <ul>
@@ -2044,7 +2028,6 @@
 <span class="p">.</span><span class="o">/</span><span class="n">dist</span><span class="o">/</span><span class="n">argo</span> <span class="n">auth</span> <span class="n">token</span>
 </code></pre></div>
 
-
 <p>At this point you’ll have everything you need to use the CLI and UI.</p>
 <h2 id="user-interface">User Interface<a class="headerlink" href="#user-interface" title="Permanent link">&para;</a></h2>
 <p>Tip: If you want to make UI changes without a time-consuming build:</p>
@@ -2053,7 +2036,6 @@
 <span class="err">yarn start</span>
 </code></pre></div>
 
-
 <p>The UI will start up on http://localhost:8080.</p>
 <h2 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Permanent link">&para;</a></h2>
 <p>If you want to run controller or argo-server in your IDE (e.g. so you can debug it):</p>
@@ -2061,11 +2043,9 @@
 <div class="codehilite"><pre><span></span><code><span class="err">make start COMPONENTS=controller</span>
 </code></pre></div>
 
-
 <p>Or</p>
 <div class="codehilite"><pre><span></span><code><span class="err">make start COMPONENTS=argo-server</span>
 </code></pre></div>
-
 
 <p>To find the command arguments you need to use, you’ll have to look at the <code>start</code> target in the <code>Makefile</code>.`</p>
 <h2 id="clean">Clean<a class="headerlink" href="#clean" title="Permanent link">&para;</a></h2>

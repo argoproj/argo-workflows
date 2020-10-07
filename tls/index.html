@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2008,35 +1996,29 @@
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
 <div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>
-
 <p>It will start with a self-signed certificate that expires after 365 days.</p>
 <p>Run the CLI with <code>--secure</code> (or <code>ARGO_SECURE=true</code>) and <code>--insecure-skip-verify</code> (or <code>ARGO_INSECURE_SKIP_VERIFY=true</code>).</p>
 <div class="highlight"><pre><span></span><code>argo --secure --insecure-skip-verify list
 </code></pre></div>
-
 <div class="highlight"><pre><span></span><code>export ARGO_SECURE=true
 export ARGO_INSECURE_SKIP_VERIFY=true
 argo --secure --insecure-skip-verify list
 </code></pre></div>
-
 <p>Tip: Don't forget to update your readiness probe to use HTTPS. To do so, edit your <code>argo-server</code> Deployment's <code>readinessProbe</code> spec: </p>
 <div class="highlight"><pre><span></span><code>readinessProbe:
     httpGet: 
         scheme: HTTPS
 </code></pre></div>
-
 <h3 id="encrypted-and-verified">Encrypted and Verified<a class="headerlink" href="#encrypted-and-verified" title="Permanent link">&para;</a></h3>
 <p><em>Recommended for: production environments</em></p>
 <p>Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this documentation.</p>
 <p>Start Argo Server with the <code>--secure</code> flag, e.g.:</p>
 <div class="highlight"><pre><span></span><code>argo server --secure
 </code></pre></div>
-
 <p>As before, it will start with a self-signed certificate that expires after 365 days.</p>
 <p>Run the CLI with <code>--secure</code> (or <code>ARGO_SECURE=true</code>) only.</p>
 <div class="highlight"><pre><span></span><code>argo --secure list
 </code></pre></div>
-
 <div class="highlight"><pre><span></span><code>export ARGO_SECURE=true
 argo list
 </code></pre></div>

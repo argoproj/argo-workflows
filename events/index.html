@@ -1515,18 +1515,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2133,13 +2121,11 @@
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
-
 <p>With a <strong>discriminator</strong>:</p>
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/events/argo/my-discriminator <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello&quot;}&#39;</span>
 </code></pre></div>
-
 <p>The event endpoint will always return in under 10 seconds because the event will be queued and processed asynchronously. This means you will not be notified synchronously of failure. It will return a failure (503) if the event processing queue is full.  </p>
 <div class="admonition warning">
 <p class="admonition-title">Processing Order</p>
@@ -2164,14 +2150,12 @@ The following example will be trigger by an event with "message" in the payload.
         <span class="nt">valueFrom</span><span class="p">:</span>
           <span class="nt">event</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">payload.message</span>
 </code></pre></div>
-
 <p>Event:</p>
 <div class="highlight"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/events/argo/my-discriminator <span class="se">\</span>
     -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
     -H <span class="s2">&quot;X-Argo-E2E: true&quot;</span> <span class="se">\</span>
     -d <span class="s1">&#39;{&quot;message&quot;: &quot;hello events&quot;}&#39;</span>
 </code></pre></div>
-
 <div class="admonition warning">
 <p class="admonition-title">Malformed Expressions</p>
 <p>If the expression is malformed, this is logged. It is not visible in logs or the UI. </p>
@@ -2193,7 +2177,6 @@ The following example will be trigger by an event with "message" in the payload.
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>payload.repository.clone_url == &quot;http://gihub.com/argoproj/argo&quot;
 </code></pre></div>
-
 <h3 id="metadata">MetaData<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
 <p>Metadata is data about the event, this includes <strong>headers</strong>:</p>
 <h4 id="headers">Headers<a class="headerlink" href="#headers" title="Permanent link">&para;</a></h4>
@@ -2209,13 +2192,11 @@ The following example will be trigger by an event with "message" in the payload.
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>metadata[&quot;x-argo&quot;] == [&quot;yes&quot;]
 </code></pre></div>
-
 <h3 id="discriminator">Discriminator<a class="headerlink" href="#discriminator" title="Permanent link">&para;</a></h3>
 <p>This is only for edge-cases where neither the payload, or metadata provide enough information to discriminate. Typically, it should be empty and ignored.</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>discriminator == &quot;my-discriminator&quot;
 </code></pre></div>
-
 <h2 id="high-availability">High-Availability<a class="headerlink" href="#high-availability" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Run Minimum 2 Replicas</p>

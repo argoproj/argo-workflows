@@ -1404,18 +1404,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -1916,7 +1904,6 @@
 <p>Firstly, to do any automation, you'll need an (<a href="../access-token/">access token</a>). For this example, our role needs extra permissions:</p>
 <div class="highlight"><pre><span></span><code>kubectl patch role jenkins -p <span class="s1">&#39;{&quot;rules&quot;: [{&quot;apiGroups&quot;: [&quot;argoproj.io&quot;], &quot;resources&quot;: [&quot;workflowtemplates&quot;], &quot;verbs&quot;: [&quot;get&quot;]}, {&quot;apiGroups&quot;: [&quot;argoproj.io&quot;], &quot;resources&quot;: [&quot;workflows&quot;], &quot;verbs&quot;: [&quot;create&quot;, &quot;list&quot;, &quot;get&quot;, &quot;update&quot;]}]}&#39;</span>
 </code></pre></div>
-
 <p>Next, create a workflow template </p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
@@ -1933,25 +1920,21 @@
       <span class="nt">container</span><span class="p">:</span>
         <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay:latest</span>
 </code></pre></div>
-
 <p>You can submit this workflow via an CLI or the <a href="../rest-api/">Argo Server API</a>. </p>
 <p>Submit via CLI (note how I add a label to help identify it later on):</p>
 <div class="highlight"><pre><span></span><code>argo submit --from wftmpl/hello-argo -l workflows.argoproj.io/workflow-template<span class="o">=</span>hello-argo
 </code></pre></div>
-
 <p>Or submit via API:</p>
 <div class="highlight"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo/submit <span class="se">\</span>
   -fs <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;resourceKind&quot;: &quot;WorkflowTemplate&quot;, &quot;resourceName&quot;: &quot;hello-argo&quot;, &quot;submitOptions&quot;: {&quot;labels&quot;: &quot;workflows.argoproj.io/workflow-template=hello-argo&quot;}}&#39;</span> 
 </code></pre></div>
-
 <p>You'll see that the workflow has been created:</p>
 <div class="highlight"><pre><span></span><code>argo list
 NAME               STATUS    AGE   DURATION   PRIORITY
 hello-argo-77m4l   Running   33s   33s        <span class="m">0</span>
 </code></pre></div>
-
 <p>See also:</p>
 <p>See also:</p>
 <ul>

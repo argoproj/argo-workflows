@@ -1429,18 +1429,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -1956,18 +1944,15 @@
 <div class="highlight"><pre><span></span><code>kubectl create ns argo
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/quick-start-postgres.yaml
 </code></pre></div>
-
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>On GKE, you may need to grant your account the ability to create new <code>clusterrole</code>s</p>
 </div>
 <div class="highlight"><pre><span></span><code>kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole<span class="o">=</span>cluster-admin --user<span class="o">=</span>YOUREMAIL@gmail.com
 </code></pre></div>
-
 <p>If you are running Argo Workflows locally (e.g. using Minikube or Docker for Desktop), open a port-forward so you can access the namespace:</p>
 <div class="highlight"><pre><span></span><code>kubectl -n argo port-forward deployment/argo-server <span class="m">2746</span>:2746
 </code></pre></div>
-
 <p>This will serve the user interface on http://localhost:2746</p>
 <p>If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then <a href="../argo-server/#access-the-argo-workflows-ui">follow these instructions</a>. </p>
 <p>Next, Download the latest Argo CLI from our <a href="https://github.com/argoproj/argo/releases">releases page</a>.</p>

@@ -1404,18 +1404,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -1911,24 +1899,20 @@
 <p>For automation, we want just the name of the workflow, we can use labels to get just this our suspended workflow:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">WF</span><span class="o">=</span><span class="k">$(</span>argo list -l workflows.argoproj.io/workflow-template<span class="o">=</span><span class="nb">wait</span> --running -o name<span class="k">)</span>
 </code></pre></div>
-
 <div class="highlight"><pre><span></span><code><span class="nv">WF</span><span class="o">=</span><span class="k">$(</span>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo?listOptions.labelSelector<span class="o">=</span>workflows.argoproj.io/workflow-template<span class="o">=</span>wait,<span class="se">\!</span>workflows.argoproj.io/completed <span class="se">\</span>
   -fs <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="p">|</span>
   jq -r <span class="s1">&#39;.items[0].metadata.name&#39;</span><span class="k">)</span>
 </code></pre></div>
-
 <p>You can resume the workflow via the CLI or API too. If you have more than one node waiting, you must target it using a <a href="../node-field-selector/">node field selector</a>.</p>
 <div class="highlight"><pre><span></span><code>argo resume <span class="nv">$WF</span> --node-field-selector <span class="nv">displayName</span><span class="o">=</span>a
 </code></pre></div>
-
 <div class="highlight"><pre><span></span><code>curl <span class="nv">$ARGO_SERVER</span>/api/v1/workflows/argo/<span class="nv">$WF</span>/resume <span class="se">\</span>
   -fs <span class="se">\</span>
   -X <span class="s1">&#39;PUT&#39;</span> <span class="se">\</span>
   -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span> <span class="se">\</span>
   -d <span class="s1">&#39;{&quot;nodeFieldSelector&quot;: &quot;displayName=a&quot;}&#39;</span> 
 </code></pre></div>
-
 <p>Now the workflow will have resumed and completed.</p>
 <p>See also:</p>
 <ul>

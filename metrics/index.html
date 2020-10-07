@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2199,7 +2187,6 @@ level Gauge metric that will report the Workflow duration time:</p>
 
 <span class="nn">...</span>
 </code></pre></div>
-
 <p>An example of a <code>Template</code>-level Counter metric that will increase a counter every time the step fails:</p>
 <div class="highlight"><pre><span></span><code><span class="nn">...</span>
   <span class="nt">templates</span><span class="p">:</span>
@@ -2221,7 +2208,6 @@ level Gauge metric that will report the Workflow duration time:</p>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 <span class="nn">...</span>
 </code></pre></div>
-
 <p>A similar example of such a Counter metric that will increase for every step status</p>
 <div class="highlight"><pre><span></span><code><span class="nn">...</span>
   <span class="nt">templates</span><span class="p">:</span>
@@ -2244,7 +2230,6 @@ level Gauge metric that will report the Workflow duration time:</p>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;import</span><span class="nv"> </span><span class="s">random;</span><span class="nv"> </span><span class="s">import</span><span class="nv"> </span><span class="s">sys;</span><span class="nv"> </span><span class="s">exit_code</span><span class="nv"> </span><span class="s">=</span><span class="nv"> </span><span class="s">random.choice([0,</span><span class="nv"> </span><span class="s">1,</span><span class="nv"> </span><span class="s">1]);</span><span class="nv"> </span><span class="s">sys.exit(exit_code)&quot;</span><span class="p p-Indicator">]</span>
 <span class="nn">...</span>
 </code></pre></div>
-
 <p>Finally, an example of a <code>Template</code>-level Histogram metric that tracks an internal value:</p>
 <div class="highlight"><pre><span></span><code><span class="nn">...</span>
   <span class="nt">templates</span><span class="p">:</span>
@@ -2274,7 +2259,6 @@ level Gauge metric that will report the Workflow duration time:</p>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;RAND_INT=$((1</span><span class="nv"> </span><span class="s">+</span><span class="nv"> </span><span class="s">RANDOM</span><span class="nv"> </span><span class="s">%</span><span class="nv"> </span><span class="s">10));</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">$RAND_INT;</span><span class="nv"> </span><span class="s">echo</span><span class="nv"> </span><span class="s">$RAND_INT</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">/tmp/rand_int.txt&quot;</span><span class="p p-Indicator">]</span>
 <span class="nn">...</span>
 </code></pre></div>
-
 <h3 id="realtime-metrics">Realtime metrics<a class="headerlink" href="#realtime-metrics" title="Permanent link">&para;</a></h3>
 <p>Argo supports a limited number of real-time metrics. These metrics are emitted in realtime, beginning when the step execution starts
 and ending when it completes. Realtime metrics are only available on Gauge type metrics and with a <a href="../variables/#realtime-metrics">limited number of variables</a>.</p>

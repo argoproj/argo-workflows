@@ -1521,18 +1521,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2154,7 +2142,6 @@
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;date;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">90&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 <h3 id="workflowspec-and-workflowmetadata"><code>workflowSpec</code> and <code>workflowMetadata</code><a class="headerlink" href="#workflowspec-and-workflowmetadata" title="Permanent link">&para;</a></h3>
 <p><code>CronWorkflow.spec.workflowSpec</code> is the same type as <code>Workflow.spec</code> and serves as a template for <code>Workflow</code> objects that are created from it. Everything under this spec will be converted to a <code>Workflow</code>.</p>
 <p>The resuling <code>Workflow</code> name will be a generated name based on the <code>CronWorkflow</code> name. In this example it could be something like <code>test-cron-wf-tj6fe</code>.</p>
@@ -2244,7 +2231,6 @@ ConcurrencyPolicy:             Replace
 LastScheduledTime:             Mon Nov <span class="m">18</span> <span class="m">10</span>:21:00 -0800 <span class="o">(</span><span class="m">51</span> seconds ago<span class="o">)</span>
 Active Workflows:              test-cron-wf-rt4nf
 </code></pre></div>
-
 <h3 id="kubectl"><code>kubectl</code><a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h3>
 <p>Using <code>kubectl apply -f</code> and <code>kubectl get cwf</code></p>
 <h2 id="backfilling-days">Backfilling Days<a class="headerlink" href="#backfilling-days" title="Permanent link">&para;</a></h2>

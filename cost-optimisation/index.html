@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2098,7 +2086,6 @@
 <div class="highlight"><pre><span></span><code><span class="nt">nodeSelector</span><span class="p">:</span>
   <span class="s">&quot;node-role.kubernetes.io/argo-spot-worker&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;true&quot;</span>
 </code></pre></div>
-
 <h3 id="consider-trying-volume-claim-templates-or-volumes-instead-of-artifacts">Consider trying Volume Claim Templates or Volumes instead of Artifacts<a class="headerlink" href="#consider-trying-volume-claim-templates-or-volumes-instead-of-artifacts" title="Permanent link">&para;</a></h3>
 <blockquote>
 <p>Suitable if you have a workflow that passes a lot of artifacts within itself.</p>
@@ -2134,13 +2121,11 @@
   <span class="nt">podGC</span><span class="p">:</span>
     <span class="nt">strategy</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">OnPodCompletion</span>
 </code></pre></div>
-
 <p>You can set these configurations globally using <a href="../default-workflow-specs/">Default Workflow Spec</a>.</p>
 <p>If you need to keep records historically, use the <a href="../workflow-archive/">Workflow Archive</a>.</p>
 <p>Changing these settings will not delete workflows that have already run. To list old workflows:</p>
 <div class="highlight"><pre><span></span><code>argo list --completed --since 7d
 </code></pre></div>
-
 <blockquote>
 <p>v2.9 and after</p>
 </blockquote>
@@ -2148,7 +2133,6 @@
 <div class="highlight"><pre><span></span><code>argo list --older 7d
 argo delete --older 7d
 </code></pre></div>
-
 <h2 id="operator-cost-optimisations">Operator Cost Optimisations<a class="headerlink" href="#operator-cost-optimisations" title="Permanent link">&para;</a></h2>
 <p>Suggestions for operators who installed Argo Workflows.</p>
 <h3 id="set-resources-requests-and-limits">Set Resources Requests and Limits<a class="headerlink" href="#set-resources-requests-and-limits" title="Permanent link">&para;</a></h3>
@@ -2163,7 +2147,6 @@ argo delete --older 7d
   <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500m</span>
   <span class="nt">memory</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">128Mi</span>
 </code></pre></div>
-
 <p>This above limit is suitable for the Argo Server, as this is stateless. The Workflow Controller is stateful and will scale to the number of live workflows - so you are likely to need higher values.</p>
 <h3 id="configure-executor-resource-requests">Configure Executor Resource Requests<a class="headerlink" href="#configure-executor-resource-requests" title="Permanent link">&para;</a></h3>
 <blockquote>
@@ -2178,7 +2161,6 @@ argo delete --older 7d
     <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500m</span>
     <span class="nt">memory</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">512Mi</span>
 </code></pre></div>
-
 <p>The correct values depend on the size of artifacts your workflows download. For artifacts &gt; 10GB, memory usage may be large - <a href="https://github.com/argoproj/argo/issues/1322">#1322</a>.</p>
                 
                   

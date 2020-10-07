@@ -1514,18 +1514,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2194,7 +2182,6 @@ and convert it to a <code>WorkflowTemplate</code> by substituting <code>kind: Wo
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 <p>However, this would be a valid <code>WorkflowTemplate</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">WorkflowTemplate</span>
@@ -2215,7 +2202,6 @@ and convert it to a <code>WorkflowTemplate</code> by substituting <code>kind: Wo
         <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
         <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-
 <h2 id="referencing-other-workflowtemplates">Referencing other <code>WorkflowTemplates</code><a class="headerlink" href="#referencing-other-workflowtemplates" title="Permanent link">&para;</a></h2>
 <p>You can reference <code>templates</code> from another <code>WorkflowTemplates</code> (see the <a href="#workflowtemplate-vs-template">difference between the two</a>) using a <code>templateRef</code> field.
 Just as how you reference other <code>templates</code> within the same <code>Workflow</code>, you should do so from a <code>steps</code> or <code>dag</code> template.</p>
@@ -2316,11 +2302,9 @@ Here is an example for referring <code>WorkflowTemplate</code> as Workflow with 
 <p>You can create some example templates as follows:</p>
 <div class="highlight"><pre><span></span><code>argo template create https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/templates.yaml
 </code></pre></div>
-
 <p>The submit a workflow using one of those templates:</p>
 <div class="highlight"><pre><span></span><code>argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/hello-world.yaml
 </code></pre></div>
-
 <blockquote>
 <p>2.7 and after
 The submit a <code>WorkflowTemplate</code> as a <code>Workflow</code>:

@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2154,7 +2142,6 @@
 <p>To run locally:</p>
 <div class="highlight"><pre><span></span><code>argo server
 </code></pre></div>
-
 <p>This will start a server on port 2746 which you can view at <a href="http://localhost:2746">http://localhost:2746</a>.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <h3 id="auth-mode">Auth Mode<a class="headerlink" href="#auth-mode" title="Permanent link">&para;</a></h3>
@@ -2176,13 +2163,11 @@ following:</p>
 <h3 id="kubectl-port-forward"><code>kubectl port-forward</code><a class="headerlink" href="#kubectl-port-forward" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>kubectl -n argo port-forward svc/argo-server <span class="m">2746</span>:2746
 </code></pre></div>
-
 <p>Then visit: http://127.0.0.1:2746</p>
 <h3 id="expose-a-loadbalancer">Expose a <code>LoadBalancer</code><a class="headerlink" href="#expose-a-loadbalancer" title="Permanent link">&para;</a></h3>
 <p>Update the service to be of type <code>LoadBalancer</code>.</p>
 <div class="highlight"><pre><span></span><code>kubectl patch svc argo-server -n argo -p <span class="s1">&#39;{&quot;spec&quot;: {&quot;type&quot;: &quot;LoadBalancer&quot;}}&#39;</span>
 </code></pre></div>
-
 <p>Then wait for the external IP to be made available:</p>
 <p><div class="highlight"><pre><span></span><code>kubectl get svc argo-server -n argo
 </code></pre></div>
@@ -2197,7 +2182,6 @@ argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="
       <span class="nt">targetPort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2746</span>
  <span class=" -Error"> </span><span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
 </code></pre></div>
-
 <p>Add <code>BASE_HREF</code> as environment variable to <code>deployment/argo-server</code> :</p>
 <div class="highlight"><pre><span></span><code>        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argo-server</span>
           <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj/argocli:latest</span>
@@ -2206,7 +2190,6 @@ argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="
             <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">BASE_HREF</span>
               <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo/</span>
 </code></pre></div>
-
 <p>Create a ingress, with the annotation <code>ingress.kubernetes.io/rewrite-target: /</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Ingress</span>
@@ -2223,7 +2206,6 @@ argo-server   LoadBalancer   <span class="m">10</span>.43.43.130   <span class="
               <span class="nt">servicePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2746</span>
             <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/argo</span>
 </code></pre></div>
-
 <p><a href="https://github.com/argoproj/argo/issues/3080">Learn more</a></p>
                 
                   

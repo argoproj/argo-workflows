@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2042,11 +2030,9 @@
 <div class="codehilite"><pre><span></span><code><span class="err">make prepare-release VERSION=v2.11.2</span>
 </code></pre></div>
 
-
 <p>Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):</p>
 <div class="codehilite"><pre><span></span><code><span class="err">make publish-release K3D=false VERSION=v2.11.2</span>
 </code></pre></div>
-
 
 <ul>
 <li>[ ] Check the images were pushed successfully.</li>
@@ -2057,7 +2043,6 @@
 docker run argoproj/argoexec:v2.11.2 version
 docker run argoproj/argocli:v2.11.2 version
 </code></pre></div>
-
 <ul>
 <li>
 <p>[ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/v2.11.2/manifests/install.yaml</p>
@@ -2070,7 +2055,6 @@ docker run argoproj/argocli:v2.11.2 version
 <p>Create <a href="https://github.com/argoproj/argo/releases">the release</a> in Github. You can get some text for this using <a href="https://github.com/alexec/github-toolkit">Github Toolkit</a>:</p>
 <div class="codehilite"><pre><span></span><code><span class="err">ght relnote v2.7.1..v2.11.2</span>
 </code></pre></div>
-
 
 <p>Release notes checklist:</p>
 <ul>
@@ -2085,7 +2069,6 @@ docker run argoproj/argocli:v2.11.2 version
 <div class="highlight"><pre><span></span><code>git tag -f stable
 git push -f origin stable
 </code></pre></div>
-
 <ul>
 <li>[ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml</li>
 </ul>
@@ -2097,14 +2080,12 @@ git push -f origin stable
 <div class="highlight"><pre><span></span><code><span class="nb">export</span> <span class="nv">HOMEBREW_GITHUB_API_TOKEN</span><span class="o">=</span>******
 brew bump-formula-pr argo --version <span class="m">2</span>.11.2
 </code></pre></div>
-
 <ul>
 <li>[ ] Check that Homebrew was successfully updated after the PR was merged:</li>
 </ul>
 <div class="highlight"><pre><span></span><code>brew upgrade argo
 /usr/local/bin/argo version
 </code></pre></div>
-
 <h3 id="update-java-sdk">Update Java SDK<a class="headerlink" href="#update-java-sdk" title="Permanent link">&para;</a></h3>
 <p>If this is GA:</p>
 <ul>
@@ -2114,7 +2095,6 @@ brew bump-formula-pr argo --version <span class="m">2</span>.11.2
 cd argo-client-java
 make publish VERSION=v2.11.2
 </code></pre></div>
-
 <ul>
 <li>[ ] Check package published: https://github.com/argoproj-labs/argo-client-java/packages</li>
 </ul>

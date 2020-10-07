@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -1983,7 +1971,6 @@ kubectl create secret -n argo generic client-secret-secret \
 <p>Then, start the Argo Server using the SSO <a href="../argo-server-auth-mode/">auth mode</a>:</p>
 <div class="highlight"><pre><span></span><code>argo server --auth-mode sso --auth-mode ...
 </code></pre></div>
-
 <h2 id="token-revocation">Token Revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
 <blockquote>
 <p>v2.12 and after</p>
@@ -1993,7 +1980,6 @@ kubectl create secret -n argo generic client-secret-secret \
 <p>You can revoke all tokens by deleting the encryption key and restarting the Argo Server (so it generates a new key). </p>
 <div class="highlight"><pre><span></span><code>kubectl delete secret sso
 </code></pre></div>
-
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The old key will be in the memory the any running Argo Server, and they will therefore accept and user with token encrypted using the old key. Every Argo Server MUST be restarted. </p>

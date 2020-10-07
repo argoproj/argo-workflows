@@ -1391,18 +1391,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -2105,16 +2093,13 @@ $ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # offic
 $ helm repo update
 $ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 </code></pre></div>
-
 <p>Login to the Minio UI using a web browser (port 9000) after obtaining the
 external IP using <code>kubectl</code>.</p>
 <div class="highlight"><pre><span></span><code>$ kubectl get service argo-artifacts
 </code></pre></div>
-
 <p>On Minikube:</p>
 <div class="highlight"><pre><span></span><code>$ minikube service --url argo-artifacts
 </code></pre></div>
-
 <p>NOTE: When minio is installed via Helm, it uses the following hard-wired default
 credentials, which you will use to login to the UI:</p>
 <ul>
@@ -2150,7 +2135,6 @@ $ aws iam create-user --user-name $mybucket-user
 $ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-policy --policy-document file://policy.json
 $ aws iam create-access-key --user-name $mybucket-user &gt; access-key.json
 </code></pre></div>
-
 <p>NOTE: if you want argo to figure out which region your buckets belong in, you
 must additionally set the following statement policy. Otherwise, you must
 specify a bucket region in your workflow configuration.</p>
@@ -2164,7 +2148,6 @@ specify a bucket region in your workflow configuration.</p>
       }
     ...
 </code></pre></div>
-
 <h2 id="configuring-gcs-google-cloud-storage">Configuring GCS (Google Cloud Storage)<a class="headerlink" href="#configuring-gcs-google-cloud-storage" title="Permanent link">&para;</a></h2>
 <p>Create a bucket from the GCP Console
 (https://console.cloud.google.com/storage/browser).</p>
@@ -2193,7 +2176,6 @@ specify a bucket region in your workflow configuration.</p>
         <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-credentials</span>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">serviceAccountKey</span>
 </code></pre></div>
-
 <p>If it's a GKE cluster, and Workload Identity is configured, there's no need to
 create the Service Account key and store it as a K8s secret,
 <code>serviceAccountKeySecret</code> is also not needed in this case. Please follow the
@@ -2227,7 +2209,6 @@ access is on a per project rather than per bucket basis.</p>
         <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-gcs-s3-credentials</span>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
 </code></pre></div>
-
 <h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
 <p>To configure artifact storage for Alibaba Cloud OSS, please first follow
 the <a href="https://www.alibabacloud.com/product/oss">official documentation</a> to set up
@@ -2254,7 +2235,6 @@ configure the artifact storage for your workflow:</p>
         <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-oss-credentials</span>
         <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretKey</span>
 </code></pre></div>
-
 <h1 id="configure-the-default-artifact-repository">Configure the Default Artifact Repository<a class="headerlink" href="#configure-the-default-artifact-repository" title="Permanent link">&para;</a></h1>
 <p>In order for Argo to use your artifact repository, you can configure it as the
 default repository. Edit the workflow-controller config map with the correct
@@ -2309,7 +2289,6 @@ data:
         key: secretKey
       useSDKCreds: true               #tells argo to use AWS SDK&#39;s default provider chain, enable for things like IRSA support
 </code></pre></div>
-
 <p>The secrets are retrieved from the namespace you use to run your workflows. Note
 that you can specify a <code>keyFormat</code>.</p>
 <h2 id="google-cloud-storage-gcs">Google Cloud Storage (GCS)<a class="headerlink" href="#google-cloud-storage-gcs" title="Permanent link">&para;</a></h2>
@@ -2328,7 +2307,6 @@ data:
         name: my-gcs-credentials
         key: serviceAccountKey
 </code></pre></div>
-
 <h1 id="accessing-non-default-artifact-repositories">Accessing Non-Default Artifact Repositories<a class="headerlink" href="#accessing-non-default-artifact-repositories" title="Permanent link">&para;</a></h1>
 <p>This section shows how to access artifacts from non-default artifact
 repositories.</p>

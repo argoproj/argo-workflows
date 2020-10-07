@@ -1433,18 +1433,6 @@
   </li>
 
         
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../swagger/" title="API Reference" class="md-nav__link">
-      API Reference
-    </a>
-  </li>
-
-        
       </ul>
     </nav>
   </li>
@@ -1957,24 +1945,20 @@
 <p>Firstly, create a role with minimal permissions. This example role for jenkins only permission to update and list workflows:</p>
 <div class="highlight"><pre><span></span><code>kubectl create role jenkins --verb<span class="o">=</span>list,update --resource<span class="o">=</span>workflows.argoproj.io 
 </code></pre></div>
-
 <p>Create a service account for your service:</p>
 <div class="highlight"><pre><span></span><code>kubectl create sa jenkins
 </code></pre></div>
-
 <p>!! TIP
     Create a unique service account for each client: (a) you'll be able to correctly secure your workflows and (b) <a href="#token-revocation">revoke the token</a> without impacting other clients. </p>
 <p>Bind the service account to the role (in this case in the <code>argo</code> namespace):</p>
 <div class="highlight"><pre><span></span><code>kubectl create rolebinding jenkins --role<span class="o">=</span>jenkins --serviceaccount<span class="o">=</span>argo:jenkins
 </code></pre></div>
-
 <p>You now need to get a token:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl get sa jenkins -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.secrets[0].name}&#39;</span><span class="k">)</span>
 <span class="nv">ARGO_TOKEN</span><span class="o">=</span><span class="s2">&quot;Bearer </span><span class="k">$(</span>kubectl get secret <span class="nv">$SECRET</span> -o<span class="o">=</span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token}&#39;</span> <span class="p">|</span> base64 --decode<span class="k">)</span><span class="s2">&quot;</span>
 <span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </code></pre></div>
-
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The <code>ARGO_TOKEN</code> should always start with "Bearer ".</p>
@@ -1983,22 +1967,18 @@ Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 <div class="highlight"><pre><span></span><code><span class="nv">ARGO_SERVER</span><span class="o">=</span>http://localhost:2746 
 argo list
 </code></pre></div>
-
 <p>Use that token in your API requests, e.g. to list workflows:</p>
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 200 OK</span>
 </code></pre></div>
-
 <p>You should check you cannot do things you're not allowed!</p>
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflow-templates/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 403 error</span>
 </code></pre></div>
-
 <h2 id="token-revocation">Token Revocation<a class="headerlink" href="#token-revocation" title="Permanent link">&para;</a></h2>
 <p>Token compromised?</p>
 <div class="highlight"><pre><span></span><code>kubectl delete secret <span class="nv">$SECRET</span>
 </code></pre></div>
-
 <p>A new one will be created.</p>
                 
                   
