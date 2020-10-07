@@ -2275,7 +2275,7 @@ spec:
         - name: invalid.metric.name
           help: "invalid"
           gauge:
-            value: "1"
+            value: 1
     container:
       image: docker/whalesay:latest
 `
@@ -2298,7 +2298,7 @@ spec:
       prometheus:
         - name: metric_name
           gauge:
-            value: "1"
+            value: 1
     container:
       image: docker/whalesay:latest
 `

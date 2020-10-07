@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   name: dag-diamond-8q7vp
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   arguments: {}
   entrypoint: diamond
@@ -34,7 +34,7 @@ spec:
       container:
         args:
           - exit
-          - "0"
+          - 0
         image: argoproj/argosay:v2
         name: ""
         resources: {}
@@ -46,7 +46,7 @@ spec:
       container:
         args:
           - exit
-          - "1"
+          - 1
         image: argoproj/argosay:v2
         name: ""
         resources: {}

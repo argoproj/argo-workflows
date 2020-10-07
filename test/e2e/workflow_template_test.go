@@ -46,7 +46,7 @@ kind: Workflow
 metadata:
   generateName: workflow-template-nested-
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:

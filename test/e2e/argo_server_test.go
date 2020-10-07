@@ -116,7 +116,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromGithubWebhook() {
 metadata:
   name: github-webhook
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   entrypoint: main
   workflowMetadata:
@@ -131,7 +131,7 @@ spec:
 metadata:
   name: github-webhook
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   event:
     selector: metadata["x-github-event"] == ["push"]
@@ -164,7 +164,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowTemplateFromEvent() {
 metadata:
   name: event-consumer
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   entrypoint: main
   workflowMetadata:
@@ -199,7 +199,7 @@ spec:
 metadata:
   name: event-consumer
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   event:
     selector: payload.appellation != "" && metadata["x-argo-e2e"] == ["true"]
@@ -236,7 +236,7 @@ func (s *ArgoServerSuite) TestSubmitClusterWorkflowTemplateFromEvent() {
 metadata:
   name: event-consumer
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   entrypoint: main
   workflowMetadata:
@@ -251,10 +251,10 @@ spec:
 metadata:
   name: event-consumer
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   event:
-    selector: "true"
+    selector: true
   submit:
     workflowTemplateRef:
       name: event-consumer
@@ -283,7 +283,7 @@ func (s *ArgoServerSuite) TestEventOnMalformedWorkflowEventBinding() {
 metadata:
   name: malformed
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 `).
 		When().
 		CreateWorkflowEventBinding().
@@ -642,9 +642,10 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "Workflow",
     "metadata": {
+      "generateName": "hello-world-",
       "name": "hello-world",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/archive-strategy": "false"
       }
     },
     "spec": {
@@ -653,7 +654,11 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
         {
           "name": "whalesay",
           "container": {
-            "image": "argoproj/argosay:v2"
+            "image": "argoproj/argosay:v2",
+            "args": [
+              "exit",
+              "0"
+            ]
           }
         }
       ]
@@ -669,9 +674,10 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "Workflow",
     "metadata": {
+      "generateName": "hello-world-",
       "name": "hello-world",
       "labels": {
-        "argo-e2e": "true"
+        "workflows.argoproj.io/archive-strategy": "false"
       }
     },
     "spec": {
@@ -680,7 +686,11 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
         {
           "name": "whalesay",
           "container": {
-            "image": "argoproj/argosay:v2"
+            "image": "argoproj/argosay:v2",
+            "args": [
+              "exit",
+              "0"
+            ]
           }
         }
       ]
@@ -688,9 +698,9 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
   }
 }`))).
 		Expect().
-		Status(409).
+		Status(500).
 		Body().
-		Contains(`already exists`)
+		Contains("create request failed due to timeout, but it's possible that workflow")
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
@@ -924,7 +934,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -933,7 +943,7 @@ spec:
   failedJobsHistoryLimit: 2
   workflowMetadata:
     labels:
-      argo-e2e: "true"
+      argo-e2e: true
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
@@ -1183,7 +1193,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 metadata:
   name: archie
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
     foo: 1
 spec:
   entrypoint: run-archie
@@ -1203,7 +1213,7 @@ spec:
 metadata:
   name: betty
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
     foo: 2
 spec:
   entrypoint: run-betty

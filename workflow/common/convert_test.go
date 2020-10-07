@@ -115,7 +115,7 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-whalesay-template
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   workflowMetadata:
     labels:

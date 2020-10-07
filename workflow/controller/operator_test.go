@@ -2982,7 +2982,7 @@ kind: Workflow
 metadata:
   name: invalid-spec
 spec:
-  entrypoint: "123"
+  entrypoint: 123
 `: {
 			"Normal WorkflowRunning Workflow Running",
 			"Warning WorkflowFailed invalid spec: template name '123' undefined",

@@ -351,7 +351,7 @@ spec:
           - 6.01
           - 8.01
           - 10.01
-          value: "5"
+          value: 5
         name: random_int_step_histogram_dag
       - gauge:
           realtime: true
