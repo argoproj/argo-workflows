@@ -42,6 +42,14 @@ func TestPrintWorkflows(t *testing.T) {
 			},
 		},
 	}
+
+	var emptyWorkflows wfv1.Workflows
+	t.Run("Empty", func(t *testing.T) {
+		var b bytes.Buffer
+		assert.NoError(t, PrintWorkflows(emptyWorkflows, &b, PrintOpts{}))
+		assert.Equal(t, `No workflows found
+`, b.String())
+	})
 	t.Run("Default", func(t *testing.T) {
 		var b bytes.Buffer
 		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{}))
