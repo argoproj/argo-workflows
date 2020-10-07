@@ -102,7 +102,7 @@ type WorkflowController struct {
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
 	// maybe nil
-	metricsInterface      podmetrics.MetricsV1beta1Interface // kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
+	metricsInterface podmetrics.MetricsV1beta1Interface // kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.7/components.yaml
 }
 
 const (

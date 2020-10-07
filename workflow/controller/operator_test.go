@@ -1026,7 +1026,8 @@ func TestAssessNodeStatus(t *testing.T) {
 		pod: &apiv1.Pod{
 			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
 			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
+				Phase:     apiv1.PodRunning,
+				StartTime: &metav1.Time{},
 			},
 		},
 		node: &wfv1.NodeStatus{},
@@ -1040,7 +1041,8 @@ func TestAssessNodeStatus(t *testing.T) {
 				},
 			},
 			Status: apiv1.PodStatus{
-				Phase: apiv1.PodRunning,
+				Phase:     apiv1.PodRunning,
+				StartTime: &metav1.Time{},
 			},
 		},
 		node: &wfv1.NodeStatus{},

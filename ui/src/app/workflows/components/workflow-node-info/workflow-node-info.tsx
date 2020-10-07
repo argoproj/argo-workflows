@@ -8,10 +8,10 @@ import {InlineTable} from '../../../shared/components/inline-table/inline-table'
 import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
+import {ResourcesUsage} from '../../../shared/resources-usage';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {EventsPanel} from '../events-panel';
-import {ResourcesUsage} from "../../../shared/resources-usage";
 
 require('./workflow-node-info.scss');
 
@@ -96,7 +96,7 @@ export const WorkflowNodeSummary = (props: Props) => {
     }
     attributes.push({
         title: 'RESOURCES USAGE',
-        value: <ResourcesUsage {...props.node.resourcesUsage}/>
+        value: <ResourcesUsage {...props.node.resourcesUsage} />
     });
     if (props.node.resourcesDuration) {
         attributes.push({

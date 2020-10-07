@@ -117,6 +117,7 @@ var (
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime = 10 * time.Second
 const defaultRequeueTime = maxOperationTime
+
 // when to check for pod metrics if they weren't found the first time
 const checkPodMetricsAgainAfter = 15 * time.Second
 
@@ -1135,11 +1136,10 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	// * Only when not yet set, so only once.
 	if woc.controller.metricsInterface != nil && pod.Status.Phase == apiv1.PodRunning && node.ResourcesUsage == nil {
 		podMetrics, err := woc.controller.metricsInterface.PodMetricses(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
-
 		if err != nil {
 			if !apierr.IsNotFound(err) {
 				woc.log.WithError(err).Warn("could not get pod metrics")
-			} else if pod.Status.StartTime.After(time.Now().Add(-checkPodMetricsAgainAfter)) {
+			} else if  pod.Status.StartTime.After(time.Now().Add(-checkPodMetricsAgainAfter)) {
 				woc.requeue(checkPodMetricsAgainAfter)
 			}
 		} else {
