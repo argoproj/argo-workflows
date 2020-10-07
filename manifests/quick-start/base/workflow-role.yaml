@@ -22,6 +22,12 @@ rules:
     verbs:
       - get
       - watch
+  - apiGroups:
+      - metrics.k8s.io
+    resources:
+      - pods
+    verbs:
+      - get
   # This allows one workflow to create another.
   # Not needed for the majority of use cases.
   - apiGroups:

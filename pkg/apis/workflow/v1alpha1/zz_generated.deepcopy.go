@@ -1147,6 +1147,13 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.ResourcesUsage != nil {
+		in, out := &in.ResourcesUsage, &out.ResourcesUsage
+		*out = make(v1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
 	if in.Daemoned != nil {
 		in, out := &in.Daemoned, &out.Daemoned
 		*out = new(bool)

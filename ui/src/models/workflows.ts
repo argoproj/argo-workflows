@@ -460,6 +460,11 @@ export interface NodeStatus {
     estimatedDuration?: number;
 
     /**
+     * How much resource was usage.
+     */
+    resourcesUsage?: {[resource: string]: number};
+
+    /**
      * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};

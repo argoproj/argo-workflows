@@ -1153,6 +1153,16 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
+		podMetrics, err := woc.controller.metricsInterface.PodMetricses(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
+		if err != nil {
+			woc.log.WithError(err).Warn("could not get pod metrics")
+		} else {
+			for _, c := range podMetrics.Containers {
+				if c.Name == common.MainContainerName {
+					node.ResourcesUsage = c.Usage
+				}
+			}
+		}
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
 	if updated {

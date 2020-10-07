@@ -1394,6 +1394,9 @@ type NodeStatus struct {
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
+	// ResourcesUsage is indicative, but not accurate, resource usage. This is populated when the nodes completes.
+	ResourcesUsage apiv1.ResourceList `json:"resourcesUsage,omitempty" protobuf:"bytes,26,rep,name=resourcesUsage,casttype=k8s.io/api/core/v1.ResourceList,castkey=k8s.io/api/core/v1.ResourceName"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
 

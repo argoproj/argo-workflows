@@ -100,6 +100,7 @@ type ContainerRuntimeExecutor interface {
 
 	// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(containerIDs []string) error
+	GetMetrics(containerID string) (apiv1.ResourceList, error)
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -1020,6 +1021,7 @@ func (we *WorkflowExecutor) Wait() error {
 
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
+	go we.monitorPodMetrics(ctx.Done())
 
 	_ = wait.ExponentialBackoff(ExecutorRetry, func() (bool, error) {
 		err = we.RuntimeExecutor.Wait(mainContainerID)
@@ -1183,6 +1185,30 @@ func (we *WorkflowExecutor) setExecutionControl() {
 		}
 		we.ExecutionControl = &execCtl
 		log.Infof("Execution control set from API: %v", *we.ExecutionControl)
+	}
+}
+func (we *WorkflowExecutor) monitorPodMetrics(stopCh <-chan struct{}) {
+	t := time.NewTicker(5 * time.Second)
+	defer t.Stop()
+	max := apiv1.ResourceList{}
+	for {
+		select {
+		case <-stopCh:
+			data, _ := json.Marshal(max)
+			_ = we.AddAnnotation(common.AnnotationKeyResourcesUsage, string(data))
+			return
+		case <-t.C:
+			metrics, err := we.RuntimeExecutor.GetMetrics(we.mainContainerID)
+			if err != nil {
+				log.WithError(err).Error("failed to get metrics")
+				continue
+			}
+			for n, q := range metrics {
+				if x, ok := max[n]; !ok || x.Value() < q.Value() {
+					max[n] = q
+				}
+			}
+		}
 	}
 }
 

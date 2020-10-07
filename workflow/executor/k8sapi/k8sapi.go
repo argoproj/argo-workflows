@@ -5,14 +5,34 @@ import (
 	"io"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"github.com/argoproj/argo/errors"
 )
 
 type K8sAPIExecutor struct {
 	client *k8sAPIClient
+}
+
+func (k *K8sAPIExecutor) GetMetrics(string) (corev1.ResourceList, error) {
+	config, err := versioned.NewForConfig(k.client.config)
+	if err != nil {
+		return nil, err
+	}
+	podMetrics, err := config.MetricsV1beta1().PodMetricses(k.client.namespace).Get(k.client.podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, container := range podMetrics.Containers {
+		if container.Name == "main" {
+			return container.Usage, nil
+		}
+	}
+	return nil, fmt.Errorf("main container not found")
 }
 
 func NewK8sAPIExecutor(clientset *kubernetes.Clientset, config *restclient.Config, podName, namespace string) (*K8sAPIExecutor, error) {

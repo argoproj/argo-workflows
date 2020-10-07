@@ -17,6 +17,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/archive"
@@ -26,9 +28,10 @@ import (
 )
 
 type PNSExecutor struct {
-	clientset *kubernetes.Clientset
-	podName   string
-	namespace string
+	clientset  *kubernetes.Clientset
+	restConfig *rest.Config
+	podName    string
+	namespace  string
 
 	// ctrIDToPid maps a containerID to a process ID
 	ctrIDToPid map[string]int
@@ -53,12 +56,25 @@ type PNSExecutor struct {
 	hasOutputs bool
 }
 
+func (p *PNSExecutor) GetMetrics(string) (corev1.ResourceList, error) {
+	podMetrics, err := versioned.NewForConfigOrDie(p.restConfig).MetricsV1beta1().PodMetricses(p.namespace).Get(p.podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for _, container := range podMetrics.Containers {
+		if container.Name == "main" {
+			return container.Usage, nil
+		}
+	}
+	return nil, fmt.Errorf("main container not found")
+}
+
 type fileInfo struct {
 	file os.File
 	info os.FileInfo
 }
 
-func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string, hasOutputs bool) (*PNSExecutor, error) {
+func NewPNSExecutor(clientset *kubernetes.Clientset, restConfig *rest.Config, podName, namespace string, hasOutputs bool) (*PNSExecutor, error) {
 	thisPID := os.Getpid()
 	log.Infof("Creating PNS executor (namespace: %s, pod: %s, pid: %d, hasOutputs: %v)", namespace, podName, thisPID, hasOutputs)
 	if thisPID == 1 {
@@ -66,6 +82,7 @@ func NewPNSExecutor(clientset *kubernetes.Clientset, podName, namespace string, 
 	}
 	return &PNSExecutor{
 		clientset:      clientset,
+		restConfig:     restConfig,
 		podName:        podName,
 		namespace:      namespace,
 		ctrIDToPid:     make(map[string]int),
