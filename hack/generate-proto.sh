@@ -3,7 +3,7 @@ set -eu -o pipefail
 
 trap 'rm -Rf vendor' EXIT
 
-newest_input=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated' | head -n1)
+newest_input=$(ls -t pkg/apis/workflow/v1alpha1/*.go | grep -v 'test\|generated\|easyjson' | head -n1)
 
 if [ "$newest_input" -nt pkg/apis/workflow/v1alpha1/generated.proto ]; then
   echo "running go-to-protobuf"

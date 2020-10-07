@@ -236,10 +236,12 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 codegen: proto swagger manifests gogenerate docs
 
 .PHONY: gogenerate
-gogenerate: $(GOPATH)/bin/mockery $(GOPATH)/bin/easyjson
+gogenerate: $(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
-	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor ./pkg/apis/workflow/v1alpha1
+	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
+%_easyjson.go: $(GOPATH)/bin/easyjson %.go
+	go generate ./$*.go
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz

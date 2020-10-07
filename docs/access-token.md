@@ -20,7 +20,7 @@ kubectl create sa jenkins
 Bind the service account to the role (in this case in the `argo` namespace):
 
 ```sh
-argo submit my-wf.yaml --serviceaccount workflow
+kubectl create rolebinding jenkins --role=jenkins --serviceaccount=argo:jenkins
 ```
 
 You now need to get a token:
