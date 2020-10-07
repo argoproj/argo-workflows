@@ -662,7 +662,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay)
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
