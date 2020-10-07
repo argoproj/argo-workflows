@@ -612,7 +612,7 @@ func TestGetTTLStrategy(t *testing.T) {
 	}
 	t.Run("TTLFromWfDefaults", func(t *testing.T) {
 		wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
-		ttl := getTTLStrategy(wf, defaultTTLStrategy)
+		ttl := wf.GetTTLStrategy(defaultTTLStrategy)
 		assert.NotNil(t, ttl)
 		assert.Equal(t, thirty, *ttl.SecondsAfterCompletion)
 	})
@@ -622,32 +622,32 @@ func TestGetTTLStrategy(t *testing.T) {
 		wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
 			SecondsAfterCompletion: &ten,
 		}
-		ttl := getTTLStrategy(wf, defaultTTLStrategy)
+		ttl := wf.GetTTLStrategy(defaultTTLStrategy)
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 	})
 
 	t.Run("TTLInWfwithWorkflowTemplate", func(t *testing.T) {
 		wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
-		ttl := getTTLStrategy(wf1, defaultTTLStrategy)
+		ttl := wf1.GetTTLStrategy(defaultTTLStrategy)
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 
 		wf1.Spec.TTLStrategy = nil
 		wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
-		ttl = getTTLStrategy(wf1, nil)
+		ttl = wf1.GetTTLStrategy(nil)
 		assert.Nil(t, ttl)
 	})
 	t.Run("TTLwithWorkflowTemplate", func(t *testing.T) {
 		wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
 		wf2.Spec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = &twenty
-		ttl := getTTLStrategy(wf2, defaultTTLStrategy)
+		ttl := wf2.GetTTLStrategy(defaultTTLStrategy)
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
-		ttl = getTTLStrategy(wf2, nil)
+		ttl = wf2.GetTTLStrategy(nil)
 		assert.Nil(t, ttl)
 	})
 }

@@ -201,7 +201,7 @@ func (c *Controller) getDefaultTTLStrategy() *wfv1.TTLStrategy {
 }
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	ttlStrategy := getTTLStrategy(wf, c.getDefaultTTLStrategy())
+	ttlStrategy := wf.GetTTLStrategy(c.getDefaultTTLStrategy())
 
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
@@ -222,7 +222,7 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLStrategy) (*time.Duration, *time.Time) {
-	ttlStrategy := getTTLStrategy(wf, defaultTTLStrategy)
+	ttlStrategy := wf.GetTTLStrategy(defaultTTLStrategy)
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
@@ -247,21 +247,4 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLS
 	} else {
 		return nil, nil
 	}
-}
-
-func getTTLStrategy(wf *wfv1.Workflow, defaultTTLStrategy *wfv1.TTLStrategy) *wfv1.TTLStrategy {
-	var ttlStrategy *wfv1.TTLStrategy
-	// TTLStrategy from Workflow default from Config
-	if defaultTTLStrategy != nil {
-		ttlStrategy = defaultTTLStrategy
-	}
-	// TTLStrategy from WorkflowTemplate
-	if wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
-		ttlStrategy = wf.Status.StoredWorkflowSpec.GetTTLStrategy()
-	}
-	//TTLStrategy from Workflow
-	if wf.Spec.GetTTLStrategy() != nil {
-		ttlStrategy = wf.Spec.GetTTLStrategy()
-	}
-	return ttlStrategy
 }

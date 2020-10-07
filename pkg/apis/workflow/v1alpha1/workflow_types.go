@@ -144,6 +144,25 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 	return out
 }
 
+// GetTTLStrategy return TTLStrategy based on Order of precedence:
+//1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+func (w *Workflow) GetTTLStrategy(defaultTTLStrategy *TTLStrategy) *TTLStrategy {
+	var ttlStrategy *TTLStrategy
+	// TTLStrategy from Workflow default from Config
+	if defaultTTLStrategy != nil {
+		ttlStrategy = defaultTTLStrategy
+	}
+	// TTLStrategy from WorkflowTemplate
+	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
+	}
+	//TTLStrategy from Workflow
+	if w.Spec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Spec.GetTTLStrategy()
+	}
+	return ttlStrategy
+}
+
 var (
 	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
 		return func(wf Workflow) bool {
