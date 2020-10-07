@@ -15,8 +15,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util"
@@ -26,23 +24,6 @@ import (
 )
 
 type DockerExecutor struct{}
-
-func (d *DockerExecutor) GetMetrics(containerID string) (corev1.ResourceList, error) {
-	output, err := common.RunShellCommand("docker stats --no-stream --no-trunc --format '{{.CPUPerc}},{{.MemUsage}}' " + containerID)
-	if err != nil {
-		return nil, err
-	}
-	parts := strings.SplitN(string(output), ",", 2)
-	cpu, err := resource.ParseQuantity(strings.TrimSuffix(parts[0], "%"))
-	if err != nil {
-		return nil, err
-	}
-	mem, err := resource.ParseQuantity(strings.TrimSpace(strings.SplitN(parts[1], "/", 2)[0]))
-	if err != nil {
-		return nil, err
-	}
-	return corev1.ResourceList{corev1.ResourceCPU: cpu, corev1.ResourceMemory: mem}, nil
-}
 
 func NewDockerExecutor() (*DockerExecutor, error) {
 	log.Infof("Creating a docker executor")

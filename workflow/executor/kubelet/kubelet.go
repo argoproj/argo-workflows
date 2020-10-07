@@ -5,17 +5,12 @@ import (
 	"io"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo/errors"
 )
 
 type KubeletExecutor struct {
 	cli *kubeletClient
-}
-
-func (k *KubeletExecutor) GetMetrics(string) (corev1.ResourceList, error) {
-	return nil, fmt.Errorf("not supported")
 }
 
 func NewKubeletExecutor() (*KubeletExecutor, error) {
