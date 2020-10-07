@@ -120,14 +120,6 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
-	if wf.Spec.TTLSecondsAfterFinished != nil {
-		if wf.Spec.TTLStrategy == nil {
-			ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompletion: wf.Spec.TTLSecondsAfterFinished}
-			wf.Spec.TTLStrategy = &ttlstrategy
-		} else if wf.Spec.TTLStrategy.SecondsAfterCompletion == nil {
-			wf.Spec.TTLStrategy.SecondsAfterCompletion = wf.Spec.TTLSecondsAfterFinished
-		}
-	}
 	return &wf, err
 }
 
