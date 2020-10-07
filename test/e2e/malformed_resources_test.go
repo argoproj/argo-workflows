@@ -52,7 +52,6 @@ func (s *MalformedResourcesSuite) TestMalformedCronWorkflow() {
 			func(t *testing.T, e []corev1.Event) {
 				assert.Equal(t, corev1.EventTypeWarning, e[0].Type)
 				assert.Equal(t, "Malformed", e[0].Reason)
-				assert.Equal(t, "parse error", e[0].Message)
 			},
 		)
 }
