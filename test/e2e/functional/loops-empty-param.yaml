@@ -3,7 +3,7 @@ kind: Workflow
 metadata:
   generateName: loops-param-result-
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: loop-param-result-example
   templates:

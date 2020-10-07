@@ -50,7 +50,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -98,7 +98,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-timezone
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "%s"
   timezone: "%s"
@@ -127,7 +127,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-suspend
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -163,7 +163,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-resume
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -199,7 +199,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-forbid
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -234,7 +234,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-allow
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -268,7 +268,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic-replace
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Replace"
@@ -305,7 +305,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-succeed-1
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"
@@ -342,7 +342,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-fail-1
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Forbid"

@@ -111,7 +111,7 @@ kind: Workflow
 metadata:
   name: continue-on-fail
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -168,7 +168,7 @@ kind: Workflow
 metadata:
   name: continue-on-failed-dag
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -379,7 +379,7 @@ kind: Workflow
 metadata:
   generateName: pending-retry-workflow-
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: dag
   templates:
@@ -424,7 +424,7 @@ kind: Workflow
 metadata:
   generateName: pending-retry-workflow-with-retry-strategy-
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: dag
   templates:
@@ -597,7 +597,7 @@ kind: Workflow
 metadata:
   name: default-params
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: start
   templates:
@@ -691,7 +691,7 @@ kind: Workflow
 metadata:
   name: retry-backoff-2
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: retry-backoff
   templates:
@@ -730,7 +730,7 @@ kind: Workflow
 metadata:
   name: param-ads
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: whalesay
   arguments:
@@ -767,7 +767,7 @@ kind: Workflow
 metadata:
   name: param-limit
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: whalesay
   arguments:
@@ -783,7 +783,7 @@ spec:
       limit: "{{inputs.parameters.limit}}"
     container:
       image: argoproj/argosay:v2
-      args: [exit, 1]
+      args: [exit, "1"]
 `).
 		When().
 		SubmitWorkflow().
@@ -828,7 +828,7 @@ kind: Workflow
 metadata:
   name: steps-tmpl-timeout
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: hello-hello-hello
   templates:
@@ -871,7 +871,7 @@ kind: Workflow
 metadata:
   name: steps-tmpl-timeout
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: hello-hello-hello
   templates:
