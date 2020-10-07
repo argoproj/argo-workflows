@@ -175,7 +175,7 @@ func (v CronWorkflowStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CronWorkflowStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson2ae774dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
@@ -511,7 +511,7 @@ func (v CronWorkflowSpec) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CronWorkflowSpec) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson2ae774dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(&r, v)
 	return r.Error()
 }
@@ -14351,9 +14351,7 @@ func easyjson2ae774dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(in *jl
 		}
 		switch key {
 		case "duration":
-			if data := in.Raw(); in.Ok() {
-				in.AddError((out.Duration).UnmarshalJSON(data))
-			}
+			out.Duration = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -14372,7 +14370,7 @@ func easyjson2ae774dcEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(out *j
 		const prefix string = ",\"duration\":"
 		first = false
 		out.RawString(prefix[1:])
-		out.Raw((in.Duration).MarshalJSON())
+		out.String(string(in.Duration))
 	}
 	out.RawByte('}')
 }
@@ -16424,7 +16422,7 @@ func (v CronWorkflowList) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CronWorkflowList) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson2ae774dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha155(&r, v)
 	return r.Error()
 }
@@ -16605,7 +16603,7 @@ func (v CronWorkflow) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CronWorkflow) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson2ae774dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha156(&r, v)
 	return r.Error()
 }

@@ -22,7 +22,9 @@ func Test_objectToWorkflowTemplate(t *testing.T) {
 			"metadata": map[string]interface{}{"namespace": "my-ns", "name": "my-name"},
 			"spec":     "ops",
 		}})
-		assert.EqualError(t, err, "malformed workflow template \"my-ns/my-name\": parse error: expected { near offset 63 of 'ops'")
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "malformed workflow template \"my-ns/my-name\"")
+		}
 		if assert.NotNil(t, v) {
 			assert.Equal(t, "my-ns", v.Namespace)
 			assert.Equal(t, "my-name", v.Name)

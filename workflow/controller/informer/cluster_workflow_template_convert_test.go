@@ -22,7 +22,9 @@ func Test_objectToClusterWorkflowTemplate(t *testing.T) {
 			"metadata": map[string]interface{}{"name": "my-name"},
 			"spec":     "ops",
 		}})
-		assert.EqualError(t, err, "malformed cluster workflow template \"my-name\": parse error: expected { near offset 43 of 'ops'")
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "malformed cluster workflow template \"my-name\"")
+		}
 		if assert.NotNil(t, v) {
 			assert.Equal(t, "my-name", v.Name)
 		}

@@ -82,5 +82,6 @@ require (
 
 replace (
 	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.12.2
+	github.com/mailru/easyjson => github.com/alexec/easyjson v0.7.8
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
 )

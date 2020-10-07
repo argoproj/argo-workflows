@@ -92,7 +92,7 @@ func (v WorkflowEventBindingSpec) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowEventBindingSpec) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonDc809a28DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
@@ -211,7 +211,7 @@ func (v WorkflowEventBindingList) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowEventBindingList) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonDc809a28DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(&r, v)
 	return r.Error()
 }
@@ -385,7 +385,7 @@ func (v WorkflowEventBinding) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowEventBinding) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonDc809a28DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(&r, v)
 	return r.Error()
 }
@@ -1079,7 +1079,7 @@ func (v Submit) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Submit) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonDc809a28DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(&r, v)
 	return r.Error()
 }
@@ -2958,7 +2958,7 @@ func (v Event) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Event) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonDc809a28DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(&r, v)
 	return r.Error()
 }

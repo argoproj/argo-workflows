@@ -2600,7 +2600,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, templateScope string,
 
 	if tmpl.Suspend.Duration != "" {
 		node := woc.wf.GetNodeByName(nodeName)
-		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration.String())
+		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration)
 		if err != nil {
 			return node, err
 		}

@@ -1,4 +1,4 @@
-//go:generate easyjson -all $GOFILE
+//go:generate easyjson  -coerce_to_string -all $GOFILE
 package v1alpha1
 
 import (
@@ -1353,7 +1353,7 @@ type NodeStatus struct {
 	DisplayName string `json:"displayName,omitempty" protobuf:"bytes,3,opt,name=displayName"`
 
 	// Type indicates type of node
-	Type NodeType `json:"type,intern" protobuf:"bytes,4,opt,name=type,casttype=NodeType"` // nolint:staticcheck
+	Type NodeType `json:"type" easyjson:"intern" protobuf:"bytes,4,opt,name=type,casttype=NodeType"`
 
 	// TemplateName is the template name which this node corresponds to.
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
@@ -1376,7 +1376,7 @@ type NodeStatus struct {
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
-	Phase NodePhase `json:"phase,omitempty,intern" protobuf:"bytes,7,opt,name=phase,casttype=NodePhase"` // nolint:staticcheck
+	Phase NodePhase `json:"phase,omitempty" easyjson:"intern" protobuf:"bytes,7,opt,name=phase,casttype=NodePhase"`
 
 	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
 	BoundaryID string `json:"boundaryID,omitempty" protobuf:"bytes,8,opt,name=boundaryID"`
@@ -1975,7 +1975,7 @@ func (t *DAGTask) ShouldExpand() bool {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template
-	Duration Int64OrString `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
+	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 
 // GetArtifactByName returns an input artifact by its name

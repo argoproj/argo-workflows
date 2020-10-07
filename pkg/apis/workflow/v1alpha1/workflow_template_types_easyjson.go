@@ -921,7 +921,7 @@ func (v WorkflowTemplateSpec) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowTemplateSpec) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonC6c1f4dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
@@ -13285,9 +13285,7 @@ func easyjsonC6c1f4dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(in *jl
 		}
 		switch key {
 		case "duration":
-			if data := in.Raw(); in.Ok() {
-				in.AddError((out.Duration).UnmarshalJSON(data))
-			}
+			out.Duration = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -13306,7 +13304,7 @@ func easyjsonC6c1f4dcEncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(out *j
 		const prefix string = ",\"duration\":"
 		first = false
 		out.RawString(prefix[1:])
-		out.Raw((in.Duration).MarshalJSON())
+		out.String(string(in.Duration))
 	}
 	out.RawByte('}')
 }
@@ -15971,7 +15969,7 @@ func (v WorkflowTemplateList) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowTemplateList) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonC6c1f4dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha152(&r, v)
 	return r.Error()
 }
@@ -16145,7 +16143,7 @@ func (v WorkflowTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjsonC6c1f4dcDecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha153(&r, v)
 	return r.Error()
 }

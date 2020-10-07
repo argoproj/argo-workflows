@@ -73,7 +73,7 @@ func (v ZipStrategy) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ZipStrategy) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha1(&r, v)
 	return r.Error()
 }
@@ -152,7 +152,7 @@ func (v WorkflowTemplateRef) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowTemplateRef) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha11(&r, v)
 	return r.Error()
 }
@@ -383,7 +383,7 @@ func (v WorkflowStep) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowStep) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha12(&r, v)
 	return r.Error()
 }
@@ -802,7 +802,7 @@ func (v WorkflowStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(&r, v)
 	return r.Error()
 }
@@ -5383,7 +5383,7 @@ func (v WorkflowSpec) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowSpec) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha14(&r, v)
 	return r.Error()
 }
@@ -8876,7 +8876,7 @@ func (v WorkflowList) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *WorkflowList) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha15(&r, v)
 	return r.Error()
 }
@@ -9057,7 +9057,7 @@ func (v Workflow) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Workflow) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha16(&r, v)
 	return r.Error()
 }
@@ -9124,7 +9124,7 @@ func (v VolumeClaimGC) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *VolumeClaimGC) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha17(&r, v)
 	return r.Error()
 }
@@ -9281,7 +9281,7 @@ func (v ValueFrom) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ValueFrom) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha18(&r, v)
 	return r.Error()
 }
@@ -9765,7 +9765,7 @@ func (v UserContainer) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *UserContainer) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha19(&r, v)
 	return r.Error()
 }
@@ -11535,7 +11535,7 @@ func (v TemplateRef) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *TemplateRef) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha110(&r, v)
 	return r.Error()
 }
@@ -12221,7 +12221,7 @@ func (v Template) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Template) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha111(&r, v)
 	return r.Error()
 }
@@ -12735,7 +12735,7 @@ func (v TarStrategy) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *TarStrategy) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha112(&r, v)
 	return r.Error()
 }
@@ -12850,7 +12850,7 @@ func (v TTLStrategy) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *TTLStrategy) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha113(&r, v)
 	return r.Error()
 }
@@ -12945,7 +12945,7 @@ func (v SynchronizationStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SynchronizationStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha114(&r, v)
 	return r.Error()
 }
@@ -13040,7 +13040,7 @@ func (v Synchronization) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Synchronization) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha115(&r, v)
 	return r.Error()
 }
@@ -13069,9 +13069,7 @@ func easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(in *jl
 		}
 		switch key {
 		case "duration":
-			if data := in.Raw(); in.Ok() {
-				in.AddError((out.Duration).UnmarshalJSON(data))
-			}
+			out.Duration = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -13090,7 +13088,7 @@ func easyjson147b50d1EncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(out *j
 		const prefix string = ",\"duration\":"
 		first = false
 		out.RawString(prefix[1:])
-		out.Raw((in.Duration).MarshalJSON())
+		out.String(string(in.Duration))
 	}
 	out.RawByte('}')
 }
@@ -13109,7 +13107,7 @@ func (v SuspendTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SuspendTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha116(&r, v)
 	return r.Error()
 }
@@ -13168,7 +13166,7 @@ func (v SuppliedValueFrom) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SuppliedValueFrom) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha117(&r, v)
 	return r.Error()
 }
@@ -13301,7 +13299,7 @@ func (v Sequence) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Sequence) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha118(&r, v)
 	return r.Error()
 }
@@ -13440,7 +13438,7 @@ func (v SemaphoreStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SemaphoreStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha119(&r, v)
 	return r.Error()
 }
@@ -13515,7 +13513,7 @@ func (v SemaphoreRef) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SemaphoreRef) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha120(&r, v)
 	return r.Error()
 }
@@ -13624,7 +13622,7 @@ func (v SemaphoreHolding) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *SemaphoreHolding) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha121(&r, v)
 	return r.Error()
 }
@@ -14094,7 +14092,7 @@ func (v ScriptTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ScriptTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha122(&r, v)
 	return r.Error()
 }
@@ -14217,7 +14215,7 @@ func (v S3Bucket) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *S3Bucket) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha123(&r, v)
 	return r.Error()
 }
@@ -14347,7 +14345,7 @@ func (v S3Artifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *S3Artifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha124(&r, v)
 	return r.Error()
 }
@@ -14456,7 +14454,7 @@ func (v RetryStrategy) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RetryStrategy) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha125(&r, v)
 	return r.Error()
 }
@@ -14594,7 +14592,7 @@ func (v ResourceTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ResourceTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha126(&r, v)
 	return r.Error()
 }
@@ -14660,7 +14658,7 @@ func (v RawArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *RawArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha127(&r, v)
 	return r.Error()
 }
@@ -14834,7 +14832,7 @@ func (v Prometheus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Prometheus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha128(&r, v)
 	return r.Error()
 }
@@ -14901,7 +14899,7 @@ func (v PodGC) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *PodGC) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha129(&r, v)
 	return r.Error()
 }
@@ -15023,7 +15021,7 @@ func (v Parameter) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Parameter) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha130(&r, v)
 	return r.Error()
 }
@@ -15202,7 +15200,7 @@ func (v Outputs) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Outputs) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha131(&r, v)
 	return r.Error()
 }
@@ -15289,7 +15287,7 @@ func (v OSSBucket) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *OSSBucket) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha132(&r, v)
 	return r.Error()
 }
@@ -15383,7 +15381,7 @@ func (v OSSArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *OSSArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha133(&r, v)
 	return r.Error()
 }
@@ -15442,7 +15440,7 @@ func (v NoneStrategy) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *NoneStrategy) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha134(&r, v)
 	return r.Error()
 }
@@ -15509,7 +15507,7 @@ func (v NodeSynchronizationStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *NodeSynchronizationStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha135(&r, v)
 	return r.Error()
 }
@@ -15887,7 +15885,7 @@ func (v NodeStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *NodeStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(&r, v)
 	return r.Error()
 }
@@ -16026,7 +16024,7 @@ func (v MutexStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *MutexStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha137(&r, v)
 	return r.Error()
 }
@@ -16105,7 +16103,7 @@ func (v MutexHolding) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *MutexHolding) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha138(&r, v)
 	return r.Error()
 }
@@ -16172,7 +16170,7 @@ func (v Mutex) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Mutex) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha139(&r, v)
 	return r.Error()
 }
@@ -16282,7 +16280,7 @@ func (v Metrics) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Metrics) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha140(&r, v)
 	return r.Error()
 }
@@ -16355,7 +16353,7 @@ func (v MetricLabel) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *MetricLabel) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha141(&r, v)
 	return r.Error()
 }
@@ -16498,7 +16496,7 @@ func (v Metadata) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Metadata) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha142(&r, v)
 	return r.Error()
 }
@@ -16590,7 +16588,7 @@ func (v Memoize) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Memoize) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha143(&r, v)
 	return r.Error()
 }
@@ -16670,7 +16668,7 @@ func (v MemoizationStatus) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *MemoizationStatus) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha144(&r, v)
 	return r.Error()
 }
@@ -16809,7 +16807,7 @@ func (v Inputs) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Inputs) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha145(&r, v)
 	return r.Error()
 }
@@ -16916,7 +16914,7 @@ func (v Histogram) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Histogram) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha146(&r, v)
 	return r.Error()
 }
@@ -16989,7 +16987,7 @@ func (v Header) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Header) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha147(&r, v)
 	return r.Error()
 }
@@ -17092,7 +17090,7 @@ func (v HTTPArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *HTTPArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha148(&r, v)
 	return r.Error()
 }
@@ -17243,7 +17241,7 @@ func (v HDFSKrbConfig) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *HDFSKrbConfig) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha149(&r, v)
 	return r.Error()
 }
@@ -17414,7 +17412,7 @@ func (v HDFSConfig) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *HDFSConfig) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha150(&r, v)
 	return r.Error()
 }
@@ -17599,7 +17597,7 @@ func (v HDFSArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *HDFSArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha151(&r, v)
 	return r.Error()
 }
@@ -17776,7 +17774,7 @@ func (v GitArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *GitArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha152(&r, v)
 	return r.Error()
 }
@@ -17861,7 +17859,7 @@ func (v Gauge) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Gauge) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha153(&r, v)
 	return r.Error()
 }
@@ -17934,7 +17932,7 @@ func (v GCSBucket) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *GCSBucket) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha154(&r, v)
 	return r.Error()
 }
@@ -18014,7 +18012,7 @@ func (v GCSArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *GCSArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha155(&r, v)
 	return r.Error()
 }
@@ -18081,7 +18079,7 @@ func (v ExecutorConfig) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ExecutorConfig) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha156(&r, v)
 	return r.Error()
 }
@@ -18207,7 +18205,7 @@ func (v DAGTemplate) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DAGTemplate) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha157(&r, v)
 	return r.Error()
 }
@@ -18436,7 +18434,7 @@ func (v DAGTask) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DAGTask) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha158(&r, v)
 	return r.Error()
 }
@@ -18502,7 +18500,7 @@ func (v Counter) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Counter) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha159(&r, v)
 	return r.Error()
 }
@@ -18581,7 +18579,7 @@ func (v ContinueOn) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ContinueOn) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha160(&r, v)
 	return r.Error()
 }
@@ -18672,7 +18670,7 @@ func (v Condition) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Condition) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha161(&r, v)
 	return r.Error()
 }
@@ -18750,7 +18748,7 @@ func (v Cache) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Cache) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha162(&r, v)
 	return r.Error()
 }
@@ -18851,7 +18849,7 @@ func (v Backoff) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Backoff) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha163(&r, v)
 	return r.Error()
 }
@@ -18946,7 +18944,7 @@ func (v ArtifactoryAuth) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ArtifactoryAuth) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha164(&r, v)
 	return r.Error()
 }
@@ -19042,7 +19040,7 @@ func (v ArtifactoryArtifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ArtifactoryArtifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha165(&r, v)
 	return r.Error()
 }
@@ -19121,7 +19119,7 @@ func (v ArtifactRepositoryRef) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ArtifactRepositoryRef) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha166(&r, v)
 	return r.Error()
 }
@@ -19356,7 +19354,7 @@ func (v ArtifactLocation) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ArtifactLocation) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha167(&r, v)
 	return r.Error()
 }
@@ -19629,7 +19627,7 @@ func (v Artifact) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Artifact) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha168(&r, v)
 	return r.Error()
 }
@@ -19768,7 +19766,7 @@ func (v Arguments) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Arguments) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha169(&r, v)
 	return r.Error()
 }
@@ -19883,7 +19881,7 @@ func (v ArchiveStrategy) MarshalEasyJSON(w *jwriter.Writer) {
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ArchiveStrategy) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
+	r := jlexer.Lexer{Data: data, CoerceToString: true}
 	easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha170(&r, v)
 	return r.Error()
 }
