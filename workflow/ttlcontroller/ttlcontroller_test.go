@@ -352,7 +352,7 @@ func newTTLController() *Controller {
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
 		workqueue:    workqueue.NewDelayingQueue(),
-		configSuppliger: func() *config.Config {
+		configSupplier: func() *config.Config {
 			return &testConfig
 		},
 	}

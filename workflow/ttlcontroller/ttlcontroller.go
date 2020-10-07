@@ -29,23 +29,23 @@ const (
 type ConfigSupplier func() *config.Config
 
 type Controller struct {
-	wfclientset     wfclientset.Interface
-	wfInformer      cache.SharedIndexInformer
-	workqueue       workqueue.DelayingInterface
-	resyncPeriod    time.Duration
-	clock           clock.Clock
-	configSuppliger ConfigSupplier
+	wfclientset    wfclientset.Interface
+	wfInformer     cache.SharedIndexInformer
+	workqueue      workqueue.DelayingInterface
+	resyncPeriod   time.Duration
+	clock          clock.Clock
+	configSupplier ConfigSupplier
 }
 
 // NewController returns a new workflow ttl controller
 func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, configSupplier ConfigSupplier) *Controller {
 	controller := &Controller{
-		wfclientset:     wfClientset,
-		wfInformer:      wfInformer,
-		workqueue:       workqueue.NewDelayingQueue(),
-		resyncPeriod:    workflowTTLResyncPeriod,
-		clock:           clock.RealClock{},
-		configSuppliger: configSupplier,
+		wfclientset:    wfClientset,
+		wfInformer:     wfInformer,
+		workqueue:      workqueue.NewDelayingQueue(),
+		resyncPeriod:   workflowTTLResyncPeriod,
+		clock:          clock.RealClock{},
+		configSupplier: configSupplier,
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -193,7 +193,7 @@ func (c *Controller) deleteWorkflow(key string) error {
 	return nil
 }
 func (c *Controller) getDefaultTTLStrategy() *wfv1.TTLStrategy {
-	wfDefault := c.configSuppliger().WorkflowDefaults
+	wfDefault := c.configSupplier().WorkflowDefaults
 	if wfDefault != nil {
 		return wfDefault.Spec.GetTTLStrategy()
 	}
