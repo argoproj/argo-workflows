@@ -1128,6 +1128,24 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			node.Outputs = &outputs
 		}
 	}
+	// Take just one sample the first time the pod is running:
+	// * Only when running (not available otherwise).
+	// * Only when not yet set, so only once.
+	if woc.controller.metricsInterface != nil && pod.Status.Phase == apiv1.PodRunning && node.ResourcesUsage == nil {
+		podMetrics, err := woc.controller.metricsInterface.PodMetricses(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
+		if err != nil {
+			if !apierr.IsNotFound(err) {
+				woc.log.WithError(err).Warn("could not get pod metrics")
+			}
+		} else {
+			for _, c := range podMetrics.Containers {
+				if c.Name == common.MainContainerName {
+					node.ResourcesUsage = c.Usage
+					updated = true
+				}
+			}
+		}
+	}
 	if node.Phase != newPhase {
 		log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
@@ -1152,16 +1170,6 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			// If we get here, the container is daemoned so the
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		}
-		podMetrics, err := woc.controller.metricsInterface.PodMetricses(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
-		if err != nil {
-			woc.log.WithError(err).Warn("could not get pod metrics")
-		} else {
-			for _, c := range podMetrics.Containers {
-				if c.Name == common.MainContainerName {
-					node.ResourcesUsage = c.Usage
-				}
-			}
 		}
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
