@@ -1139,7 +1139,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		if err != nil {
 			if !apierr.IsNotFound(err) {
 				woc.log.WithError(err).Warn("could not get pod metrics")
-			} else if  pod.Status.StartTime.After(time.Now().Add(-checkPodMetricsAgainAfter)) {
+			} else if pod.Status.StartTime.After(time.Now().Add(-checkPodMetricsAgainAfter)) {
 				woc.requeue(checkPodMetricsAgainAfter)
 			}
 		} else {

@@ -244,7 +244,10 @@ func makePodsPhase(woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
 	for _, pod := range pods.Items {
 		if pod.Status.Phase == "" {
 			pod.Status.Phase = phase
-			if phase == apiv1.PodFailed {
+			switch phase {
+			case apiv1.PodRunning:
+				pod.Status.StartTime = &metav1.Time{}
+			case apiv1.PodFailed:
 				pod.Status.Message = "Pod failed"
 			}
 			for _, w := range with {
