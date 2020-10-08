@@ -446,15 +446,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             }
         });
         dagre.layout(graph);
-
-        const size = this.getGraphSize(graph.nodes().map((id: string) => graph.node(id)));
-        this.graph = {
-            width: size.width,
-            height: size.height,
-            nodes: new Map<string, {x: number; y: number}>(),
-            edges: []
-        };
-
         graph
             .nodes()
             .map(id => graph.node(id))
@@ -464,6 +455,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         graph.edges().forEach((edge: Edge) => {
             this.graph.edges.push(this.generateEdge(edge));
         });
+        const size = this.getGraphSize(graph.nodes().map((id: string) => graph.node(id)));
+        this.graph = {
+            width: size.width,
+            height: size.height,
+            nodes: new Map<string, {x: number; y: number}>(),
+            edges: []
+        };
     }
 
     private getGraphSize(nodes: dagre.Node[]): {width: number; height: number} {
@@ -539,8 +537,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private selectNode(nodeId: string) {
         if (isCollapsedNode(nodeId)) {
             this.expandNode(nodeId);
+        } else {
+            return this.props.nodeClicked && this.props.nodeClicked(nodeId);
         }
-        return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
 
     private expandNode(nodeId: string) {
