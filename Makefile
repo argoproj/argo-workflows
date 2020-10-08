@@ -104,6 +104,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+UI_FILES          := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 NEWEST_CLI_DOC    := $(shell ls -t docs/cli | head -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
