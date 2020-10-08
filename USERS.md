@@ -1,10 +1,13 @@
 ## Argo Workflows User Community Surveys & Feedback
+
 Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
 
 ## Who uses Argo Workflows?
+
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
 Currently, the following organizations are **officially** using Argo Workflows:
+
 1. [23mofang](https://www.23mofang.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
@@ -58,6 +61,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Microba](https://www.microba.com/)
 1. [Microblink](https://microblink.com/)
 1. [Mirantis](https://mirantis.com/)
+1. [Mixpanel](https://mixpanel.com)
 1. [New Relic](https://newrelic.com/)
 1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
 1. [NVIDIA](https://www.nvidia.com/)
@@ -89,3 +93,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Helio](https://helio.exchange)
+1. [HSBC](https://hsbc.com)
