@@ -131,6 +131,22 @@ type createWorkflowPodOpts struct {
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
+
+	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
+	// an `AlreadyExists` error because we won't get that error if there is not enough resources.
+	// Performance enhancement: Code later in this func is expensive to execute, so return quickly if we can.
+	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + nodeID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
+	}
+	if exists {
+		existing, ok := obj.(*apiv1.Pod)
+		if ok {
+			woc.log.WithField("podPhase", existing.Status.Phase).Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+			return existing, nil
+		}
+	}
+
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.execWf.Spec.DeepCopy()
 
@@ -349,20 +365,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 		woc.log.Debugf("Setting new activeDeadlineSeconds %d for pod %s/%s due to templateDeadline", newActiveDeadlineSeconds, pod.Namespace, pod.Name)
 		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
-	}
-
-	// we must check to see if the pod exists rather than just optimistically creating the pod and see if we get
-	// an `AlreadyExists` error because we won't get that error if there is not enough resources
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(pod.Namespace + "/" + pod.Name))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
-	}
-	if exists {
-		existing, ok := obj.(*apiv1.Pod)
-		if ok {
-			woc.log.WithField("podPhase", existing.Status.Phase).Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
-			return existing, nil
-		}
 	}
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
