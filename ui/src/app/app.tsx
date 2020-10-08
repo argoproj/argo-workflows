@@ -15,6 +15,7 @@ import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import help from './help';
 import login from './login';
+import reports from './reports';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import {Utils} from './shared/utils';
@@ -32,6 +33,7 @@ const apiDocsUrl = uiUrl('apidocs');
 const userInfoUrl = uiUrl('userinfo');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
+const reportsUrl = uiUrl('reports');
 
 export const history = createBrowserHistory();
 
@@ -60,6 +62,11 @@ const navItems = [
         title: 'Archived Workflows',
         path: archivedWorkflowsUrl,
         iconClassName: 'fa fa-archive'
+    },
+    {
+        title: 'Reports',
+        path: reportsUrl,
+        iconClassName: 'fa fa-chart-bar'
     },
     {
         title: 'User',
@@ -155,11 +162,17 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                         <Redirect to={this.archivedWorkflowsUrl} />
                                     </Route>
                                 )}
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={reportsUrl}>
+                                        <Redirect to={this.reportsUrl} />
+                                    </Route>
+                                )}
                                 <Route path={workflowsUrl} component={workflows.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
                                 <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
                                 <Route path={archivedWorkflowsUrl} component={archivedWorkflows.component} />
+                                <Route path={reportsUrl} component={reports.component} />
                                 <Route exact={true} strict={true} path={helpUrl} component={help.component} />
                                 <Route exact={true} strict={true} path={apiDocsUrl} component={apidocs.component} />
                                 <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
@@ -186,6 +199,10 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
 
     private get workflowsUrl() {
         return workflowsUrl + '/' + (this.state.namespace || '');
+    }
+
+    private get reportsUrl() {
+        return reportsUrl + '/' + (this.state.namespace || '');
     }
 
     public getChildContext() {

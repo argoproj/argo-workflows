@@ -390,7 +390,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
-		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
+		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
 	}
 	podParams[common.LocalVarPodName] = pod.Name
 	specBytes, err := json.Marshal(pod)
