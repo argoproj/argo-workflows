@@ -62,7 +62,7 @@ endif
 # * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
 # * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
 RUN_MODE              := local
-K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
@@ -104,6 +104,7 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+UI_FILES          := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 NEWEST_CLI_DOC    := $(shell ls -t docs/cli | head -n1)
 
 # docker_build,image_name,binary_name,marker_file_name
@@ -112,12 +113,12 @@ define docker_build
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
-	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
+	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
 define docker_pull
 	docker pull $(1)
-	if [ $(K3D) = true ]; then k3d import-images $(1); fi
+	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
 .PHONY: build
@@ -347,9 +348,6 @@ dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 
 .PHONY: install
 install: dist/$(PROFILE).yaml
-ifeq ($(K3D),true)
-	k3d start
-endif
 	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
 	kubectl apply -f dist/argo-ns.yaml
 	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
@@ -362,7 +360,7 @@ pull-build-images:
 argosay: test/e2e/images/argosay/v2/argosay
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
-	k3d import-images argoproj/argosay:v2
+	k3d image import argoproj/argosay:v2
 endif
 	docker push argoproj/argosay:v2
 
