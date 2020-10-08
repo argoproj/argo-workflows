@@ -16,6 +16,11 @@ import (
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {
+	if len(workflows) == 0 {
+		_, _ = fmt.Fprintln(out, "No workflows found")
+		return nil
+	}
+
 	switch opts.Output {
 	case "", "wide":
 		printTable(workflows, out, opts)
@@ -116,7 +121,7 @@ func parameterString(params []wfv1.Parameter) string {
 	pStrs := make([]string, 0)
 	for _, p := range params {
 		if p.Value != nil {
-			str := fmt.Sprintf("%s=%s", p.Name, truncateString(*p.Value, 50))
+			str := fmt.Sprintf("%s=%s", p.Name, truncateString(p.Value.String(), 50))
 			pStrs = append(pStrs, str)
 		}
 	}
