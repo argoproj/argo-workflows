@@ -454,7 +454,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(she
 
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
+	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
 pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: proto
 pkg/apiclient/cronworkflow/cron-workflow.swagger.json: proto
