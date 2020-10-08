@@ -18,15 +18,12 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public list(namespace: string, phases: string[], labels: string[], pagination: Pagination) {
-        const params = this.queryParams({phases, labels});
-        if (pagination.offset) {
-            params.push(`listOptions.continue=${pagination.offset}`);
-        }
-        if (pagination.limit) {
-            params.push(`listOptions.limit=${pagination.limit}`);
-        }
-        const fields = [
+    public list(
+        namespace: string,
+        phases: string[],
+        labels: string[],
+        pagination: Pagination,
+        fields = [
             'metadata',
             'items.metadata.uid',
             'items.metadata.name',
@@ -37,7 +34,15 @@ export class WorkflowsService {
             'items.status.startedAt',
             'items.status.estimatedDuration',
             'items.spec.suspend'
-        ];
+        ]
+    ) {
+        const params = this.queryParams({phases, labels});
+        if (pagination.offset) {
+            params.push(`listOptions.continue=${pagination.offset}`);
+        }
+        if (pagination.limit) {
+            params.push(`listOptions.limit=${pagination.limit}`);
+        }
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
