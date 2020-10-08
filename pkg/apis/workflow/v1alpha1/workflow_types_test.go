@@ -222,3 +222,35 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 	assert.NotNil(t, spec.GetVolumeClaimGC())
 	assert.Equal(t, &VolumeClaimGC{Strategy: VolumeClaimGCOnSuccess}, spec.GetVolumeClaimGC())
 }
+
+func TestGetTTLStrategy(t *testing.T) {
+
+	spec := WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}
+	ttl := spec.GetTTLStrategy()
+	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
+
+	spec = WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10), TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	ttl = spec.GetTTLStrategy()
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
+
+	spec = WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	ttl = spec.GetTTLStrategy()
+	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
+}
+
+func TestWfGetTTLStrategy(t *testing.T) {
+	ttl := TTLStrategy{
+		SecondsAfterCompletion: pointer.Int32Ptr(10),
+	}
+	wf := Workflow{}
+	result := wf.GetTTLStrategy(&ttl)
+	assert.Equal(t, int32(10), *result.SecondsAfterCompletion)
+
+	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(20)}}
+	result = wf.GetTTLStrategy(&ttl)
+	assert.Equal(t, int32(20), *result.SecondsAfterCompletion)
+
+	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: pointer.Int32Ptr(30)}
+	result = wf.GetTTLStrategy(&ttl)
+	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
+}
