@@ -222,7 +222,6 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		select {
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
-			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
