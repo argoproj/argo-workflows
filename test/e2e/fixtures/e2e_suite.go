@@ -21,12 +21,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -37,7 +35,6 @@ const defaultTimeout = 30 * time.Second
 type E2ESuite struct {
 	suite.Suite
 	Persistence       *Persistence
-	wfConfig          config.Config
 	RestConfig        *rest.Config
 	wfClient          v1alpha1.WorkflowInterface
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
@@ -58,10 +55,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient)
-	s.wfConfig, err = configController.Get()
-	s.CheckError(err)
-	s.Persistence = newPersistence(s.KubeClient, s.wfConfig)
+	s.Persistence = newPersistence(s.KubeClient)
 	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
@@ -160,12 +154,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 		}
 	}
 	return "", nil
-}
-
-func (s *E2ESuite) NeedsNoEmptyDir() {
-	if s.wfConfig.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorK8sAPI {
-		s.T().Skip("needs NoEmptyDir")
-	}
 }
 
 func (s *E2ESuite) Given() *Given {
