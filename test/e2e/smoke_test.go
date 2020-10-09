@@ -49,6 +49,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
+	s.SkipIfNoBaseLayerOutputSupport()
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().

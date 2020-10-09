@@ -23,6 +23,7 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestArchiveStrategies() {
+	s.SkipIfNoBaseLayerOutputSupport()
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().

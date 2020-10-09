@@ -26,6 +26,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -159,6 +160,13 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func (s *E2ESuite) SkipIfNoBaseLayerOutputSupport() {
+	switch s.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
+		s.T().Skipf("%v does not support base layer output", s.Config.ContainerRuntimeExecutor)
+	}
 }
 
 func (s *E2ESuite) Given() *Given {
