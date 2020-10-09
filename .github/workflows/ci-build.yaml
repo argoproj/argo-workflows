@@ -11,13 +11,41 @@ on:
 
 jobs:
   tests:
-    name: Tests
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Restore go build cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+      - name: Setup Golang
+        uses: actions/setup-go@v1
+        with:
+          go-version: "1.13.12"
+      - name: Add bins to PATH
+        run: |
+          echo "::add-path::/home/runner/go/bin"
+          echo "::add-path::/usr/local/bin"
+      - name: Run tests
+        env:
+          GOPATH: /home/runner/go
+        run: make test
+
+  e2e-tests:
+    name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        test: ["test", "test-e2e", "test-e2e-cron"]
+        test: [ "test-e2e", "test-e2e-cron" ]
+        executor: [ "docker", "kubelet", "k8sapi", "pns" ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,15 +63,12 @@ jobs:
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
       - name: Install and start K3S v1.18.8+k3s1
-        if: ${{ matrix.test != 'test' }}
         run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
-        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
         run: make pull-build-images test-images &
       - name: Create Kubeconfig
-        if: ${{ matrix.test != 'test' }}
         run: |
           mkdir -p ~/.kube
           until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
@@ -52,7 +77,6 @@ jobs:
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
       - name: Start Argo
-        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
           PROFILE: mysql
@@ -64,10 +88,9 @@ jobs:
           mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.executor}} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.executor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
-        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
         run: make wait
@@ -76,7 +99,7 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
       - name: Upload logs
-        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
