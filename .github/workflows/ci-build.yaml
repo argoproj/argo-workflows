@@ -63,7 +63,7 @@ jobs:
           echo "::add-path::/home/runner/go/bin"
           echo "::add-path::/usr/local/bin"
       - name: Install and start K3S v1.18.8+k3s1
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+        run: "curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=${{ matrix.executor != 'pns' ? '' : '--docker' }} K3S_KUBECONFIG_MODE=644 sh - &"
       - name: Pre-pull images
         env:
           GOPATH: /home/runner/go
