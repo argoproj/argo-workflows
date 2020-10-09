@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: runasnonroot-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 8737
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+          - name: message
+            path: /mnt/in/message
+            raw:
+              data: hello
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - cp
+          - /mnt/in/message
+          - /mnt/out/message
+        volumeMounts:
+          - name: in
+            mountPath: /mnt/in
+          - name: out
+            mountPath: /mnt/out
+      volumes:
+        - name: in
+          emptyDir: { }
+        - name: out
+          emptyDir: { }
+      outputs:
+        artifacts:
+          - name: message
+            path: /mnt/out/message
