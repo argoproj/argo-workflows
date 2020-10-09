@@ -176,6 +176,15 @@ var supportedCaps = map[string]map[Cap]bool{
 	common.ContainerRuntimeExecutorPNS:     {RunAsNonRoot: true, BaseLayerOutput: true},
 }
 
+func (s *E2ESuite) SkipIf(cre ...string) {
+	executor := s.Config.ContainerRuntimeExecutor
+	for _, c := range cre {
+		if executor == c {
+			s.T().Skipf("%v because", executor)
+		}
+	}
+}
+
 func (s *E2ESuite) SkipUnless(caps ...Cap) {
 	executor := s.Config.ContainerRuntimeExecutor
 	for _, c := range caps {

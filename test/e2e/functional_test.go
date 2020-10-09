@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type FunctionalSuite struct {
@@ -38,12 +39,13 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 // when you delete a pending pod,
 // then the pod is re- created automatically
 func (s *FunctionalSuite) TestDeletingPendingPod() {
+	s.SkipIf(common.ContainerRuntimeExecutorK8sAPI) // exit very fast
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/completed=false"}, fixtures.OutputContains(`deleted`)).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
