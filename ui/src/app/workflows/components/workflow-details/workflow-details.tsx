@@ -13,6 +13,7 @@ import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {Loading} from '../../../shared/components/loading';
+import {SecurityNudge} from '../../../shared/components/security-nudge';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import * as Operations from '../../../shared/workflow-operations-map';
@@ -263,6 +264,14 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 
+    private renderSecurityNudge() {
+        return (
+            !!this.state.workflow.spec.securityContext && (
+                <SecurityNudge>Workflow does not have security context set. It maybe possible to set this to run it more securely.</SecurityNudge>
+            )
+        );
+    }
+
     private renderCostOptimisations() {
         const recommendations: string[] = [];
         if (!this.state.workflow.spec.activeDeadlineSeconds) {
@@ -295,6 +304,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             <div className='argo-container'>
                 <div className='workflow-details__content'>
                     <WorkflowSummaryPanel workflow={this.state.workflow} />
+                    {this.renderSecurityNudge()}
                     {this.renderCostOptimisations()}
                     {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
                         <React.Fragment>
