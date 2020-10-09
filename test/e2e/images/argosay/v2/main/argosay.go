@@ -30,8 +30,6 @@ func argosay(args ...string) error {
 		return assertContains(args[1:])
 	case "cat":
 		return cat(args[1:])
-	case "cp":
-		return cp(args[1:])
 	case "echo":
 		return echo(args[1:])
 	case "exit":
@@ -39,7 +37,7 @@ func argosay(args ...string) error {
 	case "sleep":
 		return sleep(args[1:])
 	}
-	return errors.New("usage: argosay [assert_contains file string|cat [file...]|cp source target|echo [string] [file]|sleep duration|exit [code]]")
+	return errors.New("usage: argosay [assert_contains file string|cat [file...]|echo [string] [file]|sleep duration|exit [code]]")
 }
 
 func assertContains(args []string) error {
@@ -71,24 +69,6 @@ func cat(args []string) error {
 		}
 	}
 	return nil
-}
-
-func cp(args []string) error {
-	switch len(args) {
-	case 2:
-		source := args[0]
-		target := args[1]
-		data, err := ioutil.ReadFile(source)
-		if err != nil {
-			return err
-		}
-		err = ioutil.WriteFile(target, data, 0666)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return errors.New("usage: argosay cp source target")
 }
 
 func echo(args []string) error {

@@ -11,26 +11,16 @@ spec:
     runAsUser: 8737
   templates:
     - name: main
-      inputs:
-        artifacts:
-          - name: message
-            path: /mnt/in/message
-            raw:
-              data: hello
       container:
         image: argoproj/argosay:v2
         args:
-          - cp
-          - /mnt/in/message
+          - echo
+          - hello
           - /mnt/out/message
         volumeMounts:
-          - name: in
-            mountPath: /mnt/in
           - name: out
             mountPath: /mnt/out
       volumes:
-        - name: in
-          emptyDir: { }
         - name: out
           emptyDir: { }
       outputs:
