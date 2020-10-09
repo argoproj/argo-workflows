@@ -40,14 +40,16 @@ func (s *SmokeSuite) TestEmptyDir() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			if assert.Len(t, status.Outputs.Parameters, 1) {
-				assert.Equal(t, "hello emptyDir", status.Outputs.Parameters[0].Value.String())
+			if assert.Equal(t, wfv1.NodeSucceeded, status.Phase) {
+				if assert.Len(t, status.Outputs.Parameters, 1) {
+					assert.Equal(t, "hello emptyDir", status.Outputs.Parameters[0].Value.String())
+				}
 			}
 		})
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
+	s.NeedsNoEmptyDir()
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
