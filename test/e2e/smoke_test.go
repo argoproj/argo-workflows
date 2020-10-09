@@ -32,7 +32,19 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 		})
 }
 
-func (s *SmokeSuite) TestEmptyDir() {
+func (s *SmokeSuite) TestSecureWorkflow() {
+	s.Given().
+		Workflow("@smoke/secure-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *SmokeSuite) TestEmptyDirWorkflow() {
 	s.Given().
 		Workflow("@smoke/emptydir-workflow.yaml").
 		When().

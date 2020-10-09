@@ -6,9 +6,6 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: main
-  volumes:
-    - name: work
-      emptyDir: { }
 
   templates:
     - name: main
@@ -21,6 +18,9 @@ spec:
         volumeMounts:
           - name: work
             mountPath: /mnt/work
+      volumes:
+        - name: work
+          emptyDir: { }
       outputs:
         parameters:
           - name: message
