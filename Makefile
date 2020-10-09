@@ -417,11 +417,11 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -timeout 15m -count 1 --tags e2e -p 1 ./test/e2e
+	go test -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	go test -count 1 --tags e2e-cron -parallel 10 ./test/e2e
+	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
