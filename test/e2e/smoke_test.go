@@ -33,9 +33,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
-	if s.Config.ContainerRuntimeExecutor == "docker" {
-		s.T().Skip("docker does not support runAsNonRoot")
-	}
+	s.SkipUnless(fixtures.RunAsNonRoot)
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
@@ -49,7 +47,7 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	s.SkipIfNoBaseLayerOutputSupport()
+	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().

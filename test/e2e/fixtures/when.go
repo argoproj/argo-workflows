@@ -230,6 +230,11 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 					w.wf = wf
 					return w
 				}
+				// once done the workflow is done, the condition can never be met
+				// rather than wait maybe 30s for something that can never happen
+				if ToBeDone(wf) {
+					w.t.Fatalf("condition never and cannot be met because the workflow is done")
+				}
 			} else {
 				w.t.Fatal("not ok")
 			}

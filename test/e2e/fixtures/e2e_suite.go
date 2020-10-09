@@ -162,10 +162,26 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
-func (s *E2ESuite) SkipIfNoBaseLayerOutputSupport() {
-	switch s.Config.ContainerRuntimeExecutor {
-	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
-		s.T().Skipf("%v does not support base layer output", s.Config.ContainerRuntimeExecutor)
+type Cap string
+
+const (
+	RunAsNonRoot    Cap = "RunAsNonRoot"
+	BaseLayerOutput Cap = "BaseLayerOutput"
+)
+
+var supportedCaps = map[string]map[Cap]bool{
+	common.ContainerRuntimeExecutorDocker:  {BaseLayerOutput: true},
+	common.ContainerRuntimeExecutorK8sAPI:  {RunAsNonRoot: true},
+	common.ContainerRuntimeExecutorKubelet: {RunAsNonRoot: true},
+	common.ContainerRuntimeExecutorPNS:     {RunAsNonRoot: true, BaseLayerOutput: true},
+}
+
+func (s *E2ESuite) SkipUnless(caps ...Cap) {
+	executor := s.Config.ContainerRuntimeExecutor
+	for _, c := range caps {
+		if !supportedCaps[executor][c] {
+			s.T().Skipf("%v does not support %v", executor, c)
+		}
 	}
 }
 
