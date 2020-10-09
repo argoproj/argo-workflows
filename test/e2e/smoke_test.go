@@ -32,6 +32,18 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 		})
 }
 
+func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
+	s.Given().
+		Workflow("@smoke/runasnonroot-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *SmokeSuite) TestArtifactPassing() {
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
