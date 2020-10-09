@@ -36,5 +36,4 @@ spec:
       outputs:
         artifacts:
           - name: message
-            globalName: message
             path: /mnt/out/message

@@ -57,7 +57,6 @@ func (s *SmokeSuite) TestEmptyDirWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	s.NeedsNoEmptyDir()
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
