@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: volumes-emptydir-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  volumes:
+    - name: work
+      emptyDir: { }
+
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - "hello emptyDir"
+          - /mnt/work/message
+        volumeMounts:
+          - name: work
+            mountPath: /mnt/work
+      outputs:
+        parameters:
+          - name: message
+            globalName: message
+            valueFrom:
+              path: /mnt/work/message
