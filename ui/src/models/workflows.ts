@@ -823,4 +823,19 @@ export const NODE_PHASE = {
     OMITTED: 'Omitted'
 };
 
+export function getColorForNodePhase(p: NodePhase) {
+    switch (p) {
+        case NODE_PHASE.ERROR:
+        case NODE_PHASE.FAILED:
+            return '#E96D76';
+        case NODE_PHASE.PENDING:
+        case NODE_PHASE.RUNNING:
+            return '#0DADEA';
+        case NODE_PHASE.SUCCEEDED:
+            return '#18BE94';
+        default:
+            return '#6D7F8B';
+    }
+}
+
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';
