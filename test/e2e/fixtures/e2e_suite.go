@@ -56,9 +56,6 @@ func (s *E2ESuite) SetupSuite() {
 	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient)
 	s.Config, err = configController.Get()
 	s.CheckError(err)
-	if err != nil {
-		panic(err)
-	}
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
