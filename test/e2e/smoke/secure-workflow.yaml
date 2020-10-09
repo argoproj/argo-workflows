@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: secure-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: main
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 8737
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+        args:
+          - echo
+          - hello
+          - /mnt/work/message
+        volumeMounts:
+          - name: work
+            mountPath: /mnt/work
+      volumes:
+        - name: work
+          emptyDir: { }
