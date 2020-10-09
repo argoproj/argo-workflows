@@ -40,6 +40,8 @@ type PNSExecutor struct {
 
 	// thisPID is the pid of this process
 	thisPID int
+	// mainPID holds the main container's pid
+	mainPID int
 	// mainFS holds a file descriptor to the main filesystem, allowing the executor to access the
 	// filesystem after the main process exited
 	mainFS *os.File
@@ -161,35 +163,35 @@ func (p *PNSExecutor) WaitInit() error {
 func (p *PNSExecutor) Wait(containerID string) error {
 	mainPID, err := p.getContainerPID(containerID)
 	if err != nil {
-		log.Warnf("Failed to get main PID: %v", err)
 		if !p.hasOutputs {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-	} else {
-		log.Infof("Main pid identified as %d", mainPID)
-		for pid, f := range p.pidFileHandles {
-			if pid == mainPID {
-				log.Info("Successfully secured file handle on main container root filesystem")
-				p.mainFS = &f.file
-			} else {
-				log.Infof("Closing root filehandle for non-main pid %d", pid)
-				_ = f.file.Close()
-			}
-		}
-		if p.mainFS == nil {
-			log.Warn("Failed to secure file handle on main container's root filesystem. Output artifacts from base image layer will fail")
-		}
-
-		// wait for pid to complete
-		log.Infof("Waiting for main pid %d to complete", mainPID)
-		err = executil.WaitPID(mainPID)
-		if err != nil {
-			return err
-		}
-		log.Infof("Main pid %d completed", mainPID)
+		return err
 	}
-	return execcommon.Wait(p.clientset, p.namespace, p.podName, containerID)
+	log.Infof("Main pid identified as %d", mainPID)
+	p.mainPID = mainPID
+	for pid, f := range p.pidFileHandles {
+		if pid == p.mainPID {
+			log.Info("Successfully secured file handle on main container root filesystem")
+			p.mainFS = &f.file
+		} else {
+			log.Infof("Closing root filehandle for non-main pid %d", pid)
+			_ = f.file.Close()
+		}
+	}
+	if p.mainFS == nil {
+		log.Warn("Failed to secure file handle on main container's root filesystem. Output artifacts from base image layer will fail")
+	}
+
+	// wait for pid to complete
+	log.Infof("Waiting for main pid %d to complete", mainPID)
+	err = executil.WaitPID(mainPID)
+	if err != nil {
+		return err
+	}
+	log.Infof("Main pid %d completed", mainPID)
+	return nil
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the
