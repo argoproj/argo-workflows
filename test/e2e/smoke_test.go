@@ -33,6 +33,9 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
+	if s.Config.ContainerRuntimeExecutor == "docker" {
+		s.T().Skip("docker does not support runAsNonRoot")
+	}
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
