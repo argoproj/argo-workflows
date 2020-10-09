@@ -29,6 +29,10 @@ func Test(t *testing.T) {
 		assert.NoError(t, argosay("cat", "/tmp/foo", "/tmp/foo"))
 		assert.Error(t, argosay("cat", "/tmp/non"))
 	})
+	t.Run("cp", func(t *testing.T) {
+		assert.NoError(t, argosay("cp", "/tmp/foo", "/tmp/bar"))
+		assert.Error(t, argosay("cp", "/tmp/non"))
+	})
 	t.Run("sleep", func(t *testing.T) {
 		assert.NoError(t, argosay("sleep", "1s"))
 		assert.Error(t, argosay("sleep", "garbage"))

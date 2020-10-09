@@ -52,11 +52,7 @@ func (s *SmokeSuite) TestEmptyDirWorkflow() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeSucceeded, status.Phase) {
-				if assert.Len(t, status.Outputs.Parameters, 1) {
-					assert.Equal(t, "hello emptyDir", status.Outputs.Parameters[0].Value.String())
-				}
-			}
+			 assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 
