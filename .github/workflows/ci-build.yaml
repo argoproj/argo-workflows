@@ -14,8 +14,6 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -44,8 +42,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [ "test-e2e", "test-e2e-cron" ]
-        executor: [ "docker", "kubelet", "k8sapi", "pns" ]
+        test: [ "smoke", "test-e2e", "test-e2e-cron" ]
+        containerRuntimeExecutor: [ "docker", "kubelet", "k8sapi", "pns" ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -88,8 +86,8 @@ jobs:
           mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.executor}} DEV_IMAGE=true STATIC_FILES=false RUN_MODE=kubernetes
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.executor}} DEV_IMAGE=true STATIC_FILES=false RUN_MODE=kubernetes 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.executor}} DEV_IMAGE=true STATIC_FILES=false
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go
