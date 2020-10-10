@@ -44,6 +44,19 @@ jobs:
       matrix:
         test: [ "smoke", "test-e2e", "test-e2e-cron" ]
         containerRuntimeExecutor: [ "docker", "kubelet", "k8sapi", "pns" ]
+        exclude:
+          - test: test-e2e
+            containerRuntimeExecutor: kubelet
+          - test: test-e2e
+            containerRuntimeExecutor: k8sapi
+          - test: test-e2e
+            containerRuntimeExecutor: pns
+          - test: test-e2e-cron
+            containerRuntimeExecutor: kubelet
+          - test: test-e2e-cron
+            containerRuntimeExecutor: k8sapi
+          - test: test-e2e-cron
+            containerRuntimeExecutor: pns
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -86,8 +99,8 @@ jobs:
           mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false RUN_MOODE=kubernetes
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false RUN_MOODE=kubernetes 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         env:
           GOPATH: /home/runner/go

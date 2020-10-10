@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"encoding/base64"
+	"os"
 	"strings"
 	"time"
 
@@ -173,7 +174,7 @@ var supportedCaps = map[string]map[Cap]bool{
 	common.ContainerRuntimeExecutorDocker:  {BaseLayerOutput: true},
 	common.ContainerRuntimeExecutorK8sAPI:  {RunAsNonRoot: true},
 	common.ContainerRuntimeExecutorKubelet: {RunAsNonRoot: true},
-	common.ContainerRuntimeExecutorPNS:     {RunAsNonRoot: true, BaseLayerOutput: true},
+	common.ContainerRuntimeExecutorPNS:     {RunAsNonRoot: true, BaseLayerOutput: os.Getenv("CI") != "true"},
 }
 
 func (s *E2ESuite) SkipIf(cre ...string) {
