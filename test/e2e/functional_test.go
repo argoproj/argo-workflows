@@ -692,6 +692,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 }
 
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
+	s.SkipIf(common.ContainerRuntimeExecutorK8sAPI)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
