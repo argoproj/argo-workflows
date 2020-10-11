@@ -322,7 +322,8 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
-func (s *CLISuite) TestWorkflowResumeBySelector() {
+func (s *CLIWithServerSuite) TestWorkflowResumeBySelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/resume-test.yaml").
 		When().
@@ -335,7 +336,8 @@ func (s *CLISuite) TestWorkflowResumeBySelector() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowResumeByFieldSelector() {
+func (s *CLIWithServerSuite) TestWorkflowResumeByFieldSelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/resume-test.yaml").
 		When().
@@ -703,7 +705,8 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowRetryBySelector() {
+func (s *CLIWithServerSuite) TestWorkflowRetryBySelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
@@ -719,7 +722,8 @@ func (s *CLISuite) TestWorkflowRetryBySelector() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowRetryByFieldSelector() {
+func (s *CLIWithServerSuite) TestWorkflowRetryByFieldSelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
@@ -735,7 +739,8 @@ func (s *CLISuite) TestWorkflowRetryByFieldSelector() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowStopBySelector() {
+func (s *CLIWithServerSuite) TestWorkflowStopBySelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/stop-test.yaml").
 		When().
@@ -748,7 +753,8 @@ func (s *CLISuite) TestWorkflowStopBySelector() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowStopByFieldSelector() {
+func (s *CLIWithServerSuite) TestWorkflowStopByFieldSelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/stop-test.yaml").
 		When().
@@ -778,7 +784,8 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowTerminateBySelector() {
+func (s *CLIWithServerSuite) TestWorkflowTerminateBySelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
@@ -790,7 +797,8 @@ func (s *CLISuite) TestWorkflowTerminateBySelector() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
+func (s *CLIWithServerSuite) TestWorkflowTerminateByFieldSelector() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
