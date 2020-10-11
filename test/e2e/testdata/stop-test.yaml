@@ -1,16 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: basic
+  name: stop-test
   labels:
     argo-e2e: true
     selected: true
 spec:
-  entrypoint: main
+  entrypoint: sleep
   templates:
-    - name: main
+    - name: sleep
       container:
         image: argoproj/argosay:v2
-        args:
-          - echo
-          - ":) Hello Argo!"
+        args: ["sleep", "5s"]

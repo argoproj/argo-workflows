@@ -322,6 +322,32 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
+func (s *CLISuite) TestWorkflowResumeBySelector() {
+	s.Given().
+		Workflow("@testdata/resume-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		RunCli([]string{"resume", "--selector", "selected=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow resume-test resumed")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowResumeByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/resume-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		RunCli([]string{"resume", "--field-selector", "metadata.name=resume-test"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow resume-test resumed")
+			}
+		})
+}
+
 func (s *CLIWithServerSuite) TestWorkflowSuspendResume() {
 	s.testNeedsOffloading()
 	s.Given().
@@ -677,43 +703,61 @@ func (s *CLIWithServerSuite) TestWorkflowRetry() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestRetryByLabelSelector() {
-	s.testNeedsOffloading()
-	var retryTime corev1.Time
-
+func (s *CLISuite) TestWorkflowRetryBySelector() {
 	s.Given().
-		Workflow("@testdata/retry-test.yaml").
+		Workflow("@testdata/basic-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToStart).
+		RunCli([]string{"terminate", "basic"}, func(t *testing.T, output string, err error) {}).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.AnyActiveSuspendNode()
-		}), "suspended node").
-		RunCli([]string{"terminate", "--selector", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow retry-test terminated")
-			}
-		}).
-		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			retryTime = wf.Status.FinishedAt
-			return wf.Status.Phase == wfv1.NodeFailed
-		}), "is terminated", 20*time.Second).
-		RunCli([]string{"retry", "--selector", "argo-e2e=true", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
+			return wf.Status.Failed()
+		})).
+		RunCli([]string{"retry", "--selector", "selected=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
 			}
-		}).
-		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.AnyActiveSuspendNode()
-		}), "suspended node").
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
-			innerStepsPodNode := status.Nodes.FindByDisplayName("steps-inner-step1")
+		})
+}
 
-			assert.True(t, outerStepsPodNode.FinishedAt.Before(&retryTime))
-			assert.True(t, retryTime.Before(&innerStepsPodNode.FinishedAt))
+func (s *CLISuite) TestWorkflowRetryByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "basic"}, func(t *testing.T, output string, err error) {}).
+		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Failed()
+		})).
+		RunCli([]string{"retry", "--field-selector", "metadata.name=basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopBySelector() {
+	s.Given().
+		Workflow("@testdata/stop-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		RunCli([]string{"stop", "--selector", "selected=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow stop-test stopped")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowStopByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/stop-test.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToStart, "to start").
+		RunCli([]string{"stop", "--field-selector", "metadata.name=stop-test"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow stop-test stopped")
+			}
 		})
 }
 
@@ -730,6 +774,30 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		RunCli([]string{"terminate", name}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Regexp(t, "workflow basic-.* terminated", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowTerminateBySelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--selector", "selected=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--field-selector", "metadata.name=basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
 			}
 		})
 }
