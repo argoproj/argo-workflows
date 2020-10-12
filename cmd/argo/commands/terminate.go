@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
@@ -22,6 +23,10 @@ func NewTerminateCommand() *cobra.Command {
   argo terminate @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()

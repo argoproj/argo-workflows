@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -38,6 +40,10 @@ func NewResubmitCommand() *cobra.Command {
   argo resubmit @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
 			}

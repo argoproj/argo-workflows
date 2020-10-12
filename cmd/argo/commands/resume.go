@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
@@ -31,6 +32,10 @@ func NewResumeCommand() *cobra.Command {
   argo resume @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
