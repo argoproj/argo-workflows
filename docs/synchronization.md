@@ -1,4 +1,4 @@
-# Sychronization
+# Synchronization
 
 ![GA](assets/ga.svg)
 
