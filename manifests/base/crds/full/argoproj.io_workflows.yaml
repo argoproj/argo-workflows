@@ -7502,6 +7502,8 @@ spec:
                     type: string
                   podIP:
                     type: string
+                  progress:
+                    type: string
                   resourcesDuration:
                     additionalProperties:
                       format: int64
@@ -8489,6 +8491,8 @@ spec:
                 type: object
               type: array
             phase:
+              type: string
+            progress:
               type: string
             resourcesDuration:
               additionalProperties:
