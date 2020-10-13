@@ -156,11 +156,11 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 		}
 		var artPath string
-		mnt, err := we.isBaseImagePath(art.Path)
+		ok, err := we.isOverlappingVolume(art.Path)
 		if err != nil {
 			return err
 		}
-		if mnt  {
+		if !ok {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
 			// If we get here, it means the input artifact path overlaps with an user specified
