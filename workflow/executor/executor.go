@@ -156,8 +156,11 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 		}
 		var artPath string
-		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
-		if mnt == nil {
+		mnt, err := we.isBaseImagePath(art.Path)
+		if err != nil {
+			return err
+		}
+		if mnt  {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
 			// If we get here, it means the input artifact path overlaps with an user specified
@@ -165,7 +168,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			// mounts, we need to load the artifact into the user specified volume mount,
 			// as opposed to the `input-artifacts` volume that is an implementation detail
 			// unbeknownst to the user.
-			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
+			log.Infof("Specified artifact path %s overlaps with volume mount. Extracting to volume mount", art.Path)
 			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
 		}
 
@@ -364,8 +367,11 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			compressionLevel = gzip.DefaultCompression
 		}
 	}
-
-	if !we.isBaseImagePath(art.Path) {
+	ok, err := we.isBaseImagePath(art.Path)
+	if err != nil {
+		return "", "", err
+	}
+	if !ok {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
@@ -395,7 +401,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
 	log.Infof("Copying %s from container base image layer to %s", art.Path, localArtPath)
 
-	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
+	err = we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
 	if err != nil {
 		return "", "", err
 	}
@@ -439,27 +445,27 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 
 // isBaseImagePath checks if the given artifact path resides in the base image layer of the container
 // versus a shared volume mount between the wait and main container
-func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
-	// first check if path overlaps with a user-specified volumeMount
-	if common.FindOverlappingVolume(&we.Template, path) != nil {
-		return false
+func (we *WorkflowExecutor) isBaseImagePath(path string) (bool, error) {
+	volume, err := we.isOverlappingVolume(path)
+	return !volume, err
+}
+
+// friend of to common.FindOverlappingVolume, returns
+func (we *WorkflowExecutor) isOverlappingVolume(path string) (bool, error) {
+	pod, err := we.getPod()
+	if err != nil {
+		return false, err
 	}
-	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
-	for _, inArt := range we.Template.Inputs.Artifacts {
-		if path == inArt.Path {
-			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
-			// the input artifact volume. Since this function was called, we know that we want to use this path as an
-			// ourput artifact, so we should look for it in the base image path.
-			if inArt.Optional && !inArt.HasLocation() {
-				return true
+	for _, c := range pod.Spec.Containers {
+		if c.Name == common.MainContainerName {
+			for _, mnt := range c.VolumeMounts {
+				if strings.HasPrefix(path, mnt.MountPath+"/") {
+					return false, nil
+				}
 			}
-			return false
-		}
-		if strings.HasPrefix(path, inArt.Path+"/") {
-			return false
 		}
 	}
-	return true
+	return true, nil
 }
 
 // SaveParameters will save the content in the specified file path as output parameter value
@@ -482,7 +488,11 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		}
 
 		var output *wfv1.Int64OrString
-		if we.isBaseImagePath(param.ValueFrom.Path) {
+		ok, err := we.isBaseImagePath(param.ValueFrom.Path)
+		if err != nil {
+			return err
+		}
+		if ok {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {

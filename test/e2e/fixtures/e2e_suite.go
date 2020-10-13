@@ -161,12 +161,9 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
-func (s *E2ESuite) SkipUnless(caps ...Cap) {
-	executor := s.Config.ContainerRuntimeExecutor
-	for _, c := range caps {
-		if !supportedCaps[executor][c] {
-			s.T().Skipf("%v does not support %v", executor, c)
-		}
+func (s *E2ESuite) SkipIf(executor string) {
+	if executor == s.Config.ContainerRuntimeExecutor {
+		s.T().Skipf("%v does not support this test", executor)
 	}
 }
 

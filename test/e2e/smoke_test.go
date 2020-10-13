@@ -12,6 +12,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type SmokeSuite struct {
@@ -33,7 +34,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
-	s.SkipUnless(fixtures.RunAsNonRoot)
+	s.SkipIf(common.ContainerRuntimeExecutorDocker)
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
@@ -47,7 +48,6 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().

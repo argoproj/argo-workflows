@@ -17,13 +17,7 @@ spec:
           - echo
           - hello
           - /mnt/out/message
-        volumeMounts:
-          - name: out
-            mountPath: /mnt/out
-      volumes:
-        - name: out
-          emptyDir: { }
       outputs:
         artifacts:
-          - name: message
-            path: /mnt/out/message
+          - name: out
+            path: /mnt/out
