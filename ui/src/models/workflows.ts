@@ -460,6 +460,11 @@ export interface NodeStatus {
     estimatedDuration?: number;
 
     /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
+
+    /**
      * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
@@ -564,6 +569,10 @@ export interface WorkflowStatus {
      */
     estimatedDuration?: number;
 
+    /**
+     * Progress as numerator/denominator.
+     */
+    progress?: string;
     /**
      * A human readable message indicating details about why the workflow is in this condition.
      */
