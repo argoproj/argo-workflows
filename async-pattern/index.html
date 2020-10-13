@@ -2021,7 +2021,7 @@ spec:
 <p>In this case the <code>job-cmd</code> parameter can be a command that makes an http call via curl to an endpoint that returns a job uuid. More sophisticated submission and parsing of submission output could be done with something like a Python script step.</p>
 <p>On job completion the external job would need to call either resume if successful:</p>
 <p>You may need  an <a href="../access-token/">access token</a>.</p>
-<p><div class="highlight"><pre><span></span><code>curl --request PUT \
+<div class="highlight"><pre><span></span><code>curl --request PUT \
   --url http://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/resume
   --header &#39;content-type: application/json&#39; \
   --header &quot;Authorization: Bearer $ARGO_TOKEN&quot; \
@@ -2030,21 +2030,19 @@ spec:
       &quot;name&quot;: &quot;&lt;WORKFLOWNAME&gt;&quot;,
       &quot;nodeFieldSelector&quot;: &quot;inputs.parameters.uuid.value=&lt;UUID&gt;&quot;
     }&#39;  
-  ```
-
-or stop if unsuccessful:
 </code></pre></div>
-curl --request PUT \
-  --url http://localhost:2746/api/v1/workflows/<NAMESPACE>/<WORKFLOWNAME>/stop
-  --header 'content-type: application/json' \
-  --header "Authorization: Bearer $ARGO_TOKEN" \
-  --data '{
-      "namespace": "<NAMESPACE>",
-      "name": "<WORKFLOWNAME>",
-      "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
-      "message": "<FAILURE-MESSAGE>"
-    }'<br />
-  ```</p>
+<p>or stop if unsuccessful:</p>
+<div class="highlight"><pre><span></span><code>curl --request PUT \
+  --url http://localhost:2746/api/v1/workflows/&lt;NAMESPACE&gt;/&lt;WORKFLOWNAME&gt;/stop
+  --header &#39;content-type: application/json&#39; \
+  --header &quot;Authorization: Bearer $ARGO_TOKEN&quot; \
+  --data &#39;{
+      &quot;namespace&quot;: &quot;&lt;NAMESPACE&gt;&quot;,
+      &quot;name&quot;: &quot;&lt;WORKFLOWNAME&gt;&quot;,
+      &quot;nodeFieldSelector&quot;: &quot;inputs.parameters.uuid.value=&lt;UUID&gt;&quot;,
+      &quot;message&quot;: &quot;&lt;FAILURE-MESSAGE&gt;&quot;
+    }&#39;  
+</code></pre></div>
 <h2 id="retrying-failed-jobs">Retrying failed jobs<a class="headerlink" href="#retrying-failed-jobs" title="Permanent link">&para;</a></h2>
 <p>Using <code>argo retry</code> on failed jobs that follow this pattern will cause Argo to re-attempt the Suspend step without re-triggering the job.  </p>
 <p>Instead you need to use the <code>--restart-successful</code> option, eg if using the template from above:</p>
