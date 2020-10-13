@@ -166,30 +166,31 @@ func (p *PNSExecutor) Wait(containerID string) error {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-	} else {
-		log.Infof("Main pid identified as %d", mainPID)
-		for pid, f := range p.pidFileHandles {
-			if pid == mainPID {
-				log.Info("Successfully secured file handle on main container root filesystem")
-				p.mainFS = &f.file
-			} else {
-				log.Infof("Closing root filehandle for non-main pid %d", pid)
-				_ = f.file.Close()
-			}
-		}
-		if p.mainFS == nil {
-			log.Warn("Failed to secure file handle on main container's root filesystem. Output artifacts from base image layer will fail")
-		}
-
-		// wait for pid to complete
-		log.Infof("Waiting for main pid %d to complete", mainPID)
-		err = executil.WaitPID(mainPID)
-		if err != nil {
-			return err
-		}
-		log.Infof("Main pid %d completed", mainPID)
+		return execcommon.Wait(p.clientset, p.namespace, p.podName, containerID)
 	}
-	return execcommon.Wait(p.clientset, p.namespace, p.podName, containerID)
+	log.Infof("Main pid identified as %d", mainPID)
+	for pid, f := range p.pidFileHandles {
+		if pid == mainPID {
+			log.Info("Successfully secured file handle on main container root filesystem")
+			p.mainFS = &f.file
+		} else {
+			log.Infof("Closing root filehandle for non-main pid %d", pid)
+			_ = f.file.Close()
+		}
+	}
+	if p.mainFS == nil {
+		log.Warn("Failed to secure file handle on main container's root filesystem. Output artifacts from base image layer will fail")
+	}
+
+	// wait for pid to complete
+	log.Infof("Waiting for main pid %d to complete", mainPID)
+	err = executil.WaitPID(mainPID)
+	if err != nil {
+		return err
+	}
+	log.Infof("Main pid %d completed", mainPID)
+	return nil
+
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the

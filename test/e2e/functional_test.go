@@ -16,7 +16,6 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
 )
 
 type FunctionalSuite struct {
@@ -24,7 +23,6 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestArchiveStrategies() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow(`@testdata/archive-strategies.yaml`).
 		When().
@@ -39,13 +37,12 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 // when you delete a pending pod,
 // then the pod is re- created automatically
 func (s *FunctionalSuite) TestDeletingPendingPod() {
-	s.SkipIf(common.ContainerRuntimeExecutorK8sAPI) // exit very fast
 	s.Given().
 		Workflow("@testdata/sleepy-workflow.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToStart, "to start").
-		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`deleted`)).
+		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputContains(`pod "sleepy" deleted`)).
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
@@ -68,8 +65,8 @@ func (s *FunctionalSuite) TestDeletingRunningPod() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Len(t, status.Nodes, 1)
-			if assert.Contains(t, status.Nodes, metadata.Name) {
-				assert.Equal(t, "pod deleted during operation", status.Nodes[metadata.Name].Message)
+			if assert.Contains(t, status.Nodes, "sleepy") {
+				assert.Equal(t, "pod deleted during operation", status.Nodes["sleepy"].Message)
 			}
 		})
 }
@@ -345,7 +342,6 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 }
 
 func (s *FunctionalSuite) TestArtifactRepositoryRef() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow("@testdata/artifact-repository-ref.yaml").
 		When().
@@ -467,7 +463,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
 		When().
@@ -484,7 +479,6 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 }
 
 func (s *FunctionalSuite) TestGlobalScope() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow("@functional/global-scope.yaml").
 		When().
@@ -596,7 +590,6 @@ func (s *FunctionalSuite) TestDAGDepends() {
 }
 
 func (s *FunctionalSuite) TestDefaultParameterOutputs() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -652,7 +645,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
-	s.SkipUnless(fixtures.BaseLayerOutput)
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
@@ -692,7 +684,6 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 }
 
 func (s *FunctionalSuite) TestPropagateMaxDuration() {
-	s.SkipIf(common.ContainerRuntimeExecutorK8sAPI)
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1

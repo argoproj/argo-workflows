@@ -261,7 +261,6 @@ spec:
 			})
 	})
 	s.Run("TestBasicReplace", func() {
-		s.SkipIf(common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet)
 		s.T().Parallel()
 		s.Given().
 			CronWorkflow(`apiVersion: argoproj.io/v1alpha1

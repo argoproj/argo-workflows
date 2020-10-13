@@ -2,7 +2,6 @@ package fixtures
 
 import (
 	"encoding/base64"
-	"os"
 	"strings"
 	"time"
 
@@ -27,7 +26,6 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -161,29 +159,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 		}
 	}
 	return "", nil
-}
-
-type Cap string
-
-const (
-	RunAsNonRoot    Cap = "RunAsNonRoot"
-	BaseLayerOutput Cap = "BaseLayerOutput"
-)
-
-var supportedCaps = map[string]map[Cap]bool{
-	common.ContainerRuntimeExecutorDocker:  {BaseLayerOutput: true},
-	common.ContainerRuntimeExecutorK8sAPI:  {RunAsNonRoot: true},
-	common.ContainerRuntimeExecutorKubelet: {RunAsNonRoot: true},
-	common.ContainerRuntimeExecutorPNS:     {RunAsNonRoot: true, BaseLayerOutput: os.Getenv("CI") != "true"},
-}
-
-func (s *E2ESuite) SkipIf(cre ...string) {
-	executor := s.Config.ContainerRuntimeExecutor
-	for _, c := range cre {
-		if executor == c {
-			s.T().Skipf("%v because", executor)
-		}
-	}
 }
 
 func (s *E2ESuite) SkipUnless(caps ...Cap) {
