@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo/workflow/executor/common/wait"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
@@ -166,7 +167,7 @@ func (p *PNSExecutor) Wait(containerID string) error {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-		return execcommon.Wait(p.clientset, p.namespace, p.podName, containerID)
+		return wait.UntilTerminated(p.clientset, p.namespace, p.podName, containerID)
 	}
 	log.Infof("Main pid identified as %d", mainPID)
 	for pid, f := range p.pidFileHandles {
