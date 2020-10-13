@@ -44,6 +44,7 @@ nav:
           - resource-duration.md
           - estimated-duration.md
           - workflow-pod-security-context.md
+          - progress.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
