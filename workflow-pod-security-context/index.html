@@ -36,7 +36,7 @@
     
     
       
-        <title>Workflow RBAC - Argo Workflows - The workflow engine for Kubernetes</title>
+        <title>Workflow Pod Security Context - Argo Workflows - The workflow engine for Kubernetes</title>
       
     
     
@@ -127,7 +127,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#workflow-rbac" tabindex="1" class="md-skip">
+      <a href="#workflow-pod-security-context" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -152,7 +152,7 @@
               Argo Workflows - The workflow engine for Kubernetes
             </span>
             <span class="md-header-nav__topic">
-              Workflow RBAC
+              Workflow Pod Security Context
             </span>
           
         </div>
@@ -410,20 +410,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-    <a href="./" title="Workflow RBAC" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../workflow-rbac/" title="Workflow RBAC" class="md-nav__link">
       Workflow RBAC
     </a>
-    
   </li>
 
         
@@ -563,11 +554,20 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../workflow-pod-security-context/" title="Workflow Pod Security Context" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+    <a href="./" title="Workflow Pod Security Context" class="md-nav__link md-nav__link--active">
       Workflow Pod Security Context
     </a>
+    
   </li>
 
         
@@ -1916,40 +1916,32 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/argoproj/argo/edit/master/docs/workflow-rbac.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/argoproj/argo/edit/master/docs/workflow-pod-security-context.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="workflow-rbac">Workflow RBAC<a class="headerlink" href="#workflow-rbac" title="Permanent link">&para;</a></h1>
-<p>All pods in a workflow run with the service account specified in <code>workflow.spec.serviceAccountName</code>,
-or if omitted, the <code>default</code> service account of the workflow's namespace. The amount of access which
-a workflow needs is dependent on what the workflow needs to do. For example, if your workflow needs
-to deploy a resource, then the workflow's service account will require 'create' privileges on that
-resource.</p>
-<p>The bare minimum for a workflow to function is outlined below:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Role</span>
+                <h1 id="workflow-pod-security-context">Workflow Pod Security Context<a class="headerlink" href="#workflow-pod-security-context" title="Permanent link">&para;</a></h1>
+<p>By default, a workflow pods run as root. The Docker executor even requires <code>privileged: true</code>.</p>
+<p>For other <a href="../workflow-executors/">workflow executors</a>, you can run your workflow pods more securely by configuring the <a href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/">security context</a> for your workflow pod.</p>
+<p>This is likely to be necessary if you have a <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">pod security policy</a>. You probably can't use the Docker executor if you have a pod security policy. </p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">workflow-role</span>
-<span class="nt">rules</span><span class="p">:</span>
-<span class="c1"># pod get/watch is used to identify the container IDs of the current pod</span>
-<span class="c1"># pod patch is used to annotate the step&#39;s outputs back to controller (e.g. artifact location)</span>
-<span class="p p-Indicator">-</span> <span class="nt">apiGroups</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="s">&quot;&quot;</span>
-  <span class="nt">resources</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">pods</span>
-  <span class="nt">verbs</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">get</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">watch</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">patch</span>
-<span class="c1"># logs get/watch are used to get the pods logs for script outputs, and for log archival</span>
-<span class="p p-Indicator">-</span> <span class="nt">apiGroups</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="s">&quot;&quot;</span>
-  <span class="nt">resources</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">pods/log</span>
-  <span class="nt">verbs</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">get</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">watch</span>
+  <span class="nt">generateName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">security-context-</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">securityContext</span><span class="p">:</span>
+    <span class="nt">runAsNonRoot</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">runAsUser</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8737</span> <span class="c1">#; any non-root user</span>
+    <span class="nt">priviledged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
 </code></pre></div>
+<p>You can configure this globally using <a href="../default-workflow-specs/">workflow defaults</a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">It is easy to make a workflow need root unintentionally</p>
+<p>You may find that user's workflows have been written to require root with seemingly innocuous code. E.g. <code>mkdir /my-dir</code> would require root. </p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">You must use volumes for output artifacts</p>
+<p>If you use <code>runAsNonRoot</code> - you cannot have output artifacts on base layer (e.g. <code>/tmp</code>). You must use a volume (e.g. <a href="../empty-dir/">empty dir</a>).  </p>
+</div>
                 
                   
                 
@@ -1970,7 +1962,7 @@ resource.</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../service-accounts/" title="Service Accounts" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../estimated-duration/" title="Estimated Duration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1979,19 +1971,19 @@ resource.</p>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Service Accounts
+                Estimated Duration
               </span>
             </div>
           </a>
         
         
-          <a href="../node-field-selector/" title="Node Field Selectors" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../progress/" title="Workflow Progress" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Node Field Selectors
+                Workflow Progress
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">

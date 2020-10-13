@@ -398,8 +398,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../service-accounts/" title="None" class="md-nav__link">
-      None
+    <a href="../service-accounts/" title="Service Accounts" class="md-nav__link">
+      Service Accounts
     </a>
   </li>
 
@@ -424,6 +424,18 @@
   <li class="md-nav__item">
     <a href="../node-field-selector/" title="Node Field Selectors" class="md-nav__link">
       Node Field Selectors
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../empty-dir/" title="Empty Dir" class="md-nav__link">
+      Empty Dir
     </a>
   </li>
 
@@ -532,6 +544,18 @@
   <li class="md-nav__item">
     <a href="../estimated-duration/" title="Estimated Duration" class="md-nav__link">
       Estimated Duration
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../workflow-pod-security-context/" title="Workflow Pod Security Context" class="md-nav__link">
+      Workflow Pod Security Context
     </a>
   </li>
 
@@ -839,6 +863,13 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflow-pod-security" title="Workflow Pod Security" class="md-nav__link">
+    Workflow Pod Security
+  </a>
   
 </li>
       
@@ -1531,18 +1562,6 @@
 
 
   <li class="md-nav__item">
-    <a href="../service-accounts/" title="Service Accounts" class="md-nav__link">
-      Service Accounts
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
     <a href="../configure-artifact-repository/" title="Configuring Your Artifact Repository" class="md-nav__link">
       Configuring Your Artifact Repository
     </a>
@@ -1959,6 +1978,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#workflow-pod-security" title="Workflow Pod Security" class="md-nav__link">
+    Workflow Pod Security
+  </a>
+  
+</li>
+      
       
       
       
@@ -1985,7 +2011,9 @@
 <p>Secondly, you should enable an <a href="../argo-server/#auth-mode">authentication mode</a> to ensure that you do not run workflows from unknown users.</p>
 <p>Finally, you should configure the <code>argo-server</code> role and role binding with the correct permissions.</p>
 <h3 id="read-only">Read-Only<a class="headerlink" href="#read-only" title="Permanent link">&para;</a></h3>
-<p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs). </p>
+<p>You can achieve this by configuring the <code>argo-server</code> role (<a href="https://github.com/argoproj/argo/blob/master/manifests/namespace-install/argo-server-rbac/argo-server-role.yaml">example</a> with only read access (i.e. only <code>get</code>/<code>list</code>/<code>watch</code> verbs).</p>
+<h2 id="workflow-pod-security">Workflow Pod Security<a class="headerlink" href="#workflow-pod-security" title="Permanent link">&para;</a></h2>
+<p>See <a href="../workflow-pod-security-context/">workflow pod security context</a>.</p>
                 
                   
                 
