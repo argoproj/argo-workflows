@@ -634,7 +634,7 @@ spec:
 			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				if node.Outputs != nil {
 					for _, param := range node.Outputs.Parameters {
-						if param.Value != nil && *param.Value == "Default value" {
+						if param.Value != nil && param.Value.String() == "Default value" {
 							return true
 						}
 					}
