@@ -3446,7 +3446,7 @@ func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 
 	woc := newWorkflowOperationCtx(wf, controller)
 
-	assert.Equal(len(woc.wf.Status.PersistentVolumeClaims), 1, "1 PVC before operating")
+	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "1 PVC before operating")
 
 	woc.operate()
 
@@ -3458,7 +3458,7 @@ func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 	// Node 2 Failed
 	assert.Equal(node2.Phase, wfv1.NodeFailed)
 	// Hence, PVCs should stick around
-	assert.NotZero(len(woc.wf.Status.PersistentVolumeClaims), "PVCs not deleted")
+	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "PVCs not deleted")
 }
 
 var containerOutputsResult = `
