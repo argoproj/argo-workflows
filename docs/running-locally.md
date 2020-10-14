@@ -1,5 +1,32 @@
 # Running Locally
 
+There are various alternatives to run Argo locally:
+
+- Running a pre-configured environment like K3ai
+- Building Argo from source
+
+# Using K3ai
+
+An alternative to quick test Argo locally is to use project [K3ai](https://docs.k3ai.in/). The automated installation provide you with a lightweight environment
+based on the popular Rancher K3s project.
+
+To explore Argo with CPU only run:
+
+```sh
+curl -sfL https://get.k3ai.in | bash -s -- --cpu --plugin_argo_workflow
+```
+
+To explore Argo with GPU support run:
+
+```sh
+curl -sfL https://get.k3ai.in | bash -s -- --gpu --plugin_argo_workflow
+```
+
+The automated installation will provide you the Argo UI address at the end of the process based. More option to run Argo on different enviroments (i.e.: WSL) are available
+on the K3ai site : [https://docs.k3ai.in/](https://docs.k3ai.in/)
+
+# Build Argo from source
+
 ## Pre-requisites
 
 * [Go](https://golang.org/dl/) (The project currently uses version 1.13)

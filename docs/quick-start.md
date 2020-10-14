@@ -30,6 +30,24 @@ This will serve the user interface on http://localhost:2746
 
 If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) then [follow these instructions](argo-server.md#access-the-argo-workflows-ui). 
 
+An alternative to quick test Argo locally is to use project [K3ai](https://docs.k3ai.in/). The automated installation provide you with a lightweight environment
+based on the popular Rancher K3s project.
+
+To explore Argo with CPU only run:
+
+```sh
+curl -sfL https://get.k3ai.in | bash -s -- --cpu --plugin_argo_workflow
+```
+
+To explore Argo with GPU support run:
+
+```sh
+curl -sfL https://get.k3ai.in | bash -s -- --gpu --plugin_argo_workflow
+```
+
+The automated installation will provide you the Argo UI address at the end of the process based. More option to run Argo on different enviroments (i.e.: WSL) are available
+on the K3ai site : [https://docs.k3ai.in/](https://docs.k3ai.in/)
+
 Next, Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo/releases).
 
 Finally, submit an example workflow:  
