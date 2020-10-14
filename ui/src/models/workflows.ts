@@ -667,6 +667,10 @@ export interface WorkflowSpec {
         strategy?: string;
     };
     /**
+     * SecurityContext holds pod-level security attributes and common container settings.
+     */
+    securityContext?: kubernetes.SecurityContext;
+    /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
     affinity?: kubernetes.Affinity;
