@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -50,8 +49,8 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	if s.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorPNS && os.Getenv("CI") == "TODO" {
-		s.T().Skip("PNS not supported on CI")
+	if s.Config.ContainerRuntimeExecutor != common.ContainerRuntimeExecutorDocker {
+		s.T().Skip("non-docker not supported")
 	}
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").

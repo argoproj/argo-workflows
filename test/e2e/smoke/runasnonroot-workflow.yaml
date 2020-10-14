@@ -13,11 +13,3 @@ spec:
     - name: main
       container:
         image: argoproj/argosay:v2
-        args:
-          - echo
-          - hello
-          - /mnt/out/message
-      outputs:
-        artifacts:
-          - name: out
-            path: /mnt/out
