@@ -432,8 +432,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.deletePVCs()
 	if err != nil {
-		msg := "failed to delete PVCs"
-		woc.log.WithError(err).Errorf(msg)
+		woc.log.WithError(err).Error("failed to delete PVCs")
 	}
 }
 
