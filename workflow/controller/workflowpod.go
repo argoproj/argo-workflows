@@ -807,15 +807,9 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 // will load the artifact in the in user's volume (as opposed to the emptydir)
 func (woc *wfOperationCtx) addArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	artifacts := tmpl.Inputs.Artifacts
-	switch woc.controller.GetContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
-		// neither kubelet or k8sapi can support non-base layer outputs, so they must be mounted as emptyDir
+	if woc.mustMountOutputArtifactsVolumesToo(tmpl) {
+		woc.log.Debug("mounting output artifacts volumes too")
 		artifacts = append(artifacts, tmpl.Outputs.Artifacts...)
-	case common.ContainerRuntimeExecutorPNS:
-		// PNS cannot support non-base layer outputs with `runAsNonRoot`
-		if tmpl.SecurityContext.RunAsNonRoot == pointer.BoolPtr(true) {
-			artifacts = append(artifacts, tmpl.Outputs.Artifacts...)
-		}
 	}
 	if len(artifacts) == 0 {
 		return nil
@@ -897,6 +891,20 @@ func (woc *wfOperationCtx) addArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Templa
 	}
 	pod.Spec.Containers[mainCtrIndex] = *mainCtr
 	return nil
+}
+
+func (woc *wfOperationCtx) mustMountOutputArtifactsVolumesToo(tmpl *wfv1.Template) bool {
+	switch woc.controller.GetContainerRuntimeExecutor() {
+	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
+		// neither kubelet nor k8sapi can support non-base layer outputs, so they must be mounted as emptyDir
+		return true
+	case common.ContainerRuntimeExecutorPNS:
+		// PNS cannot support non-base layer outputs with `runAsNonRoot`
+		return woc.execWf.Spec.IsMustRunAsNonRoot() || tmpl.IsMustRunAsNonRoot()
+	default:
+		// docker never needs to mount output volumes
+		return false
+	}
 }
 
 // addOutputArtifactsVolumes mirrors any volume mounts in the main container to the wait sidecar.
