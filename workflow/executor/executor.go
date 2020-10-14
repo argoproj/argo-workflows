@@ -156,11 +156,8 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 		}
 		var artPath string
-		ok, err := we.isOverlappingVolume(art.Path)
-		if err != nil {
-			return err
-		}
-		if !ok {
+		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
+		if mnt == nil {
 			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
 		} else {
 			// If we get here, it means the input artifact path overlaps with an user specified
@@ -168,7 +165,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			// mounts, we need to load the artifact into the user specified volume mount,
 			// as opposed to the `input-artifacts` volume that is an implementation detail
 			// unbeknownst to the user.
-			log.Infof("Specified artifact path %s overlaps with volume mount. Extracting to volume mount", art.Path)
+			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
 			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
 		}
 
