@@ -854,7 +854,7 @@ func isTarball(filePath string) (bool, error) {
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
-		_, err := common.RunCommand("tar", "-xfv", src, "-C", dest)
+		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
 		return err
 	}
 
