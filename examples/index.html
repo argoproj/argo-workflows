@@ -3470,7 +3470,7 @@ Or automatically with a <code>duration</code> limit as the example above.</p>
           <span class="nt">memory</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">32Mi</span>
           <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100m</span>
 </code></pre></div>
-<p>DAG templates use the tasks prefix to refer to another task, for example <code>{{tasks.influx.ip}}</code>.</p>
+<p>Step templates use the <code>steps</code> prefix to refer to another step: for example <code>{{steps.influx.ip}}</code>. In DAG templates, the <code>tasks</code> prefix is used instead: for example <code>{{tasks.influx.ip}}</code>.</p>
 <h2 id="sidecars">Sidecars<a class="headerlink" href="#sidecars" title="Permanent link">&para;</a></h2>
 <p>A sidecar is another container that executes concurrently in the same pod as the main container and is useful in creating multi-container pods.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
