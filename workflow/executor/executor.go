@@ -364,11 +364,8 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			compressionLevel = gzip.DefaultCompression
 		}
 	}
-	overlapping, err := we.isOverlappingVolume(art.Path)
-	if err != nil {
-		return "", "", err
-	}
-	if overlapping {
+
+	if !we.isBaseImagePath(art.Path) {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
@@ -398,7 +395,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
 	log.Infof("Copying %s from container base image layer to %s", art.Path, localArtPath)
 
-	err = we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
+	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
 	if err != nil {
 		return "", "", err
 	}
@@ -440,22 +437,29 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	return fileName, localArtPath, nil
 }
 
-// same as common.FindOverlappingVolume, but uses pod spec
-func (we *WorkflowExecutor) isOverlappingVolume(path string) (bool, error) {
-	pod, err := we.getPod()
-	if err != nil {
-		return false, err
+// isBaseImagePath checks if the given artifact path resides in the base image layer of the container
+// versus a shared volume mount between the wait and main container
+func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
+	// first check if path overlaps with a user-specified volumeMount
+	if common.FindOverlappingVolume(&we.Template, path) != nil {
+		return false
 	}
-	for _, c := range pod.Spec.Containers {
-		if c.Name == common.MainContainerName {
-			for _, mnt := range c.VolumeMounts {
-				if path == mnt.MountPath || strings.HasPrefix(path, mnt.MountPath+"/") {
-					return true, nil
-				}
+	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
+	for _, inArt := range we.Template.Inputs.Artifacts {
+		if path == inArt.Path {
+			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
+			// the input artifact volume. Since this function was called, we know that we want to use this path as an
+			// ourput artifact, so we should look for it in the base image path.
+			if inArt.Optional && !inArt.HasLocation() {
+				return true
 			}
+			return false
+		}
+		if strings.HasPrefix(path, inArt.Path+"/") {
+			return false
 		}
 	}
-	return false, nil
+	return true
 }
 
 // SaveParameters will save the content in the specified file path as output parameter value
@@ -478,11 +482,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		}
 
 		var output *wfv1.Int64OrString
-		overlapping, err := we.isOverlappingVolume(param.ValueFrom.Path)
-		if err != nil {
-			return err
-		}
-		if !overlapping {
+		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {

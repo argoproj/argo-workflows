@@ -452,10 +452,6 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
 
-func (wfs *WorkflowSpec) IsMustRunAsNonRoot() bool {
-	return wfs != nil && wfs.SecurityContext != nil && wfs.SecurityContext.RunAsNonRoot != nil && *wfs.SecurityContext.RunAsNonRoot
-}
-
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
@@ -1889,12 +1885,6 @@ func (tmpl *Template) IsLeaf() bool {
 		return true
 	}
 	return false
-}
-
-func (tmpl *Template) IsMustRunAsNonRoot() bool {
-	return tmpl != nil && ((tmpl.SecurityContext != nil && tmpl.SecurityContext.RunAsNonRoot != nil && *tmpl.SecurityContext.RunAsNonRoot) ||
-		(tmpl.Container != nil && tmpl.Container.SecurityContext != nil && *tmpl.Container.SecurityContext.RunAsNonRoot) ||
-		(tmpl.Script != nil && tmpl.Script.SecurityContext != nil && *tmpl.Script.SecurityContext.RunAsNonRoot))
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates

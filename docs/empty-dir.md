@@ -5,7 +5,7 @@ While by default, the Docker and PNS [workflow executors](workflow-executors.md)
 You can work-around this constraint by mounting volumes onto your pod. The easiest way to do this is to use as `emptytDir` volume. 
 
 !!! Note 
-    This is only needed for output artifacts in <=v2.10 and before. Input artifacts, and output artifacts in >=v2.12 are automatically mounted to an empty-dir when needed.
+    This is only needed for output artifacts. Input artifacts are automatically mounted to an empty-dir if needed
 
 This example shows how to mount an output volume: 
 

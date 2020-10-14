@@ -259,7 +259,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	err = woc.addArtifactsVolumes(pod, tmpl)
+	err = woc.addInputArtifactsVolumes(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -805,17 +805,12 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 // the explicit volume mount and the artifact emptydir and prevent all uses of the emptydir for purposes of
 // loading data. The controller will omit mounting the emptydir to the artifact path, and the executor
 // will load the artifact in the in user's volume (as opposed to the emptydir)
-func (woc *wfOperationCtx) addArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	artifacts := tmpl.Inputs.Artifacts
-	if woc.mustMountOutputArtifactsVolumesToo(tmpl) {
-		woc.log.Debug("mounting output artifacts volumes too")
-		artifacts = append(artifacts, tmpl.Outputs.Artifacts...)
-	}
-	if len(artifacts) == 0 {
+func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if len(tmpl.Inputs.Artifacts) == 0 {
 		return nil
 	}
 	artVol := apiv1.Volume{
-		Name: "artifacts",
+		Name: "input-artifacts",
 		VolumeSource: apiv1.VolumeSource{
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
@@ -861,9 +856,9 @@ func (woc *wfOperationCtx) addArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Templa
 	}
 	mainCtr := &pod.Spec.Containers[mainCtrIndex]
 
-	for _, art := range artifacts {
+	for _, art := range tmpl.Inputs.Artifacts {
 		if art.Path == "" {
-			return errors.Errorf(errors.CodeBadRequest, "[inputs|outputs].artifacts.%s did not specify a path", art.Name)
+			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
 		if !art.HasLocation() && art.Optional {
 			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
@@ -891,20 +886,6 @@ func (woc *wfOperationCtx) addArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Templa
 	}
 	pod.Spec.Containers[mainCtrIndex] = *mainCtr
 	return nil
-}
-
-func (woc *wfOperationCtx) mustMountOutputArtifactsVolumesToo(tmpl *wfv1.Template) bool {
-	switch woc.controller.GetContainerRuntimeExecutor() {
-	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
-		// neither kubelet nor k8sapi can support non-base layer outputs, so they must be mounted as emptyDir
-		return true
-	case common.ContainerRuntimeExecutorPNS:
-		// PNS cannot support non-base layer outputs with `runAsNonRoot`
-		return woc.execWf.Spec.IsMustRunAsNonRoot() || tmpl.IsMustRunAsNonRoot()
-	default:
-		// docker never needs to mount output volumes
-		return false
-	}
 }
 
 // addOutputArtifactsVolumes mirrors any volume mounts in the main container to the wait sidecar.
