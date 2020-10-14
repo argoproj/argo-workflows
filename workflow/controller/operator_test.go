@@ -3440,17 +3440,9 @@ status:
 func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
 	assert := assert.New(t)
 
-	cancel, controller := newController()
-	defer cancel()
-
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
 	wf := unmarshalWF(workflowWithPVCAndFailingStep)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(err)
-
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(err)
+	cancel, controller := newController(wf)
+	defer cancel()
 
 	woc := newWorkflowOperationCtx(wf, controller)
 
