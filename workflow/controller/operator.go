@@ -428,8 +428,8 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowPhase(wfv1.NodeError, true, workflowMessage)
 		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", workflowMessage)
 	default:
-		// NOTE: we should never make it here because if the the node was 'Running'
-		// we should have returned earlier.
+		// NOTE: we should never make it here because if the node was 'Running' we should have
+		// returned earlier.
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 	}
