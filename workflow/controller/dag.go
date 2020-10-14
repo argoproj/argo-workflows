@@ -322,6 +322,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 				woc.computeMetrics(tmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 			}
 		}
+
+		// Release acquired lock completed task.
+		if tmpl != nil && tmpl.Synchronization != nil {
+			woc.controller.syncManager.Release(woc.wf, node.ID, tmpl.Synchronization)
+		}
+
 		if node.Completed() {
 			// Run the node's onExit node, if any.
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.OnExit, task.Name, node.Name, dagCtx.boundaryID, dagCtx.tmplCtx)
