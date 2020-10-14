@@ -125,7 +125,7 @@ script:
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	volumeMount := apiv1.VolumeMount{
-		Name:             "input-artifacts",
+		Name:             "artifacts",
 		ReadOnly:         false,
 		MountPath:        "/manifest",
 		SubPath:          "manifest",
