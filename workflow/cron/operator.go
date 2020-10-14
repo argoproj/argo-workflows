@@ -128,18 +128,22 @@ func (woc *cronWfOperationCtx) persistUpdate() {
 		return
 	}
 
-	_, err := woc.cronWfIf.Update(woc.cronWf)
+	cronWf, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
 		if !errors.IsConflict(err) {
 			woc.log.WithError(err).Error("failed to update CronWorkflow")
 			return
 		}
 		var reapplyErr error
-		_, reapplyErr = woc.reapplyUpdate()
-		if reapplyErr != nil {
+		cronWf, reapplyErr = woc.reapplyUpdate()
+		if err != nil {
 			woc.log.WithError(reapplyErr).WithField("original error", err).Error("failed to update CronWorkflow after reapply attempt")
 			return
+		} else {
+			woc.cronWf = cronWf
 		}
+	} else {
+		woc.cronWf = cronWf
 	}
 }
 
