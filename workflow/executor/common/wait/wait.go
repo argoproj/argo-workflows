@@ -8,23 +8,25 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/argoproj/argo/workflow/executor/common"
 )
 
 func UntilTerminated(kubernetesInterface kubernetes.Interface, namespace, podName, containerID string) error {
 	log.Infof("Waiting for container %s to complete", containerID)
+	podInterface := kubernetesInterface.CoreV1().Pods(namespace)
 	listOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + podName}
 	for {
-		done, err := untilTerminatedAux(kubernetesInterface, namespace, containerID, listOptions)
+		done, err := untilTerminatedAux(podInterface, containerID, listOptions)
 		if done {
 			return err
 		}
 	}
 }
 
-func untilTerminatedAux(kubernetesInterface kubernetes.Interface, namespace, containerID string, listOptions metav1.ListOptions) (bool, error) {
-	w, err := kubernetesInterface.CoreV1().Pods(namespace).Watch(listOptions)
+func untilTerminatedAux(podInterface v1.PodInterface, containerID string, listOptions metav1.ListOptions) (bool, error) {
+	w, err := podInterface.Watch(listOptions)
 	if err != nil {
 		return true, fmt.Errorf("could not watch pod: %w", err)
 	}
