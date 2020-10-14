@@ -43,7 +43,6 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Empty(t, status.Message)
 		})
 }
 
