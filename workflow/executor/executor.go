@@ -282,7 +282,7 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 	}
 	fileName, localArtPath, err := we.stageArchiveFile(mainCtrID, art)
 	if err != nil {
-		if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
+		if art.Optional && (errors.IsCode(errors.CodeNotFound, err) || os.IsNotExist(err)) {
 			log.Warnf("Ignoring optional artifact '%s' which does not exist in path '%s': %v", art.Name, art.Path, err)
 			return nil
 		}
@@ -374,6 +374,9 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
+			if !argofile.Exists(mountedArtPath) {
+				return "", "", os.ErrNotExist
+			}
 			return fileName, mountedArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
