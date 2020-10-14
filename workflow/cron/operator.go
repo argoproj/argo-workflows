@@ -136,7 +136,7 @@ func (woc *cronWfOperationCtx) persistUpdate() {
 		}
 		var reapplyErr error
 		cronWf, reapplyErr = woc.reapplyUpdate()
-		if err != nil {
+		if reapplyErr != nil {
 			woc.log.WithError(reapplyErr).WithField("original error", err).Error("failed to update CronWorkflow after reapply attempt")
 			return
 		} else {
