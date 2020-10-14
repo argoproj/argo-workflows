@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -392,6 +393,23 @@ func (s *CLISuite) TestWorkflowDeleteByName() {
 			name = metadata.Name
 		}).
 		RunCli([]string{"delete", name}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteByFieldSelector() {
+	var name string
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		}).
+		RunCli([]string{"delete", "--field-selector", fmt.Sprintf("metadata.name=%s", name)}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
 			}
