@@ -388,18 +388,6 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}
 
-	err = woc.deletePVCs(workflowStatus)
-	if err != nil {
-		msg := "failed to delete PVCs"
-		woc.log.WithError(err).Errorf(msg)
-		// Mark the workflow with an error message and return, but intentionally do not
-		// markCompletion so that we can retry PVC deletion (TODO: use workqueue.ReAdd())
-		// This error phase may be cleared if a subsequent delete attempt is successful.
-		woc.markWorkflowError(err, false)
-		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("%s %s: %+v", woc.wf.ObjectMeta.Name, msg, err))
-		return
-	}
-
 	var workflowMessage string
 	if node.FailedOrError() && woc.execWf.Spec.Shutdown != "" {
 		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.execWf.Spec.Shutdown)
@@ -440,6 +428,12 @@ func (woc *wfOperationCtx) operate() {
 		}}
 		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
+	}
+
+	err = woc.deletePVCs()
+	if err != nil {
+		msg := "failed to delete PVCs"
+		woc.log.WithError(err).Errorf(msg)
 	}
 }
 
@@ -1397,14 +1391,12 @@ func (woc *wfOperationCtx) createPVCs() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) deletePVCs(workflowStatus wfv1.NodePhase) error {
+func (woc *wfOperationCtx) deletePVCs() error {
 	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
-		// We cannot use wf.Status.Phase here just yet, since we haven't processed
-		// the node statuses.
-		if workflowStatus == wfv1.NodeError || workflowStatus == wfv1.NodeFailed {
+		if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
 			// Skip deleting PVCs to reuse them for retried failed/error workflows.
 			// PVCs are automatically deleted when corresponded owner workflows get deleted.
 			return nil
