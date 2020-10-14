@@ -22,6 +22,24 @@ const (
 	fakeContainerID = "abc123"
 )
 
+func newWE(templateWithOutParam wfv1.Template) (*mocks.ContainerRuntimeExecutor, WorkflowExecutor) {
+	fakeClientset := fake.NewSimpleClientset(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Namespace: fakeNamespace, Name: fakePodName},
+	})
+	mockRuntimeExecutor := &mocks.ContainerRuntimeExecutor{}
+	we := WorkflowExecutor{
+		PodName:            fakePodName,
+		Template:           templateWithOutParam,
+		ClientSet:          fakeClientset,
+		Namespace:          fakeNamespace,
+		PodAnnotationsPath: fakeAnnotations,
+		ExecutionControl:   nil,
+		RuntimeExecutor:    mockRuntimeExecutor,
+		mainContainerID:    fakeContainerID,
+	}
+	return mockRuntimeExecutor, we
+}
+
 func TestSaveParameters(t *testing.T) {
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -83,24 +101,6 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	err := we.SaveParameters()
 	assert.NoError(t, err)
 	assert.Equal(t, "", we.Template.Outputs.Parameters[0].Value.String())
-}
-
-func newWE(templateWithOutParam wfv1.Template) (*mocks.ContainerRuntimeExecutor, WorkflowExecutor) {
-	fakeClientset := fake.NewSimpleClientset(&corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Namespace: fakeNamespace, Name: fakePodName},
-	})
-	mockRuntimeExecutor := &mocks.ContainerRuntimeExecutor{}
-	we := WorkflowExecutor{
-		PodName:            fakePodName,
-		Template:           templateWithOutParam,
-		ClientSet:          fakeClientset,
-		Namespace:          fakeNamespace,
-		PodAnnotationsPath: fakeAnnotations,
-		ExecutionControl:   nil,
-		RuntimeExecutor:    mockRuntimeExecutor,
-		mainContainerID:    fakeContainerID,
-	}
-	return mockRuntimeExecutor, we
 }
 
 func TestIsTarball(t *testing.T) {

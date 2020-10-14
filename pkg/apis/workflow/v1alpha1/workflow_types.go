@@ -454,7 +454,6 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 
 func (wfs *WorkflowSpec) IsMustRunAsNonRoot() bool {
 	return wfs != nil && wfs.SecurityContext != nil && wfs.SecurityContext.RunAsNonRoot != nil && *wfs.SecurityContext.RunAsNonRoot
-
 }
 
 // Template is a reusable and composable unit of execution in a workflow

@@ -14,7 +14,7 @@ import (
 )
 
 func UntilTerminated(kubernetesInterface kubernetes.Interface, namespace, podName, containerID string) error {
-	log.Infof("Waiting for container %s to complete", containerID)
+	log.Infof("Waiting for container %s to be terminated", containerID)
 	podInterface := kubernetesInterface.CoreV1().Pods(namespace)
 	listOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + podName}
 	for {

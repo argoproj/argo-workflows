@@ -364,11 +364,11 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			compressionLevel = gzip.DefaultCompression
 		}
 	}
-	ok, err := we.isOverlappingVolume(art.Path)
+	overlapping, err := we.isOverlappingVolume(art.Path)
 	if err != nil {
 		return "", "", err
 	}
-	if ok {
+	if overlapping {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
@@ -440,7 +440,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	return fileName, localArtPath, nil
 }
 
-// friend of to common.FindOverlappingVolume, returns
+// same as common.FindOverlappingVolume, but uses pod spec
 func (we *WorkflowExecutor) isOverlappingVolume(path string) (bool, error) {
 	pod, err := we.getPod()
 	if err != nil {
@@ -478,11 +478,11 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		}
 
 		var output *wfv1.Int64OrString
-		ok, err := we.isOverlappingVolume(param.ValueFrom.Path)
+		overlapping, err := we.isOverlappingVolume(param.ValueFrom.Path)
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if !overlapping {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
