@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -34,7 +35,9 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
-	s.SkipIf(common.ContainerRuntimeExecutorDocker)
+	if s.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
+		s.T().Skip("docker not supported")
+	}
 	s.Given().
 		Workflow("@smoke/runasnonroot-workflow.yaml").
 		When().
@@ -47,6 +50,9 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
+	if s.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorPNS && os.Getenv("CI") == "TODO" {
+		s.T().Skip("PNS not supported on CI")
+	}
 	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
@@ -65,8 +71,9 @@ func (s *SmokeSuite) TestWorkflowTemplateBasic() {
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
-		WaitForWorkflow(60 * time.Second).
+		WaitForWorkflow(60*time.Second).
 		Then().
+		RunCli([]string{"kubectl", "get", "pods", "-oyaml"}, fixtures.NoError).
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})

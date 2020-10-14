@@ -161,12 +161,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
-func (s *E2ESuite) SkipIf(executor string) {
-	if executor == s.Config.ContainerRuntimeExecutor {
-		s.T().Skipf("%v does not support this test", executor)
-	}
-}
-
 func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:                 s.T(),
