@@ -33,13 +33,13 @@ If you're using running Argo Workflows on a remote cluster (e.g. on EKS or GKE) 
 An alternative to quick test Argo locally is to use project [K3ai](https://docs.k3ai.in/). The automated installation provide you with a lightweight environment
 based on the popular Rancher K3s project.
 
-To explore Argo with CPU only run:
+To use Argo with CPU only run:
 
 ```sh
 curl -sfL https://get.k3ai.in | bash -s -- --cpu --plugin_argo_workflow
 ```
 
-To explore Argo with GPU support run:
+To use Argo with GPU support run:
 
 ```sh
 curl -sfL https://get.k3ai.in | bash -s -- --gpu --plugin_argo_workflow
