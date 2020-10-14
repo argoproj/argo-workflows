@@ -3383,70 +3383,34 @@ var workflowWithPVCAndFailingStep = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  creationTimestamp: "2020-10-14T18:12:34Z"
-  generation: 17
-  labels:
-    workflows.argoproj.io/completed: "true"
-    workflows.argoproj.io/phase: Failed
   name: wf-with-pvc
-  resourceVersion: "8196"
-  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo-next/workflows/wf-with-pvc
-  uid: 01996a37-718c-48b6-9038-33016646d425
 spec:
-  arguments: {}
   entrypoint: entrypoint
   templates:
-  - arguments: {}
-    inputs: {}
-    metadata: {}
-    name: entrypoint
-    outputs: {}
-    retryStrategy:
-      limit: 1
+  - name: entrypoint
     steps:
-    - - arguments: {}
-        name: succeed
+    - - name: succeed
         template: succeed
-    - - arguments: {}
-        name: failure
+    - - name: failure
         template: failure
-  - arguments: {}
-    inputs: {}
-    metadata: {}
-    name: succeed
-    outputs: {}
+  - name: succeed
     script:
-      args:
-      - Hello, world
-      command:
-      - cowsay
+      args: [success]
+      command: [cowsay]
       image: docker/whalesay:latest
-      name: ""
-      resources: {}
-      source: ""
       volumeMounts:
       - mountPath: /data
         name: data
-  - arguments: {}
-    inputs: {}
-    metadata: {}
-    name: failure
-    outputs: {}
+  - name: failure
     script:
-      command:
-      - sh
+      command: [sh]
       image: alpine
-      name: ""
-      resources: {}
-      source: |
-        echo "I am failing intentionally"
-        exit 1
+      args: [exit, "1"]
       volumeMounts:
       - mountPath: /data
         name: data
   volumeClaimTemplates:
   - metadata:
-      creationTimestamp: null
       name: data
     spec:
       accessModes:
@@ -3454,284 +3418,21 @@ spec:
       resources:
         requests:
           storage: 1Gi
-    status: {}
 status:
-  conditions:
-  - status: "True"
-    type: Completed
-  finishedAt: "2020-10-14T18:12:57Z"
-  message: No more retries left
   nodes:
     wf-with-pvc:
-      children:
-      - wf-with-pvc-1973167036
-      - wf-with-pvc-1369025657
-      displayName: wf-with-pvc
-      finishedAt: "2020-10-14T18:12:57Z"
-      id: wf-with-pvc
-      message: No more retries left
       name: wf-with-pvc
       phase: Failed
-      progress: 4/4
-      resourcesDuration:
-        cpu: 7
-        memory: 3
-      startedAt: "2020-10-14T18:12:34Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: Retry
-    wf-with-pvc-1083168639:
-      boundaryID: wf-with-pvc-1369025657
-      children:
-      - wf-with-pvc-3076977240
-      displayName: succeed
-      finishedAt: "2020-10-14T18:12:50Z"
-      hostNodeName: minikube
-      id: wf-with-pvc-1083168639
-      name: wf-with-pvc(1)[0].succeed
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: wf-with-pvc/wf-with-pvc-1083168639/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 1
-        memory: 0
-      startedAt: "2020-10-14T18:12:46Z"
-      templateName: succeed
-      templateScope: local/wf-with-pvc
-      type: Pod
-    wf-with-pvc-1369025657:
-      children:
-      - wf-with-pvc-3143940621
-      displayName: wf-with-pvc(1)
-      finishedAt: "2020-10-14T18:12:57Z"
-      id: wf-with-pvc-1369025657
-      message: child 'wf-with-pvc-2012183968' failed
-      name: wf-with-pvc(1)
-      outboundNodes:
-      - wf-with-pvc-2012183968
-      phase: Failed
-      progress: 2/2
-      resourcesDuration:
-        cpu: 3
-        memory: 1
-      startedAt: "2020-10-14T18:12:46Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: Steps
-    wf-with-pvc-1973167036:
-      children:
-      - wf-with-pvc-3090926742
-      displayName: wf-with-pvc(0)
-      finishedAt: "2020-10-14T18:12:46Z"
-      id: wf-with-pvc-1973167036
-      message: child 'wf-with-pvc-3099954303' failed
-      name: wf-with-pvc(0)
-      outboundNodes:
-      - wf-with-pvc-3099954303
-      phase: Failed
-      progress: 2/2
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      startedAt: "2020-10-14T18:12:34Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: Steps
-    wf-with-pvc-2012183968:
-      boundaryID: wf-with-pvc-1369025657
-      displayName: failure
-      finishedAt: "2020-10-14T18:12:55Z"
-      hostNodeName: minikube
-      id: wf-with-pvc-2012183968
-      message: failed with exit code 1
-      name: wf-with-pvc(1)[1].failure
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: wf-with-pvc/wf-with-pvc-2012183968/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "1"
-      phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-10-14T18:12:50Z"
-      templateName: failure
-      templateScope: local/wf-with-pvc
-      type: Pod
     wf-with-pvc-2390440388:
-      boundaryID: wf-with-pvc-1973167036
-      children:
-      - wf-with-pvc-4097333619
-      displayName: succeed
-      finishedAt: "2020-10-14T18:12:38Z"
-      hostNodeName: minikube
-      id: wf-with-pvc-2390440388
       name: wf-with-pvc(0)[0].succeed
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: wf-with-pvc/wf-with-pvc-2390440388/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
       phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-10-14T18:12:34Z"
-      templateName: succeed
-      templateScope: local/wf-with-pvc
-      type: Pod
-    wf-with-pvc-3076977240:
-      boundaryID: wf-with-pvc-1369025657
-      children:
-      - wf-with-pvc-2012183968
-      displayName: '[1]'
-      finishedAt: "2020-10-14T18:12:57Z"
-      id: wf-with-pvc-3076977240
-      message: child 'wf-with-pvc-2012183968' failed
-      name: wf-with-pvc(1)[1]
-      phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-10-14T18:12:50Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: StepGroup
-    wf-with-pvc-3090926742:
-      boundaryID: wf-with-pvc-1973167036
-      children:
-      - wf-with-pvc-2390440388
-      displayName: '[0]'
-      finishedAt: "2020-10-14T18:12:40Z"
-      id: wf-with-pvc-3090926742
-      name: wf-with-pvc(0)[0]
-      phase: Succeeded
-      progress: 2/2
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      startedAt: "2020-10-14T18:12:34Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: StepGroup
     wf-with-pvc-3099954303:
-      boundaryID: wf-with-pvc-1973167036
-      displayName: failure
-      finishedAt: "2020-10-14T18:12:44Z"
-      hostNodeName: minikube
-      id: wf-with-pvc-3099954303
-      message: failed with exit code 1
       name: wf-with-pvc(0)[1].failure
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: wf-with-pvc/wf-with-pvc-3099954303/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "1"
       phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-10-14T18:12:40Z"
-      templateName: failure
-      templateScope: local/wf-with-pvc
-      type: Pod
-    wf-with-pvc-3143940621:
-      boundaryID: wf-with-pvc-1369025657
-      children:
-      - wf-with-pvc-1083168639
-      displayName: '[0]'
-      finishedAt: "2020-10-14T18:12:50Z"
-      id: wf-with-pvc-3143940621
-      name: wf-with-pvc(1)[0]
-      phase: Succeeded
-      progress: 2/2
-      resourcesDuration:
-        cpu: 3
-        memory: 1
-      startedAt: "2020-10-14T18:12:46Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: StepGroup
-    wf-with-pvc-4097333619:
-      boundaryID: wf-with-pvc-1973167036
-      children:
-      - wf-with-pvc-3099954303
-      displayName: '[1]'
-      finishedAt: "2020-10-14T18:12:46Z"
-      id: wf-with-pvc-4097333619
-      message: child 'wf-with-pvc-3099954303' failed
-      name: wf-with-pvc(0)[1]
-      phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 2
-        memory: 1
-      startedAt: "2020-10-14T18:12:40Z"
-      templateName: entrypoint
-      templateScope: local/wf-with-pvc
-      type: StepGroup
   persistentVolumeClaims:
   - name: data
     persistentVolumeClaim:
       claimName: wf-with-pvc-data
-  phase: Running
-  progress: 4/4
-  resourcesDuration:
-    cpu: 7
-    memory: 3
-  startedAt: "2020-10-14T18:12:34Z"
 `
 
 // This test ensures that the PVCs used in the steps are not deleted when
