@@ -441,7 +441,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             graph.setNode(node, {label: node, width: this.nodeSize, height: this.nodeSize});
         });
         edges.forEach(edge => {
-            if (edge.v && edge.w) {
+            if (edge.v && edge.w && graph.node(edge.v) && graph.node(edge.w)) {
                 graph.setEdge(edge.v, edge.w);
             }
         });
