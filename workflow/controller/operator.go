@@ -388,7 +388,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}
 
-	err = woc.deletePVCs()
+	err = woc.deletePVCs(workflowStatus)
 	if err != nil {
 		msg := "failed to delete PVCs"
 		woc.log.WithError(err).Errorf(msg)
@@ -1397,12 +1397,14 @@ func (woc *wfOperationCtx) createPVCs() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) deletePVCs() error {
+func (woc *wfOperationCtx) deletePVCs(workflowStatus wfv1.NodePhase) error {
 	gcStrategy := woc.wf.Spec.GetVolumeClaimGC().GetStrategy()
 
 	switch gcStrategy {
 	case wfv1.VolumeClaimGCOnSuccess:
-		if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
+		// We cannot use wf.Status.Phase here just yet, since we haven't processed
+		// the node statuses.
+		if workflowStatus == wfv1.NodeError || workflowStatus == wfv1.NodeFailed {
 			// Skip deleting PVCs to reuse them for retried failed/error workflows.
 			// PVCs are automatically deleted when corresponded owner workflows get deleted.
 			return nil
