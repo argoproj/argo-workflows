@@ -367,11 +367,11 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			compressionLevel = gzip.DefaultCompression
 		}
 	}
-	ok, err := we.isBaseImagePath(art.Path)
+	ok, err := we.isOverlappingVolume(art.Path)
 	if err != nil {
 		return "", "", err
 	}
-	if !ok {
+	if ok {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
@@ -443,13 +443,6 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	return fileName, localArtPath, nil
 }
 
-// isBaseImagePath checks if the given artifact path resides in the base image layer of the container
-// versus a shared volume mount between the wait and main container
-func (we *WorkflowExecutor) isBaseImagePath(path string) (bool, error) {
-	volume, err := we.isOverlappingVolume(path)
-	return !volume, err
-}
-
 // friend of to common.FindOverlappingVolume, returns
 func (we *WorkflowExecutor) isOverlappingVolume(path string) (bool, error) {
 	pod, err := we.getPod()
@@ -459,13 +452,13 @@ func (we *WorkflowExecutor) isOverlappingVolume(path string) (bool, error) {
 	for _, c := range pod.Spec.Containers {
 		if c.Name == common.MainContainerName {
 			for _, mnt := range c.VolumeMounts {
-				if strings.HasPrefix(path, mnt.MountPath+"/") {
-					return false, nil
+				if path == mnt.MountPath || strings.HasPrefix(path, mnt.MountPath+"/") {
+					return true, nil
 				}
 			}
 		}
 	}
-	return true, nil
+	return false, nil
 }
 
 // SaveParameters will save the content in the specified file path as output parameter value
@@ -488,11 +481,11 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		}
 
 		var output *wfv1.Int64OrString
-		ok, err := we.isBaseImagePath(param.ValueFrom.Path)
+		ok, err := we.isOverlappingVolume(param.ValueFrom.Path)
 		if err != nil {
 			return err
 		}
-		if ok {
+		if !ok {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
@@ -861,7 +854,7 @@ func isTarball(filePath string) (bool, error) {
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
-		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
+		_, err := common.RunCommand("tar", "-xfv", src, "-C", dest)
 		return err
 	}
 

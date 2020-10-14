@@ -191,7 +191,6 @@ func (p *PNSExecutor) Wait(containerID string) error {
 	}
 	log.Infof("Main pid %d completed", mainPID)
 	return nil
-
 }
 
 // pollRootProcesses will poll /proc for root pids (pids without parents) in a tight loop, for the
