@@ -388,7 +388,7 @@ func TestMutexInDAG(t *testing.T) {
 			}
 		}
 		assert.Equal(wfv1.NodeRunning, woc.wf.Status.Phase)
-		makePodsPhase(woc, v1.PodSucceeded)
+		makePodsPhase(t, v1.PodSucceeded, controller.kubeclientset, woc.wf.Namespace)
 
 		woc1 := newWorkflowOperationCtx(woc.wf, controller)
 		woc1.operate()
