@@ -44,6 +44,8 @@ type archivedWorkflowLabelRecord struct {
 	Value string `db:"value"`
 }
 
+//go:generate mockery -name WorkflowArchive
+
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
