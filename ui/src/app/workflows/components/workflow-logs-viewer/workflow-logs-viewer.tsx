@@ -1,7 +1,8 @@
 import * as React from 'react';
 
-import {Subscription} from 'rxjs';
+import {Observable, Subscription} from 'rxjs';
 import * as models from '../../../../models';
+import {ErrorNotice} from '../../../shared/components/error-notice';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
 
@@ -21,9 +22,11 @@ interface WorkflowLogsViewerState {
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
-    private subscription: Subscription = null;
+    private subscription: Subscription | null = null;
+
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
+
         this.state = {lines: [], loaded: false};
     }
 
@@ -48,13 +51,10 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     <i className='fa fa-box' /> {this.props.nodeId}/{this.props.container}
                     {this.state.lines.length > 0 && <small className='muted'> {this.state.lines.length} line(s)</small>}
                 </p>
+
+                {this.state.error && <ErrorNotice error={this.state.error} onReload={() => this.refreshStream()} />}
                 <div className='white-box'>
-                    {this.state.error && (
-                        <p>
-                            <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
-                        </p>
-                    )}
-                    {!this.state.error && this.isWaitingForData() && (
+                    {this.isWaitingForData() && (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
@@ -65,12 +65,8 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                             <FullHeightLogsViewer
                                 source={{
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
-                                    loadLogs: () => {
-                                        return services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(log => {
-                                            return log ? log + '\n' : '';
-                                        });
-                                    },
-                                    shouldRepeat: () => this.isCurrentNodeRunningOrPending()
+                                    loadLogs: () => Observable.from(this.state.lines),
+                                    shouldRepeat: () => false
                                 }}
                             />
                         </div>
@@ -98,15 +94,14 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
 
     private refreshStream(): void {
         this.ensureUnsubscribed();
+
+        this.setState({lines: [], loaded: false, error: undefined});
+
         this.subscription = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
             log => {
                 this.setState(state => {
                     const newState = {...state, loaded: true};
-
-                    if (log) {
-                        newState.lines = newState.lines.concat(log.split('\n'));
-                    }
-
+                    newState.lines.push(log + '\n');
                     return newState;
                 });
             },

@@ -656,6 +656,8 @@ spec:
           periodSeconds: 20
       nodeSelector:
         kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -735,6 +737,8 @@ spec:
         name: workflow-controller
       nodeSelector:
         kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: argo
 ---
 apiVersion: v1

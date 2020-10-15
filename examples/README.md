@@ -1286,7 +1286,7 @@ spec:
           cpu: 100m
 ```
 
-DAG templates use the tasks prefix to refer to another task, for example `{{tasks.influx.ip}}`.
+Step templates use the `steps` prefix to refer to another step: for example `{{steps.influx.ip}}`. In DAG templates, the `tasks` prefix is used instead: for example `{{tasks.influx.ip}}`.
 
 ## Sidecars
 

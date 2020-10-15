@@ -11,7 +11,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -495,7 +494,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: pointer.StringPtr("0")}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: wfv1.Int64OrStringPtr("0")}},
 				},
 			},
 		}
@@ -504,7 +503,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", *parameters[0].Value)
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 	t.Run("ParameterFile", func(t *testing.T) {
@@ -519,7 +518,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", *parameters[0].Value)
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 }

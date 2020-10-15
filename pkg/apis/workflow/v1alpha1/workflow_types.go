@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo/util/slice"
+
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -65,15 +67,6 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
 )
-
-func (t NodeType) IsLeaf() bool {
-	switch t {
-	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
-		return true
-	default:
-		return false
-	}
-}
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
@@ -140,6 +133,25 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 		}
 	}
 	return out
+}
+
+// GetTTLStrategy return TTLStrategy based on Order of precedence:
+//1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+func (w *Workflow) GetTTLStrategy(defaultTTLStrategy *TTLStrategy) *TTLStrategy {
+	var ttlStrategy *TTLStrategy
+	// TTLStrategy from Workflow default from Config
+	if defaultTTLStrategy != nil {
+		ttlStrategy = defaultTTLStrategy
+	}
+	// TTLStrategy from WorkflowTemplate
+	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
+	}
+	//TTLStrategy from Workflow
+	if w.Spec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Spec.GetTTLStrategy()
+	}
+	return ttlStrategy
 }
 
 var (
@@ -352,6 +364,18 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	}
 
 	return wfs.VolumeClaimGC
+}
+
+func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
+	if wfs.TTLSecondsAfterFinished != nil {
+		if wfs.TTLStrategy == nil {
+			ttlstrategy := TTLStrategy{SecondsAfterCompletion: wfs.TTLSecondsAfterFinished}
+			wfs.TTLStrategy = &ttlstrategy
+		} else if wfs.TTLStrategy.SecondsAfterCompletion == nil {
+			wfs.TTLStrategy.SecondsAfterCompletion = wfs.TTLSecondsAfterFinished
+		}
+	}
+	return wfs.TTLStrategy
 }
 
 type ShutdownStrategy string
@@ -641,11 +665,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *string `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *Int64OrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -677,7 +701,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -744,6 +768,7 @@ func (vgc VolumeClaimGC) GetStrategy() VolumeClaimGCStrategy {
 type ArchiveStrategy struct {
 	Tar  *TarStrategy  `json:"tar,omitempty" protobuf:"bytes,1,opt,name=tar"`
 	None *NoneStrategy `json:"none,omitempty" protobuf:"bytes,2,opt,name=none"`
+	Zip  *ZipStrategy  `json:"zip,omitempty" protobuf:"bytes,3,opt,name=zip"`
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
@@ -752,6 +777,9 @@ type TarStrategy struct {
 	// Defaults to gzip.DefaultCompression.
 	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
 }
+
+// ZipStrategy will unzip zipped input artifacts
+type ZipStrategy struct{}
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
@@ -976,6 +1004,23 @@ type Synchronization struct {
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
+type SynchronizationType string
+
+const (
+	SynchronizationTypeSemaphore SynchronizationType = "Semaphore"
+	SynchronizationTypeMutex     SynchronizationType = "Mutex"
+	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
+)
+
+func (s *Synchronization) GetType() SynchronizationType {
+	if s.Semaphore != nil {
+		return SynchronizationTypeSemaphore
+	} else if s.Mutex != nil {
+		return SynchronizationTypeMutex
+	}
+	return SynchronizationTypeUnknown
+}
+
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
@@ -1073,6 +1118,9 @@ type WorkflowStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,17,opt,name=progress,casttype=Progress"`
+
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
@@ -1107,54 +1155,6 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
-}
-
-type SemaphoreStatus struct {
-	// Holding stores the list of resource acquired synchronization lock for workflows.
-	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting indicates the list of current synchronization lock holders.
-	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
-}
-
-type SemaphoreHolding struct {
-	// Semaphore stores the semaphore name.
-	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Holders stores the list of current holder names in the workflow.
-	// +listType=atomic
-	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
-}
-
-// MutexHolding describes the mutex and the object which is holding it.
-type MutexHolding struct {
-	// Reference for the mutex
-	// e.g: ${namespace}/mutex/${mutexName}
-	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
-	// Holder is a reference to the object which holds the Mutex.
-	// Holding Scenario:
-	//   1. Current workflow's NodeID which is holding the lock.
-	//      e.g: ${NodeID}
-	// Waiting Scenario:
-	//   1. Current workflow or other workflow NodeID which is holding the lock.
-	//      e.g: ${WorkflowName}/${NodeID}
-	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
-}
-
-// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
-type MutexStatus struct {
-	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
-	// +listType=atomic
-	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
-	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
-	// +listType=atomic
-	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
-}
-
-// SynchronizationStatus stores the status of semaphore and mutex.
-type SynchronizationStatus struct {
-	// Semaphore stores this workflow's Semaphore holder details
-	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
-	// Mutex stores this workflow's mutex holder details
-	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1385,6 +1385,9 @@ type NodeStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,26,opt,name=progress,casttype=Progress"`
+
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
@@ -1422,6 +1425,9 @@ type NodeStatus struct {
 
 	// MemoizationStatus holds information about cached nodes
 	MemoizationStatus *MemoizationStatus `json:"memoizationStatus,omitempty" protobuf:"varint,23,opt,name=memoizationStatus"`
+
+	// SynchronizationStatus is the synchronization status of the node
+	SynchronizationStatus *NodeSynchronizationStatus `json:"synchronizationStatus,omitempty" protobuf:"bytes,25,opt,name=synchronizationStatus"`
 }
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
@@ -1555,10 +1561,6 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
-}
-
-func (in *NodeStatus) IsLeaf() bool {
-	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -2339,4 +2341,194 @@ type MemoizationStatus struct {
 type Cache struct {
 	// ConfigMap sets a ConfigMap-based cache
 	ConfigMap *apiv1.ConfigMapKeySelector `json:"configMap" protobuf:"bytes,1,opt,name=configMap"`
+}
+
+type SynchronizationAction interface {
+	LockWaiting(holderKey, lockKey string, currentHolders []string) bool
+	LockAcquired(holderKey, lockKey string, currentHolders []string) bool
+	LockReleased(holderKey, lockKey string) bool
+}
+
+type SemaphoreHolding struct {
+	// Semaphore stores the semaphore name.
+	Semaphore string `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Holders stores the list of current holder names in the workflow.
+	// +listType=atomic
+	Holders []string `json:"holders,omitempty" protobuf:"bytes,2,opt,name=holders"`
+}
+
+type SemaphoreStatus struct {
+	// Holding stores the list of resource acquired synchronization lock for workflows.
+	Holding []SemaphoreHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting indicates the list of current synchronization lock holders.
+	Waiting []SemaphoreHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+
+var _ SynchronizationAction = &SemaphoreStatus{}
+
+func (ss *SemaphoreStatus) GetHolding(semaphoreName string) (int, SemaphoreHolding) {
+	for i, holder := range ss.Holding {
+		if holder.Semaphore == semaphoreName {
+			return i, holder
+		}
+	}
+	return -1, SemaphoreHolding{}
+}
+
+func (ss *SemaphoreStatus) GetWaiting(semaphoreName string) (int, SemaphoreHolding) {
+	for i, holder := range ss.Waiting {
+		if holder.Semaphore == semaphoreName {
+			return i, holder
+		}
+	}
+	return -1, SemaphoreHolding{}
+}
+
+func (ss *SemaphoreStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
+	i, semaphoreWaiting := ss.GetWaiting(lockKey)
+	if i < 0 {
+		ss.Waiting = append(ss.Waiting, SemaphoreHolding{Semaphore: lockKey, Holders: currentHolders})
+	} else {
+		semaphoreWaiting.Holders = currentHolders
+		ss.Waiting[i] = semaphoreWaiting
+	}
+	return true
+}
+
+func (ss *SemaphoreStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
+	i, semaphoreHolding := ss.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i < 0 {
+		ss.Holding = append(ss.Holding, SemaphoreHolding{Semaphore: lockKey, Holders: []string{holdingName}})
+		return true
+	} else if !slice.ContainsString(semaphoreHolding.Holders, holdingName) {
+		semaphoreHolding.Holders = append(semaphoreHolding.Holders, holdingName)
+		ss.Holding[i] = semaphoreHolding
+		return true
+	}
+	return false
+}
+
+func (ss *SemaphoreStatus) LockReleased(holderKey, lockKey string) bool {
+	i, semaphoreHolding := ss.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i >= 0 {
+		semaphoreHolding.Holders = slice.RemoveString(semaphoreHolding.Holders, holdingName)
+		ss.Holding[i] = semaphoreHolding
+		return true
+	}
+	return false
+}
+
+// MutexHolding describes the mutex and the object which is holding it.
+type MutexHolding struct {
+	// Reference for the mutex
+	// e.g: ${namespace}/mutex/${mutexName}
+	Mutex string `json:"mutex,omitempty" protobuf:"bytes,1,opt,name=mutex"`
+	// Holder is a reference to the object which holds the Mutex.
+	// Holding Scenario:
+	//   1. Current workflow's NodeID which is holding the lock.
+	//      e.g: ${NodeID}
+	// Waiting Scenario:
+	//   1. Current workflow or other workflow NodeID which is holding the lock.
+	//      e.g: ${WorkflowName}/${NodeID}
+	Holder string `json:"holder,omitempty" protobuf:"bytes,2,opt,name=holder"`
+}
+
+// MutexStatus contains which objects hold  mutex locks, and which objects this workflow is waiting on to release locks.
+type MutexStatus struct {
+	// Holding is a list of mutexes and their respective objects that are held by mutex lock for this workflow.
+	// +listType=atomic
+	Holding []MutexHolding `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	// Waiting is a list of mutexes and their respective objects this workflow is waiting for.
+	// +listType=atomic
+	Waiting []MutexHolding `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+
+var _ SynchronizationAction = &MutexStatus{}
+
+func (ms *MutexStatus) GetHolding(mutexName string) (int, MutexHolding) {
+	for i, holder := range ms.Holding {
+		if holder.Mutex == mutexName {
+			return i, holder
+		}
+	}
+	return -1, MutexHolding{}
+}
+
+func (ms *MutexStatus) GetWaiting(mutexName string) (int, MutexHolding) {
+	for i, holder := range ms.Waiting {
+		if holder.Mutex == mutexName {
+			return i, holder
+		}
+	}
+	return -1, MutexHolding{}
+}
+
+func (ms *MutexStatus) LockWaiting(holderKey, lockKey string, currentHolders []string) bool {
+	if len(currentHolders) == 0 {
+		return false
+	}
+
+	i, mutexWaiting := ms.GetWaiting(lockKey)
+	if i < 0 {
+		ms.Waiting = append(ms.Waiting, MutexHolding{Mutex: lockKey, Holder: currentHolders[0]})
+		return true
+	} else if mutexWaiting.Holder != currentHolders[0] {
+		mutexWaiting.Holder = currentHolders[0]
+		ms.Waiting[i] = mutexWaiting
+		return true
+	}
+	return false
+}
+
+func (ms *MutexStatus) LockAcquired(holderKey, lockKey string, currentHolders []string) bool {
+	i, mutexHolding := ms.GetHolding(lockKey)
+	items := strings.Split(holderKey, "/")
+	holdingName := items[len(items)-1]
+	if i < 0 {
+		ms.Holding = append(ms.Holding, MutexHolding{Mutex: lockKey, Holder: holdingName})
+		return true
+	} else if mutexHolding.Holder != holdingName {
+		mutexHolding.Holder = holdingName
+		ms.Holding[i] = mutexHolding
+		return true
+	}
+	return false
+}
+
+func (ms *MutexStatus) LockReleased(holderKey, lockKey string) bool {
+	i, _ := ms.GetHolding(lockKey)
+	if i >= 0 {
+		ms.Holding = append(ms.Holding[:i], ms.Holding[i+1:]...)
+		return true
+	}
+	return false
+}
+
+// SynchronizationStatus stores the status of semaphore and mutex.
+type SynchronizationStatus struct {
+	// Semaphore stores this workflow's Semaphore holder details
+	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+	// Mutex stores this workflow's mutex holder details
+	Mutex *MutexStatus `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
+	switch syncType {
+	case SynchronizationTypeSemaphore:
+		return ss.Semaphore
+	case SynchronizationTypeMutex:
+		return ss.Mutex
+	default:
+		panic("invalid syncType in GetStatus")
+	}
+}
+
+// NodeSynchronizationStatus stores the status of a node
+type NodeSynchronizationStatus struct {
+	// Waiting is the name of the lock that this node is waiting for
+	Waiting string `json:"waiting,omitempty" protobuf:"bytes,1,opt,name=waiting"`
 }

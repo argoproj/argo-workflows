@@ -17,6 +17,12 @@ import (
 )
 
 func Test_listWorkflows(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		workflows, err := listEmpty(&metav1.ListOptions{}, listFlags{})
+		if assert.NoError(t, err) {
+			assert.Len(t, workflows, 0)
+		}
+	})
 	t.Run("Nothing", func(t *testing.T) {
 		workflows, err := list(&metav1.ListOptions{}, listFlags{})
 		if assert.NoError(t, err) {
@@ -84,6 +90,13 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 			Labels:            map[string]string{common.LabelKeyPreviousWorkflowName: "foo-"},
 		}},
 	}}, nil)
+	workflows, err := listWorkflows(context.Background(), c, flags)
+	return workflows, err
+}
+
+func listEmpty(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
+	c := &workflowmocks.WorkflowServiceClient{}
+	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{}}, nil)
 	workflows, err := listWorkflows(context.Background(), c, flags)
 	return workflows, err
 }

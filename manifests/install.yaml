@@ -154,6 +154,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workfloweventbinding
+  - workfloweventbinding/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -182,6 +184,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workfloweventbinding
+  - workfloweventbinding/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -210,6 +214,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workfloweventbinding
+  - workfloweventbinding/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -474,6 +480,8 @@ spec:
           periodSeconds: 20
       nodeSelector:
         kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -507,4 +515,6 @@ spec:
         name: workflow-controller
       nodeSelector:
         kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: argo

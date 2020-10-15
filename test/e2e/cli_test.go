@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -132,8 +133,6 @@ func (s *CLISuite) TestTokenArg() {
 	s.Run("ListWithGoodToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", goodToken}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "NAME")
-			assert.Contains(t, output, "STATUS")
 		})
 	})
 }
@@ -392,6 +391,23 @@ func (s *CLISuite) TestWorkflowDeleteByName() {
 			name = metadata.Name
 		}).
 		RunCli([]string{"delete", name}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteByFieldSelector() {
+	var name string
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			name = metadata.Name
+		}).
+		RunCli([]string{"delete", "--field-selector", fmt.Sprintf("metadata.name=%s", name)}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Regexp(t, "Workflow 'basic-.*' deleted", output)
 			}
@@ -1135,6 +1151,7 @@ func (s *CLIWithServerSuite) TestResourceTemplateStopAndTerminate() {
 			RunCli([]string{"submit", "functional/resource-template.yaml", "--name", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Pending")
 			}).
+			WaitForWorkflow(fixtures.ToBeRunning).
 			RunCli([]string{"get", "resource-tmpl-wf-1"}, func(t *testing.T, output string, err error) {
 				assert.Contains(t, output, "Running")
 			}).

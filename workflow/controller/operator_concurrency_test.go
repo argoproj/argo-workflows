@@ -123,7 +123,8 @@ func GetSyncLimitFunc(kube kubernetes.Interface) func(string) (int, error) {
 }
 
 func TestSemaphoreTmplLevel(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
@@ -184,7 +185,8 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreScriptTmplLevel(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
@@ -244,7 +246,8 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 }
 
 func TestSemaphoreResourceTmplLevel(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	var cm v1.ConfigMap
@@ -304,7 +307,8 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	})
 }
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
-	_, controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
@@ -325,6 +329,68 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		assert.Nil(t, woc.wf.Status.Synchronization)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodeError, node.Phase)
+		}
+
+	})
+}
+
+var DAGWithMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: dag-mutex
+ namespace: default
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: mutex
+     - name: B
+       template: mutex
+
+ - name: mutex
+   synchronization:
+     mutex:
+       name: welcome
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 0"]
+`
+
+func TestMutexInDAG(t *testing.T) {
+	_, controller := newController()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	})
+	t.Run("MutexWithDAG", func(t *testing.T) {
+		wf := unmarshalWF(DAGWithMutex)
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
+		assert.NoError(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		err = woc.podReconciliation()
+		assert.NoError(t, err)
+		for _, node := range woc.wf.Status.Nodes {
+			if node.Name == "dag-mutex.A" {
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+			}
+			if node.Name == "dag-mutex.B" {
+				assert.NotNil(t, node.SynchronizationStatus)
+				assert.Equal(t, "default/Mutex/welcome", node.SynchronizationStatus.Waiting)
+			}
+		}
+		makePodsPhase(woc, v1.PodSucceeded)
+		err = woc.podReconciliation()
+		assert.NoError(t, err)
+		woc.operate()
+		for _, node := range woc.wf.Status.Nodes {
+
+			if node.Name == "dag-mutex.B" {
+				assert.Nil(t, node.SynchronizationStatus)
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+			}
 		}
 
 	})

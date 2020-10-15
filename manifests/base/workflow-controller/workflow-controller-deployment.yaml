@@ -28,5 +28,7 @@ spec:
                 fieldRef:
                   apiVersion: v1
                   fieldPath: metadata.name
+      securityContext:
+        runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
