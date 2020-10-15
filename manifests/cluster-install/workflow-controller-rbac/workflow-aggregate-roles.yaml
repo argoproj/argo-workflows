@@ -10,8 +10,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workfloweventbinding
-  - workfloweventbinding/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -36,8 +36,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workfloweventbinding
-  - workfloweventbinding/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -67,8 +67,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workfloweventbinding
-  - workfloweventbinding/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
