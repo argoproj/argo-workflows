@@ -349,6 +349,7 @@ spec:
      - name: A
        template: mutex
      - name: B
+       depends: A
        template: mutex
 
  - name: mutex
@@ -376,11 +377,6 @@ func TestMutexInDAG(t *testing.T) {
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
 				assert.Equal(wfv1.NodePending, node.Phase)
-			}
-			if node.Name == "dag-mutex.B" {
-				assert.NotNil(node.SynchronizationStatus)
-				assert.NotEmpty(node.SynchronizationStatus.Waiting)
-				assert.Equal("default/Mutex/welcome", node.SynchronizationStatus.Waiting)
 			}
 		}
 		assert.Equal(wfv1.NodeRunning, woc.wf.Status.Phase)
