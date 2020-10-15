@@ -161,7 +161,7 @@ func newSso(
 		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, nil)
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
