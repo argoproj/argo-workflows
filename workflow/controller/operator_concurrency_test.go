@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -378,7 +379,9 @@ func TestMutexInDAG(t *testing.T) {
 				assert.Equal(wfv1.NodePending, node.Phase)
 			}
 			if node.Name == "dag-mutex.B" {
+				fmt.Println(node)
 				assert.NotNil(node.SynchronizationStatus)
+				assert.NotEmpty(node.SynchronizationStatus.Waiting)
 				assert.Equal("default/Mutex/welcome", node.SynchronizationStatus.Waiting)
 			}
 		}
