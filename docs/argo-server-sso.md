@@ -96,7 +96,7 @@ metadata:
 If no rule matches, we deny the user access.
 
 !!! Tip
-    You'll probably want to configure a default account to use if not other rule matches, e.g. a read-only account, you can do this as follows:
+    You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
     
     ```yaml
     metadata:
