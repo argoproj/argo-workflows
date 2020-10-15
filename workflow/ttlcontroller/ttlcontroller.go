@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	commonutil "github.com/argoproj/argo/util"
@@ -25,22 +26,26 @@ const (
 	workflowTTLResyncPeriod = 20 * time.Minute
 )
 
+type ConfigSupplier func() *config.Config
+
 type Controller struct {
-	wfclientset  wfclientset.Interface
-	wfInformer   cache.SharedIndexInformer
-	workqueue    workqueue.DelayingInterface
-	resyncPeriod time.Duration
-	clock        clock.Clock
+	wfclientset    wfclientset.Interface
+	wfInformer     cache.SharedIndexInformer
+	workqueue      workqueue.DelayingInterface
+	resyncPeriod   time.Duration
+	clock          clock.Clock
+	configSupplier ConfigSupplier
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer, configSupplier ConfigSupplier) *Controller {
 	controller := &Controller{
-		wfclientset:  wfClientset,
-		wfInformer:   wfInformer,
-		workqueue:    workqueue.NewDelayingQueue(),
-		resyncPeriod: workflowTTLResyncPeriod,
-		clock:        clock.RealClock{},
+		wfclientset:    wfClientset,
+		wfInformer:     wfInformer,
+		workqueue:      workqueue.NewDelayingQueue(),
+		resyncPeriod:   workflowTTLResyncPeriod,
+		clock:          clock.RealClock{},
+		configSupplier: configSupplier,
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -132,7 +137,7 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		return
 	}
 	now := c.clock.Now()
-	remaining, expiration := timeLeft(wf, &now)
+	remaining, expiration := timeLeft(wf, &now, c.getDefaultTTLStrategy())
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
 	}
@@ -187,9 +192,17 @@ func (c *Controller) deleteWorkflow(key string) error {
 	}
 	return nil
 }
+func (c *Controller) getDefaultTTLStrategy() *wfv1.TTLStrategy {
+	wfDefault := c.configSupplier().WorkflowDefaults
+	if wfDefault != nil {
+		return wfDefault.Spec.GetTTLStrategy()
+	}
+	return nil
+}
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
-	ttlStrategy := getTTLStrategy(wf)
+	ttlStrategy := wf.GetTTLStrategy(c.getDefaultTTLStrategy())
+
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return false
@@ -208,8 +221,8 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	}
 }
 
-func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
-	ttlStrategy := getTTLStrategy(wf)
+func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLStrategy) (*time.Duration, *time.Time) {
+	ttlStrategy := wf.GetTTLStrategy(defaultTTLStrategy)
 	if wf.DeletionTimestamp != nil || ttlStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
@@ -234,13 +247,4 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 	} else {
 		return nil, nil
 	}
-}
-
-func getTTLStrategy(wf *wfv1.Workflow) *wfv1.TTLStrategy {
-	ttlStrategy := wf.Spec.TTLStrategy
-
-	if ttlStrategy == nil && wf.Status.StoredWorkflowSpec != nil && wf.Status.StoredWorkflowSpec.TTLStrategy != nil {
-		return wf.Status.StoredWorkflowSpec.TTLStrategy
-	}
-	return ttlStrategy
 }

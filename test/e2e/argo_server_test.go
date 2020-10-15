@@ -635,6 +635,60 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 		Status(200)
 }
 
+func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
+	s.e().POST("/api/v1/workflows/argo").
+		WithBytes([]byte((`{
+  "workflow": {
+    "metadata": {
+      "name": "hint",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "argoproj/argosay:v2"
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(200)
+
+	s.e().POST("/api/v1/workflows/argo").
+		WithBytes([]byte((`{
+  "workflow": {
+    "metadata": {
+      "name": "hint",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "argoproj/argosay:v2"
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(409).
+		Body().
+		Contains("already exists")
+}
+
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 	s.e().POST("/api/v1/workflows/argo").
 		WithBytes([]byte(`{

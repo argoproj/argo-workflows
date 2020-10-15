@@ -54,8 +54,8 @@ type Controller struct {
 
 const (
 	cronWorkflowResyncPeriod    = 20 * time.Minute
-	cronWorkflowWorkers         = 2
-	cronWorkflowWorkflowWorkers = 2
+	cronWorkflowWorkers         = 8
+	cronWorkflowWorkflowWorkers = 8
 )
 
 func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
@@ -251,6 +251,8 @@ func (cc *Controller) processNextWorkflowItem() bool {
 		log.Warnf("Parent CronWorkflow '%s' no longer exists", nameEntryIdMapKey)
 		return true
 	}
+
+	defer woc.persistUpdate()
 
 	// If the workflow is completed or was deleted, remove it from Active Workflows
 	if wf.Status.Fulfilled() || !wfExists {

@@ -10,8 +10,9 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
+	"gopkg.in/square/go-jose.v2/jwt"
+
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth/jws"
 	"github.com/argoproj/argo/server/auth/sso/mocks"
 )
 
@@ -44,19 +45,19 @@ func TestServer_GetWFClient(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(ctx))
 			assert.Equal(t, kubeClient, GetKubeClient(ctx))
-			assert.NotNil(t, GetClaimSet(ctx))
+			assert.NotNil(t, GetClaims(ctx))
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&jws.ClaimSet{}, nil)
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&jwt.Claims{}, nil)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
 		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer id_token:whatever"))
+			ctx, err := g.Context(x("Bearer v2:whatever"))
 			if assert.NoError(t, err) {
 				assert.Equal(t, wfClient, GetWfClient(ctx))
 				assert.Equal(t, kubeClient, GetKubeClient(ctx))
-				assert.NotNil(t, GetClaimSet(ctx))
+				assert.NotNil(t, GetClaims(ctx))
 			}
 		}
 	})
@@ -68,5 +69,5 @@ func x(authorization string) context.Context {
 
 func TestGetClaimSet(t *testing.T) {
 	// we should be able to get nil claim set
-	assert.Nil(t, GetClaimSet(context.TODO()))
+	assert.Nil(t, GetClaims(context.TODO()))
 }
