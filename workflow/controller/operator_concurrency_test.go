@@ -373,8 +373,6 @@ func TestMutexInDAG(t *testing.T) {
 		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		err = woc.podReconciliation()
-		assert.NoError(err)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
 				assert.Equal(wfv1.NodePending, node.Phase)
@@ -384,11 +382,10 @@ func TestMutexInDAG(t *testing.T) {
 				assert.Equal("default/Mutex/welcome", node.SynchronizationStatus.Waiting)
 			}
 		}
+		assert.Equal(wfv1.NodeRunning, woc.wf.Status.Phase)
 		makePodsPhase(woc, v1.PodSucceeded)
 
 		woc1 := newWorkflowOperationCtx(woc.wf, controller)
-		err = woc1.podReconciliation()
-		assert.NoError(err)
 		woc1.operate()
 		for _, node := range woc1.wf.Status.Nodes {
 			if node.Name == "dag-mutex.B" {
