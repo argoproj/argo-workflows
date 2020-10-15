@@ -431,7 +431,7 @@ destress: cli
 .PHONY: stress
 stress: destress cli
 	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
-	argo submit --from workflowtemplates/many-massive-workflows -p x="$(X)" -p y="$(Y)"
+	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(Y)
 
 # clean
 
