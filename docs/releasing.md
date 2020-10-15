@@ -24,9 +24,9 @@ Wait 1h to 2h.
 * [ ] Check the executor was correctly built.
 
 ```
-docker run argoproj/argoexec:v2.11.4 version
-docker run argoproj/workflow-controller:v2.11.4 version
-docker run argoproj/argocli:v2.11.4 version
+docker run argoproj/argoexec:v2.11.5 version
+docker run argoproj/workflow-controller:v2.11.5 version
+docker run argoproj/argocli:v2.11.5 version
 ```
 
 * [ ] Check the manifests contain the correct tags: https://raw.githubusercontent.com/argoproj/argo/v2.11.5/manifests/install.yaml
