@@ -246,7 +246,7 @@ type MetricsConfig struct {
 	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
 	Path string `json:"path,omitempty"`
 	// Port is the port where metrics are emitted. Default is "9090"
-	Port string `json:"port,omitempty"`
+	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 }

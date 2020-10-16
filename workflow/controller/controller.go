@@ -719,8 +719,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowUpdated(string(wf.GetUID()), getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			wf := obj.(*unstructured.Unstructured)
-			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			wf, ok := obj.(*unstructured.Unstructured)
+			if ok { // maybe cache.DeletedFinalStateUnknown
+				wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			}
 		},
 	})
 }
@@ -895,7 +897,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
-	if port == "" {
+	if port > 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
@@ -913,7 +915,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	}
 
 	port = metricsConfig.Port
-	if wfc.Config.TelemetryConfig.Port != "" {
+	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
 	telemetryConfig := metrics.ServerConfig{
