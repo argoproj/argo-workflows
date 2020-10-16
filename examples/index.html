@@ -3615,7 +3615,7 @@ When patching, the resource will accept another attribute, <code>mergeStrategy</
   <span class="nt">templates</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">dind-sidecar-example</span>
     <span class="nt">container</span><span class="p">:</span>
-      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker:17.10</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker:19.03.13</span>
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">sh</span><span class="p p-Indicator">,</span> <span class="nv">-c</span><span class="p p-Indicator">]</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;until</span><span class="nv"> </span><span class="s">docker</span><span class="nv"> </span><span class="s">ps;</span><span class="nv"> </span><span class="s">do</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">3;</span><span class="nv"> </span><span class="s">done;</span><span class="nv"> </span><span class="s">docker</span><span class="nv"> </span><span class="s">run</span><span class="nv"> </span><span class="s">--rm</span><span class="nv"> </span><span class="s">debian:latest</span><span class="nv"> </span><span class="s">cat</span><span class="nv"> </span><span class="s">/etc/os-release&quot;</span><span class="p p-Indicator">]</span>
       <span class="nt">env</span><span class="p">:</span>
@@ -3623,7 +3623,10 @@ When patching, the resource will accept another attribute, <code>mergeStrategy</
         <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1</span>
     <span class="nt">sidecars</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">dind</span>
-      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker:17.10-dind</span>          <span class="c1"># Docker already provides an image for running a Docker daemon</span>
+      <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker:19.03.13-dind</span>          <span class="c1"># Docker already provides an image for running a Docker daemon</span>
+      <span class="nt">env</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DOCKER_TLS_CERTDIR</span>         <span class="c1"># Docker TLS env config</span>
+          <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;&quot;</span>
       <span class="nt">securityContext</span><span class="p">:</span>
         <span class="nt">privileged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>                <span class="c1"># the Docker daemon can only run in a privileged container</span>
       <span class="c1"># mirrorVolumeMounts will mount the same volumes specified in the main container</span>
