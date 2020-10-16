@@ -42,7 +42,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {namespace: this.props.match.params.namespace};
+        this.state = {namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
