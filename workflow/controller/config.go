@@ -15,7 +15,8 @@ import (
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(config config.Config) error {
+func (wfc *WorkflowController) updateConfig(v interface{}) error {
+	config := v.(config.Config)
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
 		return err

@@ -89,14 +89,14 @@ type ArgoServerOpts struct {
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get()
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.(Config).SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -133,15 +133,16 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	configMap, err := as.configController.Get()
+	v, err := as.configController.Get()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": configMap.InstanceID}).Info("Starting Argo Server")
-	instanceIDService := instanceid.NewService(configMap.InstanceID)
+	config := v.(Config)
+	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
+	instanceIDService := instanceid.NewService(config.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
-	persistence := configMap.Persistence
+	persistence := config.Persistence
 	if persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
 		if err != nil {
@@ -160,7 +161,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	eventRecorderManager := events.NewEventRecorderManager(as.kubeClientset)
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
-	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, configMap.Links)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -304,7 +305,7 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 // Unlike the controller, the server creates object based on the config map at init time, and will not pick-up on
 // changes unless we restart.
 // Instead of opting to re-write the server, instead we'll just listen for any old change and restart.
-func (as *argoServer) restartOnConfigChange(config.Config) error {
+func (as *argoServer) restartOnConfigChange(interface{}) error {
 	log.Info("config map event, exiting gracefully")
 	as.stopCh <- struct{}{}
 	return nil

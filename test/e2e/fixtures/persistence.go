@@ -16,11 +16,14 @@ type Persistence struct {
 }
 
 func newPersistence(kubeClient kubernetes.Interface) *Persistence {
-	configController := config.NewController(Namespace, "workflow-controller-configmap", kubeClient)
-	wcConfig, err := configController.Get()
+	configController := config.NewController(Namespace, "workflow-controller-configmap", kubeClient, func() interface{} {
+		return config.Config{}
+	})
+	v, err := configController.Get()
 	if err != nil {
 		panic(err)
 	}
+	wcConfig := v.(config.Config)
 	persistence := wcConfig.Persistence
 	if persistence != nil {
 		if persistence.PostgreSQL != nil {

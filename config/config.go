@@ -6,15 +6,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth/sso"
 )
 
-var emptyConfig = Config{}
+var EmptyConfigFunc = func() interface{} { return Config{} }
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
-	// SSO in settings for single-sign on
-	SSO sso.Config `json:"sso,omitempty"`
 
 	// NodeEvents configures how node events are omitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
