@@ -27,7 +27,7 @@ type controller struct {
 	// name of the config map
 	configMap       string
 	kubeclientset   kubernetes.Interface
-	emptyConfigFunc func() interface{}
+	emptyConfigFunc func() interface{} // must return a pointer, non-nil
 }
 
 func NewController(namespace, name string, kubeclientset kubernetes.Interface, emptyConfigFunc func() interface{}) Controller {
@@ -69,7 +69,7 @@ func (cc *controller) parseConfigMap(cm *apiv1.ConfigMap) (interface{}, error) {
 			}
 		}
 	}
-	err := yaml.Unmarshal([]byte(rawConfig), &config)
+	err := yaml.Unmarshal([]byte(rawConfig), config)
 	return config, err
 }
 

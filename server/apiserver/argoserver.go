@@ -96,7 +96,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.(Config).SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.(*Config).SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
-	config := v.(Config)
+	config := v.(*Config)
 	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
 	instanceIDService := instanceid.NewService(config.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo

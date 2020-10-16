@@ -8,7 +8,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var EmptyConfigFunc = func() interface{} { return Config{} }
+var EmptyConfigFunc = func() interface{} { return &Config{} }
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {

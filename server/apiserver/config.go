@@ -5,7 +5,7 @@ import (
 	"github.com/argoproj/argo/server/auth/sso"
 )
 
-var emptyConfigFunc = func() interface{} { return Config{} }
+var emptyConfigFunc = func() interface{} { return &Config{} }
 
 type Config struct {
 	config.Config

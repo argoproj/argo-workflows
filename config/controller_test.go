@@ -17,7 +17,7 @@ func Test_parseConfigMap(t *testing.T) {
 	t.Run("Config", func(t *testing.T) {
 		c, err := cc.parseConfigMap(&apiv1.ConfigMap{Data: map[string]string{"config": "containerRuntimeExecutor: pns"}})
 		if assert.NoError(t, err) {
-			assert.Equal(t, "pns", c.(Config).ContainerRuntimeExecutor)
+			assert.Equal(t, "pns", c.(*Config).ContainerRuntimeExecutor)
 		}
 	})
 	t.Run("Complex", func(t *testing.T) {
@@ -33,8 +33,8 @@ func Test_parseConfigMap(t *testing.T) {
         name: my-minio-cred
         key: secretkey`}})
 		if assert.NoError(t, err) {
-			assert.Equal(t, "pns", c.(Config).ContainerRuntimeExecutor)
-			assert.NotEmpty(t, c.(Config).ArtifactRepository)
+			assert.Equal(t, "pns", c.(*Config).ContainerRuntimeExecutor)
+			assert.NotEmpty(t, c.(*Config).ArtifactRepository)
 		}
 	})
 	t.Run("IgnoreGarbage", func(t *testing.T) {
@@ -45,7 +45,7 @@ func Test_parseConfigMap(t *testing.T) {
 
 func Test_controller_Get(t *testing.T) {
 	kube := fake.NewSimpleClientset()
-	c := controller{configMap: "my-config-map", kubeclientset: kube}
+	c := controller{configMap: "my-config-map", kubeclientset: kube, emptyConfigFunc: EmptyConfigFunc}
 	config, err := c.Get()
 	if assert.NoError(t, err) {
 		assert.Empty(t, config)
