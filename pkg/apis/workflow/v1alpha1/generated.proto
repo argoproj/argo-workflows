@@ -1441,8 +1441,6 @@ message WorkflowSpec {
 
   // RetryStrategy for all templates in the workflow.
   optional RetryStrategy retryStrategy = 37;
-
-  optional string foo = 38;
 }
 
 // WorkflowStatus contains overall status information about a workflow
