@@ -99,11 +99,6 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
 TYPES := $(find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
-MANIFESTS := manifests/install.yaml \
-	manifests/namespace-install.yaml \
-	manifests/quick-start-minimal.yaml \
-	manifests/quick-start-mysql.yaml \
-	manifests/quick-start-postgres.yaml
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
@@ -113,7 +108,6 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-CLI_DOCS := $(shell find docs/cli -type f)
 PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
 # go_install,path
@@ -205,7 +199,9 @@ dist/argo-%.gz: dist/argo-%
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
-argo-server.crt argo-server.key:
+argo-server.crt: argo-server.key
+
+argo-server.key:
 	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
 
 .PHONY: cli-image
@@ -259,7 +255,22 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: api/openapi-spec/swagger.json $(MANIFESTS) docs/fields.md $(CLI_DOCS) $(GOPATH)/bin/mockery
+codegen: \
+	pkg/apis/workflow/v1alpha1/generated.proto \
+	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
+	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
+	pkg/apiclient/event/event.swagger.json \
+	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/workflow/workflow.swagger.json \
+	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
+	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
+	manifests/base/crds/full/argoproj.io_workflows.yaml\
+	pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go \
+	api/openapi-spec/swagger.json \
+	manifests/install.yaml \
+	docs/fields.md \
+	docs/cli/argo.md \
+	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
@@ -298,7 +309,7 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name '*generated*')
+pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(TYPES)
 	trap 'rm -Rf vendor' EXIT
 	go mod vendor
 	${GOPATH}/bin/go-to-protobuf \
@@ -308,35 +319,28 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(shell
 		--proto-import ./vendor 2>&1 |
 		grep -v 'warning: Import .* is unused'
 
-# pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.gw.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.go
 pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
 	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
 
-# pkg/apiclient/cronworkflow/cron-workflow.pb.gw.go pkg/apiclient/cronworkflow/cron-workflow.pb.go
 pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/cronworkflow/cron-workflow.proto
 	$(call protoc,pkg/apiclient/cronworkflow/cron-workflow.proto)
 
-# pkg/apiclient/event/event.pb.gw.go pkg/apiclient/event/event.pb.go
 pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) pkg/apiclient/event/event.proto
 	$(call protoc,pkg/apiclient/event/event.proto)
 
-# pkg/apiclient/info/info.pb.gw.go pkg/apiclient/info/info.pb.go
 pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) pkg/apiclient/info/info.proto
 	$(call protoc,pkg/apiclient/info/info.proto)
 
-# pkg/apiclient/workflow/workflow.pb.gw.go pkg/apiclient/workflow/workflow.pb.go
 pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
 
-# pkg/apiclient/workflowarchive/workflow-archive.pb.gw.go pkg/apiclient/workflowarchive/workflow-archive.pb.go
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
 
-# pkg/apiclient/workflowtemplate/workflow-template.pb.gw.go pkg/apiclient/workflowtemplate/workflow-template.pb.go
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
-$(CRDS): $(GOPATH)/bin/controller-gen
+manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
 	./hack/crdgen.sh
 
 /usr/local/bin/kustomize:
@@ -347,7 +351,7 @@ $(CRDS): $(GOPATH)/bin/controller-gen
 	sudo mv kustomize /usr/local/bin/
 	kustomize version
 
-$(MANIFESTS): $(CRDS) /usr/local/bin/kustomize
+manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -486,7 +490,6 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 		workflow:v1alpha1 \
 		--go-header-file ./hack/custom-boilerplate.go.txt
 
-
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
@@ -517,7 +520,7 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docgen.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
-$(CLI_DOCS): $(CLI_PKGS) server/static/files.go hack/cli/main.go
+docs/cli/argo.go: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
 # pre-push
