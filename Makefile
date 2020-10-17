@@ -322,25 +322,25 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(TYPES
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
-pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
 	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
 
-pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/cronworkflow/cron-workflow.proto
+pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/cronworkflow/cron-workflow.proto
 	$(call protoc,pkg/apiclient/cronworkflow/cron-workflow.proto)
 
-pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) pkg/apiclient/event/event.proto
+pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/event/event.proto
 	$(call protoc,pkg/apiclient/event/event.proto)
 
-pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) pkg/apiclient/info/info.proto
+pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/info/info.proto
 	$(call protoc,pkg/apiclient/info/info.proto)
 
-pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflow/workflow.proto
+pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
 
-pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowarchive/workflow-archive.proto
+pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
 
-pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowtemplate/workflow-template.proto
+pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
 # generate other files for other CRDs
