@@ -483,7 +483,7 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
-dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json 
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
