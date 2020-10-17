@@ -444,6 +444,7 @@ stress: destress cli
 clean:
 	go clean
 	rm -Rf test-results node_modules vendor dist/* ui/dist
+	grep -Rl '// Code generated' .|xargs rm
 
 # swagger
 
