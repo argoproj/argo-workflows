@@ -2089,8 +2089,8 @@
                 
                 
                 <h1 id="workflow-variables">Workflow Variables<a class="headerlink" href="#workflow-variables" title="Permanent link">&para;</a></h1>
-<p>Some fields in a workflow specification allow for variable references which are automatically substituted by Argo. </p>
-<details class="note"><summary>How to use variables</summary><p>Variables are enclosed in curly braces and <strong>must not</strong> include whitespace.</p>
+<p>Some fields in a workflow specification allow for variable references which are automatically substituted by Argo.</p>
+<details class="note"><summary>How to use variables</summary><p>Variables are enclosed in curly braces and <strong>may</strong> include whitespace between the brackets and variable.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -2109,7 +2109,7 @@
     <span class="nt">container</span><span class="p">:</span>
       <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker/whalesay</span>
       <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">cowsay</span><span class="p p-Indicator">]</span>
-    <span class="c1"># args: [&quot;{{ inputs.parameters.message }}&quot;]       &lt;- bad</span>
+    <span class="c1"># args: [&quot;{{ inputs.parameters.message }}&quot;]       &lt;- good</span>
       <span class="nt">args</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&quot;{{inputs.parameters.message}}&quot;</span><span class="p p-Indicator">]</span>         <span class="c1">#  good</span>
 </code></pre></div>
 </details>
