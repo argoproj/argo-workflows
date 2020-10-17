@@ -272,28 +272,28 @@ $(GOPATH)/bin/mockery:
 	mockery -version
 
 $(GOPATH)/bin/controller-gen:
-	go_install sigs.k8s.io/controller-tools/cmd/controller-gen
+	$(call go_install,sigs.k8s.io/controller-tools/cmd/controller-gen)
 
 $(GOPATH)/bin/go-to-protobuf:
-	go_install k8s.io/code-generator/cmd/go-to-protobuf
+	$(call go_install,k8s.io/code-generator/cmd/go-to-protobuf)
 
 $(GOPATH)/bin/protoc-gen-gogo:
-	go_install github.com/gogo/protobuf/protoc-gen-gogo
+	$(call go_install,github.com/gogo/protobuf/protoc-gen-gogo)
 
 $(GOPATH)/bin/protoc-gen-gogofast:
-	go_install github.com/gogo/protobuf/protoc-gen-gogofast
+	$(call go_install,github.com/gogo/protobuf/protoc-gen-gogofast)
 
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
-	go_install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	$(call go_install,github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway)
 
 $(GOPATH)/bin/protoc-gen-swagger:
-	go_install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	$(call go_install,github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger)
 
 $(GOPATH)/bin/openapi-gen:
-	go_install k8s.io/kube-openapi/cmd/openapi-gen
+	$(call go_install,k8s.io/kube-openapi/cmd/openapi-gen)
 
 $(GOPATH)/bin/swagger:
-	go_install github.com/go-swagger/go-swagger/cmd/swagger
+	$(call go_install,github.com/go-swagger/go-swagger/cmd/swagger)
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
