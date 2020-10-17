@@ -320,6 +320,8 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(TYPES
 		--proto-import ./vendor 2>&1 | grep -v 'warning: Import .* is unused'
 	touch pkg/apis/workflow/v1alpha1/generated.proto
 
+# this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
+# on file to represent all of them
 pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
 	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
 
@@ -341,6 +343,7 @@ pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) p
 pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
+# generate other files for other CRDs
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
 	./hack/crdgen.sh
 
@@ -352,6 +355,7 @@ manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-ge
 	sudo mv kustomize /usr/local/bin/
 	kustomize version
 
+# generates several installation files
 manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
@@ -483,6 +487,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 
+# generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.17.5/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
@@ -519,6 +524,7 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docgen.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
+# generates several other files
 docs/cli/argo.go: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
