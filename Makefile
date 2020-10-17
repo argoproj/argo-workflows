@@ -121,6 +121,11 @@ define docker_pull
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
+ifndef $(GOPATH)
+	GOPATH=$(shell go env GOPATH)
+	export GOPATH
+endif
+
 .PHONY: build
 build: status clis images manifests
 
