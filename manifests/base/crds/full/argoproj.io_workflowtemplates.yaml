@@ -665,6 +665,8 @@ spec:
                 serviceAccountName:
                   type: string
               type: object
+            foo:
+              type: string
             hostAliases:
               items:
                 properties:

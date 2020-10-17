@@ -97,7 +97,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
-TYPES := $(find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
+TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
 CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
@@ -264,10 +264,11 @@ codegen: \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
-	manifests/base/crds/full/argoproj.io_workflows.yaml\
+	pkg/apis/workflow/v1alpha1/openapi_generated.go \
 	pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go \
-	api/openapi-spec/swagger.json \
+	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests/install.yaml \
+	api/openapi-spec/swagger.json \
 	docs/fields.md \
 	docs/cli/argo.md \
 	$(GOPATH)/bin/mockery
@@ -316,8 +317,8 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(TYPES
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
-		--proto-import ./vendor 2>&1 |
-		grep -v 'warning: Import .* is unused'
+		--proto-import ./vendor 2>&1 | grep -v 'warning: Import .* is unused'
+	touch pkg/apis/workflow/v1alpha1/generated.proto
 
 pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
 	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
@@ -446,7 +447,6 @@ wait:
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
-
 .PHONY: postgres-cli
 postgres-cli:
 	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
@@ -503,8 +503,7 @@ dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
 dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
-	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
-	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) -o dist/mixed.swagger.json
 
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
@@ -512,7 +511,7 @@ dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-api/openapi-spec/swagger.json: dist/kubeified.swagger.json
+api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec

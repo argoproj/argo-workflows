@@ -353,6 +353,8 @@ type WorkflowSpec struct {
 
 	// RetryStrategy for all templates in the workflow.
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,37,opt,name=retryStrategy"`
+
+	Foo string `json:"foo,omitempty" protobuf:"bytes,38,opt,name=foo"`
 }
 
 // GetVolumeClaimGC returns the VolumeClaimGC that was defined in the workflow spec.  If none was provided, a default value is returned.

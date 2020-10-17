@@ -4405,6 +4405,9 @@
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "foo": {
+          "type": "string"
+        },
         "hostAliases": {
           "type": "array",
           "items": {
@@ -4872,6 +4875,9 @@
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
+        },
+        "foo": {
+          "type": "string"
         },
         "hostAliases": {
           "type": "array",
