@@ -259,7 +259,7 @@ crds: $(GOPATH)/bin/controller-gen
 $(GOPATH)/bin/controller-gen:
 	trap 'rm -Rf vendor' EXIT
 	go mod vendor
-	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	go install -mod=vendor ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
 
 $(GOPATH)/bin/go-to-protobuf:
 	trap 'rm -Rf vendor' EXIT
