@@ -113,7 +113,7 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 # go_install,path
 define go_install
 	trap 'rm -Rf vendor' EXIT
-	go mod vendor
+	[ -e vendor ] || go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
 
@@ -312,7 +312,7 @@ $(GOPATH)/bin/goimports:
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(TYPES)
 	trap 'rm -Rf vendor' EXIT
-	go mod vendor
+	[ -e vendor ] || go mod vendor
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \

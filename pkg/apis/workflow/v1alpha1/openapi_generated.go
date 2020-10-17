@@ -4747,12 +4747,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy"),
 						},
 					},
-					"foo": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 				},
 			},
 		},
@@ -5447,12 +5441,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "RetryStrategy for all templates in the workflow.",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy"),
-						},
-					},
-					"foo": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
 						},
 					},
 					"workflowMetadata": {
