@@ -76,7 +76,7 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplateWithEnum() {
 		WorkflowName("my-wf-with-enum").
 		When().
 		CreateWorkflowTemplates().
-			RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-with-enum-values", "--name", "my-wf-with-enum", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 			}).
 		WaitForWorkflow().
