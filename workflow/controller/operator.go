@@ -407,7 +407,6 @@ func (woc *wfOperationCtx) operate() {
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", onExitNode.Message)
 		} else {
 			woc.markWorkflowSuccess()
-			woc.wf.Status.EmoticonStatus = "Happy"
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowSucceeded", "Workflow completed")
 		}
 	case wfv1.NodeFailed:
