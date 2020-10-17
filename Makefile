@@ -446,7 +446,7 @@ clean:
 	# Remove temporary build files
 	rm -Rf test-results node_modules vendor dist/* ui/dist
 	# Remove generated files
-	grep -Rl '// Code generated' .|xargs rm
+	grep -Rl '// Code generated' . | grep '.go$' | xargs rm
 	rm pkg/apis/workflow/v1alpha1/generated.proto
 	rm api/openapi-spec/swagger.json
 
