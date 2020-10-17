@@ -3137,6 +3137,10 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.execWf.Spec.Arguments.Parameters)
 	}
 
+	if len(woc.execWf.Spec.Arguments.Artifacts) > 0 {
+		executionParameters.Artifacts = util.MergeArtifacts(executionParameters.Artifacts, woc.execWf.Spec.Arguments.Artifacts)
+	}
+
 	return tmplRef, executionParameters, nil
 }
 
