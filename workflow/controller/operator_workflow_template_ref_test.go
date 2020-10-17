@@ -343,7 +343,7 @@ func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 		assert.Equal(t, wf.Spec.Arguments.Artifacts, woc.wf.Spec.Arguments.Artifacts)
-		assert.Equal(t, 3, len(execArgs.Artifacts))
+		assert.Len(t, execArgs.Artifacts, 3)
 
 		assert.Equal(t, "own-file", execArgs.Artifacts[0].Name)
 		assert.Equal(t, "binary-file", execArgs.Artifacts[1].Name)

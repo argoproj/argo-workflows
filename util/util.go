@@ -90,7 +90,7 @@ func MergeArtifacts(artifactSlices ...[]wfv1.Artifact) []wfv1.Artifact {
 	alreadyMerged := make(map[string]bool)
 	for _, artifacts := range artifactSlices {
 		for _, item := range artifacts {
-			if _, found := alreadyMerged[item.Name]; !found {
+			if !alreadyMerged[item.Name] {
 				result = append(result, item)
 				alreadyMerged[item.Name] = true
 			}
