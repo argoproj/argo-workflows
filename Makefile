@@ -443,8 +443,12 @@ stress: destress cli
 .PHONY: clean
 clean:
 	go clean
+	# Remove temporary build files
 	rm -Rf test-results node_modules vendor dist/* ui/dist
+	# Remove generated files
 	grep -Rl '// Code generated' .|xargs rm
+	rm pkg/apis/workflow/v1alpha1/generated.proto
+	rm api/openapi-spec/swagger.json
 
 # swagger
 
