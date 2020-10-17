@@ -310,7 +310,7 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(TYPES)
+pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	trap 'rm -Rf vendor' EXIT
 	[ -e vendor ] || go mod vendor
 	${GOPATH}/bin/go-to-protobuf \
