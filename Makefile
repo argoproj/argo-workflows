@@ -4,6 +4,10 @@ export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 # This means we only one shell, and therefore you can use `trap` to clean-up
 .ONESHELL:
 
+# https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64
 
@@ -18,7 +22,6 @@ export DOCKER_BUILDKIT = 1
 
 # Use a different Dockerfile, e.g. for building for Windows or dev images.
 DOCKERFILE            := Dockerfile
-
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
@@ -95,16 +98,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
 TYPES := $(find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
-CRDS := manifests/base/crds/full/argoproj.io_clusterworkflowtemplates.yaml \
-	manifests/base/crds/full/argoproj.io_cronworkflows.yaml \
-	manifests/base/crds/full/argoproj.io_workfloweventbindings.yaml \
-	manifests/base/crds/full/argoproj.io_workflows.yaml \
-	manifests/base/crds/full/argoproj.io_workflowtemplates.yaml \
-	manifests/base/crds/minimal/argoproj.io_clusterworkflowtemplates.yaml \
-	manifests/base/crds/minimal/argoproj.io_cronworkflows.yaml \
-	manifests/base/crds/minimal/argoproj.io_workfloweventbindings.yaml \
-	manifests/base/crds/minimal/argoproj.io_workflows.yaml \
-	manifests/base/crds/minimal/argoproj.io_workflowtemplates.yaml
+CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
 MANIFESTS := manifests/install.yaml \
 	manifests/namespace-install.yaml \
 	manifests/quick-start-minimal.yaml \
@@ -120,8 +114,25 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 CLI_DOCS := $(shell find docs/cli -type f)
-PROTO_BINARIES    := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
+PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
+# protoc,my.proto
+define protoc
+	# protoc $(1)
+	trap 'rm -Rf vendor' EXIT
+    [ -e vendor ] || go mod vendor
+    protoc \
+      -I /usr/local/include \
+      -I . \
+      -I ./vendor \
+      -I ${GOPATH}/src \
+      -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
+      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.2/third_party/googleapis \
+      --gogofast_out=plugins=grpc:${GOPATH}/src \
+      --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
+      --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
+      $(1) 2>&1 | grep -v 'warning: Import .* is unused'
+endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
@@ -142,18 +153,10 @@ ifndef $(GOPATH)
 endif
 
 .PHONY: build
-build: status clis images $(MANIFESTS)
+build: clis images
 
 .PHONY: images
 images: cli-image executor-image controller-image
-
-# https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
-MAKEFLAGS += --no-builtin-rules
-.SUFFIXES:
-
-.PHONY: status
-status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
 
 # cli
 
@@ -315,25 +318,25 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(shell
 		grep -v 'warning: Import .* is unused'
 
 pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.gw.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
-	./hack/generate-proto.sh pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
 
 pkg/apiclient/cronworkflow/cron-workflow.pb.gw.go pkg/apiclient/cronworkflow/cron-workflow.pb.go pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/cronworkflow/cron-workflow.proto
-	./hack/generate-proto.sh pkg/apiclient/cronworkflow/cron-workflow.proto
+	$(call protoc,pkg/apiclient/cronworkflow/cron-workflow.proto)
 
 pkg/apiclient/event/event.pb.gw.go pkg/apiclient/event/event.pb.go pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) pkg/apiclient/event/event.proto
-	./hack/generate-proto.sh pkg/apiclient/event/event.proto
+	$(call protoc,pkg/apiclient/event/event.proto)
 
 pkg/apiclient/info/info.pb.gw.go pkg/apiclient/info/info.pb.go pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) pkg/apiclient/info/info.proto
-	./hack/generate-proto.sh pkg/apiclient/info/info.proto
+	$(call protoc,pkg/apiclient/info/info.proto)
 
 pkg/apiclient/workflow/workflow.pb.gw.go pkg/apiclient/workflow/workflow.pb.go pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflow/workflow.proto
-	./hack/generate-proto.sh pkg/apiclient/workflow/workflow.proto
+	$(call protoc,pkg/apiclient/workflow/workflow.proto)
 
 pkg/apiclient/workflowarchive/workflow-archive.pb.gw.go pkg/apiclient/workflowarchive/workflow-archive.pb.go pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowarchive/workflow-archive.proto
-	./hack/generate-proto.sh pkg/apiclient/workflowarchive/workflow-archive.proto
+	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
 
 pkg/apiclient/workflowtemplate/workflow-template.pb.gw.go pkg/apiclient/workflowtemplate/workflow-template.pb.go pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowtemplate/workflow-template.proto
-	./hack/generate-proto.sh pkg/apiclient/workflowtemplate/workflow-template.proto
+	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
 $(CRDS): $(GOPATH)/bin/controller-gen
 	./hack/crdgen.sh
@@ -414,7 +417,7 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
-start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
+start: stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
 ifeq ($(RUN_MODE),kubernetes)
 	$(MAKE) controller-image cli-image
