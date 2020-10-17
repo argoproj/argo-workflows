@@ -169,7 +169,7 @@ type ConnectionPool struct {
 
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
+	Port           int                     `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
@@ -180,7 +180,7 @@ type PostgreSQLConfig struct {
 
 type MySQLConfig struct {
 	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
+	Port           int                     `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	Options        map[string]string       `json:"options,omitempty"`
