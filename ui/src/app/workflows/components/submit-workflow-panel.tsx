@@ -33,6 +33,46 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
         };
     }
 
+    private displaySelectFieldForEnumValues(parameter: Parameter) {
+        return (
+            <Select
+                key={parameter.name}
+                value={parameter.value}
+                options={parameter.enum.map(value => ({
+                    value,
+                    title: value
+                }))}
+                onChange={event => {
+                    this.setState({
+                        parameters: this.state.parameters.map(p => ({
+                            name: p.name,
+                            value: p.name === parameter.name ? event.value : p.value,
+                            enum: p.enum
+                        }))
+                    });
+                }}
+            />
+        );
+    }
+
+    private displayInputFieldForSingleValue(parameter: Parameter) {
+        return (
+            <input
+                className='argo-field'
+                value={parameter.value}
+                onChange={event => {
+                    this.setState({
+                        parameters: this.state.parameters.map(p => ({
+                            name: p.name,
+                            value: p.name === parameter.name ? event.target.value : p.value,
+                            enum: p.enum
+                        }))
+                    });
+                }}
+            />
+        );
+    }
+
     public render() {
         return (
             <>
@@ -57,24 +97,14 @@ export class SubmitWorkflowPanel extends React.Component<Props, State> {
                         <label>Parameters</label>
                         {this.state.parameters.length > 0 ? (
                             <>
-                                {this.state.parameters.map(parameter => (
-                                    <p key={parameter.name}>
-                                        <label>
-                                            {parameter.name}
-                                            <input
-                                                className='argo-field'
-                                                value={parameter.value}
-                                                onChange={event => {
-                                                    this.setState({
-                                                        parameters: this.state.parameters.map(p => ({
-                                                            name: p.name,
-                                                            value: p.name === parameter.name ? event.target.value : p.value
-                                                        }))
-                                                    });
-                                                }}
-                                            />
-                                        </label>
-                                    </p>
+                                {this.state.parameters.map((parameter, index) => (
+                                    <div key={parameter.name + "_" + index}>
+                                        <label>{parameter.name}</label>
+                                        {
+                                            parameter.enum && this.displaySelectFieldForEnumValues(parameter)
+                                            || this.displayInputFieldForSingleValue(parameter)
+                                        }
+                                    </div>
                                 ))}
                             </>
                         ) : (

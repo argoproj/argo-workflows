@@ -664,6 +664,7 @@ WorkflowStatus contains overall status information about a workflow
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
+|`emoticonStatus`|`string`|Show status of a workflow via emoticon|
 |`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
@@ -2336,6 +2337,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
+|`enum`|`Array< string >`|_No description available_|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|

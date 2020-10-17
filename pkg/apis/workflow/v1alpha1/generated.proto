@@ -756,6 +756,8 @@ message Parameter {
   // GlobalName exports an output parameter to the global scope, making it available as
   // '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
   optional string globalName = 5;
+
+  repeated string enum = 6;
 }
 
 // PodGC describes how to delete completed pods as they complete
@@ -1494,6 +1496,9 @@ message WorkflowStatus {
 
   // Synchronization stores the status of synchronization locks
   optional SynchronizationStatus synchronization = 15;
+
+  // Show status of a workflow via emoticon
+  optional string emoticonStatus = 17;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

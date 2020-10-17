@@ -100,6 +100,8 @@ export interface Parameter {
      * ValueFrom is the source for the output parameter's value
      */
     valueFrom?: ValueFrom;
+
+    enum?: Array<string>
 }
 
 /**

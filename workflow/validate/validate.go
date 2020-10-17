@@ -760,6 +760,24 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 		if param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 		}
+		if param.Enum != nil {
+			logrus.Info(prefix)
+			logrus.Info(param.Name)
+			logrus.Info(param.Enum)
+			if len(param.Enum) == 0 {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
+			}
+			valueSpecifiedInEnumList := false
+			for _, enum := range param.Enum {
+				if enum == *param.Value {
+					valueSpecifiedInEnumList = true
+					break
+				}
+			}
+			if !valueSpecifiedInEnumList {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
+			}
+		}
 	}
 	for _, art := range arguments.Artifacts {
 		if art.From == "" && !art.HasLocation() {
