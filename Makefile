@@ -259,7 +259,7 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: api/openapi-spec/swagger.json docs/fields.md $(CLI_DOCS) $(GOPATH)/bin/mockery
+codegen: api/openapi-spec/swagger.json $(MANIFESTS) docs/fields.md $(CLI_DOCS) $(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
@@ -308,25 +308,32 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(shell
 		--proto-import ./vendor 2>&1 |
 		grep -v 'warning: Import .* is unused'
 
-pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.gw.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+# pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.gw.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.go
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
 	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
 
-pkg/apiclient/cronworkflow/cron-workflow.pb.gw.go pkg/apiclient/cronworkflow/cron-workflow.pb.go pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/cronworkflow/cron-workflow.proto
+# pkg/apiclient/cronworkflow/cron-workflow.pb.gw.go pkg/apiclient/cronworkflow/cron-workflow.pb.go
+pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/cronworkflow/cron-workflow.proto
 	$(call protoc,pkg/apiclient/cronworkflow/cron-workflow.proto)
 
-pkg/apiclient/event/event.pb.gw.go pkg/apiclient/event/event.pb.go pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) pkg/apiclient/event/event.proto
+# pkg/apiclient/event/event.pb.gw.go pkg/apiclient/event/event.pb.go
+pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) pkg/apiclient/event/event.proto
 	$(call protoc,pkg/apiclient/event/event.proto)
 
-pkg/apiclient/info/info.pb.gw.go pkg/apiclient/info/info.pb.go pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) pkg/apiclient/info/info.proto
+# pkg/apiclient/info/info.pb.gw.go pkg/apiclient/info/info.pb.go
+pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) pkg/apiclient/info/info.proto
 	$(call protoc,pkg/apiclient/info/info.proto)
 
-pkg/apiclient/workflow/workflow.pb.gw.go pkg/apiclient/workflow/workflow.pb.go pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflow/workflow.proto
+# pkg/apiclient/workflow/workflow.pb.gw.go pkg/apiclient/workflow/workflow.pb.go
+pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
 
-pkg/apiclient/workflowarchive/workflow-archive.pb.gw.go pkg/apiclient/workflowarchive/workflow-archive.pb.go pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowarchive/workflow-archive.proto
+# pkg/apiclient/workflowarchive/workflow-archive.pb.gw.go pkg/apiclient/workflowarchive/workflow-archive.pb.go
+pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
 
-pkg/apiclient/workflowtemplate/workflow-template.pb.gw.go pkg/apiclient/workflowtemplate/workflow-template.pb.go pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowtemplate/workflow-template.proto
+# pkg/apiclient/workflowtemplate/workflow-template.pb.gw.go pkg/apiclient/workflowtemplate/workflow-template.pb.go
+pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
 $(CRDS): $(GOPATH)/bin/controller-gen
