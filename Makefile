@@ -299,23 +299,7 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
-pkg/apis/workflow/v1alpha1/generated.proto: \
-	$(GOPATH)/bin/go-to-protobuf \
-	pkg/apis/workflow/v1alpha1/amount.go \
-    pkg/apis/workflow/v1alpha1/cluster_workflow_template_types.go \
-    pkg/apis/workflow/v1alpha1/common.go \
-    pkg/apis/workflow/v1alpha1/cron_workflow_types.go \
-    pkg/apis/workflow/v1alpha1/doc.go \
-    pkg/apis/workflow/v1alpha1/estimated_duration.go \
-    pkg/apis/workflow/v1alpha1/event_types.go \
-    pkg/apis/workflow/v1alpha1/info.go \
-    pkg/apis/workflow/v1alpha1/int64orstr.go \
-    pkg/apis/workflow/v1alpha1/item.go \
-    pkg/apis/workflow/v1alpha1/progress.go \
-    pkg/apis/workflow/v1alpha1/register.go \
-    pkg/apis/workflow/v1alpha1/version_types.go \
-    pkg/apis/workflow/v1alpha1/workflow_template_types.go \
-    pkg/apis/workflow/v1alpha1/workflow_types.go
+pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name '*generated*')
 	trap 'rm -Rf vendor' EXIT
 	go mod vendor
 	${GOPATH}/bin/go-to-protobuf \
