@@ -299,8 +299,34 @@ $(GOPATH)/bin/swagger:
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
+pkg/apis/workflow/v1alpha1/generated.proto: \
+	$(GOPATH)/bin/go-to-protobuf \
+	pkg/apis/workflow/v1alpha1/amount.go \
+    pkg/apis/workflow/v1alpha1/cluster_workflow_template_types.go \
+    pkg/apis/workflow/v1alpha1/common.go \
+    pkg/apis/workflow/v1alpha1/cron_workflow_types.go \
+    pkg/apis/workflow/v1alpha1/doc.go \
+    pkg/apis/workflow/v1alpha1/estimated_duration.go \
+    pkg/apis/workflow/v1alpha1/event_types.go \
+    pkg/apis/workflow/v1alpha1/info.go \
+    pkg/apis/workflow/v1alpha1/int64orstr.go \
+    pkg/apis/workflow/v1alpha1/item.go \
+    pkg/apis/workflow/v1alpha1/progress.go \
+    pkg/apis/workflow/v1alpha1/register.go \
+    pkg/apis/workflow/v1alpha1/version_types.go \
+    pkg/apis/workflow/v1alpha1/workflow_template_types.go \
+    pkg/apis/workflow/v1alpha1/workflow_types.go
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	${GOPATH}/bin/go-to-protobuf \
+		--go-header-file=./hack/custom-boilerplate.go.txt \
+		--packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
+		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
+		--proto-import ./vendor 2>&1 |
+		grep -v 'warning: Import .* is unused'
+
 .PHONY: proto
-proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
+proto: $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 
@@ -445,10 +471,6 @@ clean:
 	go clean
 	# Remove temporary build files
 	rm -Rf test-results node_modules vendor dist/* ui/dist
-	# Remove generated files
-	grep -Rl '// Code generated' . | grep '.go$' | xargs rm
-	rm pkg/apis/workflow/v1alpha1/generated.proto
-	rm api/openapi-spec/swagger.json
 
 # swagger
 
