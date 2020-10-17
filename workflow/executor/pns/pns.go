@@ -412,6 +412,7 @@ func parseContainerID(pid int) (string, error) {
 				if strings.Contains(containerID, "cri-containerd") {
 					strList := strings.Split(containerID, ":")
 					containerID = strList[len(strList)-1]
+					containerID = strings.TrimPrefix(containerID, "cri-containerd-")
 				}
 				return containerID, nil
 			}
