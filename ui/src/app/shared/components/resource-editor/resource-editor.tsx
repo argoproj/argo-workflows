@@ -12,6 +12,7 @@ require('./resource.scss');
 interface Props<T> {
     kind: string;
     upload?: boolean;
+    namespace?: string;
     title?: string;
     value: T;
     readonly?: boolean;
@@ -158,8 +159,12 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
+            const value = parse(this.state.value);
+            if (!value.metadata.namespace && this.props.namespace) {
+                value.metadata.namespace = this.props.namespace;
+            }
             this.props
-                .onSubmit(parse(this.state.value))
+                .onSubmit(value)
                 .then(() => this.setState({error: null}))
                 .catch(error => this.setState({error}));
         } catch (error) {
