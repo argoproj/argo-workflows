@@ -116,6 +116,13 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 CLI_DOCS := $(shell find docs/cli -type f)
 PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
+# go_install,path
+define go_install
+	trap 'rm -Rf vendor' EXIT
+	go mod vendor
+	go install -mod=vendor ./vendor/$(1)
+endef
+
 # protoc,my.proto
 define protoc
 	# protoc $(1)
@@ -265,44 +272,28 @@ $(GOPATH)/bin/mockery:
 	mockery -version
 
 $(GOPATH)/bin/controller-gen:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install -mod=vendor ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	go_install sigs.k8s.io/controller-tools/cmd/controller-gen
 
 $(GOPATH)/bin/go-to-protobuf:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+	go_install k8s.io/code-generator/cmd/go-to-protobuf
 
 $(GOPATH)/bin/protoc-gen-gogo:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+	go_install github.com/gogo/protobuf/protoc-gen-gogo
 
 $(GOPATH)/bin/protoc-gen-gogofast:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+	go_install github.com/gogo/protobuf/protoc-gen-gogofast
 
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	go_install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 
 $(GOPATH)/bin/protoc-gen-swagger:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	go_install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 $(GOPATH)/bin/openapi-gen:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+	go_install k8s.io/kube-openapi/cmd/openapi-gen
 
 $(GOPATH)/bin/swagger:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
+	go_install github.com/go-swagger/go-swagger/cmd/swagger
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
