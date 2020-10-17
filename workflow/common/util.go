@@ -372,7 +372,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		replacement, ok := replaceMap[tag]
+		replacement, ok := replaceMap[strings.TrimSpace(tag)]
 		if !ok {
 			// Attempt to resolve nested tags, if possible
 			if index := strings.LastIndex(tag, "{{"); index > 0 {
