@@ -309,6 +309,9 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(shell
 		--proto-import ./vendor 2>&1 |
 		grep -v 'warning: Import .* is unused'
 
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.gw.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.pb.go pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json &: $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+	./hack/generate-proto.sh pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+
 .PHONY: proto
 proto: $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 	./hack/generate-proto.sh
@@ -462,7 +465,6 @@ dist/kubernetes.swagger.json:
 	@mkdir -p dist
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
-pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: proto
 pkg/apiclient/cronworkflow/cron-workflow.swagger.json: proto
 pkg/apiclient/info/info.swagger.json: proto
 pkg/apiclient/workflow/workflow.swagger.json: proto
