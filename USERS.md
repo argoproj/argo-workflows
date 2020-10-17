@@ -1,10 +1,13 @@
 ## Argo Workflows User Community Surveys & Feedback
+
 Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
 
 ## Who uses Argo Workflows?
+
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
 Currently, the following organizations are **officially** using Argo Workflows:
+
 1. [23mofang](https://www.23mofang.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
@@ -61,6 +64,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Mixpanel](https://mixpanel.com)
 1. [New Relic](https://newrelic.com/)
 1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
+1. [nrd.io](https://nrd.io/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Onepanel](https://docs.onepanel.ai)
 1. [OVH](https://www.ovh.com/)
@@ -83,6 +87,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Sohu](https://www.sohu.com/)
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
+1. [strongDM](https://www.strongdm.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
@@ -90,3 +95,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Helio](https://helio.exchange)
+1. [HSBC](https://hsbc.com)

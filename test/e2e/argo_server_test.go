@@ -639,13 +639,10 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
 	s.e().POST("/api/v1/workflows/argo").
 		WithBytes([]byte((`{
   "workflow": {
-    "apiVersion": "argoproj.io/v1alpha1",
-    "kind": "Workflow",
     "metadata": {
-      "generateName": "hello-world-",
-      "name": "hello-world",
+      "name": "hint",
       "labels": {
-        "workflows.argoproj.io/archive-strategy": "false"
+        "argo-e2e": "true"
       }
     },
     "spec": {
@@ -654,11 +651,7 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
         {
           "name": "whalesay",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [
-              "exit",
-              "0"
-            ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ]
@@ -671,13 +664,10 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
 	s.e().POST("/api/v1/workflows/argo").
 		WithBytes([]byte((`{
   "workflow": {
-    "apiVersion": "argoproj.io/v1alpha1",
-    "kind": "Workflow",
     "metadata": {
-      "generateName": "hello-world-",
-      "name": "hello-world",
+      "name": "hint",
       "labels": {
-        "workflows.argoproj.io/archive-strategy": "false"
+        "argo-e2e": "true"
       }
     },
     "spec": {
@@ -686,11 +676,7 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
         {
           "name": "whalesay",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [
-              "exit",
-              "0"
-            ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ]
@@ -698,9 +684,9 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
   }
 }`))).
 		Expect().
-		Status(500).
+		Status(409).
 		Body().
-		Contains("create request failed due to timeout, but it's possible that workflow")
+		Contains("already exists")
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {

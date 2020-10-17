@@ -2,6 +2,7 @@ package executor
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"compress/gzip"
@@ -71,6 +72,8 @@ type WorkflowExecutor struct {
 	// the first of these is used as the overall message of the node
 	errors []error
 }
+
+//go:generate mockery -name ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
 type ContainerRuntimeExecutor interface {
@@ -180,14 +183,20 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		}
 
 		isTar := false
+		isZip := false
 		if art.GetArchive().None != nil {
 			// explicitly not a tar
 			isTar = false
+			isZip = false
 		} else if art.GetArchive().Tar != nil {
 			// explicitly a tar
 			isTar = true
+		} else if art.GetArchive().Zip != nil {
+			// explicitly a zip
+			isZip = true
 		} else {
-			// auto-detect
+			// auto-detect if tarball
+			// (don't try to autodetect zip files for backwards compatibility)
 			isTar, err = isTarball(tempArtPath)
 			if err != nil {
 				return err
@@ -196,6 +205,9 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		if isTar {
 			err = untar(tempArtPath, artPath)
+			_ = os.Remove(tempArtPath)
+		} else if isZip {
+			err = unzip(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
 			err = os.Rename(tempArtPath, artPath)
@@ -469,19 +481,19 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output string
+		var output *wfv1.Int64OrString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				output = fileContents
+				output = wfv1.Int64OrStringPtr(fileContents)
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
@@ -490,18 +502,18 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
 			} else {
-				output = string(data)
+				output = wfv1.Int64OrStringPtr(string(data))
 			}
 		}
 
 		// Trims off a single newline for user convenience
-		output = strings.TrimSuffix(output, "\n")
-		we.Template.Outputs.Parameters[i].Value = &output
+		output = wfv1.Int64OrStringPtr(strings.TrimSuffix(output.String(), "\n"))
+		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
@@ -838,15 +850,100 @@ func isTarball(filePath string) (bool, error) {
 // untar extracts a tarball to a temporary directory,
 // renaming it to the desired location
 func untar(tarPath string, destPath string) error {
+	decompressor := func(src string, dest string) error {
+		_, err := common.RunCommand("tar", "-xf", src, "-C", dest)
+		return err
+	}
+
+	return unpack(tarPath, destPath, decompressor)
+}
+
+// unzip extracts a zip folder to a temporary directory,
+// renaming it to the desired location
+func unzip(zipPath string, destPath string) error {
+	decompressor := func(src string, dest string) error {
+		r, err := zip.OpenReader(src)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err := r.Close(); err != nil {
+				panic(err)
+			}
+		}()
+
+		// Closure to address file descriptors issue with all the deferred .Close() methods
+		extractAndWriteFile := func(f *zip.File) error {
+			rc, err := f.Open()
+			if err != nil {
+				return err
+			}
+			defer func() {
+				if err := rc.Close(); err != nil {
+					panic(err)
+				}
+			}()
+
+			path := filepath.Join(dest, f.Name)
+			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
+				return fmt.Errorf("%s: Illegal file path", path)
+			}
+
+			if f.FileInfo().IsDir() {
+				if err = os.MkdirAll(path, f.Mode()); err != nil {
+					return err
+				}
+			} else {
+				if err = os.MkdirAll(filepath.Dir(path), f.Mode()); err != nil {
+					return err
+				}
+				f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if err := f.Close(); err != nil {
+						panic(err)
+					}
+				}()
+
+				_, err = io.Copy(f, rc)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		for _, f := range r.File {
+			if err := extractAndWriteFile(f); err != nil {
+				return err
+			}
+			log.Infof("Extracting file: %s", f.Name)
+		}
+
+		log.Infof("Extraction of %s finished!", src)
+
+		return nil
+	}
+
+	return unpack(zipPath, destPath, decompressor)
+}
+
+// unpack unpacks a compressed file (tarball or zip file) to a temporary directory,
+// renaming it to the desired location
+// decompression is done using the decompressor closure, that should decompress a tarball or zip file
+func unpack(srcPath string, destPath string, decompressor func(string, string) error) error {
 	// first extract the tar into a temporary dir
 	tmpDir := destPath + ".tmpdir"
 	err := os.MkdirAll(tmpDir, os.ModePerm)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	_, err = common.RunCommand("tar", "-xf", tarPath, "-C", tmpDir)
-	if err != nil {
-		return err
+	if decompressor != nil {
+		if err = decompressor(srcPath, tmpDir); err != nil {
+			return err
+		}
 	}
 	// next, decide how we wish to rename the file/dir
 	// to the destination path.

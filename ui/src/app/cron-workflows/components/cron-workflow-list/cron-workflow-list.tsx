@@ -42,7 +42,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     constructor(props: any) {
         super(props);
-        this.state = {namespace: this.props.match.params.namespace};
+        this.state = {namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
@@ -74,10 +74,11 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <ResourceEditor
                                 title={'New Cron Workflow'}
-                                value={exampleCronWorkflow(this.namespace)}
+                                namespace={this.namespace}
+                                value={exampleCronWorkflow()}
                                 onSubmit={cronWf =>
                                     services.cronWorkflows
-                                        .create(cronWf, cronWf.metadata.namespace)
+                                        .create(cronWf, cronWf.metadata.namespace || this.namespace)
                                         .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
                                 }
                                 upload={true}

@@ -19,7 +19,7 @@ interface State {
 
 export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace;
+        return this.props.match.params.namespace || '';
     }
 
     private get name() {

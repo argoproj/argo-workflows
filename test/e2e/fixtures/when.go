@@ -222,13 +222,17 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 		select {
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
-			print(".")
 			if ok {
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
 					println("Condition met after", time.Since(start).Truncate(time.Second).String())
 					w.wf = wf
 					return w
+				}
+				// once done the workflow is done, the condition can never be met
+				// rather than wait maybe 30s for something that can never happen
+				if ToBeDone(wf) {
+					w.t.Fatalf("condition never and cannot be met because the workflow is done")
 				}
 			} else {
 				w.t.Fatal("not ok")

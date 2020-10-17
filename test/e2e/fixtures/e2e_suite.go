@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/argoproj/argo/v3/config"
 	"github.com/argoproj/argo/v3/pkg/apis/workflow"
 	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -34,6 +35,7 @@ const defaultTimeout = 30 * time.Second
 
 type E2ESuite struct {
 	suite.Suite
+	Config            config.Config
 	Persistence       *Persistence
 	RestConfig        *rest.Config
 	wfClient          v1alpha1.WorkflowInterface

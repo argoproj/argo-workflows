@@ -27,6 +27,8 @@ const (
 	ClaimsKey ContextKey = "jwt.Claims"
 )
 
+//go:generate mockery -name Gatekeeper
+
 type Gatekeeper interface {
 	Context(ctx context.Context) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor

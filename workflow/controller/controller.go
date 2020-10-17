@@ -148,7 +148,9 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
+		return &wfc.Config
+	})
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
@@ -482,7 +484,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+		woc.markWorkflowFailed(fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
@@ -662,7 +664,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.Add(key)
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}

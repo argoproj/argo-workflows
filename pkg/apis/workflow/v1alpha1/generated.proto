@@ -26,6 +26,8 @@ message ArchiveStrategy {
   optional TarStrategy tar = 1;
 
   optional NoneStrategy none = 2;
+
+  optional ZipStrategy zip = 3;
 }
 
 // Arguments to a template
@@ -631,6 +633,9 @@ message NodeStatus {
 
   // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 24;
+
+  // Progress to completion
+  optional string progress = 26;
 
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
   map<string, int64> resourcesDuration = 21;
@@ -1452,6 +1457,9 @@ message WorkflowStatus {
   // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 16;
 
+  // Progress to completion
+  optional string progress = 17;
+
   // A human readable message indicating details about why the workflow is in this condition.
   optional string message = 4;
 
@@ -1559,5 +1567,9 @@ message WorkflowTemplateSpec {
 
   // WorkflowMetadata contains some metadata of the workflow to be refer
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 2;
+}
+
+// ZipStrategy will unzip zipped input artifacts
+message ZipStrategy {
 }
 
