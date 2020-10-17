@@ -678,7 +678,7 @@ type Parameter struct {
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
-	// Enum hold a list of values to choose from the actual value of the parameter
+	// Enum holds a list of string values to choose from, for the actual value of the parameter
 	Enum []Int64OrString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 }
 
