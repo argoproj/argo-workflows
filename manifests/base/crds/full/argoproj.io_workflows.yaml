@@ -6716,8 +6716,6 @@ spec:
                     type: string
                 type: object
               type: array
-            emoticonStatus:
-              type: string
             estimatedDuration:
               type: integer
             finishedAt:

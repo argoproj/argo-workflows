@@ -1367,7 +1367,7 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 	}
 	if in.Enum != nil {
 		in, out := &in.Enum, &out.Enum
-		*out = make([]string, len(*in))
+		*out = make([]Int64OrString, len(*in))
 		copy(*out, *in)
 	}
 	return

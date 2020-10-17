@@ -1496,9 +1496,6 @@ message WorkflowStatus {
 
   // Synchronization stores the status of synchronization locks
   optional SynchronizationStatus synchronization = 15;
-
-  // Show status of a workflow via emoticon
-  optional string emoticonStatus = 17;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

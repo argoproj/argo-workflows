@@ -4916,13 +4916,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SynchronizationStatus"),
 						},
 					},
-					"emoticonStatus": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Show status of a workflow via emoticon",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 				},
 			},
 		},

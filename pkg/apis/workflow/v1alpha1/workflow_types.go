@@ -79,13 +79,6 @@ const (
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
 
-type Emoticon string
-
-const (
-	HappyEmoticon Emoticon = "Happy"
-	SadEmoticon   Emoticon = "Sad"
-)
-
 // VolumeClaimGCStrategy is the strategy to use when deleting volumes from completed workflows
 type VolumeClaimGCStrategy string
 
@@ -685,7 +678,7 @@ type Parameter struct {
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
-	Enum []string `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
+	Enum []Int64OrString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -1164,9 +1157,6 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
-
-	// Show status of a workflow via emoticon
-	EmoticonStatus Emoticon `json:"emoticonStatus,omitempty" protobuf:"bytes,17,opt,name=emoticonStatus,casttype=Emoticon"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
