@@ -460,7 +460,6 @@ smoke:
 .PHONY: clean
 clean:
 	go clean
-	# Remove temporary build files
 	rm -Rf test-results node_modules vendor dist/* ui/dist
 
 # swagger
