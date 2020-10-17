@@ -121,6 +121,11 @@ define docker_pull
 	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
+ifndef $(GOPATH)
+	GOPATH=$(shell go env GOPATH)
+	export GOPATH
+endif
+
 .PHONY: build
 build: status clis images manifests
 
@@ -254,7 +259,7 @@ crds: $(GOPATH)/bin/controller-gen
 $(GOPATH)/bin/controller-gen:
 	trap 'rm -Rf vendor' EXIT
 	go mod vendor
-	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	go install -mod=vendor ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
 
 $(GOPATH)/bin/go-to-protobuf:
 	trap 'rm -Rf vendor' EXIT
@@ -478,7 +483,7 @@ dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-con
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
-dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json 
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
