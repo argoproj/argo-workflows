@@ -1,8 +1,9 @@
 package pns
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPNSExecutor_parseContainerIDFromCgroupLine(t *testing.T) {
