@@ -40,7 +40,7 @@ type Controller struct {
 	managedNamespace     string
 	instanceId           string
 	cron                 *cron.Cron
-	nameEntryIDMap       map[string]cron.EntryID
+	nameEntryIDMap       sync.Map
 	nameEntryIDMapLock   *sync.Mutex
 	wfClientset          versioned.Interface
 	wfInformer           cache.SharedIndexInformer
@@ -69,7 +69,7 @@ func NewCronController(wfclientset versioned.Interface, restConfig *rest.Config,
 		cron:                 cron.New(),
 		restConfig:           restConfig,
 		dynamicInterface:     dynamicInterface,
-		nameEntryIDMap:       make(map[string]cron.EntryID),
+		nameEntryIDMap:       sync.Map{},
 		nameEntryIDMapLock:   &sync.Mutex{},
 		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
 		cronWfQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
@@ -126,7 +126,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
-	logCtx := log.WithField("key", key)
+	logCtx := log.WithField("cronworkflow", key)
 	logCtx.Infof("Processing %s", key)
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
@@ -134,13 +134,11 @@ func (cc *Controller) processNextCronItem() bool {
 		logCtx.WithError(err).Error(fmt.Sprintf("Failed to get CronWorkflow '%s' from informer index", key))
 		return true
 	}
-	cc.nameEntryIDMapLock.Lock()
-	defer cc.nameEntryIDMapLock.Unlock()
 	if !exists {
-		if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
+		if entryId, ok := cc.nameEntryIDMap.Load(key.(string)); ok {
 			logCtx.Infof("Deleting '%s'", key)
-			cc.cron.Remove(entryId)
-			delete(cc.nameEntryIDMap, key.(string))
+			cc.cron.Remove(entryId.(cron.EntryID))
+			cc.nameEntryIDMap.Delete(key.(string))
 		}
 		return true
 	}
@@ -173,9 +171,9 @@ func (cc *Controller) processNextCronItem() bool {
 	}
 
 	// The job is currently scheduled, remove it and re add it.
-	if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
-		cc.cron.Remove(entryId)
-		delete(cc.nameEntryIDMap, key.(string))
+	if entryId, ok := cc.nameEntryIDMap.Load(key.(string)); ok {
+		cc.cron.Remove(entryId.(cron.EntryID))
+		cc.nameEntryIDMap.Delete(key.(string))
 	}
 
 	cronSchedule := cronWf.Spec.Schedule
@@ -188,7 +186,7 @@ func (cc *Controller) processNextCronItem() bool {
 		logCtx.WithError(err).Error("could not schedule CronWorkflow")
 		return true
 	}
-	cc.nameEntryIDMap[key.(string)] = entryId
+	cc.nameEntryIDMap.Store(key.(string), entryId)
 
 	logCtx.Infof("CronWorkflow %s added", key.(string))
 
@@ -244,8 +242,8 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	var woc *cronWfOperationCtx
 	cc.nameEntryIDMapLock.Lock()
 	defer cc.nameEntryIDMapLock.Unlock()
-	if entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]; ok {
-		woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
+	if entryId, ok := cc.nameEntryIDMap.Load(nameEntryIdMapKey); ok {
+		woc, ok = cc.cron.Entry(entryId.(cron.EntryID)).Job.(*cronWfOperationCtx)
 		if !ok {
 			log.Errorf("Parent CronWorkflow '%s' is malformed", nameEntryIdMapKey)
 			return true
