@@ -3379,6 +3379,88 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
 }
 
+var workflowWithPVCAndFailingStep = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-with-pvc
+spec:
+  entrypoint: entrypoint
+  templates:
+  - name: entrypoint
+    steps:
+    - - name: succeed
+        template: succeed
+    - - name: failure
+        template: failure
+  - name: succeed
+    script:
+      args: [success]
+      command: [cowsay]
+      image: docker/whalesay:latest
+      volumeMounts:
+      - mountPath: /data
+        name: data
+  - name: failure
+    script:
+      command: [sh]
+      image: alpine
+      args: [exit, "1"]
+      volumeMounts:
+      - mountPath: /data
+        name: data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+status:
+  nodes:
+    wf-with-pvc:
+      name: wf-with-pvc
+      phase: Failed
+    wf-with-pvc-2390440388:
+      name: wf-with-pvc(0)[0].succeed
+      phase: Succeeded
+    wf-with-pvc-3099954303:
+      name: wf-with-pvc(0)[1].failure
+      phase: Failed
+  persistentVolumeClaims:
+  - name: data
+    persistentVolumeClaim:
+      claimName: wf-with-pvc-data
+`
+
+// This test ensures that the PVCs used in the steps are not deleted when
+// the workflow fails
+func TestDeletePVCDoesNotDeletePVCOnFailedWorkflow(t *testing.T) {
+	assert := assert.New(t)
+
+	wf := unmarshalWF(workflowWithPVCAndFailingStep)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "1 PVC before operating")
+
+	woc.operate()
+
+	node1 := woc.wf.GetNodeByName("wf-with-pvc(0)[0].succeed")
+	node2 := woc.wf.GetNodeByName("wf-with-pvc(0)[1].failure")
+
+	// Node 1 Succeeded
+	assert.Equal(node1.Phase, wfv1.NodeSucceeded)
+	// Node 2 Failed
+	assert.Equal(node2.Phase, wfv1.NodeFailed)
+	// Hence, PVCs should stick around
+	assert.Len(woc.wf.Status.PersistentVolumeClaims, 1, "PVCs not deleted")
+}
+
 var containerOutputsResult = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
