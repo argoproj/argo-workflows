@@ -2749,8 +2749,7 @@ func TestWorkflowTemplateWithEnumValue(t *testing.T) {
 
 func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "spec.arguments.message.enum should contain at least one value")
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 }
 
 func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
