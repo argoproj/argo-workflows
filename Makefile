@@ -285,8 +285,8 @@ codegen: \
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 
-%_easyjson.go: $(GOPATH)/bin/easyjson %.go
-	go generate ./$*.go
+%_easyjson.go: %.go $(GOPATH)/bin/easyjson
+	go generate $*.go
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz

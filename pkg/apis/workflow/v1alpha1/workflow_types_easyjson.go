@@ -423,6 +423,8 @@ func easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(in *jle
 			}
 		case "estimatedDuration":
 			out.EstimatedDuration = EstimatedDuration(in.Int())
+		case "progress":
+			out.Progress = Progress(in.String())
 		case "message":
 			out.Message = string(in.String())
 		case "compressedNodes":
@@ -614,6 +616,16 @@ func easyjson147b50d1EncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha13(out *jw
 			out.RawString(prefix)
 		}
 		out.Int(int(in.EstimatedDuration))
+	}
+	if in.Progress != "" {
+		const prefix string = ",\"progress\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Progress))
 	}
 	if in.Message != "" {
 		const prefix string = ",\"message\":"
@@ -15577,6 +15589,8 @@ func easyjson147b50d1DecodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(in *jl
 			}
 		case "estimatedDuration":
 			out.EstimatedDuration = EstimatedDuration(in.Int())
+		case "progress":
+			out.Progress = Progress(in.String())
 		case "resourcesDuration":
 			if in.IsNull() {
 				in.Skip()
@@ -15785,6 +15799,11 @@ func easyjson147b50d1EncodeGithubComArgoprojArgoPkgApisWorkflowV1alpha136(out *j
 		const prefix string = ",\"estimatedDuration\":"
 		out.RawString(prefix)
 		out.Int(int(in.EstimatedDuration))
+	}
+	if in.Progress != "" {
+		const prefix string = ",\"progress\":"
+		out.RawString(prefix)
+		out.String(string(in.Progress))
 	}
 	if len(in.ResourcesDuration) != 0 {
 		const prefix string = ",\"resourcesDuration\":"
