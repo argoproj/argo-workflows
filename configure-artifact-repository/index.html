@@ -2213,7 +2213,7 @@ access is on a per project rather than per bucket basis.</p>
   (https://console.cloud.google.com/storage/settings).</li>
 <li>Enable interoperability access if needed.</li>
 <li>Create a new key if needed.</li>
-<li>Configure <code>s3</code> artifact as following exmaple.</li>
+<li>Configure <code>s3</code> artifact as following example.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="nt">artifacts</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-output-artifact</span>
@@ -2236,7 +2236,7 @@ access is on a per project rather than per bucket basis.</p>
 <h2 id="configuring-alibaba-cloud-oss-object-storage-service">Configuring Alibaba Cloud OSS (Object Storage Service)<a class="headerlink" href="#configuring-alibaba-cloud-oss-object-storage-service" title="Permanent link">&para;</a></h2>
 <p>To configure artifact storage for Alibaba Cloud OSS, please first follow
 the <a href="https://www.alibabacloud.com/product/oss">official documentation</a> to set up
-an OSS account and bucket. </p>
+an OSS account and bucket.</p>
 <p>Once it's set up, you can find endpoint and bucket
 information on your OSS dashboard and then use them like the following to
 configure the artifact storage for your workflow:</p>
@@ -2317,7 +2317,7 @@ data:
 that you can specify a <code>keyFormat</code>.</p>
 <h2 id="google-cloud-storage-gcs">Google Cloud Storage (GCS)<a class="headerlink" href="#google-cloud-storage-gcs" title="Permanent link">&para;</a></h2>
 <p>Argo also can use native GCS APIs to access a Google Cloud Storage bucket.</p>
-<p><code>serviceAccountKeySecret</code> refereces to a k8 secret which stores a Google Cloud
+<p><code>serviceAccountKeySecret</code> references to a k8 secret which stores a Google Cloud
 service account key to access the bucket.</p>
 <p>Example:</p>
 <div class="highlight"><pre><span></span><code>$ kubectl edit configmap workflow-controller-configmap -n argo  # assumes argo was installed in the argo namespace
