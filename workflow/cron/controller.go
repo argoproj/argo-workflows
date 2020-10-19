@@ -41,7 +41,6 @@ type Controller struct {
 	instanceId           string
 	cron                 *cron.Cron
 	nameEntryIDMap       sync.Map
-	nameEntryIDMapLock   *sync.Mutex
 	wfClientset          versioned.Interface
 	wfInformer           cache.SharedIndexInformer
 	wfLister             util.WorkflowLister
@@ -70,7 +69,6 @@ func NewCronController(wfclientset versioned.Interface, restConfig *rest.Config,
 		restConfig:           restConfig,
 		dynamicInterface:     dynamicInterface,
 		nameEntryIDMap:       sync.Map{},
-		nameEntryIDMapLock:   &sync.Mutex{},
 		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
 		cronWfQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
@@ -240,8 +238,6 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	// Workflows are run in the same namespace as CronWorkflow
 	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
 	var woc *cronWfOperationCtx
-	cc.nameEntryIDMapLock.Lock()
-	defer cc.nameEntryIDMapLock.Unlock()
 	if entryId, ok := cc.nameEntryIDMap.Load(nameEntryIdMapKey); ok {
 		woc, ok = cc.cron.Entry(entryId.(cron.EntryID)).Job.(*cronWfOperationCtx)
 		if !ok {
