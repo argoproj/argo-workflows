@@ -260,6 +260,13 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 .PHONY: codegen
 codegen: \
 	pkg/apis/workflow/v1alpha1/generated.proto \
+	pkg/apis/workflow/v1alpha1/cluster_workflow_template_types_easyjson.go \
+    pkg/apis/workflow/v1alpha1/cron_workflow_types_easyjson.go \
+    pkg/apis/workflow/v1alpha1/event_types_easyjson.go \
+    pkg/apis/workflow/v1alpha1/info_easyjson.go \
+    pkg/apis/workflow/v1alpha1/version_types_easyjson.go \
+    pkg/apis/workflow/v1alpha1/workflow_template_types_easyjson.go \
+    pkg/apis/workflow/v1alpha1/workflow_types_easyjson.go \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
 	pkg/apiclient/event/event.swagger.json \
