@@ -333,3 +333,62 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 
 	})
 }
+
+var DAGWithMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: dag-mutex
+ namespace: default
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: mutex
+     - name: B
+       depends: A
+       template: mutex
+
+ - name: mutex
+   synchronization:
+     mutex:
+       name: welcome
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 0"]
+`
+
+func TestMutexInDAG(t *testing.T) {
+	assert := assert.New(t)
+
+	cancel, controller := newController()
+	defer cancel()
+	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
+	})
+	t.Run("MutexWithDAG", func(t *testing.T) {
+		wf := unmarshalWF(DAGWithMutex)
+		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
+		assert.NoError(err)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+		for _, node := range woc.wf.Status.Nodes {
+			if node.Name == "dag-mutex.A" {
+				assert.Equal(wfv1.NodePending, node.Phase)
+			}
+		}
+		assert.Equal(wfv1.NodeRunning, woc.wf.Status.Phase)
+		makePodsPhase(woc, v1.PodSucceeded)
+
+		woc1 := newWorkflowOperationCtx(woc.wf, controller)
+		woc1.operate()
+		for _, node := range woc1.wf.Status.Nodes {
+			if node.Name == "dag-mutex.B" {
+				assert.Nil(node.SynchronizationStatus)
+				assert.Equal(wfv1.NodePending, node.Phase)
+			}
+		}
+	})
+}

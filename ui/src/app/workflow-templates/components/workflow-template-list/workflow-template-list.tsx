@@ -42,7 +42,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {namespace: this.props.match.params.namespace};
+        this.state = {namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
@@ -74,7 +74,8 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 title='New Workflow Template'
                                 kind='WorkflowTemplate'
                                 upload={true}
-                                value={exampleWorkflowTemplate(this.namespace || 'default')}
+                                namespace={this.namespace || 'default'}
+                                value={exampleWorkflowTemplate()}
                                 onSubmit={wfTmpl =>
                                     services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)

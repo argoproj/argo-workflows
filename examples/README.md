@@ -1286,7 +1286,7 @@ spec:
           cpu: 100m
 ```
 
-DAG templates use the tasks prefix to refer to another task, for example `{{tasks.influx.ip}}`.
+Step templates use the `steps` prefix to refer to another step: for example `{{steps.influx.ip}}`. In DAG templates, the `tasks` prefix is used instead: for example `{{tasks.influx.ip}}`.
 
 ## Sidecars
 
@@ -1455,7 +1455,7 @@ spec:
   templates:
   - name: dind-sidecar-example
     container:
-      image: docker:17.10
+      image: docker:19.03.13
       command: [sh, -c]
       args: ["until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"]
       env:
@@ -1463,7 +1463,10 @@ spec:
         value: 127.0.0.1
     sidecars:
     - name: dind
-      image: docker:17.10-dind          # Docker already provides an image for running a Docker daemon
+      image: docker:19.03.13-dind          # Docker already provides an image for running a Docker daemon
+      env:
+        - name: DOCKER_TLS_CERTDIR         # Docker TLS env config
+          value: ""
       securityContext:
         privileged: true                # the Docker daemon can only run in a privileged container
       # mirrorVolumeMounts will mount the same volumes specified in the main container

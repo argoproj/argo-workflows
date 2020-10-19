@@ -184,7 +184,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 kind='Workflow'
                                 upload={true}
                                 editing={true}
-                                value={exampleWorkflow(this.state.namespace)}
+                                namespace={this.state.namespace || 'default'}
+                                value={exampleWorkflow()}
                                 onSubmit={wfValue =>
                                     services.workflows
                                         .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
@@ -314,6 +315,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             <div className='columns small-2'>STARTED</div>
                             <div className='columns small-2'>FINISHED</div>
                             <div className='columns small-1'>DURATION</div>
+                            <div className='columns small-1'>PROGRESS</div>
                             <div className='columns small-1'>DETAILS</div>
                         </div>
                     </div>

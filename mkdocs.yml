@@ -33,6 +33,7 @@ nav:
           - service-accounts.md
           - workflow-rbac.md
           - node-field-selector.md
+          - empty-dir.md
           - workflow-templates.md
           - cluster-workflow-templates.md
           - cron-workflows.md
@@ -42,6 +43,8 @@ nav:
           - artifact-repository-ref.md
           - resource-duration.md
           - estimated-duration.md
+          - workflow-pod-security-context.md
+          - progress.md
           - workflow-creator.md
           - synchronization.md
           - workflow-of-workflows.md
@@ -116,7 +119,6 @@ nav:
       - installation.md
       - Configuration:
           - managed-namespace.md
-          - service-accounts.md
           - configure-artifact-repository.md
           - workflow-controller-configmap.md
           - workflow-executors.md

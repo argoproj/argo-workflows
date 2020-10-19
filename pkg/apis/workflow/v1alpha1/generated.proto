@@ -634,6 +634,9 @@ message NodeStatus {
   // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 24;
 
+  // Progress to completion
+  optional string progress = 26;
+
   // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
   map<string, int64> resourcesDuration = 21;
 
@@ -1454,6 +1457,9 @@ message WorkflowStatus {
 
   // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 16;
+
+  // Progress to completion
+  optional string progress = 17;
 
   // A human readable message indicating details about why the workflow is in this condition.
   optional string message = 4;
