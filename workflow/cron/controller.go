@@ -124,7 +124,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
-	logCtx := log.WithField("cronworkflow", key)
+	logCtx := log.WithField("CronWorkflow", key)
 	logCtx.Infof("Processing %s", key)
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
