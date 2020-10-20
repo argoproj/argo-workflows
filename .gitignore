@@ -31,3 +31,4 @@ git-ask-pass.sh
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
 /site/
 /.brew_home
+/go-diagrams/
