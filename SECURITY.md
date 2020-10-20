@@ -14,4 +14,4 @@ Security vulnerabilities will be disclosed via [release notes](docs/releasing.md
 
 ## Vulnerability Scanning
 
-See [static code analysis](static-code-analysis.md).
+See [static code analysis](docs/static-code-analysis.md).
