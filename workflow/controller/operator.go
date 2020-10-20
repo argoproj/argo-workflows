@@ -46,6 +46,7 @@ import (
 	"github.com/argoproj/argo/v3/workflow/controller/estimation"
 	"github.com/argoproj/argo/v3/workflow/controller/indexes"
 	"github.com/argoproj/argo/v3/workflow/metrics"
+	"github.com/argoproj/argo/v3/workflow/progress"
 	argosync "github.com/argoproj/argo/v3/workflow/sync"
 	"github.com/argoproj/argo/v3/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo/v3/workflow/util"

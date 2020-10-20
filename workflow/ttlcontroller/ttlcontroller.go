@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/argoproj/argo/v3/config"
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
 	commonutil "github.com/argoproj/argo/v3/util"

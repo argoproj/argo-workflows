@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/argoproj/argo/v3/errors"
+	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/v3/workflow/common"
 	os_specific "github.com/argoproj/argo/v3/workflow/executor/os-specific"
 )
