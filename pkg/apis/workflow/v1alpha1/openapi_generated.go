@@ -2442,6 +2442,20 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
+					"enum": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enum holds a list of string values to choose from, for the actual value of the parameter",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
