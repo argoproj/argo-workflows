@@ -15,7 +15,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	t.Run("NotFound", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
-				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo/v3/not-found"},
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo/not-found"},
 			},
 		}, "/tmp/not-found")
 		if assert.Error(t, err) {
@@ -28,7 +28,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	t.Run("Found", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
-				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo/v3"},
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo"},
 			},
 		}, "/tmp/found")
 		if assert.NoError(t, err) {

@@ -52,7 +52,7 @@ status:
 `
 
 var expectedOut = `
-Conditions:
+Conditions:                    
 ✖ SubmissionError              Failed to submit Workflow: spec.templates[0].name: 'argosay!3' is invalid: name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character (e.g. My-name1-2, 123-NAME)`
 
 func TestPrintCronWorkflow(t *testing.T) {

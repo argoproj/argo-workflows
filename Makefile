@@ -476,7 +476,7 @@ smoke:
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor v3 dist/* ui/dist
+	rm -Rf test-results node_modules vendor dist/* ui/dist
 
 # swagger
 
@@ -491,7 +491,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
 	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.17.5/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
-		github.com/argoproj/argo/pkg/client github.com/argoproj/argo/pkg/apis \
+		github.com/argoproj/argo/v3/pkg/client github.com/argoproj/argo/v3/pkg/apis \
 		workflow:v1alpha1 \
 		--go-header-file ./hack/custom-boilerplate.go.txt
 

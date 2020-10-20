@@ -21,7 +21,7 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 	err := driver.Load(&wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
 			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argo/v3proj.git",
+				Repo:     "https://github.com/argoproj/argoproj.git",
 				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
 				Revision: "HEAD",
 				Depth:    &d,
@@ -52,7 +52,7 @@ func TestGitArtifactDriverLoad_HTTPS(t *testing.T) {
 	err = driver.Load(&wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
 			Git: &wfv1.GitArtifact{
-				Repo:     "https://github.com/argoproj/argo/v3.git",
+				Repo:     "https://github.com/argoproj/argo.git",
 				Fetch:    []string{"+refs/heads/*:refs/remotes/origin/*"},
 				Revision: "HEAD",
 				Depth:    &d,
