@@ -542,6 +542,13 @@ api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
+go-diagrams/diagram.dot: ./hack/diagram/main.go
+	rm -Rf go-diagrams
+	go run ./hack/diagram
+
+docs/assets/diagram.png: go-diagrams/diagram.dot
+	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
+
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docgen.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
