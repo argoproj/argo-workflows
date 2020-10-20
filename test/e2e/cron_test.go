@@ -292,7 +292,9 @@ spec:
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, 1, len(cronWf.Status.Active))
-				assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				if assert.NotNil(t, cronWf.Status.LastScheduledTime) {
+					assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+				}
 			})
 	})
 	s.Run("TestSuccessfulJobHistoryLimit", func() {

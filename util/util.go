@@ -83,6 +83,22 @@ func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	return resultParams
 }
 
+// MergeArtifacts merges artifact argument slices
+// Merge the slices based on arguments order (first is high priority).
+func MergeArtifacts(artifactSlices ...[]wfv1.Artifact) []wfv1.Artifact {
+	var result []wfv1.Artifact
+	alreadyMerged := make(map[string]bool)
+	for _, artifacts := range artifactSlices {
+		for _, item := range artifacts {
+			if !alreadyMerged[item.Name] {
+				result = append(result, item)
+				alreadyMerged[item.Name] = true
+			}
+		}
+	}
+	return result
+}
+
 func RecoverIndexFromNodeName(name string) int {
 	startIndex := strings.Index(name, "(")
 	endIndex := strings.Index(name, ":")
