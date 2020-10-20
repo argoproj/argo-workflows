@@ -740,6 +740,12 @@ func (s *CLISuite) TestTemplate() {
 			}
 		})
 	})
+	s.Run("DirLintWithInvalidWFT", func() {
+		s.Given().RunCli([]string{"template", "lint", "testdata/workflow-templates"}, func(t *testing.T, output string, err error) {
+			assert.Error(t, err)
+		})
+	})
+
 	s.Run("Create", func() {
 		s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
