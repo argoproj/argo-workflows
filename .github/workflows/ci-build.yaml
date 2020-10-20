@@ -61,10 +61,8 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false
           KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
       - name: Wait for Argo Server to be ready
         if: ${{ matrix.test != 'test' }}
@@ -123,7 +121,8 @@ jobs:
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
 
-          make codegen STATIC_FILES=false
+          # we use -B to force make to always make targets
+          make -B codegen STATIC_FILES=false
       - name: Make lint
         env:
           GOPATH: /home/runner/go

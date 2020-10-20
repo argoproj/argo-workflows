@@ -349,6 +349,7 @@ spec:
      - name: A
        template: mutex
      - name: B
+       depends: A
        template: mutex
 
  - name: mutex
@@ -361,37 +362,33 @@ spec:
 `
 
 func TestMutexInDAG(t *testing.T) {
-	_, controller := newController()
+	assert := assert.New(t)
+
+	cancel, controller := newController()
+	defer cancel()
 	controller.syncManager = sync.NewLockManager(GetSyncLimitFunc(controller.kubeclientset), func(key string) {
 	})
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := unmarshalWF(DAGWithMutex)
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
-		assert.NoError(t, err)
+		assert.NoError(err)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
-		err = woc.podReconciliation()
-		assert.NoError(t, err)
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Name == "dag-mutex.A" {
-				assert.Equal(t, wfv1.NodePending, node.Phase)
-			}
-			if node.Name == "dag-mutex.B" {
-				assert.NotNil(t, node.SynchronizationStatus)
-				assert.Equal(t, "default/Mutex/welcome", node.SynchronizationStatus.Waiting)
+				assert.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
+		assert.Equal(wfv1.NodeRunning, woc.wf.Status.Phase)
 		makePodsPhase(woc, v1.PodSucceeded)
-		err = woc.podReconciliation()
-		assert.NoError(t, err)
-		woc.operate()
-		for _, node := range woc.wf.Status.Nodes {
 
+		woc1 := newWorkflowOperationCtx(woc.wf, controller)
+		woc1.operate()
+		for _, node := range woc1.wf.Status.Nodes {
 			if node.Name == "dag-mutex.B" {
-				assert.Nil(t, node.SynchronizationStatus)
-				assert.Equal(t, wfv1.NodePending, node.Phase)
+				assert.Nil(node.SynchronizationStatus)
+				assert.Equal(wfv1.NodePending, node.Phase)
 			}
 		}
-
 	})
 }
