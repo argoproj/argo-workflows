@@ -24,6 +24,10 @@ func NewLintCommand() *cobra.Command {
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a file or directory of workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 			err := ServerSideLint(args, strict)
 			if err != nil {
 				log.Fatal(err)
