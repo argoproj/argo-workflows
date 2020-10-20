@@ -81,7 +81,11 @@ func ServerSideLint(args []string, strict bool) error {
 			}
 			return nil
 		}
-		return filepath.Walk(args[0], walkFunc)
+		err := filepath.Walk(args[0], walkFunc)
+		if err != nil {
+			log.Error(err)
+			invalid = true
+		}
 	} else {
 		for _, arg := range args {
 			wfTmpls, err := validate.ParseWfTmplFromFile(arg, strict)
