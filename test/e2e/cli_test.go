@@ -725,6 +725,14 @@ func (s *CLIWithServerSuite) TestWorkflowWatch() {
 }
 
 func (s *CLISuite) TestTemplate() {
+	s.Run("LintWithoutArgs", func() {
+		s.Given().RunCli([]string{"template", "lint"}, func(t *testing.T, output string, err error) {
+			if assert.Error(t, err) {
+				assert.Contains(t, output, "Usage:")
+			}
+		})
+	})
+
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
