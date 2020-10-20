@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/pointer"
 
+	"github.com/argoproj/argo/v3/config"
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/v3/test"

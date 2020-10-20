@@ -311,16 +311,14 @@ $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	trap 'rm -Rf vendor v3' EXIT
+	trap 'rm -Rf vendor' EXIT
 	[ -e vendor ] || go mod vendor
-	ln -sf . v3
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
 		--proto-import ./vendor 2>&1 | grep -v 'warning: Import .* is unused'
 	touch pkg/apis/workflow/v1alpha1/generated.proto
-	rm v3
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
