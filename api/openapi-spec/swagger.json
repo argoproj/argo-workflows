@@ -2307,7 +2307,7 @@
         "failFast": {
           "type": "boolean",
           "format": "boolean",
-          "title": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps,\nas soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed\nbefore failing the DAG itself.\nThe FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to\ncompletion (either success or failure), regardless of the failed outcomes of branches in the DAG.\nMore info and example about this feature at https://github.com/argoproj/argo/v3/issues/1442"
+          "title": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps,\nas soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed\nbefore failing the DAG itself.\nThe FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to\ncompletion (either success or failure), regardless of the failed outcomes of branches in the DAG.\nMore info and example about this feature at https://github.com/argoproj/argo/issues/1442"
         },
         "target": {
           "type": "string",
@@ -2924,6 +2924,13 @@
         "default": {
           "type": "string",
           "title": "Default is the default value to use for an input parameter if a value was not supplied"
+        },
+        "enum": {
+          "type": "array",
+          "title": "Enum holds a list of string values to choose from, for the actual value of the parameter",
+          "items": {
+            "type": "string"
+          }
         },
         "globalName": {
           "type": "string",
