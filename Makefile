@@ -79,17 +79,17 @@ ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo.version=$(VERSION) \
-  -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
-  -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
-  -X github.com/argoproj/argo.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo/v3.version=$(VERSION) \
+  -X github.com/argoproj/argo/v3.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo/v3.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo/v3.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo/v3.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
@@ -519,7 +519,6 @@ dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger
 api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
-	go test ./api/openapi-spec
 
 go-diagrams/diagram.dot: ./hack/diagram/main.go
 	rm -Rf go-diagrams
