@@ -2646,6 +2646,71 @@ func TestWorkflowTemplateLabels(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+const templateRefWithArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-artifact
+spec:
+  entrypoint: A
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: https://a.server.io/file
+  templates:
+  - name: A
+    inputs:
+      artifacts:
+      - name: binary-file
+        path: /usr/local/bin/binfile
+        mode: 0755
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+const wfWithWFTRefAndNoOwnArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithOutOwnArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndNoOwnArtifact)
+	assert.NoError(t, err)
+}
+
+const wfWithWFTRefAndOwnArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: http://localserver/file
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndOwnArtifactArgument)
+	assert.NoError(t, err)
+}
+
 var workflowTeamplateWithEnumValues = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
