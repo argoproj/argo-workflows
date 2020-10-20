@@ -74,7 +74,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) *Metrics {
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
 		workflows:          make(map[string][]string),
-		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 5.0, 10.0}),
+		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		workqueueMetrics:   make(map[string]prometheus.Metric),
