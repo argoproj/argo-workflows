@@ -13,23 +13,23 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
     * Most well-tested
     * Most popular
 * Least secure:
-    * It requires `priviledged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
+    * It requires `privileged` access to `docker.sock` of the host to be mounted which. Often rejected by Open Policy Agent (OPA) or your Pod Security Policy (PSP).
     * It can escape the privileges of the pod's service account
     * It cannot [`runAsNonRoot`](workflow-pod-security-context.md).
 * Most scalable:
     * It communicates directly with the local Docker daemon.
 * Artifacts:
-    * Output artifacts can be located on the base layer (e.g. `/tmp`).  
+    * Output artifacts can be located on the base layer (e.g. `/tmp`).
 * Configuration:
     * No additional configuration needed.
-  
+
 ## Kubelet (kubelet)
 
 * Reliability:
-    * Least well-tested 
+    * Least well-tested
     * Least popular
 * Secure
-    * No `priviledged` access 
+    * No `privileged` access
     * Cannot escape the privileges of the pod's service account
     * [`runAsNonRoot`](workflow-pod-security-context.md) - TBD, see [#4186](https://github.com/argoproj/argo/issues/4186)
 * Scalable:
@@ -45,7 +45,7 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
     * Well-tested
     * Popular
 * Secure:
-    * No `priviledged` access 
+    * No `privileged` access
     * Cannot escape the privileges of the pod's service account
     * Can [`runAsNonRoot`](workflow-pod-security-context.md)
 * Least scalable:
@@ -58,10 +58,10 @@ The executor to be used in your workflows can be changed in [the configmap](./wo
 ## Process Namespace Sharing (pns)
 
 * Reliability:
-    * Well-tested 
+    * Well-tested
     * Popular
 * Secure:
-    * No `priviledged` access 
+    * No `privileged` access
     * cannot escape the privileges of the pod's service account
     * Can [`runAsNonRoot`](workflow-pod-security-context.md), if you use volumes (e.g. [emptyDir](empty-dir.md)) for your output artifacts
 * Scalable:
