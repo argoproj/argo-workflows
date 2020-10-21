@@ -1097,36 +1097,36 @@ spec:
         arguments:
           parameters:
             - name: pvc-name
-              value: '{{ steps.generate-volume.outputs.parameters.pvc-name }}'
+              value: '{{steps.generate-volume.outputs.parameters.pvc-name}}'
     - - name: print
         template: print-message
         arguments:
           parameters:
             - name: pvc-name
-              value: '{{ steps.generate-volume.outputs.parameters.pvc-name }}'
+              value: '{{steps.generate-volume.outputs.parameters.pvc-name}}'
 
   - name: generate-volume
     inputs:
       parameters:
         - name: pvc-size
-      resource:
-        action: create
-        setOwnerReference: true
-        manifest: |
-          apiVersion: v1
-          kind: PersistentVolumeClaim
-          metadata:
-            generateName: pvc-example-
-          spec:
-            accessModes: ['ReadWriteOnce', 'ReadOnlyMany']
-            resources:
-              requests:
-                storage: '{{inputs.parameters.pvc-size}}'
-      outputs:
-        parameters:
-          - name: pvc-name
-            valueFrom:
-              jsonPath: '{.metadata.name}'
+    resource:
+      action: create
+      setOwnerReference: true
+      manifest: |
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          generateName: pvc-example-
+        spec:
+          accessModes: ['ReadWriteOnce', 'ReadOnlyMany']
+          resources:
+            requests:
+              storage: '{{inputs.parameters.pvc-size}}'
+    outputs:
+      parameters:
+        - name: pvc-name
+          valueFrom:
+            jsonPath: '{.metadata.name}'
 
   - name: whalesay
     inputs:
