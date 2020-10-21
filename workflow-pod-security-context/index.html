@@ -1922,7 +1922,7 @@
                 <h1 id="workflow-pod-security-context">Workflow Pod Security Context<a class="headerlink" href="#workflow-pod-security-context" title="Permanent link">&para;</a></h1>
 <p>By default, a workflow pods run as root. The Docker executor even requires <code>privileged: true</code>.</p>
 <p>For other <a href="../workflow-executors/">workflow executors</a>, you can run your workflow pods more securely by configuring the <a href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/">security context</a> for your workflow pod.</p>
-<p>This is likely to be necessary if you have a <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">pod security policy</a>. You probably can't use the Docker executor if you have a pod security policy. </p>
+<p>This is likely to be necessary if you have a <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">pod security policy</a>. You probably can't use the Docker executor if you have a pod security policy.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Workflow</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1931,16 +1931,16 @@
   <span class="nt">securityContext</span><span class="p">:</span>
     <span class="nt">runAsNonRoot</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
     <span class="nt">runAsUser</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8737</span> <span class="c1">#; any non-root user</span>
-    <span class="nt">priviledged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">privileged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
 </code></pre></div>
 <p>You can configure this globally using <a href="../default-workflow-specs/">workflow defaults</a>.</p>
 <div class="admonition warning">
 <p class="admonition-title">It is easy to make a workflow need root unintentionally</p>
-<p>You may find that user's workflows have been written to require root with seemingly innocuous code. E.g. <code>mkdir /my-dir</code> would require root. </p>
+<p>You may find that user's workflows have been written to require root with seemingly innocuous code. E.g. <code>mkdir /my-dir</code> would require root.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">You must use volumes for output artifacts</p>
-<p>If you use <code>runAsNonRoot</code> - you cannot have output artifacts on base layer (e.g. <code>/tmp</code>). You must use a volume (e.g. <a href="../empty-dir/">empty dir</a>).  </p>
+<p>If you use <code>runAsNonRoot</code> - you cannot have output artifacts on base layer (e.g. <code>/tmp</code>). You must use a volume (e.g. <a href="../empty-dir/">empty dir</a>).</p>
 </div>
                 
                   
