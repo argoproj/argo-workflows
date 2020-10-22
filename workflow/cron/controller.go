@@ -135,8 +135,8 @@ func (cc *Controller) processNextCronItem() bool {
 	if !exists {
 		if entryId, ok := cc.nameEntryIDMap.Load(key.(string)); ok {
 			logCtx.Infof("Deleting '%s'", key)
-			cc.cron.Remove(entryId.(cron.EntryID))
 			cc.nameEntryIDMap.Delete(key.(string))
+			cc.cron.Remove(entryId.(cron.EntryID))
 		}
 		return true
 	}
@@ -170,8 +170,8 @@ func (cc *Controller) processNextCronItem() bool {
 
 	// The job is currently scheduled, remove it and re add it.
 	if entryId, ok := cc.nameEntryIDMap.Load(key.(string)); ok {
-		cc.cron.Remove(entryId.(cron.EntryID))
 		cc.nameEntryIDMap.Delete(key.(string))
+		cc.cron.Remove(entryId.(cron.EntryID))
 	}
 
 	cronSchedule := cronWf.Spec.Schedule
