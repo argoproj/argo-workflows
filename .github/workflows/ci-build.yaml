@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ["test", "test-e2e", "test-e2e-cron"]
+        test: ["test", "smoke", "test-e2e", "test-e2e-cron"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -74,7 +74,7 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
       - name: Upload logs
-        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
+        if: ${{ always() && matrix.test != 'test' }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
