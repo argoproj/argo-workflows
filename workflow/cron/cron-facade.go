@@ -8,7 +8,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-// cronFacade allows the client to operate using key rather than cron.EntryID, 
+// cronFacade allows the client to operate using key rather than cron.EntryID,
 // as well as providing sync guarantees
 type cronFacade struct {
 	mu       sync.Mutex
