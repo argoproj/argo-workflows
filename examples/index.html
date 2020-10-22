@@ -3296,36 +3296,36 @@ This can be useful workflows that generate volumes using a <code>resource</code>
         <span class="nt">arguments</span><span class="p">:</span>
           <span class="nt">parameters</span><span class="p">:</span>
             <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">pvc-name</span>
-              <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;{{</span><span class="nv"> </span><span class="s">steps.generate-volume.outputs.parameters.pvc-name</span><span class="nv"> </span><span class="s">}}&#39;</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;{{steps.generate-volume.outputs.parameters.pvc-name}}&#39;</span>
     <span class="p p-Indicator">-</span> <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">print</span>
         <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">print-message</span>
         <span class="nt">arguments</span><span class="p">:</span>
           <span class="nt">parameters</span><span class="p">:</span>
             <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">pvc-name</span>
-              <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;{{</span><span class="nv"> </span><span class="s">steps.generate-volume.outputs.parameters.pvc-name</span><span class="nv"> </span><span class="s">}}&#39;</span>
+              <span class="nt">value</span><span class="p">:</span> <span class="s">&#39;{{steps.generate-volume.outputs.parameters.pvc-name}}&#39;</span>
 
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">generate-volume</span>
     <span class="nt">inputs</span><span class="p">:</span>
       <span class="nt">parameters</span><span class="p">:</span>
         <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">pvc-size</span>
-      <span class="nt">resource</span><span class="p">:</span>
-        <span class="nt">action</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">create</span>
-        <span class="nt">setOwnerReference</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-        <span class="nt">manifest</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-          <span class="no">apiVersion: v1</span>
-          <span class="no">kind: PersistentVolumeClaim</span>
-          <span class="no">metadata:</span>
-            <span class="no">generateName: pvc-example-</span>
-          <span class="no">spec:</span>
-            <span class="no">accessModes: [&#39;ReadWriteOnce&#39;, &#39;ReadOnlyMany&#39;]</span>
-            <span class="no">resources:</span>
-              <span class="no">requests:</span>
-                <span class="no">storage: &#39;{{inputs.parameters.pvc-size}}&#39;</span>
-      <span class="nt">outputs</span><span class="p">:</span>
-        <span class="nt">parameters</span><span class="p">:</span>
-          <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">pvc-name</span>
-            <span class="nt">valueFrom</span><span class="p">:</span>
-              <span class="nt">jsonPath</span><span class="p">:</span> <span class="s">&#39;{.metadata.name}&#39;</span>
+    <span class="nt">resource</span><span class="p">:</span>
+      <span class="nt">action</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">create</span>
+      <span class="nt">setOwnerReference</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+      <span class="nt">manifest</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+        <span class="no">apiVersion: v1</span>
+        <span class="no">kind: PersistentVolumeClaim</span>
+        <span class="no">metadata:</span>
+          <span class="no">generateName: pvc-example-</span>
+        <span class="no">spec:</span>
+          <span class="no">accessModes: [&#39;ReadWriteOnce&#39;, &#39;ReadOnlyMany&#39;]</span>
+          <span class="no">resources:</span>
+            <span class="no">requests:</span>
+              <span class="no">storage: &#39;{{inputs.parameters.pvc-size}}&#39;</span>
+    <span class="nt">outputs</span><span class="p">:</span>
+      <span class="nt">parameters</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">pvc-name</span>
+          <span class="nt">valueFrom</span><span class="p">:</span>
+            <span class="nt">jsonPath</span><span class="p">:</span> <span class="s">&#39;{.metadata.name}&#39;</span>
 
   <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">whalesay</span>
     <span class="nt">inputs</span><span class="p">:</span>
