@@ -374,6 +374,9 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
 			log.Infof("No compression strategy needed. Staging skipped")
+			if !argofile.Exists(mountedArtPath) {
+				return "", "", errors.Errorf(errors.CodeNotFound, "%s no such file or directory", art.Path)
+			}
 			return fileName, mountedArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)

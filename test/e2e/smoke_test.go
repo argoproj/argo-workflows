@@ -73,9 +73,6 @@ func (s *SmokeSuite) TestWorkflowTemplateBasic() {
 		WaitForWorkflow(60 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			output, err := fixtures.Exec("kubectl", "get", "pods", "-oyaml")
-			assert.NoError(t, err)
-			println(output)
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
