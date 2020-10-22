@@ -35,7 +35,7 @@ const defaultTimeout = 30 * time.Second
 
 type E2ESuite struct {
 	suite.Suite
-	Config            config.Config
+	Config            *config.Config
 	Persistence       *Persistence
 	RestConfig        *rest.Config
 	wfClient          v1alpha1.WorkflowInterface
@@ -56,7 +56,7 @@ func (s *E2ESuite) SetupSuite() {
 	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient, config.EmptyConfigFunc)
 	c, err := configController.Get()
 	s.CheckError(err)
-	s.Config = c.(config.Config)
+	s.Config = c.(*config.Config)
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
