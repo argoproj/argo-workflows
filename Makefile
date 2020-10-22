@@ -385,10 +385,7 @@ endif
 test: server/static/files.go
 	env KUBECONFIG=/dev/null go test ./...
 
-dist/$(E2E_EXECUTOR):
-	echo $(E2E_EXECUTOR) > dist/$(E2E_EXECUTOR)
-
-dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize dist/$(E2E_EXECUTOR)
+dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
 	kustomize build --load_restrictor=none test/e2e/manifests/$(PROFILE) | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(PROFILE).yaml
 
