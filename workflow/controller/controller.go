@@ -61,9 +61,9 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
-	configController config.Controller
+	configController c.Controller
 	// Config is the workflow controller's configuration
-	Config config.Config
+	Config c.Config
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -125,7 +125,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
+		configController:           c.NewController(namespace, configMap, kubeclientset, c.EmptyConfigFunc),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
@@ -148,7 +148,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *c.Config {
 		return &wfc.Config
 	})
 	err := ttlCtrl.Run(ctx.Done())
@@ -419,7 +419,7 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 		return
 	}
 	ttl := wfc.Config.Persistence.ArchiveTTL
-	if ttl == config.TTL(0) {
+	if ttl == c.TTL(0) {
 		log.Info("Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
 	}

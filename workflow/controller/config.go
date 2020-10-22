@@ -16,7 +16,7 @@ import (
 )
 
 func (wfc *WorkflowController) updateConfig(v interface{}) error {
-	config := v.(*config.Config)
+	config := v.(*c.Config)
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
 		return err

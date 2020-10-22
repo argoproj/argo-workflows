@@ -15,7 +15,7 @@ func TestUpdateConfig(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	controller.throttler = sync.NewThrottler(0, workqueue.NewNamedRateLimitingQueue(nil, ""))
-	err := controller.updateConfig(&config.Config{ExecutorImage: "argoexec:latest"})
+	err := controller.updateConfig(&c.Config{ExecutorImage: "argoexec:latest"})
 	assert.NoError(t, err)
 	assert.NotNil(t, controller.Config)
 	assert.NotNil(t, controller.archiveLabelSelector)

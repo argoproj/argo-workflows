@@ -138,7 +138,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 	}
 	kube := fake.NewSimpleClientset()
 	controller := &WorkflowController{
-		Config: config.Config{
+		Config: c.Config{
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:        kube,

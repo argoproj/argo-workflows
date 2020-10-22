@@ -2349,7 +2349,7 @@ spec:
 func TestResolveIOPathPlaceholders(t *testing.T) {
 	wf := unmarshalWF(ioPathPlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(c.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2379,7 +2379,7 @@ spec:
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	wf := unmarshalWF(outputValuePlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(c.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2417,7 +2417,7 @@ spec:
 func TestResolvePodNameInRetries(t *testing.T) {
 	wf := unmarshalWF(podNameInRetries)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(c.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -3686,7 +3686,7 @@ spec:
 func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(c.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -4100,14 +4100,14 @@ func TestControllerReferenceMode(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	cancel, controller := newController()
 	defer cancel()
-	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
-	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
+	controller.Config.WorkflowRestrictions = &c.WorkflowRestrictions{}
+	controller.Config.WorkflowRestrictions.TemplateReferencing = c.TemplateReferencingStrict
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflows must use workflowTemplateRef to be executed when the controller is in reference mode", woc.wf.Status.Message)
 
-	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
+	controller.Config.WorkflowRestrictions.TemplateReferencing = c.TemplateReferencingSecure
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
@@ -4124,8 +4124,8 @@ func TestValidReferenceMode(t *testing.T) {
 	wfTmpl := test.LoadTestWorkflowTemplate("testdata/workflow-template-submittable.yaml")
 	cancel, controller := newController(wf, wfTmpl)
 	defer cancel()
-	controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{}
-	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingSecure
+	controller.Config.WorkflowRestrictions = &c.WorkflowRestrictions{}
+	controller.Config.WorkflowRestrictions.TemplateReferencing = c.TemplateReferencingSecure
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
@@ -4137,7 +4137,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	assert.Equal(t, "workflowTemplateRef reference may not change during execution when the controller is in reference mode", woc.wf.Status.Message)
 
-	controller.Config.WorkflowRestrictions.TemplateReferencing = config.TemplateReferencingStrict
+	controller.Config.WorkflowRestrictions.TemplateReferencing = c.TemplateReferencingStrict
 	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
