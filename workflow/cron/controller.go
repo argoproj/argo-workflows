@@ -239,9 +239,10 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
 	var woc *cronWfOperationCtx
 	if entryId, ok := cc.nameEntryIDMap.Load(nameEntryIdMapKey); ok {
-		woc, ok = cc.cron.Entry(entryId.(cron.EntryID)).Job.(*cronWfOperationCtx)
+		job := cc.cron.Entry(entryId.(cron.EntryID)).Job
+		woc, ok = job.(*cronWfOperationCtx)
 		if !ok {
-			log.Errorf("Parent CronWorkflow '%s' is malformed", nameEntryIdMapKey)
+			log.Warnf("Parent CronWorkflow's job '%s' type must be *cronWfOperationCtx, but is: %v", nameEntryIdMapKey, reflect.TypeOf(job))
 			return true
 		}
 	} else {
