@@ -3214,6 +3214,7 @@ func (woc wfOperationCtx) fetchWFTSpec(wf *wfv1.Workflow) (wfv1.WorkflowSpecHold
 	if wf.Spec.WorkflowTemplateRef == nil {
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
+	executionParameters.Artifacts = util.MergeArtifacts(executionParameters.Artifacts, woc.execWf.Spec.Arguments.Artifacts)
 
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error

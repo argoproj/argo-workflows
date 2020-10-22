@@ -2645,3 +2645,179 @@ func TestWorkflowTemplateLabels(t *testing.T) {
 	err := validateWorkflowTemplate(testWorkflowTemplateLabels)
 	assert.NoError(t, err)
 }
+
+const templateRefWithArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-artifact
+spec:
+  entrypoint: A
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: https://a.server.io/file
+  templates:
+  - name: A
+    inputs:
+      artifacts:
+      - name: binary-file
+        path: /usr/local/bin/binfile
+        mode: 0755
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+const wfWithWFTRefAndNoOwnArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithOutOwnArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndNoOwnArtifact)
+	assert.NoError(t, err)
+}
+
+const wfWithWFTRefAndOwnArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: http://localserver/file
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndOwnArtifactArgument)
+	assert.NoError(t, err)
+}
+
+var workflowTeamplateWithEnumValues = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+            - one
+            - two
+            - three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+var workflowTemplateWithEmptyEnumList = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum: []
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+var workflowTemplateWithArgumentValueNotFromEnumList = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+            -   two
+            -   three
+            -   four
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+func TestWorkflowTemplateWithEnumValue(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues)
+	assert.NoError(t, err)
+}
+
+func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList)
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+}
+
+func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList)
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+}
