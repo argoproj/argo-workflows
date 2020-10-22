@@ -157,3 +157,17 @@ func TestNestedReplaceString(t *testing.T) {
 		}
 	}
 }
+
+func TestReplaceStringWithWhiteSpace(t *testing.T) {
+
+	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+
+	test := `{{ inputs.parameters.message }}`
+	fstTmpl, err := fasttemplate.NewTemplate(test, "{{", "}}")
+	if assert.NoError(t, err) {
+		replacement, err := Replace(fstTmpl, replaceMap, true)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "hello world", replacement)
+		}
+	}
+}

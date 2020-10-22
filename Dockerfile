@@ -124,6 +124,7 @@ ENTRYPOINT [ "argoexec" ]
 # workflow-controller
 ####################################################################################################
 FROM scratch as workflow-controller
+USER 8737
 # Add timezone data
 COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-linux-* /bin/workflow-controller
@@ -133,6 +134,7 @@ ENTRYPOINT [ "workflow-controller" ]
 # argocli
 ####################################################################################################
 FROM scratch as argocli
+USER 8737
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt

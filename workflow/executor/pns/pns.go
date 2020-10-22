@@ -392,21 +392,38 @@ func parseContainerID(pid int) (string, error) {
 	defer func() { _ = cgroupFile.Close() }()
 	sc := bufio.NewScanner(cgroupFile)
 	for sc.Scan() {
-		// See https://www.systutorials.com/docs/linux/man/5-proc/ for /proc/XX/cgroup format. e.g.:
-		// 5:cpuacct,cpu,cpuset:/daemons
 		line := sc.Text()
 		log.Debugf("pid %d: %s", pid, line)
-		parts := strings.Split(line, "/")
-		if len(parts) > 1 {
-			if containerID := parts[len(parts)-1]; containerID != "" {
-				// need to check for empty string because the line may look like: 5:rdma:/
-
-				// for crio we need to get rid of "crio-" prefix and ".scope" suffix
-				// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
-				containerID := strings.TrimSuffix(strings.TrimPrefix(containerID, "crio-"), ".scope")
-				return containerID, nil
-			}
+		containerID := parseContainerIDFromCgroupLine(line)
+		if containerID != "" {
+			return containerID, nil
 		}
 	}
 	return "", errors.InternalErrorf("Failed to parse container ID from %s", cgroupPath)
+}
+
+func parseContainerIDFromCgroupLine(line string) string {
+	// See https://www.systutorials.com/docs/linux/man/5-proc/ for /proc/XX/cgroup format. e.g.:
+	// 5:cpuacct,cpu,cpuset:/daemons
+	parts := strings.Split(line, "/")
+	if len(parts) > 1 {
+		if containerID := parts[len(parts)-1]; containerID != "" {
+			// need to check for empty string because the line may look like: 5:rdma:/
+
+			// for crio we need to get rid of "crio-" prefix and ".scope" suffix
+			// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
+			containerID := strings.TrimSuffix(strings.TrimPrefix(containerID, "crio-"), ".scope")
+
+			// for compatibility with cri-containerd record format when using systemd cgroup path
+			// example record in /proc/{pid}/cgroup:
+			// 9:cpuset:/kubepods-besteffort-pod30556cce_0f92_11eb_b36d_02623cf324c8.slice:cri-containerd:c688c856b21cfb29c1dbf6c14793435e44a1299dfc12add33283239bffed2620
+			if strings.Contains(containerID, "cri-containerd") {
+				strList := strings.Split(containerID, ":")
+				containerID = strList[len(strList)-1]
+				containerID = strings.TrimPrefix(containerID, "cri-containerd-")
+			}
+			return containerID
+		}
+	}
+	return ""
 }
