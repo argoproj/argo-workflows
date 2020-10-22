@@ -106,7 +106,7 @@ jobs:
           GOPATH: /home/runner/go
         run: make ${{ matrix.test }}
       - name: Upload logs
-        if: ${{ failure() }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
