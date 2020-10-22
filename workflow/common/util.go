@@ -269,11 +269,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	}
 
 	// Performs substitutions of input artifacts
-	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
-	for i, inArt := range newTmpl.Inputs.Artifacts {
+	artifacts := newTmpl.Inputs.Artifacts
+	for i, inArt := range artifacts {
 		// if artifact has hard-wired location, we prefer that
-		if inArt.HasLocation() {
-			newInputArtifacts[i] = inArt
+		supplied, _ := inArt.HasLocationOrKey()
+		if supplied {
 			continue
 		}
 		argArt := args.GetArtifactByName(inArt.Name)
@@ -287,15 +287,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			}
 		}
 		if argArt != nil {
-			argArt.Path = inArt.Path
-			argArt.Mode = inArt.Mode
-			argArt.RecurseMode = inArt.RecurseMode
-			newInputArtifacts[i] = *argArt
-		} else {
-			newInputArtifacts[i] = inArt
+			artifacts[i] = *argArt
+			artifacts[i].Path = inArt.Path
+			artifacts[i].Mode = inArt.Mode
+			artifacts[i].RecurseMode = inArt.RecurseMode
 		}
 	}
-	newTmpl.Inputs.Artifacts = newInputArtifacts
 
 	return SubstituteParams(newTmpl, globalParams, localParams)
 }

@@ -1867,16 +1867,12 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
 	wf := unmarshalWF(testDagOptionalInputArtifacts)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	optionalInputArtifactsNode := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
 	if assert.NotNil(t, optionalInputArtifactsNode) {
 		assert.Equal(t, wfv1.NodePending, optionalInputArtifactsNode.Phase)

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"net/url"
+	"path"
 	"reflect"
 	"sort"
 	"strings"
@@ -789,22 +791,6 @@ type ZipStrategy struct{}
 // save/load the directory appropriately.
 type NoneStrategy struct{}
 
-// ArtifactLocationType is the type of artifact location
-type ArtifactLocationType string
-
-// ArtifactLocationType
-const (
-	ArtifactLocationS3          ArtifactLocationType = "S3"
-	ArtifactLocationGit         ArtifactLocationType = "Git"
-	ArtifactLocationHTTP        ArtifactLocationType = "HTTP"
-	ArtifactLocationArtifactory ArtifactLocationType = "Artifactory"
-	ArtifactLocationHDFS        ArtifactLocationType = "HDFS"
-	ArtifactLocationRaw         ArtifactLocationType = "Raw"
-	ArtifactLocationOSS         ArtifactLocationType = "OSS"
-	ArtifactLocationGCS         ArtifactLocationType = "GCS"
-	ArtifactLocationUnknown     ArtifactLocationType = ""
-)
-
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -838,54 +824,139 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-// HasLocation whether or not an artifact has a location defined
-func (a *ArtifactLocation) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+func (a *ArtifactLocation) HasLocationOrKey() (bool, error) {
+	if a.HasLocation() {
+		return true, nil
+	}
+	return a.HasKey()
 }
 
-func (a *ArtifactLocation) GetType() ArtifactLocationType {
-
-	if a.S3 != nil {
-		return ArtifactLocationS3
+// HasKey returns whether or not an artifact has a key. They may or may not also HasLocation.
+func (a *ArtifactLocation) HasKey() (bool, error) {
+	if a == nil {
+		return false, nil
 	}
-
-	if a.Git != nil {
-		return ArtifactLocationGit
+	switch a.Get().(type) {
+	case *GitArtifact, *HTTPArtifact, *RawArtifact:
+		return false, nil
+	default:
+		key, err := a.GetKey()
+		return key != "", err
 	}
+}
 
-	if a.HTTP != nil {
-		return ArtifactLocationHTTP
+func (a *ArtifactLocation) GetKey() (string, error) {
+	switch v := a.Get().(type) {
+	case *ArtifactoryArtifact:
+		u, err := url.Parse(v.URL)
+		if err != nil {
+			return "", err
+		}
+		return u.Path, nil
+	case *GCSArtifact:
+		return v.Key, nil
+	case *HDFSArtifact:
+		return v.Path, nil
+	case *HTTPArtifact:
+		u, err := url.Parse(v.URL)
+		if err != nil {
+			return "", err
+		}
+		return u.Path, nil
+	case *OSSArtifact:
+		return v.Key, nil
+	case *S3Artifact:
+		return v.Key, nil
+	default:
+		return "", fmt.Errorf("get key not supported for type: %v", reflect.TypeOf(v))
 	}
+}
 
+// set the key to a new value, use path.Join to combine items
+func (a *ArtifactLocation) SetKey(k string) error {
+	switch v := a.Get().(type) {
+	case *ArtifactoryArtifact:
+		u, err := url.Parse(v.URL)
+		if err != nil {
+			return err
+		}
+		u.Path = k
+		v.URL = u.String()
+	case *GCSArtifact:
+		v.Key = k
+	case *HDFSArtifact:
+		v.Path = k
+	case *HTTPArtifact:
+		u, err := url.Parse(v.URL)
+		if err != nil {
+			return err
+		}
+		u.Path = k
+		v.URL = u.String()
+	case *OSSArtifact:
+		v.Key = k
+	case *S3Artifact:
+		v.Key = k
+	default:
+		return fmt.Errorf("set key not supported for type: %v", reflect.TypeOf(v))
+	}
+	return nil
+}
+
+func (a *ArtifactLocation) AppendToKey(x string) error {
+	key, err := a.GetKey()
+	if err != nil {
+		return err
+	}
+	return a.SetKey(path.Join(key, x))
+}
+
+// HasLocation whether or not an artifact has a *full* location defined
+// An artifact that has a location implicitly has a key (i.e. HasKey() == true).
+func (a *ArtifactLocation) HasLocation() bool {
+	return a != nil && (a.Artifactory.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.GCS.HasLocation() ||
+		a.HDFS.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.S3.HasLocation())
+}
+
+func (a *ArtifactLocation) Get() interface{} {
+	if a == nil {
+		return nil
+	}
 	if a.Artifactory != nil {
-		return ArtifactLocationArtifactory
+		return a.Artifactory
 	}
-
-	if a.HDFS != nil {
-		return ArtifactLocationHDFS
+	if a.Git != nil {
+		return a.Git
 	}
-
-	if a.Raw != nil {
-		return ArtifactLocationRaw
-	}
-
-	if a.OSS != nil {
-		return ArtifactLocationOSS
-	}
-
 	if a.GCS != nil {
-		return ArtifactLocationGCS
+		return a.GCS
 	}
+	if a.HDFS != nil {
+		return a.HDFS
+	}
+	if a.HTTP != nil {
+		return a.HTTP
+	}
+	if a.OSS != nil {
+		return a.OSS
+	}
+	if a.Raw != nil {
+		return a.Raw
+	}
+	if a.S3 != nil {
+		return a.S3
+	}
+	return nil
+}
 
-	return ArtifactLocationUnknown
-
+func (a *ArtifactLocation) IsArchiveLogs() bool {
+	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
 type ArtifactRepositoryRef struct {
@@ -1569,10 +1640,10 @@ func (n NodeStatus) GetDuration() time.Duration {
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// Region contains the optional bucket region
 	Region string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
@@ -1581,10 +1652,10 @@ type S3Bucket struct {
 	Insecure *bool `json:"insecure,omitempty" protobuf:"varint,4,opt,name=insecure"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,5,opt,name=accessKeySecret"`
+	AccessKeySecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,5,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,6,opt,name=secretKeySecret"`
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
@@ -1688,7 +1759,7 @@ type HDFSConfig struct {
 	HDFSKrbConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSKrbConfig"`
 
 	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses" protobuf:"bytes,2,rep,name=addresses"`
+	Addresses []string `json:"addresses,omitempty" protobuf:"bytes,2,rep,name=addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
@@ -1758,10 +1829,10 @@ func (h *HTTPArtifact) HasLocation() bool {
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
-	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+	ServiceAccountKeySecret *apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
 }
 
 // GCSArtifact is the location of a GCS artifact
@@ -1779,16 +1850,16 @@ func (g *GCSArtifact) HasLocation() bool {
 // OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+	AccessKeySecret *apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+	SecretKeySecret *apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2042,6 +2113,26 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
+}
+
+func (a *Artifact) SetType(x interface{}) error {
+	switch v := x.(type) {
+	case *ArtifactoryArtifact:
+		a.Artifactory = &ArtifactoryArtifact{}
+	case *GCSArtifact:
+		a.GCS = &GCSArtifact{}
+	case *HDFSArtifact:
+		a.HDFS = &HDFSArtifact{}
+	case *HTTPArtifact:
+		a.HTTP = &HTTPArtifact{}
+	case *OSSArtifact:
+		a.OSS = &OSSArtifact{}
+	case *S3Artifact:
+		a.S3 = &S3Artifact{}
+	default:
+		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
+	}
+	return nil
 }
 
 // GetTemplateByName retrieves a defined template by its name

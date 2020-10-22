@@ -1,11 +1,16 @@
 package config
 
 import (
+	"fmt"
+	"path"
+	"reflect"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 var EmptyConfigFunc = func() interface{} { return &Config{} }
@@ -131,6 +136,73 @@ type ArtifactRepository struct {
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (a *ArtifactRepository) Get() interface{} {
+	if a == nil {
+		return nil
+	}
+	if a.Artifactory != nil {
+		return a.Artifactory
+	}
+	if a.HDFS != nil {
+		return a.HDFS
+	}
+	if a.GCS != nil {
+		return a.GCS
+	}
+	if a.OSS != nil {
+		return a.OSS
+	}
+	if a.S3 != nil {
+		return a.S3
+	}
+	return nil
+}
+
+// ToArtifactLocation returns the artifact location set with default template key:
+// key = `{{workflow.name}}/{{pod.name}}`
+func (a *ArtifactRepository) ToArtifactLocation() (*wfv1.ArtifactLocation, error) {
+	if a == nil {
+		return nil, nil
+	}
+	l := &wfv1.ArtifactLocation{ArchiveLogs: a.ArchiveLogs}
+	switch r := a.Get().(type) {
+	case *ArtifactoryArtifactRepository:
+		u := ""
+		if r.RepoURL != "" {
+			u = r.RepoURL + "/"
+		}
+		u = fmt.Sprintf("%s%s", u, common.DefaultArchivePattern)
+		l.Artifactory = &wfv1.ArtifactoryArtifact{ArtifactoryAuth: r.ArtifactoryAuth, URL: u}
+	case *GCSArtifactRepository:
+		k := r.KeyFormat
+		if k == "" {
+			k = common.DefaultArchivePattern
+		}
+		l.GCS = &wfv1.GCSArtifact{GCSBucket: r.GCSBucket, Key: k}
+	case *HDFSArtifactRepository:
+		p := r.PathFormat
+		if p == "" {
+			p = common.DefaultArchivePattern
+		}
+		l.HDFS = &wfv1.HDFSArtifact{HDFSConfig: r.HDFSConfig, Path: p, Force: r.Force}
+	case *OSSArtifactRepository:
+		k := r.KeyFormat
+		if k == "" {
+			k = common.DefaultArchivePattern
+		}
+		l.OSS = &wfv1.OSSArtifact{OSSBucket: r.OSSBucket, Key: k}
+	case *S3ArtifactRepository:
+		k := r.KeyFormat
+		if k == "" {
+			k = path.Join(r.KeyPrefix, common.DefaultArchivePattern)
+		}
+		l.S3 = &wfv1.S3Artifact{S3Bucket: r.S3Bucket, Key: k}
+	default:
+		return nil, fmt.Errorf("cannot convert to artifact location: %v", reflect.TypeOf(r))
+	}
+	return l, nil
 }
 
 type PersistConfig struct {

@@ -369,7 +369,6 @@ spec:
                             - key
                             type: object
                         required:
-                        - bucket
                         - key
                         type: object
                       git:
@@ -477,7 +476,6 @@ spec:
                           path:
                             type: string
                         required:
-                        - addresses
                         - path
                         type: object
                       http:
@@ -537,11 +535,7 @@ spec:
                             - key
                             type: object
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                       path:
                         type: string
@@ -593,11 +587,7 @@ spec:
                           useSDKCreds:
                             type: boolean
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                       subPath:
                         type: string
@@ -1244,7 +1234,6 @@ spec:
                             - key
                             type: object
                         required:
-                        - bucket
                         - key
                         type: object
                       git:
@@ -1350,7 +1339,6 @@ spec:
                           path:
                             type: string
                         required:
-                        - addresses
                         - path
                         type: object
                       http:
@@ -1403,11 +1391,7 @@ spec:
                             - key
                             type: object
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                       raw:
                         properties:
@@ -1455,11 +1439,7 @@ spec:
                           useSDKCreds:
                             type: boolean
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                     type: object
                   arguments:
@@ -1531,7 +1511,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -1639,7 +1618,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -1699,11 +1677,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -1755,11 +1729,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -2420,7 +2390,6 @@ spec:
                                             - key
                                             type: object
                                         required:
-                                        - bucket
                                         - key
                                         type: object
                                       git:
@@ -2528,7 +2497,6 @@ spec:
                                           path:
                                             type: string
                                         required:
-                                        - addresses
                                         - path
                                         type: object
                                       http:
@@ -2588,11 +2556,7 @@ spec:
                                             - key
                                             type: object
                                         required:
-                                        - accessKeySecret
-                                        - bucket
-                                        - endpoint
                                         - key
-                                        - secretKeySecret
                                         type: object
                                       path:
                                         type: string
@@ -2644,11 +2608,7 @@ spec:
                                           useSDKCreds:
                                             type: boolean
                                         required:
-                                        - accessKeySecret
-                                        - bucket
-                                        - endpoint
                                         - key
-                                        - secretKeySecret
                                         type: object
                                       subPath:
                                         type: string
@@ -3382,7 +3342,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -3490,7 +3449,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -3550,11 +3508,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -3606,11 +3560,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -3828,7 +3778,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -3936,7 +3885,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -3996,11 +3944,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -4052,11 +3996,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -6814,7 +6754,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -6922,7 +6861,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -6982,11 +6920,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -7038,11 +6972,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -7177,7 +7107,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -7285,7 +7214,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -7345,11 +7273,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -7401,11 +7325,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -7571,7 +7491,6 @@ spec:
                             - key
                             type: object
                         required:
-                        - bucket
                         - key
                         type: object
                       git:
@@ -7679,7 +7598,6 @@ spec:
                           path:
                             type: string
                         required:
-                        - addresses
                         - path
                         type: object
                       http:
@@ -7739,11 +7657,7 @@ spec:
                             - key
                             type: object
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                       path:
                         type: string
@@ -7795,11 +7709,7 @@ spec:
                           useSDKCreds:
                             type: boolean
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                       subPath:
                         type: string
@@ -8774,7 +8684,6 @@ spec:
                             - key
                             type: object
                         required:
-                        - bucket
                         - key
                         type: object
                       git:
@@ -8880,7 +8789,6 @@ spec:
                           path:
                             type: string
                         required:
-                        - addresses
                         - path
                         type: object
                       http:
@@ -8933,11 +8841,7 @@ spec:
                             - key
                             type: object
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                       raw:
                         properties:
@@ -8985,11 +8889,7 @@ spec:
                           useSDKCreds:
                             type: boolean
                         required:
-                        - accessKeySecret
-                        - bucket
-                        - endpoint
                         - key
-                        - secretKeySecret
                         type: object
                     type: object
                   arguments:
@@ -9061,7 +8961,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -9169,7 +9068,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -9229,11 +9127,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -9285,11 +9179,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -9950,7 +9840,6 @@ spec:
                                             - key
                                             type: object
                                         required:
-                                        - bucket
                                         - key
                                         type: object
                                       git:
@@ -10058,7 +9947,6 @@ spec:
                                           path:
                                             type: string
                                         required:
-                                        - addresses
                                         - path
                                         type: object
                                       http:
@@ -10118,11 +10006,7 @@ spec:
                                             - key
                                             type: object
                                         required:
-                                        - accessKeySecret
-                                        - bucket
-                                        - endpoint
                                         - key
-                                        - secretKeySecret
                                         type: object
                                       path:
                                         type: string
@@ -10174,11 +10058,7 @@ spec:
                                           useSDKCreds:
                                             type: boolean
                                         required:
-                                        - accessKeySecret
-                                        - bucket
-                                        - endpoint
                                         - key
-                                        - secretKeySecret
                                         type: object
                                       subPath:
                                         type: string
@@ -10912,7 +10792,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -11020,7 +10899,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -11080,11 +10958,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -11136,11 +11010,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -11358,7 +11228,6 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - bucket
                               - key
                               type: object
                             git:
@@ -11466,7 +11335,6 @@ spec:
                                 path:
                                   type: string
                               required:
-                              - addresses
                               - path
                               type: object
                             http:
@@ -11526,11 +11394,7 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             path:
                               type: string
@@ -11582,11 +11446,7 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
-                              - endpoint
                               - key
-                              - secretKeySecret
                               type: object
                             subPath:
                               type: string
@@ -13813,7 +13673,6 @@ spec:
                                 - key
                                 type: object
                             required:
-                            - bucket
                             - key
                             type: object
                           git:
@@ -13921,7 +13780,6 @@ spec:
                               path:
                                 type: string
                             required:
-                            - addresses
                             - path
                             type: object
                           http:
@@ -13981,11 +13839,7 @@ spec:
                                 - key
                                 type: object
                             required:
-                            - accessKeySecret
-                            - bucket
-                            - endpoint
                             - key
-                            - secretKeySecret
                             type: object
                           path:
                             type: string
@@ -14037,11 +13891,7 @@ spec:
                               useSDKCreds:
                                 type: boolean
                             required:
-                            - accessKeySecret
-                            - bucket
-                            - endpoint
                             - key
-                            - secretKeySecret
                             type: object
                           subPath:
                             type: string
@@ -14688,7 +14538,6 @@ spec:
                                 - key
                                 type: object
                             required:
-                            - bucket
                             - key
                             type: object
                           git:
@@ -14794,7 +14643,6 @@ spec:
                               path:
                                 type: string
                             required:
-                            - addresses
                             - path
                             type: object
                           http:
@@ -14847,11 +14695,7 @@ spec:
                                 - key
                                 type: object
                             required:
-                            - accessKeySecret
-                            - bucket
-                            - endpoint
                             - key
-                            - secretKeySecret
                             type: object
                           raw:
                             properties:
@@ -14899,11 +14743,7 @@ spec:
                               useSDKCreds:
                                 type: boolean
                             required:
-                            - accessKeySecret
-                            - bucket
-                            - endpoint
                             - key
-                            - secretKeySecret
                             type: object
                         type: object
                       arguments:
@@ -14975,7 +14815,6 @@ spec:
                                       - key
                                       type: object
                                   required:
-                                  - bucket
                                   - key
                                   type: object
                                 git:
@@ -15083,7 +14922,6 @@ spec:
                                     path:
                                       type: string
                                   required:
-                                  - addresses
                                   - path
                                   type: object
                                 http:
@@ -15143,11 +14981,7 @@ spec:
                                       - key
                                       type: object
                                   required:
-                                  - accessKeySecret
-                                  - bucket
-                                  - endpoint
                                   - key
-                                  - secretKeySecret
                                   type: object
                                 path:
                                   type: string
@@ -15199,11 +15033,7 @@ spec:
                                     useSDKCreds:
                                       type: boolean
                                   required:
-                                  - accessKeySecret
-                                  - bucket
-                                  - endpoint
                                   - key
-                                  - secretKeySecret
                                   type: object
                                 subPath:
                                   type: string
@@ -15864,7 +15694,6 @@ spec:
                                                 - key
                                                 type: object
                                             required:
-                                            - bucket
                                             - key
                                             type: object
                                           git:
@@ -15972,7 +15801,6 @@ spec:
                                               path:
                                                 type: string
                                             required:
-                                            - addresses
                                             - path
                                             type: object
                                           http:
@@ -16032,11 +15860,7 @@ spec:
                                                 - key
                                                 type: object
                                             required:
-                                            - accessKeySecret
-                                            - bucket
-                                            - endpoint
                                             - key
-                                            - secretKeySecret
                                             type: object
                                           path:
                                             type: string
@@ -16088,11 +15912,7 @@ spec:
                                               useSDKCreds:
                                                 type: boolean
                                             required:
-                                            - accessKeySecret
-                                            - bucket
-                                            - endpoint
                                             - key
-                                            - secretKeySecret
                                             type: object
                                           subPath:
                                             type: string
@@ -16826,7 +16646,6 @@ spec:
                                       - key
                                       type: object
                                   required:
-                                  - bucket
                                   - key
                                   type: object
                                 git:
@@ -16934,7 +16753,6 @@ spec:
                                     path:
                                       type: string
                                   required:
-                                  - addresses
                                   - path
                                   type: object
                                 http:
@@ -16994,11 +16812,7 @@ spec:
                                       - key
                                       type: object
                                   required:
-                                  - accessKeySecret
-                                  - bucket
-                                  - endpoint
                                   - key
-                                  - secretKeySecret
                                   type: object
                                 path:
                                   type: string
@@ -17050,11 +16864,7 @@ spec:
                                     useSDKCreds:
                                       type: boolean
                                   required:
-                                  - accessKeySecret
-                                  - bucket
-                                  - endpoint
                                   - key
-                                  - secretKeySecret
                                   type: object
                                 subPath:
                                   type: string
@@ -17272,7 +17082,6 @@ spec:
                                       - key
                                       type: object
                                   required:
-                                  - bucket
                                   - key
                                   type: object
                                 git:
@@ -17380,7 +17189,6 @@ spec:
                                     path:
                                       type: string
                                   required:
-                                  - addresses
                                   - path
                                   type: object
                                 http:
@@ -17440,11 +17248,7 @@ spec:
                                       - key
                                       type: object
                                   required:
-                                  - accessKeySecret
-                                  - bucket
-                                  - endpoint
                                   - key
-                                  - secretKeySecret
                                   type: object
                                 path:
                                   type: string
@@ -17496,11 +17300,7 @@ spec:
                                     useSDKCreds:
                                       type: boolean
                                   required:
-                                  - accessKeySecret
-                                  - bucket
-                                  - endpoint
                                   - key
-                                  - secretKeySecret
                                   type: object
                                 subPath:
                                   type: string

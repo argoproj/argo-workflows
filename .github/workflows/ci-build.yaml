@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make test
+        run: make test STATIC_FILES=false
 
   e2e-tests:
     name: E2E Tests

@@ -350,6 +350,13 @@ func (s *FunctionalSuite) TestArtifactRepositoryRef() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			// these should never be set because we must get them from the artifactRepositoryRef
+			generated := status.Nodes.FindByDisplayName("generate").Outputs.Artifacts[0].S3
+			assert.Empty(t, generated.Bucket)
+			assert.NotEmpty(t, generated.Key)
+			consumed := status.Nodes.FindByDisplayName("consume").Inputs.Artifacts[0].S3
+			assert.Empty(t, consumed.Bucket)
+			assert.NotEmpty(t, consumed.Key)
 		})
 }
 
