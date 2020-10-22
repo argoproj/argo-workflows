@@ -510,24 +510,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
-
-	if wf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", woc.wf.Spec.Synchronization)
-		if err != nil {
-			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
-			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
-			woc.persistUpdates()
-			wfc.throttler.Remove(key)
-			return true
-		}
-		woc.updated = wfUpdate
-		if !acquired {
-			log.WithFields(log.Fields{"key": key, "message": msg}).Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.persistUpdates()
-			return true
-		}
-	}
-
 	startTime := time.Now()
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())

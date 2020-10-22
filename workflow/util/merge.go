@@ -2,7 +2,9 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -36,4 +38,28 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 		return err
 	}
 	return nil
+}
+
+func MergeMap(left, right map[string]string) {
+	for key, val := range right {
+		if _, ok := left[key]; !ok {
+			fmt.Println(key, val)
+			left[key] = val
+		}
+	}
+}
+
+func MergeMetaDatato(patch, targetMetaData *metav1.ObjectMeta) {
+	if patch != nil && patch.Labels != nil {
+		if targetMetaData.Labels == nil {
+			targetMetaData.Labels = make(map[string]string)
+		}
+		MergeMap(targetMetaData.Labels, patch.Labels)
+	}
+	if patch != nil && patch.Annotations != nil {
+		if targetMetaData.Annotations == nil {
+			targetMetaData.Annotations = make(map[string]string)
+		}
+		MergeMap(targetMetaData.Annotations, patch.Annotations)
+	}
 }
