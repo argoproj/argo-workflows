@@ -137,7 +137,6 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	if err != nil {
 		return nil, err
 	}
-	println("ALEX", 1)
 	tmp, err := ioutil.TempFile("/tmp", "artifact")
 	if err != nil {
 		return nil, err
@@ -145,18 +144,15 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	path := tmp.Name()
 	defer func() { _ = os.Remove(path) }()
 
-	println("ALEX", 2)
 	err = driver.Load(art, path)
 	if err != nil {
 		return nil, err
 	}
 
-	println("ALEX", 3)
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	println("ALEX", 4)
 	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
 
 	return file, nil
