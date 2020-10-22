@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo/workflow/executor/common/wait"
 	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
@@ -40,8 +41,6 @@ type PNSExecutor struct {
 
 	// thisPID is the pid of this process
 	thisPID int
-	// mainPID holds the main container's pid
-	mainPID int
 	// mainFS holds a file descriptor to the main filesystem, allowing the executor to access the
 	// filesystem after the main process exited
 	mainFS *os.File
@@ -163,16 +162,16 @@ func (p *PNSExecutor) WaitInit() error {
 func (p *PNSExecutor) Wait(containerID string) error {
 	mainPID, err := p.getContainerPID(containerID)
 	if err != nil {
+		log.Warnf("Failed to get main PID: %v", err)
 		if !p.hasOutputs {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-		return err
+		return wait.UntilTerminated(p.clientset, p.namespace, p.podName, containerID)
 	}
 	log.Infof("Main pid identified as %d", mainPID)
-	p.mainPID = mainPID
 	for pid, f := range p.pidFileHandles {
-		if pid == p.mainPID {
+		if pid == mainPID {
 			log.Info("Successfully secured file handle on main container root filesystem")
 			p.mainFS = &f.file
 		} else {
