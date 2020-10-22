@@ -8,7 +8,7 @@ import (
 var emptyConfigFunc = func() interface{} { return &Config{} }
 
 type Config struct {
-	c.Config
+	config.Config
 	// SSO in settings for single-sign on
 	SSO sso.Config `json:"sso,omitempty"`
 }

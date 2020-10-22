@@ -26,7 +26,7 @@ const (
 	workflowTTLResyncPeriod = 20 * time.Minute
 )
 
-type ConfigSupplier func() *c.Config
+type ConfigSupplier func() *config.Config
 
 type Controller struct {
 	wfclientset    wfclientset.Interface

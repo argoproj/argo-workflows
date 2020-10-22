@@ -66,7 +66,7 @@ type argoServer struct {
 	wfClientSet      *versioned.Clientset
 	authenticator    auth.Gatekeeper
 	oAuth2Service    sso.Interface
-	configController c.Controller
+	configController config.Controller
 	stopCh           chan struct{}
 	eventQueueSize   int
 	eventWorkerCount int
@@ -89,7 +89,7 @@ type ArgoServerOpts struct {
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	configController := c.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get()

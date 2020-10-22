@@ -340,7 +340,7 @@ status:
     ttlStrategy:
       secondsAfterCompletion: 60
 `
-var testConfig c.Config
+var testConfig config.Config
 
 func newTTLController() *Controller {
 	clock := clock.NewFakeClock(time.Now())
@@ -352,7 +352,7 @@ func newTTLController() *Controller {
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
 		workqueue:    workqueue.NewDelayingQueue(),
-		configSupplier: func() *c.Config {
+		configSupplier: func() *config.Config {
 			return &testConfig
 		},
 	}
@@ -654,13 +654,13 @@ func TestGetTTLStrategy(t *testing.T) {
 
 func TestGetDefaultTTLStrategy(t *testing.T) {
 	controller := newTTLController()
-	testConfig = c.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}}}
+	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}}}
 	ttl := controller.getDefaultTTLStrategy()
 	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
-	testConfig = c.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(20)}}}
+	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(20)}}}
 	ttl = controller.getDefaultTTLStrategy()
 	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
-	testConfig = c.Config{WorkflowDefaults: nil}
+	testConfig = config.Config{WorkflowDefaults: nil}
 	ttl = controller.getDefaultTTLStrategy()
 	assert.Nil(t, ttl)
 }

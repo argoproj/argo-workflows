@@ -448,7 +448,7 @@ func TestMetadata(t *testing.T) {
 // TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
 func TestWorkflowControllerArchiveConfig(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &c.S3ArtifactRepository{
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -473,7 +473,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		},
 	}
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = &c.S3ArtifactRepository{
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -488,7 +488,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &c.S3ArtifactRepository{
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -508,7 +508,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do  add archive location if it is needed for logs
 func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &c.S3ArtifactRepository{
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -538,7 +538,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 		},
 	}
 	woc := newWoc()
-	woc.artifactRepository.S3 = &c.S3ArtifactRepository{
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -703,7 +703,7 @@ func TestOutOfCluster(t *testing.T) {
 	// default mount path & volume name
 	{
 		woc := newWoc()
-		woc.controller.Config.KubeConfig = &c.KubeConfig{
+		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 		}
@@ -726,7 +726,7 @@ func TestOutOfCluster(t *testing.T) {
 	// custom mount path & volume name, in case name collision
 	{
 		woc := newWoc()
-		woc.controller.Config.KubeConfig = &c.KubeConfig{
+		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 			MountPath:  "/some/path/config",
