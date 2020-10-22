@@ -228,7 +228,7 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
 	woc, err := cc.cron.Load(nameEntryIdMapKey)
 	if err != nil {
-		log.Errorf("Parent CronWorkflow '%s' is bad: %v", nameEntryIdMapKey, err)
+		log.Warnf("Parent CronWorkflow '%s' is bad: %v", nameEntryIdMapKey, err)
 		return true
 	}
 
