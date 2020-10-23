@@ -955,6 +955,26 @@ func (a *ArtifactLocation) Get() interface{} {
 	return nil
 }
 
+func (a *ArtifactLocation) SetType(x interface{}) error {
+	switch v := x.(type) {
+	case *ArtifactoryArtifact:
+		a.Artifactory = &ArtifactoryArtifact{}
+	case *GCSArtifact:
+		a.GCS = &GCSArtifact{}
+	case *HDFSArtifact:
+		a.HDFS = &HDFSArtifact{}
+	case *HTTPArtifact:
+		a.HTTP = &HTTPArtifact{}
+	case *OSSArtifact:
+		a.OSS = &OSSArtifact{}
+	case *S3Artifact:
+		a.S3 = &S3Artifact{}
+	default:
+		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
+	}
+	return nil
+}
+
 func (a *ArtifactLocation) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
@@ -2113,26 +2133,6 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
-}
-
-func (a *Artifact) SetType(x interface{}) error {
-	switch v := x.(type) {
-	case *ArtifactoryArtifact:
-		a.Artifactory = &ArtifactoryArtifact{}
-	case *GCSArtifact:
-		a.GCS = &GCSArtifact{}
-	case *HDFSArtifact:
-		a.HDFS = &HDFSArtifact{}
-	case *HTTPArtifact:
-		a.HTTP = &HTTPArtifact{}
-	case *OSSArtifact:
-		a.OSS = &OSSArtifact{}
-	case *S3Artifact:
-		a.S3 = &S3Artifact{}
-	default:
-		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
-	}
-	return nil
 }
 
 // GetTemplateByName retrieves a defined template by its name
