@@ -160,8 +160,14 @@ jobs:
           GOPATH: /home/runner/go
         run: make lint STATIC_FILES=false
       - name: Ensure nothing changed
-        run: git diff --exit-code
-
+        run: |
+          git diff > codegen.diff
+          git diff --exit-code
+      - name: Upload diffs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v1
+        with:
+          path: codegen.diff
   ui:
     name: UI
     runs-on: ubuntu-latest
