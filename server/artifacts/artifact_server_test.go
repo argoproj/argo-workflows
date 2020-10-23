@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -62,7 +63,7 @@ func newServer() *ArtifactServer {
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
 	a := &mocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
-	return NewArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId))
+	return NewArtifactServer(gatekeeper, kubefake.NewSimpleClientset(), hydratorfake.Noop, a, instanceid.NewService(instanceId), config.ArtifactRepository{}, "my-ns")
 }
 
 func TestArtifactServer_GetArtifact(t *testing.T) {

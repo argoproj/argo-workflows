@@ -138,10 +138,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Downloading artifact: %s", art.Name)
 
-		supplied, err := art.HasLocationOrKey()
-		if err != nil {
-			return err
-		}
+		supplied, _ := art.HasLocationOrKey()
 		if !supplied {
 			if art.Optional {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
