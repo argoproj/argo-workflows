@@ -41,7 +41,7 @@ import (
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/artifacts/reporef"
+	"github.com/argoproj/argo/workflow/artifacts/artifactrepository"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -255,6 +255,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
+
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -285,18 +286,6 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	if woc.execWf.Spec.ArtifactRepositoryRef != nil {
-		repo, err := reporef.GetArtifactRepositoryByRef(woc.controller.kubeclientset, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace, woc.controller.namespace)
-		if err == nil {
-			woc.artifactRepository = repo
-		} else {
-			msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
-			woc.log.Errorf(msg)
-			woc.markWorkflowError(err, true)
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
-			return
-		}
-	}
 
 	err = woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
@@ -3113,6 +3102,20 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.execWf.Spec.Arguments.Parameters)
 	}
 	executionParameters.Artifacts = util.MergeArtifacts(executionParameters.Artifacts, woc.execWf.Spec.Arguments.Artifacts)
+
+
+	repo, err := artifactrepository.GetArtifactRepositoryByRef(woc.controller.kubeclientset, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace, woc.controller.namespace)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
+		woc.log.Errorf(msg)
+		woc.markWorkflowError(err, true)
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
+		return
+	}
+	if repo != nil {
+		woc.artifactRepository = repo
+	}
+
 
 	return tmplRef, executionParameters, nil
 }

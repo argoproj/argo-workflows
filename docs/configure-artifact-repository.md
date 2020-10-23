@@ -16,6 +16,13 @@ Subsequent sections will show how to use it.
 | Raw | Yes | No | 5% |
 | S3 | Yes | Yes | 86% |
 
+The actual repository used by a workflow is determined the following order of precedence:
+
+1. Anything explicitly configured using [Artifact Repository Ref](artifact-repository-ref.md). This is the most flexible, safe, and secure option.
+3. From a config map named `artifact-repositories` with the key `default` in the workflow's namespace.                                        
+4. From a config map named `artifact-repositories` with the key `default` in the workflow controller's namespace.                                        
+5. From a workflow controller configmap.
+
 ## Configuring Minio
 
 ```

@@ -968,7 +968,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
-|`failedJobsHistoryLimit`|`int32`|FailedJobsHistoryLimit is the number of failed jobs to be kept at a time|
+|`failedJobsHistoryLimit`|`int32`|FailedJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
 |`startingDeadlineSeconds`|`int64`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
 |`successfulJobsHistoryLimit`|`int32`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
@@ -5540,6 +5540,8 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
+
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 </details>
 
@@ -6158,6 +6160,8 @@ Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap'
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 </details>

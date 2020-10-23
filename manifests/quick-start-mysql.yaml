@@ -448,7 +448,7 @@ subjects:
 ---
 apiVersion: v1
 data:
-  minio: |
+  my-key: |
     archiveLogs: true
     s3:
       bucket: my-bucket
@@ -462,7 +462,7 @@ data:
         key: secretkey
 kind: ConfigMap
 metadata:
-  name: artifact-repositories
+  name: my-artifact-repostiories
 ---
 apiVersion: v1
 data:

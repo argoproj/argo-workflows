@@ -111,7 +111,10 @@ message ArtifactLocation {
   optional GCSArtifact gcs = 9;
 }
 
+// +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRef {
+  optional string namespace = 3;
+
   optional string configMap = 1;
 
   optional string key = 2;

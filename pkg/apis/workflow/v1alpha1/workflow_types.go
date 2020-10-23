@@ -945,20 +945,39 @@ func (a *ArtifactLocation) HasLocation() bool {
 	v := a.Get()
 	return v != nil && v.HasLocation()
 }
+
 func (a *ArtifactLocation) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
+// +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (r ArtifactRepositoryRef) GetConfigMap() string {
-	if r.ConfigMap == "" {
+var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{}
+
+func (r *ArtifactRepositoryRef) GetConfigMap() string {
+	if r == nil || r.ConfigMap == "" {
 		return "artifact-repositories"
 	}
 	return r.ConfigMap
+}
+
+func (r *ArtifactRepositoryRef) GetKey() string {
+	if r == nil || r.Key == "" {
+		return "default"
+	}
+	return r.Key
+}
+
+func (r *ArtifactRepositoryRef) String() string {
+	if r == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%s/%s#%s", r.Namespace, r.GetConfigMap(), r.GetKey())
 }
 
 // Outputs hold parameters, artifacts, and results from a step

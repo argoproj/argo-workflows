@@ -638,6 +638,8 @@ spec:
                   type: string
                 key:
                   type: string
+                namespace:
+                  type: string
               type: object
             automountServiceAccountToken:
               type: boolean
@@ -13941,6 +13943,8 @@ spec:
                     configMap:
                       type: string
                     key:
+                      type: string
+                    namespace:
                       type: string
                   type: object
                 automountServiceAccountToken:

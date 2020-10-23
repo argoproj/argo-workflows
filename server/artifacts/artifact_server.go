@@ -21,7 +21,7 @@ import (
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/artifacts/reporef"
+	"github.com/argoproj/argo/workflow/artifacts/artifactrepository"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
@@ -140,15 +140,15 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	}
 
 	artifactRepository := a.artifactRepository
-	if wf.Spec.ArtifactRepositoryRef != nil {
-		r, err := reporef.GetArtifactRepositoryByRef(a.kubernetesInterface, wf.Spec.ArtifactRepositoryRef, wf.Namespace, a.namespace)
-		if err != nil {
-			return nil, err
-		}
+	r, err := artifactrepository.GetArtifactRepositoryByRef(a.kubernetesInterface, wf.Spec.ArtifactRepositoryRef, wf.Namespace, a.namespace)
+	if err != nil {
+		return nil, err
+	}
+	if r != nil {
 		artifactRepository = *r
 	}
 	l := artifactRepository.ToArtifactLocation()
-	err := art.Relocate(l)
+	err = art.Relocate(l)
 	if err != nil {
 		return nil, err
 	}

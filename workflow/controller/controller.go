@@ -38,6 +38,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -64,6 +65,8 @@ type WorkflowController struct {
 	configController config.Controller
 	// Config is the workflow controller's configuration
 	Config config.Config
+	// get the artifact repository
+	artifactRepositories artifactrepositories.Interface
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
