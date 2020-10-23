@@ -1190,6 +1190,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if task.Depends != "" {
 			usingDepends = true
 		}
+
 		nameToTask[task.Name] = task
 	}
 
@@ -1202,6 +1203,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
+
+		if usingDepends && '0' <= task.Name[0] && task.Name[0] <= '9' {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using 'depends'", tmpl.Name, task.Name)
+		}
 
 		if usingDepends && len(task.Dependencies) > 0 {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)
