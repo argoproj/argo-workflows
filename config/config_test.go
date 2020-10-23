@@ -11,21 +11,18 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var r *ArtifactRepository
 		assert.Nil(t, r.Get())
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		assert.Nil(t, l)
 	})
 	t.Run("ArchiveLogs", func(t *testing.T) {
 		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{}, ArchiveLogs: pointer.BoolPtr(true)}
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		assert.Equal(t, pointer.BoolPtr(true), l.ArchiveLogs)
 	})
 	t.Run("Artifactory", func(t *testing.T) {
 		r := &ArtifactRepository{Artifactory: &ArtifactoryArtifactRepository{RepoURL: "http://my-repo"}}
 		assert.IsType(t, &ArtifactoryArtifactRepository{}, r.Get())
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		if assert.NotNil(t, l.Artifactory) {
 			assert.Equal(t, "http://my-repo/{{workflow.name}}/{{pod.name}}", l.Artifactory.URL)
 		}
@@ -33,8 +30,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("GCS", func(t *testing.T) {
 		r := &ArtifactRepository{GCS: &GCSArtifactRepository{}}
 		assert.IsType(t, &GCSArtifactRepository{}, r.Get())
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		if assert.NotNil(t, l.GCS) {
 			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.GCS.Key)
 		}
@@ -42,8 +38,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("HDFS", func(t *testing.T) {
 		r := &ArtifactRepository{HDFS: &HDFSArtifactRepository{}}
 		assert.IsType(t, &HDFSArtifactRepository{}, r.Get())
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		if assert.NotNil(t, l.HDFS) {
 			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.HDFS.Path)
 		}
@@ -51,8 +46,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("OSS", func(t *testing.T) {
 		r := &ArtifactRepository{OSS: &OSSArtifactRepository{}}
 		assert.IsType(t, &OSSArtifactRepository{}, r.Get())
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		if assert.NotNil(t, l.OSS) {
 			assert.Equal(t, "{{workflow.name}}/{{pod.name}}", l.OSS.Key)
 		}
@@ -60,8 +54,7 @@ func TestArtifactRepository(t *testing.T) {
 	t.Run("S3", func(t *testing.T) {
 		r := &ArtifactRepository{S3: &S3ArtifactRepository{KeyPrefix: "my-key-prefix"}}
 		assert.IsType(t, &S3ArtifactRepository{}, r.Get())
-		l, err := r.ToArtifactLocation()
-		assert.NoError(t, err)
+		l := r.ToArtifactLocation()
 		if assert.NotNil(t, l.S3) {
 			assert.Equal(t, "my-key-prefix/{{workflow.name}}/{{pod.name}}", l.S3.Key)
 		}

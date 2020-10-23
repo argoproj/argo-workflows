@@ -295,7 +295,7 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 }
 
 // fileBase is probably path.Base(filePath), but can be something else
-func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileBase, filePath string) error {
+func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileName, localArtPath string) error {
 	if !art.HasKey() {
 		key, err := we.Template.ArchiveLocation.GetKey()
 		if err != nil {
@@ -304,12 +304,10 @@ func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileBase, f
 		if err = art.SetType(we.Template.ArchiveLocation.Get()); err != nil {
 			return err
 		}
-		// we must update the key here so that it is returned to the controller
-		if err := art.SetKey(path.Join(key, fileBase)); err != nil {
+		if err := art.SetKey(path.Join(key, fileName)); err != nil {
 			return err
 		}
 	}
-	// we do not want to update anything other than the key
 	driverArt, err := we.newDriverArt(art)
 	if err != nil {
 		return err
@@ -318,7 +316,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileBase, f
 	if err != nil {
 		return err
 	}
-	err = artDriver.Save(filePath, driverArt)
+	err = artDriver.Save(localArtPath, driverArt)
 	if err != nil {
 		return err
 	}

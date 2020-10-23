@@ -830,74 +830,25 @@ func (a *ArtifactLocation) HasLocationOrKey() bool {
 
 // HasKey returns whether or not an artifact has a key. They may or may not also HasLocation.
 func (a *ArtifactLocation) HasKey() bool {
-	if a == nil {
-		return false
-	}
-	switch a.Get().(type) {
-	case *GitArtifact, *HTTPArtifact, *RawArtifact:
-		return false
-	default:
-		key, _ := a.GetKey()
-		return key != ""
-	}
+	key, _ := a.GetKey()
+	return key != ""
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
-	switch v := a.Get().(type) {
-	case *ArtifactoryArtifact:
-		u, err := url.Parse(v.URL)
-		if err != nil {
-			return "", err
-		}
-		return u.Path, nil
-	case *GCSArtifact:
-		return v.Key, nil
-	case *HDFSArtifact:
-		return v.Path, nil
-	case *HTTPArtifact:
-		u, err := url.Parse(v.URL)
-		if err != nil {
-			return "", err
-		}
-		return u.Path, nil
-	case *OSSArtifact:
-		return v.Key, nil
-	case *S3Artifact:
-		return v.Key, nil
-	default:
-		return "", fmt.Errorf("get key not supported for type: %v", reflect.TypeOf(v))
+	v := a.Get()
+	if v == nil {
+		return "", keyUnsupportedErr
 	}
+	return v.GetKey()
 }
 
 // set the key to a new value, use path.Join to combine items
-func (a *ArtifactLocation) SetKey(k string) error {
-	switch v := a.Get().(type) {
-	case *ArtifactoryArtifact:
-		u, err := url.Parse(v.URL)
-		if err != nil {
-			return err
-		}
-		u.Path = k
-		v.URL = u.String()
-	case *GCSArtifact:
-		v.Key = k
-	case *HDFSArtifact:
-		v.Path = k
-	case *HTTPArtifact:
-		u, err := url.Parse(v.URL)
-		if err != nil {
-			return err
-		}
-		u.Path = k
-		v.URL = u.String()
-	case *OSSArtifact:
-		v.Key = k
-	case *S3Artifact:
-		v.Key = k
-	default:
-		return fmt.Errorf("set key not supported for type: %v", reflect.TypeOf(v))
+func (a *ArtifactLocation) SetKey(key string) error {
+	v := a.Get()
+	if v == nil {
+		return keyUnsupportedErr
 	}
-	return nil
+	return v.SetKey(key)
 }
 
 func (a *ArtifactLocation) AppendToKey(x string) error {
@@ -908,6 +859,8 @@ func (a *ArtifactLocation) AppendToKey(x string) error {
 	return a.SetKey(path.Join(key, x))
 }
 
+// Relocate copies all location info from the parameter, except the key.
+// But only if it does not have a location already.
 func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 	if a.HasLocation() {
 		return nil
@@ -926,17 +879,11 @@ func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
 // HasLocation whether or not an artifact has a *full* location defined
 // An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
-	return a != nil && (a.Artifactory.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.GCS.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.S3.HasLocation())
+	v := a.Get()
+	return v != nil && v.HasLocation()
 }
 
-func (a *ArtifactLocation) Get() interface{} {
+func (a *ArtifactLocation) Get() ArtifactType {
 	if a == nil {
 		return nil
 	}
@@ -967,7 +914,9 @@ func (a *ArtifactLocation) Get() interface{} {
 	return nil
 }
 
-func (a *ArtifactLocation) SetType(x interface{}) error {
+// SetType sets the type of the artifact to type the argument.
+// Any existing value is deleted.
+func (a *ArtifactLocation) SetType(x ArtifactType) error {
 	switch v := x.(type) {
 	case *ArtifactoryArtifact:
 		a.Artifactory = &ArtifactoryArtifact{}
@@ -979,6 +928,8 @@ func (a *ArtifactLocation) SetType(x interface{}) error {
 		a.HTTP = &HTTPArtifact{}
 	case *OSSArtifact:
 		a.OSS = &OSSArtifact{}
+	case *RawArtifact:
+		a.Raw = &RawArtifact{}
 	case *S3Artifact:
 		a.S3 = &S3Artifact{}
 	default:
@@ -1696,12 +1647,29 @@ type S3Bucket struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
+type ArtifactType interface {
+	HasLocation() bool
+	GetKey() (string, error)
+	SetKey(key string) error
+}
+
+var keyUnsupportedErr = fmt.Errorf("key unsupported")
+
 // S3Artifact is the location of an S3 artifact
 type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
 
 	// Key is the key in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (s *S3Artifact) GetKey() (string, error) {
+	return s.Key, nil
+}
+
+func (s *S3Artifact) SetKey(key string) error {
+	s.Key = key
+	return nil
 }
 
 func (s *S3Artifact) HasLocation() bool {
@@ -1740,6 +1708,14 @@ func (g *GitArtifact) HasLocation() bool {
 	return g != nil && g.Repo != ""
 }
 
+func (g *GitArtifact) GetKey() (string, error) {
+	return "", keyUnsupportedErr
+}
+
+func (g *GitArtifact) SetKey(string) error {
+	return keyUnsupportedErr
+}
+
 func (g *GitArtifact) GetDepth() int {
 	if g == nil || g.Depth == nil {
 		return 0
@@ -1766,6 +1742,23 @@ type ArtifactoryArtifact struct {
 //func (a *ArtifactoryArtifact) String() string {
 //	return a.URL
 //}
+func (a *ArtifactoryArtifact) GetKey() (string, error) {
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return "", err
+	}
+	return u.Path, nil
+}
+
+func (a *ArtifactoryArtifact) SetKey(key string) error {
+	u, err := url.Parse(a.URL)
+	if err != nil {
+		return err
+	}
+	u.Path = key
+	a.URL = u.String()
+	return nil
+}
 
 func (a *ArtifactoryArtifact) HasLocation() bool {
 	return a != nil && a.URL != ""
@@ -1780,6 +1773,15 @@ type HDFSArtifact struct {
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
+}
+
+func (h *HDFSArtifact) GetKey() (string, error) {
+	return h.Path, nil
+}
+
+func (g *HDFSArtifact) SetKey(key string) error {
+	g.Path = key
+	return nil
 }
 
 func (h *HDFSArtifact) HasLocation() bool {
@@ -1831,6 +1833,14 @@ type RawArtifact struct {
 	Data string `json:"data" protobuf:"bytes,1,opt,name=data"`
 }
 
+func (r *RawArtifact) GetKey() (string, error) {
+	return "", keyUnsupportedErr
+}
+
+func (r *RawArtifact) SetKey(string) error {
+	return keyUnsupportedErr
+}
+
 func (r *RawArtifact) HasLocation() bool {
 	return r != nil
 }
@@ -1853,6 +1863,24 @@ type HTTPArtifact struct {
 	Headers []Header `json:"headers,omitempty" protobuf:"bytes,2,opt,name=headers"`
 }
 
+func (h *HTTPArtifact) GetKey() (string, error) {
+	u, err := url.Parse(h.URL)
+	if err != nil {
+		return "", err
+	}
+	return u.Path, nil
+}
+
+func (g *HTTPArtifact) SetKey(key string) error {
+	u, err := url.Parse(g.URL)
+	if err != nil {
+		return err
+	}
+	u.Path = key
+	g.URL = u.String()
+	return nil
+}
+
 func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
@@ -1873,6 +1901,15 @@ type GCSArtifact struct {
 
 	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (g *GCSArtifact) GetKey() (string, error) {
+	return g.Key, nil
+}
+
+func (g *GCSArtifact) SetKey(key string) error {
+	g.Key = key
+	return nil
 }
 
 func (g *GCSArtifact) HasLocation() bool {
@@ -1900,6 +1937,15 @@ type OSSArtifact struct {
 
 	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (o *OSSArtifact) GetKey() (string, error) {
+	return o.Key, nil
+}
+
+func (o *OSSArtifact) SetKey(key string) error {
+	o.Key = key
+	return nil
 }
 
 func (o *OSSArtifact) HasLocation() bool {

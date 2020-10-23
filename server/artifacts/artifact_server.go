@@ -147,11 +147,8 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 		}
 		artifactRepository = *r
 	}
-	l, err := artifactRepository.ToArtifactLocation()
-	if err != nil {
-		return nil, err
-	}
-	err = art.Relocate(l)
+	l := artifactRepository.ToArtifactLocation()
+	err := art.Relocate(l)
 	if err != nil {
 		return nil, err
 	}
