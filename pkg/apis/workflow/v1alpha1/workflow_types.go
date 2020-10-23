@@ -791,6 +791,14 @@ type ZipStrategy struct{}
 // save/load the directory appropriately.
 type NoneStrategy struct{}
 
+type ArtifactLocationType interface {
+	HasLocation() bool
+	GetKey() (string, error)
+	SetKey(key string) error
+}
+
+var keyUnsupportedErr = fmt.Errorf("key unsupported")
+
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
@@ -822,6 +830,61 @@ type ArtifactLocation struct {
 
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
+}
+
+func (a *ArtifactLocation) Get() ArtifactLocationType {
+	if a == nil {
+		return nil
+	}
+	if a.Artifactory != nil {
+		return a.Artifactory
+	}
+	if a.Git != nil {
+		return a.Git
+	}
+	if a.GCS != nil {
+		return a.GCS
+	}
+	if a.HDFS != nil {
+		return a.HDFS
+	}
+	if a.HTTP != nil {
+		return a.HTTP
+	}
+	if a.OSS != nil {
+		return a.OSS
+	}
+	if a.Raw != nil {
+		return a.Raw
+	}
+	if a.S3 != nil {
+		return a.S3
+	}
+	return nil
+}
+
+// SetType sets the type of the artifact to type the argument.
+// Any existing value is deleted.
+func (a *ArtifactLocation) SetType(x ArtifactLocationType) error {
+	switch v := x.(type) {
+	case *ArtifactoryArtifact:
+		a.Artifactory = &ArtifactoryArtifact{}
+	case *GCSArtifact:
+		a.GCS = &GCSArtifact{}
+	case *HDFSArtifact:
+		a.HDFS = &HDFSArtifact{}
+	case *HTTPArtifact:
+		a.HTTP = &HTTPArtifact{}
+	case *OSSArtifact:
+		a.OSS = &OSSArtifact{}
+	case *RawArtifact:
+		a.Raw = &RawArtifact{}
+	case *S3Artifact:
+		a.S3 = &S3Artifact{}
+	default:
+		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
+	}
+	return nil
 }
 
 func (a *ArtifactLocation) HasLocationOrKey() bool {
@@ -882,62 +945,6 @@ func (a *ArtifactLocation) HasLocation() bool {
 	v := a.Get()
 	return v != nil && v.HasLocation()
 }
-
-func (a *ArtifactLocation) Get() ArtifactType {
-	if a == nil {
-		return nil
-	}
-	if a.Artifactory != nil {
-		return a.Artifactory
-	}
-	if a.Git != nil {
-		return a.Git
-	}
-	if a.GCS != nil {
-		return a.GCS
-	}
-	if a.HDFS != nil {
-		return a.HDFS
-	}
-	if a.HTTP != nil {
-		return a.HTTP
-	}
-	if a.OSS != nil {
-		return a.OSS
-	}
-	if a.Raw != nil {
-		return a.Raw
-	}
-	if a.S3 != nil {
-		return a.S3
-	}
-	return nil
-}
-
-// SetType sets the type of the artifact to type the argument.
-// Any existing value is deleted.
-func (a *ArtifactLocation) SetType(x ArtifactType) error {
-	switch v := x.(type) {
-	case *ArtifactoryArtifact:
-		a.Artifactory = &ArtifactoryArtifact{}
-	case *GCSArtifact:
-		a.GCS = &GCSArtifact{}
-	case *HDFSArtifact:
-		a.HDFS = &HDFSArtifact{}
-	case *HTTPArtifact:
-		a.HTTP = &HTTPArtifact{}
-	case *OSSArtifact:
-		a.OSS = &OSSArtifact{}
-	case *RawArtifact:
-		a.Raw = &RawArtifact{}
-	case *S3Artifact:
-		a.S3 = &S3Artifact{}
-	default:
-		return fmt.Errorf("set type not supported for type: %v", reflect.TypeOf(v))
-	}
-	return nil
-}
-
 func (a *ArtifactLocation) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
@@ -1646,14 +1653,6 @@ type S3Bucket struct {
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
-
-type ArtifactType interface {
-	HasLocation() bool
-	GetKey() (string, error)
-	SetKey(key string) error
-}
-
-var keyUnsupportedErr = fmt.Errorf("key unsupported")
 
 // S3Artifact is the location of an S3 artifact
 type S3Artifact struct {

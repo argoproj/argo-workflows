@@ -505,7 +505,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
-	if we.Template.ArchiveLocation == nil || !we.Template.ArchiveLocation.IsArchiveLogs() {
+	if !we.Template.ArchiveLocation.IsArchiveLogs() {
 		return nil, nil
 	}
 	log.Infof("Saving logs")

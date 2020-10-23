@@ -857,7 +857,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
 		if !art.HasLocationOrKey() && art.Optional {
-			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not supplied",
+			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
 				art.Name, art.Path)
 			continue
 		}
