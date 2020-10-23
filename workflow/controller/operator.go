@@ -41,7 +41,6 @@ import (
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/artifacts/artifactrepository"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -136,6 +135,14 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
+	ref, err := wfc.artifactRepositories.ResolveArtifactRepositoryByRef(wf.Spec.ArtifactRepositoryRef, wf.Namespace)
+	if err != nil {
+		panic(err)
+	}
+	artifactRepository, err := wfc.artifactRepositories.GetArtifactRepositoryByRef(ref)
+	if err != nil {
+		panic(err)
+	}
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
@@ -148,12 +155,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		artifactRepository:     &wfc.Config.ArtifactRepository,
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		artifactRepository:     artifactRepository,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -199,6 +206,26 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 		return
 	}
+
+	if woc.wf.Status.ArtifactRepositoryRef == nil {
+		r, err := woc.controller.artifactRepositories.ResolveArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
+		if err != nil {
+			woc.markWorkflowError(err, true)
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", err.Error())
+			return
+		}
+		woc.wf.Status.ArtifactRepositoryRef = r
+	}
+
+	repo, err := woc.controller.artifactRepositories.GetArtifactRepositoryByRef(woc.wf.Status.ArtifactRepositoryRef)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
+		woc.log.Errorf(msg)
+		woc.markWorkflowError(err, true)
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
+		return
+	}
+	woc.artifactRepository = repo
 
 	// Update workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
@@ -285,7 +312,6 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 		return
 	}
-
 
 	err = woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
@@ -3102,20 +3128,6 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.execWf.Spec.Arguments.Parameters)
 	}
 	executionParameters.Artifacts = util.MergeArtifacts(executionParameters.Artifacts, woc.execWf.Spec.Arguments.Artifacts)
-
-
-	repo, err := artifactrepository.GetArtifactRepositoryByRef(woc.controller.kubeclientset, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace, woc.controller.namespace)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
-		woc.log.Errorf(msg)
-		woc.markWorkflowError(err, true)
-		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
-		return
-	}
-	if repo != nil {
-		woc.artifactRepository = repo
-	}
-
 
 	return tmplRef, executionParameters, nil
 }

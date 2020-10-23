@@ -959,6 +959,13 @@ type ArtifactRepositoryRef struct {
 
 var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{}
 
+func (r *ArtifactRepositoryRef) GetNamespaceOr(namespace string) string {
+	if r == nil && r.Namespace == "" {
+		return namespace
+	}
+	return r.Namespace
+}
+
 func (r *ArtifactRepositoryRef) GetConfigMap() string {
 	if r == nil || r.ConfigMap == "" {
 		return "artifact-repositories"
@@ -1238,6 +1245,9 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
+
+	// ArtifactRepositoryRef caches the repository to use so we do not need to calculate every time we reconcille.
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

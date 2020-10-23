@@ -30,6 +30,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -137,15 +138,17 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		panic("Timed out waiting for caches to sync")
 	}
 	kube := fake.NewSimpleClientset()
-	controller := &WorkflowController{
-		Config: config.Config{
-			ExecutorImage: "executor:latest",
-			ArtifactRepository: config.ArtifactRepository{
-				S3: &config.S3ArtifactRepository{
-					S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
-				},
+	c := config.Config{
+		ExecutorImage: "executor:latest",
+		ArtifactRepository: config.ArtifactRepository{
+			S3: &config.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		},
+	}
+	controller := &WorkflowController{
+		Config:               c,
+		artifactRepositories: artifactrepositories.New(kube, "default", &c.ArtifactRepository),
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
 		wfclientset:          wfclientset,

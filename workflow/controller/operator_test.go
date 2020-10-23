@@ -2643,63 +2643,105 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 	}
 }
 
-var artifactRepositoryRef = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
+func TestArtifactRepositoryRef(t *testing.T) {
+	tests := []struct {
+		name       string
+		wf         *wfv1.Workflow
+		cm         *apiv1.ConfigMap
+		wantBucket string
+	}{
+		{
+			"Explicit",
+			unmarshalWF(`
 metadata:
-  generateName: artifact-repo-config-ref-
+  name: artifact-repo-ref
   namespace: my-ns
 spec:
-  entrypoint: whalesay
+  entrypoint: main
   artifactRepositoryRef:
-    key: minio
+    namespace: other-ns
+    configMap: my-artifact-repositories
+    key: my-key
   templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      artifacts:
-      - name: message
-        path: /tmp/hello_world.txt
-`
-
-var artifactRepositoryConfigMapData = `
+  - name: main
+    container: 
+      image: my-image
+`), &apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "other-ns", Name: "my-artifact-repositories"},
+			Data: map[string]string{"my-key": `
 s3:
   bucket: my-bucket
-  keyPrefix: prefix/in/bucket
-  endpoint: my-minio-endpoint.default:9000
-  insecure: true
-  accessKeySecret:
-    name: my-minio-cred
-    key: accesskey
-  secretKeySecret:
-    name: my-minio-cred
-    key: secretkey
-`
-
-func TestArtifactRepositoryRef(t *testing.T) {
-	wf := unmarshalWF(artifactRepositoryRef)
-	woc := newWoc(*wf)
-	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(wf.ObjectMeta.Namespace).Create(
-		&apiv1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "artifact-repositories",
-			},
-			Data: map[string]string{
-				"minio": artifactRepositoryConfigMapData,
-			},
+`}},
+			"my-bucket",
 		},
-	)
-	assert.NoError(t, err)
-	woc.operate()
-	assert.Equal(t, woc.artifactRepository.S3.Bucket, "my-bucket")
-	assert.Equal(t, woc.artifactRepository.S3.Endpoint, "my-minio-endpoint.default:9000")
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+		{
+			"WorkflowNamespaceDefault",
+			unmarshalWF(`
+metadata:
+  name: artifact-repo-ref
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container: 
+      image: my-image
+`), &apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "artifact-repositories"},
+			Data: map[string]string{"default": `
+s3:
+  bucket: other-bucket
+`}},
+			"other-bucket",
+		},
+		{
+			"ManagedNamespaceDefault",
+			unmarshalWF(`
+metadata:
+  name: artifact-repo-ref
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container: 
+      image: my-image
+`), &apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "artifact-repositories"},
+			Data: map[string]string{"default": `
+s3:
+  bucket: other-bucket
+`}},
+			"other-bucket",
+		},
+		{
+			"DefaultArtifactRepository",
+			unmarshalWF(`
+metadata:
+  name: artifact-repo-ref
+  namespace: my-ns
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container: 
+      image: my-image
+`), &apiv1.ConfigMap{},
+			"my-bucket",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cancel, controller := newController(tt.wf)
+			defer cancel()
+			_, err := controller.kubeclientset.CoreV1().ConfigMaps(tt.cm.Namespace).Create(tt.cm)
+			assert.NoError(t, err)
+			woc := newWorkflowOperationCtx(tt.wf, controller)
+			woc.operate()
+			assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+			assert.Equal(t, tt.wantBucket, woc.artifactRepository.S3.Bucket)
+		})
+	}
 }
 
 var stepScriptTmpl = `
@@ -3019,30 +3061,6 @@ spec:
 `: {
 			"Normal WorkflowRunning Workflow Running",
 			"Warning WorkflowFailed invalid spec: template name '123' undefined",
-		},
-		`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: artifact-repo-config-ref-
-spec:
-  entrypoint: whalesay
-  artifactRepositoryRef:
-    configMap: artifact-repository
-    key: config
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-    outputs:
-      artifacts:
-      - name: message
-        path: /tmp/hello_world.txt
-`: {
-			"Normal WorkflowRunning Workflow Running",
-			"Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config",
 		},
 		// DAG
 		`

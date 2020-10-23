@@ -16,7 +16,7 @@ Subsequent sections will show how to use it.
 | Raw | Yes | No | 5% |
 | S3 | Yes | Yes | 86% |
 
-The actual repository used by a workflow is determined the following order of precedence:
+The actual repository used by a workflow is choose by the following rules:
 
 1. Anything explicitly configured using [Artifact Repository Ref](artifact-repository-ref.md). This is the most flexible, safe, and secure option.
 3. From a config map named `artifact-repositories` with the key `default` in the workflow's namespace.                                        

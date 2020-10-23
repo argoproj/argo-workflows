@@ -6,7 +6,7 @@
 
 You can reduce duplication in your templates by configuring repositories that can be accessed by any workflow. This can also remove sensitive information from your templates.
 
-Create a suitable config map in either (a) your workflows namespace or (b) in the Argo namespace:
+Create a suitable config map in either (a) your workflows namespace or (b) in the managed namespace:
 
 ```yaml
 apiVersion: v1
@@ -32,6 +32,7 @@ You can override the repository for a workflow as follows:
 ```yaml
 spec:
   artifactRepositoryRef:
+    namespace: my-ns # default is the  workflows' namespace
     configMap: my-cm # default is "artifact-repositories"
     key: my-key # default is "default"
 ```
