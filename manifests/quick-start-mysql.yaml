@@ -449,6 +449,7 @@ subjects:
 apiVersion: v1
 data:
   minio: |
+    archiveLogs: true
     s3:
       bucket: my-bucket
       endpoint: minio:9000

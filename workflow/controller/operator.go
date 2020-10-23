@@ -41,6 +41,7 @@ import (
 	"github.com/argoproj/argo/util/intstr"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
+	"github.com/argoproj/argo/workflow/artifacts/reporef"
 	"github.com/argoproj/argo/workflow/common"
 	controllercache "github.com/argoproj/argo/workflow/controller/cache"
 	"github.com/argoproj/argo/workflow/controller/estimation"
@@ -285,7 +286,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	if woc.execWf.Spec.ArtifactRepositoryRef != nil {
-		repo, err := woc.getArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef)
+		repo, err := reporef.GetArtifactRepositoryByRef(woc.controller.kubeclientset, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace, woc.controller.namespace)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
@@ -3031,31 +3032,6 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
-}
-
-func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
-	namespaces := []string{woc.wf.ObjectMeta.Namespace, woc.controller.namespace}
-	for _, namespace := range namespaces {
-		cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(namespace).Get(arRef.GetConfigMap(), metav1.GetOptions{})
-		if err != nil {
-			if apierr.IsNotFound(err) {
-				continue
-			}
-			return nil, err
-		}
-		value, ok := cm.Data[arRef.Key]
-		if !ok {
-			continue
-		}
-		woc.log.WithFields(log.Fields{"namespace": namespace, "name": cm.Name}).Debug("Found artifact repository by ref")
-		ar := &config.ArtifactRepository{}
-		err = yaml.Unmarshal([]byte(value), ar)
-		if err != nil {
-			return nil, err
-		}
-		return ar, nil
-	}
-	return nil, fmt.Errorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
