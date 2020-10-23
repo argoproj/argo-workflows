@@ -88,10 +88,6 @@ type Config struct {
 	// WorkflowRestrictions restricts the controller to executing Workflows that meet certain restrictions
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
-	// MaxStackDepth is a configurable limit to the depth of the "stack", which is increased with every template reference
-	// and decreased when such calls return. This is used to prevent infinite recursion.
-	MaxStackDepth int `json:"maxStackDepth,omitempty"`
-
 	// Adding a configurable initial delay (for K8S clusters with mutating web-hooks) to prevent workflows from getting modified by MWC.
 	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
 }

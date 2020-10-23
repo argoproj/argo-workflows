@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -5438,6 +5439,7 @@ func TestMaxDepth(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 
+	// Max depth is too small, error expected
 	controller.maxStackDepth = 2
 	woc := newWorkflowOperationCtx(wf, controller)
 
@@ -5450,6 +5452,7 @@ func TestMaxDepth(t *testing.T) {
 		assert.Contains(t, node.Message, "Maximum recursion depth exceeded")
 	}
 
+	// Max depth is enabled, but not too small, no error expected
 	controller.maxStackDepth = 3
 	woc = newWorkflowOperationCtx(wf, controller)
 
@@ -5468,4 +5471,33 @@ func TestMaxDepth(t *testing.T) {
 	makePodsPhase(woc, apiv1.PodSucceeded)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+}
+
+func TestMaxDepthEnvVariable(t *testing.T) {
+	wf := unmarshalWF(maxDepth)
+	cancel, controller := newController(wf)
+	defer cancel()
+
+	// Max depth is disabled, no error expected
+	controller.maxStackDepth = 2
+	woc := newWorkflowOperationCtx(wf, controller)
+	_ = os.Setenv("DISABLE_MAX_RECURSION", "true")
+
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	node := woc.wf.Status.Nodes["hello-world-713168755"]
+	if assert.NotNil(t, node) {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+	}
+
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	makePodsPhase(woc, apiv1.PodSucceeded)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+
+	_ = os.Unsetenv("DISABLE_MAX_RECURSION")
 }

@@ -246,7 +246,3 @@ data:
     #     Workflow cannot run an arbitrary Workflow, use this option.
     workflowRequirements:
       referenceOnly: true
-
-    # MaxStackDepth is a configurable limit to the depth of the "stack", which is increased with every template reference
-    # and decreased when such calls return. This is used to prevent infinite recursion. The default value is 150 calls.
-    maxStackDepth: 150

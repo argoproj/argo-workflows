@@ -116,7 +116,7 @@ var (
 	// ErrTimeout indicates a specific template timed out
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
-	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. To increase this maximum value see %s", help.ConfigureMaximumRecursionDepth))
+	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth))
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -1484,9 +1484,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	node := woc.wf.GetNodeByName(nodeName)
 
 	woc.currentStackDepth++
-	defer func() {woc.currentStackDepth--}()
+	defer func() { woc.currentStackDepth-- }()
 
-	if woc.currentStackDepth >= woc.controller.maxStackDepth {
+	if woc.currentStackDepth >= woc.controller.maxStackDepth && os.Getenv("DISABLE_MAX_RECURSION") != "true" {
 		return woc.initializeNodeOrMarkError(node, nodeName, tmplCtx.GetTemplateScope(), orgTmpl, opts.boundaryID, ErrMaxDepthExceeded), ErrMaxDepthExceeded
 	}
 

@@ -897,10 +897,7 @@ func (wfc *WorkflowController) getParallelism() int {
 }
 
 func (wfc *WorkflowController) getMaxStackDepth() int {
-	if wfc.Config.MaxStackDepth == 0 {
-		return defaultMaxStackDepth
-	}
-	return wfc.Config.MaxStackDepth
+	return defaultMaxStackDepth
 }
 
 func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {

@@ -52,5 +52,5 @@ You do not need to have one instance ID per namespace, you could have many or fe
 ### Maximum Recursion Depth
 
 In order to protect users against infinite recursion, the controller has a default maximum recursion depth of 150 calls to templates.
-If you need to increase this value, you may do so in the [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml) under
-`maxStackDepth`
+
+This protection can be disabled with the environment variable `DISABLE_MAX_RECURSION=true`
