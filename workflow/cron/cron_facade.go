@@ -42,10 +42,10 @@ func (f *cronFacade) Delete(key string) {
 	delete(f.entryIDs, key)
 }
 
-func (f *cronFacade) AddJob(key, schedule string, ctx *cronWfOperationCtx) error {
+func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	entryID, err := f.cron.AddJob(spec, ctx)
+	entryID, err := f.cron.AddJob(schedule, cwoc)
 	if err != nil {
 		return err
 	}
@@ -61,9 +61,9 @@ func (f *cronFacade) Load(key string) (*cronWfOperationCtx, error) {
 		return nil, fmt.Errorf("entry ID for %s not found", key)
 	}
 	entry := f.cron.Entry(entryID).Job
-	woc, ok := entry.(*cronWfOperationCtx)
+	cwoc, ok := entry.(*cronWfOperationCtx)
 	if !ok {
 		return nil, fmt.Errorf("job entry ID for %s was not a *cronWfOperationCtx, was %v", key, reflect.TypeOf(entry))
 	}
-	return woc, nil
+	return cwoc, nil
 }
