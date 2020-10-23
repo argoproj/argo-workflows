@@ -191,6 +191,8 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
+	// Loading the Execute workflow spec for execution
+	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	err := woc.loadExecWFFromWfDefaultOrWFTRef()
 	if err != nil {
 		woc.log.Errorf("loading WorkflowDefault or WorkflowTemplateRef failed: %v", err)
@@ -3108,7 +3110,9 @@ func (woc *wfOperationCtx) loadExecWFFromWfDefaultOrWFTRef() error {
 		if err != nil {
 			return err
 		}
-	} else {
+	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+		return fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
+	}else{
 		err := woc.controller.setWorkflowDefaults(woc.wf)
 		if err != nil {
 			return err

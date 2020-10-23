@@ -43,10 +43,6 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 		panic(err)
 	}
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	if err != nil {
-		panic(err)
-	}
 	return woc
 }
 

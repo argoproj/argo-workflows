@@ -612,7 +612,7 @@ func TestGetTTLStrategy(t *testing.T) {
 	}
 	t.Run("TTLFromWfDefaults", func(t *testing.T) {
 		wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
-		ttl := wf.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, thirty, *ttl.SecondsAfterCompletion)
 	})
@@ -622,14 +622,14 @@ func TestGetTTLStrategy(t *testing.T) {
 		wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
 			SecondsAfterCompletion: &ten,
 		}
-		ttl := wf.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 	})
 
 	t.Run("TTLInWfwithWorkflowTemplate", func(t *testing.T) {
 		wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
-		ttl := wf1.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf1.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 
@@ -642,25 +642,13 @@ func TestGetTTLStrategy(t *testing.T) {
 		wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
 		wf2.Spec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = &twenty
-		ttl := wf2.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf2.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
-		ttl = wf2.GetTTLStrategy(nil)
+		ttl = wf2.GetTTLStrategy()
 		assert.Nil(t, ttl)
 	})
 }
 
-func TestGetDefaultTTLStrategy(t *testing.T) {
-	controller := newTTLController()
-	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}}}
-	ttl := controller.getDefaultTTLStrategy()
-	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
-	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(20)}}}
-	ttl = controller.getDefaultTTLStrategy()
-	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
-	testConfig = config.Config{WorkflowDefaults: nil}
-	ttl = controller.getDefaultTTLStrategy()
-	assert.Nil(t, ttl)
-}
