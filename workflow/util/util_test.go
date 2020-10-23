@@ -175,6 +175,15 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
+func unmarshalWFT(yamlStr string) *wfv1.WorkflowTemplate {
+	var wft wfv1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &wft)
+	if err != nil {
+		panic(err)
+	}
+	return &wft
+}
+
 var yamlStr = `
 containers:
   - name: main

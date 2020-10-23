@@ -3114,6 +3114,7 @@ func (woc *wfOperationCtx) loadWfDefaultOrWorkflowTemplateRef() error {
 		if err != nil {
 			return err
 		}
+		woc.volumes = woc.wf.Spec.DeepCopy().Volumes
 	}
 	return nil
 }
@@ -3130,14 +3131,14 @@ func (woc *wfOperationCtx) setStoredWFSpec() error {
 		}
 		if woc.wf.Status.StoredWorkflowSpec == nil {
 			wftMetadata := wftHolder.GetWorkflowMetadata()
-			wfutil.MergeMetaDatato(wftMetadata, &woc.wf.ObjectMeta)
+			wfutil.MergeMetaDataTo(wftMetadata, &woc.wf.ObjectMeta)
 
 			wfDefault := woc.controller.Config.WorkflowDefaults
 			if wfDefault == nil {
 				wfDefault = &wfv1.Workflow{}
 			}
-			setMetaData(&wfDefault.ObjectMeta, &woc.wf.ObjectMeta)
-			mergedWf, err := mergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+			wfutil.MergeMetaDataTo(&wfDefault.ObjectMeta, &woc.wf.ObjectMeta)
+			mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 			if err != nil {
 				return err
 			}
@@ -3150,7 +3151,7 @@ func (woc *wfOperationCtx) setStoredWFSpec() error {
 			if wfDefault == nil {
 				wfDefault = &wfv1.Workflow{}
 			}
-			mergedWf, err := mergeWfSpecs(&woc.wf.Spec, woc.wf.Status.StoredWorkflowSpec, &wfDefault.Spec)
+			mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, woc.wf.Status.StoredWorkflowSpec, &wfDefault.Spec)
 			if err != nil {
 				return err
 			}
@@ -3175,47 +3176,10 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 	return nil
 }
 
-func mergeWfSpecs(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Workflow, error) {
-	if wfSpec == nil {
-		return nil, fmt.Errorf("invalid Workflow spec")
-	}
-	targetWf := wfv1.Workflow{Spec: *wfSpec.DeepCopy()}
-	if wftSpec != nil {
-		err := wfutil.MergeTo(&wfv1.Workflow{Spec: *wftSpec.DeepCopy()}, &targetWf)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if wfDefaultSpec != nil {
-		err := wfutil.MergeTo(&wfv1.Workflow{Spec: *wfDefaultSpec.DeepCopy()}, &targetWf)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &targetWf, nil
-}
-
-func setMetaData(patch, targetMetaData *metav1.ObjectMeta) {
-	if patch != nil && patch.Labels != nil {
-		if targetMetaData.Labels == nil {
-			targetMetaData.Labels = make(map[string]string)
-		}
-		wfutil.MergeMap(targetMetaData.Labels, patch.Labels)
-	}
-	if patch != nil && patch.Annotations != nil {
-		if targetMetaData.Annotations == nil {
-			targetMetaData.Annotations = make(map[string]string)
-		}
-		wfutil.MergeMap(targetMetaData.Annotations, patch.Annotations)
-	}
-}
-
 func (woc wfOperationCtx) fetchWFTSpec(wf *wfv1.Workflow) (wfv1.WorkflowSpecHolder, error) {
 	if wf.Spec.WorkflowTemplateRef == nil {
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
-	executionParameters.Artifacts = util.MergeArtifacts(executionParameters.Artifacts, woc.execWf.Spec.Arguments.Artifacts)
-
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	

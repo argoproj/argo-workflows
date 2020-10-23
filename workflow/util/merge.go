@@ -49,7 +49,27 @@ func MergeMap(left, right map[string]string) {
 	}
 }
 
-func MergeMetaDatato(patch, targetMetaData *metav1.ObjectMeta) {
+func MergeWfSpecs(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Workflow, error) {
+	if wfSpec == nil {
+		return nil, fmt.Errorf("invalid Workflow spec")
+	}
+	targetWf := wfv1.Workflow{Spec: *wfSpec.DeepCopy()}
+	if wftSpec != nil {
+		err := MergeTo(&wfv1.Workflow{Spec: *wftSpec.DeepCopy()}, &targetWf)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if wfDefaultSpec != nil {
+		err := MergeTo(&wfv1.Workflow{Spec: *wfDefaultSpec.DeepCopy()}, &targetWf)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &targetWf, nil
+}
+
+func MergeMetaDataTo(patch, targetMetaData *metav1.ObjectMeta) {
 	if patch != nil && patch.Labels != nil {
 		if targetMetaData.Labels == nil {
 			targetMetaData.Labels = make(map[string]string)
