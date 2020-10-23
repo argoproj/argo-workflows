@@ -42,7 +42,7 @@ func (f *cronFacade) Delete(key string) {
 	delete(f.entryIDs, key)
 }
 
-func (f *cronFacade) AddJob(key, spec string, ctx *cronWfOperationCtx) error {
+func (f *cronFacade) AddJob(key, schedule string, ctx *cronWfOperationCtx) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	entryID, err := f.cron.AddJob(spec, ctx)
