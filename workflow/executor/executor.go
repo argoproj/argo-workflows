@@ -150,7 +150,11 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
-		artDriver, err := we.InitDriver(&art)
+		driverArt, err := we.newDriverArt(&art)
+		if err != nil {
+			return err
+		}
+		artDriver, err := we.InitDriver(driverArt)
 		if err != nil {
 			return err
 		}
@@ -176,7 +180,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
-		err = artDriver.Load(&art, tempArtPath)
+		err = artDriver.Load(driverArt, tempArtPath)
 		if err != nil {
 			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
@@ -226,6 +230,25 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		}
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+	driverArt := art.DeepCopy()
+	if !driverArt.HasLocation() {
+		if we.Template.ArchiveLocation == nil {
+			return nil, fmt.Errorf("template artifact location not set")
+		}
+		driverArt.ArtifactLocation = *we.Template.ArchiveLocation.DeepCopy()
+		key, err := art.GetKey()
+		if err != nil {
+			return nil, err
+		}
+		err = driverArt.SetKey(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return driverArt, nil
 }
 
 // StageFiles will create any files required by script/resource templates
@@ -311,19 +334,9 @@ func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileBase, f
 		}
 	}
 	// we do not want to update anything other than the key
-	driverArt := art.DeepCopy()
-	if !driverArt.HasLocation() {
-		if we.Template.ArchiveLocation == nil {
-			return fmt.Errorf("template artifact location not set")
-		}
-		driverArt.ArtifactLocation = *we.Template.ArchiveLocation.DeepCopy()
-		key, err := art.GetKey()
-		if err != nil {
-			return err
-		}
-		if err := driverArt.SetKey(key); err != nil {
-			return err
-		}
+	driverArt, err := we.newDriverArt(art)
+	if err != nil {
+		return err
 	}
 	artDriver, err := we.InitDriver(driverArt)
 	if err != nil {

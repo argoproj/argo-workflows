@@ -3,7 +3,6 @@
 package e2e
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -50,7 +49,9 @@ func (s *SmokeSuite) TestRunAsNonRootWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	if s.Config.ContainerRuntimeExecutor != common.ContainerRuntimeExecutorDocker {
+	switch s.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorDocker, common.ContainerRuntimeExecutorPNS:
+	default:
 		s.T().Skip("non-docker not supported")
 	}
 	s.Given().
@@ -61,8 +62,6 @@ func (s *SmokeSuite) TestArtifactPassing() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			data, _ := json.Marshal(status)
-			println(data)
 		})
 }
 
