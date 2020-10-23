@@ -411,7 +411,7 @@ spec:
       args: ["{{inputs.parameters.message}}"]
   volumes:
   - name: data
-    empty: {}
+    emptyDir: {}
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
@@ -421,7 +421,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	defer cancel()
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
-	woc.operate()
+	woc.loadExecWFFromWfDefaultOrWFTRef()
 	assert.Equal(t, wftmpl.Spec.WorkflowSpec.Templates, woc.execWf.Spec.Templates)
 }
 
