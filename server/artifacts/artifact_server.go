@@ -139,28 +139,21 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 		return nil, fmt.Errorf("artifact not found")
 	}
 
-	if !art.HasLocation() {
-		key, err := art.GetKey()
+	artifactRepository := a.artifactRepository
+	if wf.Spec.ArtifactRepositoryRef != nil {
+		r, err := reporef.GetArtifactRepositoryByRef(a.kubernetesInterface, wf.Spec.ArtifactRepositoryRef, wf.Namespace, a.namespace)
 		if err != nil {
 			return nil, err
 		}
-		artifactRepository := a.artifactRepository
-		if wf.Spec.ArtifactRepositoryRef != nil {
-			r, err := reporef.GetArtifactRepositoryByRef(a.kubernetesInterface, wf.Spec.ArtifactRepositoryRef, wf.Namespace, a.namespace)
-			if err != nil {
-				return nil, err
-			}
-			artifactRepository = *r
-		}
-		l, err := artifactRepository.ToArtifactLocation()
-		if err != nil {
-			return nil, err
-		}
-		art.ArtifactLocation = *l
-		err = art.SetKey(key)
-		if err != nil {
-			return nil, err
-		}
+		artifactRepository = *r
+	}
+	l, err := artifactRepository.ToArtifactLocation()
+	if err != nil {
+		return nil, err
+	}
+	err = art.Relocate(l)
+	if err != nil {
+		return nil, err
 	}
 
 	driver, err := artifact.NewDriver(art, resources{kubeClient, wf.Namespace})
