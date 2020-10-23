@@ -138,8 +138,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Downloading artifact: %s", art.Name)
 
-		supplied, _ := art.HasLocationOrKey()
-		if !supplied {
+		if !art.HasLocationOrKey() {
 			if art.Optional {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
@@ -316,8 +315,7 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 
 // fileBase is probably path.Base(filePath), but can be something else
 func (we *WorkflowExecutor) saveArtifactFromFile(art *wfv1.Artifact, fileBase, filePath string) error {
-	hasKey, _ := art.HasKey()
-	if !hasKey {
+	if !art.HasKey() {
 		key, err := we.Template.ArchiveLocation.GetKey()
 		if err != nil {
 			return err
@@ -457,8 +455,7 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
 			// the input artifact volume. Since this function was called, we know that we want to use this path as an
 			// output artifact, so we should look for it in the base image path.
-			provided, _ := inArt.HasLocationOrKey()
-			if inArt.Optional && !provided {
+			if inArt.Optional && !inArt.HasLocationOrKey() {
 				return true
 			}
 			return false

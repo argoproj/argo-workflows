@@ -824,24 +824,21 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-func (a *ArtifactLocation) HasLocationOrKey() (bool, error) {
-	if a.HasLocation() {
-		return true, nil
-	}
-	return a.HasKey()
+func (a *ArtifactLocation) HasLocationOrKey() bool {
+	return a.HasLocation() || a.HasKey()
 }
 
 // HasKey returns whether or not an artifact has a key. They may or may not also HasLocation.
-func (a *ArtifactLocation) HasKey() (bool, error) {
+func (a *ArtifactLocation) HasKey() bool {
 	if a == nil {
-		return false, nil
+		return false
 	}
 	switch a.Get().(type) {
 	case *GitArtifact, *HTTPArtifact, *RawArtifact:
-		return false, nil
+		return false
 	default:
-		key, err := a.GetKey()
-		return key != "", err
+		key, _ := a.GetKey()
+		return key != ""
 	}
 }
 

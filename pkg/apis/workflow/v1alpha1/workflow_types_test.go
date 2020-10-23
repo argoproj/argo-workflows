@@ -113,10 +113,8 @@ func TestArtifactLocation_Get(t *testing.T) {
 func TestArtifactLocation_Key(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		var l *ArtifactLocation
-		hasKey, err := l.HasKey()
-		assert.NoError(t, err)
-		assert.False(t, hasKey)
-		_, err = l.GetKey()
+		assert.False(t, l.HasKey())
+		_, err := l.GetKey()
 		assert.Error(t, err)
 		err = l.SetKey("my-file")
 		assert.Error(t, err)
@@ -124,9 +122,8 @@ func TestArtifactLocation_Key(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		// unlike nil, empty is actually invalid
 		l := &ArtifactLocation{}
-		_, err := l.HasKey()
-		assert.Error(t, err)
-		_, err = l.GetKey()
+		assert.False(t, l.HasKey())
+		_, err := l.GetKey()
 		assert.Error(t, err)
 		err = l.SetKey("my-file")
 		assert.Error(t, err)
@@ -139,10 +136,8 @@ func TestArtifactLocation_Key(t *testing.T) {
 	})
 	t.Run("Git", func(t *testing.T) {
 		l := &ArtifactLocation{Git: &GitArtifact{}}
-		hasKey, err := l.HasKey()
-		assert.NoError(t, err)
-		assert.False(t, hasKey)
-		_, err = l.GetKey()
+		assert.False(t, l.HasKey())
+		_, err := l.GetKey()
 		assert.Error(t, err)
 		err = l.SetKey("my-file")
 		assert.Error(t, err)
@@ -173,10 +168,8 @@ func TestArtifactLocation_Key(t *testing.T) {
 	})
 	t.Run("Raw", func(t *testing.T) {
 		l := &ArtifactLocation{Raw: &RawArtifact{}}
-		hasKey, err := l.HasKey()
-		assert.NoError(t, err)
-		assert.False(t, hasKey)
-		_, err = l.GetKey()
+		assert.False(t, l.HasKey())
+		_, err := l.GetKey()
 		assert.Error(t, err)
 		err = l.SetKey("my-file")
 		assert.Error(t, err)
