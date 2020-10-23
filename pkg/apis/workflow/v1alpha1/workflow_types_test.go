@@ -239,9 +239,6 @@ func TestGetTTLStrategy(t *testing.T) {
 }
 
 func TestWfGetTTLStrategy(t *testing.T) {
-	ttl := TTLStrategy{
-		SecondsAfterCompletion: pointer.Int32Ptr(10),
-	}
 	wf := Workflow{}
 	result := wf.GetTTLStrategy()
 	assert.Equal(t, int32(10), *result.SecondsAfterCompletion)

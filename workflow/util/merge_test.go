@@ -1,7 +1,6 @@
 package util
 
 import (
-
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,7 +74,7 @@ func TestMergeMetaDataTo(t *testing.T) {
 	assert.NotContains(meta2.Labels, "test")
 }
 
-var wfDefault =`
+var wfDefault = `
 metadata: 
   annotations: 
     testAnnotation: test
@@ -113,7 +112,7 @@ spec:
       secret: 
         secretName: test
 `
-var wft =`
+var wft = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -136,7 +135,7 @@ spec:
         args: ["{{inputs.parameters.message}}"]
 `
 
-var wf =`
+var wf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
@@ -154,7 +153,7 @@ spec:
       name: whalesay
 `
 
-var resultSpec=`
+var resultSpec = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
@@ -212,7 +211,6 @@ spec:
         secretName: test
 
 `
-
 
 func TestMergeWfSpecs(t *testing.T) {
 	assert := assert.New(t)

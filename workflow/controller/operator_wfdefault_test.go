@@ -2,10 +2,11 @@ package controller
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
-	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -231,8 +232,7 @@ func TestWFDefaultsWithWorkflow(t *testing.T) {
 
 func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	assert := assert.New(t)
-	var wfDefault *wfv1.Workflow
-	wfDefault = unmarshalWF(wfDefaults)
+	wfDefault := unmarshalWF(wfDefaults)
 	wft := unmarshalWFTmpl(simpleWFT)
 	var resultSpec wfv1.WorkflowSpec
 	err := json.Unmarshal([]byte(storedSpecResult), &resultSpec)
@@ -308,4 +308,3 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	})
 
 }
-

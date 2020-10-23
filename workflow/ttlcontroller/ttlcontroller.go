@@ -29,21 +29,21 @@ const (
 type ConfigSupplier func() *config.Config
 
 type Controller struct {
-	wfclientset    wfclientset.Interface
-	wfInformer     cache.SharedIndexInformer
-	workqueue      workqueue.DelayingInterface
-	resyncPeriod   time.Duration
-	clock          clock.Clock
+	wfclientset  wfclientset.Interface
+	wfInformer   cache.SharedIndexInformer
+	workqueue    workqueue.DelayingInterface
+	resyncPeriod time.Duration
+	clock        clock.Clock
 }
 
 // NewController returns a new workflow ttl controller
 func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
 	controller := &Controller{
-		wfclientset:    wfClientset,
-		wfInformer:     wfInformer,
-		workqueue:      workqueue.NewDelayingQueue(),
-		resyncPeriod:   workflowTTLResyncPeriod,
-		clock:          clock.RealClock{},
+		wfclientset:  wfClientset,
+		wfInformer:   wfInformer,
+		workqueue:    workqueue.NewDelayingQueue(),
+		resyncPeriod: workflowTTLResyncPeriod,
+		clock:        clock.RealClock{},
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{

@@ -3074,7 +3074,7 @@ func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactReposi
 	return nil, fmt.Errorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }
 
-func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
+func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) {
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
@@ -3090,7 +3090,7 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	return specHolder.GetWorkflowSpec(), nil
+	return specHolder, nil
 }
 
 func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrategy {
@@ -3112,7 +3112,7 @@ func (woc *wfOperationCtx) loadExecWFFromWfDefaultOrWFTRef() error {
 		}
 	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 		return fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
-	}else{
+	} else {
 		err := woc.controller.setWorkflowDefaults(woc.wf)
 		if err != nil {
 			return err
@@ -3127,7 +3127,7 @@ func (woc *wfOperationCtx) setStoredWFSpec() error {
 		var wftHolder wfv1.WorkflowSpecHolder
 		var err error
 		if woc.wf.Status.StoredWorkflowSpec == nil || woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
-			wftHolder, err = woc.fetchWFTSpec(woc.wf)
+			wftHolder, err = woc.fetchWorkflowSpec()
 			if err != nil {
 				return err
 			}
@@ -3185,23 +3185,4 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 		}
 	}
 	return nil
-}
-
-func (woc wfOperationCtx) fetchWFTSpec(wf *wfv1.Workflow) (wfv1.WorkflowSpecHolder, error) {
-	if wf.Spec.WorkflowTemplateRef == nil {
-		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
-	}
-	var specHolder wfv1.WorkflowSpecHolder
-	var err error
-	
-	// Logic for workflow refers Workflow template
-	if wf.Spec.WorkflowTemplateRef.ClusterScope {
-		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(wf.Spec.WorkflowTemplateRef.Name)
-	} else {
-		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(wf.Namespace).Get(wf.Spec.WorkflowTemplateRef.Name)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return specHolder, nil
 }
