@@ -463,7 +463,7 @@ func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value str
 
 // AddPodLabel adds an label to pod
 func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(c, "labels", podName, namespace, key, value)
+	return addPodMetadata(c, "labels", podName, namespace, key, value, defaultPatchBackoff)
 }
 
 // addPodMetadata is helper to either add a pod label or annotation to the pod
