@@ -228,25 +228,6 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 	return nil
 }
 
-func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, error) {
-	driverArt := art.DeepCopy()
-	if !driverArt.HasLocation() {
-		if we.Template.ArchiveLocation == nil {
-			return nil, fmt.Errorf("template artifact location not set")
-		}
-		driverArt.ArtifactLocation = *we.Template.ArchiveLocation.DeepCopy()
-		key, err := art.GetKey()
-		if err != nil {
-			return nil, err
-		}
-		err = driverArt.SetKey(key)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return driverArt, nil
-}
-
 // StageFiles will create any files required by script/resource templates
 func (we *WorkflowExecutor) StageFiles() error {
 	var filePath string
@@ -579,6 +560,12 @@ func (we *WorkflowExecutor) saveLogToFile(mainCtrID, path string) error {
 		return errors.InternalWrapError(err)
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+	driverArt := art.DeepCopy()
+	err := driverArt.Relocate(we.Template.ArchiveLocation)
+	return driverArt, err
 }
 
 // InitDriver initializes an instance of an artifact driver

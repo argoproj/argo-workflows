@@ -908,6 +908,21 @@ func (a *ArtifactLocation) AppendToKey(x string) error {
 	return a.SetKey(path.Join(key, x))
 }
 
+func (a *ArtifactLocation) Relocate(l *ArtifactLocation) error {
+	if a.HasLocation() {
+		return nil
+	}
+	if l == nil {
+		return fmt.Errorf("template artifact location not set")
+	}
+	key, err := a.GetKey()
+	if err != nil {
+		return err
+	}
+	*a = *l.DeepCopy()
+	return a.SetKey(key)
+}
+
 // HasLocation whether or not an artifact has a *full* location defined
 // An artifact that has a location implicitly has a key (i.e. HasKey() == true).
 func (a *ArtifactLocation) HasLocation() bool {
