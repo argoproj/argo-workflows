@@ -1,4 +1,4 @@
-# Sychronization
+# Synchronization
 
 ![GA](assets/ga.svg)
 
@@ -14,7 +14,7 @@ from a workflow or template within a workflow.
 For example:
 ```yaml
 apiVersion: v1
- kind: ConfigMap
+kind: ConfigMap
 metadata:
  name: my-config
 data:

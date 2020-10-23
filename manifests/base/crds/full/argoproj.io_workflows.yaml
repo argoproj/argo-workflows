@@ -315,6 +315,8 @@ spec:
                                 format: int32
                                 type: integer
                             type: object
+                          zip:
+                            type: object
                         type: object
                       archiveLogs:
                         type: boolean
@@ -608,6 +610,10 @@ spec:
                     properties:
                       default:
                         type: string
+                      enum:
+                        items:
+                          type: string
+                        type: array
                       globalName:
                         type: string
                       name:
@@ -1471,6 +1477,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -1764,6 +1772,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -2354,6 +2366,8 @@ spec:
                                                 format: int32
                                                 type: integer
                                             type: object
+                                          zip:
+                                            type: object
                                         type: object
                                       archiveLogs:
                                         type: boolean
@@ -2647,6 +2661,10 @@ spec:
                                     properties:
                                       default:
                                         type: string
+                                      enum:
+                                        items:
+                                          type: string
+                                        type: array
                                       globalName:
                                         type: string
                                       name:
@@ -3310,6 +3328,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -3603,6 +3623,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -3749,6 +3773,8 @@ spec:
                                     compressionLevel:
                                       format: int32
                                       type: integer
+                                  type: object
+                                zip:
                                   type: object
                               type: object
                             archiveLogs:
@@ -4045,6 +4071,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -6730,6 +6760,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -7023,6 +7055,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -7086,6 +7122,8 @@ spec:
                                     compressionLevel:
                                       format: int32
                                       type: integer
+                                  type: object
+                                zip:
                                   type: object
                               type: object
                             archiveLogs:
@@ -7382,6 +7420,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -7416,6 +7458,8 @@ spec:
                     type: string
                   podIP:
                     type: string
+                  progress:
+                    type: string
                   resourcesDuration:
                     additionalProperties:
                       format: int64
@@ -7426,6 +7470,11 @@ spec:
                     type: string
                   storedTemplateID:
                     type: string
+                  synchronizationStatus:
+                    properties:
+                      waiting:
+                        type: string
+                    type: object
                   templateName:
                     type: string
                   templateRef:
@@ -7467,6 +7516,8 @@ spec:
                               compressionLevel:
                                 format: int32
                                 type: integer
+                            type: object
+                          zip:
                             type: object
                         type: object
                       archiveLogs:
@@ -7763,6 +7814,10 @@ spec:
                     properties:
                       default:
                         type: string
+                      enum:
+                        items:
+                          type: string
+                        type: array
                       globalName:
                         type: string
                       name:
@@ -8388,6 +8443,8 @@ spec:
               type: array
             phase:
               type: string
+            progress:
+              type: string
             resourcesDuration:
               additionalProperties:
                 format: int64
@@ -8950,6 +9007,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -9243,6 +9302,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -9833,6 +9896,8 @@ spec:
                                                 format: int32
                                                 type: integer
                                             type: object
+                                          zip:
+                                            type: object
                                         type: object
                                       archiveLogs:
                                         type: boolean
@@ -10126,6 +10191,10 @@ spec:
                                     properties:
                                       default:
                                         type: string
+                                      enum:
+                                        items:
+                                          type: string
+                                        type: array
                                       globalName:
                                         type: string
                                       name:
@@ -10789,6 +10858,8 @@ spec:
                                       format: int32
                                       type: integer
                                   type: object
+                                zip:
+                                  type: object
                               type: object
                             archiveLogs:
                               type: boolean
@@ -11082,6 +11153,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -11228,6 +11303,8 @@ spec:
                                     compressionLevel:
                                       format: int32
                                       type: integer
+                                  type: object
+                                zip:
                                   type: object
                               type: object
                             archiveLogs:
@@ -11524,6 +11601,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -13678,6 +13759,8 @@ spec:
                                     format: int32
                                     type: integer
                                 type: object
+                              zip:
+                                type: object
                             type: object
                           archiveLogs:
                             type: boolean
@@ -13971,6 +14054,10 @@ spec:
                         properties:
                           default:
                             type: string
+                          enum:
+                            items:
+                              type: string
+                            type: array
                           globalName:
                             type: string
                           name:
@@ -14834,6 +14921,8 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
+                                    zip:
+                                      type: object
                                   type: object
                                 archiveLogs:
                                   type: boolean
@@ -15127,6 +15216,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -15717,6 +15810,8 @@ spec:
                                                     format: int32
                                                     type: integer
                                                 type: object
+                                              zip:
+                                                type: object
                                             type: object
                                           archiveLogs:
                                             type: boolean
@@ -16010,6 +16105,10 @@ spec:
                                         properties:
                                           default:
                                             type: string
+                                          enum:
+                                            items:
+                                              type: string
+                                            type: array
                                           globalName:
                                             type: string
                                           name:
@@ -16673,6 +16772,8 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
+                                    zip:
+                                      type: object
                                   type: object
                                 archiveLogs:
                                   type: boolean
@@ -16966,6 +17067,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -17112,6 +17217,8 @@ spec:
                                         compressionLevel:
                                           format: int32
                                           type: integer
+                                      type: object
+                                    zip:
                                       type: object
                                   type: object
                                 archiveLogs:
@@ -17408,6 +17515,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:

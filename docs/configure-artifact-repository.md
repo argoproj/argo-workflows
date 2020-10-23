@@ -14,7 +14,7 @@ Subsequent sections will show how to use it.
 | HTTP | Yes | No | 2% |
 | OSS | Yes | Yes | - |
 | Raw | Yes | No | 5% |
-| S3 | Yes | Yes | 86% | 
+| S3 | Yes | Yes | 86% |
 
 ## Configuring Minio
 
@@ -142,7 +142,7 @@ access is on a per project rather than per bucket basis.
   (https://console.cloud.google.com/storage/settings).
 - Enable interoperability access if needed.
 - Create a new key if needed.
-- Configure `s3` artifact as following exmaple.
+- Configure `s3` artifact as following example.
 
 ```yaml
 artifacts:
@@ -168,7 +168,7 @@ artifacts:
 
 To configure artifact storage for Alibaba Cloud OSS, please first follow
 the [official documentation](https://www.alibabacloud.com/product/oss) to set up
-an OSS account and bucket. 
+an OSS account and bucket.
 
 Once it's set up, you can find endpoint and bucket
 information on your OSS dashboard and then use them like the following to
@@ -267,7 +267,7 @@ that you can specify a `keyFormat`.
 
 Argo also can use native GCS APIs to access a Google Cloud Storage bucket.
 
-`serviceAccountKeySecret` refereces to a k8 secret which stores a Google Cloud
+`serviceAccountKeySecret` references to a k8 secret which stores a Google Cloud
 service account key to access the bucket.
 
 Example:

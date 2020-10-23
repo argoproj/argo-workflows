@@ -436,14 +436,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 
 // expandStep expands a step containing withItems or withParams into multiple parallel steps
 func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
-	stepBytes, err := json.Marshal(step)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
-	}
+	var err error
 	expandedStep := make([]wfv1.WorkflowStep, 0)
 	var items []wfv1.Item
 	if len(step.WithItems) > 0 {
@@ -461,6 +454,21 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	} else {
 		// this should have been prevented in expandStepGroup()
 		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
+	}
+
+	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
+	// very poor performance, so we just nil them out
+	step.WithItems = nil
+	step.WithParam = ""
+	step.WithSequence = nil
+
+	stepBytes, err := json.Marshal(step)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	fstTmpl, err := fasttemplate.NewTemplate(string(stepBytes), "{{", "}}")
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse argo varaible: %w", err)
 	}
 
 	for i, item := range items {
@@ -499,7 +507,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	if node.Inputs != nil {
 		for _, param := range node.Inputs.Parameters {
 			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			localScope[key] = *param.Value
+			localScope[key] = param.Value.String()
 		}
 	}
 
@@ -509,7 +517,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		}
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
-			localScope[key] = *param.Value
+			localScope[key] = param.Value.String()
 		}
 	}
 
