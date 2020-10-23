@@ -1,6 +1,6 @@
 # Empty Dir
 
-While by default, the Docker and PNS [workflow executors](workflow-executors.md) can get output artifacts from the base layer (e.g. `/tmp`), neither the Kubelet or K8SAPI exectuors can. Nor are you likely to be able to get output artifacts from the base layer if you run your workflo pods a [security context](workflow-pod-security-context.md). 
+While by default, the Docker and PNS [workflow executors](workflow-executors.md) can get output artifacts from the base layer (e.g. `/tmp`), neither the Kubelet or the K8SAPI executors can. It is unlikely you can get output artifacts from the base layer if you run your workflow pods with a [security context](workflow-pod-security-context.md). 
 
 You can work-around this constraint by mounting volumes onto your pod. The easiest way to do this is to use as `emptytDir` volume. 
 
