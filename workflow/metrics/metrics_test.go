@@ -32,7 +32,7 @@ func TestServerConfig_SameServerAs(t *testing.T) {
 
 	b.Enabled = true
 	a.Enabled = true
-	b.Port = "9091"
+	b.Port = 9091
 	assert.False(t, a.SameServerAs(b))
 
 	b.Port = DefaultMetricsServerPort
