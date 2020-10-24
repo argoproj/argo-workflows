@@ -1251,7 +1251,7 @@ type WorkflowStatus struct {
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
 
 	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
-	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty"`
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

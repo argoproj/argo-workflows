@@ -1503,7 +1503,7 @@ message WorkflowStatus {
   // Synchronization stores the status of synchronization locks
   optional SynchronizationStatus synchronization = 15;
 
-  // ArtifactRepositoryRef caches the repository to use so we do not need to calculate every time we reconcille.
+  // ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
   optional ArtifactRepositoryRef artifactRepositoryRef = 18;
 }
 

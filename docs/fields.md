@@ -5540,8 +5540,6 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
-
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 </details>
 
@@ -6160,8 +6158,6 @@ Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap'
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
-
-- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`memoize-simple.yaml`](https://github.com/argoproj/argo/blob/master/examples/memoize-simple.yaml)
 </details>
