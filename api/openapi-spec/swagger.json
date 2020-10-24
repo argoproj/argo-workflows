@@ -2081,7 +2081,13 @@
         "configMap": {
           "type": "string"
         },
+        "default": {
+          "type": "boolean"
+        },
         "key": {
+          "type": "string"
+        },
+        "namespace": {
           "type": "string"
         }
       }
@@ -4556,6 +4562,10 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactRepositoryRef": {
+          "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef"
+        },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"

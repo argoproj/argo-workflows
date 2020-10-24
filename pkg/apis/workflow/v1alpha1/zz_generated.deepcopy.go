@@ -2520,6 +2520,11 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 		*out = new(SynchronizationStatus)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ArtifactRepositoryRef != nil {
+		in, out := &in.ArtifactRepositoryRef, &out.ArtifactRepositoryRef
+		*out = new(ArtifactRepositoryRef)
+		**out = **in
+	}
 	return
 }
 
