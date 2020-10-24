@@ -15,3 +15,5 @@ data:
 kind: ConfigMap
 metadata:
   name: my-artifact-repostiories
+  annotations:
+    workflow.argoproj.io/default-artifact-repository: default
