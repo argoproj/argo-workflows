@@ -26,22 +26,30 @@ type Interface interface {
 	Get(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error)
 }
 
-func New(kubernetesInterface kubernetes.Interface, managedNamespace string, defaultArtifactRepository *config.ArtifactRepository) Interface {
-	return &artifactRepositories{kubernetesInterface, managedNamespace, defaultArtifactRepository}
+func New(kubernetesInterface kubernetes.Interface, namespace string, defaultArtifactRepository *config.ArtifactRepository) Interface {
+	return &artifactRepositories{kubernetesInterface, namespace, defaultArtifactRepository}
 }
 
 type artifactRepositories struct {
 	kubernetesInterface       kubernetes.Interface
-	managedNamespace          string
+	namespace                 string
 	defaultArtifactRepository *config.ArtifactRepository
 }
 
 func (s *artifactRepositories) Resolve(ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRef, error) {
-	// if this is explicit, it is our preference and must exist
+	var refs []*wfv1.ArtifactRepositoryRef
 	if ref != nil {
-		return &wfv1.ArtifactRepositoryRef{Namespace: ref.GetNamespaceOr(workflowNamespace), ConfigMap: ref.ConfigMap, Key: ref.Key}, nil
+		refs = []*wfv1.ArtifactRepositoryRef{
+			{Namespace: ref.GetNamespaceOr(workflowNamespace), ConfigMap: ref.ConfigMap, Key: ref.Key},
+			{Namespace: ref.GetNamespaceOr(s.namespace), ConfigMap: ref.ConfigMap, Key: ref.Key},
+		}
+	} else {
+		refs = []*wfv1.ArtifactRepositoryRef{
+			{Namespace: workflowNamespace},
+			wfv1.DefaultArtifactRepositoryRef,
+		}
 	}
-	for _, resolvedRef := range []*wfv1.ArtifactRepositoryRef{{Namespace: workflowNamespace}, {Namespace: s.managedNamespace}, wfv1.DefaultArtifactRepositoryRef} {
+	for _, resolvedRef := range refs {
 		_, err := s.Get(resolvedRef)
 		if apierr.IsNotFound(err) {
 			continue

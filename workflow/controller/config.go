@@ -34,7 +34,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 		}
 	}
 	wfc.session = nil
-	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.managedNamespace, &wfc.Config.ArtifactRepository)
+	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
