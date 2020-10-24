@@ -20,9 +20,9 @@ import (
 //go:generate mockery -name Interface
 
 type Interface interface {
-	// ResolveArtifactRepositoryByRef Figures out the correct repository to for a workflow.
+	// Resolve Figures out the correct repository to for a workflow.
 	Resolve(ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRef, error)
-	// GetArtifactRepositoryByRef returns the referenced repository. May return nil (if no default artifact repository is configured).
+	// Get returns the referenced repository. May return nil (if no default artifact repository is configured).
 	Get(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error)
 }
 
@@ -49,7 +49,7 @@ func (s *artifactRepositories) Resolve(ref *wfv1.ArtifactRepositoryRef, workflow
 		if err != nil {
 			return nil, fmt.Errorf(`error getting config map for artifact repository ref "%v": %w`, resolvedRef, err)
 		}
-		log.WithField("artifactRepositoryRef", resolvedRef).Debug("resolved artifact repository by ref")
+		log.WithField("artifactRepositoryRef", resolvedRef).Info("resolved artifact repository")
 		return resolvedRef, nil
 	}
 	return nil, fmt.Errorf("failed to find any artifact repository - should never happen")

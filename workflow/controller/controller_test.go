@@ -141,13 +141,12 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
-			ArtifactRepository: config.ArtifactRepository{
-				S3: &config.S3ArtifactRepository{
-					S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
-				},
-			},
 		},
-		artifactRepositories: armocks.DummyArtifactRepositories,
+		artifactRepositories: armocks.DummyArtifactRepositories(&config.ArtifactRepository{
+			S3: &config.S3ArtifactRepository{
+				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+			},
+		}),
 		kubeclientset:        kube,
 		dynamicInterface:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
 		wfclientset:          wfclientset,

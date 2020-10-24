@@ -19,8 +19,8 @@ Subsequent sections will show how to use it.
 The actual repository used by a workflow is choose by the following rules:
 
 1. Anything explicitly configured using [Artifact Repository Ref](artifact-repository-ref.md). This is the most flexible, safe, and secure option.
-3. From a config map named `artifact-repositories` with the key `default` in the workflow's namespace.                                        
-4. From a config map named `artifact-repositories` with the key `default` in the workflow controller's namespace.                                        
+3. From a config map named `artifact-repositories` if it has a `workflows.argoproj.io/default-artifact-repository` in the workflow's namespace.                                        
+4. From a config map named `artifact-repositories` if it has a `workflows.argoproj.io/default-artifact-repository` in the workflow controller's namespace.                                        
 5. From a workflow controller configmap.
 
 ## Configuring Minio

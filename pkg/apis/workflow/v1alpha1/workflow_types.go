@@ -1250,7 +1250,7 @@ type WorkflowStatus struct {
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
 
-	// ArtifactRepositoryRef caches the repository to use so we do not need to calculate every time we reconcille.
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
 	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty"`
 }
 

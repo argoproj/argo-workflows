@@ -7,9 +7,9 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var DummyArtifactRepositories = &Interface{}
-
-func init() {
-	DummyArtifactRepositories.On("Resolve", mock.Anything, mock.Anything).Return(wfv1.DefaultArtifactRepositoryRef, nil)
-	DummyArtifactRepositories.On("Get", mock.Anything).Return(&config.ArtifactRepository{}, nil)
+func DummyArtifactRepositories(repo *config.ArtifactRepository) *Interface {
+	i := &Interface{}
+	i.On("Resolve", mock.Anything, mock.Anything).Return(wfv1.DefaultArtifactRepositoryRef, nil)
+	i.On("Get", mock.Anything).Return(repo, nil)
+	return i
 }

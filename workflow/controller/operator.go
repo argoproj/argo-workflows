@@ -271,7 +271,6 @@ func (woc *wfOperationCtx) operate() {
 			woc.computeMetrics(woc.execWf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration()
-
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()

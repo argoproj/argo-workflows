@@ -12,7 +12,11 @@ Create a suitable config map in either (a) your workflows namespace or (b) in th
 apiVersion: v1
 kind: ConfigMap
 metadata:
+    # if you want to use this config map by default - name it "artifact-repositories" 
   name: artifact-repositories
+  annotations:
+    # if you want to use a specific key, put that's key into this annotation 
+    workflows.argoproj.io/default-artifact-repository: default
 data:
   default: |
     s3:
@@ -32,9 +36,9 @@ You can override the repository for a workflow as follows:
 ```yaml
 spec:
   artifactRepositoryRef:
-    namespace: my-ns # default is the  workflows' namespace
+    namespace: my-ns # default is the  workflow's namespace
     configMap: my-cm # default is "artifact-repositories"
-    key: my-key # default is "default"
+    key: my-key # default can be set by the annotation
 ```
 
 Reference: [fields.md#artifactrepositoryref](fields.md#artifactrepositoryref).

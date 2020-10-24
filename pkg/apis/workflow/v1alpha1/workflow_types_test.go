@@ -244,24 +244,24 @@ func TestArtifactLocation_Key(t *testing.T) {
 		var l *ArtifactLocation
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot get nil")
 		err = l.SetKey("my-file")
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot set nil")
 	})
 	t.Run("Empty", func(t *testing.T) {
 		// unlike nil, empty is actually invalid
 		l := &ArtifactLocation{}
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot get empty")
 		err = l.SetKey("my-file")
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot set empty")
 	})
 	t.Run("Artifactory", func(t *testing.T) {
-		l := &ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "http://my-host?a=1"}}
+		l := &ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "http://my-host/my-dir?a=1"}}
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
-		assert.Equal(t, "http://my-host/my-file?a=1", l.Artifactory.URL)
+		assert.Equal(t, "http://my-host/my-dir/my-file?a=1", l.Artifactory.URL, "appends to Artifactory path")
 	})
 	t.Run("Git", func(t *testing.T) {
 		l := &ArtifactLocation{Git: &GitArtifact{}}
@@ -269,45 +269,45 @@ func TestArtifactLocation_Key(t *testing.T) {
 		_, err := l.GetKey()
 		assert.Error(t, err)
 		err = l.SetKey("my-file")
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot set Git key")
 	})
 	t.Run("GCS", func(t *testing.T) {
 		l := &ArtifactLocation{GCS: &GCSArtifact{Key: "my-dir"}}
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
-		assert.Equal(t, "my-dir/my-file", l.GCS.Key)
+		assert.Equal(t, "my-dir/my-file", l.GCS.Key, "appends to GCS key")
 	})
 	t.Run("HDFS", func(t *testing.T) {
 		l := &ArtifactLocation{HDFS: &HDFSArtifact{Path: "my-path"}}
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
-		assert.Equal(t, "my-path/my-file", l.HDFS.Path)
+		assert.Equal(t, "my-path/my-file", l.HDFS.Path, "appends to HDFS path")
 	})
 	t.Run("HTTP", func(t *testing.T) {
-		l := &ArtifactLocation{HTTP: &HTTPArtifact{URL: "http://my-host?a=1"}}
+		l := &ArtifactLocation{HTTP: &HTTPArtifact{URL: "http://my-host/my-dir?a=1"}}
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
-		assert.Equal(t, "http://my-host/my-file?a=1", l.HTTP.URL)
+		assert.Equal(t, "http://my-host/my-dir/my-file?a=1", l.HTTP.URL, "appends to HTTP URL path")
 	})
 	t.Run("OSS", func(t *testing.T) {
 		l := &ArtifactLocation{OSS: &OSSArtifact{Key: "my-dir"}}
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
-		assert.Equal(t, "my-dir/my-file", l.OSS.Key)
+		assert.Equal(t, "my-dir/my-file", l.OSS.Key, "appends to OSS key")
 	})
 	t.Run("Raw", func(t *testing.T) {
 		l := &ArtifactLocation{Raw: &RawArtifact{}}
 		assert.False(t, l.HasKey())
 		_, err := l.GetKey()
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot get raw key")
 		err = l.SetKey("my-file")
-		assert.Error(t, err)
+		assert.Error(t, err, "cannot set raw key")
 	})
 	t.Run("S3", func(t *testing.T) {
 		l := &ArtifactLocation{S3: &S3Artifact{Key: "my-dir"}}
 		err := l.AppendToKey("my-file")
 		assert.NoError(t, err)
-		assert.Equal(t, "my-dir/my-file", l.S3.Key)
+		assert.Equal(t, "my-dir/my-file", l.S3.Key, "appends to S3 key")
 	})
 }
 

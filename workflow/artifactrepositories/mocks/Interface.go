@@ -14,7 +14,7 @@ type Interface struct {
 	mock.Mock
 }
 
-// GetArtifactRepositoryByRef provides a mock function with given fields: ref
+// Get provides a mock function with given fields: ref
 func (_m *Interface) Get(ref *v1alpha1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
 	ret := _m.Called(ref)
 
@@ -37,7 +37,7 @@ func (_m *Interface) Get(ref *v1alpha1.ArtifactRepositoryRef) (*config.ArtifactR
 	return r0, r1
 }
 
-// ResolveArtifactRepositoryByRef provides a mock function with given fields: ref, workflowNamespace
+// Resolve provides a mock function with given fields: ref, workflowNamespace
 func (_m *Interface) Resolve(ref *v1alpha1.ArtifactRepositoryRef, workflowNamespace string) (*v1alpha1.ArtifactRepositoryRef, error) {
 	ret := _m.Called(ref, workflowNamespace)
 

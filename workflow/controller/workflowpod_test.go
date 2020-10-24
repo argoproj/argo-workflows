@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/util"
+	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -420,16 +421,20 @@ func TestMetadata(t *testing.T) {
 // TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
 func TestWorkflowControllerArchiveConfig(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
+}
+
+func setArtifactRepository(controller *WorkflowController, repo *config.ArtifactRepository) {
+	controller.artifactRepositories = armocks.DummyArtifactRepositories(repo)
 }
 
 // TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
@@ -445,12 +450,12 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		},
 	}
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "{{workflow.unresolvable}}",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -460,12 +465,12 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{S3: &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
 		KeyFormat: "path/in/bucket",
-	}
+	}})
 	woc.operate()
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -480,14 +485,17 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do  add archive location if it is needed for logs
 func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
-		S3Bucket: wfv1.S3Bucket{
-			Bucket: "foo",
+	setArtifactRepository(woc.controller, &config.ArtifactRepository{
+		S3: &config.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket: "foo",
+			},
+			KeyFormat: "path/in/bucket",
 		},
-		KeyFormat: "path/in/bucket",
-	}
-	woc.artifactRepository.ArchiveLogs = pointer.BoolPtr(true)
+		ArchiveLogs: pointer.BoolPtr(true),
+	})
 	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
