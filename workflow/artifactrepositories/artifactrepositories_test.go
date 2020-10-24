@@ -43,32 +43,44 @@ func TestArtifactRepositories(t *testing.T) {
 		err = k.CoreV1().ConfigMaps("my-ref-ns").Delete("artifact-repositories", nil)
 		assert.NoError(t, err)
 	})
-	t.Run("WorkflowNamespace", func(t *testing.T) {
+	t.Run("WorkflowNamespaceDefault", func(t *testing.T) {
 		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "artifact-repositories",
+				Annotations: map[string]string{
+					"workflows.argoproj.io/default-artifact-repository": "default",
+				},
+			},
 			Data: map[string]string{"default": `s3:
   bucket: my-wf-ns-bucket`},
 		})
 		assert.NoError(t, err)
 
 		ref, err := i.Resolve(nil, "my-wf-ns")
-		assert.NoError(t, err)
-		assert.Equal(t, "my-wf-ns", ref.Namespace)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "my-wf-ns", ref.Namespace)
+		}
 
 		err = k.CoreV1().ConfigMaps("my-wf-ns").Delete("artifact-repositories", nil)
 		assert.NoError(t, err)
 	})
-	t.Run("ManagedNamespace", func(t *testing.T) {
+	t.Run("ManagedNamespaceDefault", func(t *testing.T) {
 		_, err := k.CoreV1().ConfigMaps("my-mngd-ns").Create(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "artifact-repositories",
+				Annotations: map[string]string{
+					"workflows.argoproj.io/default-artifact-repository": "default",
+				},
+			},
 			Data: map[string]string{"default": `s3:
   bucket: my-mngd-ns-bucket`},
 		})
 		assert.NoError(t, err)
 
 		ref, err := i.Resolve(nil, "my-wf-ns")
-		assert.NoError(t, err)
-		assert.Equal(t, "my-mngd-ns", ref.Namespace)
+		if assert.NoError(t, err) {
+			assert.Equal(t, "my-mngd-ns", ref.Namespace)
+		}
 
 		err = k.CoreV1().ConfigMaps("my-mngd-ns").Delete("artifact-repositories", nil)
 		assert.NoError(t, err)

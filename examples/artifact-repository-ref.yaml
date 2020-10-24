@@ -5,7 +5,7 @@ metadata:
 spec:
   entrypoint: main
   artifactRepositoryRef:
-    configMap: my-artifact-repostiories
+    configMap: my-artifact-repositories
     key: my-key
   templates:
     - name: main

@@ -462,7 +462,7 @@ data:
         key: secretkey
 kind: ConfigMap
 metadata:
-  name: my-artifact-repostiories
+  name: my-artifact-repositories
 ---
 apiVersion: v1
 data:

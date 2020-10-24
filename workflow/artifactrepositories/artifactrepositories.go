@@ -62,15 +62,16 @@ func (s *artifactRepositories) Get(ref *wfv1.ArtifactRepositoryRef) (*config.Art
 	var cm *v1.ConfigMap
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(ref.Namespace).Get(ref.GetConfigMap(), metav1.GetOptions{})
+		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(ref.Namespace).Get(ref.GetConfigMapOr("artifact-repositories"), metav1.GetOptions{})
 		return err == nil || !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
 		return nil, err
 	}
-	value, ok := cm.Data[ref.GetKey()]
+	key := ref.GetKeyOr(cm.Annotations["workflows.argoproj.io/default-artifact-repository"])
+	value, ok := cm.Data[key]
 	if !ok {
-		return nil, fmt.Errorf(`config map missing key for artifact repository ref "%v"`, ref)
+		return nil, fmt.Errorf(`config map missing key %s for artifact repository ref "%v"`, ref, key)
 	}
 	repo := &config.ArtifactRepository{}
 	return repo, yaml.Unmarshal([]byte(value), repo)

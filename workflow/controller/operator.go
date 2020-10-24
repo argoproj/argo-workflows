@@ -135,14 +135,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
-	ref, err := wfc.artifactRepositories.Resolve(wf.Spec.ArtifactRepositoryRef, wf.Namespace)
-	if err != nil {
-		panic(err)
-	}
-	artifactRepository, err := wfc.artifactRepositories.Get(ref)
-	if err != nil {
-		panic(err)
-	}
 	woc := wfOperationCtx{
 		wf:      wfCopy,
 		orig:    wf,
@@ -160,7 +152,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:          wfc.eventRecorderManager.Get(wf.Namespace),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
-		artifactRepository:     artifactRepository,
 	}
 
 	if woc.wf.Status.Nodes == nil {

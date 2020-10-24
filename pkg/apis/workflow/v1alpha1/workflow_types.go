@@ -967,16 +967,16 @@ func (r *ArtifactRepositoryRef) GetNamespaceOr(namespace string) string {
 	return r.Namespace
 }
 
-func (r *ArtifactRepositoryRef) GetConfigMap() string {
+func (r *ArtifactRepositoryRef) GetConfigMapOr(configMap string) string {
 	if r == nil || r.ConfigMap == "" {
-		return "artifact-repositories"
+		return configMap
 	}
 	return r.ConfigMap
 }
 
-func (r *ArtifactRepositoryRef) GetKey() string {
+func (r *ArtifactRepositoryRef) GetKeyOr(key string) string {
 	if r == nil || r.Key == "" {
-		return "default"
+		return key
 	}
 	return r.Key
 }
@@ -988,7 +988,7 @@ func (r *ArtifactRepositoryRef) String() string {
 	if r.Default {
 		return "default-artifact-repository"
 	}
-	return fmt.Sprintf("%s/%s#%s", r.Namespace, r.GetConfigMap(), r.GetKey())
+	return fmt.Sprintf("%s/%s#%s", r.Namespace, r.ConfigMap, r.Key)
 }
 
 // Outputs hold parameters, artifacts, and results from a step
