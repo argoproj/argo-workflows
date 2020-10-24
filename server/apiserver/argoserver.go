@@ -46,6 +46,7 @@ import (
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -159,7 +160,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.kubeClientset)
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, as.kubeClientset, hydrator.New(offloadRepo), wfArchive, instanceIDService, config.ArtifactRepository, as.namespace)
+	artifactRepositories := artifactrepositories.New(as.kubeClientset, as.managedNamespace, &config.ArtifactRepository)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)

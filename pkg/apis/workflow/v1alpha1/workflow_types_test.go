@@ -311,19 +311,23 @@ func TestArtifactLocation_Key(t *testing.T) {
 	})
 }
 
-func TestArtifactRepositoryRef_IsZero(t *testing.T) {
-	assert.True(t, DefaultArtifactRepositoryRef.IsZero())
-	assert.False(t, (&ArtifactRepositoryRef{Namespace: "my-ns"}).IsZero())
-	assert.False(t, (&ArtifactRepositoryRef{ConfigMap: "my-cm"}).IsZero())
-	assert.False(t, (&ArtifactRepositoryRef{Key: "my-key"}).IsZero())
+func TestArtifactRepositoryRef_GetNamespaceOr(t *testing.T) {
+	var r *ArtifactRepositoryRef
+	assert.Equal(t, "or-ns", r.GetNamespaceOr("or-ns"))
+	assert.Equal(t, "or-ns", (&ArtifactRepositoryRef{}).GetNamespaceOr("or-ns"))
+	assert.Equal(t, "my-ns", (&ArtifactRepositoryRef{Namespace: "my-ns"}).GetNamespaceOr("or-ns"))
 }
 
 func TestArtifactRepositoryRef_GetConfigMap(t *testing.T) {
-	assert.Equal(t, "artifact-repositories", (DefaultArtifactRepositoryRef).GetConfigMap())
+	var r *ArtifactRepositoryRef
+	assert.Equal(t, "artifact-repositories", r.GetConfigMap())
+	assert.Equal(t, "artifact-repositories", (&ArtifactRepositoryRef{}).GetConfigMap())
 	assert.Equal(t, "my-cm", (&ArtifactRepositoryRef{ConfigMap: "my-cm"}).GetConfigMap())
 }
 
 func TestArtifactRepositoryRef_GetKey(t *testing.T) {
+	var r *ArtifactRepositoryRef
+	assert.Equal(t, "default", r.GetKey())
 	assert.Equal(t, "default", (&ArtifactRepositoryRef{}).GetKey())
 	assert.Equal(t, "my-key", (&ArtifactRepositoryRef{Key: "my-key"}).GetKey())
 }
@@ -332,6 +336,7 @@ func TestArtifactRepositoryRef_String(t *testing.T) {
 	var l *ArtifactRepositoryRef
 	assert.Equal(t, "nil", l.String())
 	assert.Equal(t, "my-ns/my-cm#my-key", (&ArtifactRepositoryRef{Namespace: "my-ns", ConfigMap: "my-cm", Key: "my-key"}).String())
+	assert.Equal(t, "default-artifact-repository", DefaultArtifactRepositoryRef.String())
 }
 
 func TestArtifact_GetArchive(t *testing.T) {

@@ -135,11 +135,11 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	wfCopy := wf.DeepCopyObject().(*wfv1.Workflow)
-	ref, err := wfc.artifactRepositories.ResolveArtifactRepositoryByRef(wf.Spec.ArtifactRepositoryRef, wf.Namespace)
+	ref, err := wfc.artifactRepositories.Resolve(wf.Spec.ArtifactRepositoryRef, wf.Namespace)
 	if err != nil {
 		panic(err)
 	}
-	artifactRepository, err := wfc.artifactRepositories.GetArtifactRepositoryByRef(ref)
+	artifactRepository, err := wfc.artifactRepositories.Get(ref)
 	if err != nil {
 		panic(err)
 	}
@@ -208,21 +208,19 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
-		r, err := woc.controller.artifactRepositories.ResolveArtifactRepositoryByRef(woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
+		ref, err := woc.controller.artifactRepositories.Resolve(woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
 		if err != nil {
 			woc.markWorkflowError(err, true)
-			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", err.Error())
+			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("failed to resolve artifact repository: %v", err))
 			return
 		}
-		woc.wf.Status.ArtifactRepositoryRef = r
+		woc.wf.Status.ArtifactRepositoryRef = ref
 	}
 
-	repo, err := woc.controller.artifactRepositories.GetArtifactRepositoryByRef(woc.wf.Status.ArtifactRepositoryRef)
+	repo, err := woc.controller.artifactRepositories.Get(woc.wf.Status.ArtifactRepositoryRef)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
-		woc.log.Errorf(msg)
 		woc.markWorkflowError(err, true)
-		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", msg)
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowFailed", fmt.Sprintf("failed to get artifact repository: %v", err))
 		return
 	}
 	woc.artifactRepository = repo

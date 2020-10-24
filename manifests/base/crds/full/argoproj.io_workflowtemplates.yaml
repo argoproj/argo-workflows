@@ -625,6 +625,8 @@ spec:
               properties:
                 configMap:
                   type: string
+                default:
+                  type: boolean
                 key:
                   type: string
                 namespace:

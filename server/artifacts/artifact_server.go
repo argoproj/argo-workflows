@@ -13,30 +13,26 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/artifactrepositories"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/artifacts/artifactrepository"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type ArtifactServer struct {
-	gatekeeper          auth.Gatekeeper
-	kubernetesInterface kubernetes.Interface
-	hydrator            hydrator.Interface
-	wfArchive           sqldb.WorkflowArchive
-	instanceIDService   instanceid.Service
-	artifactRepository  config.ArtifactRepository
-	namespace           string
+	gatekeeper           auth.Gatekeeper
+	hydrator             hydrator.Interface
+	wfArchive            sqldb.WorkflowArchive
+	instanceIDService    instanceid.Service
+	artifactRepositories artifactrepositories.Interface
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, kubernetesInterface kubernetes.Interface, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepository config.ArtifactRepository, namespace string) *ArtifactServer {
-	return &ArtifactServer{authN, kubernetesInterface, hydrator, wfArchive, instanceIDService, artifactRepository, namespace}
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artifactRepositories}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -139,15 +135,15 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 		return nil, fmt.Errorf("artifact not found")
 	}
 
-	artifactRepository := a.artifactRepository
-	r, err := artifactrepository.GetArtifactRepositoryByRef(a.kubernetesInterface, wf.Spec.ArtifactRepositoryRef, wf.Namespace, a.namespace)
+	ref, err := a.artifactRepositories.Resolve(wf.Spec.ArtifactRepositoryRef, wf.Namespace)
 	if err != nil {
 		return nil, err
 	}
-	if r != nil {
-		artifactRepository = *r
+	r, err := a.artifactRepositories.Get(ref)
+	if err != nil {
+		return nil, err
 	}
-	l := artifactRepository.ToArtifactLocation()
+	l := r.ToArtifactLocation()
 	err = art.Relocate(l)
 	if err != nil {
 		return nil, err

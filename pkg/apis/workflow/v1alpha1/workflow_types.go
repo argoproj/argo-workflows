@@ -955,12 +955,13 @@ type ArtifactRepositoryRef struct {
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	Default   bool   `json:"default,omitempty" protobuf:"varint,4,opt,name=default"` // indicate that this represents the default artifact repository
 }
 
-var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{}
+var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{Default: true}
 
 func (r *ArtifactRepositoryRef) GetNamespaceOr(namespace string) string {
-	if r == nil && r.Namespace == "" {
+	if r == nil || r.Namespace == "" {
 		return namespace
 	}
 	return r.Namespace
@@ -983,6 +984,9 @@ func (r *ArtifactRepositoryRef) GetKey() string {
 func (r *ArtifactRepositoryRef) String() string {
 	if r == nil {
 		return "nil"
+	}
+	if r.Default {
+		return "default-artifact-repository"
 	}
 	return fmt.Sprintf("%s/%s#%s", r.Namespace, r.GetConfigMap(), r.GetKey())
 }

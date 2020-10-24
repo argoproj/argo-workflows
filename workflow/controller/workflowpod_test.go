@@ -498,35 +498,6 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
-// TestConditionalNoAddArchiveLocation verifies we add archive location when it is needed
-func TestConditionalArchiveLocation(t *testing.T) {
-	wf := unmarshalWF(helloWorldWf)
-	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
-		Artifacts: []wfv1.Artifact{
-			{
-				Name: "foo",
-				Path: "/tmp/file",
-			},
-		},
-	}
-	woc := newWoc()
-	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
-		S3Bucket: wfv1.S3Bucket{
-			Bucket: "foo",
-		},
-		KeyFormat: "path/in/bucket",
-	}
-	woc.operate()
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Len(t, pods.Items, 1)
-	pod := pods.Items[0]
-	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
-	assert.NoError(t, err)
-	assert.Nil(t, tmpl.ArchiveLocation)
-}
-
 // TestVolumeAndVolumeMounts verifies the ability to carry forward volumes and volumeMounts from workflow.spec
 func TestVolumeAndVolumeMounts(t *testing.T) {
 	volumes := []apiv1.Volume{

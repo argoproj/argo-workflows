@@ -17,12 +17,13 @@ import (
 	"github.com/argoproj/argo/util/retry"
 )
 
+//go:generate mockery -name Interface
+
 type Interface interface {
-	// Figures out the correct repository to for a workflow. This maybe a zero-valued repository - indicating you should be using
-	// the default.
-	ResolveArtifactRepositoryByRef(ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRef, error)
-	// GetArtifactRepositoryByRef returns the referenced repository. May return nil.
-	GetArtifactRepositoryByRef(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error)
+	// ResolveArtifactRepositoryByRef Figures out the correct repository to for a workflow.
+	Resolve(ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRef, error)
+	// GetArtifactRepositoryByRef returns the referenced repository. May return nil (if no default artifact repository is configured).
+	Get(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error)
 }
 
 func New(kubernetesInterface kubernetes.Interface, managedNamespace string, defaultArtifactRepository *config.ArtifactRepository) Interface {
@@ -35,32 +36,27 @@ type artifactRepositories struct {
 	defaultArtifactRepository *config.ArtifactRepository
 }
 
-func (s *artifactRepositories) ResolveArtifactRepositoryByRef(ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRef, error) {
+func (s *artifactRepositories) Resolve(ref *wfv1.ArtifactRepositoryRef, workflowNamespace string) (*wfv1.ArtifactRepositoryRef, error) {
 	// if this is explicit, it is our preference and must exist
 	if ref != nil {
-		return &wfv1.ArtifactRepositoryRef{
-			Namespace: ref.GetNamespaceOr(workflowNamespace),
-			ConfigMap: ref.GetConfigMap(),
-			Key:       ref.GetKey(),
-		}, nil
+		return &wfv1.ArtifactRepositoryRef{Namespace: ref.GetNamespaceOr(workflowNamespace), ConfigMap: ref.ConfigMap, Key: ref.Key}, nil
 	}
-
-	for _, r := range []*wfv1.ArtifactRepositoryRef{{Namespace: workflowNamespace}, {Namespace: s.managedNamespace}, wfv1.DefaultArtifactRepositoryRef} {
-		_, err := s.GetArtifactRepositoryByRef(r)
+	for _, resolvedRef := range []*wfv1.ArtifactRepositoryRef{{Namespace: workflowNamespace}, {Namespace: s.managedNamespace}, wfv1.DefaultArtifactRepositoryRef} {
+		_, err := s.Get(resolvedRef)
 		if apierr.IsNotFound(err) {
 			continue
 		}
 		if err != nil {
-			return nil, fmt.Errorf(`error getting config map for artifact repository ref "%v": %w`, r, err)
+			return nil, fmt.Errorf(`error getting config map for artifact repository ref "%v": %w`, resolvedRef, err)
 		}
-		log.WithField("ref", r).Debug("found artifact repository by ref")
-		return r, nil
+		log.WithField("artifactRepositoryRef", resolvedRef).Debug("resolved artifact repository by ref")
+		return resolvedRef, nil
 	}
 	return nil, fmt.Errorf("failed to find any artifact repository - should never happen")
 }
 
-func (s *artifactRepositories) GetArtifactRepositoryByRef(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
-	if ref == wfv1.DefaultArtifactRepositoryRef {
+func (s *artifactRepositories) Get(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
+	if ref.Default {
 		return s.defaultArtifactRepository, nil
 	}
 	var cm *v1.ConfigMap
@@ -76,6 +72,6 @@ func (s *artifactRepositories) GetArtifactRepositoryByRef(ref *wfv1.ArtifactRepo
 	if !ok {
 		return nil, fmt.Errorf(`config map missing key for artifact repository ref "%v"`, ref)
 	}
-	ar := &config.ArtifactRepository{}
-	return ar, yaml.Unmarshal([]byte(value), ar)
+	repo := &config.ArtifactRepository{}
+	return repo, yaml.Unmarshal([]byte(value), repo)
 }

@@ -118,6 +118,8 @@ message ArtifactRepositoryRef {
   optional string configMap = 1;
 
   optional string key = 2;
+
+  optional bool default = 4;
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact
@@ -1500,6 +1502,9 @@ message WorkflowStatus {
 
   // Synchronization stores the status of synchronization locks
   optional SynchronizationStatus synchronization = 15;
+
+  // ArtifactRepositoryRef caches the repository to use so we do not need to calculate every time we reconcille.
+  optional ArtifactRepositoryRef artifactRepositoryRef = 18;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
