@@ -113,12 +113,16 @@ message ArtifactLocation {
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRef {
+  // The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
   optional string namespace = 3;
 
+  // The name of the config map. Defaults to "artifact-repositories".
   optional string configMap = 1;
 
+  // The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
   optional string key = 2;
 
+  // If this ref represents the default artifact repository, rather than a config map.
   optional bool default = 4;
 }
 

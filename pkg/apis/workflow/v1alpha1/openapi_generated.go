@@ -413,26 +413,30 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"namespace": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The name of the config map. Defaults to \"artifact-repositories\".",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"default": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
-							Format: "",
+							Description: "If this ref represents the default artifact repository, rather than a config map.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

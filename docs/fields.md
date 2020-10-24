@@ -1493,10 +1493,10 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|`string`|_No description available_|
-|`default`|`boolean`|_No description available_|
-|`key`|`string`|_No description available_|
-|`namespace`|`string`|_No description available_|
+|`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
+|`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
+|`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
+|`namespace`|`string`|The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).|
 
 ## ExecutorConfig
 
