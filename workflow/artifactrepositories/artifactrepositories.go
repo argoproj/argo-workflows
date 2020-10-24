@@ -49,38 +49,48 @@ func (s *artifactRepositories) Resolve(ref *wfv1.ArtifactRepositoryRef, workflow
 			wfv1.DefaultArtifactRepositoryRef,
 		}
 	}
-	for _, resolvedRef := range refs {
-		_, err := s.Get(resolvedRef)
+	for _, r := range refs {
+		resolvedRef, _, err := s.get(r)
 		if apierr.IsNotFound(err) {
 			continue
 		}
 		if err != nil {
-			return nil, fmt.Errorf(`error getting config map for artifact repository ref "%v": %w`, resolvedRef, err)
+			return nil, fmt.Errorf(`error getting config map for artifact repository ref "%v": %w`, r, err)
 		}
-		log.WithField("artifactRepositoryRef", resolvedRef).Info("resolved artifact repository")
+		log.WithField("artifactRepositoryRef", r).Info("resolved artifact repository")
 		return resolvedRef, nil
 	}
 	return nil, fmt.Errorf("failed to find any artifact repository - should never happen")
 }
 
 func (s *artifactRepositories) Get(ref *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
+	_, repo, err := s.get(ref)
+	return repo, err
+}
+
+func (s *artifactRepositories) get(ref *wfv1.ArtifactRepositoryRef) (*wfv1.ArtifactRepositoryRef, *config.ArtifactRepository, error) {
 	if ref.Default {
-		return s.defaultArtifactRepository, nil
+		return ref, s.defaultArtifactRepository, nil
 	}
 	var cm *v1.ConfigMap
+	namespace := ref.Namespace
+	configMap := ref.GetConfigMapOr("artifact-repositories")
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(ref.Namespace).Get(ref.GetConfigMapOr("artifact-repositories"), metav1.GetOptions{})
+		cm, err = s.kubernetesInterface.CoreV1().ConfigMaps(namespace).Get(configMap, metav1.GetOptions{})
 		return err == nil || !errorsutil.IsTransientErr(err), err
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	key := ref.GetKeyOr(cm.Annotations["workflows.argoproj.io/default-artifact-repository"])
 	value, ok := cm.Data[key]
 	if !ok {
-		return nil, fmt.Errorf(`config map missing key %s for artifact repository ref "%v"`, ref, key)
+		return nil, nil, fmt.Errorf(`config map missing key %s for artifact repository ref "%v"`, ref, key)
 	}
 	repo := &config.ArtifactRepository{}
-	return repo, yaml.Unmarshal([]byte(value), repo)
+	// we need the fully filled out ref so we can store it in the workflow status and it will never change
+	// (even if the config map default annotation is changed)
+	// this means users can change the default
+	return &wfv1.ArtifactRepositoryRef{Namespace: namespace, ConfigMap: configMap, Key: key}, repo, yaml.Unmarshal([]byte(value), repo)
 }

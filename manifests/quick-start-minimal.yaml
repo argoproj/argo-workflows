@@ -448,7 +448,7 @@ subjects:
 ---
 apiVersion: v1
 data:
-  default: |
+  default-v1: |
     archiveLogs: true
     s3:
       bucket: my-bucket
@@ -475,7 +475,7 @@ data:
 kind: ConfigMap
 metadata:
   annotations:
-    workflows.argoproj.io/default-artifact-repository: default
+    workflows.argoproj.io/default-artifact-repository: default-v1
   name: artifact-repositories
 ---
 apiVersion: v1

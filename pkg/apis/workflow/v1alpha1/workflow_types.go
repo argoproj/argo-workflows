@@ -952,10 +952,14 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
+	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+	// The name of the config map. Defaults to "artifact-repositories".
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
-	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
-	Default   bool   `json:"default,omitempty" protobuf:"varint,4,opt,name=default"` // indicate that this represents the default artifact repository
+	// The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	// If this ref represents the default artifact repository, rather than a config map.
+	Default bool `json:"default,omitempty" protobuf:"varint,4,opt,name=default"`
 }
 
 var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{Default: true}
