@@ -47,6 +47,10 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     private changesSubscription: Subscription;
     private timelineComponent: WorkflowTimeline;
 
+    private get resourceVersion() {
+        return this.state.workflow && this.state.workflow.metadata.resourceVersion;
+    }
+
     private get selectedTabKey() {
         return new URLSearchParams(this.props.location.search).get('tab') || 'workflow';
     }
@@ -325,15 +329,16 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.changesSubscription = null;
     }
 
-    private async loadWorkflow(namespace: string, name: string) {
+    private loadWorkflow(namespace: string, name: string) {
         try {
             this.ensureUnsubscribed();
             this.changesSubscription = services.workflows
-                .watch({name, namespace})
+                .watch({name, namespace, resourceVersion: this.resourceVersion})
                 .map(changeEvent => changeEvent.object)
                 .subscribe(
                     workflow => this.setState({workflow, error: null}),
-                    error => this.setState({error})
+                    error => this.setState({error}),
+                    () => this.loadWorkflow(namespace, name)
                 );
         } catch (error) {
             this.setState({error});
