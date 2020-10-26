@@ -26,5 +26,11 @@ spec:
               path: /
             initialDelaySeconds: 10
             periodSeconds: 20
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: tmp
+          emptyDir: { }
       nodeSelector:
         kubernetes.io/os: linux
