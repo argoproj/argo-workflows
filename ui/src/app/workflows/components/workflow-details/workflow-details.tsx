@@ -337,8 +337,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                 .map(changeEvent => changeEvent.object)
                 .subscribe(
                     workflow => this.setState({workflow, error: null}),
-                    error => this.setState({error}),
-                    () => this.loadWorkflow(namespace, name)
+                    error => this.setState({error}, () => this.loadWorkflow(namespace, name))
                 );
         } catch (error) {
             this.setState({error});
