@@ -126,7 +126,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                         ))}
                     </div>
                     <p>
-                        <i className='fa fa-info-circle' /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. {learnMore}.
+                        <i className='fa fa-info-circle' /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. <ExampleManifests/>. {learnMore}.
                     </p>
                 </div>
             </div>
