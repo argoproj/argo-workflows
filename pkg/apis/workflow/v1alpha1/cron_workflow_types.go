@@ -63,7 +63,7 @@ type CronWorkflowSpec struct {
 	StartingDeadlineSeconds *int64 `json:"startingDeadlineSeconds,omitempty" protobuf:"varint,5,opt,name=startingDeadlineSeconds"`
 	// SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
 	SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit,omitempty" protobuf:"varint,6,opt,name=successfulJobsHistoryLimit"`
-	// FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
+	// FailedJobsHistoryLimit is the number of failed jobs to be kept at a time
 	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty" protobuf:"varint,7,opt,name=failedJobsHistoryLimit"`
 	// Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
