@@ -2352,7 +2352,7 @@
           "type": "string"
         },
         "failedJobsHistoryLimit": {
-          "description": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time",
+          "description": "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
           "type": "integer",
           "format": "int32"
         },
