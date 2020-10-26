@@ -140,6 +140,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	if wf.Spec.WorkflowTemplateRef != nil {
 		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
+		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -707,7 +708,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
-		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && *i < 0 {
+		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && i != nil && *i < 0 {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 	}
@@ -759,6 +760,21 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
 		if param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+		}
+		if param.Enum != nil {
+			if len(param.Enum) == 0 {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
+			}
+			valueSpecifiedInEnumList := false
+			for _, enum := range param.Enum {
+				if enum == *param.Value {
+					valueSpecifiedInEnumList = true
+					break
+				}
+			}
+			if !valueSpecifiedInEnumList {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
+			}
 		}
 	}
 	for _, art := range arguments.Artifacts {
@@ -1006,7 +1022,7 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 		// docker executor supports all modes of artifact outputs
 	case common.ContainerRuntimeExecutorPNS:
 		// pns supports copying from the base image, but only if there is no volume mount underneath it
-		errMsg := "pns executor does not support outputs from base image layer with volume mounts. must use emptyDir"
+		errMsg := "pns executor does not support outputs from base image layer with volume mounts. Use an emptyDir: https://argoproj.github.io/argo/empty-dir/"
 		for _, out := range tmpl.Outputs.Artifacts {
 			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
 				// output is in the base image layer. need to verify there are no volume mounts under it
@@ -1029,7 +1045,7 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 		}
 	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
 		// for kubelet/k8s fail validation if we detect artifact is copied from base image layer
-		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer. must use emptyDir", ctx.ContainerRuntimeExecutor)
+		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer.  Use an emptyDir: https://argoproj.github.io/argo/empty-dir/", ctx.ContainerRuntimeExecutor)
 		for _, out := range tmpl.Outputs.Artifacts {
 			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
@@ -1174,6 +1190,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if task.Depends != "" {
 			usingDepends = true
 		}
+
 		nameToTask[task.Name] = task
 	}
 
@@ -1186,6 +1203,10 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
+
+		if usingDepends && '0' <= task.Name[0] && task.Name[0] <= '9' {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using 'depends'", tmpl.Name, task.Name)
+		}
 
 		if usingDepends && len(task.Dependencies) > 0 {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)

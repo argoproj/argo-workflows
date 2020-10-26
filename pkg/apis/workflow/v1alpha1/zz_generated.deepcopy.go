@@ -1365,6 +1365,11 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 		*out = new(ValueFrom)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Enum != nil {
+		in, out := &in.Enum, &out.Enum
+		*out = make([]Int64OrString, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
