@@ -283,7 +283,7 @@ func (cc *Controller) addWorkflowInformerHandler() {
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
+				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
 					cc.wfQueue.Add(key)
 				}
