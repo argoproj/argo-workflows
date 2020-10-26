@@ -5,6 +5,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
@@ -85,6 +86,9 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                 editing={true}
                                 kind='CronWorkflow'
                             />
+                            <p>
+                                <ExampleManifests />.
+                            </p>
                         </SlidingPanel>
                     </Page>
                 )}
@@ -116,7 +120,9 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
             return (
                 <ZeroState title='No cron workflows'>
                     <p>You can create new cron workflows here or using the CLI.</p>
-                    <p>{learnMore}.</p>
+                    <p>
+                        <ExampleManifests />. {learnMore}.
+                    </p>
                 </ZeroState>
             );
         }
@@ -148,7 +154,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                     ))}
                 </div>
                 <p>
-                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. {learnMore}.
+                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. <ExampleManifests />. {learnMore}.
                 </p>
             </>
         );
