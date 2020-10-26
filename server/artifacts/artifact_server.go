@@ -153,8 +153,7 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	if err != nil {
 		return nil, err
 	}
-
-	tmp, err := ioutil.TempFile(".", "artifact")
+	tmp, err := ioutil.TempFile("/tmp", "artifact")
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +169,6 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	if err != nil {
 		return nil, err
 	}
-
 	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
 
 	return file, nil
