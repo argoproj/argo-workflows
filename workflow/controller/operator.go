@@ -307,6 +307,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.requeue(defaultRequeueTime)
 			return
 		}
+		err = fmt.Errorf("pvc create error: %w", err)
 		woc.log.WithError(err).Error("pvc create error")
 		woc.markWorkflowError(err)
 		return
