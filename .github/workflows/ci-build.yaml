@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         # kubelet is not included because it'd take ages to get it working methinks
-        test: [ "smoke", "test-e2e", "test-e2e-cli", "test-e2e-cron" ]
+        test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
         containerRuntimeExecutor: [ "docker", "k8sapi", "pns" ]
         # ok, so we're only running `smoke` for all CREs,
         exclude:
@@ -51,9 +51,9 @@ jobs:
             containerRuntimeExecutor: k8sapi
           - test: test-e2e
             containerRuntimeExecutor: pns
-          - test: test-e2e-cli
+          - test: test-cli
             containerRuntimeExecutor: k8sapi
-          - test: test-e2e-cli
+          - test: test-cli
             containerRuntimeExecutor: pns
           - test: test-e2e-cron
             containerRuntimeExecutor: k8sapi

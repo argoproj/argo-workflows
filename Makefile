@@ -460,9 +460,9 @@ mysql-cli:
 test-e2e:
 	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
 
-.PHONY: test-e2e-cli
-test-e2e-cli:
-	$(GOTEST) -timeout 10m -count 1 --tags e2e-cli -p 1 --short ./test/e2e
+.PHONY: test-cli
+test-cli:
+	$(GOTEST) -timeout 10m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
