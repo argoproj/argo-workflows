@@ -2570,6 +2570,12 @@
     "io.argoproj.workflow.v1alpha1.GetUserInfoResponse": {
       "type": "object",
       "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "issuer": {
           "type": "string"
         },
