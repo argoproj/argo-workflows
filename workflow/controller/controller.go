@@ -749,7 +749,9 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.GetManagedNamespace()
+	requirement, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, []string{})
 	labelSelector := labels.NewSelector().
+		Add(*requirement).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
