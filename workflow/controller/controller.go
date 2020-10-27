@@ -99,6 +99,7 @@ type WorkflowController struct {
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
+	configMapName         string
 }
 
 const (
@@ -125,15 +126,17 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
+		configController:           config.NewController(managedNamespace, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
+		configMapName:              configMap,
 	}
 
 	wfc.UpdateConfig()
+	wfc.configController.RegisterObserver(&wfc)
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
@@ -183,7 +186,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.podInformer = wfc.newPodInformer()
 	wfc.updateEstimatorFactory()
 
-	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
+	go wfc.configController.Run(ctx.Done())
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -206,6 +209,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	// Create Synchronization Manager
 	err := wfc.createSynchronizationManager()
+	wfc.configController.RegisterObserver(wfc.syncManager)
 	if err != nil {
 		panic(err)
 	}
@@ -284,7 +288,7 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 }
 
 func (wfc *WorkflowController) UpdateConfig() {
-	config, err := wfc.configController.Get()
+	config, err := wfc.configController.Get(wfc.namespace, wfc.configMapName, config.EmptyConfigFunc)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
@@ -945,4 +949,24 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(obj interface{}) {
 
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
 	return wfc.archiveLabelSelector.Matches(labels.Set(wf.Labels))
+}
+
+func (wfc *WorkflowController) Update(config interface{}) error {
+	return wfc.updateConfig(config)
+}
+
+func (wfc *WorkflowController) GetConfigKeyFilter() []string {
+	return []string{fmt.Sprintf("%s/%s", wfc.namespace, wfc.configMapName)}
+}
+
+func (wfc *WorkflowController) GetEmptyConfigFunc() func() interface{} {
+	return config.EmptyConfigFunc
+}
+
+func (wfc *WorkflowController) EnableConfigParse() bool {
+	return true
+}
+
+func (wfc *WorkflowController) GetName() string {
+	return "WorkflowController"
 }

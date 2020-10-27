@@ -12,4 +12,5 @@ type Semaphore interface {
 	getName() string
 	getLimit() int
 	resize(n int) bool
+	getWaitingWfs() []string
 }

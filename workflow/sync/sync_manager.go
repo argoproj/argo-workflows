@@ -2,9 +2,11 @@ package sync
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -279,4 +281,36 @@ func (cm *Manager) checkAndUpdateSemaphoreSize(semaphore Semaphore) error {
 		semaphore.resize(newLimit)
 	}
 	return nil
+}
+
+func (cm *Manager) NotifyLockChange(syncName string) {
+	for key, val := range cm.syncLockMap {
+		if strings.HasPrefix(key, syncName) {
+			for _, wf := range val.getWaitingWfs() {
+				cm.nextWorkflow(wf)
+			}
+		}
+	}
+}
+
+func (cm *Manager) Update(config interface{}) error {
+	syncConfig := config.(*apiv1.ConfigMap)
+	cm.NotifyLockChange(fmt.Sprintf("%s/%s/%s", syncConfig.Namespace, LockKindConfigMap, syncConfig.Name))
+	return nil
+}
+
+func (cm *Manager) GetConfigKeyFilter() []string {
+	return []string{}
+}
+
+func (cm *Manager) GetEmptyConfigFunc() func() interface{} {
+	return func() interface{} { return apiv1.ConfigMap{} }
+}
+
+func (cm *Manager) EnableConfigParse() bool {
+	return false
+}
+
+func (cm *Manager) GetName() string {
+	return "Sync-Manager"
 }

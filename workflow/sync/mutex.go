@@ -11,6 +11,10 @@ type PriorityMutex struct {
 	lock  *sync.Mutex
 }
 
+func (m *PriorityMutex) getWaitingWfs() []string {
+	panic("implement me")
+}
+
 var _ Semaphore = &PriorityMutex{}
 
 // NewMutex creates new mutex lock object

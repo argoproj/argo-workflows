@@ -21,6 +21,14 @@ type PrioritySemaphore struct {
 	log          *log.Entry
 }
 
+func (s *PrioritySemaphore) getWaitingWfs() []string {
+	var waitees []string
+	for _, item := range s.pending.items{
+		waitees = append(waitees, item.key.(string))
+	}
+	return waitees
+}
+
 var _ Semaphore = &PrioritySemaphore{}
 
 func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType string) *PrioritySemaphore {

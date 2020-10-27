@@ -70,6 +70,7 @@ type argoServer struct {
 	stopCh           chan struct{}
 	eventQueueSize   int
 	eventWorkerCount int
+	configName       string
 }
 
 type ArgoServerOpts struct {
@@ -89,10 +90,10 @@ type ArgoServerOpts struct {
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
+	configController := config.NewController(opts.Namespace, opts.KubeClientset)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get()
+		c, err := configController.Get(opts.Namespace, opts.ConfigName, emptyConfigFunc)
 		if err != nil {
 			return nil, err
 		}
@@ -122,6 +123,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		stopCh:           make(chan struct{}),
 		eventQueueSize:   opts.EventOperationQueueSize,
 		eventWorkerCount: opts.EventWorkerCount,
+		configName:       opts.ConfigName,
 	}, nil
 }
 
@@ -133,7 +135,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	v, err := as.configController.Get()
+	v, err := as.configController.Get(as.namespace, as.configName, emptyConfigFunc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -190,7 +192,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
-	go as.configController.Run(as.stopCh, as.restartOnConfigChange)
+	as.configController.RegisterObserver(as)
+	go as.configController.Run(as.stopCh)
 	go eventServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
@@ -324,4 +327,24 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
+}
+
+func (as *argoServer) Update(config interface{}) error {
+	return as.restartOnConfigChange(config)
+}
+
+func (as *argoServer) GetConfigKeyFilter() []string {
+	return []string{fmt.Sprintf("%s/%s", as.namespace, as.configName)}
+}
+
+func (as *argoServer) GetEmptyConfigFunc() func() interface{} {
+	return emptyConfigFunc
+}
+
+func (as *argoServer) EnableConfigParse() bool {
+	return true
+}
+
+func (as *argoServer) GetName() string {
+	return "Argo-Server"
 }
