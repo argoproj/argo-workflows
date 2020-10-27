@@ -12,8 +12,12 @@ spec:
         tasks:
           - name: checkout
             template: checkout
-          - name: download-dependencies
-            template: download-dependencies
+          - name : unit-test
+            template : unit-test
+            dependencies:
+              - checkout
+          - name: build-ui
+            template: build-ui
             dependencies:
               - checkout
 
@@ -30,7 +34,7 @@ spec:
             path: /root/argo
             s3:
               key: code
-    - name: download-dependencies
+    - name : unit-test
       inputs:
         artifacts:
           - name: code
@@ -53,9 +57,9 @@ spec:
         command:
           - bash
         source: |
-          set -eux
+          set -eux o pipefail
           go env
-          go mod download
+          env GOMAXPROCS=1 make test STATIC_FILES=false
       outputs:
         artifacts:
           - name: go-cache
@@ -66,3 +70,34 @@ spec:
             path: /go/pkg/mod
             s3:
               key: go-mod-cache
+          - name: test-results
+            path: /go/src/github.com/argoproj/argo/test-results
+            s3:
+              key: test-results
+    - name: build-ui
+      inputs:
+        artifacts:
+          - name: code
+            path: /go/src/github.com/argoproj/argo
+            s3:
+              key: code
+          - name: node_modules
+            path: /go/src/github.com/argoproj/argo/ui/node_modules
+            optional: true
+            s3:
+              key: node_modules
+      script:
+        image: node:14.0.0
+        workingDir: /go/src/github.com/argoproj/argo/ui
+        command:
+          - bash
+        source: |
+          set -eux o pipefail
+          yarn install
+          yarn build
+      outputs:
+        artifacts:
+          - name: node_modules
+            path: /go/src/github.com/argoproj/argo/ui/node_modules
+            s3:
+              key: node_modules

@@ -66,7 +66,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                                 source={{
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
                                     loadLogs: () => Observable.from(this.state.lines),
-                                    shouldRepeat: () => false
+                                    shouldRepeat: () => true
                                 }}
                             />
                         </div>
