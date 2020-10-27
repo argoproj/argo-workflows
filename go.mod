@@ -17,6 +17,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
+	github.com/fatih/color v1.9.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/gavv/httpexpect/v2 v2.0.3
 	github.com/go-openapi/jsonreference v0.19.3
@@ -25,6 +26,7 @@ require (
 	github.com/go-swagger/go-swagger v0.23.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
+	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0
@@ -36,6 +38,7 @@ require (
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/klauspost/compress v1.9.7 // indirect
 	github.com/lib/pq v1.3.0 // indirect
+	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/goreman v0.3.5
 	github.com/mitchellh/go-ps v0.0.0-20190716172923-621e5597135b
 	github.com/pkg/errors v0.9.1
@@ -59,6 +62,7 @@ require (
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634 // indirect
 	golang.org/x/tools v0.0.0-20200630154851-b2d8b0336632
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
@@ -69,7 +73,6 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gotest.tools/gotestsum v0.6.0 // indirect
 	k8s.io/api v0.17.8
 	k8s.io/apimachinery v0.17.8
 	k8s.io/client-go v0.17.8
