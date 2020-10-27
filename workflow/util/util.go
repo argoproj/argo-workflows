@@ -119,9 +119,25 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 // FromUnstructured converts an unstructured object to a workflow
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
+	err := FromUnstructuredObj(un, &wf)
 	return &wf, err
 }
+
+func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
+	if err != nil {
+		if err.Error() == "cannot convert int64 to v1alpha1.Int64OrString" {
+			data, err := json.Marshal(un)
+			if err != nil {
+				return err
+			}
+			return json.Unmarshal(data, v)
+		}
+		return err
+	}
+	return nil
+}
+
 
 // ToUnstructured converts an workflow to an Unstructured object
 func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
