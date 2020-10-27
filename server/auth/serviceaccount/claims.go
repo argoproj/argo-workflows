@@ -1,4 +1,4 @@
-package sso
+package serviceaccount
 
 import (
 	"encoding/base64"
@@ -10,12 +10,14 @@ import (
 	"k8s.io/client-go/rest"
 
 	"gopkg.in/square/go-jose.v2/jwt"
+
+	"github.com/argoproj/argo/server/auth/types"
 )
 
-func ClaimSetFor(restConfig *rest.Config) (*jwt.Claims, error) {
+func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {
 	username := restConfig.Username
 	if username != "" {
-		return &jwt.Claims{Subject: username}, nil
+		return &types.Claims{Claims: jwt.Claims{Subject: username}}, nil
 	} else if restConfig.BearerToken != "" || restConfig.BearerTokenFile != "" {
 		bearerToken := restConfig.BearerToken
 		if bearerToken == "" {
@@ -35,7 +37,7 @@ func ClaimSetFor(restConfig *rest.Config) (*jwt.Claims, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decode bearer token's JWT payload: %w", err)
 		}
-		claims := &jwt.Claims{}
+		claims := &types.Claims{}
 		err = json.Unmarshal(data, &claims)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal bearer token's JWT payload: %w", err)
