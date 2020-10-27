@@ -561,7 +561,7 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(obj interface{}) {
 	err := func() error {
 		pod, ok := obj.(*apiv1.Pod)
 		if !ok {
-			return fmt.Errorf("pey in index is not a pod")
+			return fmt.Errorf("key in index is not a pod")
 		}
 		if pod.Labels == nil {
 			return fmt.Errorf("pod did not have labels")
