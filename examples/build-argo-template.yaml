@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: build-argo
+spec:
+  ttlStrategy:
+    secondsAfterCompletion: 600
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: checkout
+            template: checkout
+          - name: download-dependencies
+            template: download-dependencies
+            dependencies:
+              - checkout
+
+    - name: checkout
+      script:
+        image: golang:1.13.4
+        command:
+          - bash
+        source: |
+          git clone --depth 1 --branch master --single-branch https://github.com/argoproj/argo.git /root/argo
+      outputs:
+        artifacts:
+          - name: code
+            path: /root/argo
+            s3:
+              key: code
+    - name: download-dependencies
+      inputs:
+        artifacts:
+          - name: code
+            path: /root/go/src/github.com/argoproj/argo
+            s3:
+              key: code
+          - name: go-build-cache
+            path: /root/.cache/go-build
+            optional: true
+            s3:
+              key: build-argo/go-build-cache
+          - name: go-pkg-mod
+            path: /root/go/pkg/mod
+            optional: true
+            s3:
+              key: go-pkg-mod
+      script:
+        image: golang:1.13.4
+        command:
+          - bash
+        source: |
+          set -eux
+          cd /root/go/src/github.com/argoproj/argo
+          go env
+          go clean
+          go mod download
+      outputs:
+        artifacts:
+          - name: go-build-cache
+            path: /root/.cache/go-build
+            s3:
+              key: build-argo/go-build-cache
+          - name: go-pkg-mod
+            path: /root/go/pkg/mod
+            s3:
+              key: go-pkg-mod
