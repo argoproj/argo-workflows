@@ -69,6 +69,7 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
+	gotest.tools/gotestsum v0.6.0 // indirect
 	k8s.io/api v0.17.8
 	k8s.io/apimachinery v0.17.8
 	k8s.io/client-go v0.17.8

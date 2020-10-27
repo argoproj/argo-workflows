@@ -48,6 +48,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 # perform static compilation
 STATIC_BUILD          ?= true
 STATIC_FILES          ?= true
+GOTEST                ?= go test
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
@@ -379,7 +380,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	env KUBECONFIG=/dev/null go test ./...
+	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -457,15 +458,19 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+
+.PHONY: test-e2e-cli
+test-e2e-cli:
+	$(GOTEST) -timeout 10m -count 1 --tags e2e-cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
-	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 # clean
 
