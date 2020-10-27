@@ -191,14 +191,6 @@ func (c *Controller) deleteWorkflow(key string) error {
 	return nil
 }
 
-//func (c *Controller) getDefaultTTLStrategy() *wfv1.TTLStrategy {
-//	wfDefault := c.configSupplier().WorkflowDefaults
-//	if wfDefault != nil {
-//		return wfDefault.Spec.GetTTLStrategy()
-//	}
-//	return nil
-//}
-
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	ttlStrategy := wf.GetTTLStrategy()
 
