@@ -749,10 +749,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.GetManagedNamespace()
-	// completed=false
-	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
-		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
