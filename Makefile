@@ -1,9 +1,6 @@
 export SHELL:=/bin/bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
-# This means we only one shell, and therefore you can use `trap` to clean-up
-.ONESHELL:
-
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
@@ -95,6 +92,7 @@ endif
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
+MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR ?= pns
 TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
@@ -112,7 +110,6 @@ PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofas
 
 # go_install,path
 define go_install
-	trap 'rm -Rf vendor' EXIT
 	[ -e vendor ] || go mod vendor
 	go install -mod=vendor ./vendor/$(1)
 endef
@@ -120,7 +117,6 @@ endef
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-	trap 'rm -Rf vendor' EXIT
     [ -e vendor ] || go mod vendor
     protoc \
       -I /usr/local/include \
@@ -274,6 +270,7 @@ codegen: \
 	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
+	rm -Rf vendor
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
@@ -311,7 +308,6 @@ $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
-	trap 'rm -Rf vendor' EXIT
 	[ -e vendor ] || go mod vendor
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
