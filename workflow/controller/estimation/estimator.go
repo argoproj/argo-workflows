@@ -1,6 +1,8 @@
 package estimation
 
 import (
+	"strings"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -26,10 +28,6 @@ func (e *estimator) EstimateNodeDuration(nodeName string) wfv1.EstimatedDuration
 	if e.baselineWF == nil {
 		return 0
 	}
-	// special case for root node
-	if nodeName == e.wf.Name {
-		nodeName = e.baselineWF.Name
-	}
-	oldNodeID := e.baselineWF.NodeID(nodeName)
+	oldNodeID := e.baselineWF.NodeID(strings.Replace(nodeName, e.wf.Name, e.baselineWF.Name, 1))
 	return wfv1.NewEstimatedDuration(e.baselineWF.Status.Nodes[oldNodeID].GetDuration())
 }
