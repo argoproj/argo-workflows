@@ -34,36 +34,35 @@ spec:
       inputs:
         artifacts:
           - name: code
-            path: /root/go/src/github.com/argoproj/argo
+            path: /go/src/github.com/argoproj/argo
             s3:
               key: code
-          - name: go-build-cache
+          - name: go-cache
             path: /root/.cache/go-build
             optional: true
             s3:
-              key: build-argo/go-build-cache
-          - name: go-pkg-mod
-            path: /root/go/pkg/mod
+              key: go-cache
+          - name: go-mod-cache
+            path: /go/pkg/mod
             optional: true
             s3:
-              key: go-pkg-mod
+              key: go-mod-cache
       script:
         image: golang:1.13.4
+        workingDir: /go/src/github.com/argoproj/argo
         command:
           - bash
         source: |
           set -eux
-          cd /root/go/src/github.com/argoproj/argo
           go env
-          go clean
           go mod download
       outputs:
         artifacts:
-          - name: go-build-cache
+          - name: go-cache
             path: /root/.cache/go-build
             s3:
-              key: build-argo/go-build-cache
-          - name: go-pkg-mod
-            path: /root/go/pkg/mod
+              key: go-cache
+          - name: go-mod-cache
+            path: /go/pkg/mod
             s3:
-              key: go-pkg-mod
+              key: go-mod-cache
