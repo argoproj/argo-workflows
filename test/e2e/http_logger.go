@@ -2,8 +2,6 @@ package e2e
 
 import log "github.com/sirupsen/logrus"
 
-
-
 type httpLogger struct {
 }
 
