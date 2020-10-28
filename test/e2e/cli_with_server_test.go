@@ -25,6 +25,7 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	token, err := s.GetServiceAccountToken()
 	s.CheckError(err)
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+	_ = os.Setenv("ARGO_HTTP", "true")
 	_ = os.Setenv("ARGO_SECURE", "false")
 	_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
 	// we should not need this to run any tests
@@ -33,6 +34,7 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 
 func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_SERVER")
+	_ = os.Unsetenv("ARGO_HTTP")
 	_ = os.Unsetenv("ARGO_SECURE")
 	_ = os.Unsetenv("ARGO_TOKEN")
 	s.CLISuite.AfterTest(suiteName, testName)
