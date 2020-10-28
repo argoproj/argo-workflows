@@ -146,8 +146,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workfloweventbinding
-  - workfloweventbinding/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -176,8 +176,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workfloweventbinding
-  - workfloweventbinding/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -206,8 +206,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workfloweventbinding
-  - workfloweventbinding/finalizers
+  - workfloweventbindings
+  - workfloweventbindings/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
   - cronworkflows
@@ -470,11 +470,17 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
       nodeSelector:
         kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
       serviceAccountName: argo-server
+      volumes:
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment

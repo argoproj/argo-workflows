@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sync"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,9 +36,7 @@ type Controller struct {
 	namespace            string
 	managedNamespace     string
 	instanceId           string
-	cron                 *cron.Cron
-	nameEntryIDMap       map[string]cron.EntryID
-	nameEntryIDMapLock   *sync.Mutex
+	cron                 *cronFacade
 	wfClientset          versioned.Interface
 	wfInformer           cache.SharedIndexInformer
 	wfLister             util.WorkflowLister
@@ -64,10 +60,9 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		namespace:            namespace,
 		managedNamespace:     managedNamespace,
 		instanceId:           instanceId,
-		cron:                 cron.New(),
+		cron:                 newCronFacade(),
+		restConfig:           restConfig,
 		dynamicInterface:     dynamicInterface,
-		nameEntryIDMap:       make(map[string]cron.EntryID),
-		nameEntryIDMapLock:   &sync.Mutex{},
 		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
 		cronWfQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
 		metrics:              metrics,
@@ -123,7 +118,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
-	logCtx := log.WithField("key", key)
+	logCtx := log.WithField("cronWorkflow", key)
 	logCtx.Infof("Processing %s", key)
 
 	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
@@ -131,14 +126,9 @@ func (cc *Controller) processNextCronItem() bool {
 		logCtx.WithError(err).Error(fmt.Sprintf("Failed to get CronWorkflow '%s' from informer index", key))
 		return true
 	}
-	cc.nameEntryIDMapLock.Lock()
-	defer cc.nameEntryIDMapLock.Unlock()
 	if !exists {
-		if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
-			logCtx.Infof("Deleting '%s'", key)
-			cc.cron.Remove(entryId)
-			delete(cc.nameEntryIDMap, key.(string))
-		}
+		logCtx.Infof("Deleting '%s'", key)
+		cc.cron.Delete(key.(string))
 		return true
 	}
 
@@ -170,22 +160,18 @@ func (cc *Controller) processNextCronItem() bool {
 	}
 
 	// The job is currently scheduled, remove it and re add it.
-	if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
-		cc.cron.Remove(entryId)
-		delete(cc.nameEntryIDMap, key.(string))
-	}
+	cc.cron.Delete(key.(string))
 
 	cronSchedule := cronWf.Spec.Schedule
 	if cronWf.Spec.Timezone != "" {
 		cronSchedule = "CRON_TZ=" + cronWf.Spec.Timezone + " " + cronSchedule
 	}
 
-	entryId, err := cc.cron.AddJob(cronSchedule, cronWorkflowOperationCtx)
+	err = cc.cron.AddJob(key.(string), cronSchedule, cronWorkflowOperationCtx)
 	if err != nil {
 		logCtx.WithError(err).Error("could not schedule CronWorkflow")
 		return true
 	}
-	cc.nameEntryIDMap[key.(string)] = entryId
 
 	logCtx.Infof("CronWorkflow %s added", key.(string))
 
@@ -238,17 +224,9 @@ func (cc *Controller) processNextWorkflowItem() bool {
 
 	// Workflows are run in the same namespace as CronWorkflow
 	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
-	var woc *cronWfOperationCtx
-	cc.nameEntryIDMapLock.Lock()
-	defer cc.nameEntryIDMapLock.Unlock()
-	if entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]; ok {
-		woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
-		if !ok {
-			log.Errorf("Parent CronWorkflow '%s' is malformed", nameEntryIdMapKey)
-			return true
-		}
-	} else {
-		log.Warnf("Parent CronWorkflow '%s' no longer exists", nameEntryIdMapKey)
+	woc, err := cc.cron.Load(nameEntryIdMapKey)
+	if err != nil {
+		log.Warnf("Parent CronWorkflow '%s' is bad: %v", nameEntryIdMapKey, err)
 		return true
 	}
 
@@ -303,7 +281,7 @@ func (cc *Controller) addWorkflowInformerHandler() {
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
+				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
 					cc.wfQueue.Add(key)
 				}

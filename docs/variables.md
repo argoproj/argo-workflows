@@ -1,9 +1,9 @@
 # Workflow Variables
 
-Some fields in a workflow specification allow for variable references which are automatically substituted by Argo. 
+Some fields in a workflow specification allow for variable references which are automatically substituted by Argo.
 
 ??? note "How to use variables"
-    Variables are enclosed in curly braces and **must not** include whitespace.
+    Variables are enclosed in curly braces and **may** include whitespace between the brackets and variable.
 
     ``` yaml
     apiVersion: argoproj.io/v1alpha1
@@ -24,7 +24,7 @@ Some fields in a workflow specification allow for variable references which are 
         container:
           image: docker/whalesay
           command: [cowsay]
-        # args: ["{{ inputs.parameters.message }}"]       <- bad
+        # args: ["{{ inputs.parameters.message }}"]       <- good
           args: ["{{inputs.parameters.message}}"]         #  good
     ```
 

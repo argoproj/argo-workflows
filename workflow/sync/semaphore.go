@@ -152,6 +152,10 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
 		if holderKey != nextKey {
+			// Enqueue the front workflow if lock is available
+			if len(s.lockHolder) < s.limit {
+				s.nextWorkflow(nextKey)
+			}
 			return false, waitingMsg
 		}
 	}
