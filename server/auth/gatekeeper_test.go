@@ -17,11 +17,10 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	fakewfclientset "github.com/argoproj/v3/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/v3/server/auth/sso/mocks"
-	"github.com/argoproj/argo/v3/server/auth/types"
 	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
+	fakewfclientset "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
 	ssomocks "github.com/argoproj/argo/v3/server/auth/sso/mocks"
+	"github.com/argoproj/argo/v3/server/auth/types"
 	"github.com/argoproj/argo/v3/workflow/common"
 )
 

@@ -25,9 +25,9 @@ import (
 	"github.com/argoproj/argo/v3/server/auth"
 	"github.com/argoproj/argo/v3/server/auth/types"
 	testutil "github.com/argoproj/argo/v3/test/util"
-	"github.com/argoproj/v3/argo/util"
-	"github.com/argoproj/v3/argo/util/instanceid"
-	"github.com/argoproj/v3/argo/workflow/common"
+	"github.com/argoproj/argo/v3/util"
+	"github.com/argoproj/argo/v3/util/instanceid"
+	"github.com/argoproj/argo/v3/workflow/common"
 )
 
 const unlabelled = `{
