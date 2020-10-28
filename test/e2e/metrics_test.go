@@ -1,4 +1,4 @@
-// +build cli
+// +build e2e
 
 package e2e
 
