@@ -61,7 +61,6 @@ func NewCronController(wfclientset versioned.Interface, dynamicInterface dynamic
 		managedNamespace:     managedNamespace,
 		instanceId:           instanceId,
 		cron:                 newCronFacade(),
-		restConfig:           restConfig,
 		dynamicInterface:     dynamicInterface,
 		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
 		cronWfQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "cron_wf_queue"),
