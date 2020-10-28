@@ -314,6 +314,8 @@ WorkflowTemplate is the definition of a workflow template resource
 <summary>Examples (click to open)</summary>
 <br>
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
@@ -354,6 +356,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
@@ -706,6 +710,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
@@ -1014,6 +1020,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
@@ -1622,6 +1630,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
@@ -1920,6 +1930,8 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`gc-ttl.yaml`](https://github.com/argoproj/argo/blob/master/examples/gc-ttl.yaml)
 </details>
 
@@ -2031,6 +2043,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo/blob/master/examples/custom-metrics.yaml)
@@ -2126,6 +2140,8 @@ Artifact indicates an artifact to place at a specified path
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`ci-output-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/ci-output-artifact.yaml)
 
@@ -2453,6 +2469,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
@@ -2566,6 +2584,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-path-placeholders.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
@@ -2737,6 +2757,8 @@ Pod metdata
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
@@ -3050,6 +3072,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`coinflip-recursive.yaml`](https://github.com/argoproj/argo/blob/master/examples/coinflip-recursive.yaml)
 
@@ -3732,6 +3756,8 @@ DAGTask represents a node in the graph during DAG execution
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
+
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`cluster-wftmpl-dag.yaml`](https://github.com/argoproj/argo/blob/master/examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
@@ -4015,6 +4041,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
@@ -5189,6 +5217,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifactory-artifact.yaml)
+
+- [`build-argo-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/build-argo-template.yaml)
 
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
