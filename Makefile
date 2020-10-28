@@ -117,7 +117,8 @@ endef
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    [ -e vendor ] || go mod vendor
+	[ -e vendor ] || go mod vendor
+	[ -e v3 ] || ln -s . v3
     protoc \
       -I /usr/local/include \
       -I . \
@@ -270,7 +271,7 @@ codegen: \
 	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-	rm -Rf vendor
+	rm -Rf vendor v3
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
@@ -309,6 +310,7 @@ $(GOPATH)/bin/goimports:
 
 pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
 	[ -e vendor ] || go mod vendor
+	[ -e v3 ] || ln -s . v3
 	${GOPATH}/bin/go-to-protobuf \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
@@ -341,6 +343,8 @@ pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES)
 
 # generate other files for other CRDs
 manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
+	[ -e vendor ] || go mod vendor
+	[ -e v3 ] || ln -s . v3
 	./hack/crdgen.sh
 
 /usr/local/bin/kustomize:
@@ -472,11 +476,12 @@ smoke:
 .PHONY: clean
 clean:
 	go clean
-	rm -Rf test-results node_modules vendor dist/* ui/dist
+	rm -Rf test-results node_modules vendor v3 dist/* ui/dist
 
 # swagger
 
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
+	[ -e v3 ] || ln -s . v3
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1 \
@@ -485,6 +490,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYP
 
 # generates many other files (listers, informers, client etc).
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+	[ -e v3 ] || ln -s . v3
 	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.17.5/generate-groups.sh \
 		"deepcopy,client,informer,lister" \
 		github.com/argoproj/argo/v3/pkg/client github.com/argoproj/argo/v3/pkg/apis \
