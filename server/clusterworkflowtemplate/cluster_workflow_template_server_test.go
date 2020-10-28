@@ -12,7 +12,7 @@ import (
 	"github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/v3/server/auth"
-	"github.com/argoproj/argo/server/v3/auth/types"
+	"github.com/argoproj/argo/v3/server/auth/types"
 	testutil "github.com/argoproj/argo/v3/test/util"
 	"github.com/argoproj/argo/v3/util/instanceid"
 	"github.com/argoproj/argo/v3/workflow/common"

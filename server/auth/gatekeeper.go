@@ -21,9 +21,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/v3/server/auth/sso"
-	"github.com/argoproj/argo/v3/util/kubeconfig"
-	"github.com/argoproj/argo/v3/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/v3/server/auth/serviceaccount"
 	"github.com/argoproj/argo/v3/server/auth/sso"
 	"github.com/argoproj/argo/v3/server/auth/types"

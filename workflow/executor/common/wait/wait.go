@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/workflow/executor/common"
+	"github.com/argoproj/argo/v3/workflow/executor/common"
 )
 
 func UntilTerminated(kubernetesInterface kubernetes.Interface, namespace, podName, containerID string) error {
