@@ -13,8 +13,8 @@ spec:
         tasks:
           - name: checkout
             template: checkout
-          - name : unit-test
-            template : unit-test
+          - name: unit-test
+            template: unit-test
             dependencies:
               - checkout
           - name: build-ui
@@ -35,7 +35,7 @@ spec:
             path: /root/argo
             s3:
               key: code
-    - name : unit-test
+    - name: unit-test
       inputs:
         artifacts:
           - name: code
@@ -60,7 +60,9 @@ spec:
         source: |
           set -eux o pipefail
           go env
-          env GOMAXPROCS=1 make test STATIC_FILES=false
+          make server/static/files.go STATIC_FILES=false
+          go build ./...
+          env GOMAXPROCS=1 make test
       outputs:
         artifacts:
           - name: go-cache
