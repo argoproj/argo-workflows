@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -31,7 +33,25 @@ type httpClient struct {
 
 func (h *httpClient) ListArchivedWorkflows(_ context.Context, in *workflowarchivepkg.ListArchivedWorkflowsRequest, _ ...grpc.CallOption) (*wfv1.WorkflowList, error) {
 	out := &wfv1.WorkflowList{}
-	return out, h.Get(out, "/api/v1/archived-workflows")
+	return out, h.Get(out, "/api/v1/archived-workflows?%s", queryParams(in))
+}
+
+func queryParams(in interface{}) string {
+	out := toMap(in)
+	var params []string
+	for k, v := range out {
+		for s, i := range toMap(v) {
+			params = append(params, fmt.Sprintf("%s.%s=%v", k, s, i))
+		}
+	}
+	return strings.Join(params, "&")
+}
+
+func toMap(in interface{}) map[string]interface{} {
+	data, _ := json.Marshal(in)
+	out := make(map[string]interface{})
+	_ = json.Unmarshal(data, &out)
+	return out
 }
 
 func (h *httpClient) GetArchivedWorkflow(_ context.Context, in *workflowarchivepkg.GetArchivedWorkflowRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
@@ -41,69 +61,69 @@ func (h *httpClient) GetArchivedWorkflow(_ context.Context, in *workflowarchivep
 
 func (h *httpClient) DeleteArchivedWorkflow(_ context.Context, in *workflowarchivepkg.DeleteArchivedWorkflowRequest, _ ...grpc.CallOption) (*workflowarchivepkg.ArchivedWorkflowDeletedResponse, error) {
 	out := &workflowarchivepkg.ArchivedWorkflowDeletedResponse{}
-	return out, h.Delete("/api/v1/archived-workflows/{uid}", in.Uid)
+	return out, h.Delete("/api/v1/archived-workflows/{uid}?%s", in.Uid, queryParams(in))
 }
 
 // ClusterWorkflowTemplateService
 
 func (h *httpClient) CreateClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Post(in, out, "/api/v1/cluster-workflow-templates")
+	return out, h.Post(in, out, "/api/v1/cluster-workflow-templates?%s", queryParams(in))
 
 }
 
 func (h *httpClient) GetClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Get(out, "/api/v1/cluster-workflow-templates/{name}", in.Name)
+	return out, h.Get(out, "/api/v1/cluster-workflow-templates/{name}?s", in.Name, queryParams(in))
 
 }
 
 func (h *httpClient) ListClusterWorkflowTemplates(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplateList, error) {
 	out := &wfv1.ClusterWorkflowTemplateList{}
-	return out, h.Get(out, "/api/v1/cluster-workflow-templates")
+	return out, h.Get(out, "/api/v1/cluster-workflow-templates?%s", queryParams(in))
 }
 
 func (h *httpClient) UpdateClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Put(in, out, "/api/v1/cluster-workflow-templates/{name}", in.Name)
+	return out, h.Put(in, out, "/api/v1/cluster-workflow-templates/{name}?%s", in.Name, queryParams(in))
 
 }
 
 func (h *httpClient) DeleteClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*clusterworkflowtemplate.ClusterWorkflowTemplateDeleteResponse, error) {
 	out := &clusterworkflowtemplate.ClusterWorkflowTemplateDeleteResponse{}
-	return out, h.Delete("/api/v1/cluster-workflow-templates/{name}", in.Name)
+	return out, h.Delete("/api/v1/cluster-workflow-templates/{name}?%s", in.Name, queryParams(in))
 }
 
 func (h *httpClient) LintClusterWorkflowTemplate(_ context.Context, in *clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest, _ ...grpc.CallOption) (*wfv1.ClusterWorkflowTemplate, error) {
 	out := &wfv1.ClusterWorkflowTemplate{}
-	return out, h.Post(in, out, "/api/v1/cluster-workflow-templates/lint")
+	return out, h.Post(in, out, "/api/v1/cluster-workflow-templates/lint?%s", queryParams(in))
 }
 
 // WorkflowTemplateService
 
 func (h *httpClient) CreateWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateCreateRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Post(in, out, "/api/v1/workflow-templates/{namespace}", in.Namespace)
+	return out, h.Post(in, out, "/api/v1/workflow-templates/{namespace}?%s", in.Namespace, queryParams(in))
 }
 
 func (h *httpClient) GetWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateGetRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Get(out, "/api/v1/workflow-templates/{namespace}/{name}", in.Namespace, in.Name)
+	return out, h.Get(out, "/api/v1/workflow-templates/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) ListWorkflowTemplates(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplateList, error) {
 	out := &wfv1.WorkflowTemplateList{}
-	return out, h.Get(out, "/api/v1/workflow-templates/{namespace}", in.Namespace)
+	return out, h.Get(out, "/api/v1/workflow-templates/{namespace}?%s", in.Namespace, queryParams(in))
 }
 
 func (h *httpClient) UpdateWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateUpdateRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Put(in, out, "/api/v1/workflow-templates/{namespace}/{name}", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflow-templates/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) DeleteWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
 	out := &workflowtemplatepkg.WorkflowTemplateDeleteResponse{}
-	return out, h.Delete("/api/v1/workflow-templates/{namespace}/{name}", in.Namespace, in.Name)
+	return out, h.Delete("/api/v1/workflow-templates/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) LintWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
@@ -115,48 +135,48 @@ func (h *httpClient) LintWorkflowTemplate(_ context.Context, in *workflowtemplat
 
 func (h *httpClient) LintCronWorkflow(_ context.Context, in *cronworkflowpkg.LintCronWorkflowRequest, _ ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
 	out := &wfv1.CronWorkflow{}
-	return out, h.Post(in, out, "/api/v1/cron-workflows/{namespace}/lint", in.Namespace)
+	return out, h.Post(in, out, "/api/v1/cron-workflows/{namespace}/lint?%s", in.Namespace, queryParams(in))
 }
 
 func (h *httpClient) CreateCronWorkflow(_ context.Context, in *cronworkflowpkg.CreateCronWorkflowRequest, _ ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
 	out := &wfv1.CronWorkflow{}
-	return out, h.Post(in, out, "/api/v1/cron-workflows/{namespace}", in.Namespace)
+	return out, h.Post(in, out, "/api/v1/cron-workflows/{namespace}?%s", in.Namespace, queryParams(in))
 }
 
 func (h *httpClient) ListCronWorkflows(_ context.Context, in *cronworkflowpkg.ListCronWorkflowsRequest, _ ...grpc.CallOption) (*wfv1.CronWorkflowList, error) {
 	out := &wfv1.CronWorkflowList{}
-	return out, h.Get(out, "/api/v1/cron-workflows/{namespace}", in.Namespace)
+	return out, h.Get(out, "/api/v1/cron-workflows/{namespace}?%s", in.Namespace, queryParams(in))
 }
 
 func (h *httpClient) GetCronWorkflow(_ context.Context, in *cronworkflowpkg.GetCronWorkflowRequest, _ ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
 	out := &wfv1.CronWorkflow{}
-	return out, h.Get(out, "/api/v1/cron-workflows/{namespace}/{name}", in.Namespace, in.Name)
+	return out, h.Get(out, "/api/v1/cron-workflows/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) UpdateCronWorkflow(_ context.Context, in *cronworkflowpkg.UpdateCronWorkflowRequest, _ ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
 	out := &wfv1.CronWorkflow{}
-	return out, h.Put(in, out, "/api/v1/cron-workflows/{namespace}/{name}", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/cron-workflows/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) DeleteCronWorkflow(_ context.Context, in *cronworkflowpkg.DeleteCronWorkflowRequest, _ ...grpc.CallOption) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
-	return &cronworkflowpkg.CronWorkflowDeletedResponse{}, h.Delete("/api/v1/cron-workflows/{namespace}/{name}", in.Namespace, in.Name)
+	return &cronworkflowpkg.CronWorkflowDeletedResponse{}, h.Delete("/api/v1/cron-workflows/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 // WorkflowService
 
 func (h *httpClient) CreateWorkflow(_ context.Context, in *workflowpkg.WorkflowCreateRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Post(in, out, "/api/v1/workflows/{namespace}", in.Namespace)
+	return out, h.Post(in, out, "/api/v1/workflows/{namespace}?%s", in.Namespace, queryParams(in))
 }
 
 func (h *httpClient) GetWorkflow(_ context.Context, in *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Get(out, "/api/v1/workflows/{namespace}/{name}", in.Namespace, in.Name)
+	return out, h.Get(out, "/api/v1/workflows/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) ListWorkflows(_ context.Context, in *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*wfv1.WorkflowList, error) {
 	out := &wfv1.WorkflowList{}
-	return out, h.Get("/api/v1/workflows/{namespace}", in.Namespace)
+	return out, h.Get("/api/v1/workflows/{namespace}?%s", in.Namespace, queryParams(in))
 }
 
 type httpWatchClient struct {
@@ -173,85 +193,106 @@ func (f *httpWatchClient) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 	return out, json.Unmarshal(data, out)
 }
 
-func (h *httpClient) WatchWorkflows(_ context.Context, in *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-
-	req, err := http.NewRequest("GET", h.baseUrl+"/api/v1/workflow-events/{namespace}", nil)
+func (h *httpClient) WatchWorkflows(ctx context.Context, in *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
+	reader, err := h.eventStreamReader("/api/v1/workflow-events/{namespace}?%s", in.Namespace, queryParams(in))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "text/event-stream")
-	req.Header.Set("Authorization", h.authSupplier())
-	req.Close = true
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	err = errFromResponse(resp.StatusCode)
-	if err != nil {
-		return nil, err
-	}
-
-	return &httpWatchClient{reader: bufio.NewReader(resp.Body)}, nil
-
+	return &httpWatchClient{abstractIntermediary: newAbstractIntermediary(ctx), reader: reader}, nil
 }
 
-func (h *httpClient) WatchEvents(_ context.Context, in *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
-	panic("implement me")
+type httpEventWatchClient struct {
+	abstractIntermediary
+	reader *bufio.Reader
+}
+
+func (f *httpEventWatchClient) Recv() (*corev1.Event, error) {
+	data, err := f.reader.ReadBytes('\n')
+	if err != nil {
+		return nil, err
+	}
+	out := &corev1.Event{}
+	return out, json.Unmarshal(data, out)
+}
+
+func (h *httpClient) WatchEvents(ctx context.Context, in *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
+	reader, err := h.eventStreamReader("/api/v1/stream/events/{namespace}?%s", in.Namespace, queryParams(in.ListOptions))
+	if err != nil {
+		return nil, err
+	}
+	return &httpEventWatchClient{abstractIntermediary: newAbstractIntermediary(ctx), reader: reader}, nil
 }
 
 func (h *httpClient) DeleteWorkflow(_ context.Context, in *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
-	return &workflowpkg.WorkflowDeleteResponse{}, h.Delete("/api/v1/workflows/{namespace}/{name}", in.Namespace, in.Name)
+	return &workflowpkg.WorkflowDeleteResponse{}, h.Delete("/api/v1/workflows/{namespace}/{name}?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) RetryWorkflow(_ context.Context, in *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/retry", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/retry?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) ResubmitWorkflow(_ context.Context, in *workflowpkg.WorkflowResubmitRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/resubmit", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/resubmit?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) ResumeWorkflow(_ context.Context, in *workflowpkg.WorkflowResumeRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	err := h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/resume", in.Namespace, in.Name)
+	err := h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/resume?%s", in.Namespace, in.Name, queryParams(in))
 	return out, err
 }
 
 func (h *httpClient) SuspendWorkflow(_ context.Context, in *workflowpkg.WorkflowSuspendRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/suspend", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/suspend?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) TerminateWorkflow(_ context.Context, in *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/terimate", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/terminate?%v", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) StopWorkflow(_ context.Context, in *workflowpkg.WorkflowStopRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/stop", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/stop?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) SetWorkflow(_ context.Context, in *workflowpkg.WorkflowSetRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/set", in.Namespace, in.Name)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/set?%s", in.Namespace, in.Name, queryParams(in))
 }
 
 func (h *httpClient) LintWorkflow(_ context.Context, in *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/lint", in.Namespace)
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/lint?%s", in.Namespace, queryParams(in))
 }
 
-func (h *httpClient) PodLogs(_ context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
-	panic("implement me")
+type httpPodLogsClient struct {
+	abstractIntermediary
+	reader *bufio.Reader
+}
+
+func (f *httpPodLogsClient) Recv() (*workflowpkg.LogEntry, error) {
+	data, err := f.reader.ReadBytes('\n')
+	if err != nil {
+		return nil, err
+	}
+	out := &workflowpkg.LogEntry{}
+	return out, json.Unmarshal(data, out)
+}
+
+func (h *httpClient) PodLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+	reader, err := h.eventStreamReader("/api/v1/workflows/{namespace}/{name}/{podName}/log?%s", in.Namespace, in.Name, in.PodName, queryParams(in))
+	if err != nil {
+		return nil, err
+	}
+	return &httpPodLogsClient{abstractIntermediary: newAbstractIntermediary(ctx), reader: reader}, nil
 }
 
 func (h *httpClient) SubmitWorkflow(_ context.Context, in *workflowpkg.WorkflowSubmitRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Post(in, out, "/api/v1/workflows/{namespace}/submit", in.Namespace)
+	return out, h.Post(in, out, "/api/v1/workflows/{namespace}/submit?%s", in.Namespace, queryParams(in))
 }
 
 // InfoService
@@ -307,16 +348,41 @@ func (h *httpClient) Put(in, out interface{}, path string, args ...interface{}) 
 func (h *httpClient) Post(in, out interface{}, path string, args ...interface{}) error {
 	return h.do(in, out, "POST", path, args)
 }
+
 func (h *httpClient) Delete(path string, args ...interface{}) error {
 	return h.do(nil, nil, "DELETE", path, args)
 }
 
-func (h *httpClient) do(in interface{}, out interface{}, method string, path string, args []interface{}) error {
-	data, err := json.Marshal(in)
+func (h *httpClient) eventStreamReader(path string, args ...interface{}) (*bufio.Reader, error) {
+	req, err := http.NewRequest("GET", h.apiURL(path, args...), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	req, err := http.NewRequest(method, h.baseUrl+fmt.Sprintf(regexp.MustCompile("{[^}]+}").ReplaceAllString(path, "%s"), args...), bytes.NewReader(data))
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", h.authSupplier())
+	req.Close = true
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	err = errFromResponse(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(resp.Body)
+	return reader, nil
+}
+
+func (h *httpClient) do(in interface{}, out interface{}, method string, path string, args []interface{}) error {
+	var data []byte
+	var err error
+	if in != nil {
+		data, err = json.Marshal(in)
+		if err != nil {
+			return err
+		}
+	}
+	req, err := http.NewRequest(method, h.apiURL(path, args...), bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
@@ -329,7 +395,15 @@ func (h *httpClient) do(in interface{}, out interface{}, method string, path str
 	if err != nil {
 		return err
 	}
-	return json.NewDecoder(resp.Body).Decode(out)
+	if out != nil {
+		return json.NewDecoder(resp.Body).Decode(out)
+	} else {
+		return nil
+	}
+}
+
+func (h *httpClient) apiURL(path string, args ...interface{}) string {
+	return h.baseUrl + fmt.Sprintf(regexp.MustCompile("{[^}]+}").ReplaceAllString(path, "%s"), args...)
 }
 
 func newHTTPClient(baseUrl string, authSupplier func() string) (context.Context, Client, error) {
