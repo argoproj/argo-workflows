@@ -98,3 +98,4 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Wellcome Trust](https://wellcome.ac.uk/)
 1. [Helio](https://helio.exchange)
 1. [HSBC](https://hsbc.com)
+1. [Pollination](https://pollination.cloud)
