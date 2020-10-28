@@ -6,14 +6,13 @@ import (
 	"sort"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -29,18 +28,21 @@ type cronWfOperationCtx struct {
 	// CronWorkflow is the CronWorkflow to be run
 	name        string
 	cronWf      *v1alpha1.CronWorkflow
+	origCronWf  *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
 	wfClient    typed.WorkflowInterface
 	wfLister    util.WorkflowLister
 	cronWfIf    typed.CronWorkflowInterface
 	log         *log.Entry
 	metrics     *metrics.Metrics
+	updated     bool
 }
 
 func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister, metrics *metrics.Metrics) *cronWfOperationCtx {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
+		origCronWf:  cronWorkflow.DeepCopy(),
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
 		wfLister:    wfLister,
@@ -50,6 +52,7 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 			"namespace": cronWorkflow.ObjectMeta.Namespace,
 		}),
 		metrics: metrics,
+		updated: false,
 	}
 }
 
@@ -88,6 +91,7 @@ func (woc *cronWfOperationCtx) Run() {
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
+	woc.updated = true
 }
 
 func (woc *cronWfOperationCtx) validateCronWorkflow() error {
@@ -98,6 +102,7 @@ func (woc *cronWfOperationCtx) validateCronWorkflow() error {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
 		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSpecError)
+		woc.updated = true
 	}
 	return err
 }
@@ -116,22 +121,75 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate() {
-	data, err := json.Marshal(map[string]interface{}{"status": woc.cronWf.Status})
-	if err != nil {
-		woc.log.WithError(err).Error("failed to marshall cron workflow status data")
+	if !woc.updated {
+		return
+	} else if woc.origCronWf.ResourceVersion != woc.cronWf.ResourceVersion {
+		woc.log.Error("cannot update cron workflow with mismatched resource versions")
 		return
 	}
-	err = wait.ExponentialBackoff(retry.DefaultBackoff, func() (bool, error) {
-		cronWf, err := woc.cronWfIf.Patch(woc.cronWf.Name, types.MergePatchType, data)
-		if err != nil {
-			return false, err
-		}
-		woc.cronWf = cronWf
-		return true, nil
-	})
+
+	cronWf, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		woc.log.WithError(err).Error("failed to data cron workflow")
-		return
+		if !errors.IsConflict(err) {
+			woc.log.WithError(err).Error("failed to update CronWorkflow")
+			return
+		}
+		var reapplyErr error
+		cronWf, reapplyErr = woc.reapplyUpdate()
+		if reapplyErr != nil {
+			woc.log.WithError(reapplyErr).WithField("original error", err).Error("failed to update CronWorkflow after reapply attempt")
+			return
+		} else {
+			woc.cronWf = cronWf
+		}
+	} else {
+		woc.cronWf = cronWf
+	}
+}
+
+func (woc *cronWfOperationCtx) reapplyUpdate() (*v1alpha1.CronWorkflow, error) {
+	if woc.origCronWf.ResourceVersion != woc.cronWf.ResourceVersion {
+		return nil, fmt.Errorf("cannot re-apply cron workflow update with mismatched resource versions")
+	}
+	orig, err := json.Marshal(woc.origCronWf)
+	if err != nil {
+		return nil, err
+	}
+	curr, err := json.Marshal(woc.cronWf)
+	if err != nil {
+		return nil, err
+	}
+	patch, err := jsonpatch.CreateMergePatch(orig, curr)
+	if err != nil {
+		return nil, err
+	}
+	attempts := 0
+	for {
+		currCronWf, err := woc.cronWfIf.Get(woc.name, v1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		currCronWfBytes, err := json.Marshal(currCronWf)
+		if err != nil {
+			return nil, err
+		}
+		newCronWfBytes, err := jsonpatch.MergePatch(currCronWfBytes, patch)
+		if err != nil {
+			return nil, err
+		}
+		var newCronWf v1alpha1.CronWorkflow
+		err = json.Unmarshal(newCronWfBytes, &newCronWf)
+		if err != nil {
+			return nil, err
+		}
+		cronWf, err := woc.cronWfIf.Update(&newCronWf)
+		if err == nil {
+			return cronWf, nil
+		}
+		attempts++
+		if attempts == 5 {
+			return nil, fmt.Errorf("ran out of retries when trying to reapply update: %s", err)
+		}
 	}
 }
 
@@ -258,6 +316,7 @@ func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 		return
 	}
 	woc.removeFromActiveList(wf.ObjectMeta.UID)
+	woc.updated = true
 }
 
 func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
@@ -268,6 +327,7 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 		}
 	}
 	woc.cronWf.Status.Active = newActive
+	woc.updated = true
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit() {
@@ -349,4 +409,5 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(conditionType v1alpha1.Co
 		Status:  v1.ConditionTrue,
 	})
 	woc.metrics.CronWorkflowSubmissionError()
+	woc.updated = true
 }
