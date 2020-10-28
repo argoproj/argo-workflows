@@ -170,6 +170,35 @@ spec:
       image: docker/whalesay:{{inputs.parameters.unresolved}}
 `
 
+var unresolvedStepInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: entry-step
+  arguments:
+    parameters: []
+  templates:
+    - steps:
+        - - name: a
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{inputs.parameters.message}}"
+            template: whalesay
+      name: entry-step
+      inputs:
+        parameters:
+          - name: message
+            value: hello world
+    - name: whalesay
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`
+
 var unresolvedOutput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -194,6 +223,10 @@ spec:
 
 func TestUnresolved(t *testing.T) {
 	_, err := validate(unresolvedInput)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve")
+	}
+	_, err = validate(unresolvedStepInput)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve")
 	}
