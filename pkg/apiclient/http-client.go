@@ -1,6 +1,7 @@
 package apiclient
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -158,8 +159,41 @@ func (h *httpClient) ListWorkflows(_ context.Context, in *workflowpkg.WorkflowLi
 	return out, h.Get("/api/v1/workflows/{namespace}", in.Namespace)
 }
 
+type foo struct {
+	abstractIntermediary
+	reader *bufio.Reader
+}
+
+func (f foo) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
+	data, err := f.reader.ReadBytes('\n')
+	if err != nil {
+		return nil, err
+	}
+	out := &workflowpkg.WorkflowWatchEvent{}
+	return out, json.Unmarshal(data, out)
+}
+
 func (h *httpClient) WatchWorkflows(_ context.Context, in *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-	panic("implement me")
+
+	req, err := http.NewRequest("GET", h.baseUrl+"/api/v1/workflow-events/{namespace}", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", h.authSupplier())
+	req.Close = true
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	err = errFromResponse(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return &foo{reader: bufio.NewReader(resp.Body)}, nil
+
 }
 
 func (h *httpClient) WatchEvents(_ context.Context, in *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
@@ -303,8 +337,10 @@ func newHTTPClient(baseUrl string, authSupplier func() string) (context.Context,
 }
 
 func errFromResponse(statusCode int) error {
+	if statusCode == http.StatusOK {
+		return nil
+	}
 	code, ok := map[int]codes.Code{
-		http.StatusOK:                  codes.OK,
 		http.StatusNotFound:            codes.NotFound,
 		http.StatusConflict:            codes.AlreadyExists,
 		http.StatusBadRequest:          codes.InvalidArgument,
@@ -318,9 +354,6 @@ func errFromResponse(statusCode int) error {
 		http.StatusInternalServerError: codes.Internal,
 	}[statusCode]
 	if ok {
-		if code == codes.OK {
-			return nil
-		}
 		return status.Error(code, "")
 	}
 	return status.Error(codes.Internal, fmt.Sprintf("unknown error: %v", statusCode))
