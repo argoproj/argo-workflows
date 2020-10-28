@@ -8,6 +8,7 @@ run:
     - server/static/files.go
   build-tags:
     - e2e
+    - cli
 linters:
   enable:
     - goimports
