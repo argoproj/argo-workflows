@@ -161,9 +161,7 @@ func TestResourceDurationMetric(t *testing.T) {
 	err := yaml.Unmarshal([]byte(nodeStatus), &node)
 	if assert.NoError(t, err) {
 		localScope, _ := woc.prepareMetricScope(&node)
-		assert.Contains(t, localScope["resourcesDuration"], "24s*(100Mi memory)")
-		assert.Contains(t, localScope["resourcesDuration"], "33s*(1 cpu)")
-		assert.Equal(t, "33s", localScope["resourcesDuration.cpu"])
-		assert.Equal(t, "24s", localScope["resourcesDuration.memory"])
+		assert.Equal(t, "33", localScope["resourcesDuration.cpu"])
+		assert.Equal(t, "24", localScope["resourcesDuration.memory"])
 	}
 }
