@@ -146,6 +146,14 @@ func (h *httpClient) Get(v interface{}, path string, args ...interface{}) error 
 	return json.NewDecoder(resp.Body).Decode(v)
 }
 
+func (h *httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
+	return h, nil
+}
+
+func newHTTPClient(baseUrl string, authSupplier func() string) (context.Context, Client, error) {
+	return context.Background(), &httpClient{baseUrl: baseUrl, authSupplier: authSupplier}, nil
+}
+
 func errFromResponse(statusCode int) error {
 	code, ok := map[int]codes.Code{
 		http.StatusOK:                  codes.OK,
@@ -168,12 +176,4 @@ func errFromResponse(statusCode int) error {
 		return status.Error(code, "")
 	}
 	return status.Error(codes.Internal, fmt.Sprintf("unknown error: %v", statusCode))
-}
-
-func (h *httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
-	return h, nil
-}
-
-func newHTTPClient(baseUrl string, authSupplier func() string) (context.Context, Client, error) {
-	return context.Background(), &httpClient{baseUrl: baseUrl, authSupplier: authSupplier}, nil
 }
