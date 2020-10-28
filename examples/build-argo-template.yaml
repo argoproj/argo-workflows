@@ -6,6 +6,7 @@ spec:
   ttlStrategy:
     secondsAfterCompletion: 600
   entrypoint: main
+  parallelism: 1
   templates:
     - name: main
       dag:
