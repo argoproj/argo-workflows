@@ -18,16 +18,21 @@ interface WorkflowLogsViewerProps {
 interface WorkflowLogsViewerState {
     error?: Error;
     loaded: boolean;
-    lines: string[];
+    lineCount: number;
+}
+
+function identity<T>(value: T) {
+    return () => value;
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
     private subscription: Subscription | null = null;
+    private logsObservable?: Observable<string>;
 
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
 
-        this.state = {lines: [], loaded: false};
+        this.state = {lineCount: 0, loaded: false};
     }
 
     public componentDidMount(): void {
@@ -49,7 +54,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 )}
                 <p>
                     <i className='fa fa-box' /> {this.props.nodeId}/{this.props.container}
-                    {this.state.lines.length > 0 && <small className='muted'> {this.state.lines.length} line(s)</small>}
+                    {this.state.lineCount > 0 && <small className='muted'> {this.state.lineCount} line(s)</small>}
                 </p>
 
                 {this.state.error && <ErrorNotice error={this.state.error} onReload={() => this.refreshStream()} />}
@@ -60,19 +65,19 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                         </p>
                     )}
                     {!this.state.error && this.podHasNoLogs() && <p>Pod did not output any logs.</p>}
-                    {this.state.lines.length > 0 && (
+                    {this.state.lineCount > 0 && this.logsObservable && (
                         <div className='log-box'>
                             <FullHeightLogsViewer
                                 source={{
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
-                                    loadLogs: () => Observable.from(this.state.lines),
+                                    loadLogs: identity(this.logsObservable),
                                     shouldRepeat: () => false
                                 }}
                             />
                         </div>
                     )}
                 </div>
-                {this.state.lines.length === 0 && (
+                {this.state.lineCount === 0 && (
                     <p>
                         Still waiting for data or an error? Try getting{' '}
                         <a href={services.workflows.getArtifactLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}>
@@ -95,14 +100,15 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     private refreshStream(): void {
         this.ensureUnsubscribed();
 
-        this.setState({lines: [], loaded: false, error: undefined});
+        this.setState({lineCount: 0, loaded: false, error: undefined});
 
-        this.subscription = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
+        const source = services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(line => line + '\n');
+
+        this.logsObservable = source.publishReplay().refCount();
+        this.subscription = this.logsObservable.subscribe(
             log => {
                 this.setState(state => {
-                    const newState = {...state, loaded: true};
-                    newState.lines.push(log + '\n');
-                    return newState;
+                    return {...state, lineCount: state.lineCount + 1};
                 });
             },
             error => {
@@ -112,11 +118,11 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     }
 
     private podHasNoLogs() {
-        return !this.isWaitingForData() && this.state.lines.length === 0;
+        return !this.isWaitingForData() && this.state.lineCount === 0;
     }
 
     private isWaitingForData() {
-        return this.state.lines.length === 0 && (this.isCurrentNodeRunningOrPending() || !this.state.loaded);
+        return this.state.lineCount === 0 && (this.isCurrentNodeRunningOrPending() || !this.state.loaded);
     }
 
     private isCurrentNodeRunningOrPending(): boolean {

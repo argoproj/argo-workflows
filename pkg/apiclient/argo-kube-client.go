@@ -44,7 +44,7 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService in
 	if err != nil {
 		return nil, nil, err
 	}
-	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, wfClient, kubeClient, restConfig, nil)
+	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, wfClient, kubeClient, restConfig, nil, auth.DefaultClientForAuthorization, "unused")
 	if err != nil {
 		return nil, nil, err
 	}

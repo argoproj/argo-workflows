@@ -23,6 +23,7 @@ message GetUserInfoRequest {
 message GetUserInfoResponse {
     string issuer = 1;
     string subject = 2;
+    repeated string groups = 3;
 }
 
 service InfoService {

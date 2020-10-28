@@ -15,12 +15,7 @@ type Persistence struct {
 	workflowArchive       sqldb.WorkflowArchive
 }
 
-func newPersistence(kubeClient kubernetes.Interface) *Persistence {
-	configController := config.NewController(Namespace, "workflow-controller-configmap", kubeClient)
-	wcConfig, err := configController.Get()
-	if err != nil {
-		panic(err)
-	}
+func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
 	persistence := wcConfig.Persistence
 	if persistence != nil {
 		if persistence.PostgreSQL != nil {

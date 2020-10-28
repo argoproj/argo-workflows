@@ -40,6 +40,12 @@ import (
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor
+// Run	Seconds
+// 0	0.000
+// 1	1.000
+// 2	2.600
+// 3	5.160
+// 4	9.256
 var ExecutorRetry = wait.Backoff{
 	Steps:    5,
 	Duration: 1 * time.Second,
@@ -829,7 +835,7 @@ func (we *WorkflowExecutor) AddError(err error) {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
-	return common.AddPodAnnotation(we.ClientSet, we.PodName, we.Namespace, key, value)
+	return common.AddPodAnnotation(we.ClientSet, we.PodName, we.Namespace, key, value, ExecutorRetry)
 }
 
 // isTarball returns whether or not the file is a tarball

@@ -856,7 +856,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"failedJobsHistoryLimit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time",
+							Description: "FailedJobsHistoryLimit is the number of failed jobs to be kept at a time",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

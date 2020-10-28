@@ -50,7 +50,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	var settings = postgresql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
-		Host:     cfg.Host + ":" + cfg.Port,
+		Host:     fmt.Sprintf("%s:%v", cfg.Host, cfg.Port),
 		Database: cfg.Database,
 	}
 
@@ -95,7 +95,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 	session, err := mysql.Open(mysql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
-		Host:     cfg.Host + ":" + cfg.Port,
+		Host:     fmt.Sprintf("%s:%v", cfg.Host, cfg.Port),
 		Database: cfg.Database,
 	})
 	if err != nil {

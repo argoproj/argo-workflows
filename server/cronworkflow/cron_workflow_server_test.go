@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"gopkg.in/square/go-jose.v2/jwt"
 
 	cronworkflowpkg "github.com/argoproj/argo/v3/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/v3/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/v3/server/auth"
+	"github.com/argoproj/argo/v3/server/auth/types"
 	testutil "github.com/argoproj/argo/v3/test/util"
 	"github.com/argoproj/argo/v3/util/instanceid"
 	"github.com/argoproj/argo/v3/workflow/common"
@@ -53,7 +53,7 @@ metadata:
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"))
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &jwt.Claims{Subject: "my-sub"})
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{

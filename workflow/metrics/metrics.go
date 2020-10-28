@@ -15,14 +15,14 @@ import (
 const (
 	argoNamespace            = "argo"
 	workflowsSubsystem       = "workflows"
-	DefaultMetricsServerPort = "9090"
+	DefaultMetricsServerPort = 9090
 	DefaultMetricsServerPath = "/metrics"
 )
 
 type ServerConfig struct {
 	Enabled      bool
 	Path         string
-	Port         string
+	Port         int
 	TTL          time.Duration
 	IgnoreErrors bool
 }

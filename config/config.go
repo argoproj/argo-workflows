@@ -6,15 +6,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	wfv1 "github.com/argoproj/argo/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/v3/server/auth/sso"
 )
 
-var emptyConfig = Config{}
+var EmptyConfigFunc = func() interface{} { return &Config{} }
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
-	// SSO in settings for single-sign on
-	SSO sso.Config `json:"sso,omitempty"`
 
 	// NodeEvents configures how node events are omitted
 	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
@@ -172,7 +169,7 @@ type ConnectionPool struct {
 
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
+	Port           int                     `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
@@ -183,7 +180,7 @@ type PostgreSQLConfig struct {
 
 type MySQLConfig struct {
 	Host           string                  `json:"host"`
-	Port           string                  `json:"port"`
+	Port           int                     `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName,omitempty"`
 	Options        map[string]string       `json:"options,omitempty"`
@@ -249,7 +246,7 @@ type MetricsConfig struct {
 	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
 	Path string `json:"path,omitempty"`
 	// Port is the port where metrics are emitted. Default is "9090"
-	Port string `json:"port,omitempty"`
+	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
 }
