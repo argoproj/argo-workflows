@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -94,17 +95,17 @@ func (h *httpClient) SubmitWorkflow(ctx context.Context, in *workflowpkg.Workflo
 // InfoService
 func (h *httpClient) GetInfo(context.Context, *infopkg.GetInfoRequest, ...grpc.CallOption) (*infopkg.InfoResponse, error) {
 	v := &infopkg.InfoResponse{}
-	return v, h.Get("/api/v1/info", v)
+	return v, h.Get(v, "/api/v1/info")
 }
 
 func (h *httpClient) GetVersion(context.Context, *infopkg.GetVersionRequest, ...grpc.CallOption) (*wfv1.Version, error) {
 	v := &wfv1.Version{}
-	return v, h.Get("/api/v1/version", v)
+	return v, h.Get(v, "/api/v1/version")
 }
 
 func (h *httpClient) GetUserInfo(context.Context, *infopkg.GetUserInfoRequest, ...grpc.CallOption) (*infopkg.GetUserInfoResponse, error) {
 	v := &infopkg.GetUserInfoResponse{}
-	return v, h.Get("/api/v1/userinfo", v)
+	return v, h.Get(v, "/api/v1/userinfo")
 }
 
 // all
@@ -128,8 +129,8 @@ func (h *httpClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowte
 	panic("implement me")
 }
 
-func (h *httpClient) Get(v interface{}, path string, args ...interface{} ) error {
-	req, err := http.NewRequest("GET", h.baseUrl+fmt.Sprintf(path, args...), nil)
+func (h *httpClient) Get(v interface{}, path string, args ...interface{}) error {
+	req, err := http.NewRequest("GET", h.baseUrl+fmt.Sprintf(regexp.MustCompile("{[^}]+}").ReplaceAllString(path, "%s"), args...), nil)
 	if err != nil {
 		return err
 	}
