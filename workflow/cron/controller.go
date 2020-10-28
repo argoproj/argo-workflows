@@ -155,9 +155,12 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
+	wfWasRun, err := cronWorkflowOperationCtx.runOutstandingWorkflows()
 	if err != nil {
 		logCtx.WithError(err).Error("could not run outstanding Workflow")
+		return true
+	} else if wfWasRun {
+		// A workflow was run, so the cron workflow will be requeued. Return here to avoid duplicating work
 		return true
 	}
 
