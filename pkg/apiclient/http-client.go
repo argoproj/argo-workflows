@@ -159,12 +159,12 @@ func (h *httpClient) ListWorkflows(_ context.Context, in *workflowpkg.WorkflowLi
 	return out, h.Get("/api/v1/workflows/{namespace}", in.Namespace)
 }
 
-type foo struct {
+type httpWatchClient struct {
 	abstractIntermediary
 	reader *bufio.Reader
 }
 
-func (f foo) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
+func (f *httpWatchClient) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 	data, err := f.reader.ReadBytes('\n')
 	if err != nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (h *httpClient) WatchWorkflows(_ context.Context, in *workflowpkg.WatchWork
 		return nil, err
 	}
 
-	return &foo{reader: bufio.NewReader(resp.Body)}, nil
+	return &httpWatchClient{reader: bufio.NewReader(resp.Body)}, nil
 
 }
 
