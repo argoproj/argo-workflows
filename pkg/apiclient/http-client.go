@@ -31,7 +31,7 @@ func (h *httpClient) ListArchivedWorkflows(_ context.Context, in *workflowarchiv
 
 func (h *httpClient) GetArchivedWorkflow(_ context.Context, in *workflowarchivepkg.GetArchivedWorkflowRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Get(out, "/api/v1/archived-workflows/{uid}", in.Uid)
+	return out, h.Get(in, out, "/api/v1/archived-workflows/{uid}")
 }
 
 func (h *httpClient) DeleteArchivedWorkflow(_ context.Context, in *workflowarchivepkg.DeleteArchivedWorkflowRequest, _ ...grpc.CallOption) (*workflowarchivepkg.ArchivedWorkflowDeletedResponse, error) {
@@ -242,7 +242,7 @@ func (h *httpClient) SetWorkflow(_ context.Context, in *workflowpkg.WorkflowSetR
 
 func (h *httpClient) LintWorkflow(_ context.Context, in *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/lint")
+	return out, h.Post(in, out, "/api/v1/workflows/{namespace}/lint")
 }
 
 type httpPodLogsClient struct {

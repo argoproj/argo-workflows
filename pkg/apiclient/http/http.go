@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -78,6 +79,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	if err != nil {
 		return err
 	}
+	log.Debugf("curl -X %s -d '%s' %v", method, string(data), u)
 	req, err := http.NewRequest(method, u.String(), bytes.NewReader(data))
 	if err != nil {
 		return err
@@ -100,17 +102,15 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 
 func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 	query := url.Values{}
-	f := flatten.Flatten(in)
-	for s, v := range f {
+	for s, v := range flatten.Flatten(in) {
 		x := "{" + s + "}"
-		pathParam := strings.Contains(path, x)
-		if pathParam {
+		if strings.Contains(path, x) {
 			path = strings.Replace(path, x, v, 1)
 		} else if method == "GET" {
 			query.Set(s, v)
 		}
 	}
-	return url.Parse(h.baseUrl + "/" + path + "?" + query.Encode())
+	return url.Parse(h.baseUrl + path + "?" + query.Encode())
 }
 
 func errFromResponse(statusCode int) error {
