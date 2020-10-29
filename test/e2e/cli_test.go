@@ -59,7 +59,12 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 
 func (s *CLISuite) needsServer() {
 	if os.Getenv("ARGO_SERVER") == "" {
-		s.T().Skip("test needs server, but not available")
+		s.T().Skip("test needs server")
+	}
+}
+func (s *CLISuite) skipIfServer() {
+	if os.Getenv("ARGO_SERVER") != "" {
+		s.T().Skip("test must not run with server")
 	}
 }
 
@@ -181,7 +186,7 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
-	s.needsServer()
+	s.skipIfServer()
 	s.NeedsCI()
 	s.Run("ListWithBadToken", func() {
 		s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
