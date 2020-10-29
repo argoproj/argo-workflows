@@ -166,7 +166,7 @@ func (f *httpWatchClient) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 		return nil, err
 	}
 	out := &workflowpkg.WorkflowWatchEvent{}
-	return out, json.Unmarshal(data, out)
+	return out, json.Unmarshal(data[6:], out)
 }
 
 func (h *httpClient) WatchWorkflows(ctx context.Context, in *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
