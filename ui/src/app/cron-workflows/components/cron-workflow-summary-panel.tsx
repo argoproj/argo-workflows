@@ -91,6 +91,9 @@ function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[])
 function getNextScheduledTime(schedule: string, tz: string): string {
     let out = '';
     try {
+        if (!tz) {
+            tz = 'Etc/UTC'
+        }
         out = parser
             .parseExpression(schedule, {tz})
             .next()
