@@ -164,6 +164,27 @@ function hasEnv(container: models.kubernetes.Container | models.Sidecar | models
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
 }
 
+const EnvVar = (props: {env: models.kubernetes.EnvVar}) => {
+    const {env} = props;
+    const secret = env.valueFrom?.secretKeyRef;
+    const value =
+        env.value ||
+        (secret ? (
+            <>
+                <i className='fa fa-key' />
+                {secret.name}/{secret.key}
+            </>
+        ) : (
+            undefined
+        ));
+
+    return (
+        <pre>
+            {env.name}={value}
+        </pre>
+    );
+};
+
 export const WorkflowNodeContainer = (props: {
     nodeId: string;
     container: models.kubernetes.Container | models.Sidecar | models.Script;
@@ -187,7 +208,13 @@ export const WorkflowNodeContainer = (props: {
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
+                  value: (
+                      <pre className='workflow-node-info__multi-line'>
+                          {(container.env || []).map(e => (
+                              <EnvVar env={e} />
+                          ))}
+                      </pre>
+                  )
               }
             : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
