@@ -35,7 +35,10 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
     const statusAttributes = [
         {title: 'Active', value: props.cronWorkflow.status.active ? getCronWorkflowActiveWorkflowList(props.cronWorkflow.status.active) : <i>No Workflows Active</i>},
         {title: 'Last Scheduled Time', value: props.cronWorkflow.status.lastScheduledTime},
-        {title: 'Next Scheduled Time', value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone) + " (assumes workflow-controller is in UTC)"},
+        {
+            title: 'Next Scheduled Time',
+            value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone) + ' (assumes workflow-controller is in UTC)'
+        },
         {title: 'Conditions', value: <ConditionsPanel conditions={props.cronWorkflow.status.conditions} />}
     ];
     return (
