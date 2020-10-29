@@ -770,6 +770,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
+	s.needsServer()
 	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
