@@ -34,6 +34,10 @@ type Opts struct {
 	ClientConfigSupplier func() clientcmd.ClientConfig
 }
 
+func (o Opts) String() string {
+	return fmt.Sprintf("(argoServerOpts=%v,instanceID=%v)", o.ArgoServerOpts, o.InstanceID)
+}
+
 // DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
 	return NewClientFromOpts(Opts{
