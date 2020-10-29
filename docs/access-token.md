@@ -35,12 +35,17 @@ Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 !!!NOTE
     The `ARGO_TOKEN` should always start with "Bearer ".
 
-Use that token with the CLI (you need to set `ARGO_SERVER` too):
+Use that token with the CLI (you need to set `ARGO_SERVER` and maybe `ARGO_SECURE` too):
 
 ```sh
-ARGO_SERVER=http://localhost:2746 
+ARGO_SERVER=localhost:2746 
+ARGO_SECURE=false ;# set if HTTPS
+ARGO_TOKEN='Bearer ****'
 argo list
 ```
+
+!!!WARING
+    If you want to use the CLI with a load balancer, it must support HTTP/2. See [https://github.com/argoproj/argo/issues/4394](#4394).
 
 Use that token in your API requests, e.g. to list workflows:
 
