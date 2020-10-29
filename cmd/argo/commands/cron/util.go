@@ -8,7 +8,8 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-// GetNextRuntime assumes the workflow-controller is in UTC, unless an overriding timezone is available
+// GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in
+// UTC, but nevertheless returns the time in the local timezone.
 func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	cronScheduleString := cwf.Spec.Schedule
 	if cwf.Spec.Timezone != "" {
@@ -18,5 +19,5 @@ func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	return cronSchedule.Next(time.Now().UTC()), nil
+	return cronSchedule.Next(time.Now().UTC()).Local(), nil
 }

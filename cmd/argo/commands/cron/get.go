@@ -91,7 +91,7 @@ func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 
 	next, err := GetNextRuntime(cwf)
 	if err == nil {
-		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next))
+		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next) + " (assumes workflow-controller is in UTC)")
 	}
 
 	if len(cwf.Status.Active) > 0 {

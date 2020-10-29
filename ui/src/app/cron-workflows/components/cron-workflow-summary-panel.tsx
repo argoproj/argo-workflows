@@ -35,7 +35,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
     const statusAttributes = [
         {title: 'Active', value: props.cronWorkflow.status.active ? getCronWorkflowActiveWorkflowList(props.cronWorkflow.status.active) : <i>No Workflows Active</i>},
         {title: 'Last Scheduled Time', value: props.cronWorkflow.status.lastScheduledTime},
-        {title: 'Next Scheduled Time', value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone)},
+        {title: 'Next Scheduled Time', value: getNextScheduledTime(props.cronWorkflow.spec.schedule, props.cronWorkflow.spec.timezone) + " (assumes workflow-controller is in UTC)"},
         {title: 'Conditions', value: <ConditionsPanel conditions={props.cronWorkflow.status.conditions} />}
     ];
     return (
@@ -91,11 +91,8 @@ function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[])
 function getNextScheduledTime(schedule: string, tz: string): string {
     let out = '';
     try {
-        if (!tz) {
-            tz = 'Etc/UTC'
-        }
         out = parser
-            .parseExpression(schedule, {tz})
+            .parseExpression(schedule, {utc: !tz, tz})
             .next()
             .toISOString();
     } catch (e) {
