@@ -31,7 +31,7 @@ func (h WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflowp
 	if err != nil {
 		return nil, err
 	}
-	return watchWorkflowsClient{clientStream{ctx, reader}}, nil
+	return watchWorkflowsClient{serverSentEventsClient{ctx, reader}}, nil
 }
 
 func (h WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflowpkg.WatchEventsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchEventsClient, error) {
@@ -39,7 +39,7 @@ func (h WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflowpkg.
 	if err != nil {
 		return nil, err
 	}
-	return eventWatchClient{clientStream{ctx, reader}}, nil
+	return eventWatchClient{serverSentEventsClient{ctx, reader}}, nil
 }
 
 func (h WorkflowServiceClient) DeleteWorkflow(_ context.Context, in *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
@@ -93,7 +93,7 @@ func (h WorkflowServiceClient) PodLogs(ctx context.Context, in *workflowpkg.Work
 	if err != nil {
 		return nil, err
 	}
-	return &podLogsClient{clientStream{ctx, reader}}, nil
+	return &podLogsClient{serverSentEventsClient{ctx, reader}}, nil
 }
 
 func (h WorkflowServiceClient) SubmitWorkflow(_ context.Context, in *workflowpkg.WorkflowSubmitRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {

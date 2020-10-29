@@ -4,7 +4,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
-type watchWorkflowsClient struct{ clientStream }
+type watchWorkflowsClient struct{ serverSentEventsClient }
 
 func (f watchWorkflowsClient) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 	v := &workflowpkg.WorkflowWatchEvent{}
