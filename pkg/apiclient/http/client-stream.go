@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -44,12 +46,18 @@ func (f clientStream) RecvEvent(v interface{}) error {
 	for {
 		data, err := f.reader.ReadBytes('\n')
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read line: %w", err)
 		}
+		log.Debugln(string(data))
 		if len(data) <= prefixLength {
 			continue
 		}
-		return json.Unmarshal(data[prefixLength:], v)
+		x := struct {
+			Result interface{} `json:"result"`
+		}{
+			Result: v,
+		}
+		return json.Unmarshal(data[prefixLength:], &x)
 	}
 }
 
