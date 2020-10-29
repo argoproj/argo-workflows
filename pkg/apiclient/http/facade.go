@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -111,6 +112,8 @@ func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 			query.Set(s, v)
 		}
 	}
+	// remove any that were not provided
+	path = regexp.MustCompile("{[^}]*}").ReplaceAllString(path, "")
 	return url.Parse(h.baseUrl + path + "?" + query.Encode())
 }
 
