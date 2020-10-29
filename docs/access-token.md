@@ -39,13 +39,15 @@ Use that token with the CLI (you need to set `ARGO_SERVER` and maybe `ARGO_SECUR
 
 ```sh
 ARGO_SERVER=localhost:2746 
-ARGO_SECURE=false ;# set if HTTPS
+ARGO_SECURE=false ;# set if TLS
 ARGO_TOKEN='Bearer ****'
+ARGO_HTTP=true ;# set to true if you're using 
+ARGO_PATH=/argo ;# set if a path is needed for ARGO_HTTP
 argo list
 ```
 
-!!!WARING
-    If you want to use the CLI with a load balancer, it must support HTTP/2. See [https://github.com/argoproj/argo/issues/4394](#4394).
+!!!NOTE
+    If you want to use the CLI with a load balancer, it must support HTTP/2. Otherwise, set `ARGO_HTTP=true`.
 
 Use that token in your API requests, e.g. to list workflows:
 
