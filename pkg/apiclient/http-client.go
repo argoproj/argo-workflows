@@ -155,18 +155,24 @@ func (h *httpClient) ListWorkflows(_ context.Context, in *workflowpkg.WorkflowLi
 	return out, h.Get(in, out, "/api/v1/workflows/{namespace}")
 }
 
-type httpWatchClient struct {
+type httpWatchWorkflowsClient struct {
 	abstractIntermediary
 	reader *bufio.Reader
 }
 
-func (f *httpWatchClient) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
-	data, err := f.reader.ReadBytes('\n')
-	if err != nil {
-		return nil, err
+const prefixLength = len("data: ")
+func (f *httpWatchWorkflowsClient) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
+	for {
+		data, err := f.reader.ReadBytes('\n')
+		if err != nil {
+			return nil, err
+		}
+		if len(data) <= prefixLength {
+			continue
+		}
+		out := &workflowpkg.WorkflowWatchEvent{}
+		return out, json.Unmarshal(data[prefixLength:], out)
 	}
-	out := &workflowpkg.WorkflowWatchEvent{}
-	return out, json.Unmarshal(data[6:], out)
 }
 
 func (h *httpClient) WatchWorkflows(ctx context.Context, in *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
@@ -174,7 +180,7 @@ func (h *httpClient) WatchWorkflows(ctx context.Context, in *workflowpkg.WatchWo
 	if err != nil {
 		return nil, err
 	}
-	return &httpWatchClient{abstractIntermediary: newAbstractIntermediary(ctx), reader: reader}, nil
+	return &httpWatchWorkflowsClient{abstractIntermediary: newAbstractIntermediary(ctx), reader: reader}, nil
 }
 
 type httpEventWatchClient struct {
