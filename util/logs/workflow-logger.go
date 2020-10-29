@@ -52,7 +52,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	// we create a watch on the pods labelled with the workflow name,
 	// but we also filter by pod name if that was requested
 	podListOptions := metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
-	if req.GetPodName() != "" {
+	if workflowpkg.PodName(req.GetPodName()) != "" {
 		podListOptions.FieldSelector = "metadata.name=" + req.GetPodName()
 	}
 

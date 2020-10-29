@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -48,7 +47,7 @@ func (f serverSentEventsClient) RecvEvent(v interface{}) error {
 	for {
 		line, err := f.reader.ReadBytes('\n')
 		if err != nil {
-			return fmt.Errorf("failed to read line: %w", err)
+			return err
 		}
 		log.Debugln(string(line))
 		// each line must be prefixed with `data: `, if not we just ignore it

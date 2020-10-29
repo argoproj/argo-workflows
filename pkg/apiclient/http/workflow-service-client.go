@@ -89,6 +89,9 @@ func (h WorkflowServiceClient) LintWorkflow(_ context.Context, in *workflowpkg.W
 }
 
 func (h WorkflowServiceClient) PodLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+	if in.PodName == "" {
+		in.PodName = workflowpkg.Any
+	}
 	reader, err := h.EventStreamReader(in, "/api/v1/workflows/{namespace}/{name}/{podName}/log")
 	if err != nil {
 		return nil, err

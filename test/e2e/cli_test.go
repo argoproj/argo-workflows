@@ -293,7 +293,7 @@ func (s *CLISuite) TestLogProblems() {
 		WaitForWorkflow(fixtures.ToStart, "to start").
 		Then().
 		// logs should come in order
-		RunCli([]string{"logs", "log-problems", "--follow", "-v"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				lines := strings.Split(output, "\n")
 				if assert.Len(t, lines, 6) {
@@ -763,7 +763,6 @@ func (s *CLISuite) TestWorkflowTerminate() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
-	s.NeedsOffloading()
 	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -781,7 +780,7 @@ func (s *CLISuite) TestWorkflowWait() {
 }
 
 func (s *CLISuite) TestWorkflowWatch() {
-	s.NeedsOffloading()
+	s.needsServer()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
