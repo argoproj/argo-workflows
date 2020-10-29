@@ -68,6 +68,12 @@ func (s *CLISuite) skipIfServer() {
 	}
 }
 
+func (s *CLISuite) skipIfHTTP() {
+	if os.Getenv("ARGO_HTTP") != "" {
+		s.T().Skip("test must not run with HTTP")
+	}
+}
+
 func (s *CLISuite) NeedsOffloading() {
 	s.E2ESuite.NeedsOffloading()
 	s.needsServer()
@@ -224,7 +230,7 @@ func (s *CLISuite) TestLogs() {
 
 	s.Run("FollowWorkflowLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", name, "--follow", "-v"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Argo!")
 				}
@@ -255,6 +261,7 @@ func (s *CLISuite) TestLogs() {
 			})
 	})
 	s.Run("SinceTime", func() {
+		s.skipIfHTTP() // this test errors with `field type *v1.Time is not supported in query parameters`
 		s.Given().
 			RunCli([]string{"logs", name, "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {

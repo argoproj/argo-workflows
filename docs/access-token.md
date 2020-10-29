@@ -49,6 +49,9 @@ argo list
 !!!NOTE
     If you want to use the CLI with a load balancer, it must support HTTP/2. Otherwise, set `ARGO_HTTP=true`.
 
+!!!WARNING
+    `ARGO_HTTP` does not work if you use time types. E.g. `argo logs --since-time=2020...`. It should work fine for most use cases. 
+
 Use that token in your API requests, e.g. to list workflows:
 
 ```sh
