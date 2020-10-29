@@ -293,7 +293,7 @@ func (s *CLISuite) TestLogProblems() {
 		WaitForWorkflow(fixtures.ToStart, "to start").
 		Then().
 		// logs should come in order
-		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"logs", "log-problems", "--follow", "-v"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				lines := strings.Split(output, "\n")
 				if assert.Len(t, lines, 6) {
