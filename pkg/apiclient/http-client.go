@@ -103,7 +103,7 @@ func (h *httpClient) DeleteWorkflowTemplate(_ context.Context, in *workflowtempl
 
 func (h *httpClient) LintWorkflowTemplate(_ context.Context, in *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*wfv1.WorkflowTemplate, error) {
 	out := &wfv1.WorkflowTemplate{}
-	return out, h.Put(in, out, "/api/v1/workflow-templates/{namespace}/lint")
+	return out, h.Post(in, out, "/api/v1/workflow-templates/{namespace}/lint")
 }
 
 // CronWorkflowService
