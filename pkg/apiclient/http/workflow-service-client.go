@@ -59,8 +59,7 @@ func (h WorkflowServiceClient) ResubmitWorkflow(_ context.Context, in *workflowp
 
 func (h WorkflowServiceClient) ResumeWorkflow(_ context.Context, in *workflowpkg.WorkflowResumeRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
 	out := &wfv1.Workflow{}
-	err := h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/resume")
-	return out, err
+	return out, h.Put(in, out, "/api/v1/workflows/{namespace}/{name}/resume")
 }
 
 func (h WorkflowServiceClient) SuspendWorkflow(_ context.Context, in *workflowpkg.WorkflowSuspendRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
