@@ -49,13 +49,13 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("curl -H 'Accept: text/event-stream' %s", u)
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
+	log.Debugf("curl -H 'Accept: text/event-stream' -H 'Authorization: ******' %s", u)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -64,8 +64,7 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	if err != nil {
 		return nil, err
 	}
-	reader := bufio.NewReader(resp.Body)
-	return reader, nil
+	return bufio.NewReader(resp.Body), nil
 }
 
 func (h Facade) do(in interface{}, out interface{}, method string, path string) error {
@@ -81,12 +80,12 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	if err != nil {
 		return err
 	}
-	log.Debugf("curl -X %s -d '%s' %v", method, string(data), u)
 	req, err := http.NewRequest(method, u.String(), bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Authorization", h.authorization)
+	log.Debugf("curl -X %s -H 'Authorization: ******' -d '%s' %v", method, string(data), u)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
