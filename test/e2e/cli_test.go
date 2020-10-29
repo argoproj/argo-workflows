@@ -53,6 +53,10 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
+func (s *CLISuite) AfterTest(suiteName, testName string) {
+	_ = os.Setenv("KUBECONFIG", kubeConfig)
+}
+
 func (s *CLISuite) needsServer() {
 	if os.Getenv("ARGO_SERVER") == "" {
 		s.T().Skip("test needs server, but not available")
@@ -1242,6 +1246,7 @@ func (s *CLISuite) TestResourceTemplateStopAndTerminate() {
 }
 
 func (s *CLISuite) TestMetaDataNamespace() {
+	s.needsServer()
 	s.Given().
 		Exec("../../dist/argo", []string{"cron", "create", "testdata/wf-default-ns.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.Error(t, err) {
