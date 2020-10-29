@@ -16,6 +16,8 @@ import (
 	"github.com/argoproj/argo/util/flatten"
 )
 
+// Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
+// Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
 	baseUrl       string
 	authorization string
@@ -58,7 +60,7 @@ func (h Facade) EventStreamReader(in interface{}, path string) (*bufio.Reader, e
 	if err != nil {
 		return nil, err
 	}
-	err = errFromResponse(resp.StatusCode)
+	err = errFromResponse(resp)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +91,7 @@ func (h Facade) do(in interface{}, out interface{}, method string, path string) 
 	if err != nil {
 		return err
 	}
-	err = errFromResponse(resp.StatusCode)
+	err = errFromResponse(resp)
 	if err != nil {
 		return err
 	}
@@ -113,25 +115,16 @@ func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
 	return url.Parse(h.baseUrl + path + "?" + query.Encode())
 }
 
-func errFromResponse(statusCode int) error {
-	if statusCode == http.StatusOK {
+func errFromResponse(r *http.Response) error {
+	if r.StatusCode == http.StatusOK {
 		return nil
 	}
-	code, ok := map[int]codes.Code{
-		http.StatusNotFound:            codes.NotFound,
-		http.StatusConflict:            codes.AlreadyExists,
-		http.StatusBadRequest:          codes.InvalidArgument,
-		http.StatusMethodNotAllowed:    codes.Unimplemented,
-		http.StatusServiceUnavailable:  codes.Unavailable,
-		http.StatusPreconditionFailed:  codes.FailedPrecondition,
-		http.StatusUnauthorized:        codes.Unauthenticated,
-		http.StatusForbidden:           codes.PermissionDenied,
-		http.StatusRequestTimeout:      codes.DeadlineExceeded,
-		http.StatusGatewayTimeout:      codes.DeadlineExceeded,
-		http.StatusInternalServerError: codes.Internal,
-	}[statusCode]
-	if ok {
-		return status.Error(code, "")
+	x := &struct {
+		Code    codes.Code `json:"code"`
+		Message string     `json:"message"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(x); err == nil {
+		return status.Errorf(x.Code, x.Message)
 	}
-	return status.Error(codes.Internal, fmt.Sprintf("unknown error: %v", statusCode))
+	return status.Error(codes.Internal, fmt.Sprintf(": %v", r))
 }
