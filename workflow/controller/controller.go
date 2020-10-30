@@ -497,8 +497,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	// this will ensure we process every incomplete workflow once every 20m
-	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
+	// this will ensure we process every incomplete workflow once every 2m
+	wfc.wfQueue.AddAfter(key, 2*time.Minute)
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
