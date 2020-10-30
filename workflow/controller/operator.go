@@ -193,7 +193,7 @@ func (woc *wfOperationCtx) operate() {
 
 	// Loading the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
-	err := woc.loadExecWFFromWfDefaultOrWFTRef()
+	err := woc.setExecWorkflow()
 	if err != nil {
 		woc.log.Errorf("loading WorkflowDefault or WorkflowTemplateRef failed: %v", err)
 		woc.markWorkflowError(err, true)
@@ -3100,16 +3100,14 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 	return woc.execWf.Spec.RetryStrategy
 }
 
-func (woc *wfOperationCtx) loadExecWFFromWfDefaultOrWFTRef() error {
+func (woc *wfOperationCtx) setExecWorkflow() error {
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		err := woc.setStoredWFSpec()
 		if err != nil {
 			return err
 		}
-		err = woc.setExecWorkflow()
-		if err != nil {
-			return err
-		}
+		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
+		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
 	} else if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
 		return fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 	} else {
@@ -3123,65 +3121,39 @@ func (woc *wfOperationCtx) loadExecWFFromWfDefaultOrWFTRef() error {
 }
 
 func (woc *wfOperationCtx) setStoredWFSpec() error {
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		var wftHolder wfv1.WorkflowSpecHolder
-		var err error
-		if woc.wf.Status.StoredWorkflowSpec == nil || woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
-			wftHolder, err = woc.fetchWorkflowSpec()
-			if err != nil {
-				return err
-			}
+	if woc.wf.Status.StoredWorkflowSpec == nil {
+		wftHolder, err := woc.fetchWorkflowSpec()
+		if err != nil {
+			return err
 		}
-		if woc.wf.Status.StoredWorkflowSpec == nil {
 
-			// Merge wfT Metadata to Wf
-			wfutil.MergeMetaDataTo(wftHolder.GetWorkflowMetadata(), &woc.wf.ObjectMeta)
+		// Merge wfT Metadata to Wf
+		wfutil.MergeMetaDataTo(wftHolder.GetWorkflowMetadata(), &woc.wf.ObjectMeta)
+		wfDefault := woc.controller.Config.WorkflowDefaults
 
-			wfDefault := woc.controller.Config.WorkflowDefaults
-			if wfDefault == nil {
-				wfDefault = &wfv1.Workflow{}
-			}
-			// Merge wfDefault Metadata to Wf
-			wfutil.MergeMetaDataTo(&wfDefault.ObjectMeta, &woc.wf.ObjectMeta)
+		// Merge wfDefault Metadata to Wf
+		wfutil.MergeMetaDataTo(&wfDefault.ObjectMeta, &woc.wf.ObjectMeta)
 
-			// Merge WF spec WFT spec and WorkflowDefault spec
-
-			mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
-			if err != nil {
-				return err
-			}
-
-			// Clear the WorkflowTemplateRef from merged Workflow
-			mergedWf.Spec.WorkflowTemplateRef = nil
-
-			woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
-			woc.updated = true
-		} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
-			wfDefault := woc.controller.Config.WorkflowDefaults
-			if wfDefault == nil {
-				wfDefault = &wfv1.Workflow{}
-			}
-			mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, woc.wf.Status.StoredWorkflowSpec, &wfDefault.Spec)
-			if err != nil {
-				return err
-			}
-
-			if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
-				return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
-
-			}
+		// Merge WF spec WFT spec and WorkflowDefault spec
+		mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		if err != nil {
+			return err
 		}
-	}
-	return nil
-}
 
-func (woc *wfOperationCtx) setExecWorkflow() error {
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		if woc.wf.Status.StoredWorkflowSpec != nil {
-			woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
-			woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
-		} else {
-			return fmt.Errorf("storedWorkflowSpec should not be nil")
+		// Clear the WorkflowTemplateRef from merged Workflow
+		mergedWf.Spec.WorkflowTemplateRef = nil
+		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
+		woc.updated = true
+	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
+		wftHolder, err := woc.fetchWorkflowSpec()
+		wfDefault := woc.controller.Config.WorkflowDefaults
+		mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		if err != nil {
+			return err
+		}
+		if mergedWf.Spec.String() != woc.wf.Status.StoredWorkflowSpec.String() {
+			return fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
+
 		}
 	}
 	return nil

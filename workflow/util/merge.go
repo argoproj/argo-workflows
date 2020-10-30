@@ -40,12 +40,11 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	return nil
 }
 
-// MergeMap will merge all element from right map to left map if it is not present in left.
-func MergeMap(left, right map[string]string) {
-	for key, val := range right {
-		if _, ok := left[key]; !ok {
-			fmt.Println(key, val)
-			left[key] = val
+// mergeMap will merge all element from right map to left map if it is not present in left.
+func mergeMap(from, to map[string]string) {
+	for key, val := range from {
+		if _, ok := to[key]; !ok {
+			to[key] = val
 		}
 	}
 }
@@ -54,7 +53,7 @@ func MergeMap(left, right map[string]string) {
 // 1. Workflow Spec, 2 WorkflowTemplate Spec (WorkflowTemplateRef), 3. WorkflowDefault Spec.
 func MergeWfSpecs(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Workflow, error) {
 	if wfSpec == nil {
-		return nil, fmt.Errorf("invalid Workflow spec")
+		return nil, nil
 	}
 	targetWf := wfv1.Workflow{Spec: *wfSpec.DeepCopy()}
 	if wftSpec != nil {
@@ -72,19 +71,21 @@ func MergeWfSpecs(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Work
 	return &targetWf, nil
 }
 
-// MergeMetaData will merge the patch metadata into target metadata.
-// This func will merge only labels and annotations.
-func MergeMetaDataTo(patch, targetMetaData *metav1.ObjectMeta) {
-	if patch != nil && patch.Labels != nil {
-		if targetMetaData.Labels == nil {
-			targetMetaData.Labels = make(map[string]string)
-		}
-		MergeMap(targetMetaData.Labels, patch.Labels)
+// MergeMetadata will merge the labels and annotations into the target metadata.
+func MergeMetaDataTo(from, to *metav1.ObjectMeta) {
+	if from != nil {
+		return
 	}
-	if patch != nil && patch.Annotations != nil {
-		if targetMetaData.Annotations == nil {
-			targetMetaData.Annotations = make(map[string]string)
+	if from.Labels != nil {
+		if to.Labels == nil {
+			to.Labels = make(map[string]string)
 		}
-		MergeMap(targetMetaData.Annotations, patch.Annotations)
+		mergeMap(from.Labels, to.Labels)
+	}
+	if from.Annotations != nil {
+		if to.Annotations == nil {
+			to.Annotations = make(map[string]string)
+		}
+		mergeMap(from.Annotations, to.Annotations)
 	}
 }
