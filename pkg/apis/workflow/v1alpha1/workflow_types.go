@@ -378,6 +378,39 @@ func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
 }
 
+func (wf *Workflow) GetSemaphoreKeys() []string {
+	keyMap := make(map[string]bool)
+	namespace := wf.Namespace
+	var templates []Template
+	if wf.Spec.WorkflowTemplateRef == nil && wf.Spec.Synchronization != nil && wf.Spec.Synchronization.Semaphore != nil && wf.Spec.Synchronization.Semaphore.ConfigMapKeyRef != nil {
+		key := fmt.Sprintf("%s/%s", namespace, wf.Spec.Synchronization.Semaphore.ConfigMapKeyRef.Name)
+		keyMap[key] = true
+		templates = wf.Spec.Templates
+	}
+
+	if wf.Spec.WorkflowTemplateRef != nil && wf.Status.StoredWorkflowSpec != nil {
+		templates = wf.Status.StoredWorkflowSpec.Templates
+		if wf.Status.StoredWorkflowSpec.Synchronization != nil && wf.Status.StoredWorkflowSpec.Synchronization.Semaphore != nil && wf.Status.StoredWorkflowSpec.Synchronization.Semaphore.ConfigMapKeyRef != nil {
+			key := fmt.Sprintf("%s/%s", namespace, wf.Status.StoredWorkflowSpec.Synchronization.Semaphore.ConfigMapKeyRef.Name)
+			keyMap[key] = true
+			templates = wf.Status.StoredWorkflowSpec.Templates
+		}
+	}
+
+	for _, tmpl := range templates {
+		if tmpl.Synchronization != nil && tmpl.Synchronization.Semaphore != nil && tmpl.Synchronization.Semaphore.ConfigMapKeyRef != nil {
+			key := fmt.Sprintf("%s/%s", namespace, tmpl.Synchronization.Semaphore.ConfigMapKeyRef.Name)
+			keyMap[key] = true
+		}
+	}
+
+	var semaphoreKeys []string
+	for key := range keyMap {
+		semaphoreKeys = append(semaphoreKeys, key)
+	}
+	return semaphoreKeys
+}
+
 type ShutdownStrategy string
 
 const (
