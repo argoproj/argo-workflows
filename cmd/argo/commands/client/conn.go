@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/pkg/apiclient"
@@ -50,7 +51,7 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 			AuthSupplier: func() string {
 				return GetAuthString()
 			},
-			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
+			RESTConfigSupplier: func() (*rest.Config, error) { return GetConfig().ClientConfig() },
 		})
 	if err != nil {
 		log.Fatal(err)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -31,11 +31,7 @@ type argoKubeClient struct {
 	instanceIDService instanceid.Service
 }
 
-func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
-	restConfig, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, nil, err
-	}
+func newArgoKubeClient(restConfig *rest.Config, instanceIDService instanceid.Service) (context.Context, Client, error) {
 	wfClient, err := versioned.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, err

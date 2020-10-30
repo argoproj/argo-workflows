@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -26,12 +27,18 @@ type Client interface {
 }
 
 type Opts struct {
+	// ArgoServerOpts can be used to connect via an exposed argo API.
 	ArgoServerOpts ArgoServerOpts
-	InstanceID     string
-	AuthSupplier   func() string
-	// DEPRECATED: use `ClientConfigSupplier`
-	ClientConfig         clientcmd.ClientConfig
+	// InstanceID can be specified in case multiple argo controllers are running and you want to target a specific one.
+	InstanceID string
+	// AuthSupplier is used in combination with ArgoServerOpts to specify authentication.
+	AuthSupplier func() string
+	// DEPRECATED: use `RESTConfigSupplier`
+	ClientConfig clientcmd.ClientConfig
+	// DEPRECATED: use `RESTConfigSupplier`
 	ClientConfigSupplier func() clientcmd.ClientConfig
+	// RESTConfigSupplier returns a k8s client-go REST config.
+	RESTConfigSupplier func() (*rest.Config, error)
 }
 
 // DEPRECATED: use NewClientFromOpts
@@ -45,6 +52,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 	})
 }
 
+// NewClientFromOpts initializes an argo kubernetes client.
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	log.WithField("opts", opts).Debug("Client options")
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
@@ -52,10 +60,19 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	}
 	if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
-	} else {
-		if opts.ClientConfigSupplier != nil {
-			opts.ClientConfig = opts.ClientConfigSupplier()
-		}
-		return newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 	}
+
+	if opts.ClientConfigSupplier != nil {
+		opts.ClientConfig = opts.ClientConfigSupplier()
+	}
+	if opts.ClientConfig != nil {
+		opts.RESTConfigSupplier = func() (*rest.Config, error) { return opts.ClientConfig.ClientConfig() }
+	}
+
+	cfg, err := opts.RESTConfigSupplier()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return newArgoKubeClient(cfg, instanceid.NewService(opts.InstanceID))
 }
