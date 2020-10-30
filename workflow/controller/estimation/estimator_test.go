@@ -18,8 +18,9 @@ func Test_estimator(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
 			Status: wfv1.WorkflowStatus{
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-wf":           {StartedAt: a, FinishedAt: a},
-					"my-wy-873244444": {StartedAt: a, FinishedAt: a},
+					"my-wf":             {StartedAt: a, FinishedAt: a},
+					"my-wy-873244444":   {StartedAt: a, FinishedAt: a},
+					"my-wy-873244444.x": {StartedAt: a, FinishedAt: a},
 				},
 			},
 		},
@@ -29,8 +30,9 @@ func Test_estimator(t *testing.T) {
 				StartedAt:  a,
 				FinishedAt: b,
 				Nodes: map[string]wfv1.NodeStatus{
-					"my-baseline":           {StartedAt: a, FinishedAt: b},
-					"my-baseline-873244444": {StartedAt: a, FinishedAt: b},
+					"my-baseline":             {StartedAt: a, FinishedAt: b},
+					"my-baseline-873244444":   {StartedAt: a, FinishedAt: b},
+					"my-baseline-873244444.x": {StartedAt: a, FinishedAt: b},
 				},
 			},
 		},
