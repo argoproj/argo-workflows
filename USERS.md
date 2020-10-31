@@ -16,6 +16,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [Ant Group](https://www.antgroup.com/)
 1. [AppDirect](https://www.appdirect.com/)
+1. [Atlan](https://atlan.com/)
 1. [BasisAI](https://basis-ai.com/)
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
@@ -100,4 +101,3 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
-1. [Atlan](https://atlan.com/)
