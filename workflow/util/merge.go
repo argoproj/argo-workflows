@@ -2,7 +2,6 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -49,9 +48,20 @@ func mergeMap(from, to map[string]string) {
 	}
 }
 
-// MergeWfSpece will merge the workflow space with order of precedence.
+// JoinWorkflowMetaData will join the workflow metadata with the following order of preference
+// 1. Workflow, 2 WorkflowTemplate (WorkflowTemplateRef), 3. WorkflowDefault.
+func JoinWorkflowMetaData(wfMetaData, wftMetaData, wfDefaultMetaData *metav1.ObjectMeta) {
+	if wftMetaData != nil {
+		mergeMetaDataTo(wftMetaData, wfMetaData)
+	}
+	if wfDefaultMetaData != nil {
+		mergeMetaDataTo(wfDefaultMetaData, wfMetaData)
+	}
+}
+
+// JoinWorkflowSpec will join the workflow specs with the following order of preference
 // 1. Workflow Spec, 2 WorkflowTemplate Spec (WorkflowTemplateRef), 3. WorkflowDefault Spec.
-func MergeWfSpecs(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Workflow, error) {
+func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Workflow, error) {
 	if wfSpec == nil {
 		return nil, nil
 	}
@@ -71,9 +81,9 @@ func MergeWfSpecs(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.Work
 	return &targetWf, nil
 }
 
-// MergeMetadata will merge the labels and annotations into the target metadata.
-func MergeMetaDataTo(from, to *metav1.ObjectMeta) {
-	if from != nil {
+// mergeMetadata will merge the labels and annotations into the target metadata.
+func mergeMetaDataTo(from, to *metav1.ObjectMeta) {
+	if from == nil {
 		return
 	}
 	if from.Labels != nil {

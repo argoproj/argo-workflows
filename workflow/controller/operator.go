@@ -191,7 +191,7 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
-	// Loading the Execute workflow spec for execution
+	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	err := woc.setExecWorkflow()
 	if err != nil {
@@ -202,7 +202,7 @@ func (woc *wfOperationCtx) operate() {
 
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
-		acquired, wfUpdate, _, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
+		acquired, wfUpdate, msg, err := woc.controller.syncManager.TryAcquire(woc.wf, "", woc.execWf.Spec.Synchronization)
 		if err != nil {
 			woc.log.Warn("Failed to acquire the lock")
 			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
@@ -211,6 +211,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.updated = wfUpdate
 		if !acquired {
 			woc.log.Warn("Workflow processing has been postponed due to concurrency limit")
+			woc.wf.Status.Message = msg
 			return
 		}
 	}
@@ -3122,32 +3123,31 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 
 func (woc *wfOperationCtx) setStoredWFSpec() error {
 	if woc.wf.Status.StoredWorkflowSpec == nil {
+		wfDefault := woc.controller.Config.WorkflowDefaults
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}
+		// Join WFT and WfDefault metadata to Workflow metadata.
+		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
 
-		// Merge wfT Metadata to Wf
-		wfutil.MergeMetaDataTo(wftHolder.GetWorkflowMetadata(), &woc.wf.ObjectMeta)
-		wfDefault := woc.controller.Config.WorkflowDefaults
-
-		// Merge wfDefault Metadata to Wf
-		wfutil.MergeMetaDataTo(&wfDefault.ObjectMeta, &woc.wf.ObjectMeta)
-
-		// Merge WF spec WFT spec and WorkflowDefault spec
-		mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		// Join WF spec WFT spec and WorkflowDefault spec
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
-
 		// Clear the WorkflowTemplateRef from merged Workflow
 		mergedWf.Spec.WorkflowTemplateRef = nil
+
 		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
 	} else if woc.controller.Config.WorkflowRestrictions.MustNotChangeSpec() {
 		wftHolder, err := woc.fetchWorkflowSpec()
+		if err != nil {
+			return err
+		}
 		wfDefault := woc.controller.Config.WorkflowDefaults
-		mergedWf, err := wfutil.MergeWfSpecs(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
+		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {
 			return err
 		}

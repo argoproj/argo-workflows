@@ -68,7 +68,7 @@ func TestMergeMetaDataTo(t *testing.T) {
 			"test1": "test", "welcome1": "welcome",
 		},
 	}
-	MergeMetaDataTo(meta2, meta1)
+	mergeMetaDataTo(meta2, meta1)
 	assert.Contains(meta1.Labels, "test1")
 	assert.Contains(meta1.Annotations, "test1")
 	assert.NotContains(meta2.Labels, "test")
@@ -77,9 +77,9 @@ func TestMergeMetaDataTo(t *testing.T) {
 var wfDefault = `
 metadata: 
   annotations: 
-    testAnnotation: test
+    testAnnotation: default
   labels: 
-    testLabel: test
+    testLabel: default
 spec: 
   entrypoint: whalesay
   activeDeadlineSeconds: 7200
@@ -119,6 +119,11 @@ metadata:
   name: workflow-template-submittable
   namespace: default
 spec:
+  workflowMetaData:
+    annotations: 
+      testAnnotation: wft
+    labels:
+      testLabel: wft
   entrypoint: whalesay-template
   arguments:
     parameters:
@@ -212,7 +217,7 @@ spec:
 
 `
 
-func TestMergeWfSpecs(t *testing.T) {
+func TestJoinWfSpecs(t *testing.T) {
 	assert := assert.New(t)
 	wfDefault := unmarshalWF(wfDefault)
 	wf1 := unmarshalWF(wf)
@@ -220,12 +225,44 @@ func TestMergeWfSpecs(t *testing.T) {
 	wft := unmarshalWFT(wft)
 	result := unmarshalWF(resultSpec)
 
-	targetWf, err := MergeWfSpecs(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
+	targetWf, err := JoinWorkflowSpec(&wf1.Spec, wft.GetWorkflowSpec(), &wfDefault.Spec)
 	assert.NoError(err)
 	assert.Equal(result.Spec, targetWf.Spec)
-	assert.Equal(1, len(wf1.Spec.Templates))
-	assert.Equal("whalesay", wf1.Spec.Entrypoint)
-	//assert.Equal(60, wf1.Spec.TTLStrategy.SecondsAfterCompletion)
-	//assert.Equal("whalesay-exit", wf1.Spec.OnExit)
+	assert.Equal(3, len(targetWf.Spec.Templates))
+	assert.Equal("whalesay", targetWf.Spec.Entrypoint)
+}
 
+func TestJoinWorkflowMetaData(t *testing.T) {
+	assert := assert.New(t)
+	t.Run("WfDefaultMetaData", func(t *testing.T) {
+		wfDefault := unmarshalWF(wfDefault)
+		wf1 := unmarshalWF(wf)
+		JoinWorkflowMetaData(&wf1.ObjectMeta, nil, &wfDefault.ObjectMeta)
+		assert.Contains(wf1.Labels, "testLabel")
+		assert.Equal("default", wf1.Labels["testLabel"])
+		assert.Contains(wf1.Annotations, "testAnnotation")
+		assert.Equal("default", wf1.Annotations["testAnnotation"])
+	})
+	t.Run("WFTMetadata", func(t *testing.T) {
+		wfDefault := unmarshalWF(wfDefault)
+		wf2 := unmarshalWF(wf)
+		wft1 := unmarshalWFT(wft)
+		JoinWorkflowMetaData(&wf2.ObjectMeta, wft1.Spec.WorkflowMetadata, &wfDefault.ObjectMeta)
+		assert.Contains(wf2.Labels, "testLabel")
+		assert.Equal("wft", wf2.Labels["testLabel"])
+		assert.Contains(wf2.Annotations, "testAnnotation")
+		assert.Equal("wft", wf2.Annotations["testAnnotation"])
+	})
+	t.Run("WfMetadata", func(t *testing.T) {
+		wfDefault := unmarshalWF(wfDefault)
+		wf2 := unmarshalWF(wf)
+		wf2.Labels = map[string]string{"testLabel": "wf"}
+		wf2.Annotations = map[string]string{"testAnnotation": "wf"}
+		wft1 := unmarshalWFT(wft)
+		JoinWorkflowMetaData(&wf2.ObjectMeta, wft1.Spec.WorkflowMetadata, &wfDefault.ObjectMeta)
+		assert.Contains(wf2.Labels, "testLabel")
+		assert.Equal("wf", wf2.Labels["testLabel"])
+		assert.Contains(wf2.Annotations, "testAnnotation")
+		assert.Equal("wf", wf2.Annotations["testAnnotation"])
+	})
 }
