@@ -3638,7 +3638,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`ConfigMap`|[`ConfigMapValueFrom`](#configmapvaluefrom)|ConfigMap|
+|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for input parameter configuration|
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`event`|`string`|Selector (https://github.com/antonmedv/expr) that is evaluated against the event to get the value of the parameter. E.g. `payload.message`|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
@@ -3962,31 +3962,6 @@ Header indicate a key-value request header to be used when fetching artifacts ov
 |:----------:|:----------:|---------------|
 |`name`|`string`|Name is the header name|
 |`value`|`string`|Value is the literal value to use for the header|
-
-## ConfigMapValueFrom
-
-_No description available_
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-owner-reference.yaml)
-
-- [`k8s-set-owner-reference.yaml`](https://github.com/argoproj/argo/blob/master/examples/k8s-set-owner-reference.yaml)
-
-- [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo/blob/master/examples/resource-delete-with-flags.yaml)
-
-- [`synchronization-tmpl-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-tmpl-level.yaml)
-
-- [`synchronization-wf-level.yaml`](https://github.com/argoproj/argo/blob/master/examples/synchronization-wf-level.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`Key`|`string`|_No description available_|
-|`Name`|`string`|_No description available_|
 
 ## SuppliedValueFrom
 

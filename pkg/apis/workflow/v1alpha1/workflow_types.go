@@ -707,7 +707,7 @@ type ValueFrom struct {
 	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 
 	// ConfigMapKeyRef is configmap selector for input parameter configuration
-	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,8,opt,name=configMap"`
+	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,8,opt,name=configMapKeyRef"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
