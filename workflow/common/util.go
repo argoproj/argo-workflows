@@ -247,7 +247,7 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, clientset *kubernetes.Interface) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -263,6 +263,18 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		if argParam != nil && argParam.Value != nil {
 			inParam.Value = argParam.Value
 		}
+
+		if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
+			inParam.Value = wfv1.Int64OrStringPtr("Generated from configMap")
+			if clientset != nil {
+				configMapValue, err := util.GetConfigMaps(*clientset, namespace, inParam.ValueFrom.ConfigMapKeyRef.Name, inParam.ValueFrom.ConfigMapKeyRef.Key)
+				if err != nil {
+					return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s malformed. %s", inParam.Name, err)
+				}
+				inParam.Value = wfv1.Int64OrStringPtr(configMapValue)
+			}
+		}
+
 		if inParam.Value == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}

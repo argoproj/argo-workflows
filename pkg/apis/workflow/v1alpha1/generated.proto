@@ -1206,6 +1206,9 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
+
+  // ConfigMapKeyRef is configmap selector for input parameter configuration
+  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 8;
 }
 
 message Version {

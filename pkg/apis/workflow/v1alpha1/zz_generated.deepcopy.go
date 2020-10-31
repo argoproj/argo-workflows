@@ -2085,6 +2085,11 @@ func (in *ValueFrom) DeepCopyInto(out *ValueFrom) {
 		*out = new(Int64OrString)
 		**out = **in
 	}
+	if in.ConfigMapKeyRef != nil {
+		in, out := &in.ConfigMapKeyRef, &out.ConfigMapKeyRef
+		*out = new(v1.ConfigMapKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

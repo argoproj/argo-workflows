@@ -622,6 +622,17 @@ spec:
                         type: string
                       valueFrom:
                         properties:
+                          configMapKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
                           default:
                             type: string
                           event:
@@ -1784,6 +1795,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -2673,6 +2695,17 @@ spec:
                                         type: string
                                       valueFrom:
                                         properties:
+                                          configMapKeyRef:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
                                           default:
                                             type: string
                                           event:
@@ -3635,6 +3668,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -4083,6 +4127,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -7067,6 +7122,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -7432,6 +7498,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -7826,6 +7903,17 @@ spec:
                         type: string
                       valueFrom:
                         properties:
+                          configMapKeyRef:
+                            properties:
+                              key:
+                                type: string
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                            required:
+                            - key
+                            type: object
                           default:
                             type: string
                           event:
@@ -9314,6 +9402,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -10203,6 +10302,17 @@ spec:
                                         type: string
                                       valueFrom:
                                         properties:
+                                          configMapKeyRef:
+                                            properties:
+                                              key:
+                                                type: string
+                                              name:
+                                                type: string
+                                              optional:
+                                                type: boolean
+                                            required:
+                                            - key
+                                            type: object
                                           default:
                                             type: string
                                           event:
@@ -11165,6 +11275,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -11613,6 +11734,17 @@ spec:
                               type: string
                             valueFrom:
                               properties:
+                                configMapKeyRef:
+                                  properties:
+                                    key:
+                                      type: string
+                                    name:
+                                      type: string
+                                    optional:
+                                      type: boolean
+                                  required:
+                                  - key
+                                  type: object
                                 default:
                                   type: string
                                 event:
@@ -14066,6 +14198,17 @@ spec:
                             type: string
                           valueFrom:
                             properties:
+                              configMapKeyRef:
+                                properties:
+                                  key:
+                                    type: string
+                                  name:
+                                    type: string
+                                  optional:
+                                    type: boolean
+                                required:
+                                - key
+                                type: object
                               default:
                                 type: string
                               event:
@@ -15228,6 +15371,17 @@ spec:
                                   type: string
                                 valueFrom:
                                   properties:
+                                    configMapKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
                                     default:
                                       type: string
                                     event:
@@ -16117,6 +16271,17 @@ spec:
                                             type: string
                                           valueFrom:
                                             properties:
+                                              configMapKeyRef:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  name:
+                                                    type: string
+                                                  optional:
+                                                    type: boolean
+                                                required:
+                                                - key
+                                                type: object
                                               default:
                                                 type: string
                                               event:
@@ -17079,6 +17244,17 @@ spec:
                                   type: string
                                 valueFrom:
                                   properties:
+                                    configMapKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
                                     default:
                                       type: string
                                     event:
@@ -17527,6 +17703,17 @@ spec:
                                   type: string
                                 valueFrom:
                                   properties:
+                                    configMapKeyRef:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
                                     default:
                                       type: string
                                     event:

@@ -329,7 +329,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if tmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 		}
-		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
+		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.GetNamespace(), &woc.controller.kubeclientset)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
 		}
