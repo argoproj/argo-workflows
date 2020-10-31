@@ -1,8 +1,9 @@
 export SHELL:=/bin/bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
 
-# This means we only one shell, and therefore you can use `trap` to clean-up
-.ONESHELL:
+# https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
 
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64
@@ -18,7 +19,6 @@ export DOCKER_BUILDKIT = 1
 
 # Use a different Dockerfile, e.g. for building for Windows or dev images.
 DOCKERFILE            := Dockerfile
-
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
@@ -48,6 +48,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.marker
 # perform static compilation
 STATIC_BUILD          ?= true
 STATIC_FILES          ?= true
+GOTEST                ?= go test
 PROFILE               ?= minimal
 # whether or not to start the Argo Service in TLS mode
 SECURE                := false
@@ -58,7 +59,11 @@ endif
 ifeq ($(STATIC_FILES),false)
 AUTH_MODE             := client
 endif
-K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+# Which mode to run in:
+# * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
+# * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
+RUN_MODE              := local
+K3D                   := $(shell if [[ "`which kubectl`" != '' ]] && [[ "`kubectl config current-context`" == "k3d-"* ]]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 UPPERIO_DB_DEBUG      := 0
 NAMESPACED            := true
@@ -88,10 +93,12 @@ endif
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
-MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
+MANIFESTS        := $(shell find manifests -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
-E2E_EXECUTOR     ?= pns
-SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
+E2E_EXECUTOR ?= pns
+TYPES := $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go -not -name '*generated*' -not -name '*test.go')
+CRDS := $(shell find manifests/base/crds -type f -name 'argoproj.io_*.yaml')
+SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/_.secondary.swagger.json \
 	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
 	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
@@ -100,48 +107,67 @@ SWAGGER_FILES    := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-NEWEST_CLI_DOC    := $(shell ls -t docs/cli | head -n1)
+PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
 
+# go_install,path
+define go_install
+	[ -e vendor ] || go mod vendor
+	go install -mod=vendor ./vendor/$(1)
+endef
+
+# protoc,my.proto
+define protoc
+	# protoc $(1)
+    [ -e vendor ] || go mod vendor
+    protoc \
+      -I /usr/local/include \
+      -I . \
+      -I ./vendor \
+      -I ${GOPATH}/src \
+      -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
+      -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.2/third_party/googleapis \
+      --gogofast_out=plugins=grpc:${GOPATH}/src \
+      --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
+      --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
+      $(1) 2>&1 | grep -v 'warning: Import .* is unused'
+endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build --progress plain -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
-	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
+	if [ $(K3D) = true ]; then k3d image import $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
 define docker_pull
 	docker pull $(1)
-	if [ $(K3D) = true ]; then k3d import-images $(1); fi
+	if [ $(K3D) = true ]; then k3d image import $(1); fi
 endef
 
+ifndef $(GOPATH)
+	GOPATH=$(shell go env GOPATH)
+	export GOPATH
+endif
+
 .PHONY: build
-build: status clis images manifests
+build: clis images
 
 .PHONY: images
 images: cli-image executor-image controller-image
-
-# https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
-MAKEFLAGS += --no-builtin-rules
-.SUFFIXES:
-
-.PHONY: status
-status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
 
 # cli
 
 .PHONY: cli
 cli: dist/argo argo-server.crt argo-server.key
 
-ui/dist/app/index.html: $(UI_FILES)
+ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(STATIC_FILES),true)
 	# `yarn install` is fast (~2s), so you can call it safely.
 	JOBS=max yarn --cwd ui install
-	# `yarn build` is slow, so we guard it with a recency check.
+	# `yarn build` is slow, so we guard it with a up-to-date check.
 	JOBS=max yarn --cwd ui build
 else
 	echo "Built without static files" > ui/dist/app/index.html
@@ -226,13 +252,26 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 # generation
 
 .PHONY: codegen
-codegen: proto swagger manifests gogenerate docs
-
-.PHONY: gogenerate
-gogenerate: $(GOPATH)/bin/mockery
+codegen: \
+	pkg/apis/workflow/v1alpha1/generated.proto \
+	pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json \
+	pkg/apiclient/cronworkflow/cron-workflow.swagger.json \
+	pkg/apiclient/event/event.swagger.json \
+	pkg/apiclient/info/info.swagger.json \
+	pkg/apiclient/workflow/workflow.swagger.json \
+	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
+	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
+	pkg/apis/workflow/v1alpha1/openapi_generated.go \
+	pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go \
+	manifests/base/crds/full/argoproj.io_workflows.yaml \
+	manifests/install.yaml \
+	api/openapi-spec/swagger.json \
+	docs/fields.md \
+	docs/cli/argo.md \
+	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
-
+	rm -Rf vendor
 
 $(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
@@ -242,57 +281,68 @@ $(GOPATH)/bin/mockery:
 	mv mockery $(GOPATH)/bin/mockery
 	mockery -version
 
-.PHONY: crds
-crds: $(GOPATH)/bin/controller-gen
-	./hack/crdgen.sh
-
 $(GOPATH)/bin/controller-gen:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+	$(call go_install,sigs.k8s.io/controller-tools/cmd/controller-gen)
 
 $(GOPATH)/bin/go-to-protobuf:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+	$(call go_install,k8s.io/code-generator/cmd/go-to-protobuf)
 
 $(GOPATH)/bin/protoc-gen-gogo:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogo
+	$(call go_install,github.com/gogo/protobuf/protoc-gen-gogo)
 
 $(GOPATH)/bin/protoc-gen-gogofast:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+	$(call go_install,github.com/gogo/protobuf/protoc-gen-gogofast)
 
 $(GOPATH)/bin/protoc-gen-grpc-gateway:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+	$(call go_install,github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway)
 
 $(GOPATH)/bin/protoc-gen-swagger:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	$(call go_install,github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger)
 
 $(GOPATH)/bin/openapi-gen:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/k8s.io/kube-openapi/cmd/openapi-gen
+	$(call go_install,k8s.io/kube-openapi/cmd/openapi-gen)
 
 $(GOPATH)/bin/swagger:
-	trap 'rm -Rf vendor' EXIT
-	go mod vendor
-	go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
+	$(call go_install,github.com/go-swagger/go-swagger/cmd/swagger)
 
 $(GOPATH)/bin/goimports:
 	go get golang.org/x/tools/cmd/goimports@v0.0.0-20200630154851-b2d8b0336632
 
-.PHONY: proto
-proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger
-	./hack/generate-proto.sh
-	./hack/update-codegen.sh
+pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES)
+	[ -e vendor ] || go mod vendor
+	${GOPATH}/bin/go-to-protobuf \
+		--go-header-file=./hack/custom-boilerplate.go.txt \
+		--packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
+		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1beta1 \
+		--proto-import ./vendor 2>&1 | grep -v 'warning: Import .* is unused'
+	touch pkg/apis/workflow/v1alpha1/generated.proto
+
+# this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
+# on file to represent all of them
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
+
+pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/cronworkflow/cron-workflow.proto
+	$(call protoc,pkg/apiclient/cronworkflow/cron-workflow.proto)
+
+pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/event/event.proto
+	$(call protoc,pkg/apiclient/event/event.proto)
+
+pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/info/info.proto
+	$(call protoc,pkg/apiclient/info/info.proto)
+
+pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
+	$(call protoc,pkg/apiclient/workflow/workflow.proto)
+
+pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
+	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
+
+pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowtemplate/workflow-template.proto
+	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
+
+# generate other files for other CRDs
+manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES)
+	./hack/crdgen.sh
 
 /usr/local/bin/kustomize:
 	mkdir -p dist
@@ -302,8 +352,8 @@ proto: $(GOPATH)/bin/go-to-protobuf $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/
 	sudo mv kustomize /usr/local/bin/
 	kustomize version
 
-.PHONY: manifests
-manifests: crds /usr/local/bin/kustomize
+# generates several installation files
+manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
 	./hack/update-image-tags.sh manifests/base $(VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -330,7 +380,7 @@ endif
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	env KUBECONFIG=/dev/null go test ./...
+	env KUBECONFIG=/dev/null $(GOTEST) ./...
 
 dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 	mkdir -p dist
@@ -338,9 +388,6 @@ dist/$(PROFILE).yaml: $(MANIFESTS) $(E2E_MANIFESTS) /usr/local/bin/kustomize
 
 .PHONY: install
 install: dist/$(PROFILE).yaml
-ifeq ($(K3D),true)
-	k3d start
-endif
 	cat test/e2e/manifests/argo-ns.yaml | sed 's/argo/$(KUBE_NAMESPACE)/' > dist/argo-ns.yaml
 	kubectl apply -f dist/argo-ns.yaml
 	kubectl -n $(KUBE_NAMESPACE) apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
@@ -353,11 +400,11 @@ pull-build-images:
 argosay: test/e2e/images/argosay/v2/argosay
 	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
 ifeq ($(K3D),true)
-	k3d import-images argoproj/argosay:v2
+	k3d image import argoproj/argosay:v2
 endif
 	docker push argoproj/argosay:v2
 
-test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main -type f)
+test/e2e/images/argosay/v2/argosay: test/e2e/images/argosay/v2/main/argosay.go
 	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
 
 .PHONY: test-images
@@ -374,18 +421,25 @@ $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
 .PHONY: start
-start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
+start: stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
+ifeq ($(RUN_MODE),kubernetes)
+	$(MAKE) controller-image cli-image
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
+	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
+endif
 	kubectl -n $(KUBE_NAMESPACE) wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
-	grep '127.0.0.1 *dex' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*dex' /etc/hosts
 endif
-	grep '127.0.0.1 *minio' /etc/hosts
-	grep '127.0.0.1 *postgres' /etc/hosts
-	grep '127.0.0.1 *mysql' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*minio' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*postgres' /etc/hosts
+	grep '127.0.0.1[[:blank:]]*mysql' /etc/hosts
+ifeq ($(RUN_MODE),local)
 	env SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) NAMESPACED=$(NAMESPACED) NAMESPACE=$(KUBE_NAMESPACE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
+endif
 
 .PHONY: wait
 wait:
@@ -393,7 +447,6 @@ wait:
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -405,24 +458,19 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -timeout 15m -count 1 --tags e2e -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 10m -count 1 --tags e2e -p 1 --short ./test/e2e
+
+.PHONY: test-cli
+test-cli:
+	$(GOTEST) -timeout 10m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
-	go test -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
+	$(GOTEST) -count 1 --tags e2e -parallel 10 -run CronSuite ./test/e2e
 
 .PHONY: smoke
 smoke:
-	go test -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
-
-.PHONY: destress
-destress: cli
-	kubectl delete wf -l stress
-
-.PHONY: stress
-stress: destress cli
-	kubectl apply -f test/e2e/stress/many-massive-workflows.yaml
-	argo submit --from workflowtemplates/many-massive-workflows -p x=$(X) -p y=$(Y)
+	$(GOTEST) -count 1 --tags e2e -p 1 -run SmokeSuite ./test/e2e
 
 # clean
 
@@ -433,26 +481,24 @@ clean:
 
 # swagger
 
-.PHONY: swagger
-swagger: api/openapi-spec/swagger.json
-
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
 	openapi-gen \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
 	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 
+# generates many other files (listers, informers, client etc).
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+	bash ${GOPATH}/pkg/mod/k8s.io/code-generator@v0.17.5/generate-groups.sh \
+		"deepcopy,client,informer,lister" \
+		github.com/argoproj/argo/pkg/client github.com/argoproj/argo/pkg/apis \
+		workflow:v1alpha1 \
+		--go-header-file ./hack/custom-boilerplate.go.txt
+
 dist/kubernetes.swagger.json:
 	@mkdir -p dist
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
-
-pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: proto
-pkg/apiclient/cronworkflow/cron-workflow.swagger.json: proto
-pkg/apiclient/info/info.swagger.json: proto
-pkg/apiclient/workflow/workflow.swagger.json: proto
-pkg/apiclient/workflowarchive/workflow-archive.swagger.json: proto
-pkg/apiclient/workflowtemplate/workflow-template.swagger.json: proto
+	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/v1.17.5/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/swagger/secondaryswaggergen.go server/static/files.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	# We have `hack/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
@@ -463,25 +509,31 @@ dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
 dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
-	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
-	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) -o dist/mixed.swagger.json
 
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/swaggify.sh
 	cat dist/mixed.swagger.json | sed 's/VERSION/$(VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
 
-dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json 
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
 	go run ./hack/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-api/openapi-spec/swagger.json: dist/kubeified.swagger.json
+api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
-.PHONY: docs
-docs: api/openapi-spec/swagger.json $(NEWEST_CLI_DOC)
+go-diagrams/diagram.dot: ./hack/diagram/main.go
+	rm -Rf go-diagrams
+	go run ./hack/diagram
+
+docs/assets/diagram.png: go-diagrams/diagram.dot
+	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
+
+docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hack/docgen.go
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
-$(NEWEST_CLI_DOC): $(CLI_PKGS) server/static/files.go
+# generates several other files
+docs/cli/argo.go: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
 # pre-push

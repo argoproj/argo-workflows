@@ -689,3 +689,57 @@ func TestDependsAndContinueOn(t *testing.T) {
 	_, err := validate(dagDependsAndContinueOn)
 	assert.Error(t, err, "templates.dag-target cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'")
 }
+
+var dagDependsDigit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+    - name: diamond
+      dag:
+        tasks:
+          - name: 5A
+            template: pass
+          - name: B
+            depends: 5A
+            template: pass
+          - name: C
+            depends: 5A
+            template: fail
+          - name: should-execute-1
+            depends: "'5A' && (C.Succeeded || C.Failed)"   # For more information about this depends field, see: docs/enhanced-depends-logic.md
+            template: pass
+          - name: should-execute-2
+            depends: B || C
+            template: pass
+          - name: should-not-execute
+            depends: B && C
+            template: pass
+          - name: should-execute-3
+            depends: should-execute-2.Succeeded || should-not-execute
+            template: pass
+    - name: pass
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 0
+    - name: fail
+      container:
+        image: alpine:3.7
+        command:
+          - sh
+          - -c
+          - exit 1
+`
+
+func TestDAGDependsDigit(t *testing.T) {
+	_, err := validate(dagDependsDigit)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "templates.diamond.tasks.5A name cannot begin with a digit when using 'depends'")
+	}
+}

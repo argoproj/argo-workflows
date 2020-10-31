@@ -68,15 +68,6 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
-func (t NodeType) IsLeaf() bool {
-	switch t {
-	case NodeTypePod, NodeTypeRetry, NodeTypeSkipped, NodeTypeSuspend:
-		return true
-	default:
-		return false
-	}
-}
-
 // PodGCStrategy is the strategy when to delete completed pods for GC.
 type PodGCStrategy string
 
@@ -142,6 +133,25 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 		}
 	}
 	return out
+}
+
+// GetTTLStrategy return TTLStrategy based on Order of precedence:
+//1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
+func (w *Workflow) GetTTLStrategy(defaultTTLStrategy *TTLStrategy) *TTLStrategy {
+	var ttlStrategy *TTLStrategy
+	// TTLStrategy from Workflow default from Config
+	if defaultTTLStrategy != nil {
+		ttlStrategy = defaultTTLStrategy
+	}
+	// TTLStrategy from WorkflowTemplate
+	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
+	}
+	//TTLStrategy from Workflow
+	if w.Spec.GetTTLStrategy() != nil {
+		ttlStrategy = w.Spec.GetTTLStrategy()
+	}
+	return ttlStrategy
 }
 
 var (
@@ -354,6 +364,18 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	}
 
 	return wfs.VolumeClaimGC
+}
+
+func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
+	if wfs.TTLSecondsAfterFinished != nil {
+		if wfs.TTLStrategy == nil {
+			ttlstrategy := TTLStrategy{SecondsAfterCompletion: wfs.TTLSecondsAfterFinished}
+			wfs.TTLStrategy = &ttlstrategy
+		} else if wfs.TTLStrategy.SecondsAfterCompletion == nil {
+			wfs.TTLStrategy.SecondsAfterCompletion = wfs.TTLSecondsAfterFinished
+		}
+	}
+	return wfs.TTLStrategy
 }
 
 type ShutdownStrategy string
@@ -643,11 +665,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *string `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *Int64OrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -655,6 +677,9 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+
+	// Enum holds a list of string values to choose from, for the actual value of the parameter
+	Enum []Int64OrString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -679,7 +704,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1096,6 +1121,9 @@ type WorkflowStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,16,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,17,opt,name=progress,casttype=Progress"`
+
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
@@ -1360,6 +1388,9 @@ type NodeStatus struct {
 	// EstimatedDuration in seconds.
 	EstimatedDuration EstimatedDuration `json:"estimatedDuration,omitempty" protobuf:"varint,24,opt,name=estimatedDuration,casttype=EstimatedDuration"`
 
+	// Progress to completion
+	Progress Progress `json:"progress,omitempty" protobuf:"bytes,26,opt,name=progress,casttype=Progress"`
+
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
@@ -1533,10 +1564,6 @@ func (n NodeStatus) GetDuration() time.Duration {
 		return 0
 	}
 	return n.FinishedAt.Sub(n.StartedAt.Time)
-}
-
-func (in *NodeStatus) IsLeaf() bool {
-	return in.Type.IsLeaf()
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

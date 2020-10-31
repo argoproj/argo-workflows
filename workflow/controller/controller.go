@@ -125,7 +125,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset),
+		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
@@ -148,7 +148,9 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
+		return &wfc.Config
+	})
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
@@ -482,7 +484,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+		woc.markWorkflowFailed(fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
@@ -503,7 +505,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
 		woc.log.Errorf("hydration failed: %v", err)
-		woc.markWorkflowError(err, true)
+		woc.markWorkflowError(err)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
@@ -662,7 +664,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.Add(key)
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -717,8 +719,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowUpdated(string(wf.GetUID()), getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			wf := obj.(*unstructured.Unstructured)
-			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			wf, ok := obj.(*unstructured.Unstructured)
+			if ok { // maybe cache.DeletedFinalStateUnknown
+				wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			}
 		},
 	})
 }
@@ -893,7 +897,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
-	if port == "" {
+	if port > 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
@@ -911,7 +915,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	}
 
 	port = metricsConfig.Port
-	if wfc.Config.TelemetryConfig.Port != "" {
+	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
 	telemetryConfig := metrics.ServerConfig{

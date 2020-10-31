@@ -2,22 +2,18 @@ name: CI
 on:
   push:
     branches:
-      - 'master'
-      - 'release-*'
-      - '!release-2.8'
+      - "master"
+      - "release-*"
+      - "!release-2.8"
   pull_request:
     branches:
-      - 'master'
+      - "master"
 
 jobs:
   tests:
-    name: Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        test: ["test", "test-e2e", "test-e2e-cron"]
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,21 +25,63 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
-          go-version: '1.13.12'
+          go-version: "1.13.12"
       - name: Add bins to PATH
         run: |
-          echo "::add-path::/home/runner/go/bin"
-          echo "::add-path::/usr/local/bin"
-      - name: Install and start K3S v1.0.1
-        if: ${{ matrix.test != 'test' }}
-        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
+          echo /home/runner/go/bin >> $GITHUB_PATH
+          echo /usr/local/bin >> $GITHUB_PATH
+      - name: Run tests
+        env:
+          GOPATH: /home/runner/go
+        run: make test STATIC_FILES=false
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # kubelet is not included because it'd take ages to get it working methinks
+        test: [ "smoke", "test-e2e", "test-cli", "test-e2e-cron" ]
+        containerRuntimeExecutor: [ "docker", "k8sapi", "pns" ]
+        # ok, so we're only running `smoke` for all CREs,
+        exclude:
+          - test: test-e2e
+            containerRuntimeExecutor: k8sapi
+          - test: test-e2e
+            containerRuntimeExecutor: pns
+          - test: test-cli
+            containerRuntimeExecutor: k8sapi
+          - test: test-cli
+            containerRuntimeExecutor: pns
+          - test: test-e2e-cron
+            containerRuntimeExecutor: k8sapi
+          - test: test-e2e-cron
+            containerRuntimeExecutor: pns
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Restore go build cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+      - name: Setup Golang
+        uses: actions/setup-go@v1
+        with:
+          go-version: "1.13.12"
+      - name: Add bins to PATH
+        run: |
+          echo /home/runner/go/bin >> $GITHUB_PATH
+          echo /usr/local/bin >> $GITHUB_PATH
+      - name: Install and start K3S v1.18.8+k3s1
+        run: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.18.8+k3s1 INSTALL_K3S_CHANNEL=stable INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh - &
       - name: Pre-pull images
-        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
         run: make pull-build-images test-images &
       - name: Create Kubeconfig
-        if: ${{ matrix.test != 'test' }}
         run: |
           mkdir -p ~/.kube
           until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
@@ -52,7 +90,6 @@ jobs:
           echo "  user:" >> ~/.kube/config
           echo "    token: xxxxxx" >> ~/.kube/config
       - name: Start Argo
-        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
           PROFILE: mysql
@@ -61,22 +98,21 @@ jobs:
           echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          mkdir -p dist
           mkdir -p /tmp/log/argo-e2e
           git fetch --tags
-          KUBECONFIG=~/.kube/config make status install controller cli executor-image PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false
-          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=docker DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+          KUBECONFIG=~/.kube/config make start PROFILE=$PROFILE E2E_EXECUTOR=${{matrix.containerRuntimeExecutor}} DEV_IMAGE=true STATIC_FILES=false 2>&1 > /tmp/log/argo-e2e/argo.log &
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum
       - name: Wait for Argo Server to be ready
-        if: ${{ matrix.test != 'test' }}
         env:
           GOPATH: /home/runner/go
         run: make wait
       - name: Run tests
         env:
           GOPATH: /home/runner/go
-        run: make ${{ matrix.test }}
+        run: make ${{ matrix.test }} GOTEST='gotestsum --format testname --'
       - name: Upload logs
-        if: ${{ failure() && (matrix.test == 'test-e2e' || matrix.test == 'test-e2e-cron') }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v1
         with:
           name: ${{ matrix.test }}-${{ github.run_id }}-argo.log
@@ -97,11 +133,11 @@ jobs:
       - name: Setup Golang
         uses: actions/setup-go@v1
         with:
-          go-version: '1.13.12'
+          go-version: "1.13.12"
       - name: Add bins to PATH
         run: |
-          echo "::add-path::/home/runner/go/bin"
-          echo "::add-path::/usr/local/bin"
+          echo /home/runner/go/bin >> $GITHUB_PATH
+          echo /usr/local/bin >> $GITHUB_PATH
       - name: Install protoc
         run: |
           set -eux -o pipefail
@@ -123,7 +159,8 @@ jobs:
           mkdir -p /home/runner/go/src/github.com/argoproj
           ln -s "$PWD" /home/runner/go/src/github.com/argoproj/argo
 
-          make codegen STATIC_FILES=false
+          # we use -B to force make to always make targets
+          make -B codegen STATIC_FILES=false
       - name: Make lint
         env:
           GOPATH: /home/runner/go
@@ -140,7 +177,7 @@ jobs:
         uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: '14'
+          node-version: "14"
       - name: Restore node dependency cache
         uses: actions/cache@v1
         with:

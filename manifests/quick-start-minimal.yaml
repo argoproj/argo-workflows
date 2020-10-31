@@ -602,9 +602,17 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
       nodeSelector:
         kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: argo-server
+      volumes:
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -632,6 +640,8 @@ spec:
         name: workflow-controller
       nodeSelector:
         kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: argo
 ---
 apiVersion: v1

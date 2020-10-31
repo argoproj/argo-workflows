@@ -72,7 +72,7 @@ curl --request PUT \
       "name": "<WORKFLOWNAME>",
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>"
     }'  
-  ```
+```
 
 or stop if unsuccessful:
 
@@ -87,7 +87,7 @@ curl --request PUT \
       "nodeFieldSelector": "inputs.parameters.uuid.value=<UUID>",
       "message": "<FAILURE-MESSAGE>"
     }'  
-  ```
+```
 
 ## Retrying failed jobs
 

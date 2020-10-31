@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/pointer"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
@@ -32,7 +31,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: pointer.StringPtr("test"),
+				Value: wfv1.Int64OrStringPtr("test"),
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -52,7 +51,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		args := []wfv1.Parameter{
 			{
 				Name:  "param1",
-				Value: pointer.StringPtr("test"),
+				Value: wfv1.Int64OrStringPtr("test"),
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
@@ -166,8 +165,8 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
-		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
+		assert.Equal(t, "test", execArgs.Parameters[0].Value.String())
+		assert.Equal(t, "hello", execArgs.Parameters[1].Value.String())
 	})
 }
 
@@ -277,4 +276,77 @@ func TestWorkflowTemplateRefParamMerge(t *testing.T) {
 		assert.Equal(t, wf.Spec.Arguments.Parameters, woc.wf.Spec.Arguments.Parameters)
 	})
 
+}
+
+var wftWithArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artifact-test-1
+  namespace: test-namespace
+spec:
+  entrypoint: main
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: https://a.server.io/file
+    - name: data-file
+      http:
+        url: https://b.server.io/data
+
+  templates:
+    - name: main
+      steps:
+        - - name: process-data
+            template: process
+
+    - name: process
+      inputs:
+        artifacts:
+          - name: binary-file
+            path: /usr/local/bin/binfile
+            mode: 0755
+          - name: data-file
+            path: /tmp/data
+            mode: 0755
+      container:
+        image: busybox
+        command: [sh, -c]
+        args: ["binary-file /tmp/data"]
+`
+
+const wfWithTemplateWithArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-from-artifact-test-1-
+  namespace: test-namespace
+spec:
+  arguments:
+    artifacts:
+    - name: own-file
+      http:
+        url: https://local/blob
+  workflowTemplateRef:
+    name: artifact-test-1
+`
+
+func TestWorkflowTemplateRefGetArtifactsFromTemplate(t *testing.T) {
+	wf := unmarshalWF(wfWithTemplateWithArtifact)
+	wftmpl := unmarshalWFTmpl(wftWithArtifact)
+
+	t.Run("CheckArtifactArgumentFromWF", func(t *testing.T) {
+		cancel, controller := newController(wf, wftmpl)
+		defer cancel()
+		woc := newWorkflowOperationCtx(wf, controller)
+		_, execArgs, err := woc.loadExecutionSpec()
+		assert.NoError(t, err)
+		assert.Equal(t, wf.Spec.Arguments.Artifacts, woc.wf.Spec.Arguments.Artifacts)
+		assert.Len(t, execArgs.Artifacts, 3)
+
+		assert.Equal(t, "own-file", execArgs.Artifacts[0].Name)
+		assert.Equal(t, "binary-file", execArgs.Artifacts[1].Name)
+		assert.Equal(t, "data-file", execArgs.Artifacts[2].Name)
+	})
 }

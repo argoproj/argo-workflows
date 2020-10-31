@@ -1,10 +1,9 @@
-// +build e2e
+// +build cli
 
 package e2e
 
 import (
 	"bufio"
-	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -28,13 +27,6 @@ import (
 
 const baseUrl = "http://localhost:2746"
 
-var httpClient = &http.Client{
-	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-	CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	},
-}
-
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
@@ -47,13 +39,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	var err error
 	s.bearerToken, err = s.GetServiceAccountToken()
 	s.CheckError(err)
-}
-
-type httpLogger struct {
-}
-
-func (d *httpLogger) Logf(fmt string, args ...interface{}) {
-	log.Debugf(fmt, args...)
 }
 
 func (s *ArgoServerSuite) e() *httpexpect.Expect {
@@ -639,13 +624,10 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
 	s.e().POST("/api/v1/workflows/argo").
 		WithBytes([]byte((`{
   "workflow": {
-    "apiVersion": "argoproj.io/v1alpha1",
-    "kind": "Workflow",
     "metadata": {
-      "generateName": "hello-world-",
-      "name": "hello-world",
+      "name": "hint",
       "labels": {
-        "workflows.argoproj.io/archive-strategy": "false"
+        "argo-e2e": "true"
       }
     },
     "spec": {
@@ -654,11 +636,7 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
         {
           "name": "whalesay",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [
-              "exit",
-              "0"
-            ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ]
@@ -671,13 +649,10 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
 	s.e().POST("/api/v1/workflows/argo").
 		WithBytes([]byte((`{
   "workflow": {
-    "apiVersion": "argoproj.io/v1alpha1",
-    "kind": "Workflow",
     "metadata": {
-      "generateName": "hello-world-",
-      "name": "hello-world",
+      "name": "hint",
       "labels": {
-        "workflows.argoproj.io/archive-strategy": "false"
+        "argo-e2e": "true"
       }
     },
     "spec": {
@@ -686,11 +661,7 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
         {
           "name": "whalesay",
           "container": {
-            "image": "argoproj/argosay:v2",
-            "args": [
-              "exit",
-              "0"
-            ]
+            "image": "argoproj/argosay:v2"
           }
         }
       ]
@@ -698,9 +669,9 @@ func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
   }
 }`))).
 		Expect().
-		Status(500).
+		Status(409).
 		Body().
-		Contains("create request failed due to timeout, but it's possible that workflow")
+		Contains("already exists")
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
