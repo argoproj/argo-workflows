@@ -191,7 +191,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		if getArgs.output == "wide" {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
 		} else if getArgs.output == "short" {
-			_, _ = fmt.Fprintf(w, "%s\tDURATION\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\tNODENAME\n", ansiFormat("STEP", FgDefault))
 		} else {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
@@ -521,11 +521,8 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 		}
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else if getArgs.output == "short" {
-		args[2] = args[len(args)-3]
-		args[3] = args[len(args)-2]
-		args[4] = node.ResourcesDuration
 		if node.Type == wfv1.NodeTypePod {
-			args[len(args)-2] = node.HostNodeName
+			args[len(args)-1] = node.HostNodeName
 		}
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
