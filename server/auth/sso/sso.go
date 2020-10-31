@@ -83,11 +83,12 @@ func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface,
 	return oidc.NewProvider(ctx, issuer)
 }
 
-func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
-	return newSso(providerFactoryOIDC, c, secretsIf, baseHRef, secure)
+func New(ctx context.Context, c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+	return newSso(ctx, providerFactoryOIDC, c, secretsIf, baseHRef, secure)
 }
 
 func newSso(
+	ctx context.Context,
 	factory providerFactory,
 	c Config,
 	secretsIf corev1.SecretInterface,
@@ -106,7 +107,7 @@ func newSso(
 	if c.RedirectURL == "" {
 		return nil, fmt.Errorf("redirectUrl empty")
 	}
-	clientSecretObj, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
+	clientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func newSso(
 	if c.ClientID.Name == c.ClientSecret.Name {
 		clientIDObj = clientSecretObj
 	} else {
-		clientIDObj, err = secretsIf.Get(c.ClientID.Name, metav1.GetOptions{})
+		clientIDObj, err = secretsIf.Get(ctx, c.ClientID.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -132,11 +133,11 @@ func newSso(
 	// if it fails, then the get will fail, and the pod restart
 	// it may fail due to race condition with another pod - which is fine,
 	// when it restart it'll get the new key
-	_, _ = secretsIf.Create(&apiv1.Secret{
+	_, _ = secretsIf.Create(ctx, &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: secretName},
 		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
-	})
-	secret, err := secretsIf.Get(secretName, metav1.GetOptions{})
+	}, metav1.CreateOptions{})
+	secret, err := secretsIf.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret: %w", err)
 	}

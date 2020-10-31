@@ -215,7 +215,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 	}
 	s.instanceIDService.With(opts)
 	eventInterface := kubeClient.CoreV1().Events(req.Namespace)
-	watch, err := eventInterface.Watch(*opts)
+	watch, err := eventInterface.Watch(ctx, *opts)
 	if err != nil {
 		return err
 	}
@@ -232,7 +232,7 @@ func (s *workflowServer) WatchEvents(req *workflowpkg.WatchEventsRequest, ws wor
 			if !open {
 				log.Debug("Re-establishing event watch")
 				watch.Stop()
-				watch, err = eventInterface.Watch(*opts)
+				watch, err = eventInterface.Watch(ctx, *opts)
 				if err != nil {
 					return err
 				}

@@ -2,6 +2,7 @@ package util
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -54,13 +55,14 @@ import (
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
-func NewWorkflowInformer(dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewWorkflowInformer(ctx context.Context, dclient dynamic.Interface, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc, indexers cache.Indexers) cache.SharedIndexInformer {
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
 		Resource: workflow.WorkflowPlural,
 	}
 	informer := unstructutil.NewFilteredUnstructuredInformer(
+		ctx,
 		resource,
 		dclient,
 		ns,
@@ -146,7 +148,8 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
 func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
 		return nil, err
@@ -161,7 +164,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.DryRun {
 		return wf, nil
 	} else if opts.ServerDryRun {
-		wf, err := CreateServerDryRun(wf, wfClientset)
+		wf, err := CreateServerDryRun(ctx, wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +175,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 }
 
 // CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
-func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+func CreateServerDryRun(ctx context.Context, wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
 	// Keep the workflow metadata because it will be overwritten by the Post request
 	workflowTypeMeta := wf.TypeMeta
 	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
@@ -180,7 +183,7 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 		Resource("workflows").
 		Body(wf).
 		Param("dryRun", "All").
-		Do().
+		Do(ctx).
 		Into(wf)
 	wf.TypeMeta = workflowTypeMeta
 	return wf, err
@@ -647,9 +650,11 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
 func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	var updated *wfv1.Workflow
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		var err error
-		updated, err = retryWorkflow(kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
+		updated, err = retryWorkflow(ctx, kubeClient, hydrator, wfClient, name, restartSuccessful, nodeFieldSelector)
 		return err == nil, err
 	})
 	if err != nil {
@@ -658,7 +663,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 	return updated, err
 }
 
-func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
+func retryWorkflow(ctx context.Context, kubeClient kubernetes.Interface, hydrator hydrator.Interface, wfClient v1alpha1.WorkflowInterface, name string, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	wf, err := wfClient.Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -730,7 +735,7 @@ func retryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)
-			err := podIf.Delete(node.ID, &metav1.DeleteOptions{})
+			err := podIf.Delete(ctx, node.ID, metav1.DeleteOptions{})
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
 			}

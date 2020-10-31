@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"testing"
@@ -293,14 +294,14 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
-func GetSyncLimitFunc(kube *fake.Clientset) func(string) (int, error) {
+func GetSyncLimitFunc(ctx context.Context, kube *fake.Clientset) func(string) (int, error) {
 	syncLimitConfig := func(lockName string) (int, error) {
 		items := strings.Split(lockName, "/")
 		if len(items) < 4 {
 			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Config Map Key")
 		}
 
-		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(items[2], metav1.GetOptions{})
+		configMap, err := kube.CoreV1().ConfigMaps(items[0]).Get(ctx, items[2], metav1.GetOptions{})
 
 		if err != nil {
 			return 0, err
@@ -321,9 +322,12 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	syncLimitFunc := GetSyncLimitFunc(kube)
+
+	syncLimitFunc := GetSyncLimitFunc(ctx, kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		})
@@ -430,9 +434,11 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	syncLimitFunc := GetSyncLimitFunc(kube)
+	syncLimitFunc := GetSyncLimitFunc(ctx, kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		})
@@ -464,10 +470,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		// Increase the semaphore Size
-		cm, err := kube.CoreV1().ConfigMaps("default").Get("my-config", metav1.GetOptions{})
+		cm, err := kube.CoreV1().ConfigMaps("default").Get(ctx, "my-config", metav1.GetOptions{})
 		assert.NoError(t, err)
 		cm.Data["workflow"] = "3"
-		_, err = kube.CoreV1().ConfigMaps("default").Update(cm)
+		_, err = kube.CoreV1().ConfigMaps("default").Update(ctx, cm, metav1.UpdateOptions{})
 		assert.NoError(t, err)
 
 		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", wf1.Spec.Synchronization)
@@ -496,9 +502,11 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err = kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	assert.NoError(t, err)
-	syncLimitFunc := GetSyncLimitFunc(kube)
+	syncLimitFunc := GetSyncLimitFunc(ctx, kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		//var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {

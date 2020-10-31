@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(v interface{}) error {
+func (wfc *WorkflowController) updateConfig(ctx context.Context, v interface{}) error {
 	config := v.(*config.Config)
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
@@ -39,7 +39,7 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}

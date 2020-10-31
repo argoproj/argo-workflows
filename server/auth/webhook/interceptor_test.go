@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -122,7 +123,8 @@ func intercept(method string, target string, headers map[string]string) (*http.R
 			Data:       map[string][]byte{"token": []byte("my-gitlab-token")},
 		},
 	)
-	i := Interceptor(k)
+	ctx := context.Background()
+	i := Interceptor(ctx, k)
 	w := httptest.NewRecorder()
 	b := &bytes.Buffer{}
 	b.Write([]byte("{}"))

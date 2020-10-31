@@ -90,15 +90,15 @@ type ArgoServerOpts struct {
 	XFrameOptions           string
 }
 
-func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get()
+		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.(*Config).SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(ctx, c.(*Config).SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	v, err := as.configController.Get()
+	v, err := as.configController.Get(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	var wfArchive = sqldb.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
+		session, tableName, err := sqldb.CreateDBSession(ctx, as.kubeClientset, as.namespace, persistence)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -193,7 +193,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
-	go as.configController.Run(as.stopCh, as.restartOnConfigChange)
+	go as.configController.Run(ctx, as.stopCh, as.restartOnConfigChange)
 	go eventServer.Run(as.stopCh)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
@@ -264,7 +264,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 
-	webhookInterceptor := webhook.Interceptor(as.kubeClientset)
+	webhookInterceptor := webhook.Interceptor(ctx, as.kubeClientset)
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call

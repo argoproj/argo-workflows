@@ -57,7 +57,9 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ssoInterface, err := newSso(ctx, fakeOidcFactory, config, fakeClient, "/", false)
 	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
@@ -83,7 +85,9 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	ssoInterface, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ssoInterface, err := newSso(ctx, fakeOidcFactory, config, fakeClient, "/", false)
 	assert.NoError(t, err)
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
@@ -97,7 +101,9 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:  "https://dummy",
 	}
-	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err := newSso(ctx, fakeOidcFactory, config, fakeClient, "/", false)
 	assert.Error(t, err)
 	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }

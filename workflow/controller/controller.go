@@ -109,7 +109,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 	}
 
-	wfc.UpdateConfig()
+	wfc.UpdateConfig(ctx)
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 
@@ -176,14 +176,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions, indexers)
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
 
 	wfc.addWorkflowInformerHandlers()
-	wfc.podInformer = wfc.newPodInformer()
+	wfc.podInformer = wfc.newPodInformer(ctx)
 	wfc.updateEstimatorFactory()
 
-	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
+	go wfc.configController.Run(ctx, ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -205,7 +205,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	}
 
 	// Create Synchronization Manager
-	err := wfc.createSynchronizationManager()
+	err := wfc.createSynchronizationManager(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -222,13 +222,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 }
 
 // Create and initialize the Synchronization Manager
-func (wfc *WorkflowController) createSynchronizationManager() error {
+func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context) error {
 	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
 			return 0, err
 		}
-		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(lockName.ResourceName, metav1.GetOptions{})
+		configMap, err := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace).Get(ctx, lockName.ResourceName, metav1.GetOptions{})
 		if err != nil {
 			return 0, err
 		}
@@ -264,11 +264,11 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftGetAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftListAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
-	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	cwftWatchAllowed, err := authutil.CanI(ctx, wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
 	errors.CheckError(err)
 
 	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
@@ -283,12 +283,12 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	}
 }
 
-func (wfc *WorkflowController) UpdateConfig() {
-	config, err := wfc.configController.Get()
+func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
+	config, err := wfc.configController.Get(ctx)
 	if err != nil {
 		log.Fatalf("Failed to register watch for controller config map: %v", err)
 	}
-	err = wfc.updateConfig(config)
+	err = wfc.updateConfig(ctx, config)
 	if err != nil {
 		log.Fatalf("Failed to update config: %v", err)
 	}
@@ -781,7 +781,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 	return nil
 }
 
-func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
+func (wfc *WorkflowController) newWorkflowPodWatch(ctx context.Context) *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.GetManagedNamespace()
@@ -797,7 +797,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 			Namespace(namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
+		return req.Do(ctx).Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
@@ -806,13 +806,13 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 			Namespace(namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
+		return req.Watch(ctx)
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
-	source := wfc.newWorkflowPodWatch()
+func (wfc *WorkflowController) newPodInformer(ctx context.Context) cache.SharedIndexInformer {
+	source := wfc.newWorkflowPodWatch(ctx)
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 	})

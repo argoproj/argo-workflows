@@ -2,6 +2,7 @@ package pns
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -159,7 +160,7 @@ func (p *PNSExecutor) WaitInit() error {
 }
 
 // Wait for the container to complete
-func (p *PNSExecutor) Wait(containerID string) error {
+func (p *PNSExecutor) Wait(ctx context.Context, containerID string) error {
 	mainPID, err := p.getContainerPID(containerID)
 	if err != nil {
 		log.Warnf("Failed to get main PID: %v", err)
@@ -167,7 +168,7 @@ func (p *PNSExecutor) Wait(containerID string) error {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-		return wait.UntilTerminated(p.clientset, p.namespace, p.podName, containerID)
+		return wait.UntilTerminated(ctx, p.clientset, p.namespace, p.podName, containerID)
 	}
 	log.Infof("Main pid identified as %d", mainPID)
 	for pid, f := range p.pidFileHandles {
@@ -215,7 +216,7 @@ func (p *PNSExecutor) pollRootProcesses(timeout time.Duration) {
 	}
 }
 
-func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+func (p *PNSExecutor) GetOutputStream(ctx context.Context, containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
@@ -223,12 +224,12 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 		Container: common.MainContainerName,
 		Follow:    true,
 	}
-	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream()
+	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream(ctx)
 }
 
-func (p *PNSExecutor) GetExitCode(containerID string) (string, error) {
+func (p *PNSExecutor) GetExitCode(ctx context.Context, containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, containerStatus, err := p.GetContainerStatus(containerID)
+	_, containerStatus, err := p.GetContainerStatus(ctx, containerID)
 	if err != nil {
 		return "", fmt.Errorf("could not get container status: %s", err)
 	}
@@ -368,8 +369,8 @@ func (p *PNSExecutor) updateCtrIDMap() {
 	}
 }
 
-func (p *PNSExecutor) GetContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
-	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
+func (p *PNSExecutor) GetContainerStatus(ctx context.Context, containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(ctx, p.podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not get pod: %s", err)
 	}

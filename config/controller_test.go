@@ -2,6 +2,7 @@ package config
 
 import (
 	"testing"
+	"context"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -45,8 +46,9 @@ func Test_parseConfigMap(t *testing.T) {
 
 func Test_controller_Get(t *testing.T) {
 	kube := fake.NewSimpleClientset()
+	ctx := context.Background()
 	c := controller{configMap: "my-config-map", kubeclientset: kube, emptyConfigFunc: EmptyConfigFunc}
-	config, err := c.Get()
+	config, err := c.Get(ctx)
 	if assert.NoError(t, err) {
 		assert.Empty(t, config)
 	}

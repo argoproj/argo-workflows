@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,9 +34,9 @@ var webhookParsers = map[string]matcher{
 const pathPrefix = "/api/v1/events/"
 
 // Interceptor creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
-func Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func Interceptor(ctx context.Context, client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
-		err := addWebhookAuthorization(r, client)
+		err := addWebhookAuthorization(ctx, r, client)
 		if err != nil {
 			log.WithError(err).Error("Failed to process webhook request")
 			w.WriteHeader(403)
@@ -47,7 +48,7 @@ func Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *htt
 	}
 }
 
-func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
+func addWebhookAuthorization(ctx context.Context, r *http.Request, kube kubernetes.Interface) error {
 	// try and exit quickly before we do anything API calls
 	if r.Method != "POST" || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
 		return nil
@@ -58,7 +59,7 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	}
 	namespace := parts[0]
 	secretsInterface := kube.CoreV1().Secrets(namespace)
-	webhookClients, err := secretsInterface.Get("argo-workflows-webhook-clients", metav1.GetOptions{})
+	webhookClients, err := secretsInterface.Get(ctx, "argo-workflows-webhook-clients", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get webhook clients: %w", err)
 	}
@@ -78,14 +79,14 @@ func addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 		ok := webhookParsers[client.Type](client.Secret, r)
 		if ok {
 			log.WithField("serviceAccountName", serviceAccountName).Debug("Matched webhook request")
-			serviceAccount, err := serviceAccountInterface.Get(serviceAccountName, metav1.GetOptions{})
+			serviceAccount, err := serviceAccountInterface.Get(ctx, serviceAccountName, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get service account \"%s\": %w", serviceAccountName, err)
 			}
 			if len(serviceAccount.Secrets) == 0 {
 				return fmt.Errorf("failed to get secret for service account \"%s\": no secrets", serviceAccountName)
 			}
-			tokenSecret, err := secretsInterface.Get(serviceAccount.Secrets[0].Name, metav1.GetOptions{})
+			tokenSecret, err := secretsInterface.Get(ctx, serviceAccount.Secrets[0].Name, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to get token secret \"%s\": %w", tokenSecret, err)
 			}

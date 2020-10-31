@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,7 +91,9 @@ status:
 
 func TestMutexLock(t *testing.T) {
 	kube := fake.NewSimpleClientset()
-	syncLimitFunc := GetSyncLimitFunc(kube)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	syncLimitFunc := GetSyncLimitFunc(ctx, kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
 		})
@@ -279,8 +282,9 @@ status:
 
 func TestMutexTmplLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
-
-	syncLimitFunc := GetSyncLimitFunc(kube)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	syncLimitFunc := GetSyncLimitFunc(ctx, kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		//var nextKey string
 		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
