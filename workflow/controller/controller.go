@@ -326,7 +326,7 @@ func (wfc *WorkflowController) updateSynchronizationConfig(cm *apiv1.ConfigMap) 
 		}
 		wf, err := util.FromUnstructured(un)
 		if err != nil {
-			log.Errorf("failed to convert to workflow from unstructured: %w", err)
+			log.Errorf("failed to convert to workflow from unstructured: %v", err)
 			continue
 		}
 		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
