@@ -304,7 +304,7 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 				continue
 			}
 			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
-			wfc.updateSynchronizationConfig(cm)
+			wfc.notifySemaphoreConfigUpdate(cm)
 
 		case <-stopCh:
 			return
@@ -312,7 +312,8 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	}
 }
 
-func (wfc *WorkflowController) updateSynchronizationConfig(cm *apiv1.ConfigMap) {
+// notifySemaphoreConfigUpdate will notify semaphore config update to its pending workflows
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
 	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(wfSyncLockIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
 		log.Errorf("failed get the workflow from informer. %v", err)
