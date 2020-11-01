@@ -382,28 +382,32 @@ func (wf *Workflow) GetSemaphoreKeys() []string {
 	keyMap := make(map[string]bool)
 	namespace := wf.Namespace
 	var templates []Template
-	if wf.Spec.WorkflowTemplateRef == nil && wf.Spec.Synchronization != nil && wf.Spec.Synchronization.Semaphore != nil && wf.Spec.Synchronization.Semaphore.ConfigMapKeyRef != nil {
-		key := fmt.Sprintf("%s/%s", namespace, wf.Spec.Synchronization.Semaphore.ConfigMapKeyRef.Name)
-		keyMap[key] = true
+	if wf.Spec.WorkflowTemplateRef == nil {
 		templates = wf.Spec.Templates
-	}
-
-	if wf.Spec.WorkflowTemplateRef != nil && wf.Status.StoredWorkflowSpec != nil {
+		if wf.Spec.Synchronization != nil {
+			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	} else if wf.Status.StoredWorkflowSpec != nil {
 		templates = wf.Status.StoredWorkflowSpec.Templates
-		if wf.Status.StoredWorkflowSpec.Synchronization != nil && wf.Status.StoredWorkflowSpec.Synchronization.Semaphore != nil && wf.Status.StoredWorkflowSpec.Synchronization.Semaphore.ConfigMapKeyRef != nil {
-			key := fmt.Sprintf("%s/%s", namespace, wf.Status.StoredWorkflowSpec.Synchronization.Semaphore.ConfigMapKeyRef.Name)
-			keyMap[key] = true
-			templates = wf.Status.StoredWorkflowSpec.Templates
+		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
+			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
 		}
 	}
 
 	for _, tmpl := range templates {
-		if tmpl.Synchronization != nil && tmpl.Synchronization.Semaphore != nil && tmpl.Synchronization.Semaphore.ConfigMapKeyRef != nil {
-			key := fmt.Sprintf("%s/%s", namespace, tmpl.Synchronization.Semaphore.ConfigMapKeyRef.Name)
-			keyMap[key] = true
+		if tmpl.Synchronization != nil {
+			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
 		}
 	}
-
 	var semaphoreKeys []string
 	for key := range keyMap {
 		semaphoreKeys = append(semaphoreKeys, key)
@@ -1038,6 +1042,13 @@ type Synchronization struct {
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 	// Mutex holds the Mutex lock details
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
+		return s.Semaphore.ConfigMapKeyRef
+	}
+	return nil
 }
 
 type SynchronizationType string
