@@ -102,7 +102,6 @@ func (s *CLISuite) TestLogLevels() {
 			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "CLI version", "comment version header")
-					assert.Contains(t, output, "Config loaded from file", "glog output")
 				}
 			})
 	})
@@ -111,6 +110,25 @@ func (s *CLISuite) TestLogLevels() {
 			RunCli([]string{"--loglevel=debug", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "CLI version", "comment version header")
+				}
+			})
+	})
+}
+
+func (s *CLISuite) TestGLogLevels() {
+	s.skipIfServer()
+	s.Run("Verbose", func() {
+		s.Given().
+			RunCli([]string{"-v", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Config loaded from file", "glog output")
+				}
+			})
+	})
+	s.Run("LogLevel", func() {
+		s.Given().
+			RunCli([]string{"--loglevel=debug", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
 					assert.NotContains(t, output, "Config loaded from file", "glog output")
 				}
 			})

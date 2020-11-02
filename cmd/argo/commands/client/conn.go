@@ -61,6 +61,9 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 }
 
 func Namespace() string {
+	if overrides.Context.Namespace != "" {
+		return overrides.Context.Namespace
+	}
 	namespace, ok := os.LookupEnv("ARGO_NAMESPACE")
 	if ok {
 		return namespace
