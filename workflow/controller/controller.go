@@ -56,7 +56,7 @@ import (
 
 const enoughTimeForInformerSync = 1 * time.Second
 
-const wfSyncLockIndexName = "wfSyncLockName"
+const semaphoreConfigIndexName = "bySemaphoreConfigMap"
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -186,7 +186,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.podInformer = wfc.newPodInformer()
 	wfc.updateEstimatorFactory()
 	err := wfc.wfInformer.AddIndexers(cache.Indexers{
-		wfSyncLockIndexName: wfc.workflowSemaphoreKeysIndex,
+		semaphoreConfigIndexName: wfc.workflowSemaphoreKeysIndex,
 	})
 	if err != nil {
 		panic(err)
@@ -312,9 +312,9 @@ func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
 	}
 }
 
-// notifySemaphoreConfigUpdate will notify semaphore config update to its pending workflows
+// notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
 func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
-	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(wfSyncLockIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(semaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
 	if err != nil {
 		log.Errorf("failed get the workflow from informer. %v", err)
 	}
@@ -322,7 +322,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) 
 	for _, obj := range wfs {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
-			log.Warnf("received object from indexer %s is not an unstructured", wfSyncLockIndexName)
+			log.Warnf("received object from indexer %s is not an unstructured", semaphoreConfigIndexName)
 			continue
 		}
 		wf, err := util.FromUnstructured(un)
