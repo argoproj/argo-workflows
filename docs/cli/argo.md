@@ -52,6 +52,8 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash or zsh)
 * [argo cron](argo_cron.md)	 - manage cron workflows
+
+NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 * [argo delete](argo_delete.md)	 - delete workflows
 * [argo get](argo_get.md)	 - display details about a workflow
 * [argo lint](argo_lint.md)	 - validate files or directories of workflow manifests
