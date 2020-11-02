@@ -374,6 +374,8 @@ $(GOPATH)/bin/golangci-lint:
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
+	# Check that v2 has not appeared in the Go  modules.
+	grep github.com/argoproj/argo go.mod | tail -n1 | grep module
 	# Lint Go files
 	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
