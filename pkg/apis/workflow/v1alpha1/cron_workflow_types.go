@@ -1,9 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
-	"github.com/robfig/cron/v3"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,18 +15,6 @@ type CronWorkflow struct {
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              CronWorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status            CronWorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
-}
-
-func (cwf *CronWorkflow) GetNextRuntime() (time.Time, error) {
-	cronScheduleString := cwf.Spec.Schedule
-	if cwf.Spec.Timezone != "" {
-		cronScheduleString = "CRON_TZ=" + cwf.Spec.Timezone + " " + cronScheduleString
-	}
-	cronSchedule, err := cron.ParseStandard(cronScheduleString)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return cronSchedule.Next(time.Now()), nil
 }
 
 // CronWorkflowList is list of CronWorkflow resources
