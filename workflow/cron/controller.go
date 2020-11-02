@@ -49,8 +49,8 @@ type Controller struct {
 }
 
 const (
-	cronWorkflowResyncPeriod    = 20 * time.Minute
-	cronWorkflowWorkers         = 8
+	cronWorkflowResyncPeriod = 20 * time.Minute
+	cronWorkflowWorkers      = 8
 )
 
 func NewCronController(wfclientset versioned.Interface, restConfig *rest.Config, dynamicInterface dynamic.Interface, namespace string, managedNamespace string, instanceId string, metrics *metrics.Metrics, eventRecorderManager events.EventRecorderManager) *Controller {
