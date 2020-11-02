@@ -38,6 +38,6 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http.InfoServiceClient(h), nil
 }
 
-func newHTTPClient(baseUrl string, authSupplier func() string) (context.Context, Client, error) {
-	return context.Background(), httpClient(http.NewFacade(baseUrl, authSupplier())), nil
+func newHTTPClient(baseUrl string, auth  string) (context.Context, Client, error) {
+	return context.Background(), httpClient(http.NewFacade(baseUrl, auth)), nil
 }
