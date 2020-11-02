@@ -14,7 +14,7 @@ argo server [flags]
 
 ```
 
-See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
+See hhttps://argoproj.github.io/argo/argo-server.md
 ```
 
 ### Options
@@ -31,11 +31,14 @@ See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
       --managed-namespace string         namespace that watches, default to the installation namespace
       --namespaced                       run as namespaced mode
   -p, --port int                         Port to listen on (default 2746)
+      --x-frame-options string           Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 
 ### Options inherited from parent commands
 
 ```
+      --argo-http                      If true, use the HTTP client. Defaults to the ARGO_HTTP environment variable.
+      --argo-path string               An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_PATH environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.

@@ -36,20 +36,30 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	switch mode {
 	default:
+		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Unsetenv("ARGO_SERVER")
-		_ = os.Unsetenv("ARGO_TOKEN")
 		_ = os.Unsetenv("ARGO_HTTP")
+		_ = os.Unsetenv("ARGO_TOKEN")
+		_ = os.Unsetenv("ARGO_NAMESPACE")
 		_ = os.Setenv("KUBECONFIG", kubeConfig)
 	case "GRPC":
+		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
-		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+		_ = os.Unsetenv("ARGO_SECURE")
+		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 		_ = os.Unsetenv("ARGO_HTTP")
-		_ = os.Unsetenv("KUBECONFIG")
-	case "HTTP":
-		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+		_ = os.Setenv("ARGO_NAMESPACE", "argo")
+		_ = os.Setenv("KUBECONFIG", "/dev/null")
+	case "HTTP":
+		_ = os.Unsetenv("ARGO_INSTANCEID")
+		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+		_ = os.Unsetenv("ARGO_SECURE")
+		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 		_ = os.Setenv("ARGO_HTTP", "true")
-		_ = os.Unsetenv("KUBECONFIG")
+		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
+		_ = os.Setenv("ARGO_NAMESPACE", "argo")
+		_ = os.Setenv("KUBECONFIG", "/dev/null")
 	}
 }
 

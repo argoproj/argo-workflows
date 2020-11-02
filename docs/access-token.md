@@ -32,20 +32,7 @@ echo $ARGO_TOKEN
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 ```
 
-Use that token with the CLI (you need to set `ARGO_SERVER` and maybe `ARGO_SECURE` too):
-
-```sh
-ARGO_SERVER=localhost:2746 ;# "host:port" - do not prefix with "http" or "https"
-ARGO_SECURE=false ;# set if the server is running TLS 
-ARGO_TOKEN='Bearer ****' ;# should always start with "Bearer ".
-ARGO_HTTP=true ;# set to true to use the HTTP client (see  below)
-ARGO_PATH=/argo ;# set if a path is needed for ARGO_HTTP
-argo list
-```
-
-!!!NOTE "What to do if HTTP/2 is not supported by your network load balancer"
-    If you want to use the CLI with a load balancer, it must support HTTP/2. Otherwise, set `ARGO_HTTP=true`.
-    Not all CLI commands will work with `ARGO_HTTP`, e.g. if the arguments are complex types. E.g. `argo logs --since-time=2020...`. 
+To that token with the CLI you need to set `ARGO_SERVER` (see `argo --help`).
 
 Use that token in your API requests, e.g. to list workflows:
 
