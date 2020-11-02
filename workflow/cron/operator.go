@@ -63,6 +63,11 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
+	err = woc.enforceHistoryLimit()
+	if err != nil {
+		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not enforce history limit: %s", err))
+	}
+
 	err = woc.reconcileDeletedWfs()
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not remove deleted Workflow: %s", err))
@@ -271,15 +276,14 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 	woc.cronWf.Status.Active = newActive
 }
 
-func (woc *cronWfOperationCtx) enforceHistoryLimit() {
+func (woc *cronWfOperationCtx) enforceHistoryLimit() error {
 	woc.log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	listOptions := &v1.ListOptions{}
 	wfInformerListOptionsFunc(listOptions, woc.cronWf.Labels[common.LabelKeyControllerInstanceID])
 	wfList, err := woc.wfClient.List(*listOptions)
 	if err != nil {
-		woc.log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
-		return
+		return fmt.Errorf("unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
 	}
 
 	var successfulWorkflows []v1alpha1.Workflow
@@ -303,8 +307,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	}
 	err = woc.deleteOldestWorkflows(successfulWorkflows, int(workflowsToKeep))
 	if err != nil {
-		woc.log.Errorf("Unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
-		return
+		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
 	}
 
 	workflowsToKeep = int32(1)
@@ -313,10 +316,9 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	}
 	err = woc.deleteOldestWorkflows(failedWorkflows, int(workflowsToKeep))
 	if err != nil {
-		woc.log.Errorf("Unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
-		return
+		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
 	}
-
+	return nil
 }
 
 func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow, workflowsToKeep int) error {
