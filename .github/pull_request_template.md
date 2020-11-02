@@ -1,4 +1,7 @@
 Checklist:
 
 * [ ] My organization is added to [USERS.md](https://github.com/argoproj/argo/blob/master/USERS.md).
-* [ ] My builds are green. Try syncing with master if they are not. 
+
+Please leave your PR in draft if you don't need a review yet. 
+
+Builds not green? Try syncing with master. 
