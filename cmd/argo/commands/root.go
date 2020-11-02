@@ -25,7 +25,7 @@ func NewCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   CLIName,
 		Short: "argo is the command line interface to Argo",
-		Long:  `
+		Long: `
 You can use the CLI in the following modes:
 
 # Kubernetes API Mode (default)
