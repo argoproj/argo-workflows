@@ -186,7 +186,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.podInformer = wfc.newPodInformer()
 	wfc.updateEstimatorFactory()
 	err := wfc.wfInformer.AddIndexers(cache.Indexers{
-		semaphoreConfigIndexName: wfc.workflowSemaphoreKeysIndex,
+		semaphoreConfigIndexName: wfc.workflowIndexerBySemaphoreKeys,
 	})
 	if err != nil {
 		panic(err)
@@ -231,7 +231,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	<-ctx.Done()
 }
 
-func (wfc *WorkflowController) workflowSemaphoreKeysIndex(obj interface{}) ([]string, error) {
+func (wfc *WorkflowController) workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return []string{}, fmt.Errorf("cannot convert obj into unstructured.Unstructured")
