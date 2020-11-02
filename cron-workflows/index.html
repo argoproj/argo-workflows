@@ -2247,14 +2247,16 @@ test-cron-wf   56s   2s         * * * * *   <span class="nb">false</span>
 $ argo cron get test-cron-wf
 Name:                          test-cron-wf
 Namespace:                     argo
-Created:                       Mon Nov <span class="m">18</span> <span class="m">10</span>:17:06 -0800 <span class="o">(</span><span class="m">4</span> minutes ago<span class="o">)</span>
+Created:                       Wed Oct <span class="m">28</span> <span class="m">07</span>:19:02 -0600 <span class="o">(</span><span class="m">23</span> hours ago<span class="o">)</span>
 Schedule:                      * * * * *
 Suspended:                     <span class="nb">false</span>
 StartingDeadlineSeconds:       <span class="m">0</span>
 ConcurrencyPolicy:             Replace
-LastScheduledTime:             Mon Nov <span class="m">18</span> <span class="m">10</span>:21:00 -0800 <span class="o">(</span><span class="m">51</span> seconds ago<span class="o">)</span>
+LastScheduledTime:             Thu Oct <span class="m">29</span> <span class="m">06</span>:51:00 -0600 <span class="o">(</span><span class="m">11</span> minutes ago<span class="o">)</span>
+NextScheduledTime:             Thu Oct <span class="m">29</span> <span class="m">13</span>:03:00 +0000 <span class="o">(</span><span class="m">32</span> seconds from now<span class="o">)</span>
 Active Workflows:              test-cron-wf-rt4nf
 </code></pre></div>
+<p><strong>Note</strong>: <code>NextScheduledRun</code> assumes that the workflow-controller uses UTC as its timezone</p>
 <h3 id="kubectl"><code>kubectl</code><a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h3>
 <p>Using <code>kubectl apply -f</code> and <code>kubectl get cwf</code></p>
 <h2 id="backfilling-days">Backfilling Days<a class="headerlink" href="#backfilling-days" title="Permanent link">&para;</a></h2>
