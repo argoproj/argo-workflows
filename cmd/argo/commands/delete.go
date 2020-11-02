@@ -60,7 +60,7 @@ func NewDeleteCommand() *cobra.Command {
 
 			if len(workflows) == 0 {
 				fmt.Printf("No resources found\n")
-				return
+				return nil
 			}
 
 			for _, wf := range workflows {

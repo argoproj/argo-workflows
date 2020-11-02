@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo/pkg/apiclient"
 	clientmocks "github.com/argoproj/argo/pkg/apiclient/mocks"
 	wfapi "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
+	wfmocks "github.com/argoproj/argo/pkg/apiclient/workflow/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -25,7 +25,7 @@ func TestNewListCommand(t *testing.T) {
 	cmdcommon.CreateNewAPIClientFunc = func() (context.Context, apiclient.Client) {
 		return context.TODO(), &client
 	}
-	wfClient := mocks.WorkflowServiceClient{}
+	wfClient := wfmocks.WorkflowServiceClient{}
 	var wfList wfv1.WorkflowList
 	var wf, wf1 wfv1.Workflow
 	err := yaml.Unmarshal([]byte(wfWithStatus), &wf)
@@ -106,7 +106,7 @@ func Test_listWorkflows(t *testing.T) {
 }
 
 func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
-	c := mocks.WorkflowServiceClient{}
+	c := wfmocks.WorkflowServiceClient{}
 	c.On("ListWorkflows", mock.Anything, &wfapi.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{
 		{ObjectMeta: metav1.ObjectMeta{Name: "foo-", CreationTimestamp: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.Time{Time: time.Now().Add(-2 * time.Hour)}}},
 		{ObjectMeta: metav1.ObjectMeta{Name: "bar-", CreationTimestamp: metav1.Time{Time: time.Now()}}},
@@ -122,8 +122,8 @@ func list(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, err
 }
 
 func listEmpty(listOptions *metav1.ListOptions, flags listFlags) (wfv1.Workflows, error) {
-	c := &workflowmocks.WorkflowServiceClient{}
-	c.On("ListWorkflows", mock.Anything, &workflow.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{}}, nil)
+	c := &wfmocks.WorkflowServiceClient{}
+	c.On("ListWorkflows", mock.Anything, &wfapi.WorkflowListRequest{ListOptions: listOptions}).Return(&wfv1.WorkflowList{Items: wfv1.Workflows{}}, nil)
 	workflows, err := listWorkflows(context.Background(), c, flags)
 	return workflows, err
 }
