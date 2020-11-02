@@ -94,10 +94,6 @@ func (s *E2ESuite) DeleteResources() {
 	for _, r := range resources {
 		err := s.dynamicFor(r).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
 		s.CheckError(err)
-		for _, w := range workflows {
-			err := archive.DeleteWorkflow(string(w.UID))
-			s.CheckError(err)
-		}
 	}
 
 	// delete archived workflows from the archive
