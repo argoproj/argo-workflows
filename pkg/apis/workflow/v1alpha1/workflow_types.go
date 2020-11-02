@@ -378,6 +378,9 @@ func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
 }
 
+// GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
+// Example key format namespace/configmapname (argo/my-config)
+// Return []string
 func (wf *Workflow) GetSemaphoreKeys() []string {
 	keyMap := make(map[string]bool)
 	namespace := wf.Namespace
