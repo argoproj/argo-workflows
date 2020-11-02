@@ -247,6 +247,11 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 			if err != nil {
 				log.Warnf("cmd.Wait for kubectl get -w command for resource %s returned error %v",
 					resourceName, err)
+
+				if checkIfResourceDeleted(resourceName, resourceNamespace) {
+					return false, errors.Errorf(errors.CodeNotFound, "Resource %s in namespace %s has been deleted somehow.", resourceName, resourceNamespace)
+				}
+
 				resultErr = err
 			} else {
 				log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
