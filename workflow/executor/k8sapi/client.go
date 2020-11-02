@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"syscall"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,10 +76,6 @@ func (c *k8sAPIClient) GetContainerStatus(containerID string) (*corev1.Pod, *cor
 		return pod, &containerStatus, nil
 	}
 	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, c.podName))
-}
-
-func (c *k8sAPIClient) waitForTermination(containerID string, timeout time.Duration) error {
-	return execcommon.WaitForTermination(c, containerID, timeout)
 }
 
 func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {

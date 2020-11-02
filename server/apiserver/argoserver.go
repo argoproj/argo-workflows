@@ -64,12 +64,13 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	wfClientSet      *versioned.Clientset
-	authenticator    auth.Gatekeeper
+	gatekeeper       auth.Gatekeeper
 	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
 	eventQueueSize   int
 	eventWorkerCount int
+	xframeOptions    string
 }
 
 type ArgoServerOpts struct {
@@ -86,17 +87,18 @@ type ArgoServerOpts struct {
 	HSTS                    bool
 	EventOperationQueueSize int
 	EventWorkerCount        int
+	XFrameOptions           string
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset, emptyConfigFunc)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get()
 		if err != nil {
 			return nil, err
 		}
-		ssoIf, err = sso.New(c.SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.(*Config).SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +106,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -116,12 +118,13 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		managedNamespace: opts.ManagedNamespace,
 		wfClientSet:      opts.WfClientSet,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    gatekeeper,
+		gatekeeper:       gatekeeper,
 		oAuth2Service:    ssoIf,
 		configController: configController,
 		stopCh:           make(chan struct{}),
 		eventQueueSize:   opts.EventOperationQueueSize,
 		eventWorkerCount: opts.EventWorkerCount,
+		xframeOptions:    opts.XFrameOptions,
 	}, nil
 }
 
@@ -133,15 +136,16 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	configMap, err := as.configController.Get()
+	v, err := as.configController.Get()
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": configMap.InstanceID}).Info("Starting Argo Server")
-	instanceIDService := instanceid.NewService(configMap.InstanceID)
+	config := v.(*Config)
+	log.WithFields(log.Fields{"version": argo.GetVersion().Version, "instanceID": config.InstanceID}).Info("Starting Argo Server")
+	instanceIDService := instanceid.NewService(config.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
-	persistence := configMap.Persistence
+	persistence := config.Persistence
 	if persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
 		if err != nil {
@@ -158,9 +162,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.kubeClientset)
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
+	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	eventServer := event.NewController(instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount)
-	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, configMap.Links)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, eventServer, config.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -217,13 +221,13 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
-			as.authenticator.UnaryServerInterceptor(),
+			as.gatekeeper.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
-			as.authenticator.StreamServerInterceptor(),
+			as.gatekeeper.StreamServerInterceptor(),
 		)),
 	}
 
@@ -287,7 +291,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
 	return &httpServer
 }
 
@@ -304,7 +308,7 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 // Unlike the controller, the server creates object based on the config map at init time, and will not pick-up on
 // changes unless we restart.
 // Instead of opting to re-write the server, instead we'll just listen for any old change and restart.
-func (as *argoServer) restartOnConfigChange(config.Config) error {
+func (as *argoServer) restartOnConfigChange(interface{}) error {
 	log.Info("config map event, exiting gracefully")
 	as.stopCh <- struct{}{}
 	return nil

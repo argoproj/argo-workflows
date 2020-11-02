@@ -1,4 +1,4 @@
-// +build e2e
+// +build cli
 
 package e2e
 
@@ -226,7 +226,7 @@ spec:
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("release")
 			if assert.NotNil(t, nodeStatus) {
-				assert.Equal(t, "Hello, World!", *nodeStatus.Inputs.Parameters[0].Value)
+				assert.Equal(t, "Hello, World!", nodeStatus.Inputs.Parameters[0].Value.String())
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
 			if assert.NotNil(t, nodeStatus) {

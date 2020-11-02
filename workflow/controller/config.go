@@ -15,7 +15,8 @@ import (
 	"github.com/argoproj/argo/workflow/hydrator"
 )
 
-func (wfc *WorkflowController) updateConfig(config config.Config) error {
+func (wfc *WorkflowController) updateConfig(v interface{}) error {
+	config := v.(*config.Config)
 	bytes, err := yaml.Marshal(config)
 	if err != nil {
 		return err
@@ -24,7 +25,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
-	wfc.Config = config
+	wfc.Config = *config
 	if wfc.session != nil {
 		err := wfc.session.Close()
 		if err != nil {

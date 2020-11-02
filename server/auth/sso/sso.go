@@ -2,29 +2,44 @@ package sso
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/argoproj/pkg/jwt/zjwt"
-	"github.com/argoproj/pkg/rand"
+	pkgrand "github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo/server/auth/jws"
+	"github.com/argoproj/argo/server/auth/rbac"
+	"github.com/argoproj/argo/server/auth/types"
 )
 
-const Prefix = "Bearer id_token:"
+const (
+	Prefix                              = "Bearer v2:"
+	issuer                              = "argo-server"                // the JWT issuer
+	expiry                              = 10 * time.Hour               // how long JWT are valid for
+	secretName                          = "sso"                        // where we store SSO secret
+	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
+)
+
+//go:generate mockery -name Interface
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error)
+	Authorize(authorization string) (*types.Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
+	IsRBACEnabled() bool
 }
 
 var _ Interface = &sso{}
@@ -34,6 +49,13 @@ type sso struct {
 	idTokenVerifier *oidc.IDTokenVerifier
 	baseHRef        string
 	secure          bool
+	privateKey      crypto.PrivateKey
+	encrypter       jose.Encrypter
+	rbacConfig      *rbac.Config
+}
+
+func (s *sso) IsRBACEnabled() bool {
+	return s.rbacConfig.IsEnabled()
 }
 
 type Config struct {
@@ -41,9 +63,12 @@ type Config struct {
 	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
+	RBAC         *rbac.Config            `json:"rbac,omitempty"`
+	// additional scopes (on top of "openid")
+	Scopes []string `json:"scopes,omitempty"`
 }
 
-// Abtsract methods of oidc.Provider that our code uses into an interface. That
+// Abstract methods of oidc.Provider that our code uses into an interface. That
 // will allow us to implement a stub for unit testing.  If you start using more
 // oidc.Provider methods in this file, add them here and provide a stub
 // implementation in test.
@@ -99,6 +124,27 @@ func newSso(
 			return nil, err
 		}
 	}
+	generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate key: %w", err)
+	}
+	// whoa - are you ignoring errors - yes - we don't care if it fails -
+	// if it fails, then the get will fail, and the pod restart
+	// it may fail due to race condition with another pod - which is fine,
+	// when it restart it'll get the new key
+	_, _ = secretsIf.Create(&apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: secretName},
+		Data:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},
+	})
+	secret, err := secretsIf.Get(secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to read secret: %w", err)
+	}
+	privateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
 	clientID := clientIDObj.Data[c.ClientID.Key]
 	if clientID == nil {
 		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
@@ -107,23 +153,34 @@ func newSso(
 	if clientSecret == nil {
 		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
 	}
-
 	config := &oauth2.Config{
 		ClientID:     string(clientID),
 		ClientSecret: string(clientSecret),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID},
+		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
+	}
 	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
-	return &sso{config, idTokenVerifier, baseHRef, secure}, nil
+	return &sso{
+		config:          config,
+		idTokenVerifier: idTokenVerifier,
+		baseHRef:        baseHRef,
+		secure:          secure,
+		privateKey:      privateKey,
+		encrypter:       encrypter,
+		rbacConfig:      c.RBAC,
+	}, nil
 }
 
 const stateCookieName = "oauthState"
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	state := rand.RandString(10)
+	state := pkgrand.RandString(10)
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookieName,
 		Value:    state,
@@ -168,25 +225,24 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
 		return
 	}
-	c := &jws.ClaimSet{}
+	c := &types.Claims{}
 	if err := idToken.Claims(c); err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	token, err := zjwt.ZJWT(rawIDToken)
+	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
+	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
-		w.WriteHeader(500)
-		_, _ = w.Write([]byte(fmt.Sprintf("failed to get compress token: %v", err)))
-		return
+		panic(err)
 	}
-	value := Prefix + token
+	value := Prefix + raw
 	log.Debugf("handing oauth2 callback %v", value)
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",
 		Path:     s.baseHRef,
-		Expires:  time.Now().Add(10 * time.Hour),
+		Expires:  time.Now().Add(expiry),
 		SameSite: http.SameSiteStrictMode,
 		Secure:   s.secure,
 	})
@@ -194,18 +250,17 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorization string) (*jws.ClaimSet, error) {
-	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorization, Prefix))
+func (s *sso) Authorize(authorization string) (*types.Claims, error) {
+	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decompress token %v", err)
+		return nil, fmt.Errorf("failed to parse encrypted token %v", err)
 	}
-	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify id_token %v", err)
-	}
-	c := &jws.ClaimSet{}
-	if err := idToken.Claims(c); err != nil {
+	c := &types.Claims{}
+	if err := tok.Claims(s.privateKey, c); err != nil {
 		return nil, fmt.Errorf("failed to parse claims: %v", err)
+	}
+	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
+		return nil, fmt.Errorf("failed to validate claims: %v", err)
 	}
 	return c, nil
 }

@@ -22,10 +22,13 @@ func NewLintCommand() *cobra.Command {
 		strict bool
 	)
 	var command = &cobra.Command{
-		Use:          "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-		Short:        "validate a file or directory of workflow template manifests",
-		SilenceUsage: true,
+		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
+		Short: "validate a file or directory of workflow template manifests",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				return cmdcommon.MissingArgumentsError
+			}
 			err := ServerSideLint(args, strict)
 			if err != nil {
 				return err
@@ -80,7 +83,11 @@ func ServerSideLint(args []string, strict bool) error {
 			}
 			return nil
 		}
-		return filepath.Walk(args[0], walkFunc)
+		err := filepath.Walk(args[0], walkFunc)
+		if err != nil {
+			log.Error(err)
+			invalid = true
+		}
 	} else {
 		for _, arg := range args {
 			wfTmpls, err := validate.ParseWfTmplFromFile(arg, strict)

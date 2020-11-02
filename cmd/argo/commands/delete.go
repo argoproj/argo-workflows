@@ -35,7 +35,7 @@ func NewDeleteCommand() *cobra.Command {
 `,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "") {
+			if len(args) == 0 && !(all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "") {
 				cmd.HelpFunc()(cmd, args)
 				return cmdcommon.MissingArgumentsError
 			}
@@ -50,13 +50,19 @@ func NewDeleteCommand() *cobra.Command {
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
 			}
-			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.finishedAfter != "" {
+			if all || flags.completed || flags.resubmitted || flags.prefix != "" || flags.labels != "" || flags.fields != "" || flags.finishedAfter != "" {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
 				if err != nil {
 					return err
 				}
 				workflows = append(workflows, listed...)
 			}
+
+			if len(workflows) == 0 {
+				fmt.Printf("No resources found\n")
+				return
+			}
+
 			for _, wf := range workflows {
 				if !dryRun {
 					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
@@ -83,6 +89,7 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
 	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
+	command.Flags().StringVar(&flags.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	return command
 }

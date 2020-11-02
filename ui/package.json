@@ -15,6 +15,8 @@
         "@fortawesome/fontawesome-free": "^5.12.0",
         "@types/dagre": "^0.7.44",
         "argo-ui": "https://github.com/argoproj/argo-ui.git",
+        "chart.js": "^2.9.4",
+        "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.2.5",
         "cron-parser": "^2.16.3",
         "dagre": "^0.8.5",
@@ -26,9 +28,9 @@
         "monaco-editor": "0.20.0",
         "prop-types": "^15.7.2",
         "react": "^16.8.3",
+        "react-chartjs-2": "^2.9.0",
         "react-datepicker": "^2.14.0",
         "react-dom": "^16.8.3",
-        "react-form": "2.16.0",
         "react-moment": "^0.9.7",
         "react-monaco-editor": "^0.36.0",
         "react-router-dom": "^4.2.2",
@@ -38,6 +40,7 @@
         "swagger-ui-react": "^3.29.0"
     },
     "devDependencies": {
+        "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.2.3",
         "@types/deep-equal": "^1.0.1",
         "@types/history": "^4.6.2",

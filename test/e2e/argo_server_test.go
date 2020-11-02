@@ -1,10 +1,9 @@
-// +build e2e
+// +build cli
 
 package e2e
 
 import (
 	"bufio"
-	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -28,13 +27,6 @@ import (
 
 const baseUrl = "http://localhost:2746"
 
-var httpClient = &http.Client{
-	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-	CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	},
-}
-
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
@@ -47,13 +39,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	var err error
 	s.bearerToken, err = s.GetServiceAccountToken()
 	s.CheckError(err)
-}
-
-type httpLogger struct {
-}
-
-func (d *httpLogger) Logf(fmt string, args ...interface{}) {
-	log.Debugf(fmt, args...)
 }
 
 func (s *ArgoServerSuite) e() *httpexpect.Expect {
@@ -633,6 +618,60 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 }`))).
 		Expect().
 		Status(200)
+}
+
+func (s *ArgoServerSuite) TestHintWhenWorkflowExists() {
+	s.e().POST("/api/v1/workflows/argo").
+		WithBytes([]byte((`{
+  "workflow": {
+    "metadata": {
+      "name": "hint",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "argoproj/argosay:v2"
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(200)
+
+	s.e().POST("/api/v1/workflows/argo").
+		WithBytes([]byte((`{
+  "workflow": {
+    "metadata": {
+      "name": "hint",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "argoproj/argosay:v2"
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(409).
+		Body().
+		Contains("already exists")
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {

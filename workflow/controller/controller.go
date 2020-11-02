@@ -94,7 +94,7 @@ type WorkflowController struct {
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	estimatorFactory      estimation.EstimatorFactory
-	syncManager           *sync.SyncManager
+	syncManager           *sync.Manager
 	metrics               *metrics.Metrics
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
@@ -125,7 +125,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
-		configController:           config.NewController(namespace, configMap, kubeclientset),
+		configController:           config.NewController(namespace, configMap, kubeclientset, config.EmptyConfigFunc),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
@@ -148,7 +148,9 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
+		return &wfc.Config
+	})
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
@@ -221,7 +223,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 // Create and initialize the Synchronization Manager
 func (wfc *WorkflowController) createSynchronizationManager() error {
-	syncLimitConfig := func(lockKey string) (int, error) {
+	getSyncLimit := func(lockKey string) (int, error) {
 		lockName, err := sync.DecodeLockName(lockKey)
 		if err != nil {
 			return 0, err
@@ -233,14 +235,16 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 
 		value, found := configMap.Data[lockName.Key]
 		if !found {
-			return 0, argoErr.New(argoErr.CodeBadRequest, "Invalid Sync configuration Key")
+			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.Key))
 		}
 		return strconv.Atoi(value)
 	}
 
-	wfc.syncManager = sync.NewLockManager(syncLimitConfig, func(key string) {
+	nextWorkflow := func(key string) {
 		wfc.wfQueue.AddAfter(key, enoughTimeForInformerSync)
-	})
+	}
+
+	wfc.syncManager = sync.NewLockManager(getSyncLimit, nextWorkflow)
 
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
@@ -254,7 +258,7 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(wfList)
+	wfc.syncManager.Initialize(wfList.Items)
 	return nil
 }
 
@@ -480,7 +484,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to unmarshal key to workflow object")
 		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+		woc.markWorkflowFailed(fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
@@ -501,15 +505,14 @@ func (wfc *WorkflowController) processNextItem() bool {
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
 		woc.log.Errorf("hydration failed: %v", err)
-		woc.markWorkflowError(err, true)
+		woc.markWorkflowError(err)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
 	}
 
 	if wf.Spec.Synchronization != nil {
-		priority, creationTime := getWfPriority(woc.wf)
-		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Synchronization)
+		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", woc.wf.Spec.Synchronization)
 		if err != nil {
 			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
 			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
@@ -661,7 +664,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wfc.wfQueue.Add(key)
+						wfc.wfQueue.AddAfter(key, wfc.Config.InitialDelay.Duration)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
@@ -716,8 +719,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowUpdated(string(wf.GetUID()), getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			wf := obj.(*unstructured.Unstructured)
-			wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			wf, ok := obj.(*unstructured.Unstructured)
+			if ok { // maybe cache.DeletedFinalStateUnknown
+				wfc.metrics.WorkflowDeleted(string(wf.GetUID()), getWfPhase(obj))
+			}
 		},
 	})
 }
@@ -892,7 +897,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
-	if port == "" {
+	if port > 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
@@ -910,7 +915,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	}
 
 	port = metricsConfig.Port
-	if wfc.Config.TelemetryConfig.Port != "" {
+	if wfc.Config.TelemetryConfig.Port > 0 {
 		port = wfc.Config.TelemetryConfig.Port
 	}
 	telemetryConfig := metrics.ServerConfig{
