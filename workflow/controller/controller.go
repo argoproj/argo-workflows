@@ -514,7 +514,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	err = wfc.hydrator.Hydrate(woc.wf)
 	if err != nil {
 		woc.log.Errorf("hydration failed: %v", err)
-		woc.markWorkflowError(err, true)
+		woc.markWorkflowError(err)
 		woc.persistUpdates()
 		return true
 	}
