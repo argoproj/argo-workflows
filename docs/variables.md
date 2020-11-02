@@ -91,7 +91,7 @@ step.
 | `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
 | `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
 | `outputs.result` | Output result of the metric-emitting template |
-| `resourcesDuration` | Resources duration as a string. Can also be indexed for a selected resource, if available (may be one of `resourcesDuration.cpu` or `resourcesDuration.memory`. For more info, see the [Resource Duration](resource-duration.md) doc.|
+| `resourcesDuration.{cpu,memory}` | Resources duration **in seconds**. Must be one of `resourcesDuration.cpu` or `resourcesDuration.memory`, if available. For more info, see the [Resource Duration](resource-duration.md) doc.|
 
 ### Realtime Metrics
 

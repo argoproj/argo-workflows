@@ -70,23 +70,23 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 	}
 	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tNEXT RUN\tSCHEDULE\tSUSPENDED")
 	_, _ = fmt.Fprint(w, "\n")
-	for _, wf := range wfList {
+	for _, cwf := range wfList {
 		if listArgs.allNamespaces {
-			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
+			_, _ = fmt.Fprintf(w, "%s\t", cwf.ObjectMeta.Namespace)
 		}
 		var cleanLastScheduledTime string
-		if wf.Status.LastScheduledTime != nil {
-			cleanLastScheduledTime = humanize.RelativeDurationShort(wf.Status.LastScheduledTime.Time, time.Now())
+		if cwf.Status.LastScheduledTime != nil {
+			cleanLastScheduledTime = humanize.RelativeDurationShort(cwf.Status.LastScheduledTime.Time, time.Now())
 		} else {
 			cleanLastScheduledTime = "N/A"
 		}
 		var cleanNextScheduledTime string
-		if next, err := wf.GetNextRuntime(); err == nil {
+		if next, err := GetNextRuntime(&cwf); err == nil {
 			cleanNextScheduledTime = humanize.RelativeDurationShort(next, time.Now())
 		} else {
 			cleanNextScheduledTime = "N/A"
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, wf.Spec.Schedule, wf.Spec.Suspend)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%t", cwf.ObjectMeta.Name, humanize.RelativeDurationShort(cwf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, cleanNextScheduledTime, cwf.Spec.Schedule, cwf.Spec.Suspend)
 		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

@@ -67,46 +67,46 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 	}
 }
 
-func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
+func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
 
 	out := ""
-	out += fmt.Sprintf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
-	out += fmt.Sprintf(fmtStr, "Schedule:", wf.Spec.Schedule)
-	out += fmt.Sprintf(fmtStr, "Suspended:", wf.Spec.Suspend)
-	if wf.Spec.Timezone != "" {
-		out += fmt.Sprintf(fmtStr, "Timezone:", wf.Spec.Timezone)
+	out += fmt.Sprintf(fmtStr, "Name:", cwf.ObjectMeta.Name)
+	out += fmt.Sprintf(fmtStr, "Namespace:", cwf.ObjectMeta.Namespace)
+	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.ObjectMeta.CreationTimestamp.Time))
+	out += fmt.Sprintf(fmtStr, "Schedule:", cwf.Spec.Schedule)
+	out += fmt.Sprintf(fmtStr, "Suspended:", cwf.Spec.Suspend)
+	if cwf.Spec.Timezone != "" {
+		out += fmt.Sprintf(fmtStr, "Timezone:", cwf.Spec.Timezone)
 	}
-	if wf.Spec.StartingDeadlineSeconds != nil {
-		out += fmt.Sprintf(fmtStr, "StartingDeadlineSeconds:", *wf.Spec.StartingDeadlineSeconds)
+	if cwf.Spec.StartingDeadlineSeconds != nil {
+		out += fmt.Sprintf(fmtStr, "StartingDeadlineSeconds:", *cwf.Spec.StartingDeadlineSeconds)
 	}
-	if wf.Spec.ConcurrencyPolicy != "" {
-		out += fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", wf.Spec.ConcurrencyPolicy)
+	if cwf.Spec.ConcurrencyPolicy != "" {
+		out += fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy)
 	}
-	if wf.Status.LastScheduledTime != nil {
-		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
+	if cwf.Status.LastScheduledTime != nil {
+		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
 	}
 
-	next, err := wf.GetNextRuntime()
+	next, err := GetNextRuntime(cwf)
 	if err == nil {
-		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next))
+		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)")
 	}
 
-	if len(wf.Status.Active) > 0 {
+	if len(cwf.Status.Active) > 0 {
 		var activeWfNames []string
-		for _, activeWf := range wf.Status.Active {
+		for _, activeWf := range cwf.Status.Active {
 			activeWfNames = append(activeWfNames, activeWf.Name)
 		}
 		out += fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
-	if len(wf.Status.Conditions) > 0 {
-		out += wf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
+	if len(cwf.Status.Conditions) > 0 {
+		out += cwf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
 	}
-	if len(wf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
+	if len(cwf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
 		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")
-		for _, param := range wf.Spec.WorkflowSpec.Arguments.Parameters {
+		for _, param := range cwf.Spec.WorkflowSpec.Arguments.Parameters {
 			if param.Value == nil {
 				continue
 			}

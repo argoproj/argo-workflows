@@ -521,9 +521,8 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	}
 
 	if node.ResourcesDuration != nil {
-		localScope[common.LocalVarResourcesDuration] = node.ResourcesDuration.String()
 		for name, duration := range node.ResourcesDuration {
-			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = duration.String()
+			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = fmt.Sprint(duration.Duration().Seconds())
 		}
 	}
 

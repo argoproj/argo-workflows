@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -140,7 +139,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 	cronWf := &v1alpha1.CronWorkflow{}
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, cronWf)
+	err = util.FromUnstructuredObj(un, cronWf)
 	if err != nil {
 		cc.eventRecorderManager.Get(un.GetNamespace()).Event(un, apiv1.EventTypeWarning, "Malformed", err.Error())
 		logCtx.WithError(err).Error("malformed cron workflow: could not convert from unstructured")

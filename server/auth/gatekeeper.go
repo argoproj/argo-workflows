@@ -129,12 +129,9 @@ func getAuthHeader(md metadata.MD) string {
 func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
-	mode, err := GetMode(authorization)
+	mode, err := s.Modes.GetMode(authorization)
 	if err != nil {
 		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	if !s.Modes[mode] {
-		return nil, nil, nil, status.Errorf(codes.Unauthenticated, "client auth-mode is %v, but that mode is disabled", mode)
 	}
 	switch mode {
 	case Client:
