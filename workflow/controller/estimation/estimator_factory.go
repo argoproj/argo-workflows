@@ -6,7 +6,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo/persist/sqldb"
@@ -14,6 +13,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller/indexes"
 	"github.com/argoproj/argo/workflow/hydrator"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 type EstimatorFactory interface {
@@ -55,8 +55,7 @@ func (f *estimatorFactory) NewEstimator(wf *wfv1.Workflow) (Estimator, error) {
 				if un.GetLabels()[common.LabelKeyPhase] != string(wfv1.NodeSucceeded) {
 					continue
 				}
-				candidateWf := &wfv1.Workflow{}
-				err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, candidateWf)
+				candidateWf, err := util.FromUnstructured(un)
 				if err != nil {
 					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
 				}
