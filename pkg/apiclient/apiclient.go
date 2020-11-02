@@ -39,6 +39,8 @@ type Opts struct {
 	ClientConfigSupplier func() clientcmd.ClientConfig
 	// RESTConfigSupplier returns a k8s client-go REST config.
 	RESTConfigSupplier func() (*rest.Config, error)
+	// Context to use for the generated API client.
+	Context context.Context
 }
 
 // DEPRECATED: use NewClientFromOpts
@@ -74,5 +76,10 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 		return nil, nil, err
 	}
 
-	return newArgoKubeClient(cfg, instanceid.NewService(opts.InstanceID))
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	return newArgoKubeClient(ctx, cfg, instanceid.NewService(opts.InstanceID))
 }
