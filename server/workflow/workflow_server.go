@@ -493,6 +493,10 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
+func (s *workflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_WorkflowLogsServer) error {
+	return s.PodLogs(req, ws)
+}
+
 func (s *workflowServer) getWorkflow(wfClient versioned.Interface, namespace string, name string, options metav1.GetOptions) (*wfv1.Workflow, error) {
 	if name == latestAlias {
 		latest, err := getLatestWorkflow(wfClient, namespace)
