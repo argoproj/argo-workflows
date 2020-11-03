@@ -92,6 +92,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
+	go wait.Until(cc.syncAll, 10 * time.Second, ctx.Done())
 
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
@@ -195,6 +196,41 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 			}
 		},
 	})
+}
+
+func (cc *Controller) syncAll() {
+	log.Info("Syncing all CronWorkflows")
+
+	cronWorkflows := cc.cronWfInformer.Informer().GetStore().List()
+	for _, obj := range cronWorkflows {
+
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			log.Error("Unable to convert object to unstructured when syncing CronWorkflows")
+			continue
+		}
+		cronWf := &v1alpha1.CronWorkflow{}
+		err := util.FromUnstructuredObj(un, cronWf)
+		if err != nil {
+			log.WithError(err).Error("Unable to convert unstructured to CronWorkflow when syncing CronWorkflows")
+			continue
+		}
+
+		cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+
+		err = cwoc.enforceHistoryLimit()
+		if err != nil {
+			log.WithError(err).Error("Error enforcing history limit")
+			continue
+		}
+		err = cwoc.reconcileActiveWfs()
+		if err != nil {
+			log.WithError(err).Error("Error reconciling workflows")
+			continue
+		}
+
+		cwoc.persistUpdate()
+	}
 }
 
 func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {

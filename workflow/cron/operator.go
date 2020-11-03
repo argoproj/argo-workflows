@@ -68,7 +68,7 @@ func (woc *cronWfOperationCtx) Run() {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not enforce history limit: %s", err))
 	}
 
-	err = woc.reconcileDeletedWfs()
+	err = woc.reconcileActiveWfs()
 	if err != nil {
 		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not remove deleted Workflow: %s", err))
 		return
@@ -239,7 +239,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 	return false, nil
 }
 
-func (woc *cronWfOperationCtx) reconcileDeletedWfs() error {
+func (woc *cronWfOperationCtx) reconcileActiveWfs() error {
 	wfList, err := woc.wfLister.List()
 	if err != nil {
 		return fmt.Errorf("unable to list workflows: %s", err)
