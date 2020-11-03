@@ -35,6 +35,7 @@ import (
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
+	workflowsync "github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -172,6 +173,8 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+		wfc.throttler = workflowsync.NewThrottler(0, wfc.wfQueue)
+		wfc.throttler.SetParallelism(wfc.getParallelism())
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}
 
