@@ -692,6 +692,32 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
+func (s *CLIWithServerSuite) TestWorkflowTerminateBySelector() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--selector", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
+func (s *CLIWithServerSuite) TestWorkflowTerminateByFieldSelector() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--field-selector", "metadata.name=basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
 func (s *CLIWithServerSuite) TestWorkflowWait() {
 	s.testNeedsOffloading()
 	var name string
