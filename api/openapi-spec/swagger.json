@@ -2391,6 +2391,11 @@
     "io.argoproj.workflow.v1alpha1.CronWorkflowStatus": {
       "description": "CronWorkflowStatus is the status of a CronWorkflow",
       "type": "object",
+      "required": [
+        "active",
+        "lastScheduledTime",
+        "conditions"
+      ],
       "properties": {
         "active": {
           "description": "Active is a list of active workflows stemming from this CronWorkflow",

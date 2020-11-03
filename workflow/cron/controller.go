@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +31,6 @@ import (
 	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/pkg/sync"
 )
 
 // Controller is a controller for cron workflows
