@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -29,6 +30,7 @@ import (
 	"github.com/argoproj/argo/workflow/events"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/pkg/sync"
 )
 
 // Controller is a controller for cron workflows
@@ -37,6 +39,7 @@ type Controller struct {
 	managedNamespace     string
 	instanceId           string
 	cron                 *cronFacade
+	keyLock              sync.KeyLock
 	wfClientset          versioned.Interface
 	wfLister             util.WorkflowLister
 	wfQueue              workqueue.RateLimitingInterface
@@ -60,6 +63,7 @@ func NewCronController(wfclientset versioned.Interface, restConfig *rest.Config,
 		managedNamespace:     managedNamespace,
 		instanceId:           instanceId,
 		cron:                 newCronFacade(),
+		keyLock:              sync.NewKeyLock(),
 		restConfig:           restConfig,
 		dynamicInterface:     dynamicInterface,
 		wfQueue:              workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "wf_cron_queue"),
@@ -85,6 +89,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	wfInformer := util.NewWorkflowInformer(cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
 		wfInformerListOptionsFunc(options, cc.instanceId)
 	}, cache.Indexers{})
+	go wfInformer.Run(ctx.Done())
 
 	cc.wfLister = util.NewWorkflowLister(wfInformer)
 
@@ -112,6 +117,10 @@ func (cc *Controller) processNextCronItem() bool {
 		return false
 	}
 	defer cc.cronWfQueue.Done(key)
+
+	cc.keyLock.Lock(key.(string))
+	defer cc.keyLock.Unlock(key.(string))
+
 	logCtx := log.WithField("cronWorkflow", key)
 	logCtx.Infof("Processing %s", key)
 
@@ -139,7 +148,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
@@ -201,9 +210,14 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 func (cc *Controller) syncAll() {
 	log.Info("Syncing all CronWorkflows")
 
+	workflows, err := cc.wfLister.List()
+	if err != nil {
+		return
+	}
+	groupedWorkflows := groupWorkflows(workflows)
+
 	cronWorkflows := cc.cronWfInformer.Informer().GetStore().List()
 	for _, obj := range cronWorkflows {
-
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
 			log.Error("Unable to convert object to unstructured when syncing CronWorkflows")
@@ -216,21 +230,43 @@ func (cc *Controller) syncAll() {
 			continue
 		}
 
-		cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
-
-		err = cwoc.enforceHistoryLimit()
+		err = cc.syncCronWorkflow(cronWf, groupedWorkflows[cronWf.UID])
 		if err != nil {
-			log.WithError(err).Error("Error enforcing history limit")
+			log.WithError(err).Error("Unable to sync CronWorkflow")
 			continue
 		}
-		err = cwoc.reconcileActiveWfs()
-		if err != nil {
-			log.WithError(err).Error("Error reconciling workflows")
-			continue
-		}
-
-		cwoc.persistUpdate()
 	}
+}
+
+func (cc *Controller) syncCronWorkflow(cronWf *v1alpha1.CronWorkflow, workflows []v1alpha1.Workflow) error {
+	key := cronWf.Namespace + "/" + cronWf.Name
+	cc.keyLock.Lock(key)
+	defer cc.keyLock.Unlock(key)
+
+	cwoc := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.metrics)
+	err := cwoc.enforceHistoryLimit(workflows)
+	if err != nil {
+		return err
+	}
+	err = cwoc.reconcileActiveWfs(workflows)
+	if err != nil {
+		return err
+	}
+
+	cwoc.persistUpdate()
+	return nil
+}
+
+func groupWorkflows(wfs []*v1alpha1.Workflow) map[types.UID][]v1alpha1.Workflow {
+	cwfChildren := make(map[types.UID][]v1alpha1.Workflow)
+	for _, wf := range wfs {
+		owner := v1.GetControllerOf(wf)
+		if owner == nil || owner.Kind != workflow.CronWorkflowKind {
+			continue
+		}
+		cwfChildren[owner.UID] = append(cwfChildren[owner.UID], *wf)
+	}
+	return cwfChildren
 }
 
 func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
