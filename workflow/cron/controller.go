@@ -92,7 +92,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
-	go wait.Until(cc.syncAll, 10 * time.Second, ctx.Done())
+	go wait.Until(cc.syncAll, 10*time.Second, ctx.Done())
 
 	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
