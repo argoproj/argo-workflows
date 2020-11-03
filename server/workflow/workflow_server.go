@@ -70,7 +70,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return req.Workflow, nil
 	}
 	if req.ServerDryRun {
-		return util.CreateServerDryRun(req.Workflow, wfClient)
+		return util.CreateServerDryRun(ctx, req.Workflow, wfClient)
 	}
 
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(req.Workflow)
