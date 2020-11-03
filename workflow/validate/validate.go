@@ -702,7 +702,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) && !placeholderGenerator.IsPlaceholder(tmpl.ActiveDeadlineSeconds.StrVal) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && i != nil && *i < 0 {
