@@ -269,6 +269,7 @@ codegen: \
 	api/openapi-spec/swagger.json \
 	docs/fields.md \
 	docs/cli/argo.md \
+	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	rm -Rf vendor v3
