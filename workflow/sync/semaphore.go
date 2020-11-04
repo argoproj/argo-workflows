@@ -27,7 +27,7 @@ func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType st
 	return &PrioritySemaphore{
 		name:         name,
 		limit:        limit,
-		pending:      &priorityQueue{itemByKey: make(map[interface{}]*item)},
+		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
 		semaphore:    sema.NewWeighted(int64(limit)),
 		lockHolder:   make(map[string]bool),
 		lock:         &sync.Mutex{},

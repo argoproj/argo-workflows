@@ -35,7 +35,6 @@ import (
 	"github.com/argoproj/argo/workflow/events"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
-	workflowsync "github.com/argoproj/argo/workflow/sync"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -173,8 +172,7 @@ func newController(options ...interface{}) (context.CancelFunc, *WorkflowControl
 	{
 		wfc.metrics = metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 		wfc.wfQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-		wfc.throttler = workflowsync.NewThrottler(0, wfc.wfQueue)
-		wfc.throttler.SetParallelism(wfc.getParallelism())
+		wfc.throttler = wfc.newThrottler()
 		wfc.podQueue = workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	}
 
@@ -249,6 +247,22 @@ func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
 		panic(err)
 	}
 	return &artifact
+}
+
+func expectWorkflow(controller *WorkflowController, name string, test func(wf *wfv1.Workflow)) {
+	obj, exists, err := controller.wfInformer.GetStore().GetByKey(name)
+	if err != nil {
+		panic(err)
+	}
+	if !exists {
+		test(nil)
+		return
+	}
+	wf, err := util.FromUnstructured(obj.(*unstructured.Unstructured))
+	if err != nil {
+		panic(err)
+	}
+	test(wf)
 }
 
 type with func(pod *apiv1.Pod)
@@ -394,6 +408,46 @@ func TestClusterController(t *testing.T) {
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
+}
+
+func TestParallelism(t *testing.T) {
+	cancel, controller := newController(
+		unmarshalWF(`
+metadata:
+  name: my-wf-0
+spec:
+  entrypoint: main
+  templates:
+    - name: main 
+      container: 
+        image: my-image
+`),
+		unmarshalWF(`
+metadata:
+  name: my-wf-1
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container: 
+        image: my-image
+`),
+		func(controller *WorkflowController) { controller.Config.Parallelism = 1 },
+	)
+	defer cancel()
+	assert.True(t, controller.processNextItem())
+	assert.True(t, controller.processNextItem())
+
+	expectWorkflow(controller, "my-wf-0", func(wf *wfv1.Workflow) {
+		if assert.NotNil(t, wf) {
+			assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+		}
+	})
+	expectWorkflow(controller, "my-wf-1", func(wf *wfv1.Workflow) {
+		if assert.NotNil(t, wf) {
+			assert.Empty(t, wf.Status.Phase)
+		}
+	})
 }
 
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
