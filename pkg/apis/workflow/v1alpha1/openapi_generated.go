@@ -958,6 +958,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 						},
 					},
 				},
+				Required: []string{"active", "lastScheduledTime", "conditions"},
 			},
 		},
 		Dependencies: []string{
