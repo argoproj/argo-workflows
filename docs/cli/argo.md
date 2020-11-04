@@ -59,7 +59,7 @@ Use this when your network load-balancer does not support HTTP/2.
 
 Use the same configuration as GRPC mode, but also set:
 
-	ARGO_HTTP=true
+	ARGO_HTTP1=true
 
 
 ```
@@ -69,7 +69,7 @@ argo [flags]
 ### Options
 
 ```
-      --argo-http                      If true, use the HTTP client. Defaults to the ARGO_HTTP environment variable.
+      --argo-http                      If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
       --argo-path string               An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation

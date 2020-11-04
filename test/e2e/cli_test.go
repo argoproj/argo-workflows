@@ -39,7 +39,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Unsetenv("ARGO_SERVER")
 		_ = os.Unsetenv("ARGO_BASE_HREF")
-		_ = os.Unsetenv("ARGO_HTTP")
+		_ = os.Unsetenv("ARGO_HTTP1")
 		_ = os.Unsetenv("ARGO_TOKEN")
 		_ = os.Unsetenv("ARGO_NAMESPACE")
 		_ = os.Setenv("KUBECONFIG", kubeConfig)
@@ -49,7 +49,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 		_ = os.Unsetenv("ARGO_BASE_HREF")
 		_ = os.Unsetenv("ARGO_SECURE")
 		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
-		_ = os.Unsetenv("ARGO_HTTP")
+		_ = os.Unsetenv("ARGO_HTTP1")
 		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
 		_ = os.Setenv("ARGO_NAMESPACE", "argo")
 		_ = os.Setenv("KUBECONFIG", "/dev/null")
@@ -59,7 +59,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 		_ = os.Unsetenv("ARGO_BASE_HREF")
 		_ = os.Unsetenv("ARGO_SECURE")
 		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
-		_ = os.Setenv("ARGO_HTTP", "true")
+		_ = os.Setenv("ARGO_HTTP1", "true")
 		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
 		_ = os.Setenv("ARGO_NAMESPACE", "argo")
 		_ = os.Setenv("KUBECONFIG", "/dev/null")
@@ -82,7 +82,7 @@ func (s *CLISuite) skipIfServer() {
 }
 
 func (s *CLISuite) skipIfHTTP() {
-	if os.Getenv("ARGO_HTTP") != "" {
+	if os.Getenv("ARGO_HTTP1") != "" {
 		s.T().Skip("test must not run with HTTP")
 	}
 }

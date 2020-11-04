@@ -76,7 +76,7 @@ Use this when your network load-balancer does not support HTTP/2.
 
 Use the same configuration as GRPC mode, but also set:
 
-	ARGO_HTTP=true
+	ARGO_HTTP1=true
 
 If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
 
