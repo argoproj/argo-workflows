@@ -38,6 +38,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	default:
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Unsetenv("ARGO_SERVER")
+		_ = os.Unsetenv("ARGO_BASE_HREF")
 		_ = os.Unsetenv("ARGO_HTTP")
 		_ = os.Unsetenv("ARGO_TOKEN")
 		_ = os.Unsetenv("ARGO_NAMESPACE")
@@ -45,6 +46,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	case "GRPC":
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+		_ = os.Unsetenv("ARGO_BASE_HREF")
 		_ = os.Unsetenv("ARGO_SECURE")
 		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 		_ = os.Unsetenv("ARGO_HTTP")
@@ -54,6 +56,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	case "HTTP":
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+		_ = os.Unsetenv("ARGO_BASE_HREF")
 		_ = os.Unsetenv("ARGO_SECURE")
 		_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 		_ = os.Setenv("ARGO_HTTP", "true")

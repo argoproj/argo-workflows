@@ -37,7 +37,7 @@ If your server is running with self-signed certificates. Do not use in productio
 
 If your server is behind an ingress with a path (you'll be running "argo server --bashhref /...) or "BASH_HREF=/... argo server"):
 
-	ARGO_PATH=/argo
+	ARGO_BASE_HREF=/argo
 
 By default, the CLI uses your KUBECONFIG to determine default for ARGO_TOKEN and ARGO_NAMESPACE. You probably error with "no configuration has been provided". To prevent it:
 
@@ -70,7 +70,7 @@ argo [flags]
 
 ```
       --argo-http                      If true, use the HTTP client. Defaults to the ARGO_HTTP environment variable.
-      --argo-path string               An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_PATH environment variable.
+      --argo-path string               An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.

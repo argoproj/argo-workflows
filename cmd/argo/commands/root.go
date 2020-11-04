@@ -54,11 +54,7 @@ If you're have transport-layer security (TLS) enabled (i.e. you are running "arg
 
 If your server is running with self-signed certificates. Do not use in production:
 
-	ARGO_INSECURE_SKIP_VERIFY=true 
-
-If your server is behind an ingress with a path (you'll be running "argo server --bashhref /...) or "BASH_HREF=/... argo server"):
-
-	ARGO_PATH=/argo
+	ARGO_INSECURE_SKIP_VERIFY=true
 
 By default, the CLI uses your KUBECONFIG to determine default for ARGO_TOKEN and ARGO_NAMESPACE. You probably error with "no configuration has been provided". To prevent it:
 
@@ -81,6 +77,10 @@ Use this when your network load-balancer does not support HTTP/2.
 Use the same configuration as GRPC mode, but also set:
 
 	ARGO_HTTP=true
+
+If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
+
+	ARGO_BASE_HREF=/argo
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
