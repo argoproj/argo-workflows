@@ -53,7 +53,7 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 		_ = os.Setenv("ARGO_TOKEN", "Bearer "+token)
 		_ = os.Setenv("ARGO_NAMESPACE", "argo")
 		_ = os.Setenv("KUBECONFIG", "/dev/null")
-	case "HTTP":
+	case "HTTP1":
 		_ = os.Unsetenv("ARGO_INSTANCEID")
 		_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 		_ = os.Unsetenv("ARGO_BASE_HREF")
@@ -1469,7 +1469,7 @@ func TestCLIWithServerOverGRPCSuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
 
-func TestCLIWithServerOverHTTPSuite(t *testing.T) {
-	_ = os.Setenv("E2E_MODE", "HTTP")
+func TestCLIWithServerOverHTTP1Suite(t *testing.T) {
+	_ = os.Setenv("E2E_MODE", "HTTP1")
 	suite.Run(t, new(CLISuite))
 }
