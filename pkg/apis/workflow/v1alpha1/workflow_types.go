@@ -2283,7 +2283,7 @@ func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, 
 		return nil
 	}
 	if tmpl, ok := wf.Status.StoredTemplates[tmplID]; ok {
-		return &tmpl
+		return tmpl.DeepCopy()
 	}
 	return nil
 }
