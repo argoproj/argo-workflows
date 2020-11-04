@@ -2884,9 +2884,6 @@ spec:
         - A
         name: B
         template: fail
-      - arguments: {}
-        name: C
-        template: ok
     inputs: {}
     metadata: {}
     name: test-workflow
@@ -2922,21 +2919,16 @@ spec:
     name: fail
     outputs: {}
 status:
-  conditions:
-  - status: "True"
-    type: Completed
   finishedAt: "2020-11-04T16:17:59Z"
   nodes:
     build-wf-kpxvm:
       children:
-      - build-wf-kpxvm-2259495649
       - build-wf-kpxvm-2225940411
       displayName: build-wf-kpxvm
       finishedAt: "2020-11-04T16:17:59Z"
       id: build-wf-kpxvm
       name: build-wf-kpxvm
       outboundNodes:
-      - build-wf-kpxvm-2259495649
       - build-wf-kpxvm-2242718030
       phase: Running
       progress: 3/3
@@ -2956,27 +2948,7 @@ status:
       hostNodeName: minikube
       id: build-wf-kpxvm-2225940411
       name: build-wf-kpxvm.A
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: build-wf-kpxvm/build-wf-kpxvm-2225940411/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
       phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 6
-        memory: 3
       startedAt: "2020-11-04T16:17:43Z"
       templateName: ok
       templateScope: local/build-wf-kpxvm
@@ -2989,61 +2961,9 @@ status:
       id: build-wf-kpxvm-2242718030
       message: failed with exit code 1
       name: build-wf-kpxvm.B
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: build-wf-kpxvm/build-wf-kpxvm-2242718030/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "1"
       phase: Failed
-      progress: 1/1
-      resourcesDuration:
-        cpu: 3
-        memory: 1
       startedAt: "2020-11-04T16:17:53Z"
       templateName: fail
-      templateScope: local/build-wf-kpxvm
-      type: Pod
-    build-wf-kpxvm-2259495649:
-      boundaryID: build-wf-kpxvm
-      displayName: C
-      finishedAt: "2020-11-04T16:17:49Z"
-      hostNodeName: minikube
-      id: build-wf-kpxvm-2259495649
-      name: build-wf-kpxvm.C
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: build-wf-kpxvm/build-wf-kpxvm-2259495649/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 4
-        memory: 2
-      startedAt: "2020-11-04T16:17:43Z"
-      templateName: ok
       templateScope: local/build-wf-kpxvm
       type: Pod
   phase: Running
@@ -3056,13 +2976,10 @@ status:
 `
 
 func TestLeafContinueOn(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
 	wf := unmarshalWF(testLeafContinueOn)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
+	cancel, controller := newController(wf)
+	defer cancel()
+
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
