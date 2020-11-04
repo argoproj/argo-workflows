@@ -68,7 +68,7 @@ And:
 
 	ARGO_TOKEN='Bearer ******' ;# Should always start with "Bearer " or "Basic ". 
 
-# Argo Server HTTP Mode
+# Argo Server HTTP1 Mode
 
 As per GRPC mode, but uses HTTP. Can be used with ALB that does not support HTTP/2. The command "argo logs --since-time=2020...." will not work (due to time-type).
 

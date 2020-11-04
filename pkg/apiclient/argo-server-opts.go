@@ -8,8 +8,8 @@ type ArgoServerOpts struct {
 	// any base path needed (e.g. due to being behind an ingress)
 	Path                       string
 	Secure, InsecureSkipVerify bool
-	// whether or not to use HTTP rather than GRPC
-	HTTP bool
+	// whether or not to use HTTP1
+	HTTP1 bool
 }
 
 func (o ArgoServerOpts) GetURL() string {
@@ -20,5 +20,5 @@ func (o ArgoServerOpts) GetURL() string {
 }
 
 func (o ArgoServerOpts) String() string {
-	return fmt.Sprintf("(url=%s,path=%s,secure=%v,insecureSkipVerify=%v,http=%v)", o.URL, o.Path, o.Secure, o.InsecureSkipVerify, o.HTTP)
+	return fmt.Sprintf("(url=%s,path=%s,secure=%v,insecureSkipVerify=%v,http=%v)", o.URL, o.Path, o.Secure, o.InsecureSkipVerify, o.HTTP1)
 }

@@ -33,11 +33,7 @@ If you're have transport-layer security (TLS) enabled (i.e. you are running "arg
 
 If your server is running with self-signed certificates. Do not use in production:
 
-	ARGO_INSECURE_SKIP_VERIFY=true 
-
-If your server is behind an ingress with a path (you'll be running "argo server --bashhref /...) or "BASH_HREF=/... argo server"):
-
-	ARGO_BASE_HREF=/argo
+	ARGO_INSECURE_SKIP_VERIFY=true
 
 By default, the CLI uses your KUBECONFIG to determine default for ARGO_TOKEN and ARGO_NAMESPACE. You probably error with "no configuration has been provided". To prevent it:
 
@@ -51,7 +47,7 @@ And:
 
 	ARGO_TOKEN='Bearer ******' ;# Should always start with "Bearer " or "Basic ". 
 
-# Argo Server HTTP Mode
+# Argo Server HTTP1 Mode
 
 As per GRPC mode, but uses HTTP. Can be used with ALB that does not support HTTP/2. The command "argo logs --since-time=2020...." will not work (due to time-type).
 
@@ -61,6 +57,10 @@ Use the same configuration as GRPC mode, but also set:
 
 	ARGO_HTTP1=true
 
+If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):
+
+	ARGO_BASE_HREF=/argo
+
 
 ```
 argo [flags]
@@ -69,8 +69,8 @@ argo [flags]
 ### Options
 
 ```
-      --argo-http                      If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
-      --argo-path string               An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
