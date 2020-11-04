@@ -269,7 +269,6 @@ codegen: \
 	api/openapi-spec/swagger.json \
 	docs/fields.md \
 	docs/cli/argo.md \
-	$(GOPATH)/bin/mockery
 	# `go generate ./...` takes around 10s, so we only run on specific packages.
 	go generate ./persist/sqldb ./pkg/apiclient/workflow ./server/auth ./server/auth/sso ./workflow/executor
 	rm -Rf vendor v3
@@ -372,6 +371,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+	rm -Rf vendor v3
 	# Tidy Go modules
 	go mod tidy
 	# Check that v2 has not appeared in the Go  modules.

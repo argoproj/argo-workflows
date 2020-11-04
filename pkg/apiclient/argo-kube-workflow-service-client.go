@@ -83,11 +83,11 @@ func (c *argoKubeWorkflowServiceClient) LintWorkflow(ctx context.Context, req *w
 	return c.delegate.LintWorkflow(ctx, req)
 }
 
-func (c *argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+func (c *argoKubeWorkflowServiceClient) logs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, f func(*workflowpkg.WorkflowLogRequest, *logsIntermediary) error) (workflowpkg.WorkflowService_PodLogsClient, error) {
 	intermediary := newLogsIntermediary(ctx)
 	go func() {
 		defer intermediary.cancel()
-		err := c.delegate.PodLogs(req, intermediary)
+		err := f(req, intermediary)
 		if err != nil {
 			intermediary.error <- err
 		} else {
@@ -95,6 +95,18 @@ func (c *argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workfl
 		}
 	}()
 	return intermediary, nil
+}
+
+func (c *argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+	return c.logs(ctx, req, func(req *workflowpkg.WorkflowLogRequest, i *logsIntermediary) error {
+		return c.delegate.PodLogs(req, i)
+	})
+}
+
+func (c *argoKubeWorkflowServiceClient) WorkflowLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
+	return c.logs(ctx, req, func(req *workflowpkg.WorkflowLogRequest, i *logsIntermediary) error {
+		return c.delegate.WorkflowLogs(req, i)
+	})
 }
 
 func (c *argoKubeWorkflowServiceClient) SubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowSubmitRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
