@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -1126,32 +1127,42 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 	})
 
 	// then,  lets check the logs
-	s.Run("PodLogs", func() {
-		t := s.T()
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+"/"+name+"/log?logOptions.container=main&logOptions.tailLines=3", nil)
-		assert.NoError(t, err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := httpClient.Do(req)
-		defer func() {
-			if resp != nil && resp.Body != nil {
-				_ = resp.Body.Close()
-			}
-		}()
-		if assert.NoError(t, err) && assert.NotNil(t, resp) {
-			if assert.Equal(t, 200, resp.StatusCode) {
-				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-				s := bufio.NewScanner(resp.Body)
-				for s.Scan() {
-					line := s.Text()
-					if strings.Contains(line, ":) Hello Argo!") {
-						break
+	for _, tt := range []struct {
+		name string
+		path string
+	}{
+		{"PodLogs", "/" + name + "/log?logOptions.container=main&logOptions.tailLines=3"},
+		{"WorkflowLogs", "/log?podName=" + name + "&logOptions.container=main&logOptions.tailLines=3"},
+	} {
+		s.Run(tt.name, func() {
+			t := s.T()
+			req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/"+name+tt.path, nil)
+			assert.NoError(t, err)
+			req.Header.Set("Accept", "text/event-stream")
+			req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+			req.Close = true
+			resp, err := httpClient.Do(req)
+			defer func() {
+				if resp != nil && resp.Body != nil {
+					_ = resp.Body.Close()
+				}
+			}()
+			if assert.NoError(t, err) && assert.NotNil(t, resp) {
+				if assert.Equal(t, 200, resp.StatusCode) {
+					assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+					s := bufio.NewScanner(resp.Body)
+					for s.Scan() {
+						line := s.Text()
+						if strings.Contains(line, "data: ") {
+							assert.Contains(t, line, `"content":":) Hello Argo!"`)
+							assert.Contains(t, line, fmt.Sprintf(`"podName":"%s"`, name))
+							break
+						}
 					}
 				}
 			}
-		}
-	})
+		})
+	}
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
