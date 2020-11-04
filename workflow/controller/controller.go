@@ -172,6 +172,7 @@ var indexers = cache.Indexers{
 	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+	semaphoreConfigIndexName:             workflowIndexerBySemaphoreKeys,
 }
 
 // Run starts an Workflow resource controller
@@ -188,12 +189,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
 	wfc.updateEstimatorFactory()
-	err := wfc.wfInformer.AddIndexers(cache.Indexers{
-		semaphoreConfigIndexName: wfc.workflowIndexerBySemaphoreKeys,
-	})
-	if err != nil {
-		panic(err)
-	}
+
 
 	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
@@ -213,7 +209,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.waitForCacheSync(ctx)
 
 	// Create Synchronization Manager
-	err = wfc.createSynchronizationManager()
+	err := wfc.createSynchronizationManager()
 	if err != nil {
 		panic(err)
 	}
@@ -227,7 +223,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	<-ctx.Done()
 }
 
-func (wfc *WorkflowController) workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
+func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return []string{}, fmt.Errorf("cannot convert obj into unstructured.Unstructured")

@@ -549,3 +549,53 @@ func TestReleaseAllWorkflowLocks(t *testing.T) {
 		controller.releaseAllWorkflowLocks(un)
 	})
 }
+
+var wfWithSema = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ name: hello-world
+ namespace: default
+spec:
+ entrypoint: whalesay
+ synchronization:
+   semaphore:
+     configMapKeyRef:
+       name: my-config
+       key: workflow
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]
+`
+
+func TestNotifySemaphoreConfigUpdate(t *testing.T) {
+	assert := assert.New(t)
+	wf := unmarshalWF(wfWithSema)
+	wf1 := wf.DeepCopy()
+	wf1.Name = "one"
+	wf2 := wf.DeepCopy()
+	wf2.Name = "two"
+	wf2.Spec.Synchronization = nil
+
+	cancel, controller := newController(wf, wf1, wf2)
+	defer cancel()
+
+	cm := apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
+		Name:      "my-config",
+		Namespace: "default",
+	}}
+	assert.Equal(3, controller.wfQueue.Len())
+
+	// Remove all Wf from Worker queue
+	for i := 0; i < 3; i++ {
+		key, _ := controller.wfQueue.Get()
+		controller.wfQueue.Done(key)
+	}
+	assert.Equal(0, controller.wfQueue.Len())
+
+	controller.notifySemaphoreConfigUpdate(&cm)
+	assert.Equal(2, controller.wfQueue.Len())
+}
