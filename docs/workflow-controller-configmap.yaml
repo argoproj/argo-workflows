@@ -15,7 +15,7 @@ data:
     instanceID: my-ci-controller
 
     # Parallelism limits the max total parallel workflows that can execute at the same time
-    # (available since Argo v2.3)
+    # (available since Argo v2.3). Controller must be restarted to take effect.
     parallelism: 10
 
     # Whether or not to emit events on node completion. These can take a up a lot of space in
