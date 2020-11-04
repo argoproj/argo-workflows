@@ -3244,6 +3244,10 @@
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
       "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret",
         "key"
       ],
       "properties": {
@@ -3469,6 +3473,10 @@
       "description": "S3Artifact is the location of an S3 artifact",
       "type": "object",
       "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret",
         "key"
       ],
       "properties": {

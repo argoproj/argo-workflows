@@ -1472,6 +1472,7 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref common.ReferenceCallback) 
 						},
 					},
 				},
+				Required: []string{"addresses"},
 			},
 		},
 		Dependencies: []string{
@@ -2289,7 +2290,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"key"},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -2331,6 +2332,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
@@ -2762,7 +2764,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"key"},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -2832,6 +2834,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						},
 					},
 				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
