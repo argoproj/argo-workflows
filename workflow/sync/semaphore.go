@@ -86,10 +86,10 @@ func (s *PrioritySemaphore) release(key string) bool {
 		}
 
 		s.semaphore.Release(1)
-		avaiableLock := s.limit - len(s.lockHolder)
-		s.log.Infof("Lock has been released by %s. Available locks: %d", key, avaiableLock)
+		availableLocks := s.limit - len(s.lockHolder)
+		s.log.Infof("Lock has been released by %s. Available locks: %d", key, availableLocks)
 		if s.pending.Len() > 0 {
-			triggerCount := avaiableLock
+			triggerCount := availableLocks
 			if s.pending.Len() < triggerCount {
 				triggerCount = s.pending.Len()
 			}
