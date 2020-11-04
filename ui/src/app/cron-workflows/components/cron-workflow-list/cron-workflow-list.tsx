@@ -141,9 +141,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             className='row argo-table-list__row'
                             key={`${w.metadata.namespace}/${w.metadata.name}`}
                             to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
-                            <div className='columns small-1'>
-                                <i className='fa fa-clock' />
-                            </div>
+                            <div className='columns small-1'>{w.spec.suspend ? <i className='fa fa-pause' /> : <i className='fa fa-clock' />}</div>
                             <div className='columns small-3'>{w.metadata.name}</div>
                             <div className='columns small-3'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>{w.spec.schedule}</div>

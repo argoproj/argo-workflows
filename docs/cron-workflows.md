@@ -90,14 +90,17 @@ test-cron-wf   56s   2s         * * * * *   false
 $ argo cron get test-cron-wf
 Name:                          test-cron-wf
 Namespace:                     argo
-Created:                       Mon Nov 18 10:17:06 -0800 (4 minutes ago)
+Created:                       Wed Oct 28 07:19:02 -0600 (23 hours ago)
 Schedule:                      * * * * *
 Suspended:                     false
 StartingDeadlineSeconds:       0
 ConcurrencyPolicy:             Replace
-LastScheduledTime:             Mon Nov 18 10:21:00 -0800 (51 seconds ago)
+LastScheduledTime:             Thu Oct 29 06:51:00 -0600 (11 minutes ago)
+NextScheduledTime:             Thu Oct 29 13:03:00 +0000 (32 seconds from now)
 Active Workflows:              test-cron-wf-rt4nf
 ```
+
+**Note**: `NextScheduledRun` assumes that the workflow-controller uses UTC as its timezone
 
 ### `kubectl`
 

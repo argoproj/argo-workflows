@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // this function always tries to return a value, even if it is badly formed
@@ -17,7 +18,7 @@ func objectToClusterWorkflowTemplate(object runtime.Object) (*wfv1.ClusterWorkfl
 	if !ok {
 		return v, fmt.Errorf("malformed cluster workflow template: expected \"*unstructured.Unstructured\", got \"%s\"", reflect.TypeOf(object).String())
 	}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
+	err := util.FromUnstructuredObj(un, v)
 	if err != nil {
 		return v, fmt.Errorf("malformed cluster workflow template \"%s\": %w", un.GetName(), err)
 	}
