@@ -2193,9 +2193,19 @@
       "type": "object",
       "properties": {
         "configMap": {
+          "description": "The name of the config map. Defaults to \"artifact-repositories\".",
           "type": "string"
         },
+        "default": {
+          "description": "If this ref represents the default artifact repository, rather than a config map.",
+          "type": "boolean"
+        },
         "key": {
+          "description": "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).",
           "type": "string"
         }
       }
@@ -3234,10 +3244,6 @@
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "properties": {
@@ -3463,10 +3469,6 @@
       "description": "S3Artifact is the location of an S3 artifact",
       "type": "object",
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "properties": {
@@ -4691,6 +4693,10 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactRepositoryRef": {
+          "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef"
+        },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"

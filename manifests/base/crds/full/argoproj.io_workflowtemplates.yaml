@@ -635,7 +635,11 @@ spec:
               properties:
                 configMap:
                   type: string
+                default:
+                  type: boolean
                 key:
+                  type: string
+                namespace:
                   type: string
               type: object
             automountServiceAccountToken:

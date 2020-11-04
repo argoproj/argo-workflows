@@ -888,16 +888,49 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 
 }
 
+// +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
+	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,3,opt,name=namespace"`
+	// The name of the config map. Defaults to "artifact-repositories".
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
-	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	// The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+	// If this ref represents the default artifact repository, rather than a config map.
+	Default bool `json:"default,omitempty" protobuf:"varint,4,opt,name=default"`
 }
 
-func (r ArtifactRepositoryRef) GetConfigMap() string {
-	if r.ConfigMap == "" {
-		return "artifact-repositories"
+var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{Default: true}
+
+func (r *ArtifactRepositoryRef) GetNamespaceOr(namespace string) string {
+	if r == nil || r.Namespace == "" {
+		return namespace
+	}
+	return r.Namespace
+}
+
+func (r *ArtifactRepositoryRef) GetConfigMapOr(configMap string) string {
+	if r == nil || r.ConfigMap == "" {
+		return configMap
 	}
 	return r.ConfigMap
+}
+
+func (r *ArtifactRepositoryRef) GetKeyOr(key string) string {
+	if r == nil || r.Key == "" {
+		return key
+	}
+	return r.Key
+}
+
+func (r *ArtifactRepositoryRef) String() string {
+	if r == nil {
+		return "nil"
+	}
+	if r.Default {
+		return "default-artifact-repository"
+	}
+	return fmt.Sprintf("%s/%s#%s", r.Namespace, r.ConfigMap, r.Key)
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -1158,6 +1191,9 @@ type WorkflowStatus struct {
 
 	// Synchronization stores the status of synchronization locks
 	Synchronization *SynchronizationStatus `json:"synchronization,omitempty" protobuf:"bytes,15,opt,name=synchronization"`
+
+	// ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,18,opt,name=artifactRepositoryRef"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

@@ -12,12 +12,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/persist/sqldb/mocks"
+	"github.com/argoproj/argo/config"
+	sqldbmocks "github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
 	authmocks "github.com/argoproj/argo/server/auth/mocks"
 	"github.com/argoproj/argo/util/instanceid"
+	armocks "github.com/argoproj/argo/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
@@ -60,9 +62,9 @@ func newServer() *ArtifactServer {
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"}})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
-	a := &mocks.WorkflowArchive{}
+	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
-	return NewArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId))
+	return NewArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), armocks.DummyArtifactRepositories(&config.ArtifactRepository{}))
 }
 
 func TestArtifactServer_GetArtifact(t *testing.T) {
