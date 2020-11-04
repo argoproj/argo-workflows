@@ -904,7 +904,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.spec.suspend").
-			Equal("true")
+			Equal(true)
 	})
 
 	s.Run("Resume", func() {
@@ -913,7 +913,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.spec.suspend").
-			Equal("false")
+			NotEqual(true)
 	})
 
 	s.Run("List", func() {
