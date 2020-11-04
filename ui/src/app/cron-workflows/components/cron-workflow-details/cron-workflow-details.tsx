@@ -134,7 +134,8 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private suspendCronWorkflow() {
-        services.cronWorkflows.suspend(this.name, this.namespace)
+        services.cronWorkflows
+            .suspend(this.name, this.namespace)
             .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}))
             .catch(e => {
                 this.appContext.apis.notifications.show({
@@ -145,7 +146,8 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private resumeCronWorkflow() {
-        services.cronWorkflows.resume(this.name, this.namespace)
+        services.cronWorkflows
+            .resume(this.name, this.namespace)
             .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}))
             .catch(e => {
                 this.appContext.apis.notifications.show({
