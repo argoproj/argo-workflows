@@ -75,13 +75,11 @@ func TestTemplateScope(t *testing.T) {
 
 	cancel, controller := newController(wf, wftmpl1, wftmpl2)
 	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 
-	wf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
+	wf = woc.wf
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {

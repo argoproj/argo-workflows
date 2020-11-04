@@ -1,9 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
-	"github.com/robfig/cron/v3"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,18 +15,6 @@ type CronWorkflow struct {
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              CronWorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 	Status            CronWorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
-}
-
-func (cwf *CronWorkflow) GetNextRuntime() (time.Time, error) {
-	cronScheduleString := cwf.Spec.Schedule
-	if cwf.Spec.Timezone != "" {
-		cronScheduleString = "CRON_TZ=" + cwf.Spec.Timezone + " " + cronScheduleString
-	}
-	cronSchedule, err := cron.ParseStandard(cronScheduleString)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return cronSchedule.Next(time.Now()), nil
 }
 
 // CronWorkflowList is list of CronWorkflow resources
@@ -74,11 +59,11 @@ type CronWorkflowSpec struct {
 // CronWorkflowStatus is the status of a CronWorkflow
 type CronWorkflowStatus struct {
 	// Active is a list of active workflows stemming from this CronWorkflow
-	Active []v1.ObjectReference `json:"active,omitempty" protobuf:"bytes,1,rep,name=active"`
+	Active []v1.ObjectReference `json:"active" protobuf:"bytes,1,rep,name=active"`
 	// LastScheduleTime is the last time the CronWorkflow was scheduled
-	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,2,opt,name=lastScheduledTime"`
+	LastScheduledTime *metav1.Time `json:"lastScheduledTime" protobuf:"bytes,2,opt,name=lastScheduledTime"`
 	// Conditions is a list of conditions the CronWorkflow may have
-	Conditions Conditions `json:"conditions,omitempty" protobuf:"bytes,3,rep,name=conditions"`
+	Conditions Conditions `json:"conditions" protobuf:"bytes,3,rep,name=conditions"`
 }
 
 const (
