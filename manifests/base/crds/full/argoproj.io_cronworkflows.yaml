@@ -6695,6 +6695,10 @@ spec:
             lastScheduledTime:
               format: date-time
               type: string
+          required:
+          - active
+          - conditions
+          - lastScheduledTime
           type: object
       required:
       - metadata

@@ -3003,7 +3003,6 @@ spec:
 	} {
 		wf := unmarshalWF(manifest)
 		cancel, controller := newController(wf)
-		defer cancel()
 		t.Run(wf.Name, func(t *testing.T) {
 			woc := newWorkflowOperationCtx(wf, controller)
 			woc.operate()
@@ -3012,6 +3011,7 @@ spec:
 			woc.operate()
 			assert.Equal(t, want, getEvents(controller, len(want)))
 		})
+		cancel()
 	}
 }
 

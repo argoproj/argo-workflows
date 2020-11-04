@@ -228,7 +228,9 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		log.Infof("Successfully download file: %s", artPath)
 		if art.Mode != nil {
 			err = chmod(artPath, *art.Mode, art.RecurseMode)
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

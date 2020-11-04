@@ -71,6 +71,7 @@ type argoServer struct {
 	stopCh           chan struct{}
 	eventQueueSize   int
 	eventWorkerCount int
+	xframeOptions    string
 }
 
 type ArgoServerOpts struct {
@@ -87,6 +88,7 @@ type ArgoServerOpts struct {
 	HSTS                    bool
 	EventOperationQueueSize int
 	EventWorkerCount        int
+	XFrameOptions           string
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
@@ -123,6 +125,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		stopCh:           make(chan struct{}),
 		eventQueueSize:   opts.EventOperationQueueSize,
 		eventWorkerCount: opts.EventWorkerCount,
+		xframeOptions:    opts.XFrameOptions,
 	}, nil
 }
 
@@ -290,7 +293,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts, as.xframeOptions).ServerFiles)
 	return &httpServer
 }
 
