@@ -898,6 +898,24 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 			Status(200)
 	})
 
+	s.Run("Suspend", func() {
+		s.e().PUT("/api/v1/cron-workflows/argo/test/suspend").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.suspend").
+			Equal("true")
+	})
+
+	s.Run("Resume", func() {
+		s.e().PUT("/api/v1/cron-workflows/argo/test/resume").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.suspend").
+			Equal("false")
+	})
+
 	s.Run("List", func() {
 		// make sure list options work correctly
 		s.Given().
