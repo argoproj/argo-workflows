@@ -2854,3 +2854,47 @@ func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
 	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList)
 	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 }
+
+var validActiveDeadlineSecondsArgoVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: timeout-bug-
+spec:
+  entrypoint: main
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: print-timeout
+            template: print-timeout
+          - name: use-timeout
+            template: use-timeout
+            dependencies: [print-timeout]
+            arguments:
+              parameters:
+                - name: timeout
+                  value: "{{tasks.print-timeout.outputs.result}}"
+
+    - name: print-timeout
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ['echo 5']
+
+    - name: use-timeout
+      inputs:
+        parameters:
+          - name: timeout
+      activeDeadlineSeconds: "{{inputs.parameters.timeout}}"
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo sleeping for 1m; sleep 60; echo done"]
+`
+
+func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
+	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable)
+	assert.NoError(t, err)
+}
