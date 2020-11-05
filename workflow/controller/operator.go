@@ -3100,7 +3100,7 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 
 func (woc *wfOperationCtx) setExecWorkflow() error {
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		err := woc.setStoredWFSpec()
+		err := woc.setStoredWfSpec()
 		if err != nil {
 			return err
 		}
@@ -3118,23 +3118,25 @@ func (woc *wfOperationCtx) setExecWorkflow() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) setStoredWFSpec() error {
+func (woc *wfOperationCtx) setStoredWfSpec() error {
+	wfDefault := woc.controller.Config.WorkflowDefaults
+	if wfDefault == nil {
+		wfDefault = &wfv1.Workflow{}
+	}
 	if woc.wf.Status.StoredWorkflowSpec == nil {
-		wfDefault := woc.controller.Config.WorkflowDefaults
 		wftHolder, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}
+
 		// Join WFT and WfDefault metadata to Workflow metadata.
 		wfutil.JoinWorkflowMetaData(&woc.wf.ObjectMeta, wftHolder.GetWorkflowMetadata(), &wfDefault.ObjectMeta)
 
-		// Join WF spec WFT spec and WorkflowDefault spec
+		// Join workflow, workflow template, and workflow default metadata to workflow spec.
 		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
-		// Clear the WorkflowTemplateRef from merged Workflow
-		mergedWf.Spec.WorkflowTemplateRef = nil
 
 		woc.wf.Status.StoredWorkflowSpec = &mergedWf.Spec
 		woc.updated = true
@@ -3143,7 +3145,6 @@ func (woc *wfOperationCtx) setStoredWFSpec() error {
 		if err != nil {
 			return err
 		}
-		wfDefault := woc.controller.Config.WorkflowDefaults
 		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {
 			return err

@@ -12,42 +12,42 @@ import (
 )
 
 var wfDefaults = `
-	metadata: 
-	  annotations: 
-		testAnnotation: test
-	  labels: 
-		testLabel: test
-	spec: 
-	  entrypoint: whalesay
-	  activeDeadlineSeconds: 7200
-	  arguments: 
-		artifacts: 
-		  -
-			name: message
-			path: /tmp/message
-		parameters: 
-		  - 
-			name: message
-			value: "hello world"
-	  onExit: whalesay-exit
-	  serviceAccountName: argo
-	  templates: 
-		- 
-		  container: 
-			args: 
-			  - "hello from the default exit handler"
-			command: 
-			  - cowsay
-			image: docker/whalesay
-		  name: whalesay-exit
-	  ttlSecondsAfterFinished: 86400
-	  ttlStrategy: 
-		secondsAfterCompletion: 60
-	  volumes: 
-		- 
-		  name: test
-		  secret: 
-			secretName: test
+  metadata: 
+    annotations: 
+      testAnnotation: test
+    labels: 
+      testLabel: test
+  spec: 
+    entrypoint: whalesay
+    activeDeadlineSeconds: 7200
+    arguments: 
+      artifacts: 
+        -
+          name: message
+          path: /tmp/message
+      parameters: 
+        - 
+          name: message
+          value: "hello world"
+    onExit: whalesay-exit
+    serviceAccountName: argo
+    templates: 
+      - 
+        container: 
+          args: 
+            - "hello from the default exit handler"
+          command: 
+            - cowsay
+          image: docker/whalesay
+        name: whalesay-exit
+    ttlSecondsAfterFinished: 86400
+    ttlStrategy: 
+      secondsAfterCompletion: 60
+    volumes: 
+      - 
+        name: test
+        secret: 
+          secretName: test
 `
 var simpleWf = `
 apiVersion: argoproj.io/v1alpha1
