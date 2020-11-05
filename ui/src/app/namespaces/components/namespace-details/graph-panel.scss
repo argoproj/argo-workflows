@@ -62,6 +62,10 @@
     text-anchor: middle;
     font-size: 12px;
     fill: $argo-color-gray-8;
+    &.edge {
+      font-size: 10px;
+      transform: rotate(-45deg);
+    }
   }
 
   .line {

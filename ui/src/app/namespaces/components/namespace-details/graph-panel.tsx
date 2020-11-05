@@ -107,7 +107,7 @@ export class GraphPanel extends React.Component<Props> {
                                     markerEnd='url(#arrow)'
                                 />
                                 <g transform={`translate(${e.points[1].x},${e.points[1].y})`}>
-                                    <text className='label'>{e.label}</text>
+                                    <text className='label edge'>{e.label}</text>
                                 </g>
                             </>
                         ))}
@@ -127,10 +127,8 @@ export class GraphPanel extends React.Component<Props> {
                                         </tspan>
                                     </text>
                                 </g>
-                                <g className='label' transform={`translate(0,${nodeSize})`}>
-                                    <text>
-                                        {n.touch} {n.label}
-                                    </text>
+                                <g className='label' transform={`translate(0,${(nodeSize * 3) / 4})`}>
+                                    <text>{n.label}</text>
                                 </g>
                             </g>
                         ))}
