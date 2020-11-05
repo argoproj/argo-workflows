@@ -2,9 +2,13 @@
 
 manage cron workflows
 
+NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
+
 ### Synopsis
 
 manage cron workflows
+
+NextScheduledRun assumes that the workflow-controller uses UTC as its timezone
 
 ```
 argo cron [flags]
