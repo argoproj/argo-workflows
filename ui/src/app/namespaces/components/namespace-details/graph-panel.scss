@@ -6,13 +6,13 @@
   50%,
   75%,
   100% {
-    transform: translateY(0);
+    transform: scale(1);
   }
   40% {
-    transform: translateY(-20px);
+    transform: scale(1.2);
   }
   60% {
-    transform: translateY(-12px);
+    transform: scale(1);
   }
 }
 
@@ -39,7 +39,7 @@
     }
 
     &.touched {
-      animation: bounce 2s none ;
+      animation: bounce 3s infinite ;
     }
 
     text {

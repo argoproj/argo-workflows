@@ -3,9 +3,10 @@ package sensor
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"sync"
 
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,32 +31,34 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 
 func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorpkg.SensorService_SensorsLogsServer) error {
 	labelSelector := "sensor-name"
-	podsInterface := auth.GetKubeClient(svr.Context()).CoreV1().Pods(in.Namespace)
+	coreV1 := auth.GetKubeClient(svr.Context()).CoreV1()
 	listOptions := metav1.ListOptions{LabelSelector: labelSelector}
 	podLogOptions := in.PodLogOptions
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}
 	}
-	list, err := podsInterface.List(listOptions)
+	list, err := coreV1.Pods(in.Namespace).List(listOptions)
 	if err != nil {
 		return err
 	}
 	streaming := &sync.Map{}
-	streamPod := func(sensorName, podName string) error {
-		log.With("sensorName", sensorName).With("podName", podName).Debug("streaming pod logs")
+	streamPod := func(namespace, sensorName, podName string) error {
+		log.WithFields(log.Fields{"namespace": namespace, "podName": podName}).Debug("streaming pod logs")
 		_, loaded := streaming.LoadOrStore(podName, true)
 		if loaded {
 			return nil
 		}
 		defer streaming.Delete(podName)
-		stream, err := podsInterface.GetLogs(podName, podLogOptions).Stream()
+		stream, err := coreV1.Pods(namespace).GetLogs(podName, podLogOptions).Stream()
 		if err != nil {
 			return err
 		}
 		scanner := bufio.NewScanner(stream)
 		for scanner.Scan() {
-			text := scanner.Text()
-			err := svr.Send(&sensorpkg.LogEntry{SensorName: sensorName, Content: text})
+			bytes := scanner.Bytes()
+			e := &sensorpkg.LogEntry{Namespace: namespace, SensorName: sensorName, Msg: string(bytes)}
+			_ = json.Unmarshal(bytes, e)
+			err = svr.Send(e)
 			if err != nil {
 				return err
 			}
@@ -63,12 +66,12 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 		return nil
 	}
 	for _, p := range list.Items {
-		err := streamPod(p.Labels[labelSelector], p.Name)
+		err := streamPod(p.Namespace, p.Labels[labelSelector], p.Name)
 		if err != nil {
 			return err
 		}
 	}
-	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, podsInterface)
+	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, coreV1.Pods(in.Namespace))
 	if err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 		if !ok {
 			return apierr.FromObject(event.Object)
 		}
-		err := streamPod(pod.Labels[labelSelector], pod.Name)
+		err := streamPod(pod.Labels[labelSelector], pod.Namespace, pod.Name)
 		if err != nil {
 			return err
 		}

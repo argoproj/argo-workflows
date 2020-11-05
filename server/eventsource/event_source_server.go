@@ -3,6 +3,7 @@ package eventsource
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -30,32 +31,34 @@ func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourc
 
 func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogsRequest, svr eventsourcepkg.EventSourceService_EventSourcesLogsServer) error {
 	labelSelector := "eventsource-name"
-	podsInterface := auth.GetKubeClient(svr.Context()).CoreV1().Pods(in.Namespace)
+	coreV1 := auth.GetKubeClient(svr.Context()).CoreV1()
 	listOptions := metav1.ListOptions{LabelSelector: labelSelector}
 	podLogOptions := in.PodLogOptions
 	if podLogOptions == nil {
 		podLogOptions = &corev1.PodLogOptions{}
 	}
-	list, err := podsInterface.List(listOptions)
+	list, err := coreV1.Pods(in.Namespace).List(listOptions)
 	if err != nil {
 		return err
 	}
 	streaming := &sync.Map{}
-	streamPod := func(eventSourceName, podName string) error {
-		log.WithField("eventSourceName", eventSourceName).WithField("podName", podName).Debug("streaming pod logs")
+	streamPod := func(namespace, eventSourceName, podName string) error {
+		log.WithFields(log.Fields{"namespace": namespace, "podName": podName}).Debug("streaming pod logs")
 		_, loaded := streaming.LoadOrStore(podName, true)
 		if loaded {
 			return nil
 		}
 		defer streaming.Delete(podName)
-		stream, err := podsInterface.GetLogs(podName, podLogOptions).Stream()
+		stream, err := coreV1.Pods(namespace).GetLogs(podName, podLogOptions).Stream()
 		if err != nil {
 			return err
 		}
 		scanner := bufio.NewScanner(stream)
 		for scanner.Scan() {
-			text := scanner.Text()
-			err := svr.Send(&eventsourcepkg.LogEntry{EventSourceName: eventSourceName, Content: text})
+			bytes := scanner.Bytes()
+			e := &eventsourcepkg.LogEntry{Namespace: namespace, EventSourceName: eventSourceName, Msg: string(bytes)}
+			_ = json.Unmarshal(bytes, e)
+			err = svr.Send(e)
 			if err != nil {
 				return err
 			}
@@ -63,12 +66,12 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 		return nil
 	}
 	for _, p := range list.Items {
-		err := streamPod(p.Labels[labelSelector], p.Name)
+		err := streamPod(p.Namespace, p.Labels[labelSelector], p.Name)
 		if err != nil {
 			return err
 		}
 	}
-	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, podsInterface)
+	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, coreV1.Pods(in.Namespace))
 	if err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 		if !ok {
 			return apierr.FromObject(event.Object)
 		}
-		err := streamPod(pod.Labels[labelSelector], pod.Name)
+		err := streamPod(pod.Namespace, pod.Labels[labelSelector], pod.Name)
 		if err != nil {
 			return err
 		}

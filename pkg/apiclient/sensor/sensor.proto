@@ -21,7 +21,8 @@ message SensorsLogsRequest {
 message LogEntry {
     string namespace = 1;
     string sensorName = 2;
-    string content = 3;
+    string triggerName = 3;
+    string msg = 4;
 }
 
 service SensorService {

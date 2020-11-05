@@ -19,7 +19,9 @@ message EventSourcesLogsRequest {
 message LogEntry {
     string namespace = 1;
     string eventSourceName = 2;
-    string content = 3;
+    string eventSourceType = 3;
+    string eventName = 4;
+    string msg = 5;
 }
 
 service EventSourceService {

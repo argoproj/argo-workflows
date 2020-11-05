@@ -22,7 +22,7 @@ interface State {
     selectedId?: string;
     error?: Error;
     resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
-    touched: {[id: string]: boolean};
+    touched: {[id: string]: any};
 }
 
 const icons: {[type: string]: string} = {
@@ -152,7 +152,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 type: typeKey,
                                 label: key,
                                 phase: phase(eventSource),
-                                icon: icons[eventTypes[typeKey] || 'Event']
+                                icon: icons[eventTypes[typeKey] || 'Event'],
+                                touched: !!this.state.touched[eventId]
                             });
                         });
                     });
@@ -186,7 +187,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             label: template.name,
                             type: triggerTypeKey,
                             phase: phase(sensor),
-                            icon: icons[triggerTypes[triggerTypeKey] || 'Trigger']
+                            icon: icons[triggerTypes[triggerTypeKey] || 'Trigger'],
+                            touched: !!this.state.touched[triggerId]
                         });
                         if (template.conditions) {
                             const conditionsId = ID.join({
@@ -199,7 +201,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 id: conditionsId,
                                 label: template.conditions,
                                 type: 'conditions',
-                                icon: icons.Conditions
+                                icon: icons.Conditions,
+                                touched: !!this.state.touched[conditionsId]
                             });
                             edges.push({x: sensorId, y: conditionsId});
                             edges.push({x: conditionsId, y: triggerId});
@@ -254,8 +257,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                                         key: 'logs',
                                                         loadLogs: () =>
                                                             this.selected.kind === 'Sensor'
-                                                                ? services.sensor.sensorsLogs(this.namespace).map(e => e.content + '\n')
-                                                                : services.eventSource.eventSourcesLogs(this.namespace).map(e => e.content + '\n'),
+                                                                ? services.sensor.sensorsLogs(this.namespace).map(e => JSON.stringify(e) + '\n')
+                                                                : services.eventSource.eventSourcesLogs(this.namespace).map(e => JSON.stringify(e) + '\n'),
                                                         shouldRepeat: () => false
                                                     }}
                                                 />
@@ -322,29 +325,62 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         Utils.setCurrentNamespace(namespace);
                     })
                 )
-                .then(() => {
-                    services.sensor.sensorsLogs(namespace, 0).subscribe(
-                        e => {
-                            const id = ID.join({type: 'Sensor', namespace, name: e.sensorName});
-                            this.setState(
-                                s => {
-                                    s.touched[id] = true;
-                                    return {touched: s.touched};
+                .then(() =>
+                    Promise.all([
+                        services.eventSource
+                            .eventSourcesLogs(namespace, 0)
+                            .filter(e => !!e.eventSourceName)
+                            .subscribe(
+                                e =>
+                                    this.touch(
+                                        ID.join({
+                                            type: 'Event',
+                                            namespace: e.namespace,
+                                            name: e.eventSourceName,
+                                            key: e.eventName
+                                        })
+                                    ),
+                                error => this.setState({error})
+                            ),
+                        services.sensor
+                            .sensorsLogs(namespace, 0)
+                            .filter(e => !!e.triggerName)
+                            .subscribe(
+                                e => {
+                                    this.touch(
+                                        ID.join({
+                                            type: 'Sensor',
+                                            namespace: e.namespace,
+                                            name: e.sensorName
+                                        })
+                                    );
+                                    this.touch(
+                                        ID.join({
+                                            type: 'Trigger',
+                                            namespace: e.namespace,
+                                            name: e.sensorName,
+                                            key: e.triggerName
+                                        })
+                                    );
                                 },
-                                () => {
-                                    setTimeout(() => {
-                                        this.setState(s => {
-                                            delete s.touched[id];
-                                            return {touched: s.touched};
-                                        });
-                                    }, 10000);
-                                }
-                            );
-                        },
-                        error => this.setState({error})
-                    );
-                })
+                                error => this.setState({error})
+                            )
+                    ])
+                )
                 .catch(error => this.setState({error}));
+        });
+    }
+
+    private touch(id: string) {
+        this.setState(state => {
+            clearTimeout(state.touched[id]);
+            state.touched[id] = setTimeout(() => {
+                this.setState(s => {
+                    delete s.touched[id];
+                    return {touched: s.touched};
+                });
+            }, 3000);
+            return {touched: state.touched};
         });
     }
 }

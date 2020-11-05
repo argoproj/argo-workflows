@@ -99,17 +99,12 @@ export class GraphPanel extends React.Component<Props> {
                         .edges()
                         .map(e => g.edge(e))
                         .map((e, i) => (
-                            <>
-                                <path
-                                    key={`edge/${i}`}
-                                    d={e.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')}
-                                    className='line'
-                                    markerEnd='url(#arrow)'
-                                />
+                            <g key={`edge/${i}`}>
+                                <path d={e.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' markerEnd='url(#arrow)' />
                                 <g transform={`translate(${e.points[1].x},${e.points[1].y})`}>
                                     <text className='label edge'>{e.label}</text>
                                 </g>
-                            </>
+                            </g>
                         ))}
                     {nodes
                         .filter(n => n.x)
@@ -117,7 +112,7 @@ export class GraphPanel extends React.Component<Props> {
                             <g key={`node/${n.id}`} transform={`translate(${n.x},${n.y})`} className='node'>
                                 <title>{n.id}</title>
                                 <g className={`icon ${n.phase} ${n.touched && 'touched'}`} onClick={() => this.props.onSelect(n.id)}>
-                                    <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} rx={nodeSize / 8} ry={nodeSize / 8} className='bg' />
+                                    <circle r={nodeSize / 2} className='bg' />
                                     <text>
                                         <tspan x={0} y={4} className='icon'>
                                             {icons[n.icon]}

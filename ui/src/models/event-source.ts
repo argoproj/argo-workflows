@@ -35,3 +35,11 @@ export interface EventSource {
 export interface EventSourceList {
     items: EventSource[];
 }
+
+export interface EventSourceLogEntry {
+    namespace: string;
+    eventSourceName: string;
+    eventName?: string;
+    level: string;
+    msg: string;
+}

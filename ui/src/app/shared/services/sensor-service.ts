@@ -1,4 +1,4 @@
-import {LogEntry, SensorList} from '../../../models';
+import {SensorList, SensorLogEntry} from '../../../models';
 
 import requests from './requests';
 
@@ -10,6 +10,6 @@ export class SensorService {
     public sensorsLogs(namespace: string, tailLines = -1) {
         return requests
             .loadEventSource(`api/v1/stream/sensors/${namespace}/logs?podLogOptions.follow=true&${tailLines >= 0 ? `podLogOptions.tailLines=${tailLines}` : ''}`)
-            .map(line => JSON.parse(line).result as LogEntry);
+            .map(line => JSON.parse(line).result as SensorLogEntry);
     }
 }
