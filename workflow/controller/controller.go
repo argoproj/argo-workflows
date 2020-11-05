@@ -230,7 +230,7 @@ func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		log.Warnf("failed to convert to workflow from unstructured: %w", err)
+		log.Warnf("failed to convert to workflow from unstructured: %v", err)
 		return []string{}, nil
 	}
 	return wf.GetSemaphoreKeys(), nil
