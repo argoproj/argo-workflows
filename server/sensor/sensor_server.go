@@ -5,12 +5,13 @@ import (
 	"context"
 	"sync"
 
-	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	"github.com/prometheus/common/log"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/watch"
+
+	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 
 	sensorpkg "github.com/argoproj/argo/pkg/apiclient/sensor"
 	"github.com/argoproj/argo/server/auth"

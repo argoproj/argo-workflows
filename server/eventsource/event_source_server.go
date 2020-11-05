@@ -5,12 +5,13 @@ import (
 	"context"
 	"sync"
 
-	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/watch"
+
+	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 
 	eventsourcepkg "github.com/argoproj/argo/pkg/apiclient/eventsource"
 	"github.com/argoproj/argo/server/auth"
