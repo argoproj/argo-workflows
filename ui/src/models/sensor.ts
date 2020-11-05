@@ -16,6 +16,7 @@ export interface Sensor {
                 argoWorkflow?: {};
                 awsLambda?: {};
                 custom?: {};
+                http?: {};
                 k8s?: {};
                 kafka?: {};
                 nats?: {};
