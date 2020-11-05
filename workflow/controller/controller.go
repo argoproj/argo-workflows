@@ -199,6 +199,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
 	go wfc.runTTLController(ctx)
 	go wfc.runCronController(ctx)
 	go wfc.metrics.RunServer(ctx)
@@ -522,6 +523,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return false
 	}
 	defer wfc.wfQueue.Done(key)
+
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.WithFields(log.Fields{"key": key, "error": err}).Error("Failed to get workflow from informer")
