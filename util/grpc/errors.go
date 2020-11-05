@@ -9,6 +9,8 @@ import (
 // translate a K8S errors into gRPC error - assume that we want to surface this - which we may not
 func TranslateError(err error) error {
 	switch {
+	case err == nil:
+		return nil
 	case apierr.IsNotFound(err):
 		return status.Error(codes.NotFound, err.Error())
 	case apierr.IsAlreadyExists(err):
