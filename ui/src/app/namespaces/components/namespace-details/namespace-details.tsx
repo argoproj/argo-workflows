@@ -168,20 +168,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         name: d.eventSourceName,
                         key: d.eventName
                     });
-                    const dependencyId = ID.join({
-                        type: 'Dependency',
-                        namespace: sensor.metadata.namespace,
-                        name: sensor.metadata.name,
-                        key: d.name
-                    });
-                    nodes.push({
-                        id: dependencyId,
-                        type: 'dependency',
-                        label: d.name,
-                        icon: icons.Dependency
-                    });
-                    edges.push({x: eventId, y: dependencyId});
-                    edges.push({x: dependencyId, y: sensorId});
+                    edges.push({x: eventId, y: sensorId, label: d.name});
                 });
                 spec.triggers
                     .map(t => t.template)

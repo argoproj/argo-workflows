@@ -20,6 +20,7 @@ export interface Graph {
 export interface Edge {
     x: string;
     y: string;
+    label?: string;
 }
 
 interface Props {
@@ -75,7 +76,7 @@ export class GraphPanel extends React.Component<Props> {
                 height: nodeSize
             })
         );
-        (this.props.graph.edges || []).forEach(e => g.setEdge(e.x, e.y));
+        (this.props.graph.edges || []).forEach(e => g.setEdge(e.x, e.y, {label: e.label}));
 
         dagre.layout(g);
 
@@ -96,14 +97,19 @@ export class GraphPanel extends React.Component<Props> {
                 <g transform={`translate(${nodeSize},${nodeSize})`}>
                     {g
                         .edges()
-                        .map(edge => g.edge(edge))
-                        .map((edge, i) => (
-                            <path
-                                key={`edge/${i}`}
-                                d={edge.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')}
-                                className='line'
-                                markerEnd='url(#arrow)'
-                            />
+                        .map(e => g.edge(e))
+                        .map((e, i) => (
+                            <>
+                                <path
+                                    key={`edge/${i}`}
+                                    d={e.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')}
+                                    className='line'
+                                    markerEnd='url(#arrow)'
+                                />
+                                <g transform={`translate(${e.points[1].x},${e.points[1].y})`}>
+                                    <text className='label'>{e.label}</text>
+                                </g>
+                            </>
                         ))}
                     {nodes
                         .filter(n => n.x)
