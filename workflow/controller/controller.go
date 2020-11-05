@@ -225,11 +225,13 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		return []string{}, fmt.Errorf("cannot convert obj into unstructured.Unstructured")
+		log.Warnf("cannot convert obj into unstructured.Unstructured in Indexer %s", semaphoreConfigIndexName)
+		return []string{}, nil
 	}
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
-		return []string{}, fmt.Errorf("failed to convert to workflow from unstructured: %w", err)
+		log.Warnf("failed to convert to workflow from unstructured: %w", err)
+		return []string{}, nil
 	}
 	return wf.GetSemaphoreKeys(), nil
 }
