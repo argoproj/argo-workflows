@@ -11,7 +11,7 @@ export interface Sensor {
         triggers: {
             template?: {
                 name: string;
-                conditions?:string;
+                conditions?: string;
                 argoWorkflow?: {};
                 awsLambda?: {};
                 custom?: {};

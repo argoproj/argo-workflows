@@ -7,6 +7,7 @@ import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {ZeroState} from '../../../shared/components/zero-state';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
@@ -20,11 +21,11 @@ interface State {
     namespace: string;
     selectedId?: string;
     error?: Error;
-    resources: { [id: string]: { metadata: kubernetes.ObjectMeta; status?: { conditions?: Condition[] } } };
-    touched: { [id: string]: boolean };
+    resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
+    touched: {[id: string]: boolean};
 }
 
-const icons: { [type: string]: string } = {
+const icons: {[type: string]: string} = {
     AMQPEvent: 'stream',
     AWSLambdaTrigger: 'microchip',
     ArgoWorkflowTrigger: 'sitemap',
@@ -63,7 +64,7 @@ const icons: { [type: string]: string } = {
     WebhookEvent: 'cloud'
 };
 
-const eventTypes: { [key: string]: string } = {
+const eventTypes: {[key: string]: string} = {
     amqp: 'AMQPEvent',
     azureEventsHub: 'AzureEventsHubEvent',
     calendar: 'CalendarEvent',
@@ -90,7 +91,7 @@ const eventTypes: { [key: string]: string } = {
     webhook: 'WebhookEvent'
 };
 
-const triggerTypes: { [key: string]: string } = {
+const triggerTypes: {[key: string]: string} = {
     argoWorkflow: 'ArgoWorkflowTrigger',
     awsLambda: 'AWSLambdaTrigger',
     custom: 'CustomTrigger',
@@ -101,7 +102,7 @@ const triggerTypes: { [key: string]: string } = {
     slack: 'SlackTrigger'
 };
 
-const phase = (r: { status?: { conditions?: Condition[] } }) => {
+const phase = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
@@ -197,7 +198,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 id: conditionsId,
                                 label: template.conditions,
                                 type: 'conditions',
-                                icon: icons['Conditions']
+                                icon: icons.Conditions
                             });
                             edges.push({x: sensorId, y: conditionsId});
                             edges.push({x: conditionsId, y: triggerId});
@@ -225,8 +226,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 title='Namespace'
                 toolbar={{
                     breadcrumbs: [{title: 'Namespaces', path: uiUrl('namespaces')}],
-                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace}
-                                             onChange={namespace => (this.namespace = namespace)}/>]
+                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
                 <div className='argo-container'>{this.renderGraph()}</div>
                 <SlidingPanel isShown={!!selected} onClose={() => this.setState({selectedId: null})}>
@@ -241,14 +241,12 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'SUMMARY',
                                         key: 'summary',
-                                        content: <ResourceEditor readonly={true} kind={selected.kind}
-                                                                 value={selected.value}/>
+                                        content: <ResourceEditor readonly={true} kind={selected.kind} value={selected.value} />
                                     },
                                     {
                                         title: 'EVENTS',
                                         key: 'events',
-                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace}
-                                                              name={selected.name}/>
+                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace} name={selected.name} />
                                     },
                                     {
                                         title: 'LOGS',
@@ -286,23 +284,27 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return;
         }
         const {type, namespace, name} = ID.split(i);
-        const kind = ({Event: 'EventSource', Trigger: 'Sensor'} as { [key: string]: string })[type] || type;
+        const kind = ({Event: 'EventSource', Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
         return {namespace, kind, name, value: this.state.resources[ID.join({type: kind, namespace, name})]};
     }
 
     private renderGraph() {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)}/>;
+            return <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} />;
+        }
+        const g = this.graph;
+        if (g.nodes.length === 0) {
+            return <ZeroState title='No entities found'>No Argo Events resources found.</ZeroState>;
         }
         return (
             <div style={{textAlign: 'center'}}>
-                <GraphPanel graph={this.graph} onSelect={selectedId => this.setState({selectedId})}/>
+                <GraphPanel graph={g} onSelect={selectedId => this.setState({selectedId})} />
             </div>
         );
     }
 
     private fetch(namespace: string) {
-        const updateResources = (s: State, type: string, list: { items: { metadata: kubernetes.ObjectMeta }[] }) => {
+        const updateResources = (s: State, type: string, list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
             (list.items || []).forEach(v => {
                 s.resources[ID.join({type, namespace: v.metadata.namespace, name: v.metadata.name})] = v;
             });
