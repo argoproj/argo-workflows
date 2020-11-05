@@ -48,16 +48,10 @@ func (c *errorTranslatingCronWorkflowServiceClient) DeleteCronWorkflow(ctx conte
 
 func (c *errorTranslatingCronWorkflowServiceClient) ResumeCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
 	workflow, err := c.delegate.ResumeCronWorkflow(ctx, req)
-	if err != nil {
-		return nil, grpcutil.TranslateError(err)
-	}
-	return workflow, nil
+	return workflow, grpcutil.TranslateError(err)
 }
 
 func (c *errorTranslatingCronWorkflowServiceClient) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
 	workflow, err := c.delegate.SuspendCronWorkflow(ctx, req)
-	if err != nil {
-		return nil, grpcutil.TranslateError(err)
-	}
-	return workflow, nil
+	return workflow, grpcutil.TranslateError(err)
 }
