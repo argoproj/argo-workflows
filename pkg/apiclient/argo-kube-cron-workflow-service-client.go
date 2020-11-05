@@ -38,3 +38,11 @@ func (c *argoKubeCronWorkflowServiceClient) UpdateCronWorkflow(ctx context.Conte
 func (c *argoKubeCronWorkflowServiceClient) DeleteCronWorkflow(ctx context.Context, req *cronworkflowpkg.DeleteCronWorkflowRequest, _ ...grpc.CallOption) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
 	return c.delegate.DeleteCronWorkflow(ctx, req)
 }
+
+func (c *argoKubeCronWorkflowServiceClient) ResumeCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
+	return c.delegate.ResumeCronWorkflow(ctx, req)
+}
+
+func (c *argoKubeCronWorkflowServiceClient) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
+	return c.delegate.SuspendCronWorkflow(ctx, req)
+}

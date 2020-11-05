@@ -9,7 +9,6 @@ import {Loading} from '../../../shared/components/loading';
 import {services} from '../../../shared/services';
 import {CronWorkflowSummaryPanel} from '../cron-workflow-summary-panel';
 
-const jsonMergePatch = require('json-merge-patch');
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
@@ -135,13 +134,8 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private suspendCronWorkflow() {
-        const wf = JSON.parse(JSON.stringify(this.state.cronWorkflow));
-        wf.spec.suspend = true;
-        const patch = jsonMergePatch.generate(this.state.cronWorkflow, wf) || {};
         services.cronWorkflows
-            .get(this.name, this.namespace)
-            .then(latest => jsonMergePatch.apply(latest, patch))
-            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
+            .suspend(this.name, this.namespace)
             .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}))
             .catch(e => {
                 this.appContext.apis.notifications.show({
@@ -152,13 +146,8 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private resumeCronWorkflow() {
-        const wf = JSON.parse(JSON.stringify(this.state.cronWorkflow));
-        wf.spec.suspend = undefined;
-        const patch = jsonMergePatch.generate(this.state.cronWorkflow, wf) || {};
         services.cronWorkflows
-            .get(this.name, this.namespace)
-            .then(latest => jsonMergePatch.apply(latest, patch))
-            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
+            .resume(this.name, this.namespace)
             .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}))
             .catch(e => {
                 this.appContext.apis.notifications.show({
