@@ -6,8 +6,9 @@ type ArgoServerOpts struct {
 	// argo server host port, must be `host:port`, e.g. localhost:2746
 	URL string
 	// any base path needed (e.g. due to being behind an ingress)
-	Path                       string
-	Secure, InsecureSkipVerify bool
+	Path               string
+	Secure             bool
+	InsecureSkipVerify bool
 	// whether or not to use HTTP1
 	HTTP1 bool
 }

@@ -13,14 +13,14 @@ func toMap(in interface{}) map[string]interface{} {
 	return out
 }
 
-func f(in map[string]interface{}, out map[string]string, prefix string) {
+func flattenWithPrefix(in map[string]interface{}, out map[string]string, prefix string) {
 	for k, v := range in {
 		if v == nil {
 			continue
 		}
 		switch reflect.TypeOf(v).Kind() {
 		case reflect.Map:
-			f(toMap(v), out, prefix+k+".")
+			flattenWithPrefix(toMap(v), out, prefix+k+".")
 		default:
 			out[prefix+k] = fmt.Sprintf("%v", v)
 		}
@@ -31,6 +31,6 @@ func f(in map[string]interface{}, out map[string]string, prefix string) {
 // E.g. listOptions.continue="10"
 func Flatten(in interface{}) map[string]string {
 	out := make(map[string]string)
-	f(toMap(in), out, "")
+	flattenWithPrefix(toMap(in), out, "")
 	return out
 }
