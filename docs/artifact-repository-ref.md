@@ -16,9 +16,9 @@ metadata:
   name: artifact-repositories
   annotations:
     # if you want to use a specific key, put that's key into this annotation 
-    workflows.argoproj.io/default-artifact-repository: default
+    workflows.argoproj.io/default-artifact-repository: default-v1
 data:
-  default: |
+  default-v1: |
     s3:
       bucket: my-bucket
       endpoint: minio:9000

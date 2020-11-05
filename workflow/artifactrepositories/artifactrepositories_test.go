@@ -16,24 +16,6 @@ func TestArtifactRepositories(t *testing.T) {
 	defaultArtifactRepository := &config.ArtifactRepository{}
 	k := kubefake.NewSimpleClientset()
 	i := New(k, "my-ctrl-ns", defaultArtifactRepository)
-	t.Run("Explicit.WithNamespace", func(t *testing.T) {
-		_, err := k.CoreV1().ConfigMaps("my-ref-ns").Create(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
-			Data:       map[string]string{"my-key": ""},
-		})
-		assert.NoError(t, err)
-
-		ref, err := i.Resolve(&wfv1.ArtifactRepositoryRef{Namespace: "my-ref-ns", Key: "my-key"}, "my-wf-ns")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "my-ref-ns", ref.Namespace)
-			assert.Equal(t, "artifact-repositories", ref.ConfigMap)
-			assert.Equal(t, "my-key", ref.Key)
-			assert.False(t, ref.Default)
-		}
-
-		err = k.CoreV1().ConfigMaps("my-ref-ns").Delete("artifact-repositories", nil)
-		assert.NoError(t, err)
-	})
 	t.Run("Explicit.WorkflowNamespace", func(t *testing.T) {
 		_, err := k.CoreV1().ConfigMaps("my-wf-ns").Create(&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
@@ -80,32 +62,10 @@ func TestArtifactRepositories(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		_, err = i.Resolve(&wfv1.ArtifactRepositoryRef{Namespace: "my-ns"}, "my-wf-ns")
+		_, err = i.Resolve(&wfv1.ArtifactRepositoryRef{}, "my-wf-ns")
 		assert.Error(t, err)
 
 		err = k.CoreV1().ConfigMaps("my-ns").Delete("artifact-repositories", nil)
-		assert.NoError(t, err)
-	})
-	t.Run("Explicit.DefaultKey", func(t *testing.T) {
-		_, err := k.CoreV1().ConfigMaps("my-ref-ns").Create(&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        "artifact-repositories",
-				Annotations: map[string]string{"workflows.argoproj.io/default-artifact-repository": "default-v1"},
-			},
-			Data: map[string]string{"default-v1": ""},
-		})
-		assert.NoError(t, err)
-
-		ref, err := i.Resolve(&wfv1.ArtifactRepositoryRef{Namespace: "my-ref-ns"}, "my-wf-ns")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "my-ref-ns", ref.Namespace)
-			assert.Equal(t, "artifact-repositories", ref.ConfigMap)
-			assert.Equal(t, "default-v1", ref.Key)
-			assert.False(t, ref.Default)
-			_, err = i.Get(ref)
-			assert.NoError(t, err)
-		}
-		err = k.CoreV1().ConfigMaps("my-ref-ns").Delete("artifact-repositories", nil)
 		assert.NoError(t, err)
 	})
 	t.Run("WorkflowNamespaceDefault", func(t *testing.T) {
