@@ -45,7 +45,7 @@ These templates _define_ work to be done, usually in a Container.
 
 ##### [Container](fields.md#container)
 
-Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [K8s container spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#container-v1-core), so you can define a container here the same way you do anywhere else in K8s.
+Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [K8s container spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#container-v1-core), so you can define a container here the same way you do anywhere else in K8s.
     
 Example:
 ```yaml

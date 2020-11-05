@@ -3032,7 +3032,7 @@ spec:
         path: /tmp/hello_world.txt
 `: {
 			"Normal WorkflowRunning Workflow Running",
-			"Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config",
+			"Warning WorkflowFailed failed to find artifactory ref {,}/artifact-repository#config",
 		},
 		// DAG
 		`
@@ -3079,7 +3079,6 @@ spec:
 	} {
 		wf := unmarshalWF(manifest)
 		cancel, controller := newController(wf)
-		defer cancel()
 		t.Run(wf.Name, func(t *testing.T) {
 			woc := newWorkflowOperationCtx(wf, controller)
 			woc.operate()
@@ -3088,6 +3087,7 @@ spec:
 			woc.operate()
 			assert.Equal(t, want, getEvents(controller, len(want)))
 		})
+		cancel()
 	}
 }
 

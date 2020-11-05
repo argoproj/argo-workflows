@@ -136,6 +136,14 @@ func (c *errorTranslatingWorkflowServiceClient) PodLogs(ctx context.Context, req
 	return logs, nil
 }
 
+func (c *errorTranslatingWorkflowServiceClient) WorkflowLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WorkflowLogsClient, error) {
+	logs, err := c.delegate.WorkflowLogs(ctx, req)
+	if err != nil {
+		return nil, grpcutil.TranslateError(err)
+	}
+	return logs, nil
+}
+
 func (c *errorTranslatingWorkflowServiceClient) SubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowSubmitRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	workflow, err := c.delegate.SubmitWorkflow(ctx, req)
 	if err != nil {
