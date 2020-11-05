@@ -32,6 +32,7 @@ const icons: {[type: string]: string} = {
     AzureEventsHubEvent: 'database',
     CalendarEvent: 'clock',
     Conditions: 'filter',
+    Dependency: 'link',
     CustomTrigger: 'puzzle-piece',
     EmitterEvent: 'stream',
     Event: 'circle',
@@ -167,7 +168,20 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         name: d.eventSourceName,
                         key: d.eventName
                     });
-                    edges.push({x: eventId, y: sensorId});
+                    const dependencyId = ID.join({
+                        type: 'Dependency',
+                        namespace: sensor.metadata.namespace,
+                        name: sensor.metadata.name,
+                        key: d.name
+                    });
+                    nodes.push({
+                        id: dependencyId,
+                        type: 'dependency',
+                        label: d.name,
+                        icon: icons.Dependency
+                    });
+                    edges.push({x: eventId, y: dependencyId});
+                    edges.push({x: dependencyId, y: sensorId});
                 });
                 spec.triggers
                     .map(t => t.template)
@@ -244,11 +258,6 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                         content: <ResourceEditor readonly={true} kind={selected.kind} value={selected.value} />
                                     },
                                     {
-                                        title: 'EVENTS',
-                                        key: 'events',
-                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace} name={selected.name} />
-                                    },
-                                    {
                                         title: 'LOGS',
                                         key: 'logs',
                                         content: (
@@ -265,6 +274,11 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                                 />
                                             </div>
                                         )
+                                    },
+                                    {
+                                        title: 'EVENTS',
+                                        key: 'events',
+                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace} name={selected.name} />
                                     }
                                 ]}
                             />

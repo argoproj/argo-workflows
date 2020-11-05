@@ -43,6 +43,7 @@ const icons: {[key: string]: string} = {
     'file-code': '\uf1c9',
     'filter': '\uf0b0',
     'hdd': '\uf0a0',
+    'link': '\uf0c1',
     'microchip': '\uf2db',
     'puzzle-piece': '\uf12e',
     'save': '\uf0c7',

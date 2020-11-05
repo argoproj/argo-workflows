@@ -5,6 +5,7 @@ export interface Sensor {
     metadata: kubernetes.ObjectMeta;
     spec: {
         dependencies: {
+            name: string;
             eventSourceName: string;
             eventName: string;
         }[];
