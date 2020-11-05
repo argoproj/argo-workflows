@@ -20,18 +20,12 @@ func NewSuspendCommand() *cobra.Command {
 			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, name := range args {
-				cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
+				cronWf, err := serviceClient.SuspendCronWorkflow(ctx, &cronworkflowpkg.CronWorkflowSuspendRequest{
 					Name:      name,
 					Namespace: namespace,
 				})
 				errors.CheckError(err)
 				cronWf.Spec.Suspend = true
-				_, err = serviceClient.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{
-					Name:         name,
-					Namespace:    namespace,
-					CronWorkflow: cronWf,
-				})
-				errors.CheckError(err)
 				fmt.Printf("CronWorkflow '%s' suspended\n", name)
 			}
 		},
