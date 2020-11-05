@@ -658,6 +658,82 @@
         }
       }
     },
+    "/api/v1/cron-workflows/{namespace}/{name}/resume": {
+      "put": {
+        "tags": [
+          "CronWorkflowService"
+        ],
+        "operationId": "ResumeCronWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowResumeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cron-workflows/{namespace}/{name}/suspend": {
+      "put": {
+        "tags": [
+          "CronWorkflowService"
+        ],
+        "operationId": "SuspendCronWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events/{namespace}/{discriminator}": {
       "post": {
         "tags": [
@@ -2471,6 +2547,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowResumeRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
       "description": "CronWorkflowSpec is the specification of a CronWorkflow",
       "type": "object",
@@ -2546,6 +2633,17 @@
         "lastScheduledTime": {
           "description": "LastScheduleTime is the last time the CronWorkflow was scheduled",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowSuspendRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
         }
       }
     },
