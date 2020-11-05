@@ -18,11 +18,11 @@ Subsequent sections will show how to use it.
 
 ## Configuring Minio
 
-```
-$ brew install helm # mac, helm 3.x
-$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
-$ helm repo update
-$ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
+```bash
+brew install helm # mac, helm 3.x
+helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
+helm repo update
+helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after obtaining the
