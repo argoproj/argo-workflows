@@ -77,6 +77,7 @@ ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 override LDFLAGS += \
+  -s -w \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
   -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
