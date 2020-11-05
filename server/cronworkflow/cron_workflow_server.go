@@ -103,7 +103,7 @@ func (c *cronWorkflowServiceServer) SuspendCronWorkflow(ctx context.Context, req
 func setCronWorkflowSuspend(setTo bool, namespace, name string, ctx context.Context) (*v1alpha1.CronWorkflow, error) {
 	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"suspend": setTo}})
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshall cron workflow patch data")
+		return nil, fmt.Errorf("failed to marshall cron workflow patch data: %w", err)
 	}
 	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(namespace).Patch(name, types.MergePatchType, data)
 }
