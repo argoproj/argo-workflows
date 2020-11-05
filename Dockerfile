@@ -71,6 +71,7 @@ RUN ./recurl.sh /usr/local/bin/jq https://github.com/stedolan/jq/releases/downlo
 RUN rm recurl.sh
 
 COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
+COPY hack/nsswitch.conf /etc/nsswitch.conf
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 ####################################################################################################
@@ -136,6 +137,7 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 USER 8737
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
+COPY --from=argoexec-base /etc/nsswitch.conf /etc/nsswitch.conf
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
 COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
