@@ -90,6 +90,23 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 	return &cronworkflowpkg.CronWorkflowDeletedResponse{}, nil
 }
 
+func (c *cronWorkflowServiceServer) ResumeCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowResumeRequest) (*v1alpha1.CronWorkflow, error) {
+	return c.setCronWorkflowSuspend(false, req.Namespace, req.Name, ctx)
+}
+
+func (c *cronWorkflowServiceServer) SuspendCronWorkflow(ctx context.Context, req *cronworkflowpkg.CronWorkflowSuspendRequest) (*v1alpha1.CronWorkflow, error) {
+	return c.setCronWorkflowSuspend(true, req.Namespace, req.Name, ctx)
+}
+
+func (c *cronWorkflowServiceServer) setCronWorkflowSuspend(setTo bool, namespace, name string, ctx context.Context) (*v1alpha1.CronWorkflow, error) {
+	cwf, err := c.getCronWorkflowAndValidate(ctx, namespace, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	cwf.Spec.Suspend = setTo
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(namespace).Update(cwf)
+}
+
 func (c *cronWorkflowServiceServer) getCronWorkflowAndValidate(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(namespace).Get(name, options)
