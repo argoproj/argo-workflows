@@ -131,6 +131,6 @@ func TestArtifactRepositories(t *testing.T) {
 	t.Run("Default", func(t *testing.T) {
 		ref, err := i.Resolve(nil, "my-wf-ns")
 		assert.NoError(t, err)
-		assert.Equal(t, wfv1.DefaultArtifactRepositoryRef, ref)
+		assert.Equal(t, wfv1.DefaultArtifactRepositoryRefStatus, ref)
 	})
 }

@@ -36,7 +36,6 @@ You can override the repository for a workflow as follows:
 ```yaml
 spec:
   artifactRepositoryRef:
-    namespace: my-ns # default is the  workflow's namespace
     configMap: my-cm # default is "artifact-repositories"
     key: my-key # default can be set by the annotation
 ```

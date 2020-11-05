@@ -113,14 +113,19 @@ message ArtifactLocation {
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRef {
-  // The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
-  optional string namespace = 3;
-
   // The name of the config map. Defaults to "artifact-repositories".
   optional string configMap = 1;
 
   // The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.
   optional string key = 2;
+}
+
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+message ArtifactRepositoryRefStatus {
+  optional ArtifactRepositoryRef artifactRepositoryRef = 1;
+
+  // The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
+  optional string namespace = 3;
 
   // If this ref represents the default artifact repository, rather than a config map.
   optional bool default = 4;
@@ -1508,7 +1513,7 @@ message WorkflowStatus {
   optional SynchronizationStatus synchronization = 15;
 
   // ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.
-  optional ArtifactRepositoryRef artifactRepositoryRef = 18;
+  optional ArtifactRepositoryRefStatus artifactRepositoryRef = 18;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

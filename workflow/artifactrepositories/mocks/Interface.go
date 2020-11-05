@@ -15,11 +15,11 @@ type Interface struct {
 }
 
 // Get provides a mock function with given fields: ref
-func (_m *Interface) Get(ref *v1alpha1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
+func (_m *Interface) Get(ref *v1alpha1.ArtifactRepositoryRefStatus) (*config.ArtifactRepository, error) {
 	ret := _m.Called(ref)
 
 	var r0 *config.ArtifactRepository
-	if rf, ok := ret.Get(0).(func(*v1alpha1.ArtifactRepositoryRef) *config.ArtifactRepository); ok {
+	if rf, ok := ret.Get(0).(func(*v1alpha1.ArtifactRepositoryRefStatus) *config.ArtifactRepository); ok {
 		r0 = rf(ref)
 	} else {
 		if ret.Get(0) != nil {
@@ -28,7 +28,7 @@ func (_m *Interface) Get(ref *v1alpha1.ArtifactRepositoryRef) (*config.ArtifactR
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*v1alpha1.ArtifactRepositoryRef) error); ok {
+	if rf, ok := ret.Get(1).(func(*v1alpha1.ArtifactRepositoryRefStatus) error); ok {
 		r1 = rf(ref)
 	} else {
 		r1 = ret.Error(1)
@@ -38,15 +38,15 @@ func (_m *Interface) Get(ref *v1alpha1.ArtifactRepositoryRef) (*config.ArtifactR
 }
 
 // Resolve provides a mock function with given fields: ref, workflowNamespace
-func (_m *Interface) Resolve(ref *v1alpha1.ArtifactRepositoryRef, workflowNamespace string) (*v1alpha1.ArtifactRepositoryRef, error) {
+func (_m *Interface) Resolve(ref *v1alpha1.ArtifactRepositoryRef, workflowNamespace string) (*v1alpha1.ArtifactRepositoryRefStatus, error) {
 	ret := _m.Called(ref, workflowNamespace)
 
-	var r0 *v1alpha1.ArtifactRepositoryRef
-	if rf, ok := ret.Get(0).(func(*v1alpha1.ArtifactRepositoryRef, string) *v1alpha1.ArtifactRepositoryRef); ok {
+	var r0 *v1alpha1.ArtifactRepositoryRefStatus
+	if rf, ok := ret.Get(0).(func(*v1alpha1.ArtifactRepositoryRef, string) *v1alpha1.ArtifactRepositoryRefStatus); ok {
 		r0 = rf(ref, workflowNamespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.ArtifactRepositoryRef)
+			r0 = ret.Get(0).(*v1alpha1.ArtifactRepositoryRefStatus)
 		}
 	}
 
