@@ -912,8 +912,9 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.spec.suspend").
-			Equal(false)
+			Path("$.spec").
+			Object().
+			NotContainsKey("suspend")
 	})
 
 	s.Run("List", func() {
