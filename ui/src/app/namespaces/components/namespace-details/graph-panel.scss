@@ -1,0 +1,76 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+@keyframes bounce {
+  0%,
+  25%,
+  50%,
+  75%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-12px);
+  }
+}
+
+.graph {
+
+  .icon {
+    cursor: pointer;
+
+    .bg {
+      fill: black;
+      border: 1px solid $argo-color-gray-4;
+    }
+
+    &.Warning {
+      .bg {
+        fill: $argo-status-warning-color;
+      }
+    }
+
+    &.Running {
+      .bg {
+        fill: $argo-running-color;
+      }
+    }
+
+    &.touched {
+      animation: bounce 2s none ;
+    }
+
+    text {
+      alignment-baseline: bottom;
+      text-anchor: middle;
+      fill: $argo-color-gray-2;
+
+      .icon {
+        font-family: "Font Awesome 5 Free", serif;
+        font-size: 28px;
+      }
+
+      .type {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .label {
+    text-anchor: middle;
+    font-size: 12px;
+    fill: $argo-color-gray-8;
+  }
+
+  .line {
+    fill: transparent;
+    stroke-width: 2;
+    stroke: $argo-color-gray-4;
+  }
+
+  .arrow {
+    fill: $argo-color-gray-4;
+  }
+}

@@ -1,0 +1,33 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo/pkg/apiclient/eventsource";
+
+import "google/api/annotations.proto";
+import "k8s.io/api/core/v1/generated.proto";
+import "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1/generated.proto";
+
+package sensor;
+
+message ListEventSourcesRequest {
+    string namespace = 1;
+}
+
+message EventSourcesLogsRequest {
+    string namespace = 1;
+    k8s.io.api.core.v1.PodLogOptions podLogOptions = 2;
+}
+
+message LogEntry {
+    string namespace = 1;
+    string eventSourceName = 2;
+    string content = 3;
+}
+
+service EventSourceService {
+    rpc ListEventSources (ListEventSourcesRequest) returns (github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1.EventSourceList) {
+        option (google.api.http).get = "/api/v1/event-sources/{namespace}";
+    }
+
+    rpc EventSourcesLogs (EventSourcesLogsRequest) returns (stream LogEntry) {
+        option (google.api.http).get = "/api/v1/stream/event-sources/{namespace}/logs";
+    }
+}

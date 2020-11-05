@@ -267,6 +267,8 @@ rules:
 - apiGroups:
   - argoproj.io
   resources:
+  - eventsources
+  - sensors
   - workflows
   - workfloweventbindings
   - workflowtemplates

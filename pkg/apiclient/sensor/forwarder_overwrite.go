@@ -1,0 +1,9 @@
+package sensor
+
+import (
+	"github.com/argoproj/pkg/grpc/http"
+)
+
+func init() {
+	forward_SensorService_SensorsLogs_0 = http.StreamForwarder
+}

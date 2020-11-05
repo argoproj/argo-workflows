@@ -15,6 +15,7 @@ import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import help from './help';
 import login from './login';
+import namespaces from './namespaces';
 import reports from './reports';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
@@ -23,6 +24,7 @@ import userinfo from './userinfo';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
+const namespacesUrl = uiUrl('namespaces');
 const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
@@ -39,9 +41,14 @@ export const history = createBrowserHistory();
 
 const navItems = [
     {
-        title: 'Timeline',
+        title: 'Namespace',
+        path: namespacesUrl,
+        iconClassName: 'fa fa-square'
+    },
+    {
+        title: 'Workflows',
         path: workflowsUrl,
-        iconClassName: 'fa fa-stream'
+        iconClassName: 'fa fa-sitemap'
     },
     {
         title: 'Workflow Templates',
@@ -139,6 +146,11 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                 <Route exact={true} strict={true} path={uiUrl('')}>
                                     <Redirect to={workflowsUrl} />
                                 </Route>
+                                {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={namespacesUrl}>
+                                        <Redirect to={this.namespacesUrl} />
+                                    </Route>
+                                )}
                                 <Route exact={true} strict={true} path={timelineUrl}>
                                     <Redirect to={workflowsUrl} />
                                 </Route>
@@ -167,6 +179,7 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                         <Redirect to={this.reportsUrl} />
                                     </Route>
                                 )}
+                                <Route path={namespacesUrl} component={namespaces.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
@@ -183,6 +196,10 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                 </Router>
             </Provider>
         );
+    }
+
+    private get namespacesUrl() {
+        return namespacesUrl + '/' + (this.state.namespace || '');
     }
 
     private get archivedWorkflowsUrl() {
