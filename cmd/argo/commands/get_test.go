@@ -364,8 +364,8 @@ status:
 `, &wf)
 		output := printWorkflowHelper(&wf, getFlags{})
 		assert.Contains(t, output, `         
-   ├- sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
-   ├- sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
-   ├- sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
+   ├─ sleep(9:nine)     sleep           many-items-z26lj-2619926859  19s         
+   ├─ sleep(10:ten)     sleep           many-items-z26lj-1052882686  23s         
+   ├─ sleep(11:eleven)  sleep           many-items-z26lj-3011405271  22s`)
 	})
 }
