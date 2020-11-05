@@ -246,6 +246,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"}, Spec: wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}}}
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate()
+		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 		assert.Equal(resultSpec, woc.execWf.Spec)
 		assert.Equal(&resultSpec, woc.wf.Status.StoredWorkflowSpec)
 	})
@@ -265,6 +266,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		//resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, args.Parameters...)
 		resultSpec.Entrypoint = "Test"
 		resultSpec.TTLStrategy = &ttlStrategy
+		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate()
@@ -298,6 +300,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		//resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, args.Parameters...)
 		resultSpec.Entrypoint = "Test"
 		resultSpec.TTLStrategy = &ttlStrategy
+		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
 		resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, param)
 		resultSpec.Arguments.Artifacts = append(resultSpec.Arguments.Artifacts, art)
 
