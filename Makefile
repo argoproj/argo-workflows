@@ -463,7 +463,7 @@ test-e2e:
 
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 10m -count 1 --tags cli -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
