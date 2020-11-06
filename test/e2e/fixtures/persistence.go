@@ -6,6 +6,7 @@ import (
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist/sqldb/retry"
 	"github.com/argoproj/argo/util/instanceid"
 )
 
@@ -32,6 +33,7 @@ func newPersistence(kubeClient kubernetes.Interface, wcConfig *config.Config) *P
 		if err != nil {
 			panic(err)
 		}
+		offloadNodeStatusRepo = retry.WithRetry(offloadNodeStatusRepo)
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
 		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
 		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}

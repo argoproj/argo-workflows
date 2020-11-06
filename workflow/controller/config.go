@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist/sqldb/retry"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -51,10 +52,11 @@ func (wfc *WorkflowController) updateConfig(v interface{}) error {
 
 		wfc.session = session
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
+			wfc.offloadNodeStatusRepo = retry.WithRetry(offloadNodeStatusRepo)
 			log.Info("Node status offloading is enabled")
 		} else {
 			log.Info("Node status offloading is disabled")
