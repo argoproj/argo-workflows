@@ -114,7 +114,7 @@ func (w *When) CreateWorkflowTemplates() *When {
 			w.t.Fatal(err)
 		}
 	}
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 	return w
 }
 
@@ -130,6 +130,7 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 			w.t.Fatal(err)
 		}
 	}
+	time.Sleep(1 * time.Second)
 	return w
 }
 
