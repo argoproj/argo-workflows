@@ -1,5 +1,4 @@
-import {SensorList, SensorLogEntry} from '../../../models';
-
+import {LogEntry, SensorList} from '../../../models/sensor';
 import requests from './requests';
 
 export class SensorService {
@@ -8,12 +7,16 @@ export class SensorService {
     }
 
     public sensorsLogs(namespace: string, name = '', triggerName = '', tailLines = -1) {
-        return requests
-            .loadEventSource(
-                `api/v1/stream/sensors/${namespace}/logs?name=${name || ''}&triggerName=${triggerName || ''}&podLogOptions.follow=true&${
-                    tailLines >= 0 ? `podLogOptions.tailLines=${tailLines}` : ''
-                }`
-            )
-            .map(line => JSON.parse(line).result as SensorLogEntry);
+        const params = ['podLogOptions.follow=true'];
+        if (name) {
+            params.push('name=' + name);
+        }
+        if (triggerName) {
+            params.push('triggerName=' + triggerName);
+        }
+        if (tailLines >= 0) {
+            params.push('podLogOptions.tailLines=' + tailLines);
+        }
+        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}/logs?${params.join('&')}`).map(line => JSON.parse(line).result as LogEntry);
     }
 }

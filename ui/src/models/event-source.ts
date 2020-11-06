@@ -36,7 +36,7 @@ export interface EventSourceList {
     items: EventSource[];
 }
 
-export interface EventSourceLogEntry {
+export interface LogEntry {
     namespace: string;
     eventSourceName: string;
     eventSourceType?: string;
@@ -46,7 +46,7 @@ export interface EventSourceLogEntry {
     msg: string;
 }
 
-export const eventTypes: {[key: string]: string} = {
+export const eventSources: {[key: string]: string} = {
     amqp: 'AMQP',
     azureEventsHub: 'AzureEventsHub',
     calendar: 'Calendar',

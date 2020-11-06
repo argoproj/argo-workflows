@@ -17,13 +17,16 @@ message SensorsLogsRequest {
     string namespace = 1;
     // optional
     string name = 2;
+    // optional
     string triggerName = 3;
     k8s.io.api.core.v1.PodLogOptions podLogOptions = 4;
 }
 
+// structured log entry
 message LogEntry {
     string namespace = 1;
     string sensorName = 2;
+    // optional
     string triggerName = 3;
     string level = 5;
     k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;

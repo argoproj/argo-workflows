@@ -2,7 +2,9 @@ import {Page, SlidingPanel, Tabs} from 'argo-ui/src/index';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Subscription} from 'rxjs';
-import {Condition, EventSource, eventTypes, kubernetes, Sensor, triggerTypes} from '../../../../models';
+import {Condition, kubernetes} from '../../../../models';
+import {EventSource, eventSources} from '../../../../models/event-source';
+import {Sensor, triggerTypes} from '../../../../models/sensor';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -110,7 +112,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 type: typeKey,
                                 label: key,
                                 phase: phase(eventSource),
-                                icon: icons[eventTypes[typeKey] + 'EventSource'],
+                                icon: icons[eventSources[typeKey] + 'EventSource'],
                                 active: !!this.state.active[eventId]
                             });
                         });

@@ -1,4 +1,4 @@
-import {EventSourceList, EventSourceLogEntry} from '../../../models';
+import {EventSourceList, LogEntry} from '../../../models/event-source';
 import requests from './requests';
 
 export class EventSourceService {
@@ -7,12 +7,19 @@ export class EventSourceService {
     }
 
     public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', tailLines = -1) {
-        return requests
-            .loadEventSource(
-                `api/v1/stream/event-sources/${namespace}/logs?name=${name || ''}&eventSourceType=${eventSourceType || ''}&eventName=${eventName || ''}&podLogOptions.follow=true&${
-                    tailLines >= 0 ? `podLogOptions.tailLines=${tailLines}` : ''
-                }`
-            )
-            .map(line => JSON.parse(line).result as EventSourceLogEntry);
+        const params = ['podLogOptions.follow=true'];
+        if (name) {
+            params.push('name=' + name);
+        }
+        if (eventSourceType) {
+            params.push('eventSourceType=' + eventSourceType);
+        }
+        if (eventName) {
+            params.push('eventName=' + eventName);
+        }
+        if (tailLines >= 0) {
+            params.push('podLogOptions.tailLines=' + tailLines);
+        }
+        return requests.loadEventSource(`api/v1/stream/event-sources/${namespace}/logs?${params.join('&')}`).map(line => JSON.parse(line).result as LogEntry);
     }
 }

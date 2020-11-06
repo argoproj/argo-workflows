@@ -23,10 +23,13 @@ message EventSourcesLogsRequest {
     k8s.io.api.core.v1.PodLogOptions podLogOptions = 5;
 }
 
+// structured log entry
 message LogEntry {
     string namespace = 1;
     string eventSourceName = 2;
+    // optional
     string eventSourceType = 3;
+    // optional
     string eventName = 4;
     string level = 5;
     k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;

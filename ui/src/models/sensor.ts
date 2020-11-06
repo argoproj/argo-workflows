@@ -32,7 +32,7 @@ export interface SensorList {
     items: Sensor[];
 }
 
-export interface SensorLogEntry {
+export interface LogEntry {
     namespace: string;
     sensorName: string;
     triggerName?: string;
