@@ -372,7 +372,7 @@ func (p *PNSExecutor) updateCtrIDMap() {
 func (p *PNSExecutor) GetTerminatedContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
 	var pod *corev1.Pod
 	var containerStatus *corev1.ContainerStatus
-	err := wait.Poll(500*time.Millisecond, 2*time.Second, func() (bool, error) {
+	err := wait.Poll(1*time.Second, 3*time.Second, func() (bool, error) {
 		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
 		if err != nil {
 			return false, fmt.Errorf("could not get pod: %s", err)
