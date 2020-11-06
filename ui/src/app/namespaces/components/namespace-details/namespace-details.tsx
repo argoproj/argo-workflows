@@ -12,6 +12,7 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
+import {GraphOptionsPanel} from './graph-options-panel';
 import {Edge, Graph, GraphPanel, Node} from './graph-panel';
 import {icons} from './icons';
 import {ID} from './id';
@@ -20,6 +21,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
     namespace: string;
+    markActivations: boolean;
     selectedId?: string;
     tab?: string;
     error?: Error;
@@ -38,12 +40,27 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     private set selectedId(selectedId: string) {
         this.setState({selectedId}, this.saveHistory);
     }
+
+    private get selectedId() {
+        return this.state.selectedId;
+    }
+
+    private get markActivations() {
+        return this.state.markActivations;
+    }
+
+    private set markActivations(markActivations: boolean) {
+        this.setState({markActivations}, this.saveHistory);
+    }
+
     private get tab() {
         return this.state.tab;
     }
+
     private set tab(tab: string) {
         this.setState({tab}, this.saveHistory);
     }
+
     private get namespace() {
         return this.state.namespace;
     }
@@ -148,7 +165,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private get selected() {
-        return this.resource(this.state.selectedId);
+        return this.resource(this.selectedId);
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
@@ -158,7 +175,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             resources: {},
             active: {},
             selectedId: this.queryParam('selectedId'),
-            tab: this.queryParam('tab')
+            tab: this.queryParam('tab'),
+            markActivations: !!this.queryParam('markActivations')
         };
     }
 
@@ -171,7 +189,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     breadcrumbs: [{title: 'Namespaces', path: uiUrl('namespaces')}],
                     tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
-                <div className='argo-container'>{this.renderGraph()}</div>
+                {this.renderGraph()}
                 <SlidingPanel isShown={!!selected} onClose={() => (this.selectedId = null)}>
                     {!!selected && (
                         <div>
@@ -246,22 +264,28 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return <ZeroState title='No entities found'>No Argo Events resources found.</ZeroState>;
         }
         return (
-            <div style={{textAlign: 'center'}}>
-                <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />
+            <div>
+                <GraphOptionsPanel markActivations={this.markActivations} onChange={changed => (this.markActivations = changed.markActivations)} />
+                <div style={{textAlign: 'center'}}>
+                    <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />
+                </div>
             </div>
         );
     }
 
     private saveHistory() {
         const params = [];
-        if (this.state.selectedId) {
-            params.push('selectedId=' + this.state.selectedId);
+        if (this.selectedId) {
+            params.push('selectedId=' + this.selectedId);
         }
         if (this.tab) {
             params.push('tab=' + this.tab);
         }
-        this.appContext.router.history.push(uiUrl(`namespaces/${this.state.namespace}?${params.join('&')}`));
-        Utils.setCurrentNamespace(this.state.namespace);
+        if (this.markActivations) {
+            params.push('markActivations=' + this.markActivations);
+        }
+        this.appContext.router.history.push(uiUrl(`namespaces/${this.namespace}?${params.join('&')}`));
+        Utils.setCurrentNamespace(this.namespace);
     }
 
     private fetch(namespace: string) {
