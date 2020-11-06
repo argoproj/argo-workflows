@@ -674,6 +674,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
 		When().
 		CreateWorkflowTemplates().
+		Wait(1 * time.Second). // allow the template to reach the informer
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
