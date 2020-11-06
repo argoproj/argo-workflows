@@ -1,6 +1,7 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui/src/index';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
+import {Subscription} from 'rxjs';
 import {Condition, EventSource, eventTypes, kubernetes, Sensor, triggerTypes} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
@@ -37,6 +38,8 @@ const phase = (r: {status?: {conditions?: Condition[]}}) => {
 };
 
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
+    private markActivationsSubscriptions: Subscription[];
+
     private set selectedId(selectedId: string) {
         this.setState({selectedId}, this.saveHistory);
     }
@@ -50,6 +53,11 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private set markActivations(markActivations: boolean) {
+        if (markActivations) {
+            this.startMarkingActivations();
+        } else {
+            this.stopMarkingActivations();
+        }
         this.setState({markActivations}, this.saveHistory);
     }
 
@@ -246,6 +254,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         this.fetch(this.namespace);
     }
 
+    public componentWillUnmount() {
+        this.stopMarkingActivations();
+    }
+
     private resource(i: string) {
         if (!i) {
             return;
@@ -301,50 +313,65 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 services.sensor.list(namespace).then(list => this.setState(s => updateResources(s, 'Sensor', list)))
             ])
                 .then(() => this.setState({error: null, namespace}, this.saveHistory))
-                .then(() =>
-                    Promise.all([
-                        services.eventSource
-                            .eventSourcesLogs(namespace, '', '', '', 0)
-                            .filter(e => !!e.eventSourceName)
-                            .subscribe(
-                                e =>
-                                    this.markActive(
-                                        ID.join({
-                                            type: 'EventSource',
-                                            namespace: e.namespace,
-                                            name: e.eventSourceName,
-                                            key: e.eventName
-                                        })
-                                    ),
-                                error => this.setState({error})
-                            ),
-                        services.sensor
-                            .sensorsLogs(namespace, '', '', 0)
-                            .filter(e => !!e.triggerName)
-                            .subscribe(
-                                e => {
-                                    this.markActive(
-                                        ID.join({
-                                            type: 'Sensor',
-                                            namespace: e.namespace,
-                                            name: e.sensorName
-                                        })
-                                    );
-                                    this.markActive(
-                                        ID.join({
-                                            type: 'Trigger',
-                                            namespace: e.namespace,
-                                            name: e.sensorName,
-                                            key: e.triggerName
-                                        })
-                                    );
-                                },
-                                error => this.setState({error})
-                            )
-                    ])
-                )
+                .then(() => {
+                    if (this.markActivations) {
+                        this.startMarkingActivations();
+                    }
+                })
                 .catch(error => this.setState({error}));
         });
+    }
+
+    private stopMarkingActivations() {
+        if (this.markActivationsSubscriptions) {
+            this.markActivationsSubscriptions.forEach(x => x.unsubscribe());
+            this.markActivationsSubscriptions = null;
+        }
+    }
+    private startMarkingActivations() {
+        if (this.markActivationsSubscriptions) {
+            return;
+        }
+        this.markActivationsSubscriptions = [
+            services.eventSource
+                .eventSourcesLogs(this.namespace, '', '', '', 0)
+                .filter(e => !!e.eventSourceName)
+                .subscribe(
+                    e =>
+                        this.markActive(
+                            ID.join({
+                                type: 'EventSource',
+                                namespace: e.namespace,
+                                name: e.eventSourceName,
+                                key: e.eventName
+                            })
+                        ),
+                    error => this.setState({error})
+                ),
+            services.sensor
+                .sensorsLogs(this.namespace, '', '', 0)
+                .filter(e => !!e.triggerName)
+                .subscribe(
+                    e => {
+                        this.markActive(
+                            ID.join({
+                                type: 'Sensor',
+                                namespace: e.namespace,
+                                name: e.sensorName
+                            })
+                        );
+                        this.markActive(
+                            ID.join({
+                                type: 'Trigger',
+                                namespace: e.namespace,
+                                name: e.sensorName,
+                                key: e.triggerName
+                            })
+                        );
+                    },
+                    error => this.setState({error})
+                )
+        ];
     }
 
     private markActive(id: string) {
