@@ -921,11 +921,11 @@ var DefaultArtifactRepositoryRefStatus = &ArtifactRepositoryRefStatus{Default: t
 
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRefStatus struct {
-	ArtifactRepositoryRef `json:",inline"`
+	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
 	// The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
 	// If this ref represents the default artifact repository, rather than a config map.
-	Default bool `json:"default,omitempty"`
+	Default bool `json:"default,omitempty" protobuf:"varint,3,opt,name=default"`
 }
 
 func (r *ArtifactRepositoryRefStatus) String() string {

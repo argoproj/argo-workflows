@@ -2272,6 +2272,19 @@
           "description": "The name of the config map. Defaults to \"artifact-repositories\".",
           "type": "string"
         },
+        "key": {
+          "description": "The config map key. Defaults to the value of the \"workflows.argoproj.io/default-artifact-repository\" annotation.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
+      "type": "object",
+      "properties": {
+        "configMap": {
+          "description": "The name of the config map. Defaults to \"artifact-repositories\".",
+          "type": "string"
+        },
         "default": {
           "description": "If this ref represents the default artifact repository, rather than a config map.",
           "type": "boolean"
@@ -4801,7 +4814,7 @@
       "properties": {
         "artifactRepositoryRef": {
           "description": "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus"
         },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",

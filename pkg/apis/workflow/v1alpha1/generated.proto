@@ -125,10 +125,10 @@ message ArtifactRepositoryRefStatus {
   optional ArtifactRepositoryRef artifactRepositoryRef = 1;
 
   // The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).
-  optional string namespace = 3;
+  optional string namespace = 2;
 
   // If this ref represents the default artifact repository, rather than a config map.
-  optional bool default = 4;
+  optional bool default = 3;
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact

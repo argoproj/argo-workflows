@@ -662,7 +662,7 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
+|`artifactRepositoryRef`|[`ArtifactRepositoryRefStatus`](#artifactrepositoryrefstatus)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`estimatedDuration`|`int32`|EstimatedDuration in seconds.|
@@ -1494,9 +1494,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
-|`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
 |`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
-|`namespace`|`string`|The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).|
 
 ## ExecutorConfig
 
@@ -1965,6 +1963,25 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |:----------:|:----------:|---------------|
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
+
+## ArtifactRepositoryRefStatus
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-repository-ref.yaml`](https://github.com/argoproj/argo/blob/master/examples/artifact-repository-ref.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMap`|`string`|The name of the config map. Defaults to "artifact-repositories".|
+|`default`|`boolean`|If this ref represents the default artifact repository, rather than a config map.|
+|`key`|`string`|The config map key. Defaults to the value of the "workflows.argoproj.io/default-artifact-repository" annotation.|
+|`namespace`|`string`|The namespace of the config map. Defaults to the workflow's namespace, or the controller's namespace (if found).|
 
 ## Condition
 
