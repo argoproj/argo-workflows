@@ -10,16 +10,15 @@ import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
-import {ZeroState} from '../../../shared/components/zero-state';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
+import {EventsZeroState} from './events-zero-state';
 import {GraphOptionsPanel} from './graph-options-panel';
 import {Edge, Graph, GraphPanel, Node} from './graph-panel';
 import {icons} from './icons';
 import {ID} from './id';
-import {EventsHelp} from "./events-help";
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -275,17 +274,14 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
 
     private renderGraph() {
         if (this.state.error) {
-            return <div>
-                <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)}/>
-                <EventsHelp className='white-box'/>
-            </div>
+            return JSON.stringify(this.state.error).includes("could not find the requested resource") ?
+                    <EventsZeroState title='Not installed'/> :
+                    <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)}/>
+            ;
         }
         const g = this.graph;
         if (g.nodes.length === 0) {
-            return <ZeroState title='No entities found'>
-                <p>You're installed Argo Events, but no entities have been configured.</p>
-                <EventsHelp/>
-            </ZeroState>;
+            return (<EventsZeroState title='No entities found'/>);
         }
         return (
             <div>
