@@ -249,3 +249,75 @@ func TestWfGetTTLStrategy(t *testing.T) {
 	result = wf.GetTTLStrategy()
 	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
 }
+
+func TestWorkflow_GetSemaphoreKeys(t *testing.T) {
+	assert := assert.New(t)
+	wf := Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: WorkflowSpec{
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "test",
+					},
+				}},
+			},
+		},
+	}
+	keys := wf.GetSemaphoreKeys()
+	assert.Len(keys, 1)
+	assert.Contains(keys, "test/test")
+	wf.Spec.Templates = []Template{
+		{
+			Name: "t1",
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "template",
+					},
+				}},
+			},
+		},
+		{
+			Name: "t1",
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "template1",
+					},
+				}},
+			},
+		},
+		{
+			Name: "t2",
+			Synchronization: &Synchronization{
+				Semaphore: &SemaphoreRef{ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "template",
+					},
+				}},
+			},
+		},
+	}
+	keys = wf.GetSemaphoreKeys()
+	assert.Len(keys, 3)
+	assert.Contains(keys, "test/test")
+	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template1")
+
+	spec := wf.Spec.DeepCopy()
+	wf.Spec = WorkflowSpec{
+		WorkflowTemplateRef: &WorkflowTemplateRef{
+			Name: "test",
+		},
+	}
+	wf.Status.StoredWorkflowSpec = spec
+	keys = wf.GetSemaphoreKeys()
+	assert.Len(keys, 3)
+	assert.Contains(keys, "test/test")
+	assert.Contains(keys, "test/template")
+	assert.Contains(keys, "test/template1")
+}

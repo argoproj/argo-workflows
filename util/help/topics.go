@@ -1,7 +1,7 @@
 package help
 
 const (
-	root      = "https://github.com/argoproj/argo/blob/master/docs"
+	root      = "https://argoproj.github.io/argo"
 	ArgoSever = root + "/argo-server.md"
 	CLI       = root + "/cli.md"
 

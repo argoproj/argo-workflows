@@ -374,6 +374,46 @@ func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
 }
 
+// GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
+// Example key format namespace/configmapname (argo/my-config)
+// Return []string
+func (wf *Workflow) GetSemaphoreKeys() []string {
+	keyMap := make(map[string]bool)
+	namespace := wf.Namespace
+	var templates []Template
+	if wf.Spec.WorkflowTemplateRef == nil {
+		templates = wf.Spec.Templates
+		if wf.Spec.Synchronization != nil {
+			if configMapRef := wf.Spec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	} else if wf.Status.StoredWorkflowSpec != nil {
+		templates = wf.Status.StoredWorkflowSpec.Templates
+		if wf.Status.StoredWorkflowSpec.Synchronization != nil {
+			if configMapRef := wf.Status.StoredWorkflowSpec.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	}
+
+	for _, tmpl := range templates {
+		if tmpl.Synchronization != nil {
+			if configMapRef := tmpl.Synchronization.getSemaphoreConfigMapRef(); configMapRef != nil {
+				key := fmt.Sprintf("%s/%s", namespace, configMapRef.Name)
+				keyMap[key] = true
+			}
+		}
+	}
+	var semaphoreKeys []string
+	for key := range keyMap {
+		semaphoreKeys = append(semaphoreKeys, key)
+	}
+	return semaphoreKeys
+}
+
 type ShutdownStrategy string
 
 const (
@@ -1001,6 +1041,13 @@ type Synchronization struct {
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 	// Mutex holds the Mutex lock details
 	Mutex *Mutex `json:"mutex,omitempty" protobuf:"bytes,2,opt,name=mutex"`
+}
+
+func (s *Synchronization) getSemaphoreConfigMapRef() *apiv1.ConfigMapKeySelector {
+	if s.Semaphore != nil && s.Semaphore.ConfigMapKeyRef != nil {
+		return s.Semaphore.ConfigMapKeyRef
+	}
+	return nil
 }
 
 type SynchronizationType string
