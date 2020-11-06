@@ -31,6 +31,7 @@ See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
       --managed-namespace string         namespace that watches, default to the installation namespace
       --namespaced                       run as namespaced mode
   -p, --port int                         Port to listen on (default 2746)
+      --x-frame-options string           Set X-Frame-Options header in HTTP responses. (default "DENY")
 ```
 
 ### Options inherited from parent commands
