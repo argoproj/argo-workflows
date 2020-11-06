@@ -368,6 +368,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
