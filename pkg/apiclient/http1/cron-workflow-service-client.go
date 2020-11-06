@@ -38,12 +38,12 @@ func (h CronWorkflowServiceClient) UpdateCronWorkflow(_ context.Context, in *cro
 
 func (h Facade) ResumeCronWorkflow(ctx context.Context, in *cronworkflowpkg.CronWorkflowResumeRequest, opts ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
 	out := &wfv1.CronWorkflow{}
-	return out, h.Post(in, out, "/api/v1/cron-workflows/{namespace}/{name}/resume")
+	return out, h.Put(in, out, "/api/v1/cron-workflows/{namespace}/{name}/resume")
 }
 
 func (h Facade) SuspendCronWorkflow(ctx context.Context, in *cronworkflowpkg.CronWorkflowSuspendRequest, opts ...grpc.CallOption) (*wfv1.CronWorkflow, error) {
 	out := &wfv1.CronWorkflow{}
-	return out, h.Post(in, out, "/api/v1/cron-workflows/{namespace}/{name}/suspend")
+	return out, h.Put(in, out, "/api/v1/cron-workflows/{namespace}/{name}/suspend")
 }
 
 func (h CronWorkflowServiceClient) DeleteCronWorkflow(_ context.Context, in *cronworkflowpkg.DeleteCronWorkflowRequest, _ ...grpc.CallOption) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
