@@ -205,7 +205,7 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 }
 
 func (cc *Controller) syncAll() {
-	log.Info("Syncing all CronWorkflows")
+	log.Debug("Syncing all CronWorkflows")
 
 	workflows, err := cc.wfLister.List()
 	if err != nil {
