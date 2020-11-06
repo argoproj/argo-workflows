@@ -75,7 +75,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     .forEach(([typeKey, type]) => {
                         Object.keys(type).forEach(key => {
                             const eventId = ID.join({
-                                type: 'EventType',
+                                type: 'EventSource',
                                 namespace: eventSource.metadata.namespace,
                                 name: eventSource.metadata.name,
                                 key
@@ -85,7 +85,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 type: typeKey,
                                 label: key,
                                 phase: phase(eventSource),
-                                icon: icons[eventTypes[typeKey] + 'EventType'],
+                                icon: icons[eventTypes[typeKey] + 'EventSource'],
                                 active: !!this.state.active[eventId]
                             });
                         });
@@ -97,7 +97,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 const spec = (sensor as Sensor).spec;
                 spec.dependencies.forEach(d => {
                     const eventId = ID.join({
-                        type: 'EventType',
+                        type: 'EventSource',
                         namespace: sensor.metadata.namespace,
                         name: d.eventSourceName,
                         key: d.eventName
@@ -233,7 +233,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return;
         }
         const {type, namespace, name, key} = ID.split(i);
-        const kind = ({EventType: 'EventSource', Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
+        const kind = ({Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
         return {namespace, kind, name, key, value: this.state.resources[ID.join({type: kind, namespace, name})]};
     }
 
@@ -286,7 +286,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 e =>
                                     this.markActive(
                                         ID.join({
-                                            type: 'EventType',
+                                            type: 'EventSource',
                                             namespace: e.namespace,
                                             name: e.eventSourceName,
                                             key: e.eventName

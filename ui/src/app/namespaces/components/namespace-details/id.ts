@@ -2,7 +2,7 @@
  * Examples
  *
  * * argo-events/EventSource/webhook
- * * argo-events/EventType/webhook/example
+ * * argo-events/EventSource/webhook/example
  * * argo-events/Sensor/webhook
  * * argo-events/Trigger/webhook/example
  * * argo-events/Conditions/webhook/example - condition
