@@ -21,9 +21,10 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 interface State {
     namespace: string;
     selectedId?: string;
+    tab?: string;
     error?: Error;
     resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
-    touched: {[id: string]: any};
+    active: {[id: string]: any};
 }
 
 const phase = (r: {status?: {conditions?: Condition[]}}) => {
@@ -34,6 +35,15 @@ const phase = (r: {status?: {conditions?: Condition[]}}) => {
 };
 
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
+    private set selectedId(selectedId: string) {
+        this.setState({selectedId}, this.saveHistory);
+    }
+    private get tab() {
+        return this.state.tab;
+    }
+    private set tab(tab: string) {
+        this.setState({tab}, this.saveHistory);
+    }
     private get namespace() {
         return this.state.namespace;
     }
@@ -51,7 +61,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 label: sensor.metadata.name,
                 icon: icons.Sensor,
                 phase: phase(sensor),
-                touched: !!this.state.touched[sensorId]
+                active: !!this.state.active[sensorId]
             }));
 
         const edges: Edge[] = [];
@@ -76,7 +86,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 label: key,
                                 phase: phase(eventSource),
                                 icon: icons[eventTypes[typeKey] + 'EventType'],
-                                touched: !!this.state.touched[eventId]
+                                active: !!this.state.active[eventId]
                             });
                         });
                     });
@@ -111,7 +121,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             type: triggerTypeKey,
                             phase: phase(sensor),
                             icon: icons[triggerTypes[triggerTypeKey] + 'Trigger'],
-                            touched: !!this.state.touched[triggerId]
+                            active: !!this.state.active[triggerId]
                         });
                         if (template.conditions) {
                             const conditionsId = ID.join({
@@ -125,7 +135,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 label: template.conditions,
                                 type: 'conditions',
                                 icon: icons.Conditions,
-                                touched: !!this.state.touched[conditionsId]
+                                active: !!this.state.active[conditionsId]
                             });
                             edges.push({x: sensorId, y: conditionsId});
                             edges.push({x: conditionsId, y: triggerId});
@@ -143,7 +153,13 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {namespace: this.props.match.params.namespace || '', resources: {}, touched: {}};
+        this.state = {
+            namespace: this.props.match.params.namespace || '',
+            resources: {},
+            active: {},
+            selectedId: this.queryParam('selectedId'),
+            tab: this.queryParam('tab')
+        };
     }
 
     public render() {
@@ -156,7 +172,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
                 <div className='argo-container'>{this.renderGraph()}</div>
-                <SlidingPanel isShown={!!selected} onClose={() => this.setState({selectedId: null})}>
+                <SlidingPanel isShown={!!selected} onClose={() => (this.selectedId = null)}>
                     {!!selected && (
                         <div>
                             <h4>
@@ -164,6 +180,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             </h4>
                             <Tabs
                                 navTransparent={true}
+                                selectedTabKey={this.tab}
+                                onTabSelected={tab => (this.tab = tab)}
                                 tabs={[
                                     {
                                         title: 'SUMMARY',
@@ -229,9 +247,21 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         return (
             <div style={{textAlign: 'center'}}>
-                <GraphPanel graph={g} onSelect={selectedId => this.setState({selectedId})} />
+                <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />
             </div>
         );
+    }
+
+    private saveHistory() {
+        const params = [];
+        if (this.state.selectedId) {
+            params.push('selectedId=' + this.state.selectedId);
+        }
+        if (this.tab) {
+            params.push('tab=' + this.tab);
+        }
+        this.appContext.router.history.push(uiUrl(`namespaces/${this.state.namespace}?${params.join('&')}`));
+        Utils.setCurrentNamespace(this.state.namespace);
     }
 
     private fetch(namespace: string) {
@@ -246,12 +276,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 services.eventSource.list(namespace).then(list => this.setState(s => updateResources(s, 'EventSource', list))),
                 services.sensor.list(namespace).then(list => this.setState(s => updateResources(s, 'Sensor', list)))
             ])
-                .then(() =>
-                    this.setState({error: null, namespace}, () => {
-                        this.appContext.router.history.push(uiUrl(`namespaces/${namespace}`));
-                        Utils.setCurrentNamespace(namespace);
-                    })
-                )
+                .then(() => this.setState({error: null, namespace}, this.saveHistory))
                 .then(() =>
                     Promise.all([
                         services.eventSource
@@ -259,12 +284,12 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             .filter(e => !!e.eventSourceName)
                             .subscribe(
                                 e =>
-                                    this.touch(
+                                    this.markActive(
                                         ID.join({
                                             type: 'EventType',
                                             namespace: e.namespace,
                                             name: e.eventSourceName,
-                                            key: e.eventSourceType + '.' + e.eventName
+                                            key: e.eventName
                                         })
                                     ),
                                 error => this.setState({error})
@@ -274,14 +299,14 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             .filter(e => !!e.triggerName)
                             .subscribe(
                                 e => {
-                                    this.touch(
+                                    this.markActive(
                                         ID.join({
                                             type: 'Sensor',
                                             namespace: e.namespace,
                                             name: e.sensorName
                                         })
                                     );
-                                    this.touch(
+                                    this.markActive(
                                         ID.join({
                                             type: 'Trigger',
                                             namespace: e.namespace,
@@ -298,16 +323,16 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         });
     }
 
-    private touch(id: string) {
+    private markActive(id: string) {
         this.setState(state => {
-            clearTimeout(state.touched[id]);
-            state.touched[id] = setTimeout(() => {
+            clearTimeout(state.active[id]);
+            state.active[id] = setTimeout(() => {
                 this.setState(s => {
-                    delete s.touched[id];
-                    return {touched: s.touched};
+                    delete s.active[id];
+                    return {active: s.active};
                 });
-            }, 3000);
-            return {touched: state.touched};
+            }, 2000);
+            return {active: state.active};
         });
     }
 }

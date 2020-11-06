@@ -9,7 +9,7 @@ export class Node {
     public label: string;
     public icon: string;
     public phase?: string;
-    public touched?: boolean;
+    public active?: boolean;
 }
 
 export interface Graph {
@@ -71,7 +71,7 @@ export class GraphPanel extends React.Component<Props> {
                 type: n.type,
                 icon: n.icon,
                 phase: n.phase,
-                touched: n.touched,
+                active: n.active,
                 width: nodeSize,
                 height: nodeSize
             })
@@ -111,7 +111,7 @@ export class GraphPanel extends React.Component<Props> {
                         .map((n: any) => (
                             <g key={`node/${n.id}`} transform={`translate(${n.x},${n.y})`} className='node'>
                                 <title>{n.id}</title>
-                                <g className={`icon ${n.phase} ${n.touched && 'touched'}`} onClick={() => this.props.onSelect(n.id)}>
+                                <g className={`icon ${n.phase} ${n.active && 'active'}`} onClick={() => this.props.onSelect(n.id)}>
                                     <circle r={nodeSize / 2} className='bg' />
                                     <text>
                                         <tspan x={0} y={4} className='icon'>

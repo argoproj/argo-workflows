@@ -1,17 +1,19 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
-@keyframes bounce {
-  0%,
-  25%,
-  50%,
-  75%,
-  100% {
+@keyframes pulse {
+  0% {
     transform: scale(1);
   }
-  40% {
+  25% {
     transform: scale(1.2);
   }
-  60% {
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.05);
+  }
+  100% {
     transform: scale(1);
   }
 }
@@ -38,8 +40,8 @@
       }
     }
 
-    &.touched {
-      animation: bounce 3s infinite ;
+    &.active {
+      animation: pulse 1s none ;
     }
 
     text {

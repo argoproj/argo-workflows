@@ -29,21 +29,22 @@ func LogLabelledPods(ctx context.Context, namespace string, listOptions metav1.L
 	streaming := &sync.Map{}
 	streamPod := func(pod *corev1.Pod) {
 		logCtx := log.WithFields(log.Fields{"namespace": pod.Namespace, "podName": pod.Name})
-		go func() {
+		go func(pod *corev1.Pod) {
 			err := func() error {
 				_, loaded := streaming.LoadOrStore(pod.Name, true)
 				if loaded {
 					return nil
 				}
-				logCtx.Debug("streaming pod logs")
 				defer streaming.Delete(pod.Name)
-				stream, err := coreV1.Pods(namespace).GetLogs(pod.Name, podLogOptions).Stream()
+				stream, err := coreV1.Pods(pod.Namespace).GetLogs(pod.Name, podLogOptions).Stream()
 				if err != nil {
 					return err
 				}
+				logCtx.Debug("streaming pod logs")
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					data := scanner.Bytes()
+					logCtx.Info("ALEX", pod.Name)
 					logCtx.Debugln(string(data))
 					err = callback(pod, data)
 					if err != nil {
@@ -55,10 +56,10 @@ func LogLabelledPods(ctx context.Context, namespace string, listOptions metav1.L
 			if err != nil {
 				logCtx.Error(err)
 			}
-		}()
+		}(pod)
 	}
 	for _, p := range list.Items {
-		streamPod(&p)
+		streamPod(p.DeepCopy())
 	}
 	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, podInterface)
 	if err != nil {
