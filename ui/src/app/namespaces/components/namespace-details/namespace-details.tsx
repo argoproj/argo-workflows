@@ -1,7 +1,7 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui/src/index';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Condition, EventSource, kubernetes, Sensor} from '../../../../models';
+import {Condition, EventSource, eventTypes, kubernetes, Sensor, triggerTypes} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -14,6 +14,8 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {Edge, Graph, GraphPanel, Node} from './graph-panel';
 import {ID} from './id';
+import {icons} from "./icons";
+
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -21,91 +23,12 @@ interface State {
     namespace: string;
     selectedId?: string;
     error?: Error;
-    resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
-    touched: {[id: string]: any};
+    resources: { [id: string]: { metadata: kubernetes.ObjectMeta; status?: { conditions?: Condition[] } } };
+    touched: { [id: string]: any };
 }
 
-const icons: {[type: string]: string} = {
-    AMQPEvent: 'stream',
-    AWSLambdaTrigger: 'microchip',
-    ArgoWorkflowTrigger: 'sitemap',
-    AzureEventsHubEvent: 'database',
-    CalendarEvent: 'clock',
-    Conditions: 'filter',
-    Dependency: 'link',
-    CustomTrigger: 'puzzle-piece',
-    EmitterEvent: 'stream',
-    Event: 'circle',
-    EventSource: 'circle',
-    FileEvent: 'file',
-    GenericEvent: 'puzzle-piece',
-    GithubEvent: 'code-branch',
-    GitlabEvent: 'code-branch',
-    HDFSEvent: 'hdd',
-    HTTPTrigger: "cloud",
-    K8STrigger: 'file-code',
-    KafkaEvent: 'stream',
-    KafkaTrigger: 'stream',
-    MinioEvent: 'database',
-    NATSEvent: 'stream',
-    NATSTrigger: 'stream',
-    NSQEvent: 'stream',
-    OpenWhiskTrigger: 'microchip',
-    PubSubEvent: 'stream',
-    PulsarEvent: 'stream',
-    RedisEvent: 'th',
-    ResourceEvent: 'file-code',
-    SNSEvent: 'stream',
-    SQSEvent: 'stream',
-    Sensor: 'circle',
-    SlackEvent: 'comment',
-    SlackTrigger: 'comment',
-    StorageGridEvent: 'th',
-    StripeEvent: 'credit-card',
-    Trigger: 'bell',
-    WebhookEvent: 'cloud'
-};
 
-const eventTypes: {[key: string]: string} = {
-    amqp: 'AMQPEvent',
-    azureEventsHub: 'AzureEventsHubEvent',
-    calendar: 'CalendarEvent',
-    emitter: 'EmitterEvent',
-    file: 'FileEvent',
-    generic: 'GenericEvent',
-    github: 'GithubEvent',
-    gitlab: 'GitlabEvent',
-    hdfs: 'HDFSEvent',
-    kafka: 'KafkaEvent',
-    minio: 'MinioEvent',
-    mqtt: 'MQTTEvent',
-    nats: 'NATSEvent',
-    nsq: 'NSQEvent',
-    pubSub: 'PubSubEvent',
-    pulsar: 'PulsarEvent',
-    redis: 'RedisEvent',
-    resource: 'ResourceEvent',
-    slack: 'SlackEvent',
-    sns: 'SNSEvent',
-    sqs: 'SQSEvent',
-    storageGrid: 'StorageGridEvent',
-    stripe: 'StripeEvent',
-    webhook: 'WebhookEvent'
-};
-
-const triggerTypes: {[key: string]: string} = {
-    argoWorkflow: 'ArgoWorkflowTrigger',
-    awsLambda: 'AWSLambdaTrigger',
-    custom: 'CustomTrigger',
-    http: "HTTPTrigger",
-    k8s: 'K8STrigger',
-    kafka: 'KafkaTrigger',
-    nats: 'NATSTrigger',
-    openWhisk: 'OpenWhiskTrigger',
-    slack: 'SlackTrigger'
-};
-
-const phase = (r: {status?: {conditions?: Condition[]}}) => {
+const phase = (r: { status?: { conditions?: Condition[] } }) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
@@ -232,7 +155,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 title='Namespace'
                 toolbar={{
                     breadcrumbs: [{title: 'Namespaces', path: uiUrl('namespaces')}],
-                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
+                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace}
+                                             onChange={namespace => (this.namespace = namespace)}/>]
                 }}>
                 <div className='argo-container'>{this.renderGraph()}</div>
                 <SlidingPanel isShown={!!selected} onClose={() => this.setState({selectedId: null})}>
@@ -247,7 +171,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'SUMMARY',
                                         key: 'summary',
-                                        content: <ResourceEditor readonly={true} kind={selected.kind} value={selected.value} />
+                                        content: <ResourceEditor readonly={true} kind={selected.kind}
+                                                                 value={selected.value}/>
                                     },
                                     {
                                         title: 'LOGS',
@@ -270,7 +195,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'EVENTS',
                                         key: 'events',
-                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace} name={selected.name} />
+                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace}
+                                                              name={selected.name}/>
                                     }
                                 ]}
                             />
@@ -290,13 +216,13 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return;
         }
         const {type, namespace, name} = ID.split(i);
-        const kind = ({Event: 'EventSource', Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
+        const kind = ({Event: 'EventSource', Trigger: 'Sensor'} as { [key: string]: string })[type] || type;
         return {namespace, kind, name, value: this.state.resources[ID.join({type: kind, namespace, name})]};
     }
 
     private renderGraph() {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} />;
+            return <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)}/>;
         }
         const g = this.graph;
         if (g.nodes.length === 0) {
@@ -304,13 +230,13 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         return (
             <div style={{textAlign: 'center'}}>
-                <GraphPanel graph={g} onSelect={selectedId => this.setState({selectedId})} />
+                <GraphPanel graph={g} onSelect={selectedId => this.setState({selectedId})}/>
             </div>
         );
     }
 
     private fetch(namespace: string) {
-        const updateResources = (s: State, type: string, list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
+        const updateResources = (s: State, type: string, list: { items: { metadata: kubernetes.ObjectMeta }[] }) => {
             (list.items || []).forEach(v => {
                 s.resources[ID.join({type, namespace: v.metadata.namespace, name: v.metadata.name})] = v;
             });

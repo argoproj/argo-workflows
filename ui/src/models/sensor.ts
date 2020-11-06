@@ -25,7 +25,7 @@ export interface Sensor {
             };
         }[];
     };
-    status?: {conditions?: Condition[]};
+    status?: { conditions?: Condition[] };
 }
 
 export interface SensorList {
@@ -39,3 +39,15 @@ export interface SensorLogEntry {
     level: string;
     msg: string;
 }
+
+export const triggerTypes: { [key: string]: string } = {
+    argoWorkflow: 'ArgoWorkflowTrigger',
+    awsLambda: 'AWSLambdaTrigger',
+    custom: 'CustomTrigger',
+    http: "HTTPTrigger",
+    k8s: 'K8STrigger',
+    kafka: 'KafkaTrigger',
+    nats: 'NATSTrigger',
+    openWhisk: 'OpenWhiskTrigger',
+    slack: 'SlackTrigger'
+};

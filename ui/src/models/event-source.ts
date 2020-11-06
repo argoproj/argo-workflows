@@ -43,3 +43,30 @@ export interface EventSourceLogEntry {
     level: string;
     msg: string;
 }
+
+export const eventTypes: { [key: string]: string } = {
+    amqp: 'AMQPEvent',
+    azureEventsHub: 'AzureEventsHubEvent',
+    calendar: 'CalendarEvent',
+    emitter: 'EmitterEvent',
+    file: 'FileEvent',
+    generic: 'GenericEvent',
+    github: 'GithubEvent',
+    gitlab: 'GitlabEvent',
+    hdfs: 'HDFSEvent',
+    kafka: 'KafkaEvent',
+    minio: 'MinioEvent',
+    mqtt: 'MQTTEvent',
+    nats: 'NATSEvent',
+    nsq: 'NSQEvent',
+    pubSub: 'PubSubEvent',
+    pulsar: 'PulsarEvent',
+    redis: 'RedisEvent',
+    resource: 'ResourceEvent',
+    slack: 'SlackEvent',
+    sns: 'SNSEvent',
+    sqs: 'SQSEvent',
+    storageGrid: 'StorageGridEvent',
+    stripe: 'StripeEvent',
+    webhook: 'WebhookEvent'
+};
