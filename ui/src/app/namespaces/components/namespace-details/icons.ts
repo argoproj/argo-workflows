@@ -3,48 +3,44 @@ const compute = 'microchip';
 const git = 'code-branch';
 const grid = 'th';
 const manifest = 'file-code';
-const queue = 'stream'; 
+const queue = 'stream';
 const storage = 'database';
-const web = "cloud";
+const web = 'cloud';
 
-export const icons: { [type: string]: string } = {
-    AMQPEvent: queue,
+export const icons: {[type: string]: string} = {
+    AMQPEventType: queue,
     AWSLambdaTrigger: compute,
     ArgoWorkflowTrigger: 'sitemap',
-    AzureEventsHubEvent: storage,
-    CalendarEvent: 'clock',
+    AzureEventsHubEventType: storage,
+    CalendarEventType: 'clock',
     Conditions: 'filter', // special type
-    Dependency: 'link', // special type
     CustomTrigger: 'puzzle-piece',
-    EmitterEvent: queue,
-    Event: queue, // fall-back type
-    EventSource: 'circle', // resource type
-    FileEvent: 'file',
-    GenericEvent: 'puzzle-piece',
-    GithubEvent: git,
-    GitlabEvent: git,
-    HDFSEvent: 'hdd',
+    EmitterEventType: queue,
+    FileEventType: 'file',
+    GenericEventType: 'puzzle-piece',
+    GithubEventType: git,
+    GitlabEventType: git,
+    HDFSEventType: 'hdd',
     HTTPTrigger: web,
     K8STrigger: manifest,
-    KafkaEvent: queue,
+    KafkaEventType: queue,
     KafkaTrigger: queue,
-    MinioEvent: storage,
-    MQTTEvent: queue,
-    NATSEvent: queue,
+    MinioEventType: storage,
+    MQTTEventType: queue,
+    NATSEventType: queue,
     NATSTrigger: queue,
-    NSQEvent: queue,
+    NSQEventType: queue,
     OpenWhiskTrigger: compute,
-    PubSubEvent: queue,
-    PulsarEvent: queue,
-    RedisEvent: grid,
-    ResourceEvent: manifest,
-    SNSEvent: queue,
-    SQSEvent: queue,
+    PubSubEventType: queue,
+    PulsarEventType: queue,
+    RedisEventType: grid,
+    ResourceEventType: manifest,
+    SNSEventType: queue,
+    SQSEventType: queue,
     Sensor: 'circle', // resource type
-    SlackEvent: chat,
+    SlackEventType: chat,
     SlackTrigger: chat,
-    StorageGridEvent: grid,
-    StripeEvent: 'credit-card',
-    Trigger: 'bell', // fall-back type
-    WebhookEvent: web
+    StorageGridEventType: grid,
+    StripeEventType: 'credit-card',
+    WebhookEventType: web
 };

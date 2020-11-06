@@ -39,34 +39,36 @@ export interface EventSourceList {
 export interface EventSourceLogEntry {
     namespace: string;
     eventSourceName: string;
+    eventSourceType?: string;
     eventName?: string;
     level: string;
+    time: kubernetes.Time;
     msg: string;
 }
 
-export const eventTypes: { [key: string]: string } = {
-    amqp: 'AMQPEvent',
-    azureEventsHub: 'AzureEventsHubEvent',
-    calendar: 'CalendarEvent',
-    emitter: 'EmitterEvent',
-    file: 'FileEvent',
-    generic: 'GenericEvent',
-    github: 'GithubEvent',
-    gitlab: 'GitlabEvent',
-    hdfs: 'HDFSEvent',
-    kafka: 'KafkaEvent',
-    minio: 'MinioEvent',
-    mqtt: 'MQTTEvent',
-    nats: 'NATSEvent',
-    nsq: 'NSQEvent',
-    pubSub: 'PubSubEvent',
-    pulsar: 'PulsarEvent',
-    redis: 'RedisEvent',
-    resource: 'ResourceEvent',
-    slack: 'SlackEvent',
-    sns: 'SNSEvent',
-    sqs: 'SQSEvent',
-    storageGrid: 'StorageGridEvent',
-    stripe: 'StripeEvent',
-    webhook: 'WebhookEvent'
+export const eventTypes: {[key: string]: string} = {
+    amqp: 'AMQP',
+    azureEventsHub: 'AzureEventsHub',
+    calendar: 'Calendar',
+    emitter: 'Emitter',
+    file: 'File',
+    generic: 'Generic',
+    github: 'Github',
+    gitlab: 'Gitlab',
+    hdfs: 'HDFS',
+    kafka: 'Kafka',
+    minio: 'Minio',
+    mqtt: 'MQTT',
+    nats: 'NATS',
+    nsq: 'NSQ',
+    pubSub: 'PubSub',
+    pulsar: 'Pulsar',
+    redis: 'Redis',
+    resource: 'Resource',
+    slack: 'Slack',
+    sns: 'SNS',
+    sqs: 'SQS',
+    storageGrid: 'StorageGrid',
+    stripe: 'Stripe',
+    webhook: 'Webhook'
 };

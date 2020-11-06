@@ -13,9 +13,8 @@ import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {Edge, Graph, GraphPanel, Node} from './graph-panel';
+import {icons} from './icons';
 import {ID} from './id';
-import {icons} from "./icons";
-
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -23,12 +22,11 @@ interface State {
     namespace: string;
     selectedId?: string;
     error?: Error;
-    resources: { [id: string]: { metadata: kubernetes.ObjectMeta; status?: { conditions?: Condition[] } } };
-    touched: { [id: string]: any };
+    resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
+    touched: {[id: string]: any};
 }
 
-
-const phase = (r: { status?: { conditions?: Condition[] } }) => {
+const phase = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
@@ -46,14 +44,14 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
 
     private get graph(): Graph {
         const nodes: Node[] = Object.entries(this.state.resources)
-            .filter(([id]) => ID.split(id).type !== 'EventSource')
-            .map(([id, resource]) => ({
-                id,
-                type: ID.split(id).type.toLowerCase(),
-                label: resource.metadata.name,
-                icon: icons[ID.split(id).type],
-                phase: phase(resource),
-                touched: !!this.state.touched[id]
+            .filter(([id]) => ID.split(id).type === 'Sensor')
+            .map(([sensorId, sensor]) => ({
+                id: sensorId,
+                type: 'sensor',
+                label: sensor.metadata.name,
+                icon: icons.Sensor,
+                phase: phase(sensor),
+                touched: !!this.state.touched[sensorId]
             }));
 
         const edges: Edge[] = [];
@@ -67,7 +65,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     .forEach(([typeKey, type]) => {
                         Object.keys(type).forEach(key => {
                             const eventId = ID.join({
-                                type: 'Event',
+                                type: 'EventType',
                                 namespace: eventSource.metadata.namespace,
                                 name: eventSource.metadata.name,
                                 key
@@ -77,7 +75,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 type: typeKey,
                                 label: key,
                                 phase: phase(eventSource),
-                                icon: icons[eventTypes[typeKey] || 'Event'],
+                                icon: icons[eventTypes[typeKey] + 'EventType'],
                                 touched: !!this.state.touched[eventId]
                             });
                         });
@@ -89,7 +87,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 const spec = (sensor as Sensor).spec;
                 spec.dependencies.forEach(d => {
                     const eventId = ID.join({
-                        type: 'Event',
+                        type: 'EventType',
                         namespace: sensor.metadata.namespace,
                         name: d.eventSourceName,
                         key: d.eventName
@@ -112,7 +110,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             label: template.name,
                             type: triggerTypeKey,
                             phase: phase(sensor),
-                            icon: icons[triggerTypes[triggerTypeKey] || 'Trigger'],
+                            icon: icons[triggerTypes[triggerTypeKey] + 'Trigger'],
                             touched: !!this.state.touched[triggerId]
                         });
                         if (template.conditions) {
@@ -155,15 +153,14 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 title='Namespace'
                 toolbar={{
                     breadcrumbs: [{title: 'Namespaces', path: uiUrl('namespaces')}],
-                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace}
-                                             onChange={namespace => (this.namespace = namespace)}/>]
+                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
                 <div className='argo-container'>{this.renderGraph()}</div>
                 <SlidingPanel isShown={!!selected} onClose={() => this.setState({selectedId: null})}>
                     {!!selected && (
-                        <>
+                        <div>
                             <h4>
-                                {selected.kind} / {selected.name}
+                                {selected.kind}/{selected.name} {selected.key}
                             </h4>
                             <Tabs
                                 navTransparent={true}
@@ -171,21 +168,24 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'SUMMARY',
                                         key: 'summary',
-                                        content: <ResourceEditor readonly={true} kind={selected.kind}
-                                                                 value={selected.value}/>
+                                        content: <ResourceEditor readonly={true} kind={selected.kind} value={selected.value} />
                                     },
                                     {
                                         title: 'LOGS',
                                         key: 'logs',
                                         content: (
-                                            <div className='white-box' style={{height: 400}}>
+                                            <div className='white-box' style={{height: 600}}>
                                                 <FullHeightLogsViewer
                                                     source={{
                                                         key: 'logs',
                                                         loadLogs: () =>
-                                                            this.selected.kind === 'Sensor'
-                                                                ? services.sensor.sensorsLogs(this.namespace).map(e => JSON.stringify(e) + '\n')
-                                                                : services.eventSource.eventSourcesLogs(this.namespace).map(e => JSON.stringify(e) + '\n'),
+                                                            selected.kind === 'Sensor'
+                                                                ? services.sensor
+                                                                      .sensorsLogs(this.namespace, selected.name, selected.key, 10)
+                                                                      .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n')
+                                                                : services.eventSource
+                                                                      .eventSourcesLogs(this.namespace, selected.name, '', selected.key, 10)
+                                                                      .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n'),
                                                         shouldRepeat: () => false
                                                     }}
                                                 />
@@ -195,12 +195,11 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'EVENTS',
                                         key: 'events',
-                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace}
-                                                              name={selected.name}/>
+                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace} name={selected.name} />
                                     }
                                 ]}
                             />
-                        </>
+                        </div>
                     )}
                 </SlidingPanel>
             </Page>
@@ -215,14 +214,14 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         if (!i) {
             return;
         }
-        const {type, namespace, name} = ID.split(i);
-        const kind = ({Event: 'EventSource', Trigger: 'Sensor'} as { [key: string]: string })[type] || type;
-        return {namespace, kind, name, value: this.state.resources[ID.join({type: kind, namespace, name})]};
+        const {type, namespace, name, key} = ID.split(i);
+        const kind = ({EventType: 'EventSource', Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
+        return {namespace, kind, name, key, value: this.state.resources[ID.join({type: kind, namespace, name})]};
     }
 
     private renderGraph() {
         if (this.state.error) {
-            return <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)}/>;
+            return <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} />;
         }
         const g = this.graph;
         if (g.nodes.length === 0) {
@@ -230,13 +229,13 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         return (
             <div style={{textAlign: 'center'}}>
-                <GraphPanel graph={g} onSelect={selectedId => this.setState({selectedId})}/>
+                <GraphPanel graph={g} onSelect={selectedId => this.setState({selectedId})} />
             </div>
         );
     }
 
     private fetch(namespace: string) {
-        const updateResources = (s: State, type: string, list: { items: { metadata: kubernetes.ObjectMeta }[] }) => {
+        const updateResources = (s: State, type: string, list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
             (list.items || []).forEach(v => {
                 s.resources[ID.join({type, namespace: v.metadata.namespace, name: v.metadata.name})] = v;
             });
@@ -256,22 +255,22 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 .then(() =>
                     Promise.all([
                         services.eventSource
-                            .eventSourcesLogs(namespace, 0)
+                            .eventSourcesLogs(namespace, '', '', '', 0)
                             .filter(e => !!e.eventSourceName)
                             .subscribe(
                                 e =>
                                     this.touch(
                                         ID.join({
-                                            type: 'Event',
+                                            type: 'EventType',
                                             namespace: e.namespace,
                                             name: e.eventSourceName,
-                                            key: e.eventName
+                                            key: e.eventSourceType + '.' + e.eventName
                                         })
                                     ),
                                 error => this.setState({error})
                             ),
                         services.sensor
-                            .sensorsLogs(namespace, 0)
+                            .sensorsLogs(namespace, '', '', 0)
                             .filter(e => !!e.triggerName)
                             .subscribe(
                                 e => {

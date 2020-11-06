@@ -25,7 +25,7 @@ export interface Sensor {
             };
         }[];
     };
-    status?: { conditions?: Condition[] };
+    status?: {conditions?: Condition[]};
 }
 
 export interface SensorList {
@@ -37,17 +37,18 @@ export interface SensorLogEntry {
     sensorName: string;
     triggerName?: string;
     level: string;
+    time: kubernetes.Time;
     msg: string;
 }
 
-export const triggerTypes: { [key: string]: string } = {
-    argoWorkflow: 'ArgoWorkflowTrigger',
-    awsLambda: 'AWSLambdaTrigger',
-    custom: 'CustomTrigger',
-    http: "HTTPTrigger",
-    k8s: 'K8STrigger',
-    kafka: 'KafkaTrigger',
-    nats: 'NATSTrigger',
-    openWhisk: 'OpenWhiskTrigger',
+export const triggerTypes: {[key: string]: string} = {
+    argoWorkflow: 'ArgoWorkflow',
+    awsLambda: 'AWSLambda',
+    custom: 'Custom',
+    http: 'HTTPTrigger',
+    k8s: 'K8S',
+    kafka: 'Kafka',
+    nats: 'NATS',
+    openWhisk: 'OpenWhisk',
     slack: 'SlackTrigger'
 };

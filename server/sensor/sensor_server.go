@@ -1,21 +1,16 @@
 package sensor
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"sync"
-
-	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/watch"
 
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	sensorpkg "github.com/argoproj/argo/pkg/apiclient/sensor"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/logs"
 )
 
 type sensorServer struct{}
@@ -30,62 +25,31 @@ func (s *sensorServer) ListSensors(ctx context.Context, in *sensorpkg.ListSensor
 }
 
 func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorpkg.SensorService_SensorsLogsServer) error {
-	labelSelector := "sensor-name"
-	coreV1 := auth.GetKubeClient(svr.Context()).CoreV1()
-	listOptions := metav1.ListOptions{LabelSelector: labelSelector}
-	podLogOptions := in.PodLogOptions
-	if podLogOptions == nil {
-		podLogOptions = &corev1.PodLogOptions{}
+	listOptions := metav1.ListOptions{LabelSelector: "sensor-name"}
+	if in.Name != "" {
+		listOptions.LabelSelector += "=" + in.Name
 	}
-	list, err := coreV1.Pods(in.Namespace).List(listOptions)
-	if err != nil {
-		return err
-	}
-	streaming := &sync.Map{}
-	streamPod := func(namespace, sensorName, podName string) error {
-		log.WithFields(log.Fields{"namespace": namespace, "podName": podName}).Debug("streaming pod logs")
-		_, loaded := streaming.LoadOrStore(podName, true)
-		if loaded {
-			return nil
-		}
-		defer streaming.Delete(podName)
-		stream, err := coreV1.Pods(namespace).GetLogs(podName, podLogOptions).Stream()
-		if err != nil {
-			return err
-		}
-		scanner := bufio.NewScanner(stream)
-		for scanner.Scan() {
-			bytes := scanner.Bytes()
-			e := &sensorpkg.LogEntry{Namespace: namespace, SensorName: sensorName, Msg: string(bytes)}
-			_ = json.Unmarshal(bytes, e)
-			err = svr.Send(e)
-			if err != nil {
-				return err
+	return logs.LogLabelledPods(
+		svr.Context(),
+		in.Namespace,
+		listOptions,
+		in.PodLogOptions,
+		func(pod *corev1.Pod, data []byte) error {
+			now := metav1.Now()
+			e := &sensorpkg.LogEntry{
+				Namespace:  pod.Namespace,
+				SensorName: pod.Labels["sensor-name"],
+				Level:      "info",
+				Time:       &now,
+				Msg:        string(data),
 			}
-		}
-		return nil
-	}
-	for _, p := range list.Items {
-		err := streamPod(p.Namespace, p.Labels[labelSelector], p.Name)
-		if err != nil {
-			return err
-		}
-	}
-	watcher, err := watch.NewRetryWatcher(list.ResourceVersion, coreV1.Pods(in.Namespace))
-	if err != nil {
-		return err
-	}
-	for event := range watcher.ResultChan() {
-		pod, ok := event.Object.(*corev1.Pod)
-		if !ok {
-			return apierr.FromObject(event.Object)
-		}
-		err := streamPod(pod.Labels[labelSelector], pod.Namespace, pod.Name)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+			_ = json.Unmarshal(data, e)
+			if in.TriggerName != "" && in.TriggerName != e.TriggerName {
+				return nil
+			}
+			return svr.Send(e)
+		},
+	)
 }
 
 func NewSensorServer() sensorpkg.SensorServiceServer {
