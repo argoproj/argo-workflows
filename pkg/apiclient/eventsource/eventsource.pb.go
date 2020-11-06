@@ -82,7 +82,8 @@ type EventSourcesLogsRequest struct {
 	// optional
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// optional
-	EventSourceType      string            `protobuf:"bytes,3,opt,name=eventSourceType,proto3" json:"eventSourceType,omitempty"`
+	EventSourceType string `protobuf:"bytes,3,opt,name=eventSourceType,proto3" json:"eventSourceType,omitempty"`
+	// optional
 	EventName            string            `protobuf:"bytes,4,opt,name=eventName,proto3" json:"eventName,omitempty"`
 	PodLogOptions        *v1.PodLogOptions `protobuf:"bytes,5,opt,name=podLogOptions,proto3" json:"podLogOptions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
@@ -158,10 +159,13 @@ func (m *EventSourcesLogsRequest) GetPodLogOptions() *v1.PodLogOptions {
 	return nil
 }
 
+// structured log entry
 type LogEntry struct {
-	Namespace            string    `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	EventSourceName      string    `protobuf:"bytes,2,opt,name=eventSourceName,proto3" json:"eventSourceName,omitempty"`
-	EventSourceType      string    `protobuf:"bytes,3,opt,name=eventSourceType,proto3" json:"eventSourceType,omitempty"`
+	Namespace       string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	EventSourceName string `protobuf:"bytes,2,opt,name=eventSourceName,proto3" json:"eventSourceName,omitempty"`
+	// optional
+	EventSourceType string `protobuf:"bytes,3,opt,name=eventSourceType,proto3" json:"eventSourceType,omitempty"`
+	// optional
 	EventName            string    `protobuf:"bytes,4,opt,name=eventName,proto3" json:"eventName,omitempty"`
 	Level                string    `protobuf:"bytes,5,opt,name=level,proto3" json:"level,omitempty"`
 	Time                 *v11.Time `protobuf:"bytes,6,opt,name=time,proto3" json:"time,omitempty"`

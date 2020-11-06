@@ -88,7 +88,8 @@ func (m *ListSensorsRequest) GetListOptions() *v1.ListOptions {
 type SensorsLogsRequest struct {
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// optional
-	Name                 string             `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// optional
 	TriggerName          string             `protobuf:"bytes,3,opt,name=triggerName,proto3" json:"triggerName,omitempty"`
 	PodLogOptions        *v11.PodLogOptions `protobuf:"bytes,4,opt,name=podLogOptions,proto3" json:"podLogOptions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
@@ -157,9 +158,11 @@ func (m *SensorsLogsRequest) GetPodLogOptions() *v11.PodLogOptions {
 	return nil
 }
 
+// structured log entry
 type LogEntry struct {
-	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	SensorName           string   `protobuf:"bytes,2,opt,name=sensorName,proto3" json:"sensorName,omitempty"`
+	Namespace  string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	SensorName string `protobuf:"bytes,2,opt,name=sensorName,proto3" json:"sensorName,omitempty"`
+	// optional
 	TriggerName          string   `protobuf:"bytes,3,opt,name=triggerName,proto3" json:"triggerName,omitempty"`
 	Level                string   `protobuf:"bytes,5,opt,name=level,proto3" json:"level,omitempty"`
 	Time                 *v1.Time `protobuf:"bytes,6,opt,name=time,proto3" json:"time,omitempty"`

@@ -29,7 +29,7 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 	if in.Name != "" {
 		listOptions.LabelSelector += "=" + in.Name
 	}
-	return logs.LogLabelledPods(
+	return logs.LogPods(
 		svr.Context(),
 		in.Namespace,
 		listOptions,
