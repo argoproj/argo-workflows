@@ -14,7 +14,7 @@ argo server [flags]
 
 ```
 
-See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
+See https://argoproj.github.io/argo/argo-server.md
 ```
 
 ### Options
@@ -37,6 +37,8 @@ See https://github.com/argoproj/argo/blob/master/docs/argo-server.md
 ### Options inherited from parent commands
 
 ```
+      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
   -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
