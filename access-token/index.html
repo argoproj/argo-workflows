@@ -1983,14 +1983,7 @@
 <span class="nb">echo</span> <span class="nv">$ARGO_TOKEN</span>
 Bearer ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkltS...
 </code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code>ARGO_TOKEN</code> should always start with "Bearer ".</p>
-</div>
-<p>Use that token with the CLI (you need to set <code>ARGO_SERVER</code> too):</p>
-<div class="highlight"><pre><span></span><code><span class="nv">ARGO_SERVER</span><span class="o">=</span>http://localhost:2746 
-argo list
-</code></pre></div>
+<p>To that token with the CLI you need to set <code>ARGO_SERVER</code> (see <code>argo --help</code>).</p>
 <p>Use that token in your API requests, e.g. to list workflows:</p>
 <div class="highlight"><pre><span></span><code>curl https://localhost:2746/api/v1/workflows/argo -H <span class="s2">&quot;Authorization: </span><span class="nv">$ARGO_TOKEN</span><span class="s2">&quot;</span>
 <span class="c1"># 200 OK</span>

@@ -897,6 +897,8 @@
     
     <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
     
+      
+    
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
         argo
@@ -910,48 +912,16 @@
 <nav class="md-nav md-nav--secondary">
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">Table of contents</label>
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo" title="argo" class="md-nav__link">
-    argo
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#synopsis" title="Synopsis" class="md-nav__link">
     Synopsis
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" title="Examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#options" title="Options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#see-also" title="SEE ALSO" class="md-nav__link">
-    SEE ALSO
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1962,48 +1932,16 @@
 <nav class="md-nav md-nav--secondary">
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">Table of contents</label>
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#argo" title="argo" class="md-nav__link">
-    argo
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#synopsis" title="Synopsis" class="md-nav__link">
     Synopsis
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" title="Examples" class="md-nav__link">
-    Examples
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#options" title="Options" class="md-nav__link">
-    Options
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#see-also" title="SEE ALSO" class="md-nav__link">
-    SEE ALSO
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2026,19 +1964,61 @@
                   <a href="https://github.com/argoproj/argo/edit/master/docs/cli/argo.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                  <h1>argo</h1>
-                
                 <h2 id="argo">argo<a class="headerlink" href="#argo" title="Permanent link">&para;</a></h2>
 <p>argo is the command line interface to Argo</p>
 <h3 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h3>
-<p>argo is the command line interface to Argo</p>
+<p>You can use the CLI in the following modes:</p>
+<h1 id="kubernetes-api-mode-default">Kubernetes API Mode (default)<a class="headerlink" href="#kubernetes-api-mode-default" title="Permanent link">&para;</a></h1>
+<p>Requests are sent directly to the Kubernetes API. No Argo Server is needs. Large workflows and the workflow archive are not supported.</p>
+<p>Use when you have direct access to the Kubernetes API, and don't need large workflow or workflow archive support.</p>
+<p>If you're using instance ID (which is very unlikely), you'll need to set it:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_INSTANCEID=your-instanceid</span>
+</code></pre></div>
+
+<h1 id="argo-server-grpc-mode">Argo Server GRPC Mode<a class="headerlink" href="#argo-server-grpc-mode" title="Permanent link">&para;</a></h1>
+<p>Requests are sent to the Argo Server API via GRPC (using HTTP/2). Large workflows and the workflow archive are supported. Network load-balancers that do not support HTTP/2 are not supported. </p>
+<p>Use if you do not have access to the Kubernetes API (e.g. you're in another cluster), and you're running the Argo Server using a network load-balancer that support HTTP/2.</p>
+<p>To enable, set ARGO_SERVER:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_SERVER=localhost:2746 ;# The format is &quot;host:port&quot; - do not prefix with &quot;http&quot; or &quot;https&quot;</span>
+</code></pre></div>
+
+<p>If you're have transport-layer security (TLS) enabled (i.e. you are running "argo server --secure" and therefore has HTTPS):</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_SECURE=true</span>
+</code></pre></div>
+
+<p>If your server is running with self-signed certificates. Do not use in production:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_INSECURE_SKIP_VERIFY=true</span>
+</code></pre></div>
+
+<p>By default, the CLI uses your KUBECONFIG to determine default for ARGO_TOKEN and ARGO_NAMESPACE. You probably error with "no configuration has been provided". To prevent it:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">KUBECONFIG=/dev/null</span>
+</code></pre></div>
+
+<p>You will then need to set:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_NAMESPACE=argo</span>
+</code></pre></div>
+
+<p>And:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_TOKEN=&#39;Bearer ******&#39; ;# Should always start with &quot;Bearer &quot; or &quot;Basic &quot;.</span>
+</code></pre></div>
+
+<h1 id="argo-server-http1-mode">Argo Server HTTP1 Mode<a class="headerlink" href="#argo-server-http1-mode" title="Permanent link">&para;</a></h1>
+<p>As per GRPC mode, but uses HTTP. Can be used with ALB that does not support HTTP/2. The command "argo logs --since-time=2020...." will not work (due to time-type).</p>
+<p>Use this when your network load-balancer does not support HTTP/2.</p>
+<p>Use the same configuration as GRPC mode, but also set:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_HTTP1=true</span>
+</code></pre></div>
+
+<p>If your server is behind an ingress with a path (you'll be running "argo server --basehref /...) or "BASE_HREF=/... argo server"):</p>
+<div class="codehilite"><pre><span></span><code><span class="err">ARGO_BASE_HREF=/argo</span>
+</code></pre></div>
+
 <div class="highlight"><pre><span></span><code>argo [flags]
 </code></pre></div>
-<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>If you&#39;re using the Argo Server (e.g. because you need large workflow support or workflow archive), please read https://github.com/argoproj/argo/blob/master/docs/cli.md.
-</code></pre></div>
 <h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
+<div class="highlight"><pre><span></span><code>      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
+  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
       --certificate-authority string   Path to a cert file for the certificate authority

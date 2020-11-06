@@ -2038,7 +2038,9 @@
 <div class="highlight"><pre><span></span><code>  -h, --help   help for template
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands<a class="headerlink" href="#options-inherited-from-parent-commands" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
+<div class="highlight"><pre><span></span><code>      --argo-base-href string          An path to use with HTTP client (e.g. due to BASE_HREF). Defaults to the ARGO_BASE_HREF environment variable.
+      --argo-http1                     If true, use the HTTP client. Defaults to the ARGO_HTTP1 environment variable.
+  -s, --argo-server host:port          API server host:port. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
       --certificate-authority string   Path to a cert file for the certificate authority
