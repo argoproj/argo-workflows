@@ -28,11 +28,11 @@ interface State {
     selectedId?: string;
     tab?: string;
     error?: Error;
-    resources: { [id: string]: { metadata: kubernetes.ObjectMeta; status?: { conditions?: Condition[] } } };
-    active: { [id: string]: any };
+    resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
+    active: {[id: string]: any};
 }
 
-const phase = (r: { status?: { conditions?: Condition[] } }) => {
+const phase = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
@@ -197,8 +197,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 title='Namespace'
                 toolbar={{
                     breadcrumbs: [{title: 'Namespaces', path: uiUrl('namespaces')}],
-                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace}
-                                             onChange={namespace => (this.namespace = namespace)}/>]
+                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
                 {this.renderGraph()}
                 <SlidingPanel isShown={!!selected} onClose={() => (this.selectedId = null)}>
@@ -215,8 +214,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'SUMMARY',
                                         key: 'summary',
-                                        content: <ResourceEditor readonly={true} kind={selected.kind}
-                                                                 value={selected.value}/>
+                                        content: <ResourceEditor readonly={true} kind={selected.kind} value={selected.value} />
                                     },
                                     {
                                         title: 'LOGS',
@@ -229,11 +227,11 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                                         loadLogs: () =>
                                                             selected.kind === 'Sensor'
                                                                 ? services.sensor
-                                                                    .sensorsLogs(this.namespace, selected.name, selected.key, 50)
-                                                                    .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n')
+                                                                      .sensorsLogs(this.namespace, selected.name, selected.key, 50)
+                                                                      .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n')
                                                                 : services.eventSource
-                                                                    .eventSourcesLogs(this.namespace, selected.name, '', selected.key, 50)
-                                                                    .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n'),
+                                                                      .eventSourcesLogs(this.namespace, selected.name, '', selected.key, 50)
+                                                                      .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n'),
                                                         shouldRepeat: () => false
                                                     }}
                                                 />
@@ -243,8 +241,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'EVENTS',
                                         key: 'events',
-                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace}
-                                                              name={selected.name}/>
+                                        content: <EventsPanel kind={selected.kind} namespace={selected.namespace} name={selected.name} />
                                     }
                                 ]}
                             />
@@ -268,27 +265,27 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return;
         }
         const {type, namespace, name, key} = ID.split(i);
-        const kind = ({Trigger: 'Sensor'} as { [key: string]: string })[type] || type;
+        const kind = ({Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
         return {namespace, kind, name, key, value: this.state.resources[ID.join({type: kind, namespace, name})]};
     }
 
     private renderGraph() {
         if (this.state.error) {
-            return JSON.stringify(this.state.error).includes("could not find the requested resource") ?
-                    <EventsZeroState title='Not installed'/> :
-                    <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)}/>
-            ;
+            return JSON.stringify(this.state.error).includes('could not find the requested resource') ? (
+                <EventsZeroState title='Not installed' />
+            ) : (
+                <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} />
+            );
         }
         const g = this.graph;
         if (g.nodes.length === 0) {
-            return (<EventsZeroState title='No entities found'/>);
+            return <EventsZeroState title='No entities found' />;
         }
         return (
             <div>
-                <GraphOptionsPanel markActivations={this.markActivations}
-                                   onChange={changed => (this.markActivations = changed.markActivations)}/>
+                <GraphOptionsPanel markActivations={this.markActivations} onChange={changed => (this.markActivations = changed.markActivations)} />
                 <div style={{textAlign: 'center'}}>
-                    <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)}/>
+                    <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />
                 </div>
             </div>
         );
@@ -310,7 +307,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private fetch(namespace: string) {
-        const updateResources = (s: State, type: string, list: { items: { metadata: kubernetes.ObjectMeta }[] }) => {
+        const updateResources = (s: State, type: string, list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
             (list.items || []).forEach(v => {
                 s.resources[ID.join({type, namespace: v.metadata.namespace, name: v.metadata.name})] = v;
             });
