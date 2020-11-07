@@ -41,6 +41,7 @@ const icons: {[key: string]: string} = {
     'database': '\uf1c0',
     'envelope': '\uf0e0',
     'file': '\uf15b',
+    'file-alt': '\uf15c',
     'file-code': '\uf1c9',
     'filter': '\uf0b0',
     'hdd': '\uf0a0',

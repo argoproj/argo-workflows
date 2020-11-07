@@ -25,6 +25,7 @@ export const icons: {[type: string]: string} = {
     K8STrigger: manifest,
     KafkaEventSource: queue,
     KafkaTrigger: queue,
+    LogTrigger: 'file-alt',
     MinioEventSource: storage,
     MQTTEventSource: queue,
     NATSEventSource: queue,

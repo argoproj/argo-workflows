@@ -31,6 +31,8 @@ message LogEntry {
     string level = 5;
     k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;
     string msg = 7;
+    string dependencyName = 8;
+    string eventContext = 9;
 }
 
 service SensorService {

@@ -18,6 +18,7 @@ export interface Sensor {
                 custom?: {};
                 http?: {};
                 k8s?: {};
+                log?: {};
                 kafka?: {};
                 nats?: {};
                 openWhisk?: {};
@@ -48,7 +49,8 @@ export const triggerTypes: {[key: string]: string} = {
     http: 'HTTPTrigger',
     k8s: 'K8S',
     kafka: 'Kafka',
+    log: 'Log',
     nats: 'NATS',
     openWhisk: 'OpenWhisk',
-    slack: 'SlackTrigger'
+    slack: 'Slack'
 };

@@ -122,7 +122,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             .filter(([sensorId]) => ID.split(sensorId).type === 'Sensor')
             .forEach(([sensorId, sensor]) => {
                 const spec = (sensor as Sensor).spec;
-                spec.dependencies.forEach(d => {
+                (spec.dependencies || []).forEach(d => {
                     const eventId = ID.join({
                         type: 'EventSource',
                         namespace: sensor.metadata.namespace,
@@ -131,7 +131,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     });
                     edges.push({x: eventId, y: sensorId, label: d.name});
                 });
-                spec.triggers
+                (spec.triggers || [])
                     .map(t => t.template)
                     .filter(template => template)
                     .forEach(template => {
@@ -192,6 +192,27 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
 
     public render() {
         const selected = this.selected;
+        const exclude: string[] = [];
+        // if the user has selected a specific object then
+        if (selected) {
+            if (selected.kind === 'Sensor') {
+                exclude.push('sensorName');
+                if (!!selected.key) {
+                    exclude.push('triggerId');
+                }
+            } else {
+                exclude.push('eventSourceName');
+                if (!!selected.key) {
+                    exclude.push('eventSourceName');
+                    exclude.push('eventName');
+                }
+            }
+        }
+        const log = (e: any) =>
+            Object.entries(e)
+                .filter(([key]) => !exclude.includes(key))
+                .map(([key, value]) => key + '=' + value)
+                .join(', ') + '\n';
         return (
             <Page
                 title='Namespace'
@@ -226,12 +247,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                                         key: 'logs',
                                                         loadLogs: () =>
                                                             selected.kind === 'Sensor'
-                                                                ? services.sensor
-                                                                      .sensorsLogs(this.namespace, selected.name, selected.key, 50)
-                                                                      .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n')
-                                                                : services.eventSource
-                                                                      .eventSourcesLogs(this.namespace, selected.name, '', selected.key, 50)
-                                                                      .map(e => e.time + ' ' + e.level + ': ' + e.msg + '\n'),
+                                                                ? services.sensor.sensorsLogs(this.namespace, selected.name, selected.key, 50).map(log)
+                                                                : services.eventSource.eventSourcesLogs(this.namespace, selected.name, '', selected.key, 50).map(log),
                                                         shouldRepeat: () => false
                                                     }}
                                                 />

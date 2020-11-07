@@ -73,6 +73,7 @@ require (
 )
 
 replace (
+	github.com/argoproj/argo-events => ../argo-events
 	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.12.2
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
 )
