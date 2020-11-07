@@ -2285,7 +2285,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	}
 
 	mainCtr := tmpl.Script.Container
-	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
 	_, err = woc.createWorkflowPod(nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
