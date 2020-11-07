@@ -800,8 +800,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowTerminateDryRun() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowTerminateDryRun() {
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
@@ -813,8 +812,7 @@ func (s *CLIWithServerSuite) TestWorkflowTerminateDryRun() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowTerminateBySelector() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowTerminateBySelector() {
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
@@ -826,8 +824,7 @@ func (s *CLIWithServerSuite) TestWorkflowTerminateBySelector() {
 		})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowTerminateByFieldSelector() {
-	s.testNeedsOffloading()
+func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
 	s.Given().
 		Workflow("@testdata/basic-workflow.yaml").
 		When().
