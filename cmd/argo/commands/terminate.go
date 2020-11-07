@@ -54,7 +54,7 @@ func NewTerminateCommand() *cobra.Command {
   argo terminate @latest
 `,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 && t.isList() {
+			if len(args) == 0 && !t.isList() {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
@@ -95,6 +95,6 @@ func NewTerminateCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&t.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	command.Flags().StringVar(&t.fields, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.")
-	command.Flags().BoolVar(&t.dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
+	command.Flags().BoolVar(&t.dryRun, "dry-run", false, "Do not terminate the workflow, only print what would happen")
 	return command
 }

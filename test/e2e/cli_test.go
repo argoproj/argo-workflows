@@ -692,6 +692,19 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
+func (s *CLIWithServerSuite) TestWorkflowTerminateDryRun() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated \\(dry-run\\)", output)
+			}
+		})
+}
+
 func (s *CLIWithServerSuite) TestWorkflowTerminateBySelector() {
 	s.testNeedsOffloading()
 	s.Given().
