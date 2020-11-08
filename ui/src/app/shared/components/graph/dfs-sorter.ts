@@ -1,4 +1,4 @@
-import {Graph, Node} from '../../../../shared/components/graph/types';
+import {Graph, Node} from './types';
 
 export class DfsSorter {
     private graph: Graph;

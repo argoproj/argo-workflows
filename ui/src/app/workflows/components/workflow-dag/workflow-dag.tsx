@@ -3,12 +3,12 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 
 import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
+import {CoffmanGrahamSorter} from '../../../shared/components/graph/coffman-graham-sorter';
 import {formatLabel} from '../../../shared/components/graph/label';
 import {dagreLayout} from '../../../shared/components/graph/layout';
 import {Edge, Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
-import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
 import {getCollapsedNodeName, getMessage, getNodeParent, getType, isCollapsedNode} from './graph/collapsible-node';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 

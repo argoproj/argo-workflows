@@ -1,5 +1,5 @@
-import {Graph, Node} from '../../../../shared/components/graph/types';
 import {DfsSorter} from './dfs-sorter';
+import {Graph, Node} from './types';
 
 export class CoffmanGrahamSorter {
     private graph: Graph;
