@@ -18,6 +18,15 @@
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .graph-options-panel {
   margin: 10px;
   padding: 10px;
@@ -58,7 +67,7 @@
     cursor: pointer;
 
     .bg {
-      fill: black;
+      fill: $argo-color-gray-8;
       border: 1px solid $argo-color-gray-4;
     }
 
@@ -68,9 +77,30 @@
       }
     }
 
+    &.Suspended {
+      .bg {
+        fill: $argo-color-gray-6;
+      }
+    }
+
     &.Running {
       .bg {
         fill: $argo-running-color;
+      }
+      text  {
+        animation: spin 1s infinite;
+      }
+    }
+
+    &.Succeeded {
+      .bg {
+        fill: $argo-success-color;
+      }
+    }
+
+    &.Error, &.Failed {
+      .bg {
+        fill: $argo-failed-color;
       }
     }
 

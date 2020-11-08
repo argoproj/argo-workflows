@@ -28,20 +28,6 @@ export class Graph {
     public width?: number;
     public height?: number;
 
-    public removeTransitives() {
-        this.nodes.forEach((aLabel, a) => {
-            this.nodes.forEach((bLabel, b) => {
-                if (this.edgeExists(a, b)) {
-                    this.nodes.forEach((cLabel, c) => {
-                        if (this.edgeExists(b, c)) {
-                            this.removeEdge(a, c);
-                        }
-                    });
-                }
-            });
-        });
-    }
-
     public outgoingEdges(v: Node) {
         const edges: Node[] = [];
         this.edges.forEach((_, e) => {
@@ -60,13 +46,5 @@ export class Graph {
             }
         });
         return edges;
-    }
-
-    private edgeExists(v: Node, w: Node) {
-        return this.edges.has({v, w});
-    }
-
-    private removeEdge(v: Node, w: Node) {
-        this.edges.delete({v, w});
     }
 }

@@ -36,7 +36,7 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
-    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Warning' : 'Running';
+    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Active';
 };
 
 const types = new Set(['sensor'].concat(Object.keys(eventSources)).concat(Object.keys(triggerTypes)));

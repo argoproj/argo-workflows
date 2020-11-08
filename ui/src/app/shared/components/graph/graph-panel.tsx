@@ -4,7 +4,7 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 import {icons} from './icons';
 import {formatLabel} from './label';
-import {dagreLayout} from './layout';
+import {layout} from './layout';
 import {Graph, Node} from './types';
 
 require('./graph-panel.scss');
@@ -12,9 +12,7 @@ require('./graph-panel.scss');
 /*
 To be as featureful as the DAG graph we'd need:
 
-* Fast and Dagre layouts.
 * Animated - and percentage completed - running nodes.
-* Hidden nodes.
 
  */
 
@@ -25,13 +23,15 @@ interface Filter {
 interface State {
     nodeSize: number;
     horizontal: boolean;
+    fast: boolean;
     filter: Filter;
 }
 
 interface Props {
     graph: Graph;
     filter: Filter;
-    options?: React.ReactChildren;
+    options?: React.ReactNode;
+    nodeSize?: number;
     horizontal?: boolean;
     onSelect?: (id: string) => void;
 }
@@ -39,12 +39,17 @@ interface Props {
 export class GraphPanel extends React.Component<Props, State> {
     constructor(props: Readonly<Props>) {
         super(props);
-        this.state = {nodeSize: 64, horizontal: props.horizontal, filter: {types: new Set(this.props.filter.types)}};
+        this.state = {
+            nodeSize: props.nodeSize || 64,
+            horizontal: props.horizontal,
+            fast: false,
+            filter: {types: new Set(this.props.filter.types)}
+        };
     }
 
     public render() {
         const nodeSize = this.state.nodeSize;
-        dagreLayout(this.props.graph, nodeSize, this.state.horizontal, id => !this.visible(id));
+        layout(this.props.graph, nodeSize, this.state.horizontal, id => !this.visible(id), this.state.fast);
         const width = this.props.graph.width;
         const height = this.props.graph.height;
         return (
@@ -93,6 +98,10 @@ export class GraphPanel extends React.Component<Props, State> {
                     <a onClick={() => this.setState(s => ({nodeSize: s.nodeSize / 1.2}))} title='Zoom out'>
                         <i className='fa fa-search-minus' />
                     </a>
+                    <a onClick={() => this.setState(s => ({fast: !s.fast}))} title='Use faster, but less pretty rendered' className={this.state.fast ? 'active' : ''}>
+                        <i className='fa fa-bolt' />
+                    </a>
+                    {this.props.options}
                 </div>
                 <div className='graph'>
                     <svg key='graph' width={width + nodeSize * 2} height={height + nodeSize * 2}>
@@ -122,19 +131,20 @@ export class GraphPanel extends React.Component<Props, State> {
                                     </g>
                                 );
                             })}
-                            {Array.from(this.props.graph.edges).map(([e, label]) => (
-                                <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
-                                    <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
-                                    <g transform={`translate(${label.points[1].x},${label.points[1].y})`}>
-                                        <text className='label' style={{fontSize: nodeSize / 6}}>
-                                            {formatLabel(label.label)}
-                                        </text>
+                            {Array.from(this.props.graph.edges)
+                                .filter(([, label]) => label.points)
+                                .map(([e, label]) => (
+                                    <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
+                                        <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
+                                        <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
+                                            <text className='label' style={{fontSize: nodeSize / 6}}>
+                                                {formatLabel(label.label)}
+                                            </text>
+                                        </g>
                                     </g>
-                                </g>
-                            ))}
+                                ))}
                             {Array.from(this.props.graph.nodes)
-                                .filter(([_, label]) => label.x)
-                                .filter(([n]) => this.visible(n))
+                                .filter(([n, label]) => label.x !== null && this.visible(n))
                                 .map(([n, label]) => (
                                     <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`} className='node'>
                                         <title>{n}</title>

@@ -1,23 +1,17 @@
 import {Ticker} from 'argo-ui';
-import * as classNames from 'classnames';
 import * as React from 'react';
 
 import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
-import {CoffmanGrahamSorter} from '../../../shared/components/graph/coffman-graham-sorter';
-import {formatLabel} from '../../../shared/components/graph/label';
-import {dagreLayout} from '../../../shared/components/graph/layout';
-import {Edge, Graph} from '../../../shared/components/graph/types';
+import {GraphPanel} from '../../../shared/components/graph/graph-panel';
+import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
-import {getCollapsedNodeName, getMessage, getNodeParent, getType, isCollapsedNode} from './graph/collapsible-node';
+import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
+import {icons} from './icons';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
-    horizontal: boolean;
-    scale: number;
-    nodesToDisplay: string[];
     expandNodes: Set<string>;
-    fastRenderer: boolean;
 }
 
 export interface WorkflowDagProps {
@@ -27,25 +21,23 @@ export interface WorkflowDagProps {
     nodeClicked?: (nodeId: string) => any;
 }
 
-require('./workflow-dag.scss');
+const types = new Set(['Pod', 'Steps', 'DAG', 'Retry', 'Skipped', 'Suspend', 'TaskGroup', 'StepGroup']);
 
-type DagPhase = NodePhase | 'Suspended' | 'Collapsed-Horizontal' | 'Collapsed-Vertical';
+function dagPhase(n: NodeStatus) {
+    return n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
+}
 
-const LOCAL_STORAGE_KEY = 'DagOptions';
+function nodeLabel(n: NodeStatus) {
+    const p = dagPhase(n);
+    return {
+        label: Utils.shortNodeName(n),
+        type: n.type,
+        icon: icons[p],
+        classNames: p
+    };
+}
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
-    private get scale() {
-        return this.state.scale;
-    }
-
-    private get nodeSize() {
-        return 32 / this.scale;
-    }
-
-    private get gap() {
-        return 1.25 * this.nodeSize;
-    }
-
     /**
      * Return and SVG path for the phase.
      *
@@ -54,51 +46,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
      * * open the "times" page: https://fontawesome.com/icons/times?style=solid
      * * right click on the smallest icon (next to the unicode character) and view source.
      */
-    private static iconPath(phase: DagPhase, complete: number) {
+    // @ts-ignore
+    private static iconPath(phase: NodePhase, complete: number) {
         switch (phase) {
-            case 'Pending':
-                return (
-                    <path
-                        fill='currentColor'
-                        // tslint:disable-next-line
-                        d='M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z'
-                    />
-                );
-            case 'Failed':
-            case 'Error':
-                return (
-                    <g transform='translate(60,0)'>
-                        <path
-                            fill='currentColor'
-                            // tslint:disable-next-line
-                            d='M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z'
-                        />
-                    </g>
-                );
-            case 'Skipped':
-                return (
-                    <path
-                        fill='currentColor'
-                        // tslint:disable-next-line
-                        d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
-                    />
-                );
-            case 'Omitted':
-                return (
-                    <path
-                        fill='currentColor'
-                        // tslint:disable-next-line
-                        d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
-                    />
-                );
-            case 'Succeeded':
-                return (
-                    <path
-                        fill='currentColor'
-                        // tslint:disable-next-line
-                        d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'
-                    />
-                );
             case 'Running':
                 const radius = 250;
                 const offset = (2 * Math.PI * 3) / 4;
@@ -118,34 +68,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`}
                     />
                 );
-            case 'Suspended':
-                return (
-                    <path
-                        fill='currentColor'
-                        // tslint:disable-next-line
-                        d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
-                    />
-                );
-            case 'Collapsed-Horizontal':
-                return (
-                    <path
-                        fill='currentColor'
-                        // tslint:disable-next-line
-                        d='M328 256c0 39.8-32.2 72-72 72s-72-32.2-72-72 32.2-72 72-72 72 32.2 72 72zm104-72c-39.8 0-72 32.2-72 72s32.2 72 72 72 72-32.2 72-72-32.2-72-72-72zm-352 0c-39.8 0-72 32.2-72 72s32.2 72 72 72 72-32.2 72-72-32.2-72-72-72z'
-                    />
-                );
-            case 'Collapsed-Vertical':
-                return (
-                    <path
-                        fill='currentColor'
-                        transform='translate(150,0)'
-                        // tslint:disable-next-line
-                        d='M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z'
-                    />
-                );
         }
     }
 
+    // @ts-ignore
     private static complete(node: NodeStatus) {
         if (!node || !node.estimatedDuration) {
             return null;
@@ -153,13 +79,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return (new Date().getTime() - new Date(node.startedAt).getTime()) / 1000 / node.estimatedDuration;
     }
 
-    private hash: {scale: number; nodeCount: number; nodesToDisplay: string[]};
     private graph: Graph;
 
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
         this.state = {
-            ...this.getOptions(),
             expandNodes: new Set()
         };
     }
@@ -169,91 +93,23 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return <Loading />;
         }
         this.prepareGraph();
-        this.layoutGraph();
 
         return (
-            <>
-                <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />
-                <Ticker intervalMs={100}>
-                    {() => (
-                        <div className='workflow-dag'>
-                            <svg
-                                style={{
-                                    width: this.graph.width + this.gap * 2,
-                                    height: this.graph.height + this.gap * 2,
-                                    margin: this.nodeSize
-                                }}>
-                                <defs>
-                                    <marker
-                                        id='arrow'
-                                        viewBox='0 0 10 10'
-                                        refX={10}
-                                        refY={5}
-                                        markerWidth={this.nodeSize / 6}
-                                        markerHeight={this.nodeSize / 6}
-                                        orient='auto-start-reverse'>
-                                        <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
-                                    </marker>
-                                    <filter id='shadow' x='0' y='0' width='200%' height='200%'>
-                                        <feOffset result='offOut' in='SourceGraphic' dx={0.5} dy={0.5} />
-                                        <feColorMatrix result='matrixOut' in='offOut' type='matrix' values='0.1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 1 0' />
-                                        <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation={0.5} />
-                                        <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
-                                    </filter>
-                                </defs>
-                                <g transform={`translate(${this.gap},${this.gap})`}>
-                                    {Array.from(this.graph.edges).map(([e, label]) => {
-                                        const points = (label.points || []).map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                        return <path key={`line/${e.v}-${e.w}`} d={points} className='line' markerEnd={this.hiddenNode(e.w) ? '' : 'url(#arrow)'} />;
-                                    })}
-                                    {Array.from(this.graph.nodes).map(([nodeId, v]) => {
-                                        let phase: DagPhase;
-                                        let label: string;
-                                        let hidden: boolean;
-                                        const node = this.getNode(nodeId);
-                                        if (isCollapsedNode(nodeId)) {
-                                            phase = this.state.horizontal ? 'Collapsed-Vertical' : 'Collapsed-Horizontal';
-                                            label = getMessage(nodeId);
-                                            hidden = this.hiddenNode(nodeId);
-                                        } else {
-                                            phase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
-                                            label = Utils.shortNodeName(node);
-                                            hidden = this.hiddenNode(nodeId);
-                                        }
-                                        return (
-                                            <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
-                                                <title>{label}</title>
-                                                <circle
-                                                    r={this.nodeSize / (hidden ? 16 : 2)}
-                                                    className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
-                                                        active: nodeId === this.props.selectedNodeId,
-                                                        hidden
-                                                    })}
-                                                />
-                                                {!hidden && (
-                                                    <>
-                                                        {this.icon(phase, WorkflowDag.complete(node))}
-                                                        <g transform={`translate(0,${this.nodeSize})`}>
-                                                            <text className='label' fontSize={12 / this.scale}>
-                                                                {formatLabel(label)}
-                                                            </text>
-                                                        </g>
-                                                    </>
-                                                )}
-                                            </g>
-                                        );
-                                    })}
-                                </g>
-                            </svg>
-                        </div>
-                    )}
-                </Ticker>
-            </>
+            <Ticker intervalMs={100}>
+                {() => (
+                    <GraphPanel
+                        graph={this.graph}
+                        filter={{types}}
+                        onSelect={id => this.selectNode(id)}
+                        nodeSize={48}
+                        options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
+                    />
+                )}
+            </Ticker>
         );
     }
 
     private saveOptions(newChanges: WorkflowDagRenderOptions) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
         this.setState(newChanges);
     }
 
@@ -263,31 +119,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return null;
         }
         return node;
-    }
-
-    private getOptions(): WorkflowDagRenderOptions {
-        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
-            return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as WorkflowDagRenderOptions;
-        }
-        return {
-            horizontal: false,
-            scale: 1,
-            nodesToDisplay: [
-                'phase:Pending',
-                'phase:Running',
-                'phase:Succeeded',
-                'phase:Skipped',
-                'phase:Failed',
-                'phase:Error',
-                'type:Pod',
-                'type:Steps',
-                'type:DAG',
-                'type:Retry',
-                'type:Skipped',
-                'type:Suspend'
-            ],
-            fastRenderer: false
-        } as WorkflowDagRenderOptions;
     }
 
     private prepareGraph() {
@@ -355,9 +186,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             while (queue.length > 0) {
                 const item = queue.pop();
 
+                const child = allNodes[item.nodeName];
                 if (isCollapsedNode(item.nodeName)) {
                     if (item.nodeName !== previousCollapsed) {
-                        nodes.set(item.nodeName, {label: item.nodeName, type: allNodes[item.nodeName].type});
+                        nodes.set(item.nodeName, {
+                            label: getMessage(item.nodeName),
+                            type: child.type,
+                            icon: icons.Collapsed
+                        });
                         edges.set({v: item.parent, w: item.nodeName}, {});
                         previousCollapsed = item.nodeName;
                     }
@@ -365,7 +201,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 }
 
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
-                nodes.set(item.nodeName, {label: item.nodeName, type: allNodes[item.nodeName].type});
+                nodes.set(item.nodeName, nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});
 
                 // If we have already considered the children of this node, don't consider them again
@@ -396,7 +232,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(v => {
                 const exitHandler = allNodes[onExitHandlerNodeId.id];
-                nodes.set(onExitHandlerNodeId.id, {label: exitHandler.name, type: exitHandler.type, icon: 'circle'});
+                nodes.set(onExitHandlerNodeId.id, nodeLabel(exitHandler));
                 if (nodes.has(v)) {
                     edges.set({v, w: onExitHandlerNodeId.id}, {});
                 }
@@ -409,57 +245,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             // Traverse the onExit tree starting from the onExit node itself
             traverse(onExitRoot);
         }
-        return {nodes, edges};
-    }
-
-    private layoutGraphPretty() {
-        dagreLayout(this.graph, this.nodeSize, this.state.horizontal, id => this.hiddenNode(id));
-    }
-
-    private layoutGraphFast() {
-        const layers = new CoffmanGrahamSorter(this.graph).sort();
-
-        // we have a lot of logic here about laying it out with suitable gaps - but what if we
-        // would just translate it somehow?
-        if (this.state.horizontal) {
-            this.graph.width = layers.length * this.gap * 2;
-        } else {
-            this.graph.height = layers.length * this.gap * 2;
-        }
-        layers.forEach(level => {
-            if (this.state.horizontal) {
-                this.graph.height = Math.max(this.graph.height, level.length * this.gap * 2);
-            } else {
-                this.graph.width = Math.max(this.graph.width, level.length * this.gap * 2);
-            }
-        });
-        layers.forEach((level, i) => {
-            level.forEach((node, j) => {
-                const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.gap;
-                const t = !this.state.horizontal ? 0 : this.graph.height / 2 - level.length * this.gap;
-                const label = this.graph.nodes.get(node);
-                label.x = (this.state.horizontal ? i : j) * this.gap * 2 + l;
-                label.y = (this.state.horizontal ? j : i) * this.gap * 2 + t;
-            });
-        });
-        this.graph.edges.forEach((label, e) => (label.points = this.generateEdge(e)));
-    }
-
-    private generateEdge(edge: Edge) {
-        // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
-        const h = this.state.horizontal ? this.nodeSize / 2 : 0;
-        const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
-        return [
-            {
-                // for hidden nodes, we want to size them zero
-                x: this.graph.nodes.get(edge.v).x + (this.hiddenNode(edge.v) ? 0 : h),
-                y: this.graph.nodes.get(edge.v).y + (this.hiddenNode(edge.v) ? 0 : v)
-            },
-            {
-                x: this.graph.nodes.get(edge.w).x - (this.hiddenNode(edge.w) ? 0 : h),
-                y: this.graph.nodes.get(edge.w).y - (this.hiddenNode(edge.w) ? 0 : v)
-            }
-        ];
     }
 
     private selectNode(nodeId: string) {
@@ -478,19 +263,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
     }
 
-    private icon(phase: DagPhase, complete: number) {
-        return (
-            <g>
-                <g transform={`translate(-${this.nodeSize / 4},-${this.nodeSize / 4}), scale(${0.032 / this.scale})`} color='white'>
-                    {WorkflowDag.iconPath(phase, complete)}
-                </g>
-                {phase === 'Running' && (!complete || complete >= 1) && (
-                    <animateTransform attributeType='xml' attributeName='transform' type='rotate' from='0 0 0 ' to='360 0 0' dur='2s' additive='sum' repeatCount='indefinite' />
-                )}
-            </g>
-        );
-    }
-
     private getOutboundNodes(nodeID: string): string[] {
         const node = this.getNode(nodeID);
         if (node.type === 'Pod' || node.type === 'Skipped') {
@@ -506,32 +278,5 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             }
         }
         return outbound;
-    }
-
-    private hiddenNode(id: string): boolean {
-        if (isCollapsedNode(id)) {
-            return !this.state.nodesToDisplay.includes('type:' + getType(id));
-        }
-
-        const node = this.getNode(id);
-        // Filter the node if it is a virtual node or a Retry node with one child
-        return (
-            !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
-            (node.type === 'Retry' && node.children.length === 1)
-        );
-    }
-
-    private layoutGraph() {
-        const hash = {scale: this.scale, nodeCount: this.graph.nodes.size, nodesToDisplay: this.state.nodesToDisplay};
-        // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
-        if (this.hash === hash) {
-            return;
-        }
-        this.hash = hash;
-        if (this.state.fastRenderer) {
-            this.layoutGraphFast();
-        } else {
-            this.layoutGraphPretty();
-        }
     }
 }
