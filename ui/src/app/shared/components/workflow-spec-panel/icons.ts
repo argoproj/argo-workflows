@@ -1,0 +1,21 @@
+export const icons: {[key: string]: string} = {
+    artifact: 'database',
+    artifacts: 'database',
+    dag: 'sitemap',
+    container: 'box',
+    onExit: 'sign-out-alt',
+    parameters: 'keyboard',
+    resource: 'file-code',
+    script: 'box',
+    step: 'check',
+    steps: 'tasks',
+    suspend: 'pause-circle',
+    task: 'square',
+    templateRef: 'window-maximize',
+    clusterTemplateRef: 'window-restore',
+    when: 'filter',
+    withItems: 'sync-alt',
+    withParam: 'sync-alt',
+    withSequence: 'sync-alt',
+    workflow: 'sitemap'
+};

@@ -15,7 +15,6 @@ interface Props<T> {
     namespace?: string;
     title?: string;
     value: T;
-    readonly?: boolean;
     editing?: boolean;
     onSubmit?: (value: T) => Promise<any>;
 }
@@ -101,7 +100,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
         return (
             <>
                 {this.props.title && <h4>{this.props.title}</h4>}
-                {!this.props.readonly && this.renderButtons()}
+                {this.renderButtons()}
                 {this.state.error && <ErrorNotice error={this.state.error} />}
                 <div className='resource-editor-panel__editor'>
                     <MonacoEditor
@@ -111,7 +110,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                         height={'600px'}
                         onChange={value => this.setState({value})}
                         options={{
-                            readOnly: this.props.readonly || !this.state.editing,
+                            readOnly: this.props.onSubmit === null || !this.state.editing,
                             extraEditorClassName: 'resource',
                             minimap: {enabled: false},
                             lineNumbers: 'off',
@@ -133,26 +132,27 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private renderButtons() {
         return (
             <div>
-                {(this.state.editing && (
-                    <>
-                        <ToggleButton toggled={this.state.lang === 'yaml'} onToggle={() => this.changeLang()}>
-                            YAML
-                        </ToggleButton>
-                        {this.props.upload && (
-                            <label className='argo-button argo-button--base-o' key='upload-file'>
-                                <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
-                                <i className='fa fa-upload' /> Upload file
-                            </label>
-                        )}
-                        <button onClick={() => this.submit()} className='argo-button argo-button--base' key='submit'>
-                            <i className='fa fa-plus' /> Submit
+                <ToggleButton toggled={this.state.lang === 'yaml'} onToggle={() => this.changeLang()}>
+                    YAML
+                </ToggleButton>
+                {!!this.props.onSubmit &&
+                    (this.state.editing ? (
+                        <>
+                            {this.props.upload && (
+                                <label className='argo-button argo-button--base-o' key='upload-file'>
+                                    <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
+                                    <i className='fa fa-upload' /> Upload file
+                                </label>
+                            )}
+                            <button onClick={() => this.submit()} className='argo-button argo-button--base' key='submit'>
+                                <i className='fa fa-plus' /> Submit
+                            </button>
+                        </>
+                    ) : (
+                        <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base' key='edit'>
+                            <i className='fa fa-edit' /> Edit
                         </button>
-                    </>
-                )) || (
-                    <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base' key='edit'>
-                        <i className='fa fa-edit' /> Edit
-                    </button>
-                )}
+                    ))}
             </div>
         );
     }
@@ -160,7 +160,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private submit() {
         try {
             const value = parse(this.state.value);
-            if (!value.metadata.namespace && this.props.namespace) {
+            if (value.metadata && !value.metadata.namespace && this.props.namespace) {
                 value.metadata.namespace = this.props.namespace;
             }
             this.props
@@ -173,6 +173,9 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     }
 
     private renderWarning() {
+        if (!this.state.editing) {
+            return;
+        }
         return (
             <div style={{marginTop: '1em'}}>
                 <i className='fa fa-info-circle' />{' '}

@@ -5,7 +5,7 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 export const WorkflowResourcePanel = (props: {workflow: Workflow}) => (
     <div className='white-box' key='workflow-resource'>
         <div className='white-box__details'>
-            <ResourceEditor readonly={true} value={props.workflow} kind='Workflow' />
+            <ResourceEditor value={props.workflow} kind='Workflow' />
         </div>
     </div>
 );

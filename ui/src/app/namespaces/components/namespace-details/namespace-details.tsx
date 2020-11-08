@@ -8,6 +8,8 @@ import {Sensor, triggerTypes} from '../../../../models/sensor';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {GraphPanel} from '../../../shared/components/graph/graph-panel';
+import {Graph} from '../../../shared/components/graph/types';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
@@ -15,8 +17,6 @@ import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {EventsZeroState} from './events-zero-state';
-import {GraphOptionsPanel} from './graph-options-panel';
-import {Edge, Graph, GraphPanel, Node} from './graph-panel';
 import {icons} from './icons';
 import {ID} from './id';
 
@@ -32,11 +32,11 @@ interface State {
     active: {[id: string]: any};
 }
 
-const phase = (r: {status?: {conditions?: Condition[]}}) => {
+const status = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
-    return r.status.conditions.find(c => c.status !== 'True') ? 'Warning' : 'Running';
+    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Warning' : 'Running';
 };
 
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
@@ -80,18 +80,17 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private get graph(): Graph {
-        const nodes: Node[] = Object.entries(this.state.resources)
+        const graph: Graph = {nodes: new Map(), edges: new Map(), nodeGroups: new Map()};
+        Object.entries(this.state.resources)
             .filter(([id]) => ID.split(id).type === 'Sensor')
-            .map(([sensorId, sensor]) => ({
-                id: sensorId,
-                type: 'sensor',
-                label: sensor.metadata.name,
-                icon: icons.Sensor,
-                phase: phase(sensor),
-                active: !!this.state.active[sensorId]
-            }));
-
-        const edges: Edge[] = [];
+            .forEach(([sensorId, sensor]) => {
+                graph.nodes.set(sensorId, {
+                    type: 'sensor',
+                    label: sensor.metadata.name,
+                    icon: icons.Sensor,
+                    classNames: this.classNames(sensor, sensorId)
+                });
+            });
 
         Object.entries(this.state.resources)
             .filter(([eventSourceId]) => ID.split(eventSourceId).type === 'EventSource')
@@ -107,13 +106,11 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 name: eventSource.metadata.name,
                                 key
                             });
-                            nodes.push({
-                                id: eventId,
+                            graph.nodes.set(eventId, {
                                 type: typeKey,
                                 label: key,
-                                phase: phase(eventSource),
-                                icon: icons[eventSources[typeKey] + 'EventSource'],
-                                active: !!this.state.active[eventId]
+                                classNames: this.classNames(eventSource, eventId),
+                                icon: icons[eventSources[typeKey] + 'EventSource']
                             });
                         });
                     });
@@ -129,7 +126,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         name: d.eventSourceName,
                         key: d.eventName
                     });
-                    edges.push({x: eventId, y: sensorId, label: d.name});
+                    graph.edges.set({v: eventId, w: sensorId}, {label: d.name});
                 });
                 (spec.triggers || [])
                     .map(t => t.template)
@@ -142,13 +139,11 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             name: sensor.metadata.name,
                             key: template.name
                         });
-                        nodes.push({
-                            id: triggerId,
+                        graph.nodes.set(triggerId, {
                             label: template.name,
                             type: triggerTypeKey,
-                            phase: phase(sensor),
-                            icon: icons[triggerTypes[triggerTypeKey] + 'Trigger'],
-                            active: !!this.state.active[triggerId]
+                            classNames: this.classNames(sensor, triggerId),
+                            icon: icons[triggerTypes[triggerTypeKey] + 'Trigger']
                         });
                         if (template.conditions) {
                             const conditionsId = ID.join({
@@ -157,21 +152,20 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 name: sensor.metadata.name,
                                 key: template.conditions
                             });
-                            nodes.push({
-                                id: conditionsId,
-                                label: template.conditions,
+                            graph.nodes.set(conditionsId, {
                                 type: 'conditions',
+                                label: template.conditions,
                                 icon: icons.Conditions,
-                                active: !!this.state.active[conditionsId]
+                                classNames: ''
                             });
-                            edges.push({x: sensorId, y: conditionsId});
-                            edges.push({x: conditionsId, y: triggerId});
+                            graph.edges.set({v: sensorId, w: conditionsId}, {});
+                            graph.edges.set({v: conditionsId, w: triggerId}, {});
                         } else {
-                            edges.push({x: sensorId, y: triggerId});
+                            graph.edges.set({v: sensorId, w: triggerId}, {});
                         }
                     });
             });
-        return {nodes, edges};
+        return graph;
     }
 
     private get selected() {
@@ -218,6 +212,15 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 title='Namespace'
                 toolbar={{
                     breadcrumbs: [{title: 'Namespaces', path: uiUrl('namespaces')}],
+                    actionMenu: {
+                        items: [
+                            {
+                                action: () => (this.markActivations = !this.markActivations),
+                                iconClassName: this.markActivations ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
+                                title: 'Mark activations'
+                            }
+                        ]
+                    },
                     tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
                 {this.renderGraph()}
@@ -235,7 +238,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'SUMMARY',
                                         key: 'summary',
-                                        content: <ResourceEditor readonly={true} kind={selected.kind} value={selected.value} />
+                                        content: <ResourceEditor kind={selected.kind} value={selected.value} />
                                     },
                                     {
                                         title: 'LOGS',
@@ -295,17 +298,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             );
         }
         const g = this.graph;
-        if (g.nodes.length === 0) {
+        if (g.nodes.size === 0) {
             return <EventsZeroState title='No entities found' />;
         }
-        return (
-            <div>
-                <GraphOptionsPanel markActivations={this.markActivations} onChange={changed => (this.markActivations = changed.markActivations)} />
-                <div style={{textAlign: 'center'}}>
-                    <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />
-                </div>
-            </div>
-        );
+        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />;
     }
 
     private saveHistory() {
@@ -396,6 +392,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     error => this.setState({error})
                 )
         ];
+    }
+
+    private classNames(r: {status?: {conditions?: Condition[]}}, id: string) {
+        return status(r) + (!!this.state.active[id] ? ' active' : '');
     }
 
     private markActive(id: string) {

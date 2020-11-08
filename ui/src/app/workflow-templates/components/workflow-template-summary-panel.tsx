@@ -3,6 +3,7 @@ import * as React from 'react';
 import {WorkflowTemplate} from '../../../models';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
+import {WorkflowSpecPanel} from '../../shared/components/workflow-spec-panel/workflow-spec-panel';
 import {services} from '../../shared/services';
 
 interface Props {
@@ -26,6 +27,12 @@ export const WorkflowTemplateSummaryPanel = (props: Props) => {
                             <div className='columns small-9'>{attr.value}</div>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            <div className='white-box'>
+                <div className='white-box__details'>
+                    <WorkflowSpecPanel spec={props.template.spec} />
                 </div>
             </div>
 

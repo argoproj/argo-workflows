@@ -4,6 +4,7 @@ import * as dagre from 'dagre';
 import * as React from 'react';
 
 import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
+import {formatLabel} from '../../../shared/components/graph/label';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
@@ -145,35 +146,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
     }
 
-    private static formatLabel(label: string) {
-        const maxPerLine = 14;
-        if (label.length <= maxPerLine) {
-            return <tspan>{label}</tspan>;
-        }
-        if (label.length <= maxPerLine * 2) {
-            return (
-                <>
-                    <tspan x={0} dy='-0.2em'>
-                        {label.substr(0, label.length / 2)}
-                    </tspan>
-                    <tspan x={0} dy='1.2em'>
-                        {label.substr(label.length / 2)}
-                    </tspan>
-                </>
-            );
-        }
-        return (
-            <>
-                <tspan x={0} dy='-0.2em'>
-                    {label.substr(0, maxPerLine - 2)}..
-                </tspan>
-                <tspan x={0} dy='1.2em'>
-                    {label.substr(label.length + 1 - maxPerLine)}
-                </tspan>
-            </>
-        );
-    }
-
     private static complete(node: NodeStatus) {
         if (!node || !node.estimatedDuration) {
             return null;
@@ -268,7 +240,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                                         {this.icon(phase, WorkflowDag.complete(node))}
                                                         <g transform={`translate(0,${this.nodeSize})`}>
                                                             <text className='label' fontSize={12 / this.scale}>
-                                                                {WorkflowDag.formatLabel(label)}
+                                                                {formatLabel(label)}
                                                             </text>
                                                         </g>
                                                     </>
