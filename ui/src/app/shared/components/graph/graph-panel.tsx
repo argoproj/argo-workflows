@@ -2,22 +2,16 @@ import {Checkbox} from 'argo-ui/src/components/checkbox';
 import {DropDown} from 'argo-ui/src/components/dropdown/dropdown';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import {icons} from './icons';
+import {GraphIcon} from './icon';
 import {formatLabel} from './label';
 import {layout} from './layout';
 import {Graph, Node} from './types';
 
 require('./graph-panel.scss');
 
-/*
-To be as featureful as the DAG graph we'd need:
-
-* Animated - and percentage completed - running nodes.
-
- */
-
 interface Filter {
     types: Set<string>;
+    classNames: Set<string>;
 }
 
 interface State {
@@ -43,7 +37,7 @@ export class GraphPanel extends React.Component<Props, State> {
             nodeSize: props.nodeSize || 64,
             horizontal: props.horizontal,
             fast: false,
-            filter: {types: new Set(this.props.filter.types)}
+            filter: {types: new Set(this.props.filter.types), classNames: new Set(this.props.filter.classNames)}
         };
     }
 
@@ -58,32 +52,63 @@ export class GraphPanel extends React.Component<Props, State> {
                     <DropDown
                         isMenu={true}
                         anchor={() => (
-                            <div className={classNames('top-bar__filter', {'top-bar__filter--selected': this.props.filter.types.size > this.state.filter.types.size})}>
+                            <div
+                                className={classNames('top-bar__filter', {
+                                    'top-bar__filter--selected':
+                                        this.props.filter.types.size > this.state.filter.types.size || this.props.filter.classNames.size > this.state.filter.classNames.size
+                                })}>
                                 <i className='argo-icon-filter' aria-hidden='true' />
                                 <i className='fa fa-angle-down' aria-hidden='true' />
                             </div>
                         )}>
+                        <p>Types</p>
                         <ul>
                             {Array.from(this.props.filter.types)
                                 .sort()
-                                .map(type => (
-                                    <li key={'type/' + type} className='top-bar__filter-item'>
+                                .map(x => (
+                                    <li key={x} className='top-bar__filter-item'>
                                         <label>
                                             <Checkbox
-                                                checked={this.state.filter.types.has(type)}
+                                                checked={this.state.filter.types.has(x)}
                                                 onChange={checked => {
                                                     this.setState(s => {
                                                         const filter = s.filter;
                                                         if (checked) {
-                                                            filter.types.add(type);
+                                                            filter.types.add(x);
                                                         } else {
-                                                            filter.types.delete(type);
+                                                            filter.types.delete(x);
                                                         }
                                                         return {filter: {...filter}};
                                                     });
                                                 }}
                                             />{' '}
-                                            {type}
+                                            {x}
+                                        </label>
+                                    </li>
+                                ))}
+                        </ul>
+                        <p>Classes</p>
+                        <ul>
+                            {Array.from(this.props.filter.classNames)
+                                .sort()
+                                .map(x => (
+                                    <li key={x} className='top-bar__filter-item'>
+                                        <label>
+                                            <Checkbox
+                                                checked={this.state.filter.classNames.has(x)}
+                                                onChange={checked => {
+                                                    this.setState(s => {
+                                                        const filter = s.filter;
+                                                        if (checked) {
+                                                            filter.classNames.add(x);
+                                                        } else {
+                                                            filter.classNames.delete(x);
+                                                        }
+                                                        return {filter: {...filter}};
+                                                    });
+                                                }}
+                                            />{' '}
+                                            {x}
                                         </label>
                                     </li>
                                 ))}
@@ -150,13 +175,9 @@ export class GraphPanel extends React.Component<Props, State> {
                                         <title>{n}</title>
                                         <g className={`icon ${label.classNames || ''}`} onClick={() => this.props.onSelect && this.props.onSelect(n)}>
                                             <circle r={nodeSize / 2} className='bg' />
-                                            <text>
-                                                <tspan x={0} y={nodeSize / 16} className='icon' style={{fontSize: nodeSize / 2}}>
-                                                    {icons[label.icon]}
-                                                </tspan>
-                                                <tspan x={0} y={nodeSize / 3.5} className='type' style={{fontSize: nodeSize / 5}}>
-                                                    {label.type}
-                                                </tspan>
+                                            <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
+                                            <text y={nodeSize / 3} className='type' style={{fontSize: nodeSize / 5}}>
+                                                {label.type}
                                             </text>
                                         </g>
                                         <g className='label' transform={`translate(0,${(nodeSize * 3) / 4})`}>
@@ -172,6 +193,7 @@ export class GraphPanel extends React.Component<Props, State> {
     }
 
     private visible(id: Node) {
-        return this.state.filter.types.has(this.props.graph.nodes.get(id).type);
+        const label = this.props.graph.nodes.get(id);
+        return this.state.filter.types.has(label.type) && Array.from(this.state.filter.classNames).find(className => (label.classNames || '').includes(className)) !== null;
     }
 }

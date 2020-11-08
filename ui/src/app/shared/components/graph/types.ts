@@ -6,6 +6,7 @@ export interface NodeLabel {
     label: string;
     icon?: string;
     classNames?: string;
+    progress?: number;
     x?: number;
     y?: number;
 }

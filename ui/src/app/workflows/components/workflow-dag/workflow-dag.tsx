@@ -1,7 +1,7 @@
 import {Ticker} from 'argo-ui';
 import * as React from 'react';
 
-import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
+import {NODE_PHASE, NodeStatus} from '../../../../models';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
@@ -21,10 +21,17 @@ export interface WorkflowDagProps {
     nodeClicked?: (nodeId: string) => any;
 }
 
-const types = new Set(['Pod', 'Steps', 'DAG', 'Retry', 'Skipped', 'Suspend', 'TaskGroup', 'StepGroup']);
+const types = new Set(['Pod', 'Steps', 'DAG', 'Retry', 'Skipped', 'Suspend', 'TaskGroup', 'StepGroup', 'Collapsed']);
 
 function dagPhase(n: NodeStatus) {
     return n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
+}
+
+function progress(n: NodeStatus) {
+    if (!n || !n.estimatedDuration) {
+        return null;
+    }
+    return (new Date().getTime() - new Date(n.startedAt).getTime()) / 1000 / n.estimatedDuration;
 }
 
 function nodeLabel(n: NodeStatus) {
@@ -33,52 +40,12 @@ function nodeLabel(n: NodeStatus) {
         label: Utils.shortNodeName(n),
         type: n.type,
         icon: icons[p],
+        progress: n.phase === 'Running' && progress(n),
         classNames: p
     };
 }
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
-    /**
-     * Return and SVG path for the phase.
-     *
-     * This copied and pasted from the Font Awesome page because it was easier to do that than try harder.
-     * E.g.
-     * * open the "times" page: https://fontawesome.com/icons/times?style=solid
-     * * right click on the smallest icon (next to the unicode character) and view source.
-     */
-    // @ts-ignore
-    private static iconPath(phase: NodePhase, complete: number) {
-        switch (phase) {
-            case 'Running':
-                const radius = 250;
-                const offset = (2 * Math.PI * 3) / 4;
-                const theta0 = offset;
-                // clip the line to min 5% max 95% so something always renders
-                const theta1 = 2 * Math.PI * Math.max(0.05, Math.min(0.95, complete || 1)) + offset;
-                const start = {x: 250 + radius * Math.cos(theta0), y: 250 + radius * Math.sin(theta0)};
-                const end = {x: 250 + radius * Math.cos(theta1), y: 250 + radius * Math.sin(theta1)};
-                const theta = theta1 - theta0;
-                const largeArcFlag = theta > Math.PI ? 1 : 0;
-                const sweepFlag = 1;
-                return (
-                    <path
-                        stroke='currentColor'
-                        strokeWidth={70}
-                        fill='transparent'
-                        d={`M${start.x},${start.y} A${radius},${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x},${end.y}`}
-                    />
-                );
-        }
-    }
-
-    // @ts-ignore
-    private static complete(node: NodeStatus) {
-        if (!node || !node.estimatedDuration) {
-            return null;
-        }
-        return (new Date().getTime() - new Date(node.startedAt).getTime()) / 1000 / node.estimatedDuration;
-    }
-
     private graph: Graph;
 
     constructor(props: Readonly<WorkflowDagProps>) {
@@ -99,7 +66,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 {() => (
                     <GraphPanel
                         graph={this.graph}
-                        filter={{types}}
+                        filter={{types, classNames: new Set(Object.keys(icons))}}
                         onSelect={id => this.selectNode(id)}
                         nodeSize={48}
                         options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
@@ -186,12 +153,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             while (queue.length > 0) {
                 const item = queue.pop();
 
-                const child = allNodes[item.nodeName];
                 if (isCollapsedNode(item.nodeName)) {
                     if (item.nodeName !== previousCollapsed) {
                         nodes.set(item.nodeName, {
                             label: getMessage(item.nodeName),
-                            type: child.type,
+                            type: 'Collapsed',
                             icon: icons.Collapsed
                         });
                         edges.set({v: item.parent, w: item.nodeName}, {});
@@ -199,7 +165,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     }
                     continue;
                 }
-
+                const child = allNodes[item.nodeName];
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
                 nodes.set(item.nodeName, nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});

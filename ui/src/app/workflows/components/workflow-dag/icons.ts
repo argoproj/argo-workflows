@@ -1,5 +1,5 @@
 export const icons: {[key: string]: string} = {
-    Collapsed: 'ellipsis-v',
+    Collapsed: 'ellipsis-h',
     Error: 'times-circle',
     Failed: 'times-circle',
     Omitted: 'arrow-right',

@@ -303,7 +303,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         if (g.nodes.size === 0) {
             return <EventsZeroState title='No entities found' />;
         }
-        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} horizontal={true} filter={{types}} />;
+        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} horizontal={true} filter={{types, classNames: new Set(['Pending', 'Active'])}} />;
     }
 
     private saveHistory() {

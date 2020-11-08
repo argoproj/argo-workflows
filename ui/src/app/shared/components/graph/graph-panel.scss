@@ -19,9 +19,6 @@
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
   to {
     transform: rotate(360deg);
   }
@@ -67,7 +64,7 @@
     cursor: pointer;
 
     .bg {
-      fill: $argo-color-gray-8;
+      fill: $argo-color-gray-6;
       border: 1px solid $argo-color-gray-4;
     }
 
@@ -76,7 +73,6 @@
         fill: $argo-status-warning-color;
       }
     }
-
     &.Suspended {
       .bg {
         fill: $argo-color-gray-6;
@@ -87,8 +83,8 @@
       .bg {
         fill: $argo-running-color;
       }
-      text  {
-        animation: spin 1s infinite;
+      text.icon  {
+        animation: spin 1s linear infinite;
       }
     }
 
@@ -109,13 +105,18 @@
     }
 
     text {
-      alignment-baseline: bottom;
-      text-anchor: middle;
+      text-anchor: middle ;
+      dominant-baseline: middle;
       fill: $argo-color-gray-2;
 
-      .icon {
+      &.icon {
         font-family: "Font Awesome 5 Free", serif;
       }
+    }
+    path.icon {
+      fill: transparent;
+      stroke:  $argo-color-gray-2;
+      stroke-width: 4;
     }
   }
 
