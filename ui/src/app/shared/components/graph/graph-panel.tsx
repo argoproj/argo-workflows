@@ -17,27 +17,33 @@ To be as featureful as the DAG graph we'd need:
 
 interface State {
     nodeSize: number;
+    horizontal: boolean;
 }
 
 interface Props {
     graph: Graph;
+    options?: React.ReactChildren;
+    horizontal?: boolean;
     onSelect?: (id: string) => void;
 }
 
 export class GraphPanel extends React.Component<Props, State> {
     constructor(props: Readonly<Props>) {
         super(props);
-        this.state = {nodeSize: 64};
+        this.state = {nodeSize: 64, horizontal: props.horizontal};
     }
 
     public render() {
         const nodeSize = this.state.nodeSize;
-        dagreLayout(this.props.graph, nodeSize);
+        dagreLayout(this.props.graph, nodeSize, this.state.horizontal);
         const width = this.props.graph.width;
         const height = this.props.graph.height;
         return (
             <div>
                 <div className='graph-options-panel'>
+                    <a onClick={() => this.setState(s => ({horizontal: !s.horizontal}))} title='Horizontal/vertical layout'>
+                        <i className={`fas ${this.state.horizontal ? 'fa-arrows-alt-h' : 'fa-arrows-alt-v'}`} />
+                    </a>
                     <a onClick={() => this.setState(s => ({nodeSize: s.nodeSize * 1.2}))} title='Zoom in'>
                         <i className='fa fa-search-plus' />
                     </a>

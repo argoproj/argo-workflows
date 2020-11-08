@@ -301,7 +301,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         if (g.nodes.size === 0) {
             return <EventsZeroState title='No entities found' />;
         }
-        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} />;
+        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} horizontal={true} />;
     }
 
     private saveHistory() {

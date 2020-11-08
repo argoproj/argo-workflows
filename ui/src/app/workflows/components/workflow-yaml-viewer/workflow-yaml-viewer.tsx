@@ -11,7 +11,6 @@ export interface WorkflowYamlViewerProps {
 }
 
 export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps> {
-
     public render() {
         const contents: JSX.Element[] = [];
         contents.push(<h3 key='title'>Node</h3>);
@@ -49,16 +48,11 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             );
         }
 
-        return (
-            <div className='workflow-yaml-viewer'>
-                {contents}
-            </div>
-        );
+        return <div className='workflow-yaml-viewer'>{contents}</div>;
     }
 
     private normalizeNodeName(name: string) {
         const parts = name.replace(/([(][^)]*[)])/g, '').split('.');
         return parts[parts.length - 1];
     }
-
 }
