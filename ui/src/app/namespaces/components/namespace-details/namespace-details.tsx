@@ -39,6 +39,8 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
     return !!r.status.conditions.find(c => c.status !== 'True') ? 'Warning' : 'Running';
 };
 
+const types = new Set(['sensor'].concat(Object.keys(eventSources)).concat(Object.keys(triggerTypes)));
+
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
     private markActivationsSubscriptions: Subscription[];
 
@@ -301,7 +303,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         if (g.nodes.size === 0) {
             return <EventsZeroState title='No entities found' />;
         }
-        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} horizontal={true} />;
+        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} horizontal={true} filter={{types}} />;
     }
 
     private saveHistory() {

@@ -1,12 +1,17 @@
 import * as dagre from 'dagre';
-import {Graph} from './types';
+import {Graph, Node} from './types';
 
-export const dagreLayout = (graph: Graph, nodeSize: number, horizontal = true) => {
+export const dagreLayout = (graph: Graph, nodeSize: number, horizontal = true, hidden: (id: Node) => boolean = () => false) => {
     const gap = nodeSize * 1.25;
     const g = new dagre.graphlib.Graph();
     g.setGraph({rankdir: horizontal ? 'LR' : 'TB', ranksep: gap, nodesep: gap});
     g.setDefaultEdgeLabel(() => ({}));
-    graph.nodes.forEach((label, id) => g.setNode(id, {width: nodeSize, height: nodeSize}));
+    graph.nodes.forEach((label, id) =>
+        g.setNode(id, {
+            width: hidden(id) ? 2 : nodeSize,
+            height: hidden(id) ? 2 : nodeSize
+        })
+    );
     graph.edges.forEach((label, e) => g.setEdge(e.v, e.w));
 
     dagre.layout(g);

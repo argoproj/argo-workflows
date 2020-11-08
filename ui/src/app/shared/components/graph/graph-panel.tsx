@@ -1,8 +1,11 @@
+import {Checkbox} from 'argo-ui/src/components/checkbox';
+import {DropDown} from 'argo-ui/src/components/dropdown/dropdown';
+import * as classNames from 'classnames';
 import * as React from 'react';
 import {icons} from './icons';
 import {formatLabel} from './label';
 import {dagreLayout} from './layout';
-import {Graph} from './types';
+import {Graph, Node} from './types';
 
 require('./graph-panel.scss');
 
@@ -15,13 +18,19 @@ To be as featureful as the DAG graph we'd need:
 
  */
 
+interface Filter {
+    types: Set<string>;
+}
+
 interface State {
     nodeSize: number;
     horizontal: boolean;
+    filter: Filter;
 }
 
 interface Props {
     graph: Graph;
+    filter: Filter;
     options?: React.ReactChildren;
     horizontal?: boolean;
     onSelect?: (id: string) => void;
@@ -30,17 +39,51 @@ interface Props {
 export class GraphPanel extends React.Component<Props, State> {
     constructor(props: Readonly<Props>) {
         super(props);
-        this.state = {nodeSize: 64, horizontal: props.horizontal};
+        this.state = {nodeSize: 64, horizontal: props.horizontal, filter: this.props.filter};
     }
 
     public render() {
         const nodeSize = this.state.nodeSize;
-        dagreLayout(this.props.graph, nodeSize, this.state.horizontal);
+        dagreLayout(this.props.graph, nodeSize, this.state.horizontal, id => !this.visible(id));
         const width = this.props.graph.width;
         const height = this.props.graph.height;
         return (
             <div>
                 <div className='graph-options-panel'>
+                    <DropDown
+                        isMenu={true}
+                        anchor={() => (
+                            <div className={classNames('top-bar__filter', {'top-bar__filter--selected': this.props.filter.types !== this.state.filter.types})}>
+                                <i className='argo-icon-filter' aria-hidden='true' />
+                                <i className='fa fa-angle-down' aria-hidden='true' />
+                            </div>
+                        )}>
+                        <ul>
+                            {Array.from(this.props.filter.types)
+                                .sort()
+                                .map(type => (
+                                    <li key={'type/' + type} className='top-bar__filter-item'>
+                                        <label>
+                                            <Checkbox
+                                                checked={this.state.filter.types.has(type)}
+                                                onChange={checked => {
+                                                    this.setState(s => {
+                                                        const filter = s.filter;
+                                                        if (checked) {
+                                                            filter.types.add(type);
+                                                        } else {
+                                                            filter.types.delete(type);
+                                                        }
+                                                        return {filter: {...filter}};
+                                                    });
+                                                }}
+                                            />{' '}
+                                            {type}
+                                        </label>
+                                    </li>
+                                ))}
+                        </ul>
+                    </DropDown>
                     <a onClick={() => this.setState(s => ({horizontal: !s.horizontal}))} title='Horizontal/vertical layout'>
                         <i className={`fa ${this.state.horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
                     </a>
@@ -91,10 +134,13 @@ export class GraphPanel extends React.Component<Props, State> {
                             ))}
                             {Array.from(this.props.graph.nodes)
                                 .filter(([_, label]) => label.x)
+                                .filter(([n]) => this.visible(n))
                                 .map(([n, label]) => (
                                     <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`} className='node'>
                                         <title>{n}</title>
-                                        <g className={`icon ${label.classNames || ''}`} onClick={() => this.props.onSelect && this.props.onSelect(n)}>
+                                        <g
+                                            className={`icon ${label.classNames || ''}`}
+                                            onClick={() => this.props.onSelect && this.props.onSelect(n)}>
                                             <circle r={nodeSize / 2} className='bg' />
                                             <text>
                                                 <tspan x={0} y={nodeSize / 16} className='icon' style={{fontSize: nodeSize / 2}}>
@@ -115,5 +161,9 @@ export class GraphPanel extends React.Component<Props, State> {
                 </div>
             </div>
         );
+    }
+
+    private visible(id: Node) {
+        return this.state.filter.types.has(this.props.graph.nodes.get(id).type);
     }
 }
