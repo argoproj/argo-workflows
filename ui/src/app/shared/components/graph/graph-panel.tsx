@@ -39,7 +39,7 @@ interface Props {
 export class GraphPanel extends React.Component<Props, State> {
     constructor(props: Readonly<Props>) {
         super(props);
-        this.state = {nodeSize: 64, horizontal: props.horizontal, filter: this.props.filter};
+        this.state = {nodeSize: 64, horizontal: props.horizontal, filter: {types: new Set(this.props.filter.types)}};
     }
 
     public render() {
@@ -53,7 +53,7 @@ export class GraphPanel extends React.Component<Props, State> {
                     <DropDown
                         isMenu={true}
                         anchor={() => (
-                            <div className={classNames('top-bar__filter', {'top-bar__filter--selected': this.props.filter.types !== this.state.filter.types})}>
+                            <div className={classNames('top-bar__filter', {'top-bar__filter--selected': this.props.filter.types.size > this.state.filter.types.size})}>
                                 <i className='argo-icon-filter' aria-hidden='true' />
                                 <i className='fa fa-angle-down' aria-hidden='true' />
                             </div>
@@ -138,9 +138,7 @@ export class GraphPanel extends React.Component<Props, State> {
                                 .map(([n, label]) => (
                                     <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`} className='node'>
                                         <title>{n}</title>
-                                        <g
-                                            className={`icon ${label.classNames || ''}`}
-                                            onClick={() => this.props.onSelect && this.props.onSelect(n)}>
+                                        <g className={`icon ${label.classNames || ''}`} onClick={() => this.props.onSelect && this.props.onSelect(n)}>
                                             <circle r={nodeSize / 2} className='bg' />
                                             <text>
                                                 <tspan x={0} y={nodeSize / 16} className='icon' style={{fontSize: nodeSize / 2}}>
