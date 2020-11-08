@@ -42,7 +42,7 @@ export class GraphPanel extends React.Component<Props, State> {
             <div>
                 <div className='graph-options-panel'>
                     <a onClick={() => this.setState(s => ({horizontal: !s.horizontal}))} title='Horizontal/vertical layout'>
-                        <i className={`fas ${this.state.horizontal ? 'fa-arrows-alt-h' : 'fa-arrows-alt-v'}`} />
+                        <i className={`fa ${this.state.horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
                     </a>
                     <a onClick={() => this.setState(s => ({nodeSize: s.nodeSize * 1.2}))} title='Zoom in'>
                         <i className='fa fa-search-plus' />
