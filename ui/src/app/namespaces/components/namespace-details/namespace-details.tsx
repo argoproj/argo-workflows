@@ -82,7 +82,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private get graph(): Graph {
-        const graph: Graph = {nodes: new Map(), edges: new Map(), nodeGroups: new Map()};
+        const graph = new Graph();
         Object.entries(this.state.resources)
             .filter(([id]) => ID.split(id).type === 'Sensor')
             .forEach(([sensorId, sensor]) => {

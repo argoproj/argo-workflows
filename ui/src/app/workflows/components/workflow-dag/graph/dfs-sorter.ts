@@ -1,9 +1,9 @@
-import {Graph, node} from './graph';
+import {Graph, Node} from '../../../../shared/components/graph/types';
 
 export class DfsSorter {
     private graph: Graph;
-    private sorted: node[] = [];
-    private discovered: Set<node> = new Set<node>();
+    private sorted: Node[] = [];
+    private discovered: Set<Node> = new Set<Node>();
 
     constructor(g: Graph) {
         this.graph = g;
@@ -11,11 +11,11 @@ export class DfsSorter {
 
     public sort() {
         // Pre-order DFS sort
-        this.graph.nodes.forEach(n => this.visit(n));
+        this.graph.nodes.forEach((_, n) => this.visit(n));
         return this.sorted.reverse();
     }
 
-    private visit(n: node) {
+    private visit(n: Node) {
         if (this.discovered.has(n)) {
             return;
         }

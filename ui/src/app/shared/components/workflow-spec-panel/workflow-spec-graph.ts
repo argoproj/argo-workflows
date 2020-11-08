@@ -60,7 +60,7 @@ function addCommonDependencies(
 }
 
 export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
-    const g: Graph = {nodes: new Map(), edges: new Map(), nodeGroups: new Map()};
+    const g: Graph = new Graph();
     if (s.entrypoint) {
         g.nodes.set('Workflow', {label: 'workflow', type: 'workflow', icon: icons.workflow});
         g.edges.set({v: 'Workflow', w: 'Template/' + s.entrypoint}, {label: 'entrypoint'});

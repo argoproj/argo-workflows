@@ -1,5 +1,5 @@
+import {Graph, Node} from '../../../../shared/components/graph/types';
 import {DfsSorter} from './dfs-sorter';
-import {Graph, node} from './graph';
 
 export class CoffmanGrahamSorter {
     private graph: Graph;
@@ -13,8 +13,8 @@ export class CoffmanGrahamSorter {
         // normally you should remove transitive here, but this is expensive, and we don't expect to find any
         // this.graph.removeTransitives();
         const nodes = new DfsSorter(this.graph).sort();
-        const layers = new Array<node[]>();
-        const levels = new Map<node, number>();
+        const layers = new Array<Node[]>();
+        const levels = new Map<Node, number>();
 
         nodes.forEach(n => {
             let dependantLevel = -1;
@@ -37,7 +37,7 @@ export class CoffmanGrahamSorter {
                 }
             }
             if (level === -1) {
-                layers.push(new Array<node>(0));
+                layers.push(new Array<Node>(0));
                 level = layers.length - 1;
             }
             layers[level].push(n);

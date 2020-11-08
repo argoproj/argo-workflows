@@ -12,7 +12,11 @@ export const dagreLayout = (graph: Graph, nodeSize: number, horizontal = true, h
             height: hidden(id) ? 2 : nodeSize
         })
     );
-    graph.edges.forEach((label, e) => g.setEdge(e.v, e.w));
+    graph.edges.forEach((label, e) => {
+        if (graph.nodes.has(e.v) && graph.nodes.has(e.w)) {
+            g.setEdge(e.v, e.w);
+        }
+    });
 
     dagre.layout(g);
 
@@ -25,11 +29,13 @@ export const dagreLayout = (graph: Graph, nodeSize: number, horizontal = true, h
         graph.height = Math.max(graph.height, label.y + nodeSize);
     });
     graph.edges.forEach((label, e) => {
-        const points = g.edge(e).points;
-        graph.edges.get(e).points = points;
-        points.forEach(p => {
-            graph.width = Math.max(graph.width, p.x + nodeSize);
-            graph.height = Math.max(graph.height, p.y + nodeSize);
-        });
+        if (graph.nodes.has(e.v) && graph.nodes.has(e.w)) {
+            const points = g.edge(e).points;
+            graph.edges.get(e).points = points;
+            points.forEach(p => {
+                graph.width = Math.max(graph.width, p.x + nodeSize);
+                graph.height = Math.max(graph.height, p.y + nodeSize);
+            });
+        }
     });
 };
