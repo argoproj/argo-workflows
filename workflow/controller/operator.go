@@ -231,7 +231,6 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}
 
-
 	// Update workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
 
@@ -3051,31 +3050,6 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
-}
-
-func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
-	namespaces := []string{woc.wf.ObjectMeta.Namespace, woc.controller.namespace}
-	for _, namespace := range namespaces {
-		cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(namespace).Get(arRef.GetConfigMap(), metav1.GetOptions{})
-		if err != nil {
-			if apierr.IsNotFound(err) {
-				continue
-			}
-			return nil, err
-		}
-		value, ok := cm.Data[arRef.Key]
-		if !ok {
-			continue
-		}
-		woc.log.WithFields(log.Fields{"namespace": namespace, "name": cm.Name}).Debug("Found artifact repository by ref")
-		ar := &config.ArtifactRepository{}
-		err = yaml.Unmarshal([]byte(value), ar)
-		if err != nil {
-			return nil, err
-		}
-		return ar, nil
-	}
-	return nil, fmt.Errorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (wfv1.WorkflowSpecHolder, error) {

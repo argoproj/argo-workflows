@@ -40,10 +40,6 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-	_, _, err := woc.loadExecutionSpec()
-	if err != nil {
-		panic(err)
-	}
 	return woc
 }
 
