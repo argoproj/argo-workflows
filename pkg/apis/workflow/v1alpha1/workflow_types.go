@@ -137,12 +137,8 @@ func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
 
 // GetTTLStrategy return TTLStrategy based on Order of precedence:
 //1. Workflow, 2. WorkflowTemplate, 3. Workflowdefault
-func (w *Workflow) GetTTLStrategy(defaultTTLStrategy *TTLStrategy) *TTLStrategy {
+func (w *Workflow) GetTTLStrategy() *TTLStrategy {
 	var ttlStrategy *TTLStrategy
-	// TTLStrategy from Workflow default from Config
-	if defaultTTLStrategy != nil {
-		ttlStrategy = defaultTTLStrategy
-	}
 	// TTLStrategy from WorkflowTemplate
 	if w.Status.StoredWorkflowSpec != nil && w.Status.StoredWorkflowSpec.GetTTLStrategy() != nil {
 		ttlStrategy = w.Status.StoredWorkflowSpec.GetTTLStrategy()
