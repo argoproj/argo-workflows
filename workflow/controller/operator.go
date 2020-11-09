@@ -2302,7 +2302,10 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	}
 
 	mainCtr := tmpl.Script.Container
-	mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
+	// if script source is specified then pass all container args to the script
+	if tmpl.Script.Source != "" {
+		mainCtr.Args = append([]string{common.ExecutorScriptSourcePath}, mainCtr.Args...)
+	}
 	_, err = woc.createWorkflowPod(nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
