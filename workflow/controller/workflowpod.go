@@ -563,9 +563,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		}
 	}
 	if isResourcesSpecified(woc.controller.Config.Executor) {
-		exec.Resources = *woc.controller.Config.Executor.Resources.DeepCopy()
+		exec.Resources = *(woc.controller.Config.Executor.Resources.DeepCopy())
 	} else if woc.controller.Config.ExecutorResources != nil {
-		exec.Resources = *woc.controller.Config.ExecutorResources.DeepCopy()
+		exec.Resources = *(woc.controller.Config.ExecutorResources.DeepCopy())
 	}
 	if woc.controller.Config.KubeConfig != nil {
 		path := woc.controller.Config.KubeConfig.MountPath
