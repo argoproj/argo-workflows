@@ -26,6 +26,12 @@ spec:
               path: /
             initialDelaySeconds: 10
             periodSeconds: 20
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: tmp
+          emptyDir: { }
       securityContext:
         runAsNonRoot: true
       nodeSelector:

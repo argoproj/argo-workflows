@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"encoding/base64"
+	"os"
 	"strings"
 	"time"
 
@@ -75,9 +76,26 @@ func (s *E2ESuite) BeforeTest(string, string) {
 }
 
 var foreground = metav1.DeletePropagationForeground
-var foregroundDelete = &metav1.DeleteOptions{PropagationPolicy: &foreground}
+var background = metav1.DeletePropagationBackground
 
 func (s *E2ESuite) DeleteResources() {
+
+	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
+	resources := []schema.GroupVersionResource{
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
+		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
+		{Version: "v1", Resource: "resourcequotas"},
+		{Version: "v1", Resource: "configmaps"},
+	}
+
+	for _, r := range resources {
+		err := s.dynamicFor(r).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &background}, hasTestLabel)
+		s.CheckError(err)
+	}
+
 	// delete archived workflows from the archive
 	if s.Persistence.IsEnabled() {
 		archive := s.Persistence.workflowArchive
@@ -89,22 +107,6 @@ func (s *E2ESuite) DeleteResources() {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
 		}
-	}
-
-	hasTestLabel := metav1.ListOptions{LabelSelector: Label}
-	resources := []schema.GroupVersionResource{
-		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural},
-		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowEventBindingPlural},
-		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowPlural},
-		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.WorkflowTemplatePlural},
-		{Group: workflow.Group, Version: workflow.Version, Resource: workflow.ClusterWorkflowTemplatePlural},
-		{Version: "v1", Resource: "resourcequotas"},
-		{Version: "v1", Resource: "configmaps"},
-	}
-
-	for _, r := range resources {
-		err := s.dynamicFor(r).DeleteCollection(foregroundDelete, hasTestLabel)
-		s.CheckError(err)
 	}
 
 	for _, r := range resources {
@@ -119,7 +121,17 @@ func (s *E2ESuite) DeleteResources() {
 	}
 }
 
-func (s *E2ESuite) AfterTest(_, _ string) {}
+func (s *E2ESuite) NeedsCI() {
+	if os.Getenv("CI") != "true" {
+		s.T().Skip("test needs CI")
+	}
+}
+
+func (s *E2ESuite) NeedsOffloading() {
+	if !s.Persistence.IsEnabled() {
+		s.T().Skip("test needs offloading, but persistence not enabled")
+	}
+}
 
 func (s *E2ESuite) dynamicFor(r schema.GroupVersionResource) dynamic.ResourceInterface {
 	resourceInterface := dynamic.NewForConfigOrDie(s.RestConfig).Resource(r)

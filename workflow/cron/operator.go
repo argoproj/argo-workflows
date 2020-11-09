@@ -31,19 +31,17 @@ type cronWfOperationCtx struct {
 	cronWf      *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
 	wfClient    typed.WorkflowInterface
-	wfLister    util.WorkflowLister
 	cronWfIf    typed.CronWorkflowInterface
 	log         *log.Entry
 	metrics     *metrics.Metrics
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister, metrics *metrics.Metrics) *cronWfOperationCtx {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, metrics *metrics.Metrics) *cronWfOperationCtx {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
-		wfLister:    wfLister,
 		cronWfIf:    wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 		log: log.WithFields(log.Fields{
 			"workflow":  cronWorkflow.ObjectMeta.Name,
@@ -60,12 +58,6 @@ func (woc *cronWfOperationCtx) Run() {
 
 	err := woc.validateCronWorkflow()
 	if err != nil {
-		return
-	}
-
-	err = woc.reconcileDeletedWfs()
-	if err != nil {
-		woc.reportCronWorkflowError(v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Could not remove deleted Workflow: %s", err))
 		return
 	}
 
@@ -176,15 +168,16 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows() error {
 	return nil
 }
 
-func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
+func (woc *cronWfOperationCtx) runOutstandingWorkflows() (bool, error) {
 	proceed, err := woc.shouldOutstandingWorkflowsBeRun()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if proceed {
 		woc.Run()
+		return true, nil
 	}
-	return nil
+	return false, nil
 }
 
 func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
@@ -224,7 +217,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 		// We missed the latest execution time
 		if !missedExecutionTime.IsZero() {
 			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
-			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
+			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || *woc.cronWf.Spec.StartingDeadlineSeconds == 0 || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 				woc.log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 				return true, nil
 			}
@@ -233,31 +226,19 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 	return false, nil
 }
 
-func (woc *cronWfOperationCtx) reconcileDeletedWfs() error {
-	wfList, err := woc.wfLister.List()
-	if err != nil {
-		return fmt.Errorf("unable to list workflows: %s", err)
-	}
-
-	currentWfs := make(map[types.UID]*v1alpha1.Workflow)
-	for _, wf := range wfList {
-		currentWfs[wf.UID] = wf
+func (woc *cronWfOperationCtx) reconcileActiveWfs(workflows []v1alpha1.Workflow) error {
+	currentWfsFulfilled := make(map[types.UID]bool)
+	for _, wf := range workflows {
+		currentWfsFulfilled[wf.UID] = wf.Status.Fulfilled()
 	}
 
 	for _, objectRef := range woc.cronWf.Status.Active {
-		if wf, found := currentWfs[objectRef.UID]; !found || wf.Status.Fulfilled() {
+		if fulfilled, found := currentWfsFulfilled[objectRef.UID]; !found || fulfilled {
 			woc.removeFromActiveList(objectRef.UID)
 		}
 	}
 
 	return nil
-}
-
-func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
-	if wf == nil || wf.ObjectMeta.UID == "" {
-		return
-	}
-	woc.removeFromActiveList(wf.ObjectMeta.UID)
 }
 
 func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
@@ -270,20 +251,12 @@ func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
 	woc.cronWf.Status.Active = newActive
 }
 
-func (woc *cronWfOperationCtx) enforceHistoryLimit() {
+func (woc *cronWfOperationCtx) enforceHistoryLimit(workflows []v1alpha1.Workflow) error {
 	woc.log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
-
-	listOptions := &v1.ListOptions{}
-	wfInformerListOptionsFunc(listOptions, woc.cronWf.Labels[common.LabelKeyControllerInstanceID])
-	wfList, err := woc.wfClient.List(*listOptions)
-	if err != nil {
-		woc.log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
-		return
-	}
 
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
-	for _, wf := range wfList.Items {
+	for _, wf := range workflows {
 		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
 		}
@@ -300,10 +273,9 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	if woc.cronWf.Spec.SuccessfulJobsHistoryLimit != nil && *woc.cronWf.Spec.SuccessfulJobsHistoryLimit >= 0 {
 		workflowsToKeep = *woc.cronWf.Spec.SuccessfulJobsHistoryLimit
 	}
-	err = woc.deleteOldestWorkflows(successfulWorkflows, int(workflowsToKeep))
+	err := woc.deleteOldestWorkflows(successfulWorkflows, int(workflowsToKeep))
 	if err != nil {
-		woc.log.Errorf("Unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
-		return
+		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
 	}
 
 	workflowsToKeep = int32(1)
@@ -312,10 +284,9 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	}
 	err = woc.deleteOldestWorkflows(failedWorkflows, int(workflowsToKeep))
 	if err != nil {
-		woc.log.Errorf("Unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
-		return
+		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
 	}
-
+	return nil
 }
 
 func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow, workflowsToKeep int) error {
