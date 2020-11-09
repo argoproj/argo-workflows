@@ -177,8 +177,6 @@ func newSso(
 	}, nil
 }
 
-const stateCookieName = "oauthState"
-
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	redirectUrl := r.URL.Query().Get("redirect")
 	state := pkgrand.RandString(10)
