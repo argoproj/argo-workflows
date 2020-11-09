@@ -1,4 +1,6 @@
-export const icons: {[key: string]: string} = {
+import {Icon} from '../icon';
+
+export const icons: {[key: string]: Icon} = {
     artifact: 'database',
     artifacts: 'database',
     dag: 'sitemap',

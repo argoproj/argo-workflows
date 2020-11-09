@@ -43,7 +43,7 @@ const navItems = [
     {
         title: 'Namespace',
         path: namespacesUrl,
-        iconClassName: 'fa fa-square'
+        iconClassName: 'fa fa-broadcast-tower'
     },
     {
         title: 'Workflows',

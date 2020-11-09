@@ -1,10 +1,12 @@
+import {Icon} from '../icon';
+
 export type Node = string;
 export type NodeGroup = string;
 
 export interface NodeLabel {
     type: string;
     label: string;
-    icon?: string;
+    icon?: Icon;
     classNames?: string;
     progress?: number;
     x?: number;

@@ -1,3 +1,5 @@
+import {Icon} from '../../../shared/components/icon';
+
 const chat = 'comment';
 const compute = 'microchip';
 const git = 'code-branch';
@@ -7,7 +9,7 @@ const queue = 'stream';
 const storage = 'database';
 const web = 'cloud';
 
-export const icons: {[type: string]: string} = {
+export const icons: {[type: string]: Icon} = {
     AMQPEventSource: queue,
     AWSLambdaTrigger: compute,
     ArgoWorkflowTrigger: 'sitemap',

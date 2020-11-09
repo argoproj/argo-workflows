@@ -1,7 +1,8 @@
 import * as React from 'react';
-import {icons} from './icons';
+import {Icon} from '../icon';
+import {icons} from '../icons';
 
-export const GraphIcon = (props: {icon: string; progress?: number; nodeSize: number}) => {
+export const GraphIcon = (props: {icon: Icon; progress?: number; nodeSize: number}) => {
     if (!props.progress) {
         return (
             <text className='icon' style={{fontSize: props.nodeSize / 2}}>
