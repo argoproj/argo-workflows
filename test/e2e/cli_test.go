@@ -800,6 +800,42 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowTerminateDryRun() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated \\(dry-run\\)", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowTerminateBySelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--selector", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowTerminateByFieldSelector() {
+	s.Given().
+		Workflow("@testdata/basic-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"terminate", "--field-selector", "metadata.name=basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "workflow basic terminated", output)
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowWait() {
 	s.needsServer()
 	var name string
