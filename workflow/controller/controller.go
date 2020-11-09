@@ -154,9 +154,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
-		return &wfc.Config
-	})
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
@@ -586,22 +584,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		woc.markWorkflowError(err)
 		woc.persistUpdates()
 		return true
-	}
-
-	if wf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", woc.wf.Spec.Synchronization)
-		if err != nil {
-			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
-			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
-			woc.persistUpdates()
-			return true
-		}
-		woc.updated = wfUpdate
-		if !acquired {
-			log.WithFields(log.Fields{"key": key, "message": msg}).Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.persistUpdates()
-			return true
-		}
 	}
 
 	startTime := time.Now()
