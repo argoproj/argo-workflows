@@ -11,7 +11,7 @@ export function uiUrlWithParams(uiPath: string, params: string[]): string {
     if (!params) {
         return uiUrl(uiPath);
     }
-    return baseUrl() + uiPath + "?" + params.join("&");
+    return baseUrl() + uiPath + '?' + params.join('&');
 }
 
 export function apiUrl(apiPath: string): string {

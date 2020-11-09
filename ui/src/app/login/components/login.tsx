@@ -15,8 +15,8 @@ const user = (token: string) => {
 };
 const getRedirect = (): string => {
     const urlParams = new URLSearchParams(new URL(document.location.href).search);
-    if (urlParams.has("redirect")) {
-        return 'redirect=' + urlParams.get('redirect')
+    if (urlParams.has('redirect')) {
+        return 'redirect=' + urlParams.get('redirect');
     }
     return '';
 };
@@ -39,9 +39,11 @@ export const Login = () => (
                         If your organisation has configured <b>single sign-on</b>:
                     </p>
                     <div>
-                        <button className='argo-button argo-button--base-o' onClick={() => {
-                            document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
-                        }}>
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                document.location.href = uiUrlWithParams('oauth2/redirect', [getRedirect()]);
+                            }}>
                             <i className='fa fa-sign-in-alt' /> Login
                         </button>
                     </div>
