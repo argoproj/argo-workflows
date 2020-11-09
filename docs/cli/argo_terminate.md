@@ -25,7 +25,10 @@ argo terminate WORKFLOW WORKFLOW2... [flags]
 ### Options
 
 ```
-  -h, --help   help for terminate
+      --dry-run                 Do not terminate the workflow, only print what would happen
+      --field-selector string   Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selectorkey1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -h, --help                    help for terminate
+  -l, --selector string         Selector (label query) to filter on, not including uninitialized ones
 ```
 
 ### Options inherited from parent commands
