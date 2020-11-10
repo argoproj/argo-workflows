@@ -924,6 +924,38 @@ spec:
 		DeleteMemoryQuota()
 }
 
+func (s *FunctionalSuite) TestExitCodePNSSleep() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cond
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: conditional-example
+  templates:
+  - name: conditional-example
+    steps:
+    - - name: print-hello
+        template: whalesay
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 5s]
+`).
+		When().
+		SubmitWorkflow().
+		Wait(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("print-hello")
+			if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.NotNil(t, node.Outputs.ExitCode) {
+				assert.Equal(t, "0", *node.Outputs.ExitCode)
+			}
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
