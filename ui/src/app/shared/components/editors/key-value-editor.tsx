@@ -1,29 +1,21 @@
 import * as React from 'react';
-import {useState} from 'react';
 
 interface KeyValues {
     [key: string]: string;
 }
 
 export const KeyValueEditor = (props: {value: KeyValues; onChange: (value: KeyValues) => void; hide?: (key: string) => boolean}) => {
-    const [keyValues, setKeyValues] = useState(props.value || {});
-    const deleteItem = (k: string) => {
-        setKeyValues(s => {
-            delete s[k];
-            return s;
-        });
-    };
+    const keyValues: KeyValues = props.value || {};
     const [name, setName] = React.useState('');
     const [value, setValue] = React.useState('');
-    const addItem = () => {
-        setKeyValues(s => {
-            s[name] = value;
-            return s;
-        });
-    };
-    React.useEffect(() => {
+    const deleteItem = (k: string) => {
+        delete keyValues[k];
         props.onChange(keyValues);
-    }, [keyValues]);
+    };
+    const addItem = () => {
+        keyValues[name] = value;
+        props.onChange(keyValues);
+    };
     return (
         <div className='wf-row-labels ' style={{cursor: 'default'}}>
             {Object.entries(keyValues)

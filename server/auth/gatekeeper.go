@@ -146,9 +146,9 @@ func getAuthHeader(md metadata.MD) string {
 func (s gatekeeper) getClients(ctx context.Context) (*servertypes.Clients, *types.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
-	mode, err := s.Modes.GetMode(authorization)
-	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+	mode, valid := s.Modes.GetMode(authorization)
+	if !valid {
+		return nil, nil, status.Error(codes.Unauthenticated, "token not valid for requested mode")
 	}
 	switch mode {
 	case Client:

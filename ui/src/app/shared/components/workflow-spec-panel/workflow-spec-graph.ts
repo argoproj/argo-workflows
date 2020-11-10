@@ -61,8 +61,8 @@ function addCommonDependencies(
 
 export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
     const g: Graph = new Graph();
+    g.nodes.set('Workflow', {label: 'workflow', type: 'workflow', icon: icons.workflow});
     if (s.entrypoint) {
-        g.nodes.set('Workflow', {label: 'workflow', type: 'workflow', icon: icons.workflow});
         g.edges.set({v: 'Workflow', w: 'Template/' + s.entrypoint}, {label: 'entrypoint'});
     }
     if (s.arguments) {
@@ -90,7 +90,17 @@ export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
         g.edges.set({v: 'OnExit', w: 'Template/' + s.onExit}, {});
         g.edges.set({v: 'Workflow', w: 'OnExit'}, {classNames: 'related'});
     }
-    s.templates.forEach(t => {
+
+    if (s.workflowTemplateRef) {
+        const templateRefId = 'WorkflowTemplateRef/' + s.workflowTemplateRef.name;
+        g.nodes.set(templateRefId, {
+            label: s.workflowTemplateRef.name,
+            type: 'tmpl-ref',
+            icon: s.workflowTemplateRef.clusterScope ? icons.clusterTemplateRef : icons.templateRef
+        });
+        g.edges.set({v: 'Workflow', w: templateRefId}, {});
+    }
+    (s.templates || []).forEach(t => {
         const type = t.dag ? 'dag' : t.steps ? 'steps' : t.container ? 'container' : t.script ? 'script' : t.resource ? 'resource' : t.suspend ? 'suspend' : 'unknown';
         const templateId = 'Template/' + t.name;
         g.nodes.set(templateId, {label: t.name, type, icon: icons[type]});
@@ -114,15 +124,23 @@ export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
                 g.nodeGroups.get(templateId).add(taskId);
             });
         } else if (t.steps) {
-            t.steps.forEach((parallelStep, i) => {
-                const parallelStepId = templateId + '/' + i;
-                g.nodeGroups.set(parallelStepId, new Set());
-                parallelStep.forEach((step, j) => {
-                    const stepId = parallelStepId + '/' + j;
+            t.steps.forEach((group, i) => {
+                const groupId = templateId + '/' + i;
+                g.nodes.set(groupId, {label: 'group ' + i, type: 'group', icon: icons.stepGroup});
+                g.nodeGroups.set(groupId, new Set());
+                if (i === t.steps.length - 1) {
+                    g.edges.set({v: templateId, w: groupId}, {});
+                }
+                const parentGroupId = templateId + '/' + (i - 1);
+                group.forEach((step, j) => {
+                    const stepId = groupId + '/' + j;
                     g.nodes.set(stepId, {label: step.name, type: 'step', icon: icons.step});
-                    g.edges.set({v: templateId, w: stepId}, {label: 'step ' + j});
+                    g.edges.set({v: groupId, w: stepId}, {});
+                    g.nodeGroups.get(groupId).add(stepId);
+                    if (i > 0) {
+                        g.edges.set({v: stepId, w: parentGroupId}, {});
+                    }
                     addCommonDependencies(step, stepId, g);
-                    g.nodeGroups.get(parallelStepId).add(stepId);
                 });
             });
         }

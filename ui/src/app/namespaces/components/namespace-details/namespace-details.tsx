@@ -36,10 +36,16 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
-    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Active';
+    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Succeeded';
 };
 
-const types = new Set(['sensor'].concat(Object.keys(eventSources)).concat(Object.keys(triggerTypes)));
+const types = () => {
+    const v: {[label: string]: boolean} = {sensor: true, conditions: true};
+    Object.keys(eventSources)
+        .concat(Object.keys(triggerTypes))
+        .forEach(label => (v[label] = true));
+    return v;
+};
 
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
     private markActivationsSubscriptions: Subscription[];
@@ -303,7 +309,16 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         if (g.nodes.size === 0) {
             return <EventsZeroState title='No entities found' />;
         }
-        return <GraphPanel graph={g} onSelect={selectedId => (this.selectedId = selectedId)} horizontal={true} filter={{types, classNames: new Set(['Pending', 'Active'])}} />;
+        return (
+            <GraphPanel
+                storageKey='namespace-details'
+                graph={g}
+                onSelect={selectedId => (this.selectedId = selectedId)}
+                horizontal={true}
+                types={types()}
+                classNames={{Pending: true, Succeeded: true, Active: true}}
+            />
+        );
     }
 
     private saveHistory() {
@@ -397,7 +412,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private classNames(r: {status?: {conditions?: Condition[]}}, id: string) {
-        return status(r) + (!!this.state.active[id] ? ' active' : '');
+        return !!this.state.active[id] ? 'Active' : status(r);
     }
 
     private markActive(id: string) {

@@ -19,6 +19,7 @@ export type Icon =
     | 'file-alt'
     | 'file-code'
     | 'filter'
+    | 'forward'
     | 'grip-vertical'
     | 'hdd'
     | 'keyboard'

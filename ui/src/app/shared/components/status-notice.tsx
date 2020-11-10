@@ -4,7 +4,7 @@ import {ErrorNotice} from './error-notice';
 import {Notice} from './notice';
 import {PhaseIcon} from './phase-icon';
 
-export type Status = Error | 'Pending' | 'Running' | 'Succeeded' | undefined;
+export type Status = Error | 'Pending' | 'Running' | 'Succeeded' | null;
 
 export const StatusNotice = (props: {style?: CSSProperties; status: Status}) =>
     typeof props.status === 'undefined' ? null : typeof props.status === 'object' ? (

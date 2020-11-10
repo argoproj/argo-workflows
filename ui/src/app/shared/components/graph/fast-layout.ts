@@ -1,6 +1,7 @@
 import {CoffmanGrahamSorter} from './coffman-graham-sorter';
 import {Edge, Graph, Node} from './types';
 
+const minSize = 1;
 export const layoutGraphFast = (graph: Graph, nodeSize: number, horizontal: boolean, hidden: (id: Node) => boolean) => {
     const gap = nodeSize * 1.25;
     const layers = new CoffmanGrahamSorter(graph).sort();
@@ -23,8 +24,8 @@ export const layoutGraphFast = (graph: Graph, nodeSize: number, horizontal: bool
     });
     layers.forEach((level, i) => {
         level.forEach((node, j) => {
-            const l = horizontal ? 0 : graph.width / 2 - level.length * gap;
-            const t = !horizontal ? 0 : graph.height / 2 - level.length * gap;
+            const l = horizontal ? minSize : graph.width / 2 - level.length * gap;
+            const t = !horizontal ? minSize : graph.height / 2 - level.length * gap;
             const label = graph.nodes.get(node);
             label.x = (horizontal ? i : j) * gap * 2 + l;
             label.y = (horizontal ? j : i) * gap * 2 + t;
@@ -44,12 +45,12 @@ const generateEdge = (graph: Graph, edge: Edge, nodeSize: number, horizontal: bo
     return [
         {
             // for hidden nodes, we want to size them zero
-            x: graph.nodes.get(edge.v).x + (hiddenNode(edge.v) ? 0 : h),
-            y: graph.nodes.get(edge.v).y + (hiddenNode(edge.v) ? 0 : v)
+            x: graph.nodes.get(edge.v).x + (hiddenNode(edge.v) ? minSize : h),
+            y: graph.nodes.get(edge.v).y + (hiddenNode(edge.v) ? minSize : v)
         },
         {
-            x: graph.nodes.get(edge.w).x - (hiddenNode(edge.w) ? 0 : h),
-            y: graph.nodes.get(edge.w).y - (hiddenNode(edge.w) ? 0 : v)
+            x: graph.nodes.get(edge.w).x - (hiddenNode(edge.w) ? minSize : h),
+            y: graph.nodes.get(edge.w).y - (hiddenNode(edge.w) ? minSize : v)
         }
     ];
 };

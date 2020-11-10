@@ -1,4 +1,5 @@
 export const icons: {[key: string]: string} = {
+    'arrow-right': '\uf061',
     'bell': '\uf0f3',
     'box': '\uf466',
     'calendar': '\uf133',
@@ -18,6 +19,7 @@ export const icons: {[key: string]: string} = {
     'file-alt': '\uf15c',
     'file-code': '\uf1c9',
     'filter': '\uf0b0',
+    'forward': '\uf04e',
     'grip-vertical': '\uf58e',
     'hdd': '\uf0a0',
     'keyboard': '\uf11c',
@@ -38,6 +40,7 @@ export const icons: {[key: string]: string} = {
     'sync-alt': '\uf2f1',
     'tasks': '\uf0ae',
     'th': '\uf00a',
+    'times-circle': '\uf057',
     'undo-alt': '\uf2ea',
     'window-restore': '\uf2d2',
     'window-maximize': '\uf2d0'

@@ -1,4 +1,3 @@
-import {Ticker} from 'argo-ui';
 import * as React from 'react';
 
 import {NODE_PHASE, NodeStatus} from '../../../../models';
@@ -21,11 +20,17 @@ export interface WorkflowDagProps {
     nodeClicked?: (nodeId: string) => any;
 }
 
-const types = new Set(['Pod', 'Steps', 'DAG', 'Retry', 'Skipped', 'Suspend', 'TaskGroup', 'StepGroup', 'Collapsed']);
-
-function dagPhase(n: NodeStatus) {
-    return n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
-}
+const types = {
+    Pod: true,
+    Steps: true,
+    DAG: true,
+    Retry: true,
+    Skipped: true,
+    Suspend: true,
+    TaskGroup: false,
+    StepGroup: false,
+    Collapsed: true
+};
 
 function progress(n: NodeStatus) {
     if (!n || !n.estimatedDuration) {
@@ -35,15 +40,23 @@ function progress(n: NodeStatus) {
 }
 
 function nodeLabel(n: NodeStatus) {
-    const p = dagPhase(n);
+    const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
     return {
         label: Utils.shortNodeName(n),
         type: n.type,
-        icon: icons[p],
-        progress: n.phase === 'Running' && progress(n),
-        classNames: p
+        icon: icons[phase],
+        progress: phase === 'Running' && progress(n),
+        classNames: phase
     };
 }
+
+const classNames = () => {
+    const v: {[label: string]: boolean} = {
+        Suspended: true
+    };
+    Object.entries(NODE_PHASE).forEach(([, label]) => (v[label] = true));
+    return v;
+};
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
     private graph: Graph;
@@ -62,17 +75,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.prepareGraph();
 
         return (
-            <Ticker intervalMs={100}>
-                {() => (
-                    <GraphPanel
-                        graph={this.graph}
-                        filter={{types, classNames: new Set(Object.keys(icons))}}
-                        onSelect={id => this.selectNode(id)}
-                        nodeSize={48}
-                        options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
-                    />
-                )}
-            </Ticker>
+            <GraphPanel
+                storageKey='workflow-dag'
+                graph={this.graph}
+                types={types}
+                classNames={classNames()}
+                onSelect={id => this.selectNode(id)}
+                nodeSize={48}
+                options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
+                hideTypes={true}
+            />
         );
     }
 

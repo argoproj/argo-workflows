@@ -4,26 +4,20 @@ import {exampleTemplate, randomSillyName} from '../../examples';
 import {WorkflowSpecPanel} from '../workflow-spec-panel/workflow-spec-panel';
 
 export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value: WorkflowSpec) => void}) => {
-    const [spec, setSpec] = React.useState(props.value);
-    React.useEffect(() => {
-        props.onChange(spec);
-    }, [spec]);
     return (
         <div key='workflow-spec-editor' className='white-box'>
-            <h4>Specification</h4>
+            <h5>Specification</h5>
             <div>
                 <button
                     className='argo-button argo-button--base-o'
                     onClick={() => {
-                        setSpec(s => {
-                            s.templates.push(exampleTemplate(randomSillyName()));
-                            return s;
-                        });
+                        props.value.templates.push(exampleTemplate(randomSillyName()));
+                        props.onChange(props.value);
                     }}>
                     <i className='fa fa-box' /> Add container template
                 </button>
             </div>
-            <WorkflowSpecPanel spec={spec} />
+            <WorkflowSpecPanel spec={props.value} />
         </div>
     );
 };

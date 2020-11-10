@@ -11,6 +11,7 @@ export const icons: {[key: string]: Icon} = {
     script: 'box',
     step: 'check',
     steps: 'tasks',
+    stepGroup: 'list',
     suspend: 'pause-circle',
     task: 'square',
     templateRef: 'window-maximize',

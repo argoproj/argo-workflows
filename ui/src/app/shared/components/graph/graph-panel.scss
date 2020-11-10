@@ -73,6 +73,7 @@
         fill: $argo-status-warning-color;
       }
     }
+
     &.Suspended {
       .bg {
         fill: $argo-color-gray-6;
@@ -83,7 +84,8 @@
       .bg {
         fill: $argo-running-color;
       }
-      text.icon  {
+
+      text.icon {
         animation: spin 1s linear infinite;
       }
     }
@@ -100,12 +102,17 @@
       }
     }
 
-    &.active {
+    &.Active {
+      // TODO remove the succeeded color
+      .bg {
+        fill: $argo-success-color;
+      }
+
       animation: pulse 1s none;
     }
 
     text {
-      text-anchor: middle ;
+      text-anchor: middle;
       dominant-baseline: middle;
       fill: $argo-color-gray-2;
 
@@ -113,9 +120,10 @@
         font-family: "Font Awesome 5 Free", serif;
       }
     }
+
     path.icon {
       fill: transparent;
-      stroke:  $argo-color-gray-2;
+      stroke: $argo-color-gray-2;
       stroke-width: 4;
     }
   }

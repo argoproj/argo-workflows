@@ -74,7 +74,14 @@ export class WorkflowSpecPanel extends React.Component<{spec: WorkflowSpec}, {se
     public render() {
         return (
             <div>
-                <GraphPanel graph={workflowSpecGraph(this.props.spec)} onSelect={id => (this.selectedId = id)} horizontal={true} filter={{types, classNames: new Set([''])}} />
+                <GraphPanel
+                    storageKey='workflow-spec-panel'
+                    graph={workflowSpecGraph(this.props.spec)}
+                    onSelect={id => (this.selectedId = id)}
+                    horizontal={true}
+                    types={types}
+                    classNames={{'': true}}
+                />
                 <SlidingPanel key='template-editor' isShown={!!this.selected} onClose={() => (this.selectedId = null)}>
                     {this.selected && <ResourceEditor kind={this.selected.kind} title={this.selectedId} value={this.selected.value} />}
                 </SlidingPanel>
