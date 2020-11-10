@@ -38,9 +38,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		options.Continue = "0"
 	}
 	limit := int(options.Limit)
-	if limit == 0 {
-		limit = 10
-	}
+
 	offset, err := strconv.Atoi(options.Continue)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
@@ -77,7 +75,6 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 
-	items := make(wfv1.Workflows, 0)
 	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
 	if err != nil {
 		return nil, err
@@ -85,29 +82,31 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	hasMore := true
-	// keep trying until we have enough
-	for len(items) < limit {
-		moreItems, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limit+1, offset)
-		if err != nil {
-			return nil, err
-		}
-		for index, wf := range moreItems {
-			if index == limit {
-				break
-			}
-			items = append(items, wf)
-		}
-		if len(moreItems) < limit+1 {
-			hasMore = false
-			break
-		}
-		offset = offset + limit
+
+	// When the zero value is passed, we should treat this as returning all results
+	// to align ourselves with the behavior of the `List` endpoints in the Kubernetes API
+	loadAll := limit == 0
+	limitWithMore := 0
+
+	if !loadAll {
+		// Attempt to load 1 more record than we actually need as an easy way to determine whether or not more
+		// records exist than we're currently requesting
+		limitWithMore = limit + 1
 	}
+
+	items, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limitWithMore, offset)
+
+	if err != nil {
+		return nil, err
+	}
+
 	meta := metav1.ListMeta{}
-	if hasMore {
-		meta.Continue = fmt.Sprintf("%v", offset)
+
+	if !loadAll && len(items) > limit {
+		items = items[0:limit]
+		meta.Continue = fmt.Sprintf("%v", offset+limit)
 	}
+
 	sort.Sort(items)
 	return &wfv1.WorkflowList{ListMeta: meta, Items: items}, nil
 }
