@@ -33,6 +33,7 @@ export interface EventSource {
 }
 
 export interface EventSourceList {
+    metadata: kubernetes.ListMeta;
     items: EventSource[];
 }
 

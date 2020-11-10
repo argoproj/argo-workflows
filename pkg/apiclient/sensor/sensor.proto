@@ -35,11 +35,19 @@ message LogEntry {
     string eventContext = 9;
 }
 
+message SensorWatchEvent {
+    string type = 1;
+    github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor object = 2;
+}
+
 service SensorService {
     rpc ListSensors (ListSensorsRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList) {
         option (google.api.http).get = "/api/v1/sensors/{namespace}";
     }
     rpc SensorsLogs (SensorsLogsRequest) returns (stream LogEntry) {
         option (google.api.http).get = "/api/v1/stream/sensors/{namespace}/logs";
+    }
+    rpc WatchSensors (ListSensorsRequest) returns (stream SensorWatchEvent) {
+        option (google.api.http).get = "/api/v1/stream/sensors/{namespace}";
     }
 }

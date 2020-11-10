@@ -1,9 +1,15 @@
-import {LogEntry, SensorList} from '../../../models/sensor';
+import {LogEntry, SensorList, SensorWatchEvent} from '../../../models/sensor';
 import requests from './requests';
 
 export class SensorService {
     public list(namespace: string) {
         return requests.get(`api/v1/sensors/${namespace}`).then(res => res.body as SensorList);
+    }
+
+    public watch(namespace: string, resourceVersion: string) {
+        return requests
+            .loadEventSource(`api/v1/stream/sensors/${namespace}?listOptions.resourceVersion=${resourceVersion}`)
+            .map(line => JSON.parse(line).result as SensorWatchEvent);
     }
 
     public sensorsLogs(namespace: string, name = '', triggerName = '', tailLines = -1) {

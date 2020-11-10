@@ -43,6 +43,11 @@ export interface LogEntry {
     msg: string;
 }
 
+export interface SensorWatchEvent {
+    type: string;
+    object: Sensor;
+}
+
 export const triggerTypes: {[key: string]: string} = {
     argoWorkflow: 'ArgoWorkflow',
     awsLambda: 'AWSLambda',

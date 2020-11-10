@@ -56,7 +56,7 @@ AUTH_MODE             := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE             := sso
 endif
-ifeq ($(STATIC_FILES),false)
+ifeq ($(CI),true)
 AUTH_MODE             := client
 endif
 # Which mode to run in:

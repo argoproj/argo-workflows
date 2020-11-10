@@ -349,29 +349,56 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         this.stopWatches();
         this.setState({resources: {}}, () => {
             Promise.all([
-                services.eventSource.list(namespace).then(list => this.setState(s => updateResources(s, 'EventSource', list))),
+                services.eventSource.list(namespace).then(list =>
+                    this.setState(
+                        s => updateResources(s, 'EventSource', list),
+                        () => {
+                            this.watchSubscriptions.push(
+                                services.sensor
+                                    .watch(namespace, list.metadata.resourceVersion)
+                                    .map(x => x.object)
+                                    .subscribe(
+                                        x =>
+                                            this.setState(s => {
+                                                s.resources[
+                                                    ID.join({
+                                                        type: 'Sensor',
+                                                        namespace: x.metadata.namespace,
+                                                        name: x.metadata.name
+                                                    })
+                                                ] = x;
+                                                return {resources: s.resources};
+                                            }),
+                                        error => this.setState({error})
+                                    )
+                            );
+                        }
+                    )
+                ),
                 services.sensor.list(namespace).then(list => {
                     this.setState(
                         s => updateResources(s, 'Sensor', list),
                         () =>
                             this.watchSubscriptions.push(
-                                services.eventSource
-                                    .watch(namespace, list.metadata.resourceVersion)
-                                    .map(x => x.object)
-                                    .subscribe(
-                                        e =>
-                                            this.setState(s => {
-                                                s.resources[
-                                                    ID.join({
-                                                        type: 'EventSource',
-                                                        namespace: e.metadata.namespace,
-                                                        name: e.metadata.name
-                                                    })
-                                                ] = e;
-                                                return {resources: s.resources};
-                                            }),
-                                        error => this.setState({error})
-                                    )
+                                services.eventSource.watch(namespace, list.metadata.resourceVersion).subscribe(
+                                    x =>
+                                        this.setState(s => {
+                                            const id = ID.join({
+                                                type: 'EventSource',
+                                                namespace: x.object.metadata.namespace,
+                                                name: x.object.metadata.name
+                                            });
+                                            const resources = Object.assign({}, s.resources);
+                                            if (x.type === 'DELETED') {
+                                                delete resources[id];
+                                            } else {
+                                                resources[id] = x.object;
+                                            }
+
+                                            return {resources};
+                                        }),
+                                    error => this.setState({error})
+                                )
                             )
                     );
                 })
