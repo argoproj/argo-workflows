@@ -248,7 +248,6 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 				TTLStrategy:         &ttlStrategy,
 			},
 		}
-		//resultSpec.Arguments.Parameters = append(resultSpec.Arguments.Parameters, args.Parameters...)
 		resultSpec.Entrypoint = "Test"
 		resultSpec.TTLStrategy = &ttlStrategy
 		resultSpec.WorkflowTemplateRef = &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}
@@ -261,9 +260,8 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
 		param := wfv1.Parameter{
-			Name: "Test",
+			Name:  "Test",
 			Value: wfv1.Int64OrStringPtr("welcome"),
-
 		}
 		art := wfv1.Artifact{
 			Name: "TestA",
