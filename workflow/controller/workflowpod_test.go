@@ -105,24 +105,6 @@ func TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource(t *testing.T) {
 	assert.Equal(t, []string{"hello world"}, mainCtr.Args)
 }
 
-var scriptTemplateWithoutArgsAndWithSource = `
-name: script-without-args-and-with-source
-script:
-  image: alpine:latest
-  command: [sh]
-  source: |
-    echo "hello world"
-`
-
-// TestScriptTemplateMainCtrArgsWhenNoArgsAndWhenSource ensure only script path is passed
-// as an arg to the resulting container when there are no args but script source is specified
-func TestScriptTemplateMainCtrArgsWhenNoArgsAndWhenSource(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithoutArgsAndWithSource)
-	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
-	assert.Equal(t, []string{"sh"}, mainCtr.Command)
-	assert.Equal(t, []string{common.ExecutorScriptSourcePath}, mainCtr.Args)
-}
-
 var scriptTemplateWithOptionalInputArtifactProvided = `
 name: script-with-input-artifact
 inputs:
