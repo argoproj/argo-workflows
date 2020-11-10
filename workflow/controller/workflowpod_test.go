@@ -79,17 +79,8 @@ script:
     echo $@
 `
 
-// TestScriptTemplateWithArgsAndWithSource ensure we can run a script template
-// when both args and script source are specified
-func TestScriptTemplateWithArgsAndWithSource(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithSource)
-	woc := newWoc()
-	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
-	assert.NoError(t, err)
-}
-
-// TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource ensure order of merged
-// args and script path is correct when both args and script source are specified
+// TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource ensure order of merged args
+// and script path is correct when both args and script source are specified
 func TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithSource)
 	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
@@ -104,15 +95,6 @@ script:
   command: [echo]
   args: ["hello world"]
 `
-
-// TestScriptTemplateWithArgsAndWithoutSource ensure we can run a script template
-// when args are specified but script source is empty
-func TestScriptTemplateWithArgsAndWithoutSource(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithoutSource)
-	woc := newWoc()
-	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
-	assert.NoError(t, err)
-}
 
 // TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource ensure only args are passed
 // to the resulting container when script source is empty
@@ -131,15 +113,6 @@ script:
   source: |
     echo "hello world"
 `
-
-// TestScriptTemplateWithoutArgsAndWithSource ensure we can run a script template
-// that has no args and but script source is specified
-func TestScriptTemplateWithoutArgsAndWithSource(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithoutArgsAndWithSource)
-	woc := newWoc()
-	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
-	assert.NoError(t, err)
-}
 
 // TestScriptTemplateMainCtrArgsWhenNoArgsAndWhenSource ensure only script path is passed
 // as an arg to the resulting container when there are no args but script source is specified
