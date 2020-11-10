@@ -3,6 +3,7 @@ import MonacoEditor from 'react-monaco-editor';
 import {uiUrl} from '../../base';
 
 import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
+import {Button} from '../button';
 import {ErrorNotice} from '../error-notice';
 import {ToggleButton} from '../toggle-button';
 import {parse, stringify} from './resource';
@@ -17,6 +18,7 @@ interface Props<T> {
     value: T;
     editing?: boolean;
     onSubmit?: (value: T) => Promise<any>;
+    onDelete?: () => Promise<any>;
 }
 
 interface State {
@@ -137,7 +139,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                 <ToggleButton toggled={this.state.lang === 'yaml'} onToggle={() => this.changeLang()}>
                     YAML
                 </ToggleButton>
-                {!!this.props.onSubmit &&
+                {(!!this.props.onSubmit || !!this.props.onDelete) &&
                     (this.state.editing ? (
                         <>
                             {this.props.upload && (
@@ -146,17 +148,38 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                                     <i className='fa fa-upload' /> Upload file
                                 </label>
                             )}
-                            <button onClick={() => this.submit()} className='argo-button argo-button--base' key='submit'>
-                                <i className='fa fa-plus' /> Submit
-                            </button>
+                            {this.props.onSubmit && (
+                                <Button icon='plus' onClick={() => this.submit()} key='submit'>
+                                    Submit
+                                </Button>
+                            )}
+                            {this.props.onDelete && (
+                                <Button icon='trash' onClick={() => this.delete()} key='delete'>
+                                    Delete
+                                </Button>
+                            )}
                         </>
                     ) : (
-                        <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base' key='edit'>
-                            <i className='fa fa-edit' /> Edit
-                        </button>
+                        <Button icon='edit' onClick={() => this.setState({editing: true})} key='edit'>
+                            Edit
+                        </Button>
                     ))}
             </div>
         );
+    }
+
+    private delete() {
+        if (!confirm('Are you sure you want to delete?')) {
+            return;
+        }
+        try {
+            this.props
+                .onDelete()
+                .then(() => this.setState({error: null}))
+                .catch(error => this.setState({error}));
+        } catch (error) {
+            this.setState({error});
+        }
     }
 
     private submit() {

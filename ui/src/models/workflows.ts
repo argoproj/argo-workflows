@@ -748,7 +748,7 @@ export interface DAGTemplate {
     /**
      * Target are one or more names of targets to execute in a DAG
      */
-    targets: string;
+    targets?: string;
 
     /**
      * Tasks are a list of DAG tasks
@@ -773,17 +773,17 @@ export interface DAGTask {
     /**
      * TemplateRef is the reference to the template resource to execute.
      */
-    templateRef: TemplateRef;
+    templateRef?: TemplateRef;
 
     /**
      * Arguments are the parameter and artifact arguments to the template
      */
-    arguments: Arguments;
+    arguments?: Arguments;
 
     /**
      * Dependencies are name of other targets which this depends on
      */
-    dependencies: string[];
+    dependencies?: string[];
     onExit?: string;
     withItems?: any[];
     withParam?: string;
