@@ -1201,7 +1201,9 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v2`).
+        image: argoproj/argosay:v2
+        command: [cowsay, ":) Hello Argo!"]
+        imagePullPolicy: IfNotPresent`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -1221,7 +1223,9 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: argoproj/argosay:v2`).
+        image: argoproj/argosay:v2
+        command: [cowsay, ":) Hello Argo!"]
+        imagePullPolicy: IfNotPresent`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived, "to be archived")

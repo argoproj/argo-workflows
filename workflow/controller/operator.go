@@ -1853,7 +1853,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, message strin
 					woc.log.Infof("Marking workflow as pending archiving")
 					woc.wf.Labels[common.LabelKeyWorkflowArchivingStatus] = "Pending"
 				} else {
-					woc.log.Infof("Doesn't match with archive label selector. Skipping Archive")
+				woc.log.Infof("Does't match with archive label selector. Skipping Archive")
 				}
 			}
 			woc.updated = true
