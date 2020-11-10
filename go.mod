@@ -73,6 +73,8 @@ require (
 )
 
 replace (
+	// TODO will need to delete this
+	github.com/argoproj/argo-events => github.com/alexec/argo-events v0.15.1-0.20201107222931-6d0687873fc9
 	github.com/grpc-ecosystem/grpc-gateway => github.com/grpc-ecosystem/grpc-gateway v1.12.2
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.9
 )
