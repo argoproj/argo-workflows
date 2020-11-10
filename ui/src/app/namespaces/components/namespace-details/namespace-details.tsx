@@ -354,23 +354,24 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         s => updateResources(s, 'EventSource', list),
                         () => {
                             this.watchSubscriptions.push(
-                                services.sensor
-                                    .watch(namespace, list.metadata.resourceVersion)
-                                    .map(x => x.object)
-                                    .subscribe(
-                                        x =>
-                                            this.setState(s => {
-                                                s.resources[
-                                                    ID.join({
-                                                        type: 'Sensor',
-                                                        namespace: x.metadata.namespace,
-                                                        name: x.metadata.name
-                                                    })
-                                                ] = x;
-                                                return {resources: s.resources};
-                                            }),
-                                        error => this.setState({error})
-                                    )
+                                services.sensor.watch(namespace, list.metadata.resourceVersion).subscribe(
+                                    x =>
+                                        this.setState(s => {
+                                            const id = ID.join({
+                                                type: 'Sensor',
+                                                namespace: x.object.metadata.namespace,
+                                                name: x.object.metadata.name
+                                            });
+                                            const resources = Object.assign({}, s.resources);
+                                            if (x.type === 'DELETED') {
+                                                delete resources[id];
+                                            } else {
+                                                resources[id] = x.object;
+                                            }
+                                            return {resources};
+                                        }),
+                                    error => this.setState({error})
+                                )
                             );
                         }
                     )
@@ -394,7 +395,6 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                             } else {
                                                 resources[id] = x.object;
                                             }
-
                                             return {resources};
                                         }),
                                     error => this.setState({error})
