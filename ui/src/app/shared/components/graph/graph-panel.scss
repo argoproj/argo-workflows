@@ -126,7 +126,8 @@
 
     &.selected {
       .bg {
-        fill: red;
+        stroke: $argo-color-yellow;
+        stroke-width: 3;
       }
     }
 
