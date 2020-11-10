@@ -54,18 +54,31 @@
       stroke: $argo-color-gray-4;
       stroke-dasharray: 4;
     }
+  }
 
-    text {
-      fill: $argo-color-gray-4;
+  text {
+    text-anchor: middle;
+    dominant-baseline: middle;
+
+    &.node-label {
+      fill: $argo-color-gray-8;
     }
   }
 
-  .icon {
+  .node {
     cursor: pointer;
 
     .bg {
       fill: $argo-color-gray-6;
       border: 1px solid $argo-color-gray-4;
+    }
+
+    text {
+      fill: $argo-color-gray-2;
+
+      &.icon {
+        font-family: "Font Awesome 5 Free", serif;
+      }
     }
 
     &.Warning, &.Pending {
@@ -111,13 +124,9 @@
       animation: pulse 1s none;
     }
 
-    text {
-      text-anchor: middle;
-      dominant-baseline: middle;
-      fill: $argo-color-gray-2;
-
-      &.icon {
-        font-family: "Font Awesome 5 Free", serif;
+    &.selected {
+      .bg {
+        fill: red;
       }
     }
 
@@ -128,12 +137,6 @@
     }
   }
 
-  .label {
-    text-anchor: middle;
-    fill: $argo-color-gray-8;
-
-  }
-
   .edge {
     .line {
       fill: transparent;
@@ -141,7 +144,7 @@
       stroke: $argo-color-gray-4;
     }
 
-    .label {
+    .edge-label {
       transform: rotate(-22.5deg);
     }
 

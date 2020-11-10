@@ -16,7 +16,8 @@ interface Props {
     nodeSize?: number;
     horizontal?: boolean;
     hideTypes?: boolean;
-    onSelect?: (id: string) => void;
+    selectedNode?: Node;
+    onNodeSelect?: (id: Node) => void;
 }
 
 export const GraphPanel = (props: Props) => {
@@ -108,7 +109,7 @@ export const GraphPanel = (props: Props) => {
                                 <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
                                     <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
                                     <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
-                                        <text className='label' style={{fontSize: nodeSize / 6}}>
+                                        <text className='edge-label' style={{fontSize: nodeSize / 6}}>
                                             {formatLabel(label.label)}
                                         </text>
                                     </g>
@@ -117,19 +118,23 @@ export const GraphPanel = (props: Props) => {
                         {Array.from(props.graph.nodes)
                             .filter(([n, label]) => label.x !== null && visible(n))
                             .map(([n, label]) => (
-                                <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`} className='node'>
+                                <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
                                     <title>{n}</title>
-                                    <g className={`icon ${label.classNames || ''}`} onClick={() => props.onSelect && props.onSelect(n)}>
+                                    <g
+                                        className={`node  ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
+                                        onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
                                         <circle r={nodeSize / 2} className='bg' />
                                         <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
                                         {props.hideTypes || (
-                                            <text y={nodeSize / 3} className='type' style={{fontSize: nodeSize / 5}}>
+                                            <text y={nodeSize * 0.33} className='type' style={{fontSize: nodeSize * 0.2}}>
                                                 {label.type}
                                             </text>
                                         )}
                                     </g>
-                                    <g className='label' transform={`translate(0,${(nodeSize * 3) / 4})`}>
-                                        <text style={{fontSize: nodeSize / 5}}>{formatLabel(label.label)}</text>
+                                    <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
+                                        <text className='node-label' style={{fontSize: nodeSize / 5}}>
+                                            {formatLabel(label.label)}
+                                        </text>
                                     </g>
                                 </g>
                             ))}

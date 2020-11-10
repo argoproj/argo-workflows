@@ -302,7 +302,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return JSON.stringify(this.state.error).includes('could not find the requested resource') ? (
                 <EventsZeroState title='Not installed' />
             ) : (
-                <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} />
+                <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} style={{margin: 20}} />
             );
         }
         const g = this.graph;
@@ -313,7 +313,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             <GraphPanel
                 storageKey='namespace-details'
                 graph={g}
-                onSelect={selectedId => (this.selectedId = selectedId)}
+                selectedNode={this.selectedId}
+                onNodeSelect={selectedId => (this.selectedId = selectedId)}
                 horizontal={true}
                 types={types()}
                 classNames={{Pending: true, Succeeded: true, Active: true}}

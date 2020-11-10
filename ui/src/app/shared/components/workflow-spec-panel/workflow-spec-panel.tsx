@@ -77,7 +77,8 @@ export class WorkflowSpecPanel extends React.Component<{spec: WorkflowSpec}, {se
                 <GraphPanel
                     storageKey='workflow-spec-panel'
                     graph={workflowSpecGraph(this.props.spec)}
-                    onSelect={id => (this.selectedId = id)}
+                    selectedNode={this.selectedId}
+                    onNodeSelect={id => (this.selectedId = id)}
                     horizontal={true}
                     types={types}
                     classNames={{'': true}}

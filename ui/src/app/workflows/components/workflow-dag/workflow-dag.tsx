@@ -73,15 +73,15 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return <Loading />;
         }
         this.prepareGraph();
-
         return (
             <GraphPanel
                 storageKey='workflow-dag'
                 graph={this.graph}
                 types={types}
                 classNames={classNames()}
-                onSelect={id => this.selectNode(id)}
-                nodeSize={48}
+                selectedNode={this.props.selectedNodeId}
+                onNodeSelect={id => this.selectNode(id)}
+                nodeSize={40}
                 options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
                 hideTypes={true}
             />
