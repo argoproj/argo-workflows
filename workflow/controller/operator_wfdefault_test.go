@@ -20,11 +20,7 @@ var wfDefaults = `
   spec: 
     entrypoint: whalesay
     activeDeadlineSeconds: 7200
-    arguments: 
-      artifacts: 
-        -
-          name: message
-          path: /tmp/message
+    arguments:
       parameters: 
         - 
           name: message
@@ -77,11 +73,7 @@ metadata:
     workflows.argoproj.io/archive-strategy: "false"
 spec: 
   activeDeadlineSeconds: 7200
-  arguments: 
-    artifacts: 
-      -
-        name: message
-        path: /tmp/message
+  arguments:
     parameters: 
       - 
         name: message
@@ -141,13 +133,6 @@ var storedSpecResult = `
 {
    "activeDeadlineSeconds": 7200,
    "arguments": {
-      "artifacts": [
-         {
-            "name": "message",
-            "path": "/tmp/message",
-            "url": "http://artifactory:8081/artifactory/generic-local/hello_world.tgz"
-         }
-      ],
       "parameters": [
          {
             "name": "message",
@@ -277,9 +262,12 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
 		param := wfv1.Parameter{
 			Name: "Test",
+			Value: wfv1.Int64OrStringPtr("welcome"),
+
 		}
 		art := wfv1.Artifact{
 			Name: "TestA",
+			Path: "tmp/test",
 		}
 
 		ttlStrategy := wfv1.TTLStrategy{
