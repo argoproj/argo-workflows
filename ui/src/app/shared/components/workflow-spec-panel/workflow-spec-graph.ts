@@ -75,7 +75,7 @@ export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
                 label: s.arguments.parameters.map(x => x.name).join(','),
                 type: 'params'
             });
-            g.edges.set({v: 'Workflow', w: parametersId}, {classNames: 'related'});
+            g.edges.set({v: workflowId, w: parametersId}, {classNames: 'related'});
         }
         if (s.arguments.artifacts) {
             const artifactsId = ID.join('Artifacts');
@@ -84,7 +84,7 @@ export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
                 label: s.arguments.artifacts.map(x => x.name).join(','),
                 type: 'artifacts'
             });
-            g.edges.set({v: 'Workflow', w: artifactsId}, {classNames: 'related'});
+            g.edges.set({v: workflowId, w: artifactsId}, {classNames: 'related'});
         }
     }
     if (s.onExit) {
@@ -147,7 +147,7 @@ export const workflowSpecGraph = (s: WorkflowSpec): Graph => {
                 }
                 const parentGroupId = ID.join('StepGroup', template.name + ',/' + (i - 1));
                 group.forEach((step, j) => {
-                    const stepId = ID.join('Step', groupId + ',' + j);
+                    const stepId = ID.join('Step', template.name + ',' + i + ',' + j);
                     g.nodes.set(stepId, {label: step.name, type: 'step', icon: icons.step});
                     g.edges.set({v: groupId, w: stepId}, {});
                     g.nodeGroups.get(groupId).add(stepId);

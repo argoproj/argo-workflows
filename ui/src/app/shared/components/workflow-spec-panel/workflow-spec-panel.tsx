@@ -10,7 +10,7 @@ export const WorkflowSpecPanel = (props: {spec: WorkflowSpec; selectedId?: strin
             storageKey='workflow-spec-panel'
             graph={workflowSpecGraph(props.spec)}
             selectedNode={props.selectedId}
-            onNodeSelect={id => props.onSelect(id)}
+            onNodeSelect={id => props.onSelect && props.onSelect(id)}
             horizontal={true}
             types={types}
             classNames={{'': true}}
