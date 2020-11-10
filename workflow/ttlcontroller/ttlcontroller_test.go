@@ -10,9 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
@@ -340,7 +338,6 @@ status:
     ttlStrategy:
       secondsAfterCompletion: 60
 `
-var testConfig config.Config
 
 func newTTLController() *Controller {
 	clock := clock.NewFakeClock(time.Now())
@@ -352,9 +349,6 @@ func newTTLController() *Controller {
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
 		workqueue:    workqueue.NewDelayingQueue(),
-		configSupplier: func() *config.Config {
-			return &testConfig
-		},
 	}
 }
 
@@ -606,61 +600,38 @@ func TestTTLlExpired(t *testing.T) {
 func TestGetTTLStrategy(t *testing.T) {
 	var ten int32 = 10
 	var twenty int32 = 20
-	var thirty int32 = 30
-	defaultTTLStrategy := &wfv1.TTLStrategy{
-		SecondsAfterCompletion: &thirty,
-	}
-	t.Run("TTLFromWfDefaults", func(t *testing.T) {
-		wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
-		ttl := wf.GetTTLStrategy(defaultTTLStrategy)
-		assert.NotNil(t, ttl)
-		assert.Equal(t, thirty, *ttl.SecondsAfterCompletion)
-	})
 
 	t.Run("TTLFromWorkflow", func(t *testing.T) {
 		wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
 		wf.Spec.TTLStrategy = &wfv1.TTLStrategy{
 			SecondsAfterCompletion: &ten,
 		}
-		ttl := wf.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 	})
 
 	t.Run("TTLInWfwithWorkflowTemplate", func(t *testing.T) {
 		wf1 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWF))
-		ttl := wf1.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf1.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 
 		wf1.Spec.TTLStrategy = nil
 		wf1.Status.StoredWorkflowSpec.TTLStrategy = nil
-		ttl = wf1.GetTTLStrategy(nil)
+		ttl = wf1.GetTTLStrategy()
 		assert.Nil(t, ttl)
 	})
 	t.Run("TTLwithWorkflowTemplate", func(t *testing.T) {
 		wf2 := test.LoadWorkflowFromBytes([]byte(wftRefWithTTLinWFT))
 		wf2.Spec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = &twenty
-		ttl := wf2.GetTTLStrategy(defaultTTLStrategy)
+		ttl := wf2.GetTTLStrategy()
 		assert.NotNil(t, ttl)
 		assert.Equal(t, ten, *ttl.SecondsAfterCompletion)
 		wf2.Status.StoredWorkflowSpec.TTLSecondsAfterFinished = nil
 		wf2.Status.StoredWorkflowSpec.TTLStrategy = nil
-		ttl = wf2.GetTTLStrategy(nil)
+		ttl = wf2.GetTTLStrategy()
 		assert.Nil(t, ttl)
 	})
-}
-
-func TestGetDefaultTTLStrategy(t *testing.T) {
-	controller := newTTLController()
-	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(10)}}}
-	ttl := controller.getDefaultTTLStrategy()
-	assert.Equal(t, int32(10), *ttl.SecondsAfterCompletion)
-	testConfig = config.Config{WorkflowDefaults: &wfv1.Workflow{Spec: wfv1.WorkflowSpec{TTLSecondsAfterFinished: pointer.Int32Ptr(20)}}}
-	ttl = controller.getDefaultTTLStrategy()
-	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
-	testConfig = config.Config{WorkflowDefaults: nil}
-	ttl = controller.getDefaultTTLStrategy()
-	assert.Nil(t, ttl)
 }
