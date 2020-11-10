@@ -1899,7 +1899,11 @@ func (woc *wfOperationCtx) markWorkflowFailed(message string) {
 }
 
 func (woc *wfOperationCtx) markWorkflowError(err error) {
-	woc.markWorkflowPhase(wfv1.NodeError, err.Error())
+	if errorsutil.IsTransientErr(err) {
+		woc.markWorkflowPhase(woc.wf.Status.Phase, fmt.Sprintf("workflow had transient error: %v", err))
+	} else {
+		woc.markWorkflowPhase(wfv1.NodeError, err.Error())
+	}
 }
 
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
