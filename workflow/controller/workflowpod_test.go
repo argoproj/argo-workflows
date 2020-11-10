@@ -69,6 +69,87 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+var scriptTemplateWithArgsAndWithSource = `
+name: script-with-args-and-with-source
+script:
+  image: alpine:latest
+  command: [sh]
+  args: ["hello world"]
+  source: |
+    echo $@
+`
+
+// TestScriptTemplateWithArgsAndWithSource ensure we can run a script template
+// when both args and script source are specified
+func TestScriptTemplateWithArgsAndWithSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithSource)
+	woc := newWoc()
+	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
+	assert.NoError(t, err)
+}
+
+// TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource ensure order of merged
+// args and script path is correct when both args and script source are specified
+func TestScriptTemplateMainCtrArgsWhenArgsAndWhenSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithSource)
+	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	assert.Equal(t, []string{"sh"}, mainCtr.Command)
+	assert.Equal(t, []string{common.ExecutorScriptSourcePath, "hello world"}, mainCtr.Args)
+}
+
+var scriptTemplateWithArgsAndWithoutSource = `
+name: script-with-args-and-without-source
+script:
+  image: alpine:latest
+  command: [echo]
+  args: ["hello world"]
+`
+
+// TestScriptTemplateWithArgsAndWithoutSource ensure we can run a script template
+// when args are specified but script source is empty
+func TestScriptTemplateWithArgsAndWithoutSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithoutSource)
+	woc := newWoc()
+	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
+	assert.NoError(t, err)
+}
+
+// TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource ensure only args are passed
+// to the resulting container when script source is empty
+func TestScriptTemplateMainCtrArgsWhenArgsAndWhenNoSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithArgsAndWithoutSource)
+	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	assert.Equal(t, []string{"echo"}, mainCtr.Command)
+	assert.Equal(t, []string{"hello world"}, mainCtr.Args)
+}
+
+var scriptTemplateWithoutArgsAndWithSource = `
+name: script-without-args-and-with-source
+script:
+  image: alpine:latest
+  command: [sh]
+  source: |
+    echo "hello world"
+`
+
+// TestScriptTemplateWithoutArgsAndWithSource ensure we can run a script template
+// that has no args and but script source is specified
+func TestScriptTemplateWithoutArgsAndWithSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithoutArgsAndWithSource)
+	woc := newWoc()
+	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
+	assert.NoError(t, err)
+}
+
+// TestScriptTemplateMainCtrArgsWhenNoArgsAndWhenSource ensure only script path is passed
+// as an arg to the resulting container when there are no args but script source is specified
+func TestScriptTemplateMainCtrArgsWhenNoArgsAndWhenSource(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithoutArgsAndWithSource)
+	mainCtr := extractMainCtrFromScriptTemplate(tmpl)
+	assert.Equal(t, []string{"sh"}, mainCtr.Command)
+	assert.Equal(t, []string{common.ExecutorScriptSourcePath}, mainCtr.Args)
+}
+
 var scriptTemplateWithOptionalInputArtifactProvided = `
 name: script-with-input-artifact
 inputs:
