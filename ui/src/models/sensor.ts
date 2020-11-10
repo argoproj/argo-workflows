@@ -30,6 +30,7 @@ export interface Sensor {
 }
 
 export interface SensorList {
+    metadata: kubernetes.ListMeta;
     items: Sensor[];
 }
 

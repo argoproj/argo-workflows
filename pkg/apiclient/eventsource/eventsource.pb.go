@@ -13,8 +13,8 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	io "io"
-	v1 "k8s.io/api/core/v1"
-	v11 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v11 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	math "math"
 	math_bits "math/bits"
 )
@@ -31,10 +31,11 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ListEventSourcesRequest struct {
-	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Namespace            string          `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ListOptions          *v1.ListOptions `protobuf:"bytes,2,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
 func (m *ListEventSourcesRequest) Reset()         { *m = ListEventSourcesRequest{} }
@@ -77,6 +78,13 @@ func (m *ListEventSourcesRequest) GetNamespace() string {
 	return ""
 }
 
+func (m *ListEventSourcesRequest) GetListOptions() *v1.ListOptions {
+	if m != nil {
+		return m.ListOptions
+	}
+	return nil
+}
+
 type EventSourcesLogsRequest struct {
 	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// optional
@@ -84,11 +92,11 @@ type EventSourcesLogsRequest struct {
 	// optional
 	EventSourceType string `protobuf:"bytes,3,opt,name=eventSourceType,proto3" json:"eventSourceType,omitempty"`
 	// optional
-	EventName            string            `protobuf:"bytes,4,opt,name=eventName,proto3" json:"eventName,omitempty"`
-	PodLogOptions        *v1.PodLogOptions `protobuf:"bytes,5,opt,name=podLogOptions,proto3" json:"podLogOptions,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	EventName            string             `protobuf:"bytes,4,opt,name=eventName,proto3" json:"eventName,omitempty"`
+	PodLogOptions        *v11.PodLogOptions `protobuf:"bytes,5,opt,name=podLogOptions,proto3" json:"podLogOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
 func (m *EventSourcesLogsRequest) Reset()         { *m = EventSourcesLogsRequest{} }
@@ -152,7 +160,7 @@ func (m *EventSourcesLogsRequest) GetEventName() string {
 	return ""
 }
 
-func (m *EventSourcesLogsRequest) GetPodLogOptions() *v1.PodLogOptions {
+func (m *EventSourcesLogsRequest) GetPodLogOptions() *v11.PodLogOptions {
 	if m != nil {
 		return m.PodLogOptions
 	}
@@ -166,13 +174,13 @@ type LogEntry struct {
 	// optional
 	EventSourceType string `protobuf:"bytes,3,opt,name=eventSourceType,proto3" json:"eventSourceType,omitempty"`
 	// optional
-	EventName            string    `protobuf:"bytes,4,opt,name=eventName,proto3" json:"eventName,omitempty"`
-	Level                string    `protobuf:"bytes,5,opt,name=level,proto3" json:"level,omitempty"`
-	Time                 *v11.Time `protobuf:"bytes,6,opt,name=time,proto3" json:"time,omitempty"`
-	Msg                  string    `protobuf:"bytes,7,opt,name=msg,proto3" json:"msg,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	EventName            string   `protobuf:"bytes,4,opt,name=eventName,proto3" json:"eventName,omitempty"`
+	Level                string   `protobuf:"bytes,5,opt,name=level,proto3" json:"level,omitempty"`
+	Time                 *v1.Time `protobuf:"bytes,6,opt,name=time,proto3" json:"time,omitempty"`
+	Msg                  string   `protobuf:"bytes,7,opt,name=msg,proto3" json:"msg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *LogEntry) Reset()         { *m = LogEntry{} }
@@ -243,7 +251,7 @@ func (m *LogEntry) GetLevel() string {
 	return ""
 }
 
-func (m *LogEntry) GetTime() *v11.Time {
+func (m *LogEntry) GetTime() *v1.Time {
 	if m != nil {
 		return m.Time
 	}
@@ -257,10 +265,66 @@ func (m *LogEntry) GetMsg() string {
 	return ""
 }
 
+type EventSourceWatchEvent struct {
+	Type                 string                `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Object               *v1alpha1.EventSource `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *EventSourceWatchEvent) Reset()         { *m = EventSourceWatchEvent{} }
+func (m *EventSourceWatchEvent) String() string { return proto.CompactTextString(m) }
+func (*EventSourceWatchEvent) ProtoMessage()    {}
+func (*EventSourceWatchEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b13fbf03f636aa35, []int{3}
+}
+func (m *EventSourceWatchEvent) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EventSourceWatchEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EventSourceWatchEvent.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EventSourceWatchEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventSourceWatchEvent.Merge(m, src)
+}
+func (m *EventSourceWatchEvent) XXX_Size() int {
+	return m.Size()
+}
+func (m *EventSourceWatchEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventSourceWatchEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EventSourceWatchEvent proto.InternalMessageInfo
+
+func (m *EventSourceWatchEvent) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *EventSourceWatchEvent) GetObject() *v1alpha1.EventSource {
+	if m != nil {
+		return m.Object
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*ListEventSourcesRequest)(nil), "eventsource.ListEventSourcesRequest")
 	proto.RegisterType((*EventSourcesLogsRequest)(nil), "eventsource.EventSourcesLogsRequest")
 	proto.RegisterType((*LogEntry)(nil), "eventsource.LogEntry")
+	proto.RegisterType((*EventSourceWatchEvent)(nil), "eventsource.EventSourceWatchEvent")
 }
 
 func init() {
@@ -268,41 +332,46 @@ func init() {
 }
 
 var fileDescriptor_b13fbf03f636aa35 = []byte{
-	// 536 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xcf, 0x8b, 0x13, 0x31,
-	0x14, 0x66, 0xba, 0x3f, 0xb4, 0x59, 0xc4, 0x12, 0x94, 0x1d, 0xca, 0x52, 0x76, 0x47, 0x0f, 0x55,
-	0x69, 0x62, 0xab, 0xa2, 0x27, 0x11, 0x61, 0xf1, 0x52, 0xab, 0x74, 0xf7, 0xe4, 0x45, 0xb2, 0xb3,
-	0x8f, 0x34, 0x76, 0x66, 0x12, 0x27, 0xe9, 0x40, 0x11, 0x2f, 0x7b, 0xf2, 0xee, 0x9f, 0xe2, 0x3f,
-	0xe1, 0x51, 0x10, 0x6f, 0x1e, 0xa4, 0xf8, 0x87, 0x48, 0x32, 0x6d, 0x27, 0xad, 0x16, 0x3d, 0x78,
-	0x7b, 0xf3, 0xf2, 0xbe, 0xef, 0xbd, 0x2f, 0xf9, 0xde, 0xa0, 0x3b, 0x6a, 0xcc, 0x29, 0x53, 0x22,
-	0x4e, 0x04, 0x64, 0x86, 0x42, 0x01, 0x99, 0xd1, 0x72, 0x92, 0xc7, 0xe0, 0xc7, 0x44, 0xe5, 0xd2,
-	0x48, 0xbc, 0xe7, 0xa5, 0x9a, 0x07, 0x5c, 0x4a, 0x9e, 0x80, 0x05, 0x53, 0x96, 0x65, 0xd2, 0x30,
-	0x23, 0x64, 0xa6, 0xcb, 0xd2, 0xe6, 0xfd, 0xf1, 0x23, 0x4d, 0x84, 0xb4, 0xa7, 0x29, 0x8b, 0x47,
-	0x22, 0x83, 0x7c, 0x4a, 0xe7, 0xbd, 0x34, 0x4d, 0xc1, 0x30, 0x5a, 0x74, 0x29, 0x87, 0x0c, 0x72,
-	0x66, 0xe0, 0x7c, 0x8e, 0x8a, 0x2a, 0x14, 0x8d, 0x65, 0x0e, 0x7f, 0xaa, 0x79, 0xce, 0x85, 0x19,
-	0x4d, 0xce, 0x48, 0x2c, 0x53, 0xca, 0x72, 0x2e, 0x55, 0x2e, 0xdf, 0xb8, 0xa0, 0x53, 0x4e, 0x57,
-	0x75, 0xf1, 0xc5, 0x14, 0x5d, 0x96, 0xa8, 0x11, 0xfb, 0x8d, 0x2e, 0x7a, 0x88, 0xf6, 0xfb, 0x42,
-	0x9b, 0x63, 0x5b, 0x7b, 0xe2, 0x6a, 0xf5, 0x10, 0xde, 0x4e, 0x40, 0x1b, 0x7c, 0x80, 0xea, 0x19,
-	0x4b, 0x41, 0x2b, 0x16, 0x43, 0x18, 0x1c, 0x06, 0xed, 0xfa, 0xb0, 0x4a, 0x44, 0xdf, 0x03, 0xb4,
-	0xef, 0xa3, 0xfa, 0x92, 0xff, 0x1b, 0x12, 0x63, 0xb4, 0x6d, 0x3f, 0xc2, 0x9a, 0x3b, 0x70, 0x31,
-	0x6e, 0xa3, 0xab, 0x50, 0x91, 0x9d, 0x4e, 0x15, 0x84, 0x5b, 0xee, 0x78, 0x3d, 0x6d, 0xb9, 0x5d,
-	0x6a, 0x60, 0x29, 0xb6, 0x4b, 0xee, 0x65, 0x02, 0x3f, 0x43, 0x57, 0x94, 0x3c, 0xef, 0x4b, 0xfe,
-	0x42, 0xb9, 0xe7, 0x08, 0x77, 0x0e, 0x83, 0xf6, 0x5e, 0xef, 0x88, 0x94, 0x37, 0x4b, 0x98, 0x12,
-	0xc4, 0xde, 0x2c, 0x29, 0xba, 0xe4, 0xa5, 0x5f, 0x38, 0x5c, 0xc5, 0x45, 0x17, 0x35, 0x74, 0xb9,
-	0x2f, 0xf9, 0x71, 0x66, 0xf2, 0xe9, 0x5f, 0xf4, 0xac, 0xce, 0x3e, 0xa8, 0xa4, 0xad, 0xa7, 0xff,
-	0x9b, 0xca, 0x6b, 0x68, 0x27, 0x81, 0x02, 0x12, 0xa7, 0xae, 0x3e, 0x2c, 0x3f, 0xf0, 0x63, 0xb4,
-	0x6d, 0x44, 0x0a, 0xe1, 0xae, 0x93, 0x7c, 0xdb, 0x93, 0xbc, 0xb4, 0x20, 0x51, 0x63, 0x6e, 0x13,
-	0x9a, 0x58, 0x0b, 0xda, 0x4b, 0x38, 0x15, 0x29, 0x0c, 0x1d, 0x0e, 0x37, 0xd0, 0x56, 0xaa, 0x79,
-	0x78, 0xc9, 0x71, 0xda, 0xb0, 0xf7, 0xad, 0x86, 0xb0, 0xf7, 0xc6, 0x27, 0x90, 0x17, 0x22, 0x06,
-	0xfc, 0x29, 0x40, 0x8d, 0x75, 0xd3, 0xe0, 0x9b, 0xc4, 0x5f, 0x98, 0x0d, 0x9e, 0x6a, 0x0e, 0x48,
-	0x65, 0x5f, 0xb2, 0xb0, 0xaf, 0x0b, 0x5e, 0x97, 0xf0, 0x6a, 0x42, 0x9f, 0x6e, 0x61, 0x5f, 0xe2,
-	0x71, 0xda, 0x16, 0xd1, 0xad, 0x8b, 0xaf, 0x3f, 0x3f, 0xd6, 0x6e, 0xe0, 0x23, 0xb7, 0x33, 0x45,
-	0xb7, 0x34, 0x7d, 0xa7, 0x84, 0x69, 0xfa, 0x6e, 0xf9, 0x4a, 0xef, 0xf1, 0x87, 0x00, 0x35, 0xd6,
-	0x0d, 0xbb, 0x36, 0xf5, 0x06, 0x3f, 0x37, 0xaf, 0xaf, 0x6a, 0x9b, 0xdb, 0x22, 0x7a, 0xe0, 0x9a,
-	0x53, 0xdc, 0x59, 0x34, 0xd7, 0x26, 0x07, 0x96, 0x6e, 0x9e, 0x81, 0x26, 0x92, 0xeb, 0xbb, 0xc1,
-	0xd3, 0x27, 0x9f, 0x67, 0xad, 0xe0, 0xcb, 0xac, 0x15, 0xfc, 0x98, 0xb5, 0x82, 0x57, 0xbd, 0x4d,
-	0x1b, 0x4d, 0x37, 0xfe, 0x9c, 0xce, 0x76, 0xdd, 0xf6, 0xde, 0xfb, 0x15, 0x00, 0x00, 0xff, 0xff,
-	0xb8, 0x9b, 0x13, 0x53, 0xc0, 0x04, 0x00, 0x00,
+	// 620 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xcf, 0x6b, 0x13, 0x41,
+	0x14, 0x66, 0xfa, 0x4b, 0x33, 0x45, 0xac, 0x83, 0xa5, 0x21, 0x94, 0xd2, 0xae, 0x1e, 0x62, 0xa5,
+	0x33, 0x4d, 0x55, 0xf0, 0x24, 0x22, 0x14, 0x41, 0x62, 0x95, 0x4d, 0x41, 0xf0, 0x22, 0x93, 0xed,
+	0x63, 0xb2, 0xcd, 0xee, 0xce, 0xba, 0x33, 0x59, 0x08, 0xe2, 0xa5, 0x27, 0x0f, 0x82, 0x88, 0x7f,
+	0x8a, 0xff, 0x84, 0x47, 0xc1, 0xab, 0x07, 0x09, 0x5e, 0xfc, 0x2f, 0x64, 0x66, 0x93, 0xee, 0x24,
+	0xba, 0x18, 0xa1, 0xb7, 0x37, 0x2f, 0xef, 0x7d, 0xef, 0xfb, 0xf6, 0xcd, 0x37, 0xc1, 0xb7, 0xd3,
+	0xbe, 0x60, 0x3c, 0x0d, 0x83, 0x28, 0x84, 0x44, 0x33, 0xc8, 0x21, 0xd1, 0x4a, 0x0e, 0xb2, 0x00,
+	0xdc, 0x98, 0xa6, 0x99, 0xd4, 0x92, 0xac, 0x3a, 0xa9, 0xc6, 0xa6, 0x90, 0x52, 0x44, 0x60, 0x9a,
+	0x19, 0x4f, 0x12, 0xa9, 0xb9, 0x0e, 0x65, 0xa2, 0x8a, 0xd2, 0xc6, 0xdd, 0xfe, 0x7d, 0x45, 0x43,
+	0x69, 0x7e, 0x8d, 0x79, 0xd0, 0x0b, 0x13, 0xc8, 0x86, 0x6c, 0x3c, 0x4b, 0xb1, 0x18, 0x34, 0x67,
+	0x79, 0x8b, 0x09, 0x48, 0x20, 0xe3, 0x1a, 0x4e, 0xc6, 0x5d, 0x5e, 0xd9, 0xc5, 0x02, 0x99, 0xc1,
+	0xdf, 0x6a, 0x9e, 0x8a, 0x50, 0xf7, 0x06, 0x5d, 0x1a, 0xc8, 0x98, 0xf1, 0x4c, 0xc8, 0x34, 0x93,
+	0xa7, 0x36, 0xd8, 0x2b, 0xd8, 0x95, 0x53, 0x5c, 0x31, 0x79, 0x8b, 0x47, 0x69, 0x8f, 0xff, 0x01,
+	0xe7, 0xbd, 0x47, 0x78, 0xa3, 0x1d, 0x2a, 0x7d, 0x68, 0x8a, 0x3b, 0xb6, 0x58, 0xf9, 0xf0, 0x7a,
+	0x00, 0x4a, 0x93, 0x4d, 0x5c, 0x4b, 0x78, 0x0c, 0x2a, 0xe5, 0x01, 0xd4, 0xd1, 0x36, 0x6a, 0xd6,
+	0xfc, 0x32, 0x41, 0x3a, 0x78, 0x35, 0x0a, 0x95, 0x7e, 0x96, 0x5a, 0xdd, 0xf5, 0x85, 0x6d, 0xd4,
+	0x5c, 0x3d, 0x68, 0xd1, 0x42, 0x02, 0x75, 0x85, 0xd3, 0xb4, 0x2f, 0x4c, 0x42, 0x51, 0x23, 0x9c,
+	0xe6, 0x2d, 0xda, 0x2e, 0x1b, 0x7d, 0x17, 0xc5, 0xfb, 0x8e, 0xf0, 0x86, 0x4b, 0xa5, 0x2d, 0xc5,
+	0x9c, 0x74, 0x08, 0x5e, 0x32, 0x07, 0xcb, 0xa3, 0xe6, 0xdb, 0x98, 0x34, 0xf1, 0x55, 0x28, 0xc1,
+	0x8e, 0x87, 0x29, 0xd4, 0x17, 0xed, 0xcf, 0xb3, 0x69, 0x83, 0x6d, 0x53, 0x47, 0x06, 0x62, 0xa9,
+	0xc0, 0x3e, 0x4f, 0x90, 0xc7, 0xf8, 0x4a, 0x2a, 0x4f, 0xda, 0x52, 0x4c, 0xc4, 0x2e, 0x5b, 0xb1,
+	0x3b, 0x8e, 0x58, 0x6a, 0xf6, 0x65, 0xa4, 0x3d, 0x77, 0x0b, 0xfd, 0xe9, 0x3e, 0xef, 0x6c, 0x01,
+	0x5f, 0x6e, 0x4b, 0x71, 0x98, 0xe8, 0x6c, 0xf8, 0x0f, 0x3d, 0xd3, 0xdc, 0x8f, 0x4a, 0x69, 0xb3,
+	0xe9, 0x0b, 0x53, 0x79, 0x1d, 0x2f, 0x47, 0x90, 0x43, 0x64, 0xd5, 0xd5, 0xfc, 0xe2, 0x40, 0x1e,
+	0xe0, 0x25, 0x1d, 0xc6, 0x50, 0x5f, 0xb1, 0x92, 0x77, 0xe7, 0xdb, 0xef, 0x71, 0x18, 0x83, 0x6f,
+	0xfb, 0xc8, 0x1a, 0x5e, 0x8c, 0x95, 0xa8, 0x5f, 0xb2, 0x98, 0x26, 0xf4, 0x3e, 0x20, 0xbc, 0xee,
+	0xec, 0xf8, 0x05, 0xd7, 0x41, 0xcf, 0x9e, 0xcd, 0x0e, 0xb5, 0xa1, 0x5f, 0x7c, 0x0c, 0x1b, 0x93,
+	0x2e, 0x5e, 0x91, 0xdd, 0x53, 0x08, 0xf4, 0xf8, 0x86, 0x3d, 0xa1, 0xa5, 0x01, 0xe8, 0xc4, 0x00,
+	0x36, 0x78, 0x55, 0x5c, 0xf8, 0x92, 0x8d, 0xeb, 0xe0, 0x89, 0x01, 0xa8, 0x33, 0xd9, 0x1f, 0x23,
+	0x1f, 0xfc, 0x5a, 0xc4, 0xc4, 0xc9, 0x77, 0x20, 0xcb, 0xc3, 0x00, 0xc8, 0x67, 0x84, 0xd7, 0x66,
+	0xbd, 0x41, 0x6e, 0x4e, 0xc1, 0x56, 0x58, 0xa7, 0x71, 0x74, 0x71, 0x2c, 0xcd, 0x08, 0xef, 0xd6,
+	0xd9, 0xb7, 0x9f, 0x9f, 0x16, 0x6e, 0x90, 0x1d, 0xfb, 0x36, 0xe4, 0xad, 0xc2, 0xdc, 0x7b, 0x45,
+	0x9b, 0x62, 0x6f, 0xce, 0xef, 0xcd, 0x5b, 0xf2, 0x0e, 0xe1, 0xb5, 0x59, 0x0b, 0xcd, 0xb0, 0xae,
+	0x70, 0x58, 0x63, 0x7d, 0x5a, 0xdb, 0xf8, 0xa2, 0x7a, 0xf7, 0xec, 0x70, 0x46, 0xf6, 0x26, 0xc3,
+	0x95, 0xce, 0x80, 0xc7, 0xd5, 0x1c, 0x58, 0x24, 0x85, 0xda, 0x47, 0xe4, 0x23, 0xc2, 0xd7, 0xca,
+	0xf5, 0xfe, 0xdf, 0x17, 0xf4, 0xaa, 0x18, 0x97, 0x80, 0xde, 0xbe, 0x25, 0xb6, 0x4b, 0x9a, 0xf3,
+	0x12, 0xdb, 0x47, 0x8f, 0x1e, 0x7e, 0x19, 0x6d, 0xa1, 0xaf, 0xa3, 0x2d, 0xf4, 0x63, 0xb4, 0x85,
+	0x5e, 0x1e, 0x54, 0xbd, 0xa6, 0xac, 0xf2, 0x8f, 0xa1, 0xbb, 0x62, 0x5f, 0xce, 0x3b, 0xbf, 0x03,
+	0x00, 0x00, 0xff, 0xff, 0xdb, 0xe6, 0xdc, 0xb7, 0x3c, 0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -319,6 +388,7 @@ const _ = grpc.SupportPackageIsVersion4
 type EventSourceServiceClient interface {
 	ListEventSources(ctx context.Context, in *ListEventSourcesRequest, opts ...grpc.CallOption) (*v1alpha1.EventSourceList, error)
 	EventSourcesLogs(ctx context.Context, in *EventSourcesLogsRequest, opts ...grpc.CallOption) (EventSourceService_EventSourcesLogsClient, error)
+	WatchEventSources(ctx context.Context, in *ListEventSourcesRequest, opts ...grpc.CallOption) (EventSourceService_WatchEventSourcesClient, error)
 }
 
 type eventSourceServiceClient struct {
@@ -370,10 +440,43 @@ func (x *eventSourceServiceEventSourcesLogsClient) Recv() (*LogEntry, error) {
 	return m, nil
 }
 
+func (c *eventSourceServiceClient) WatchEventSources(ctx context.Context, in *ListEventSourcesRequest, opts ...grpc.CallOption) (EventSourceService_WatchEventSourcesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_EventSourceService_serviceDesc.Streams[1], "/eventsource.EventSourceService/WatchEventSources", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &eventSourceServiceWatchEventSourcesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type EventSourceService_WatchEventSourcesClient interface {
+	Recv() (*EventSourceWatchEvent, error)
+	grpc.ClientStream
+}
+
+type eventSourceServiceWatchEventSourcesClient struct {
+	grpc.ClientStream
+}
+
+func (x *eventSourceServiceWatchEventSourcesClient) Recv() (*EventSourceWatchEvent, error) {
+	m := new(EventSourceWatchEvent)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // EventSourceServiceServer is the server API for EventSourceService service.
 type EventSourceServiceServer interface {
 	ListEventSources(context.Context, *ListEventSourcesRequest) (*v1alpha1.EventSourceList, error)
 	EventSourcesLogs(*EventSourcesLogsRequest, EventSourceService_EventSourcesLogsServer) error
+	WatchEventSources(*ListEventSourcesRequest, EventSourceService_WatchEventSourcesServer) error
 }
 
 // UnimplementedEventSourceServiceServer can be embedded to have forward compatible implementations.
@@ -385,6 +488,9 @@ func (*UnimplementedEventSourceServiceServer) ListEventSources(ctx context.Conte
 }
 func (*UnimplementedEventSourceServiceServer) EventSourcesLogs(req *EventSourcesLogsRequest, srv EventSourceService_EventSourcesLogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method EventSourcesLogs not implemented")
+}
+func (*UnimplementedEventSourceServiceServer) WatchEventSources(req *ListEventSourcesRequest, srv EventSourceService_WatchEventSourcesServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchEventSources not implemented")
 }
 
 func RegisterEventSourceServiceServer(s *grpc.Server, srv EventSourceServiceServer) {
@@ -430,6 +536,27 @@ func (x *eventSourceServiceEventSourcesLogsServer) Send(m *LogEntry) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _EventSourceService_WatchEventSources_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListEventSourcesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(EventSourceServiceServer).WatchEventSources(m, &eventSourceServiceWatchEventSourcesServer{stream})
+}
+
+type EventSourceService_WatchEventSourcesServer interface {
+	Send(*EventSourceWatchEvent) error
+	grpc.ServerStream
+}
+
+type eventSourceServiceWatchEventSourcesServer struct {
+	grpc.ServerStream
+}
+
+func (x *eventSourceServiceWatchEventSourcesServer) Send(m *EventSourceWatchEvent) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _EventSourceService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "eventsource.EventSourceService",
 	HandlerType: (*EventSourceServiceServer)(nil),
@@ -443,6 +570,11 @@ var _EventSourceService_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "EventSourcesLogs",
 			Handler:       _EventSourceService_EventSourcesLogs_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchEventSources",
+			Handler:       _EventSourceService_WatchEventSources_Handler,
 			ServerStreams: true,
 		},
 	},
@@ -472,6 +604,18 @@ func (m *ListEventSourcesRequest) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	if m.XXX_unrecognized != nil {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
 	}
 	if len(m.Namespace) > 0 {
 		i -= len(m.Namespace)
@@ -631,6 +775,52 @@ func (m *LogEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *EventSourceWatchEvent) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventSourceWatchEvent) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventSourceWatchEvent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Object != nil {
+		{
+			size, err := m.Object.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEventsource(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i -= len(m.Type)
+		copy(dAtA[i:], m.Type)
+		i = encodeVarintEventsource(dAtA, i, uint64(len(m.Type)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintEventsource(dAtA []byte, offset int, v uint64) int {
 	offset -= sovEventsource(v)
 	base := offset
@@ -650,6 +840,10 @@ func (m *ListEventSourcesRequest) Size() (n int) {
 	_ = l
 	l = len(m.Namespace)
 	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
 		n += 1 + l + sovEventsource(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -730,6 +924,26 @@ func (m *LogEntry) Size() (n int) {
 	return n
 }
 
+func (m *EventSourceWatchEvent) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.Object != nil {
+		l = m.Object.Size()
+		n += 1 + l + sovEventsource(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func sovEventsource(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -796,6 +1010,42 @@ func (m *ListEventSourcesRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1009,7 +1259,7 @@ func (m *EventSourcesLogsRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.PodLogOptions == nil {
-				m.PodLogOptions = &v1.PodLogOptions{}
+				m.PodLogOptions = &v11.PodLogOptions{}
 			}
 			if err := m.PodLogOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1259,7 +1509,7 @@ func (m *LogEntry) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Time == nil {
-				m.Time = &v11.Time{}
+				m.Time = &v1.Time{}
 			}
 			if err := m.Time.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1296,6 +1546,128 @@ func (m *LogEntry) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Msg = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEventsource(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventSourceWatchEvent) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEventsource
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventSourceWatchEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventSourceWatchEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEventsource
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEventsource
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Object == nil {
+				m.Object = &v1alpha1.EventSource{}
+			}
+			if err := m.Object.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

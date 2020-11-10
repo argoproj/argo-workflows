@@ -3,10 +3,13 @@ package eventsource
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/watch"
 
 	eventsourcepkg "github.com/argoproj/argo/pkg/apiclient/eventsource"
 	"github.com/argoproj/argo/server/auth"
@@ -16,7 +19,7 @@ import (
 type eventSourceServer struct{}
 
 func (e *eventSourceServer) ListEventSources(ctx context.Context, in *eventsourcepkg.ListEventSourcesRequest) (*esv1.EventSourceList, error) {
-	client := auth.GetEvenSourceClient(ctx)
+	client := auth.GetEventSourceClient(ctx)
 	list, err := client.ArgoprojV1alpha1().EventSources(in.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -53,6 +56,37 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 			return svr.Send(e)
 		},
 	)
+}
+
+func (e *eventSourceServer) WatchEventSources(in *eventsourcepkg.ListEventSourcesRequest, srv eventsourcepkg.EventSourceService_WatchEventSourcesServer) error {
+	ctx := srv.Context()
+	listOptions := metav1.ListOptions{}
+	if in.ListOptions != nil {
+		listOptions = *in.ListOptions
+	}
+	eventSourceInterface := auth.GetEventSourceClient(ctx).ArgoprojV1alpha1().EventSources(in.Namespace)
+	watcher, err := watch.NewRetryWatcher(listOptions.ResourceVersion, eventSourceInterface)
+	if err != nil {
+		return err
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case event, ok := <-watcher.ResultChan():
+			if !ok {
+				return fmt.Errorf("failed to read event")
+			}
+			es, ok := event.Object.(*esv1.EventSource)
+			if !ok {
+				return apierr.FromObject(event.Object)
+			}
+			err := srv.Send(&eventsourcepkg.EventSourceWatchEvent{Type: string(event.Type), Object: es})
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
 
 func NewEventSourceServer() eventsourcepkg.EventSourceServiceServer {

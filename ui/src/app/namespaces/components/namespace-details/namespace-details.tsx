@@ -18,7 +18,7 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {EventsZeroState} from './events-zero-state';
 import {icons} from './icons';
-import {ID} from './id';
+import {ID, Type} from './id';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -49,6 +49,7 @@ const types = () => {
 
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
     private markActivationsSubscriptions: Subscription[];
+    private watchSubscriptions: Subscription[] = [];
 
     private set selectedId(selectedId: string) {
         this.setState({selectedId}, this.saveHistory);
@@ -285,6 +286,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     public componentWillUnmount() {
+        this.stopWatches();
         this.stopMarkingActivations();
     }
 
@@ -293,7 +295,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             return;
         }
         const {type, namespace, name, key} = ID.split(i);
-        const kind = ({Trigger: 'Sensor'} as {[key: string]: string})[type] || type;
+        const kind: Type = ({Trigger: 'Sensor'} as {[key: string]: Type})[type] || type;
         return {namespace, kind, name, key, value: this.state.resources[ID.join({type: kind, namespace, name})]};
     }
 
@@ -338,16 +340,41 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private fetch(namespace: string) {
-        const updateResources = (s: State, type: string, list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
+        const updateResources = (s: State, type: 'EventSource' | 'Sensor', list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
             (list.items || []).forEach(v => {
                 s.resources[ID.join({type, namespace: v.metadata.namespace, name: v.metadata.name})] = v;
             });
             return {resources: s.resources};
         };
+        this.stopWatches();
         this.setState({resources: {}}, () => {
             Promise.all([
                 services.eventSource.list(namespace).then(list => this.setState(s => updateResources(s, 'EventSource', list))),
-                services.sensor.list(namespace).then(list => this.setState(s => updateResources(s, 'Sensor', list)))
+                services.sensor.list(namespace).then(list => {
+                    this.setState(
+                        s => updateResources(s, 'Sensor', list),
+                        () =>
+                            this.watchSubscriptions.push(
+                                services.eventSource
+                                    .watch(namespace, list.metadata.resourceVersion)
+                                    .map(x => x.object)
+                                    .subscribe(
+                                        e =>
+                                            this.setState(s => {
+                                                s.resources[
+                                                    ID.join({
+                                                        type: 'EventSource',
+                                                        namespace: e.metadata.namespace,
+                                                        name: e.metadata.name
+                                                    })
+                                                ] = e;
+                                                return {resources: s.resources};
+                                            }),
+                                        error => this.setState({error})
+                                    )
+                            )
+                    );
+                })
             ])
                 .then(() => this.setState({error: null, namespace}, this.saveHistory))
                 .then(() => {
@@ -427,5 +454,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             }, 2000);
             return {active: state.active};
         });
+    }
+
+    private stopWatches() {
+        this.watchSubscriptions.forEach(x => x.unsubscribe());
+        this.watchSubscriptions = [];
     }
 }

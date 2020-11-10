@@ -46,6 +46,11 @@ export interface LogEntry {
     msg: string;
 }
 
+export interface EventSourceWatchEvent {
+    type: string;
+    object: EventSource;
+}
+
 export const eventSources: {[key: string]: string} = {
     amqp: 'AMQP',
     azureEventsHub: 'AzureEventsHub',

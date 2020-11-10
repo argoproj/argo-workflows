@@ -108,7 +108,7 @@ func GetWfClient(ctx context.Context) workflow.Interface {
 	return ctx.Value(WfKey).(workflow.Interface)
 }
 
-func GetEvenSourceClient(ctx context.Context) eventsource.Interface {
+func GetEventSourceClient(ctx context.Context) eventsource.Interface {
 	return ctx.Value(EventSourceKey).(eventsource.Interface)
 }
 

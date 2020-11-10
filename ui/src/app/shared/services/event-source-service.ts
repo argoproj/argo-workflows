@@ -1,9 +1,15 @@
-import {EventSourceList, LogEntry} from '../../../models/event-source';
+import {EventSourceList, EventSourceWatchEvent, LogEntry} from '../../../models/event-source';
 import requests from './requests';
 
 export class EventSourceService {
     public list(namespace: string) {
         return requests.get(`api/v1/event-sources/${namespace}`).then(res => res.body as EventSourceList);
+    }
+
+    public watch(namespace: string, resourceVersion: string) {
+        return requests
+            .loadEventSource(`api/v1/stream/event-sources/${namespace}?listOptions.resourceVersion=${resourceVersion}`)
+            .map(line => JSON.parse(line).result as EventSourceWatchEvent);
     }
 
     public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', tailLines = -1) {
