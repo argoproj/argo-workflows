@@ -349,7 +349,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     }
 
     private openLink(link: Link) {
-
         const url = link.url
             .replace(/\${metadata\.namespace}/g, this.state.workflow.metadata.namespace)
             .replace(/\${metadata\.name}/g, this.state.workflow.metadata.name)
