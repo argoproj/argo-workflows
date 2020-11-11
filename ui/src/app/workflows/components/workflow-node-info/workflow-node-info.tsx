@@ -120,9 +120,9 @@ export const WorkflowNodeSummary = (props: Props) => {
                                 className='argo-button argo-button--base-o'
                                 href={link.url
                                     .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
-                                    .replace(/\${metadata\.name}/g, props.workflow.metadata.name)
-                                    .replace(/\${status\.startedAt}/g, props.workflow.status.startedAt)
-                                    .replace(/\${status\.finishedAt}/g, props.workflow.status.finishedAt)}>
+                                    .replace(/\${metadata\.name}/g, props.node.id)
+                                    .replace(/\${status\.startedAt}/g, props.node.startedAt)
+                                    .replace(/\${status\.finishedAt}/g, props.node.finishedAt)}>
                                 <i className='fa fa-link' /> {link.name}
                             </a>
                         ))}
