@@ -69,6 +69,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Mixpanel](https://mixpanel.com)
 1. [New Relic](https://newrelic.com/)
 1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
+1. [Norwegian Refugee Council](https://www.nrc.no/)
 1. [nrd.io](https://nrd.io/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Onepanel](https://docs.onepanel.ai)
