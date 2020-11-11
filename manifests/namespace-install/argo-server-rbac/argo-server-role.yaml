@@ -40,10 +40,10 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - secrets
       - serviceaccounts
     verbs:
       - get
+      - list
   - apiGroups:
       - argoproj.io
     resources:
