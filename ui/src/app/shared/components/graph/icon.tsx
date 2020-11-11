@@ -5,7 +5,7 @@ import {icons} from '../icons';
 export const GraphIcon = (props: {icon: Icon; progress?: number; nodeSize: number}) => {
     if (!props.progress) {
         return (
-            <text y={props.nodeSize / 32} className='icon' style={{fontSize: props.nodeSize / 2}}>
+            <text className='icon' style={{fontSize: props.nodeSize / 2}}>
                 {icons[props.icon]}
             </text>
         );

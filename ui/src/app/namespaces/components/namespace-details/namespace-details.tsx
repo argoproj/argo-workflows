@@ -36,7 +36,7 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
-    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Succeeded';
+    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Listening';
 };
 
 const types = () => {
@@ -97,7 +97,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                     type: 'sensor',
                     label: sensor.metadata.name,
                     icon: icons.Sensor,
-                    classNames: this.classNames(sensor, sensorId)
+                    classNames: status(sensor)
                 });
             });
 
@@ -118,7 +118,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                             graph.nodes.set(eventId, {
                                 type: typeKey,
                                 label: key,
-                                classNames: this.classNames(eventSource, eventId),
+                                classNames: status(eventSource),
                                 icon: icons[eventSources[typeKey] + 'EventSource']
                             });
                         });
@@ -135,7 +135,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         name: d.eventSourceName,
                         key: d.eventName
                     });
-                    graph.edges.set({v: eventId, w: sensorId}, {label: d.name});
+                    graph.edges.set({v: eventId, w: sensorId}, {label: d.name, classNames: this.edgeClassNames(eventId)});
                 });
                 (spec.triggers || [])
                     .map(t => t.template)
@@ -151,7 +151,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         graph.nodes.set(triggerId, {
                             label: template.name,
                             type: triggerTypeKey,
-                            classNames: this.classNames(sensor, triggerId),
+                            classNames: status(sensor),
                             icon: icons[triggerTypes[triggerTypeKey] + 'Trigger']
                         });
                         if (template.conditions) {
@@ -167,10 +167,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 icon: icons.Conditions,
                                 classNames: ''
                             });
-                            graph.edges.set({v: sensorId, w: conditionsId}, {});
-                            graph.edges.set({v: conditionsId, w: triggerId}, {});
+                            graph.edges.set({v: sensorId, w: conditionsId}, {classNames: this.edgeClassNames(sensorId)});
+                            graph.edges.set({v: conditionsId, w: triggerId}, {classNames: this.edgeClassNames(sensorId)});
                         } else {
-                            graph.edges.set({v: sensorId, w: triggerId}, {});
+                            graph.edges.set({v: sensorId, w: triggerId}, {classNames: this.edgeClassNames(sensorId)});
                         }
                     });
             });
@@ -319,7 +319,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                 onNodeSelect={selectedId => (this.selectedId = selectedId)}
                 horizontal={true}
                 types={types()}
-                classNames={{Pending: true, Succeeded: true, Active: true}}
+                classNames={{Pending: true, Listening: true, Active: true}}
             />
         );
     }
@@ -452,22 +452,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 name: e.sensorName
                             })
                         );
-                        this.markActive(
-                            ID.join({
-                                type: 'Trigger',
-                                namespace: e.namespace,
-                                name: e.sensorName,
-                                key: e.triggerName
-                            })
-                        );
                     },
                     error => this.setState({error})
                 )
         ];
-    }
-
-    private classNames(r: {status?: {conditions?: Condition[]}}, id: string) {
-        return !!this.state.active[id] ? 'Active' : status(r);
     }
 
     private markActive(id: string) {
@@ -486,5 +474,9 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     private stopWatches() {
         this.watchSubscriptions.forEach(x => x.unsubscribe());
         this.watchSubscriptions = [];
+    }
+
+    private edgeClassNames(id: string) {
+        return 'data ' + (!!this.state.active[id] ? ' active' : '');
     }
 }

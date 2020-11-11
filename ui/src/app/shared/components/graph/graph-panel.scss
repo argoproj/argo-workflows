@@ -1,20 +1,9 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.2);
-  }
-  50% {
-    transform: scale(1);
-  }
-  75% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
+@keyframes data-flowing {
+  to {;
+    stroke-dashoffset: -64;
+    stroke: $argo-color-yellow;
   }
 }
 
@@ -81,7 +70,7 @@
       }
     }
 
-    &.Warning, &.Pending {
+    &.Warning, &.Pending, &.Listening {
       .bg {
         fill: $argo-status-warning-color;
       }
@@ -115,15 +104,6 @@
       }
     }
 
-    &.Active {
-      // TODO remove the succeeded color
-      .bg {
-        fill: $argo-success-color;
-      }
-
-      animation: pulse 1s none;
-    }
-
     &.selected {
       .bg {
         stroke: $argo-color-yellow;
@@ -139,6 +119,10 @@
   }
 
   .edge {
+    text {
+      fill: $argo-color-gray-8;
+    }
+
     .line {
       fill: transparent;
       stroke-width: 2;
@@ -151,6 +135,14 @@
 
     &.arrow .line {
       marker-end: url(#arrow);
+    }
+
+    &.data .line {
+      stroke-dasharray: 8;
+    }
+
+    &.data.active .line {
+      animation: data-flowing 2s ease-in-out infinite;
     }
 
     &.related .line {
