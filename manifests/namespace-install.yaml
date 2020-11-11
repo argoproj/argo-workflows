@@ -238,6 +238,7 @@ rules:
   - secrets
   verbs:
   - get
+  - create
 - apiGroups:
   - ""
   resources:
