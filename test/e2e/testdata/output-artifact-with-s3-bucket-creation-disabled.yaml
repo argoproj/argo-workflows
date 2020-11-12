@@ -2,11 +2,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-artifact-with-s3-bucket-creation-
+  generateName: output-artifact-with-s3-bucket-creation-disabled-
 spec:
-  entrypoint: output-artifact-with-s3-bucket-creation
+  entrypoint: output-artifact-with-s3-bucket-creation-disabled
   templates:
-    - name: output-artifact-with-s3-bucket-creation
+    - name: output-artifact-with-s3-bucket-creation-disabled
       steps:
         - - name: generate-artifact
             template: whalesay
