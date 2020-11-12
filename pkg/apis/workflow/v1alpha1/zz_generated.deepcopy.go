@@ -1569,7 +1569,11 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 	}
 	in.AccessKeySecret.DeepCopyInto(&out.AccessKeySecret)
 	in.SecretKeySecret.DeepCopyInto(&out.SecretKeySecret)
-	out.CreateBucketIfNotPresent = in.CreateBucketIfNotPresent
+	if in.CreateBucketIfNotPresent != nil {
+		in, out := &in.CreateBucketIfNotPresent, &out.CreateBucketIfNotPresent
+		*out = new(CreateS3BucketOptions)
+		**out = **in
+	}
 	return
 }
 
