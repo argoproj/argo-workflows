@@ -23,7 +23,7 @@ export class ObjectEditor<T> extends React.Component<Props<T>, State> {
     }
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        this.state = {value: stringify(this.props.value, this.language)};
+        this.state = {value: stringify(this.props.value, this.props.language || 'yaml')};
     }
 
     public componentDidMount() {
@@ -54,7 +54,7 @@ export class ObjectEditor<T> extends React.Component<Props<T>, State> {
     }
 
     public componentDidUpdate(prevProps: Props<T>) {
-        if (prevProps.value !== this.props.value) {
+        if (prevProps.value !== this.props.value || prevProps.language !== this.props.language) {
             this.setState(() => ({value: stringify(this.props.value, this.language)}));
         }
     }

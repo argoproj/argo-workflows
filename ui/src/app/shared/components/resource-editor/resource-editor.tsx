@@ -29,11 +29,11 @@ const LOCAL_STORAGE_KEY = 'ResourceEditorLang';
 
 export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends React.Component<Props<T>, State<T>> {
     private set lang(lang: string) {
-        this.setState({lang, error: null});
+        this.setState({lang, error: null}, () => localStorage.setItem(LOCAL_STORAGE_KEY, lang));
     }
 
-    private static saveLang(newLang: string) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, newLang);
+    private get lang() {
+        return this.state.lang;
     }
 
     private static loadLang(): string {
@@ -48,8 +48,7 @@ export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends
 
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        const storedLang = ResourceEditor.loadLang();
-        this.state = {editing: this.props.editing, lang: storedLang, value: this.props.value};
+        this.state = {editing: this.props.editing, lang: ResourceEditor.loadLang(), value: this.props.value};
     }
 
     public handleFiles(files: FileList) {
@@ -71,7 +70,7 @@ export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends
                         key='editor'
                         type={'io.argoproj.workflow.v1alpha1.' + this.props.kind}
                         value={this.state.value}
-                        language={this.state.lang}
+                        language={this.lang}
                         onChange={value => this.setState({value})}
                         onError={error => this.setState({error})}
                     />
@@ -81,15 +80,13 @@ export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends
     }
 
     private changeLang() {
-        const newLang = this.state.lang === 'yaml' ? 'json' : 'yaml';
-        this.lang = newLang;
-        ResourceEditor.saveLang(newLang);
+        this.lang = this.lang === 'yaml' ? 'json' : 'yaml';
     }
 
     private renderButtons() {
         return (
             <div>
-                <ToggleButton toggled={this.state.lang === 'yaml'} onToggle={() => this.changeLang()}>
+                <ToggleButton toggled={this.lang === 'yaml'} onToggle={() => this.changeLang()}>
                     YAML
                 </ToggleButton>
                 {this.state.editing ? (
@@ -107,9 +104,11 @@ export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends
                         )}
                     </>
                 ) : (
-                    <Button icon='edit' onClick={() => this.setState({editing: true})} key='edit'>
-                        Edit
-                    </Button>
+                    this.props.onSubmit && (
+                        <Button icon='edit' onClick={() => this.setState({editing: true})} key='edit'>
+                            Edit
+                        </Button>
+                    )
                 )}
             </div>
         );
