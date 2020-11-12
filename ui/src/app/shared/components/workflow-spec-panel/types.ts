@@ -2,6 +2,7 @@ export const types: {[type: string]: boolean} = {
     'artifacts': true,
     'container': true,
     'dag': true,
+    'depends': true,
     'task': true,
     'items': true,
     'on-exit': true,

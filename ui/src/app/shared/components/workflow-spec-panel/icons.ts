@@ -4,6 +4,7 @@ export const icons: {[key: string]: Icon} = {
     artifact: 'database',
     artifacts: 'database',
     dag: 'sitemap',
+    depends: 'filter',
     container: 'box',
     onExit: 'sign-out-alt',
     parameters: 'keyboard',
