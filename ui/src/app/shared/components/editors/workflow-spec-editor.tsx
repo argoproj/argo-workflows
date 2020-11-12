@@ -3,29 +3,27 @@ import * as React from 'react';
 import {WorkflowSpec} from '../../../../models';
 import {exampleTemplate, randomSillyName} from '../../examples';
 import {Button} from '../button';
-import {ResourceEditor} from '../resource-editor/resource-editor';
+import {ObjectEditor} from '../resource-editor/object-editor';
 import {icons} from '../workflow-spec-panel/icons';
 import {idForTemplate, onExitId, stepGroupOf, stepOf, taskOf, templateOf, typeOf} from '../workflow-spec-panel/id';
 import {WorkflowSpecPanel} from '../workflow-spec-panel/workflow-spec-panel';
 
-export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value: WorkflowSpec) => void}) => {
+export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value: WorkflowSpec) => void; onError: (error: Error) => void}) => {
     const [selectedId, setSelectedId] = React.useState<string>();
-    const kind = (id: string) => {
-        const type = typeOf(id);
-        const kinds: {[key: string]: string} = {
-            Artifacts: 'Artifacts',
-            Parameters: 'Parameters',
-            Step: 'WorkflowStep',
-            Template: 'Template',
-            Task: 'DagTask',
-            Workflow: 'WorkflowSpec'
+    const type = (id: string) => {
+        const types: {[key: string]: string} = {
+            Artifacts: 'io.argoproj.workflow.v1alpha1.Artifacts',
+            Parameters: 'io.argoproj.workflow.v1alpha1.Parameters',
+            Step: 'io.argoproj.workflow.v1alpha1.WorkflowStep',
+            Template: 'io.argoproj.workflow.v1alpha1.Template',
+            Task: 'io.argoproj.workflow.v1alpha1.DagTask',
+            Workflow: 'io.argoproj.workflow.v1alpha1.WorkflowSpec'
         };
-        return kinds[type];
+        return types[typeOf(id)];
     };
     const object = (id: string) => {
-        const type = typeOf(id);
-        const template = (name: string) => props.value.templates.find(t => t.name === name);
-        switch (type) {
+        const template = (name: string) => props.value.templates.filter(t => !!t).find(t => t.name === name);
+        switch (typeOf(id)) {
             case 'Artifacts':
                 return props.value.arguments.artifacts;
             case 'OnExit':
@@ -51,8 +49,7 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
         }
     };
     const setObject = (id: string, value: any) => {
-        const type = typeOf(id);
-        switch (type) {
+        switch (typeOf(id)) {
             case 'Artifacts':
                 props.value.arguments.artifacts = value;
                 break;
@@ -95,8 +92,7 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
         }
     };
     const deleteObject = (id: string) => {
-        const type = typeOf(id);
-        switch (type) {
+        switch (typeOf(id)) {
             case 'Artifacts':
                 delete props.value.arguments.artifacts;
                 break;
@@ -231,23 +227,37 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
                     <>
                         <h4>{selectedId}</h4>
                         <div>
-                            <ResourceEditor
-                                kind={kind(selectedId)}
+                            <Button
+                                icon='trash'
+                                onClick={() => {
+                                    deleteObject(selectedId);
+                                    setSelectedId(undefined);
+                                }}>
+                                Remove
+                            </Button>
+                            <Button icon='times-circle' onClick={() => setSelectedId(undefined)}>
+                                Close
+                            </Button>
+                        </div>
+                        <div>
+                            <ObjectEditor
+                                language='yaml'
+                                type={type(selectedId)}
                                 value={object(selectedId)}
-                                editing={true}
-                                onSubmit={value => Promise.resolve(setObject(selectedId, value)).then(() => setSelectedId(undefined))}
-                                onDelete={() => Promise.resolve(deleteObject(selectedId)).then(() => setSelectedId(undefined))}
+                                onChange={value => setObject(selectedId, value)}
+                                onError={error => props.onError(error)}
                             />
                         </div>
                     </>
                 ) : (
                     <>
                         <h4>Specification</h4>
-                        <ResourceEditor
-                            kind='WorkflowSpec'
+                        <ObjectEditor
+                            language='yaml'
+                            type={type('WorkflowSpec')}
                             value={props.value}
-                            editing={true}
-                            onSubmit={value => Promise.resolve(props.onChange(value)).then(() => setSelectedId(undefined))}
+                            onChange={value => props.onChange(value)}
+                            onError={error => props.onError(error)}
                         />
                     </>
                 )}

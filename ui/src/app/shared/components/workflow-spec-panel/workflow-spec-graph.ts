@@ -4,7 +4,7 @@ import {icons} from './icons';
 import {artifactsId, idForStepGroup, idForSteps, idForTask, idForTemplate, idForTemplateRef, onExitId, parametersId, workflowId, workflowTemplateRefId} from './id';
 
 function addCommonDependencies(
-    x: {withItems?: string[]; withParam?: string; withSequence?: Sequence; template?: string; when?: string; templateRef?: TemplateRef; onExit?: string},
+    x: {withItems?: string[]; withParam?: string; withSequence?: Sequence; template?: string; when?: string; templateRef?: TemplateRef; onExit?: string; depends?: string},
     id: string,
     g: Graph
 ) {
@@ -42,6 +42,11 @@ function addCommonDependencies(
         const whenId = id + '#when';
         g.nodes.set(whenId, {icon: icons.when, label: x.when, type: 'when'});
         g.edges.set({v: id, w: whenId}, {label: 'when'});
+    }
+    if (x.depends) {
+        const dependsId = id + '#depends';
+        g.nodes.set(dependsId, {icon: icons.depends, label: x.depends, type: 'depends'});
+        g.edges.set({v: id, w: dependsId}, {label: 'depends'});
     }
     if (x.templateRef) {
         const templateRefId = idForTemplateRef(x.templateRef.name, x.templateRef.template);

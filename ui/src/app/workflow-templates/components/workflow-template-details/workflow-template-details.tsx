@@ -110,7 +110,11 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         return (
             <>
                 {this.state.status && <StatusNotice status={this.state.status} />}
-                {!this.state.template ? <Loading /> : <WorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} />}
+                {!this.state.template ? (
+                    <Loading />
+                ) : (
+                    <WorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} onError={status => this.setState({status})} />
+                )}
             </>
         );
     }
