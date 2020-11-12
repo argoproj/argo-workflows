@@ -8,7 +8,6 @@ add_header() {
   mv tmp "$1"
 }
 
-echo "Generating CRDs"
 controller-gen crd:trivialVersions=true,maxDescLen=0 paths=./pkg/apis/... output:dir=manifests/base/crds/full
 
 find manifests/base/crds/full -name 'argoproj.io*.yaml' | while read -r file; do

@@ -5,6 +5,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
+import {ExampleManifests} from '../../../shared/components/example-manifests';
 import {Loading} from '../../../shared/components/loading';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
@@ -68,6 +69,9 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                     services.clusterWorkflowTemplate.create(wfTmpl).then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)))
                                 }
                             />
+                            <p>
+                                <ExampleManifests />.
+                            </p>
                         </SlidingPanel>
                     </Page>
                 )}
@@ -94,7 +98,9 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
             return (
                 <ZeroState title='No cluster workflow templates'>
                     <p>You can create new templates here or using the CLI.</p>
-                    <p>{learnMore}.</p>
+                    <p>
+                        <ExampleManifests />. {learnMore}.
+                    </p>
                 </ZeroState>
             );
         }
@@ -120,7 +126,8 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                         ))}
                     </div>
                     <p>
-                        <i className='fa fa-info-circle' /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. {learnMore}.
+                        <i className='fa fa-info-circle' /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />.{' '}
+                        {learnMore}.
                     </p>
                 </div>
             </div>

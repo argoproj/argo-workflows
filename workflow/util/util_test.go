@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -174,6 +174,15 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 		panic(err)
 	}
 	return &wf
+}
+
+func unmarshalWFT(yamlStr string) *wfv1.WorkflowTemplate {
+	var wft wfv1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &wft)
+	if err != nil {
+		panic(err)
+	}
+	return &wft
 }
 
 var yamlStr = `
@@ -495,7 +504,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{{Name: "a", Value: pointer.StringPtr("0")}},
+					Parameters: []wfv1.Parameter{{Name: "a", Value: wfv1.Int64OrStringPtr("0")}},
 				},
 			},
 		}
@@ -504,7 +513,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", *parameters[0].Value)
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 	t.Run("ParameterFile", func(t *testing.T) {
@@ -519,7 +528,7 @@ func TestApplySubmitOpts(t *testing.T) {
 		parameters := wf.Spec.Arguments.Parameters
 		if assert.Len(t, parameters, 1) {
 			assert.Equal(t, "a", parameters[0].Name)
-			assert.Equal(t, "81861780812", *parameters[0].Value)
+			assert.Equal(t, "81861780812", parameters[0].Value.String())
 		}
 	})
 }
@@ -748,6 +757,30 @@ func TestRetryWorkflow(t *testing.T) {
 		assert.NotContains(t, wf.Labels, common.LabelKeyCompleted)
 		assert.NotContains(t, wf.Labels, common.LabelKeyWorkflowArchivingStatus)
 	}
+}
+
+func TestFromUnstructuredObj(t *testing.T) {
+	un := &unstructured.Unstructured{}
+	err := yaml.Unmarshal([]byte(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: example-integers
+spec:
+  schedule: "* * * * *"
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        inputs:
+          parameters:
+            - name: age
+              value: 20
+        container:
+          image: my-image`), un)
+	assert.NoError(t, err)
+	x := &wfv1.CronWorkflow{}
+	err = FromUnstructuredObj(un, x)
+	assert.NoError(t, err)
 }
 
 func TestToUnstructured(t *testing.T) {

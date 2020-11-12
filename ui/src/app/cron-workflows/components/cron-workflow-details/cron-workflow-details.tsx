@@ -1,7 +1,7 @@
 import {NotificationType, Page} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {CronWorkflow, Workflow} from '../../../../models';
+import {CronWorkflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {ErrorNotice} from '../../../shared/components/error-notice';
@@ -9,7 +9,6 @@ import {Loading} from '../../../shared/components/loading';
 import {services} from '../../../shared/services';
 import {CronWorkflowSummaryPanel} from '../cron-workflow-summary-panel';
 
-const jsonMergePatch = require('json-merge-patch');
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
@@ -19,7 +18,7 @@ interface State {
 
 export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace;
+        return this.props.match.params.namespace || '';
     }
 
     private get name() {
@@ -97,24 +96,24 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         return <CronWorkflowSummaryPanel cronWorkflow={this.state.cronWorkflow} onChange={cronWorkflow => this.setState({cronWorkflow})} />;
     }
 
-    private submitCronWorkflow() {
-        services.workflows
-            .submit('cronwf', this.name, this.namespace)
-            .catch(e => {
-                this.appContext.apis.notifications.show({
-                    content: 'Failed to submit cron workflow ' + e,
-                    type: NotificationType.Error
-                });
-            })
-            .then((submitted: Workflow) => {
+    private async submitCronWorkflow() {
+        try {
+            const submitted = await services.workflows.submit('cronwf', this.name, this.namespace);
+
+            try {
                 document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
-            })
-            .catch(e => {
+            } catch (e) {
                 this.appContext.apis.notifications.show({
                     content: 'Failed redirect to newly submitted cron workflow ' + e,
                     type: NotificationType.Error
                 });
+            }
+        } catch (e) {
+            this.appContext.apis.notifications.show({
+                content: 'Failed to submit cron workflow ' + e,
+                type: NotificationType.Error
             });
+        }
     }
 
     private deleteCronWorkflow() {
@@ -135,36 +134,26 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private suspendCronWorkflow() {
-        const wf = JSON.parse(JSON.stringify(this.state.cronWorkflow));
-        wf.spec.suspend = true;
-        const patch = jsonMergePatch.generate(this.state.cronWorkflow, wf) || {};
         services.cronWorkflows
-            .get(this.name, this.namespace)
-            .then(latest => jsonMergePatch.apply(latest, patch))
-            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
+            .suspend(this.name, this.namespace)
+            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}))
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to suspend cron workflow ' + e,
                     type: NotificationType.Error
                 });
-            })
-            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}));
+            });
     }
 
     private resumeCronWorkflow() {
-        const wf = JSON.parse(JSON.stringify(this.state.cronWorkflow));
-        wf.spec.suspend = undefined;
-        const patch = jsonMergePatch.generate(this.state.cronWorkflow, wf) || {};
         services.cronWorkflows
-            .get(this.name, this.namespace)
-            .then(latest => jsonMergePatch.apply(latest, patch))
-            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
+            .resume(this.name, this.namespace)
+            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}))
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to resume cron workflow ' + e,
                     type: NotificationType.Error
                 });
-            })
-            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}));
+            });
     }
 }

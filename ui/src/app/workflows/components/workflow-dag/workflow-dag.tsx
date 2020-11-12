@@ -459,12 +459,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             graph.setNode(node, {label: node, width: this.nodeSize, height: this.nodeSize});
         });
         edges.forEach(edge => {
-            if (edge.v && edge.w) {
+            if (edge.v && edge.w && graph.node(edge.v) && graph.node(edge.w)) {
                 graph.setEdge(edge.v, edge.w);
             }
         });
         dagre.layout(graph);
-
         const size = this.getGraphSize(graph.nodes().map((id: string) => graph.node(id)));
         this.graph = {
             width: size.width,
@@ -472,7 +471,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             nodes: new Map<string, {x: number; y: number}>(),
             edges: []
         };
-
         graph
             .nodes()
             .map(id => graph.node(id))
@@ -557,8 +555,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private selectNode(nodeId: string) {
         if (isCollapsedNode(nodeId)) {
             this.expandNode(nodeId);
+        } else {
+            return this.props.nodeClicked && this.props.nodeClicked(nodeId);
         }
-        return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
 
     private expandNode(nodeId: string) {
@@ -608,7 +607,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         // Filter the node if it is a virtual node or a Retry node with one child
         return (
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
-            (node.type === 'Retry' && node.children.length === 1)
+            (node.type === 'Retry' && node.children && node.children.length === 1)
         );
     }
 

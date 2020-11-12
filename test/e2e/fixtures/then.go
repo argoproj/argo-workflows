@@ -49,6 +49,7 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if err != nil {
 		t.t.Fatal(err)
 	}
+	println(wf.Name, ":", wf.Status.Phase, wf.Status.Message)
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	if t.t.Failed() {
 		t.t.FailNow()

@@ -1,11 +1,15 @@
 ## Argo Workflows User Community Surveys & Feedback
+
 Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
 
 ## Who uses Argo Workflows?
+
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
 Currently, the following organizations are **officially** using Argo Workflows:
+
 1. [23mofang](https://www.23mofang.com/)
+1. [Acquia](https://www.acquia.com/)
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
@@ -31,6 +35,8 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Data4Risk](https://www.data4risk.com/)
 1. [Datadog](https://www.datadoghq.com/)
 1. [DataStax](https://www.datastax.com/)
+1. [DDEV](https://www.ddev.com/)
+1. [DevSamurai](https://www.devsamurai.com/)
 1. [EBSCO Information Services](https://www.ebsco.com/)
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
@@ -42,7 +48,9 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Graviti](https://www.graviti.cn)
 1. [Greenhouse](https://greenhouse.io)
 1. [Habx](https://www.habx.com/)
+1. [Helio](https://helio.exchange)
 1. [HOVER](https://hover.to)
+1. [HSBC](https://hsbc.com)
 1. [IBM](https://ibm.com)
 1. [InsideBoard](https://www.insideboard.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
@@ -61,11 +69,13 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Mixpanel](https://mixpanel.com)
 1. [New Relic](https://newrelic.com/)
 1. [Nikkei](https://www.nikkei.co.jp/nikkeiinfo/en/)
+1. [nrd.io](https://nrd.io/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Onepanel](https://docs.onepanel.ai)
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
 1. [PDOK](https://www.pdok.nl/)
+1. [Pollination](https://pollination.cloud)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
@@ -83,10 +93,11 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Sohu](https://www.sohu.com/)
 1. [Stillwater Supercomputing, Inc](http://www.stillwater-sc.com/)
+1. [strongDM](https://www.strongdm.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Tulip](https://tulip.com/)
+1. [UFirstGroup](https://www.ufirstgroup.com)
 1. [Wavefront](https://www.wavefront.com/)
 1. [Wellcome Trust](https://wellcome.ac.uk/)
-1. [Helio](https://helio.exchange)

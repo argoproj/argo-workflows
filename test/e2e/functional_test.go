@@ -634,7 +634,7 @@ spec:
 			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 				if node.Outputs != nil {
 					for _, param := range node.Outputs.Parameters {
-						if param.Value != nil && *param.Value == "Default value" {
+						if param.Value != nil && param.Value.String() == "Default value" {
 							return true
 						}
 					}
@@ -686,6 +686,7 @@ func (s *FunctionalSuite) TestWorkflowTemplateRefWithExitHandler() {
 		Workflow("@testdata/workflow-template-ref-exithandler.yaml").
 		When().
 		CreateWorkflowTemplates().
+		Wait(1 * time.Second). // allow the template to reach the informer
 		SubmitWorkflow().
 		WaitForWorkflow().
 		Then().
@@ -921,6 +922,38 @@ spec:
 			return wf.Status.Phase == wfv1.NodeFailed
 		}), "Waiting for timeout", 30*time.Second).
 		DeleteMemoryQuota()
+}
+
+func (s *FunctionalSuite) TestExitCodePNSSleep() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cond
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: conditional-example
+  templates:
+  - name: conditional-example
+    steps:
+    - - name: print-hello
+        template: whalesay
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+      args: [sleep, 5s]
+`).
+		When().
+		SubmitWorkflow().
+		Wait(10 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			node := status.Nodes.FindByDisplayName("print-hello")
+			if assert.NotNil(t, node) && assert.NotNil(t, node.Outputs) && assert.NotNil(t, node.Outputs.ExitCode) {
+				assert.Equal(t, "0", *node.Outputs.ExitCode)
+			}
+		})
 }
 
 func TestFunctionalSuite(t *testing.T) {

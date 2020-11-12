@@ -44,6 +44,8 @@ type archivedWorkflowLabelRecord struct {
 	Value string `db:"value"`
 }
 
+//go:generate mockery -name WorkflowArchive
+
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	// list workflows, with the most recently started workflows at the beginning (i.e. index 0 is the most recent)
@@ -128,6 +130,14 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 	if err != nil {
 		return nil, err
 	}
+
+	// If we were passed 0 as the limit, then we should load all available archived workflows
+	// to match the behavior of the `List` operations in the Kubernetes API
+	if limit == 0 {
+		limit = -1
+		offset = -1
+	}
+
 	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
