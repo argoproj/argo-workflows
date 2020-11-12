@@ -619,6 +619,10 @@ spec:
                     properties:
                       default:
                         type: string
+                      enum:
+                        items:
+                          type: string
+                        type: array
                       globalName:
                         type: string
                       name:
@@ -1795,6 +1799,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -2689,6 +2697,10 @@ spec:
                                     properties:
                                       default:
                                         type: string
+                                      enum:
+                                        items:
+                                          type: string
+                                        type: array
                                       globalName:
                                         type: string
                                       name:
@@ -3656,6 +3668,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -4109,6 +4125,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -7098,6 +7118,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -7468,6 +7492,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -7867,6 +7895,10 @@ spec:
                     properties:
                       default:
                         type: string
+                      enum:
+                        items:
+                          type: string
+                        type: array
                       globalName:
                         type: string
                       name:
@@ -9369,6 +9401,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -10263,6 +10299,10 @@ spec:
                                     properties:
                                       default:
                                         type: string
+                                      enum:
+                                        items:
+                                          type: string
+                                        type: array
                                       globalName:
                                         type: string
                                       name:
@@ -11230,6 +11270,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -11683,6 +11727,10 @@ spec:
                           properties:
                             default:
                               type: string
+                            enum:
+                              items:
+                                type: string
+                              type: array
                             globalName:
                               type: string
                             name:
@@ -14141,6 +14189,10 @@ spec:
                         properties:
                           default:
                             type: string
+                          enum:
+                            items:
+                              type: string
+                            type: array
                           globalName:
                             type: string
                           name:
@@ -15317,6 +15369,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -16211,6 +16267,10 @@ spec:
                                         properties:
                                           default:
                                             type: string
+                                          enum:
+                                            items:
+                                              type: string
+                                            type: array
                                           globalName:
                                             type: string
                                           name:
@@ -17178,6 +17238,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:
@@ -17631,6 +17695,10 @@ spec:
                               properties:
                                 default:
                                   type: string
+                                enum:
+                                  items:
+                                    type: string
+                                  type: array
                                 globalName:
                                   type: string
                                 name:

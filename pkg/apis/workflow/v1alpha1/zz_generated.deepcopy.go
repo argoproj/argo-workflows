@@ -1381,6 +1381,11 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 		*out = new(ValueFrom)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Enum != nil {
+		in, out := &in.Enum, &out.Enum
+		*out = make([]Int64OrString, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
@@ -1564,7 +1569,11 @@ func (in *S3Bucket) DeepCopyInto(out *S3Bucket) {
 	}
 	in.AccessKeySecret.DeepCopyInto(&out.AccessKeySecret)
 	in.SecretKeySecret.DeepCopyInto(&out.SecretKeySecret)
-	out.CreateBucketIfNotPresent = in.CreateBucketIfNotPresent
+	if in.CreateBucketIfNotPresent != nil {
+		in, out := &in.CreateBucketIfNotPresent, &out.CreateBucketIfNotPresent
+		*out = new(CreateS3BucketOptions)
+		**out = **in
+	}
 	return
 }
 

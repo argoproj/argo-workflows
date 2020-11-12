@@ -702,7 +702,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) && !placeholderGenerator.IsPlaceholder(tmpl.ActiveDeadlineSeconds.StrVal) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && i != nil && *i < 0 {
@@ -757,6 +757,21 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
 		if param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
+		}
+		if param.Enum != nil {
+			if len(param.Enum) == 0 {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.enum should contain at least one value", prefix, param.Name)
+			}
+			valueSpecifiedInEnumList := false
+			for _, enum := range param.Enum {
+				if enum == *param.Value {
+					valueSpecifiedInEnumList = true
+					break
+				}
+			}
+			if !valueSpecifiedInEnumList {
+				return errors.Errorf(errors.CodeBadRequest, "%s%s.value should be present in %s%s.enum list", prefix, param.Name, prefix, param.Name)
+			}
 		}
 	}
 	for _, art := range arguments.Artifacts {
