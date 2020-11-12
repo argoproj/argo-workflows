@@ -35,6 +35,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Data4Risk](https://www.data4risk.com/)
 1. [Datadog](https://www.datadoghq.com/)
 1. [DataStax](https://www.datastax.com/)
+1. [DDEV](https://www.ddev.com/)
 1. [DevSamurai](https://www.devsamurai.com/)
 1. [EBSCO Information Services](https://www.ebsco.com/)
 1. [Equinor](https://www.equinor.com/)

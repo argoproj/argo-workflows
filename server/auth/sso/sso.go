@@ -177,13 +177,12 @@ func newSso(
 	}, nil
 }
 
-const stateCookieName = "oauthState"
-
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
+	redirectUrl := r.URL.Query().Get("redirect")
 	state := pkgrand.RandString(10)
 	http.SetCookie(w, &http.Cookie{
-		Name:     stateCookieName,
-		Value:    state,
+		Name:     state,
+		Value:    redirectUrl,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -195,16 +194,11 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	state := r.URL.Query().Get("state")
-	cookie, err := r.Cookie(stateCookieName)
-	http.SetCookie(w, &http.Cookie{Name: stateCookieName, MaxAge: 0})
+	cookie, err := r.Cookie(state)
+	http.SetCookie(w, &http.Cookie{Name: state, MaxAge: 0})
 	if err != nil {
 		w.WriteHeader(400)
 		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %v", err)))
-		return
-	}
-	if state != cookie.Value {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte("invalid state: does not match cookie value"))
 		return
 	}
 	oauth2Token, err := s.config.Exchange(ctx, r.URL.Query().Get("code"))
@@ -246,7 +240,11 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 		Secure:   s.secure,
 	})
-	http.Redirect(w, r, s.baseHRef, 302)
+	redirect := s.baseHRef
+	if cookie.Value != "" {
+		redirect = cookie.Value
+	}
+	http.Redirect(w, r, redirect, 302)
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.

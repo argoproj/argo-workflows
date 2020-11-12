@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -54,6 +55,8 @@ import (
 )
 
 const enoughTimeForInformerSync = 1 * time.Second
+
+const semaphoreConfigIndexName = "bySemaphoreConfigMap"
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
@@ -151,9 +154,7 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 
 // RunTTLController runs the workflow TTL controller
 func (wfc *WorkflowController) runTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer, func() *config.Config {
-		return &wfc.Config
-	})
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
@@ -169,6 +170,7 @@ var indexers = cache.Indexers{
 	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
 	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
 	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+	semaphoreConfigIndexName:             workflowIndexerBySemaphoreKeys,
 }
 
 // Run starts an Workflow resource controller
@@ -186,6 +188,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.podInformer = wfc.newPodInformer()
 	wfc.updateEstimatorFactory()
 
+	go wfc.runConfigMapWatcher(ctx.Done())
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
@@ -215,6 +218,20 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		log.Warnf("cannot convert obj into unstructured.Unstructured in Indexer %s", semaphoreConfigIndexName)
+		return []string{}, nil
+	}
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		log.Warnf("failed to convert to workflow from unstructured: %v", err)
+		return []string{}, nil
+	}
+	return wf.GetSemaphoreKeys(), nil
 }
 
 func (wfc *WorkflowController) waitForCacheSync(ctx context.Context) {
@@ -268,6 +285,56 @@ func (wfc *WorkflowController) createSynchronizationManager() error {
 
 	wfc.syncManager.Initialize(wfList.Items)
 	return nil
+}
+
+func (wfc *WorkflowController) runConfigMapWatcher(stopCh <-chan struct{}) {
+	retryWatcher, err := apiwatch.NewRetryWatcher("1", &cache.ListWatch{
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(metav1.ListOptions{})
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer retryWatcher.Stop()
+
+	for {
+		select {
+		case event := <-retryWatcher.ResultChan():
+			cm, ok := event.Object.(*apiv1.ConfigMap)
+			if !ok {
+				log.Errorf("invalid config map object received in config watcher. Ignored processing")
+				continue
+			}
+			log.Debugf("received config map %s/%s update", cm.Namespace, cm.Name)
+			wfc.notifySemaphoreConfigUpdate(cm)
+
+		case <-stopCh:
+			return
+		}
+	}
+}
+
+// notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(cm *apiv1.ConfigMap) {
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(semaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+	if err != nil {
+		log.Errorf("failed get the workflow from informer. %v", err)
+	}
+
+	for _, obj := range wfs {
+		un, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			log.Warnf("received object from indexer %s is not an unstructured", semaphoreConfigIndexName)
+			continue
+		}
+		wf, err := util.FromUnstructured(un)
+		if err != nil {
+			log.Errorf("failed to convert to workflow from unstructured: %v", err)
+			continue
+		}
+		wfc.wfQueue.Add(fmt.Sprintf("%s/%s", wf.Namespace, wf.Name))
+	}
 }
 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
@@ -517,22 +584,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		woc.markWorkflowError(err)
 		woc.persistUpdates()
 		return true
-	}
-
-	if wf.Spec.Synchronization != nil {
-		acquired, wfUpdate, msg, err := wfc.syncManager.TryAcquire(woc.wf, "", woc.wf.Spec.Synchronization)
-		if err != nil {
-			log.WithFields(log.Fields{"key": key, "error": err}).Warn("Failed to acquire the lock")
-			woc.markWorkflowFailed(fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
-			woc.persistUpdates()
-			return true
-		}
-		woc.updated = wfUpdate
-		if !acquired {
-			log.WithFields(log.Fields{"key": key, "message": msg}).Warn("Workflow processing has been postponed due to concurrency limit")
-			woc.persistUpdates()
-			return true
-		}
 	}
 
 	startTime := time.Now()
