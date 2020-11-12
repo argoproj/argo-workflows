@@ -670,7 +670,7 @@ func (s *FunctionalSuite) TestOptionalInputArtifacts() {
 
 func (s *FunctionalSuite) TestOutputArtifactS3BucketCreationEnabled() {
 	s.Given().
-		Workflow("@functional/output-artifact-with-s3-bucket-creation.yaml").
+		Workflow("@testdata/output-artifact-with-s3-bucket-creation.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
