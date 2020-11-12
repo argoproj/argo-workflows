@@ -2,7 +2,7 @@ import {SlideContents} from 'argo-ui';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {ObjectEditor} from '../../../shared/components/resource-editor/object-editor';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
 export interface WorkflowYamlViewerProps {
@@ -20,7 +20,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 contents.push(
                     <div key='parent-node'>
                         <h4>{this.normalizeNodeName(this.props.selectedNode.displayName || this.props.selectedNode.name)}</h4>
-                        <ResourceEditor kind='Template' value={getResolvedTemplates(this.props.workflow, parentNode)} />
+                        <ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={getResolvedTemplates(this.props.workflow, parentNode)} />
                     </div>
                 );
             }
@@ -28,13 +28,20 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             contents.push(
                 <div key='current-node'>
                     <h4>{this.props.selectedNode.name}</h4>
-                    <ResourceEditor kind='Template' value={getResolvedTemplates(this.props.workflow, this.props.selectedNode)} />
+                    <ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={getResolvedTemplates(this.props.workflow, this.props.selectedNode)} />
                 </div>
             );
         }
         const templates = this.props.workflow.spec.templates;
         if (templates && Object.keys(templates).length) {
-            contents.push(<SlideContents title='Templates' key='templates' contents={<ResourceEditor kind='Template' value={templates} />} className='workflow-yaml-section' />);
+            contents.push(
+                <SlideContents
+                    title='Templates'
+                    key='templates'
+                    contents={<ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={templates} />}
+                    className='workflow-yaml-section'
+                />
+            );
         }
         const storedTemplates = this.props.workflow.status.storedTemplates;
         if (storedTemplates && Object.keys(storedTemplates).length) {
@@ -42,7 +49,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 <SlideContents
                     title='Stored Templates'
                     key='stored-templates'
-                    contents={<ResourceEditor kind='Template' value={storedTemplates} />}
+                    contents={<ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={storedTemplates} />}
                     className='workflow-yaml-section'
                 />
             );

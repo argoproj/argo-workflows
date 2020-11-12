@@ -7,10 +7,10 @@ import {parse, stringify} from './resource';
 
 interface Props<T> {
     language?: string;
-    type?: string;
+    type: string;
     value: T;
     onChange?: (value: T) => void;
-    onError: (error: Error) => void;
+    onError?: (error: Error) => void;
 }
 
 interface State {
@@ -18,9 +18,12 @@ interface State {
 }
 
 export class ObjectEditor<T> extends React.Component<Props<T>, State> {
+    private get language() {
+        return this.props.language || 'yaml';
+    }
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        this.state = {value: stringify(this.props.value, this.props.language || 'yaml')};
+        this.state = {value: stringify(this.props.value, this.language)};
     }
 
     public componentDidMount() {
@@ -52,7 +55,7 @@ export class ObjectEditor<T> extends React.Component<Props<T>, State> {
 
     public componentDidUpdate(prevProps: Props<T>) {
         if (prevProps.value !== this.props.value) {
-            this.setState(() => ({value: stringify(this.props.value, this.props.language)}));
+            this.setState(() => ({value: stringify(this.props.value, this.language)}));
         }
     }
 
@@ -62,7 +65,7 @@ export class ObjectEditor<T> extends React.Component<Props<T>, State> {
                 <MonacoEditor
                     key='editor'
                     value={this.state.value}
-                    language={this.props.language}
+                    language={this.language}
                     height='600px'
                     onChange={value => this.setState({value}, () => this.props.onChange && this.props.onChange(parse(this.state.value)))}
                     options={{

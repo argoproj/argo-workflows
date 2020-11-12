@@ -1,3 +1,4 @@
+import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as React from 'react';
 import {Button} from '../button';
 import {ErrorNotice} from '../error-notice';
@@ -17,22 +18,18 @@ interface Props<T> {
     onSubmit?: (value: T) => Promise<any>;
 }
 
-interface State {
+interface State<T> {
     editing: boolean;
     lang: string;
-    value: string;
+    value: T;
     error?: Error;
 }
 
 const LOCAL_STORAGE_KEY = 'ResourceEditorLang';
 
-export class ResourceEditor<T> extends React.Component<Props<T>, State> {
+export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends React.Component<Props<T>, State<T>> {
     private set lang(lang: string) {
-        try {
-            this.setState(state => ({lang, error: null, value: stringify(parse(state.value), lang)}));
-        } catch (error) {
-            this.setState({error});
-        }
+        this.setState({lang, error: null});
     }
 
     private static saveLang(newLang: string) {
@@ -52,14 +49,14 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     constructor(props: Readonly<Props<T>>) {
         super(props);
         const storedLang = ResourceEditor.loadLang();
-        this.state = {editing: this.props.editing, lang: storedLang, value: stringify(this.props.value, storedLang)};
+        this.state = {editing: this.props.editing, lang: storedLang, value: this.props.value};
     }
 
     public handleFiles(files: FileList) {
         files[0]
             .text()
             .then(value => stringify(parse(value), this.state.lang))
-            .then(value => this.setState({error: null, value}))
+            .then(value => this.setState({error: null, value: parse(value)}))
             .catch(error => this.setState(error));
     }
 
@@ -120,7 +117,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            const value = parse(this.state.value);
+            const value = this.state.value;
             if (value.metadata && !value.metadata.namespace && this.props.namespace) {
                 value.metadata.namespace = this.props.namespace;
             }
