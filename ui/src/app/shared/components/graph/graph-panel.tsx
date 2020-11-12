@@ -69,76 +69,80 @@ export const GraphPanel = (props: Props) => {
                 <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
                     <i className='fa fa-search-minus' />
                 </a>
-                <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty rendered' className={fast ? 'active' : ''}>
+                <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
                     <i className='fa fa-bolt' />
                 </a>
                 {props.options}
             </div>
             <div className='graph'>
-                <svg key='graph' width={width + nodeSize * 2} height={height + nodeSize * 2}>
-                    <defs>
-                        <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={nodeSize / 8} markerHeight={nodeSize / 8} orient='auto-start-reverse'>
-                            <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
-                        </marker>
-                    </defs>
-                    <g transform={`translate(${nodeSize},${nodeSize})`}>
-                        {Array.from(props.graph.nodeGroups).map(([g, nodes]) => {
-                            const r: {x1: number; y1: number; x2: number; y2: number} = {
-                                x1: width,
-                                y1: height,
-                                x2: 0,
-                                y2: 0
-                            };
-                            nodes.forEach(n => {
-                                const l = props.graph.nodes.get(n);
-                                r.x1 = Math.min(r.x1, l.x);
-                                r.y1 = Math.min(r.y1, l.y);
-                                r.x2 = Math.max(r.x2, l.x);
-                                r.y2 = Math.max(r.y2, l.y);
-                            });
-                            return (
-                                <g key={`group/${g}`} className='group' transform={`translate(${r.x1 - nodeSize},${r.y1 - nodeSize})`}>
-                                    <rect width={r.x2 - r.x1 + 2 * nodeSize} height={r.y2 - r.y1 + 2 * nodeSize} />
-                                </g>
-                            );
-                        })}
-                        {Array.from(props.graph.edges)
-                            .filter(([, label]) => label.points)
-                            .map(([e, label]) => (
-                                <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
-                                    <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
-                                    <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
-                                        <text className='edge-label' style={{fontSize: nodeSize / 6}}>
-                                            {formatLabel(label.label)}
-                                        </text>
+                {props.graph.nodes.size === 0 ? (
+                    <p>Nothing to show</p>
+                ) : (
+                    <svg key='graph' width={width + nodeSize * 2} height={height + nodeSize * 2}>
+                        <defs>
+                            <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={nodeSize / 8} markerHeight={nodeSize / 8} orient='auto-start-reverse'>
+                                <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
+                            </marker>
+                        </defs>
+                        <g transform={`translate(${nodeSize},${nodeSize})`}>
+                            {Array.from(props.graph.nodeGroups).map(([g, nodes]) => {
+                                const r: {x1: number; y1: number; x2: number; y2: number} = {
+                                    x1: width,
+                                    y1: height,
+                                    x2: 0,
+                                    y2: 0
+                                };
+                                nodes.forEach(n => {
+                                    const l = props.graph.nodes.get(n);
+                                    r.x1 = Math.min(r.x1, l.x);
+                                    r.y1 = Math.min(r.y1, l.y);
+                                    r.x2 = Math.max(r.x2, l.x);
+                                    r.y2 = Math.max(r.y2, l.y);
+                                });
+                                return (
+                                    <g key={`group/${g}`} className='group' transform={`translate(${r.x1 - nodeSize},${r.y1 - nodeSize})`}>
+                                        <rect width={r.x2 - r.x1 + 2 * nodeSize} height={r.y2 - r.y1 + 2 * nodeSize} />
                                     </g>
-                                </g>
-                            ))}
-                        {Array.from(props.graph.nodes)
-                            .filter(([n, label]) => label.x !== null && visible(n))
-                            .map(([n, label]) => (
-                                <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
-                                    <title>{n}</title>
-                                    <g
-                                        className={`node  ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
-                                        onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
-                                        <circle r={nodeSize / 2} className='bg' />
-                                        <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
-                                        {props.hideTypes || (
-                                            <text y={nodeSize * 0.33} className='type' style={{fontSize: nodeSize * 0.2}}>
-                                                {label.type}
+                                );
+                            })}
+                            {Array.from(props.graph.edges)
+                                .filter(([, label]) => label.points)
+                                .map(([e, label]) => (
+                                    <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
+                                        <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
+                                        <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
+                                            <text className='edge-label' style={{fontSize: nodeSize / 6}}>
+                                                {formatLabel(label.label)}
                                             </text>
-                                        )}
+                                        </g>
                                     </g>
-                                    <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
-                                        <text className='node-label' style={{fontSize: nodeSize / 5}}>
-                                            {formatLabel(label.label)}
-                                        </text>
+                                ))}
+                            {Array.from(props.graph.nodes)
+                                .filter(([n, label]) => label.x !== null && visible(n))
+                                .map(([n, label]) => (
+                                    <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
+                                        <title>{n}</title>
+                                        <g
+                                            className={`node  ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
+                                            onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
+                                            <circle r={nodeSize / 2} className='bg' />
+                                            <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
+                                            {props.hideTypes || (
+                                                <text y={nodeSize * 0.33} className='type' style={{fontSize: nodeSize * 0.2}}>
+                                                    {label.type}
+                                                </text>
+                                            )}
+                                        </g>
+                                        <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
+                                            <text className='node-label' style={{fontSize: nodeSize / 5}}>
+                                                {formatLabel(label.label)}
+                                            </text>
+                                        </g>
                                     </g>
-                                </g>
-                            ))}
-                    </g>
-                </svg>
+                                ))}
+                        </g>
+                    </svg>
+                )}
             </div>
         </div>
     );

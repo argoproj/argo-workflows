@@ -1,5 +1,5 @@
-import {WorkflowEventBindingsList} from './components/workflow-event-bindings-list/workflow-event-bindings-list';
+import {WorkflowEventBindingsContainer} from './components/workflow-event-bindings-container';
 
 export default {
-    component: WorkflowEventBindingsList
+    component: WorkflowEventBindingsContainer
 };

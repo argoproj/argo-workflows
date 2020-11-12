@@ -13,17 +13,13 @@ interface Props<T> {
     onError?: (error: Error) => void;
 }
 
-interface State {
-    value: string;
-}
-
-export class ObjectEditor<T> extends React.Component<Props<T>, State> {
+export class ObjectEditor<T> extends React.Component<Props<T>> {
     private get language() {
         return this.props.language || 'yaml';
     }
+
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        this.state = {value: stringify(this.props.value, this.props.language || 'yaml')};
     }
 
     public componentDidMount() {
@@ -64,10 +60,12 @@ export class ObjectEditor<T> extends React.Component<Props<T>, State> {
             <>
                 <MonacoEditor
                     key='editor'
-                    value={this.state.value}
+                    value={stringify(this.props.value, this.props.language)}
                     language={this.language}
                     height='600px'
-                    onChange={value => this.setState({value}, () => this.props.onChange && this.props.onChange(parse(this.state.value)))}
+                    onChange={value => {
+                        this.props.onChange && this.props.onChange(parse(value));
+                    }}
                     options={{
                         readOnly: this.props.onChange === null,
                         extraEditorClassName: 'resource',
@@ -76,11 +74,13 @@ export class ObjectEditor<T> extends React.Component<Props<T>, State> {
                         renderIndentGuides: false
                     }}
                 />
-                <div style={{marginTop: '1em'}}>
-                    <i className='fa fa-info-circle' />{' '}
-                    {this.props.language === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
-                    <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
-                </div>
+                {this.props.onChange && (
+                    <div style={{marginTop: '1em'}}>
+                        <i className='fa fa-info-circle' />{' '}
+                        {this.props.language === 'json' ? <>Full auto-completion enabled.</> : <>Basic completion for YAML. Switch to JSON for full auto-completion.</>}{' '}
+                        <a href='https://argoproj.github.io/argo/ide-setup/'>Learn how to get auto-completion in your IDE.</a>
+                    </div>
+                )}
             </>
         );
     }

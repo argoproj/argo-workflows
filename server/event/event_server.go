@@ -2,13 +2,11 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/watch"
 
 	eventpkg "github.com/argoproj/argo/pkg/apiclient/event"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -95,35 +93,4 @@ func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg
 		listOptions = *in.ListOptions
 	}
 	return auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(listOptions)
-}
-
-func (s *Controller) WatchWorkflowEventBindings(in *eventpkg.ListWorkflowEventBindingsRequest, srv eventpkg.EventService_WatchWorkflowEventBindingsServer) error {
-	ctx := srv.Context()
-	listOptions := metav1.ListOptions{}
-	if in.ListOptions != nil {
-		listOptions = *in.ListOptions
-	}
-	workflowEventBindings := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace)
-	watcher, err := watch.NewRetryWatcher(listOptions.ResourceVersion, workflowEventBindings)
-	if err != nil {
-		return err
-	}
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				return fmt.Errorf("failed to read event")
-			}
-			obj, ok := event.Object.(*wfv1.WorkflowEventBinding)
-			if !ok {
-				return apierrors.FromObject(event.Object)
-			}
-			err := srv.Send(&eventpkg.WorkflowEventBindingWatchEvent{Type: string(event.Type), Object: obj})
-			if err != nil {
-				return err
-			}
-		}
-	}
 }

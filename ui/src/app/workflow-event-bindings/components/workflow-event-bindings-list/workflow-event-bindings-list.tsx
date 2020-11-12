@@ -9,6 +9,7 @@ import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
+import {Notice} from '../../../shared/components/notice';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
@@ -79,6 +80,12 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
             <Page
                 title='Workflow Event Bindings'
                 toolbar={{
+                    breadcrumbs: [
+                        {
+                            title: 'Workflow Event Bindings',
+                            path: 'workflow-event-bindings/' + this.namespace
+                        }
+                    ],
                     tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
                 {this.state.error && <ErrorNotice error={this.state.error} />}
@@ -100,6 +107,10 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                                 }
                             }}
                         />
+                        <Notice style={{margin: 20}}>
+                            <i className='fa fa-info-circle' /> Workflow event bindings allow you to trigger workflows when a webhook event is received. For example, start a build
+                            on a Git commit. Use the <a href={uiUrl('apidocs')}>API docs</a> to test. <a href='https://argoproj.github.io/argo/events/'>Learn more</a>
+                        </Notice>
                         <SlidingPanel isShown={!!this.selectedWorkflowEventBinding} onClose={() => this.setState({selectedWorkflowEventBinding: null})}>
                             {this.state.selectedWorkflowEventBinding && <ResourceEditor value={this.selectedWorkflowEventBinding} />}
                         </SlidingPanel>
@@ -124,9 +135,7 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                         namespace,
                         error: null
                     },
-                    () => {
-                        this.saveHistory();
-                    }
+                    () => this.saveHistory()
                 )
             )
             .catch(error => this.setState({error}));

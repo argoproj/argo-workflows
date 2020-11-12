@@ -27,8 +27,3 @@ export interface WorkflowEventBinding {
         };
     };
 }
-
-export interface WorkflowEventBindingWatchEvent {
-    type: 'ADDED' | 'UPDATED' | 'DELETED';
-    object: WorkflowEventBinding;
-}
