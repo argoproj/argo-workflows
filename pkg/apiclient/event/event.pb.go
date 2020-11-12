@@ -13,6 +13,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	io "io"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	math "math"
 	math_bits "math/bits"
 )
@@ -138,37 +139,162 @@ func (m *EventResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_EventResponse proto.InternalMessageInfo
 
+type ListWorkflowEventBindingsRequest struct {
+	Namespace            string          `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ListOptions          *v1.ListOptions `protobuf:"bytes,2,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *ListWorkflowEventBindingsRequest) Reset()         { *m = ListWorkflowEventBindingsRequest{} }
+func (m *ListWorkflowEventBindingsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListWorkflowEventBindingsRequest) ProtoMessage()    {}
+func (*ListWorkflowEventBindingsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d80a0d2509a47d1c, []int{2}
+}
+func (m *ListWorkflowEventBindingsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListWorkflowEventBindingsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListWorkflowEventBindingsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListWorkflowEventBindingsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListWorkflowEventBindingsRequest.Merge(m, src)
+}
+func (m *ListWorkflowEventBindingsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListWorkflowEventBindingsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListWorkflowEventBindingsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListWorkflowEventBindingsRequest proto.InternalMessageInfo
+
+func (m *ListWorkflowEventBindingsRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *ListWorkflowEventBindingsRequest) GetListOptions() *v1.ListOptions {
+	if m != nil {
+		return m.ListOptions
+	}
+	return nil
+}
+
+type WorkflowEventBindingWatchEvent struct {
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// the object changed
+	Object               *v1alpha1.WorkflowEventBinding `protobuf:"bytes,2,opt,name=object,proto3" json:"object,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
+}
+
+func (m *WorkflowEventBindingWatchEvent) Reset()         { *m = WorkflowEventBindingWatchEvent{} }
+func (m *WorkflowEventBindingWatchEvent) String() string { return proto.CompactTextString(m) }
+func (*WorkflowEventBindingWatchEvent) ProtoMessage()    {}
+func (*WorkflowEventBindingWatchEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d80a0d2509a47d1c, []int{3}
+}
+func (m *WorkflowEventBindingWatchEvent) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowEventBindingWatchEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowEventBindingWatchEvent.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowEventBindingWatchEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowEventBindingWatchEvent.Merge(m, src)
+}
+func (m *WorkflowEventBindingWatchEvent) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowEventBindingWatchEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowEventBindingWatchEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowEventBindingWatchEvent proto.InternalMessageInfo
+
+func (m *WorkflowEventBindingWatchEvent) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *WorkflowEventBindingWatchEvent) GetObject() *v1alpha1.WorkflowEventBinding {
+	if m != nil {
+		return m.Object
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*EventRequest)(nil), "event.EventRequest")
 	proto.RegisterType((*EventResponse)(nil), "event.EventResponse")
+	proto.RegisterType((*ListWorkflowEventBindingsRequest)(nil), "event.ListWorkflowEventBindingsRequest")
+	proto.RegisterType((*WorkflowEventBindingWatchEvent)(nil), "event.WorkflowEventBindingWatchEvent")
 }
 
 func init() { proto.RegisterFile("pkg/apiclient/event/event.proto", fileDescriptor_d80a0d2509a47d1c) }
 
 var fileDescriptor_d80a0d2509a47d1c = []byte{
-	// 347 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0xbf, 0x4a, 0x2b, 0x41,
-	0x14, 0xc6, 0xd9, 0x5c, 0xee, 0xbd, 0x64, 0x4d, 0x10, 0x56, 0x8b, 0x10, 0x42, 0x0c, 0x8b, 0x45,
-	0x10, 0x99, 0x21, 0x11, 0x0b, 0x63, 0xa7, 0x58, 0xd8, 0x6e, 0x3a, 0xbb, 0xc9, 0xe6, 0x38, 0x19,
-	0xb3, 0x3b, 0x67, 0x9c, 0x99, 0x6c, 0x90, 0x90, 0xc6, 0xc2, 0x17, 0xf0, 0x21, 0x7c, 0x15, 0x4b,
-	0xc1, 0x17, 0x90, 0xe0, 0x83, 0x48, 0x66, 0xb3, 0xf9, 0x53, 0xd9, 0x2c, 0x67, 0x3f, 0x0e, 0xdf,
-	0xfc, 0xbe, 0xf3, 0xf9, 0x47, 0x6a, 0xcc, 0x29, 0x53, 0x22, 0x4e, 0x04, 0x48, 0x4b, 0x21, 0x5b,
-	0x7f, 0x89, 0xd2, 0x68, 0x31, 0xf8, 0xeb, 0x7e, 0xea, 0x0d, 0x8e, 0xc8, 0x13, 0x58, 0xae, 0x52,
-	0x26, 0x25, 0x5a, 0x66, 0x05, 0x4a, 0x93, 0x2f, 0xd5, 0xaf, 0xb9, 0xb0, 0xa3, 0xc9, 0x80, 0xc4,
-	0x98, 0x52, 0xa6, 0x39, 0x2a, 0x8d, 0x0f, 0x6e, 0xa0, 0x2b, 0x7b, 0x43, 0xa7, 0xa8, 0xc7, 0xf7,
-	0x09, 0x4e, 0x69, 0xd6, 0x61, 0x89, 0x1a, 0xb1, 0x0e, 0xe5, 0x20, 0x41, 0x33, 0x0b, 0xc3, 0xdc,
-	0x24, 0x7c, 0xf3, 0xfc, 0xca, 0xcd, 0xf2, 0xb1, 0x08, 0x1e, 0x27, 0x60, 0x6c, 0xd0, 0xf0, 0xcb,
-	0x92, 0xa5, 0x60, 0x14, 0x8b, 0xa1, 0xe6, 0xb5, 0xbc, 0x76, 0x39, 0xda, 0x08, 0xc1, 0xb1, 0x5f,
-	0x1d, 0x0a, 0x13, 0x6b, 0x91, 0x0a, 0xc9, 0x2c, 0xea, 0x5a, 0xc9, 0x6d, 0xec, 0x8a, 0x41, 0xdf,
-	0xff, 0xaf, 0xd8, 0x53, 0x82, 0x6c, 0x58, 0xfb, 0xd3, 0xf2, 0xda, 0x7b, 0xdd, 0x0b, 0xb2, 0x61,
-	0x25, 0x05, 0xab, 0x1b, 0x88, 0x1a, 0x73, 0xb2, 0x64, 0x25, 0x05, 0x2b, 0x29, 0x58, 0xc9, 0xad,
-	0x85, 0x34, 0x2a, 0x9c, 0xc2, 0x7d, 0xbf, 0xba, 0x02, 0x35, 0x0a, 0xa5, 0x81, 0xee, 0x4b, 0x81,
-	0xde, 0x07, 0x9d, 0x89, 0x18, 0x82, 0xcc, 0xaf, 0x44, 0x10, 0x83, 0xc8, 0xc0, 0xc9, 0xc1, 0x01,
-	0xc9, 0x6f, 0xba, 0x9d, 0xaf, 0x7e, 0xb8, 0x2b, 0xe6, 0x5e, 0xe1, 0xe5, 0xf3, 0xe7, 0xf7, 0x6b,
-	0xe9, 0x3c, 0x3c, 0x71, 0xb7, 0xce, 0x3a, 0x79, 0x1b, 0x86, 0xce, 0xd6, 0xd1, 0xe7, 0x74, 0xb6,
-	0x13, 0x72, 0xde, 0x2b, 0xc8, 0xae, 0x7a, 0xef, 0x8b, 0xa6, 0xf7, 0xb1, 0x68, 0x7a, 0x5f, 0x8b,
-	0xa6, 0x77, 0x77, 0xfa, 0x5b, 0x2d, 0xdb, 0xad, 0x0f, 0xfe, 0xb9, 0x1a, 0xce, 0x7e, 0x02, 0x00,
-	0x00, 0xff, 0xff, 0xab, 0x58, 0x8b, 0x7b, 0x13, 0x02, 0x00, 0x00,
+	// 542 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x94, 0xdd, 0x6a, 0x13, 0x41,
+	0x14, 0xc7, 0x99, 0x56, 0x2b, 0x9d, 0xb4, 0x08, 0xa3, 0x17, 0x31, 0x94, 0x18, 0x16, 0xc5, 0xa2,
+	0x66, 0xc6, 0xa4, 0x15, 0x34, 0xde, 0x55, 0xbc, 0x28, 0x54, 0x84, 0xcd, 0x45, 0xc1, 0xbb, 0xc9,
+	0xe6, 0xb8, 0x99, 0x66, 0x77, 0x66, 0xdc, 0x99, 0x6e, 0x09, 0xa5, 0x37, 0xbe, 0x82, 0x88, 0x8f,
+	0x20, 0xf8, 0x24, 0xbd, 0x14, 0x7c, 0x01, 0x09, 0x3e, 0x87, 0xc8, 0x4e, 0x66, 0x9b, 0x0d, 0x56,
+	0x5b, 0xd4, 0x9b, 0x65, 0xf6, 0xcc, 0xf9, 0xf8, 0x9d, 0xf3, 0x3f, 0x0c, 0xbe, 0xad, 0xc7, 0x31,
+	0xe3, 0x5a, 0x44, 0x89, 0x00, 0x69, 0x19, 0xe4, 0x67, 0x5f, 0xaa, 0x33, 0x65, 0x15, 0xb9, 0xea,
+	0x7e, 0x1a, 0x1b, 0xb1, 0x52, 0x71, 0x02, 0x85, 0x2b, 0xe3, 0x52, 0x2a, 0xcb, 0xad, 0x50, 0xd2,
+	0xcc, 0x9c, 0x1a, 0xdb, 0xe3, 0x27, 0x86, 0x0a, 0x55, 0xdc, 0xa6, 0x3c, 0x1a, 0x09, 0x09, 0xd9,
+	0x84, 0xf9, 0xcc, 0x86, 0xa5, 0x60, 0x39, 0xcb, 0x3b, 0x2c, 0x06, 0x09, 0x19, 0xb7, 0x30, 0xf4,
+	0x51, 0xcf, 0x63, 0x61, 0x47, 0x87, 0x03, 0x1a, 0xa9, 0x94, 0xf1, 0x2c, 0x56, 0x3a, 0x53, 0x07,
+	0xee, 0x30, 0x0f, 0x3d, 0x52, 0xd9, 0xf8, 0x4d, 0xa2, 0x8e, 0x58, 0xde, 0xe1, 0x89, 0x1e, 0xf1,
+	0x5f, 0x92, 0x04, 0x9f, 0x10, 0x5e, 0x7b, 0x51, 0x20, 0x86, 0xf0, 0xf6, 0x10, 0x8c, 0x25, 0x1b,
+	0x78, 0x55, 0xf2, 0x14, 0x8c, 0xe6, 0x11, 0xd4, 0x51, 0x0b, 0x6d, 0xae, 0x86, 0x73, 0x03, 0xb9,
+	0x83, 0xd7, 0x87, 0xc2, 0x44, 0x99, 0x48, 0x85, 0xe4, 0x56, 0x65, 0xf5, 0x25, 0xe7, 0xb1, 0x68,
+	0x24, 0x7d, 0x7c, 0x4d, 0xf3, 0x49, 0xa2, 0xf8, 0xb0, 0xbe, 0xdc, 0x42, 0x9b, 0xb5, 0xee, 0x53,
+	0x3a, 0x67, 0xa5, 0x25, 0xab, 0x3b, 0x50, 0x3d, 0x8e, 0x69, 0xc1, 0x4a, 0x4b, 0x56, 0x5a, 0xb2,
+	0xd2, 0x5d, 0x0b, 0x69, 0x58, 0x66, 0x0a, 0xae, 0xe3, 0x75, 0x0f, 0x6a, 0xb4, 0x92, 0x06, 0x82,
+	0x0f, 0x08, 0xb7, 0xf6, 0x84, 0xb1, 0xfb, 0x3e, 0xd0, 0xdd, 0xee, 0x08, 0x39, 0x14, 0x32, 0x36,
+	0x97, 0x6b, 0xa7, 0x8f, 0x6b, 0x89, 0x30, 0xf6, 0x95, 0x76, 0x6a, 0xb8, 0x66, 0x6a, 0xdd, 0x0e,
+	0x9d, 0xc9, 0x41, 0xab, 0x72, 0xcc, 0x39, 0x0b, 0x39, 0x68, 0xde, 0xa1, 0x7b, 0xf3, 0xc0, 0xb0,
+	0x9a, 0x25, 0xf8, 0x88, 0x70, 0xf3, 0x3c, 0xa6, 0x7d, 0x6e, 0xa3, 0x91, 0x33, 0x10, 0x82, 0xaf,
+	0xd8, 0x89, 0x2e, 0x81, 0xdc, 0x99, 0x70, 0xbc, 0xa2, 0x06, 0x07, 0x10, 0x59, 0x8f, 0xb1, 0xfb,
+	0x57, 0x33, 0x3b, 0xaf, 0x70, 0xe8, 0x13, 0x77, 0x7f, 0x2c, 0x7b, 0xb1, 0xfb, 0x90, 0xe5, 0x22,
+	0x02, 0x92, 0xe3, 0xb5, 0x10, 0x22, 0x10, 0x39, 0xcc, 0xb8, 0x6e, 0xd0, 0xd9, 0xee, 0x56, 0x37,
+	0xa2, 0x71, 0x73, 0xd1, 0xe8, 0xa7, 0xff, 0xec, 0xdd, 0xd7, 0xef, 0xef, 0x97, 0x1e, 0x07, 0xf7,
+	0xdd, 0x4e, 0xe7, 0x9d, 0xd9, 0xd6, 0x1b, 0x76, 0x7c, 0x36, 0xdd, 0x13, 0x76, 0xbc, 0xb0, 0x16,
+	0x27, 0xbd, 0x52, 0x4b, 0x72, 0x8a, 0xf0, 0xad, 0xdf, 0x4a, 0x47, 0xee, 0xf9, 0x82, 0x17, 0x89,
+	0xdb, 0x78, 0xf9, 0xdf, 0x46, 0x54, 0x94, 0x0a, 0xb6, 0x5c, 0x4b, 0x6d, 0xf2, 0xa0, 0x6c, 0xa9,
+	0x8c, 0x6d, 0x3b, 0x9e, 0xf6, 0xc0, 0x97, 0xaf, 0xf6, 0x48, 0x3e, 0x23, 0xdc, 0x70, 0xca, 0xfe,
+	0x63, 0x2f, 0x77, 0xbd, 0xe3, 0x9f, 0x37, 0x27, 0xe8, 0x39, 0xc6, 0x6d, 0xd2, 0x2d, 0x19, 0x8d,
+	0xcd, 0x80, 0xa7, 0x97, 0x41, 0x7d, 0x84, 0x76, 0x7a, 0xa7, 0xd3, 0x26, 0xfa, 0x32, 0x6d, 0xa2,
+	0x6f, 0xd3, 0x26, 0x7a, 0xfd, 0xf0, 0xa2, 0x07, 0xa4, 0xfa, 0xaa, 0x0d, 0x56, 0xdc, 0x83, 0xb1,
+	0xf5, 0x33, 0x00, 0x00, 0xff, 0xff, 0x22, 0x45, 0x17, 0x15, 0xf3, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -184,6 +310,8 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type EventServiceClient interface {
 	ReceiveEvent(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventResponse, error)
+	ListWorkflowEventBindings(ctx context.Context, in *ListWorkflowEventBindingsRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowEventBindingList, error)
+	WatchWorkflowEventBindings(ctx context.Context, in *ListWorkflowEventBindingsRequest, opts ...grpc.CallOption) (EventService_WatchWorkflowEventBindingsClient, error)
 }
 
 type eventServiceClient struct {
@@ -203,9 +331,52 @@ func (c *eventServiceClient) ReceiveEvent(ctx context.Context, in *EventRequest,
 	return out, nil
 }
 
+func (c *eventServiceClient) ListWorkflowEventBindings(ctx context.Context, in *ListWorkflowEventBindingsRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowEventBindingList, error) {
+	out := new(v1alpha1.WorkflowEventBindingList)
+	err := c.cc.Invoke(ctx, "/event.EventService/ListWorkflowEventBindings", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventServiceClient) WatchWorkflowEventBindings(ctx context.Context, in *ListWorkflowEventBindingsRequest, opts ...grpc.CallOption) (EventService_WatchWorkflowEventBindingsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_EventService_serviceDesc.Streams[0], "/event.EventService/WatchWorkflowEventBindings", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &eventServiceWatchWorkflowEventBindingsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type EventService_WatchWorkflowEventBindingsClient interface {
+	Recv() (*WorkflowEventBindingWatchEvent, error)
+	grpc.ClientStream
+}
+
+type eventServiceWatchWorkflowEventBindingsClient struct {
+	grpc.ClientStream
+}
+
+func (x *eventServiceWatchWorkflowEventBindingsClient) Recv() (*WorkflowEventBindingWatchEvent, error) {
+	m := new(WorkflowEventBindingWatchEvent)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // EventServiceServer is the server API for EventService service.
 type EventServiceServer interface {
 	ReceiveEvent(context.Context, *EventRequest) (*EventResponse, error)
+	ListWorkflowEventBindings(context.Context, *ListWorkflowEventBindingsRequest) (*v1alpha1.WorkflowEventBindingList, error)
+	WatchWorkflowEventBindings(*ListWorkflowEventBindingsRequest, EventService_WatchWorkflowEventBindingsServer) error
 }
 
 // UnimplementedEventServiceServer can be embedded to have forward compatible implementations.
@@ -214,6 +385,12 @@ type UnimplementedEventServiceServer struct {
 
 func (*UnimplementedEventServiceServer) ReceiveEvent(ctx context.Context, req *EventRequest) (*EventResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReceiveEvent not implemented")
+}
+func (*UnimplementedEventServiceServer) ListWorkflowEventBindings(ctx context.Context, req *ListWorkflowEventBindingsRequest) (*v1alpha1.WorkflowEventBindingList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListWorkflowEventBindings not implemented")
+}
+func (*UnimplementedEventServiceServer) WatchWorkflowEventBindings(req *ListWorkflowEventBindingsRequest, srv EventService_WatchWorkflowEventBindingsServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchWorkflowEventBindings not implemented")
 }
 
 func RegisterEventServiceServer(s *grpc.Server, srv EventServiceServer) {
@@ -238,6 +415,45 @@ func _EventService_ReceiveEvent_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EventService_ListWorkflowEventBindings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWorkflowEventBindingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServiceServer).ListWorkflowEventBindings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/event.EventService/ListWorkflowEventBindings",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServiceServer).ListWorkflowEventBindings(ctx, req.(*ListWorkflowEventBindingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventService_WatchWorkflowEventBindings_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListWorkflowEventBindingsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(EventServiceServer).WatchWorkflowEventBindings(m, &eventServiceWatchWorkflowEventBindingsServer{stream})
+}
+
+type EventService_WatchWorkflowEventBindingsServer interface {
+	Send(*WorkflowEventBindingWatchEvent) error
+	grpc.ServerStream
+}
+
+type eventServiceWatchWorkflowEventBindingsServer struct {
+	grpc.ServerStream
+}
+
+func (x *eventServiceWatchWorkflowEventBindingsServer) Send(m *WorkflowEventBindingWatchEvent) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _EventService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "event.EventService",
 	HandlerType: (*EventServiceServer)(nil),
@@ -246,8 +462,18 @@ var _EventService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "ReceiveEvent",
 			Handler:    _EventService_ReceiveEvent_Handler,
 		},
+		{
+			MethodName: "ListWorkflowEventBindings",
+			Handler:    _EventService_ListWorkflowEventBindings_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchWorkflowEventBindings",
+			Handler:       _EventService_WatchWorkflowEventBindings_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "pkg/apiclient/event/event.proto",
 }
 
@@ -331,6 +557,98 @@ func (m *EventResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ListWorkflowEventBindingsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListWorkflowEventBindingsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListWorkflowEventBindingsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEvent(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintEvent(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowEventBindingWatchEvent) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowEventBindingWatchEvent) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowEventBindingWatchEvent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Object != nil {
+		{
+			size, err := m.Object.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintEvent(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i -= len(m.Type)
+		copy(dAtA[i:], m.Type)
+		i = encodeVarintEvent(dAtA, i, uint64(len(m.Type)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintEvent(dAtA []byte, offset int, v uint64) int {
 	offset -= sovEvent(v)
 	base := offset
@@ -372,6 +690,46 @@ func (m *EventResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ListWorkflowEventBindingsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovEvent(uint64(l))
+	}
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
+		n += 1 + l + sovEvent(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowEventBindingWatchEvent) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovEvent(uint64(l))
+	}
+	if m.Object != nil {
+		l = m.Object.Size()
+		n += 1 + l + sovEvent(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -567,6 +925,250 @@ func (m *EventResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: EventResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEvent(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListWorkflowEventBindingsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEvent
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListWorkflowEventBindingsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListWorkflowEventBindingsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEvent
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEvent
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEvent(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowEventBindingWatchEvent) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEvent
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowEventBindingWatchEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowEventBindingWatchEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthEvent
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEvent
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Object == nil {
+				m.Object = &v1alpha1.WorkflowEventBinding{}
+			}
+			if err := m.Object.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipEvent(dAtA[iNdEx:])

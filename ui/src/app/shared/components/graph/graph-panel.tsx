@@ -8,7 +8,6 @@ import {Graph, Node} from './types';
 require('./graph-panel.scss');
 
 interface Props {
-    storageKey: string;
     graph: Graph;
     types: {[type: string]: boolean};
     classNames: {[type: string]: boolean};

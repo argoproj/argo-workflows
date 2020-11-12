@@ -48,7 +48,7 @@ export interface LogEntry {
 }
 
 export interface EventSourceWatchEvent {
-    type: string;
+    type: 'ADDED' | 'UPDATED' | 'DELETED';
     object: EventSource;
 }
 

@@ -75,7 +75,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.prepareGraph();
         return (
             <GraphPanel
-                storageKey='workflow-dag'
                 graph={this.graph}
                 types={types}
                 classNames={classNames()}

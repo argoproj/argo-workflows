@@ -44,7 +44,7 @@ export interface LogEntry {
 }
 
 export interface SensorWatchEvent {
-    type: string;
+    type: 'ADDED' | 'UPDATED' | 'DELETED';
     object: Sensor;
 }
 

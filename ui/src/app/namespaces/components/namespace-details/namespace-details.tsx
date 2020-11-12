@@ -313,7 +313,6 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         return (
             <GraphPanel
-                storageKey='namespace-details'
                 graph={g}
                 selectedNode={this.selectedId}
                 onNodeSelect={selectedId => (this.selectedId = selectedId)}

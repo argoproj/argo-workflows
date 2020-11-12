@@ -21,11 +21,13 @@ import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import {Utils} from './shared/utils';
 import userinfo from './userinfo';
+import workflowEventBindings from './workflow-event-bindings';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
 const namespacesUrl = uiUrl('namespaces');
 const workflowsUrl = uiUrl('workflows');
+const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
 const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 const cronWorkflowsUrl = uiUrl('cron-workflows');
@@ -49,6 +51,11 @@ const navItems = [
         title: 'Workflows',
         path: workflowsUrl,
         iconClassName: 'fa fa-sitemap'
+    },
+    {
+        title: 'Workflow Event Bindings',
+        path: workflowsEventBindingsUrl,
+        iconClassName: 'fa fa-cloud'
     },
     {
         title: 'Workflow Templates',
@@ -160,6 +167,11 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                     </Route>
                                 )}
                                 {this.state.namespace && (
+                                    <Route exact={true} strict={true} path={workflowsEventBindingsUrl}>
+                                        <Redirect to={this.workflowsEventBindingsUrl} />
+                                    </Route>
+                                )}
+                                {this.state.namespace && (
                                     <Route exact={true} strict={true} path={workflowTemplatesUrl}>
                                         <Redirect to={this.workflowTemplatesUrl} />
                                     </Route>
@@ -181,6 +193,7 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                 )}
                                 <Route path={namespacesUrl} component={namespaces.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
+                                <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
                                 <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
                                 <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
@@ -216,6 +229,10 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
 
     private get workflowsUrl() {
         return workflowsUrl + '/' + (this.state.namespace || '');
+    }
+
+    private get workflowsEventBindingsUrl() {
+        return workflowsEventBindingsUrl + '/' + (this.state.namespace || '');
     }
 
     private get reportsUrl() {

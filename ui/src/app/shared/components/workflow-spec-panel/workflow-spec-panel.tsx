@@ -7,7 +7,6 @@ import {workflowSpecGraph} from './workflow-spec-graph';
 export const WorkflowSpecPanel = (props: {spec: WorkflowSpec; selectedId?: string; onSelect?: (id: string) => void}) => {
     return (
         <GraphPanel
-            storageKey='workflow-spec-panel'
             graph={workflowSpecGraph(props.spec)}
             selectedNode={props.selectedId}
             onNodeSelect={id => props.onSelect && props.onSelect(id)}
