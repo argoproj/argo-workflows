@@ -8,6 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	log "github.com/sirupsen/logrus"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -41,6 +43,10 @@ const (
 )
 
 func initializeSession() {
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000Z",
+		FullTimestamp:   true,
+	})
 	if noUtf8 {
 		jobStatusIconMap = map[wfv1.NodePhase]string{
 			wfv1.NodePending:   ansiFormat("Pending", FgYellow),
