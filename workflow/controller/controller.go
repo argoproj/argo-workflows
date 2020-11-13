@@ -213,6 +213,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		log.Fatal(err)
 	}
 
+	// HA support
 	if wfc.haEnabled {
 		log.Info("workflow-controller is starting HA mode")
 		wfc.startHAModeWorkflowProcessing(ctx, wfWorkers, podWorkers)

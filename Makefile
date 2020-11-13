@@ -25,7 +25,7 @@ IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
-VERSION               := le
+VERSION               := latest
 DEV_IMAGE             := true
 
 # VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
