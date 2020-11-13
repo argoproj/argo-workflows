@@ -159,7 +159,7 @@ rules:
   - delete
   - deletecollection
   - get
-:  - list
+  - list
   - patch
   - update
   - watch
