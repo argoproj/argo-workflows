@@ -25,7 +25,7 @@ IMAGE_NAMESPACE       ?= argoproj
 # The name of the namespace where Kubernetes resources/RBAC will be installed
 KUBE_NAMESPACE        ?= argo
 
-VERSION               := latest
+VERSION               := le
 DEV_IMAGE             := true
 
 # VERSION is the version to be used for files in manifests and should always be latest uunlesswe are releasing
@@ -360,6 +360,9 @@ manifests/install.yaml: $(CRDS) /usr/local/bin/kustomize
 	kustomize build --load_restrictor=none manifests/quick-start/minimal | ./hack/auto-gen-msg.sh > manifests/quick-start-minimal.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 	kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	kustomize build --load_restrictor=none manifests/ha/namespace | ./hack/auto-gen-msg.sh > manifests/namespace-install-ha.yaml
+	kustomize build --load_restrictor=none manifests/ha/cluster | ./hack/auto-gen-msg.sh > manifests/install-ha.yaml
+
 
 # lint/test/etc
 

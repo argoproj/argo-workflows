@@ -66,6 +66,9 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
+	// HA mode enabled
+	haEnabled bool
+
 	configController config.Controller
 	// Config is the workflow controller's configuration
 	Config config.Config
@@ -114,7 +117,7 @@ const (
 )
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string) (*WorkflowController, error) {
+func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap string, haEnabled bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -136,6 +139,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		workflowKeyLock:            syncpkg.NewKeyLock(),
 		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
+		haEnabled:                  haEnabled,
 	}
 
 	wfc.UpdateConfig()
@@ -209,6 +213,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		log.Fatal(err)
 	}
 
+	if wfc.haEnabled {
+		log.Info("workflow-controller is starting HA mode")
+		wfc.startHAModeWorkflowProcessing(ctx, wfWorkers, podWorkers)
+	} else {
+		log.Info("workflow-controller is starting Non-HA mode")
+		wfc.startWorkflowProcessing(ctx, wfWorkers, podWorkers)
+	}
+	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) startHAModeWorkflowProcessing(ctx context.Context, wfWorkers, podWorkers int) {
 	nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 	if !ok {
 		log.Fatal("LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
@@ -229,22 +244,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 			OnStartedLeading: func(ctx context.Context) {
 				logCtx.Info("started leading")
 				ctx, cancel = context.WithCancel(ctx)
-
-				go wfc.podLabeler(ctx.Done())
-				go wfc.podGarbageCollector(ctx.Done())
-				go wfc.workflowGarbageCollector(ctx.Done())
-				go wfc.archivedWorkflowGarbageCollector(ctx.Done())
-
-				go wfc.runTTLController(ctx)
-				go wfc.runCronController(ctx)
-				go wfc.metrics.RunServer(ctx)
-
-				for i := 0; i < wfWorkers; i++ {
-					go wait.Until(wfc.runWorker, time.Second, ctx.Done())
-				}
-				for i := 0; i < podWorkers; i++ {
-					go wait.Until(wfc.podWorker, time.Second, ctx.Done())
-				}
+				wfc.startWorkflowProcessing(ctx, wfWorkers, podWorkers)
 			},
 			OnStoppedLeading: func() {
 				logCtx.Info("stopped leading")
@@ -255,7 +255,24 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 			},
 		},
 	})
-	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) startWorkflowProcessing(ctx context.Context, wfWorkers, podWorkers int) {
+	go wfc.podLabeler(ctx.Done())
+	go wfc.podGarbageCollector(ctx.Done())
+	go wfc.workflowGarbageCollector(ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+	go wfc.runTTLController(ctx)
+	go wfc.runCronController(ctx)
+	go wfc.metrics.RunServer(ctx)
+
+	for i := 0; i < wfWorkers; i++ {
+		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+	}
+	for i := 0; i < podWorkers; i++ {
+		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
+	}
 }
 
 func workflowIndexerBySemaphoreKeys(obj interface{}) ([]string, error) {

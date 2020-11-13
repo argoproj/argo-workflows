@@ -130,7 +130,7 @@ rules:
 - apiGroups:
   - coordination.k8s.io
   resourceNames:
-  - workflow-controller
+  - workflow-controller-*
   resources:
   - leases
   verbs:
@@ -495,6 +495,7 @@ kind: Deployment
 metadata:
   name: workflow-controller
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: workflow-controller
@@ -509,9 +510,16 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
+        - --ha-enabled
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:latest
+        env:
+        - name: LEADER_ELECTION_IDENTITY
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: argoproj/workflow-controller:le
         name: workflow-controller
       nodeSelector:
         kubernetes.io/os: linux

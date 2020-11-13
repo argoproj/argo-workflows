@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../cluster-install
+patchesStrategicMerge:
+- workflow-controller-deployment.yaml
+patchesJson6902:
+  - target:
+      version: v1
+      group: apps
+      kind: Deployment
+      name: workflow-controller
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value:
+          --ha-enabled

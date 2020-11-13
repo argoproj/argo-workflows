@@ -644,12 +644,6 @@ spec:
         - --namespaced
         command:
         - workflow-controller
-        env:
-        - name: LEADER_ELECTION_IDENTITY
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       nodeSelector:

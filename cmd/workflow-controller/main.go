@@ -44,6 +44,7 @@ func NewRootCommand() *cobra.Command {
 		qps                      float32
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
+		haEnabled                bool   // --ha-enabled
 	)
 
 	var command = cobra.Command{
@@ -79,7 +80,7 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			// start a controller on instances of our custom resource
-			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
+			wfController, err := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap, haEnabled)
 			errors.CheckError(err)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -105,6 +106,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().Float32Var(&qps, "qps", 20.0, "Queries per second")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
+	command.Flags().BoolVar(&haEnabled, "ha-enabled", false, "Enable high availability mode on workflow controller")
 	return &command
 }
 
