@@ -159,7 +159,7 @@ rules:
   - delete
   - deletecollection
   - get
-  - list
+:  - list
   - patch
   - update
   - watch
@@ -358,7 +358,6 @@ rules:
   verbs:
   - get
   - list
-
 - apiGroups:
   - argoproj.io
   resources:
