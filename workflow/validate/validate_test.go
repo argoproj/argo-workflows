@@ -170,6 +170,35 @@ spec:
       image: docker/whalesay:{{inputs.parameters.unresolved}}
 `
 
+var unresolvedStepInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: entry-step
+  arguments:
+    parameters: []
+  templates:
+    - steps:
+        - - name: a
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{inputs.parameters.message}}"
+            template: whalesay
+      name: entry-step
+      inputs:
+        parameters:
+          - name: message
+            value: hello world
+    - name: whalesay
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+`
+
 var unresolvedOutput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -194,6 +223,10 @@ spec:
 
 func TestUnresolved(t *testing.T) {
 	_, err := validate(unresolvedInput)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve")
+	}
+	_, err = validate(unresolvedStepInput)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve")
 	}
@@ -2643,5 +2676,225 @@ spec:
 
 func TestWorkflowTemplateLabels(t *testing.T) {
 	err := validateWorkflowTemplate(testWorkflowTemplateLabels)
+	assert.NoError(t, err)
+}
+
+const templateRefWithArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-artifact
+spec:
+  entrypoint: A
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: https://a.server.io/file
+  templates:
+  - name: A
+    inputs:
+      artifacts:
+      - name: binary-file
+        path: /usr/local/bin/binfile
+        mode: 0755
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+const wfWithWFTRefAndNoOwnArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithOutOwnArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndNoOwnArtifact)
+	assert.NoError(t, err)
+}
+
+const wfWithWFTRefAndOwnArtifactArgument = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  arguments:
+    artifacts:
+    - name: binary-file
+      http:
+        url: http://localserver/file
+  workflowTemplateRef:
+    name: template-ref-with-artifact
+`
+
+func TestWorkflowWithWFTRefWithArtifactArgument(t *testing.T) {
+	err := createWorkflowTemplate(templateRefWithArtifactArgument)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefAndOwnArtifactArgument)
+	assert.NoError(t, err)
+}
+
+var workflowTeamplateWithEnumValues = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+            - one
+            - two
+            - three
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+var workflowTemplateWithEmptyEnumList = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum: []
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+var workflowTemplateWithArgumentValueNotFromEnumList = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: test-enum-1-
+  labels:
+    testLabel: foobar
+spec:
+  entrypoint: argosay
+  arguments:
+    parameters:
+      - name: message
+        value: one
+        enum:
+            -   two
+            -   three
+            -   four
+  templates:
+    - name: argosay
+      inputs:
+        parameters:
+          - name: message
+            value: '{{workflow.parameters.message}}'
+      container:
+        name: main
+        image: 'argoproj/argosay:v2'
+        command:
+          - /argosay
+        args:
+          - echo
+          - '{{inputs.parameters.message}}'
+`
+
+func TestWorkflowTemplateWithEnumValue(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTeamplateWithEnumValues)
+	assert.NoError(t, err)
+}
+
+func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTemplateWithEmptyEnumList)
+	assert.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
+}
+
+func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
+	err := validateWorkflowTemplate(workflowTemplateWithArgumentValueNotFromEnumList)
+	assert.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
+}
+
+var validActiveDeadlineSecondsArgoVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: timeout-bug-
+spec:
+  entrypoint: main
+
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: print-timeout
+            template: print-timeout
+          - name: use-timeout
+            template: use-timeout
+            dependencies: [print-timeout]
+            arguments:
+              parameters:
+                - name: timeout
+                  value: "{{tasks.print-timeout.outputs.result}}"
+
+    - name: print-timeout
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ['echo 5']
+
+    - name: use-timeout
+      inputs:
+        parameters:
+          - name: timeout
+      activeDeadlineSeconds: "{{inputs.parameters.timeout}}"
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["echo sleeping for 1m; sleep 60; echo done"]
+`
+
+func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
+	err := validateWorkflowTemplate(validActiveDeadlineSecondsArgoVariable)
 	assert.NoError(t, err)
 }

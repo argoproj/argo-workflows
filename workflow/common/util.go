@@ -20,6 +20,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -373,7 +374,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		replacement, ok := replaceMap[tag]
+		replacement, ok := replaceMap[strings.TrimSpace(tag)]
 		if !ok {
 			// Attempt to resolve nested tags, if possible
 			if index := strings.LastIndex(tag, "{{"); index > 0 {
@@ -434,20 +435,39 @@ func RunShellCommand(arg ...string) ([]byte, error) {
 	return RunCommand(name, arg...)
 }
 
-const patchRetries = 5
+// Run	Seconds
+// 0	0.000
+// 1	1.000
+// 2	2.000
+// 3	3.000
+// 4	4.000
+var defaultPatchBackoff = wait.Backoff{
+	Steps:    5,
+	Duration: 1 * time.Second,
+	Factor:   1,
+}
 
 // AddPodAnnotation adds an annotation to pod
-func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(c, "annotations", podName, namespace, key, value)
+func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string, options ...interface{}) error {
+	backoff := defaultPatchBackoff
+	for _, option := range options {
+		switch v := option.(type) {
+		case wait.Backoff:
+			backoff = v
+		default:
+			panic("unknown option type")
+		}
+	}
+	return addPodMetadata(c, "annotations", podName, namespace, key, value, backoff)
 }
 
 // AddPodLabel adds an label to pod
 func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
-	return addPodMetadata(c, "labels", podName, namespace, key, value)
+	return addPodMetadata(c, "labels", podName, namespace, key, value, defaultPatchBackoff)
 }
 
 // addPodMetadata is helper to either add a pod label or annotation to the pod
-func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, value string) error {
+func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, value string, backoff wait.Backoff) error {
 	metadata := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			field: map[string]string{
@@ -455,23 +475,14 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 			},
 		},
 	}
-	var err error
 	patch, err := json.Marshal(metadata)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	for attempt := 0; attempt < patchRetries; attempt++ {
+	return wait.ExponentialBackoff(backoff, func() (bool, error) {
 		_, err = c.CoreV1().Pods(namespace).Patch(podName, types.MergePatchType, patch)
-		if err != nil {
-			if !apierr.IsConflict(err) {
-				return err
-			}
-		} else {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	return err
+		return err == nil, err
+	})
 }
 
 const deleteRetries = 3

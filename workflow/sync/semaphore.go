@@ -27,7 +27,7 @@ func NewSemaphore(name string, limit int, nextWorkflow NextWorkflow, lockType st
 	return &PrioritySemaphore{
 		name:         name,
 		limit:        limit,
-		pending:      &priorityQueue{itemByKey: make(map[interface{}]*item)},
+		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
 		semaphore:    sema.NewWeighted(int64(limit)),
 		lockHolder:   make(map[string]bool),
 		lock:         &sync.Mutex{},
@@ -86,18 +86,24 @@ func (s *PrioritySemaphore) release(key string) bool {
 		}
 
 		s.semaphore.Release(1)
-
-		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))
+		availableLocks := s.limit - len(s.lockHolder)
+		s.log.Infof("Lock has been released by %s. Available locks: %d", key, availableLocks)
 		if s.pending.Len() > 0 {
-			item := s.pending.peek()
-			keyStr := fmt.Sprint(item.key)
-			items := strings.Split(keyStr, "/")
-			workflowKey := keyStr
-			if len(items) == 3 {
-				workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
+			triggerCount := availableLocks
+			if s.pending.Len() < triggerCount {
+				triggerCount = s.pending.Len()
 			}
-			s.log.Debugf("Enqueue the workflow %s", workflowKey)
-			s.nextWorkflow(workflowKey)
+			for idx := 0; idx < triggerCount; idx++ {
+				item := s.pending.items[idx]
+				keyStr := fmt.Sprint(item.key)
+				items := strings.Split(keyStr, "/")
+				workflowKey := keyStr
+				if len(items) == 3 {
+					workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
+				}
+				s.log.Debugf("Enqueue the workflow %s", workflowKey)
+				s.nextWorkflow(workflowKey)
+			}
 		}
 	}
 	return true
@@ -152,6 +158,10 @@ func (s *PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
 		if holderKey != nextKey {
+			// Enqueue the front workflow if lock is available
+			if len(s.lockHolder) < s.limit {
+				s.nextWorkflow(nextKey)
+			}
 			return false, waitingMsg
 		}
 	}

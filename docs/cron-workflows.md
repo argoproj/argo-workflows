@@ -41,15 +41,15 @@ The resuling `Workflow` name will be a generated name based on the `CronWorkflow
 
 ### `CronWorkflow` Options
 
-|          Option Name         |      Default Value     | Description                                                                                                                                                                                                                            |
-|:----------------------------:|:----------------------:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|          `schedule`          | None, must be provided | Schedule at which the `Workflow` will be run. E.g. `5 4 * * * `                                                                                                                                                                        |
-|          `timezone`          |    Machine timezone    | Timezone (the name of the timezone as listed in the [tz database](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) during which the Workflow will be run. E.g. `America/Los_Angeles`                                                                                                                                                             |
-|           `suspend`          |         `false`        | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                                                             |
-|      `concurrencyPolicy`     |         `Allow`        | Policy that determines what to do if multiple `Workflows` are scheduled at the same time. Available options: `Allow`: allow all, `Replace`: remove all old before scheduling a new, `Forbid`: do not allow any new while there are old |
-| `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last successful run during which a missed `Workflow` will be run                                                                                                                                           |
-| `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                      |
-| `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                          |
+|          Option Name         |      Default Value     | Description                                                                                                                                                                                                                             |
+|:----------------------------:|:----------------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|          `schedule`          | None, must be provided | Schedule at which the `Workflow` will be run. E.g. `5 4 * * * `                                                                                                                                                                         |
+|          `timezone`          |    Machine timezone    | Timezone during which the Workflow will be run from the IANA timezone standard, e.g. `America/Los_Angeles`                                                                                                                              |
+|           `suspend`          |         `false`        | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                                                              |
+|      `concurrencyPolicy`     |         `Allow`        | Policy that determines what to do if multiple `Workflows` are scheduled at the same time. Available options: `Allow`: allow all, `Replace`: remove all old before scheduling a new, `Forbid`: do not allow any new while there are old  |
+| `startingDeadlineSeconds`    |           `0`          | Number of seconds after the last successful run during which a missed `Workflow` will be run                                                                                                                                            |
+| `successfulJobsHistoryLimit` |           `3`          | Number of successful `Workflows` that will be persisted at a time                                                                                                                                                                       |
+| `failedJobsHistoryLimit`     | `1`                    | Number of failed `Workflows` that will be persisted at a time                                                                                                                                                                           |
 
 ### Crash Recovery
 
@@ -90,14 +90,17 @@ test-cron-wf   56s   2s         * * * * *   false
 $ argo cron get test-cron-wf
 Name:                          test-cron-wf
 Namespace:                     argo
-Created:                       Mon Nov 18 10:17:06 -0800 (4 minutes ago)
+Created:                       Wed Oct 28 07:19:02 -0600 (23 hours ago)
 Schedule:                      * * * * *
 Suspended:                     false
 StartingDeadlineSeconds:       0
 ConcurrencyPolicy:             Replace
-LastScheduledTime:             Mon Nov 18 10:21:00 -0800 (51 seconds ago)
+LastScheduledTime:             Thu Oct 29 06:51:00 -0600 (11 minutes ago)
+NextScheduledTime:             Thu Oct 29 13:03:00 +0000 (32 seconds from now)
 Active Workflows:              test-cron-wf-rt4nf
 ```
+
+**Note**: `NextScheduledRun` assumes that the workflow-controller uses UTC as its timezone
 
 ### `kubectl`
 

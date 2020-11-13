@@ -126,7 +126,7 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
 
     private getExtractDatasets(workflows: Workflow[]) {
         const filteredWorkflows = workflows
-            .filter(wf => wf.status.finishedAt !== '')
+            .filter(wf => !!wf.status.finishedAt)
             .map(wf => ({
                 name: wf.metadata.name,
                 finishedAt: new Date(wf.status.finishedAt),

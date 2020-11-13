@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -543,5 +544,48 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, wf.Status.Synchronization.Semaphore)
 		assert.Equal(t, "semaphore-tmpl-level-xjvln-1607747183", wf.Status.Synchronization.Semaphore.Holding[0].Holders[0])
 
+	})
+}
+
+func TestTriggerWFWithAvailableLock(t *testing.T) {
+	assert := assert.New(t)
+	kube := fake.NewSimpleClientset()
+	var cm v1.ConfigMap
+	err := yaml.Unmarshal([]byte(configMap), &cm)
+	cm.Data["workflow"] = "3"
+	assert.NoError(err)
+	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
+	assert.NoError(err)
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
+		triggerCount := 0
+		concurrenyMgr := NewLockManager(syncLimitFunc, func(key string) {
+			triggerCount++
+		})
+		var wfs []wfv1.Workflow
+		for i := 0; i < 3; i++ {
+			wf := unmarshalWF(wfWithSemaphore)
+			wf.Name = fmt.Sprintf("%s-%d", "acquired", i)
+			status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+			assert.NoError(err)
+			assert.Empty(msg)
+			assert.True(status)
+			assert.True(wfUpdate)
+			wfs = append(wfs, *wf)
+
+		}
+		for i := 0; i < 3; i++ {
+			wf := unmarshalWF(wfWithSemaphore)
+			wf.Name = fmt.Sprintf("%s-%d", "wait", i)
+			status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", wf.Spec.Synchronization)
+			assert.NoError(err)
+			assert.NotEmpty(msg)
+			assert.False(status)
+			assert.True(wfUpdate)
+		}
+		concurrenyMgr.Release(&wfs[0], "", wfs[0].Spec.Synchronization)
+		triggerCount = 0
+		concurrenyMgr.Release(&wfs[1], "", wfs[1].Spec.Synchronization)
+		assert.Equal(2, triggerCount)
 	})
 }
