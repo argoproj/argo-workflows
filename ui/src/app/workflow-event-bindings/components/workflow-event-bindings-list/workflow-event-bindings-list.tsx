@@ -9,8 +9,8 @@ import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {Notice} from '../../../shared/components/notice';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {ZeroState} from '../../../shared/components/zero-state';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -18,7 +18,7 @@ interface State {
     namespace: string;
     error?: Error;
     workflowEventBindings?: WorkflowEventBinding[];
-    selectedWorkflowEventBinding?: {namespace: string; name: string};
+    selectedWorkflowEventBinding?: { namespace: string; name: string };
 }
 
 type Type = 'WorkflowEventBinding' | 'WorkflowTemplate';
@@ -86,11 +86,36 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                             path: 'workflow-event-bindings/' + this.namespace
                         }
                     ],
-                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
+                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)}/>]
                 }}>
-                {this.state.error && <ErrorNotice error={this.state.error} />}
+                {this.state.error && <ErrorNotice error={this.state.error}/>}
                 {!this.state.workflowEventBindings ? (
-                    <Loading />
+                    <Loading/>
+                ) : this.state.workflowEventBindings.length === 0 ? (
+                    <ZeroState title='Workflow Event Bindings'>
+                        <p>
+                            Workflow event bindings allow you to trigger workflows when a webhook event is received. For example, start a build on a Git commit, or start a machine
+                            learning pipeline from a remote system.
+                        </p>
+                        <p>
+                            Once you've created a a workflow event binding, you can test it from the CLI using <code>curl</code>, for example:
+                        </p>
+                        <p>
+                            <code>
+                                curl '{document.location.protocol}://{document.location.host}/api/v1/events/{this.namespace}/-'
+                                -H 'Content-Type: application/json'
+                                -H 'Authorization: $ARGO_TOKEN'
+                                -d '&#123;&#125;'
+                            </code>
+                        </p>
+                        <p>
+                            You'll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for
+                            "EventService.
+                        </p>
+                        <p>
+                            <a href='https://argoproj.github.io/argo/events/'>Learn more</a>
+                        </p>
+                    </ZeroState>
                 ) : (
                     <>
                         <GraphPanel
@@ -107,12 +132,8 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                                 }
                             }}
                         />
-                        <Notice style={{margin: 20}}>
-                            <i className='fa fa-info-circle' /> Workflow event bindings allow you to trigger workflows when a webhook event is received. For example, start a build
-                            on a Git commit. Use the <a href={uiUrl('apidocs')}>API docs</a> to test. <a href='https://argoproj.github.io/argo/events/'>Learn more</a>
-                        </Notice>
                         <SlidingPanel isShown={!!this.selectedWorkflowEventBinding} onClose={() => this.setState({selectedWorkflowEventBinding: null})}>
-                            {this.state.selectedWorkflowEventBinding && <ResourceEditor value={this.selectedWorkflowEventBinding} />}
+                            {this.state.selectedWorkflowEventBinding && <ResourceEditor value={this.selectedWorkflowEventBinding}/>}
                         </SlidingPanel>
                     </>
                 )}

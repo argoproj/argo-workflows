@@ -309,7 +309,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         const g = this.graph;
         if (g.nodes.size === 0) {
-            return <EventsZeroState title='No entities found' />;
+            return <EventsZeroState title='Nothing to show' />;
         }
         return (
             <GraphPanel
