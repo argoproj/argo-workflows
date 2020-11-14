@@ -612,7 +612,8 @@ spec:
         runAsNonRoot: true
       serviceAccountName: argo-server
       volumes:
-      - name: tmp
+      - emptyDir: {}
+        name: tmp
 ---
 apiVersion: apps/v1
 kind: Deployment
