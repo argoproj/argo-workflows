@@ -18,7 +18,7 @@ interface State {
     namespace: string;
     error?: Error;
     workflowEventBindings?: WorkflowEventBinding[];
-    selectedWorkflowEventBinding?: { namespace: string; name: string };
+    selectedWorkflowEventBinding?: {namespace: string; name: string};
 }
 
 type Type = 'WorkflowEventBinding' | 'WorkflowTemplate';
@@ -86,11 +86,11 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                             path: 'workflow-event-bindings/' + this.namespace
                         }
                     ],
-                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)}/>]
+                    tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                 }}>
-                {this.state.error && <ErrorNotice error={this.state.error}/>}
+                {this.state.error && <ErrorNotice error={this.state.error} />}
                 {!this.state.workflowEventBindings ? (
-                    <Loading/>
+                    <Loading />
                 ) : this.state.workflowEventBindings.length === 0 ? (
                     <ZeroState title='Workflow Event Bindings'>
                         <p>
@@ -102,10 +102,8 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                         </p>
                         <p>
                             <code>
-                                curl '{document.location.protocol}://{document.location.host}/api/v1/events/{this.namespace}/-'
-                                -H 'Content-Type: application/json'
-                                -H 'Authorization: $ARGO_TOKEN'
-                                -d '&#123;&#125;'
+                                curl '{document.location.protocol}://{document.location.host}/api/v1/events/{this.namespace}/-' -H 'Content-Type: application/json' -H
+                                'Authorization: $ARGO_TOKEN' -d '&#123;&#125;'
                             </code>
                         </p>
                         <p>
@@ -133,7 +131,7 @@ export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>
                             }}
                         />
                         <SlidingPanel isShown={!!this.selectedWorkflowEventBinding} onClose={() => this.setState({selectedWorkflowEventBinding: null})}>
-                            {this.state.selectedWorkflowEventBinding && <ResourceEditor value={this.selectedWorkflowEventBinding}/>}
+                            {this.state.selectedWorkflowEventBinding && <ResourceEditor value={this.selectedWorkflowEventBinding} />}
                         </SlidingPanel>
                     </>
                 )}

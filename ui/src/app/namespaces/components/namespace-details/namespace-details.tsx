@@ -168,9 +168,9 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 classNames: ''
                             });
                             graph.edges.set({v: sensorId, w: conditionsId}, {classNames: this.edgeClassNames(sensorId)});
-                            graph.edges.set({v: conditionsId, w: triggerId}, {classNames: this.edgeClassNames(sensorId)});
+                            graph.edges.set({v: conditionsId, w: triggerId}, {classNames: this.edgeClassNames(triggerId)});
                         } else {
-                            graph.edges.set({v: sensorId, w: triggerId}, {classNames: this.edgeClassNames(sensorId)});
+                            graph.edges.set({v: sensorId, w: triggerId}, {classNames: this.edgeClassNames(triggerId)});
                         }
                     });
             });
@@ -449,6 +449,14 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 type: 'Sensor',
                                 namespace: e.namespace,
                                 name: e.sensorName
+                            })
+                        );
+                        this.markActive(
+                            ID.join({
+                                type: 'Trigger',
+                                namespace: e.namespace,
+                                name: e.sensorName,
+                                key: e.triggerName
                             })
                         );
                     },
