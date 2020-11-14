@@ -1,8 +1,7 @@
+import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import * as React from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import {uiUrl} from '../../base';
-
-import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import {parse, stringify} from './resource';
 
 interface Props<T> {
@@ -63,9 +62,7 @@ export class ObjectEditor<T> extends React.Component<Props<T>> {
                     value={stringify(this.props.value, this.props.language)}
                     language={this.language}
                     height='600px'
-                    onChange={value => {
-                        this.props.onChange && this.props.onChange(parse(value));
-                    }}
+                    onChange={value => this.props.onChange && this.props.onChange(parse(value))}
                     options={{
                         readOnly: this.props.onChange === null,
                         extraEditorClassName: 'resource',

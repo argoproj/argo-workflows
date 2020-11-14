@@ -439,18 +439,16 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         ),
                     error => this.setState({error})
                 ),
-            services.sensor
-                .sensorsLogs(this.namespace, '', '', 0)
-                .filter(e => !!e.triggerName)
-                .subscribe(
-                    e => {
-                        this.markActive(
-                            ID.join({
-                                type: 'Sensor',
-                                namespace: e.namespace,
-                                name: e.sensorName
-                            })
-                        );
+            services.sensor.sensorsLogs(this.namespace, '', '', 0).subscribe(
+                e => {
+                    this.markActive(
+                        ID.join({
+                            type: 'Sensor',
+                            namespace: e.namespace,
+                            name: e.sensorName
+                        })
+                    );
+                    if (e.triggerName) {
                         this.markActive(
                             ID.join({
                                 type: 'Trigger',
@@ -459,9 +457,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                 key: e.triggerName
                             })
                         );
-                    },
-                    error => this.setState({error})
-                )
+                    }
+                },
+                error => this.setState({error})
+            )
         ];
     }
 
