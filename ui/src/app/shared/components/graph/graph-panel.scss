@@ -139,6 +139,7 @@
 
     &.data .line {
       stroke-dasharray: 8;
+      stroke-width: 4;
     }
 
     &.data.active .line {
