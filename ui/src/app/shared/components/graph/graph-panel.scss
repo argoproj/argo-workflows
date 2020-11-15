@@ -37,57 +37,6 @@
   overflow: scroll;
   text-align: center;
 
-  #BgDefault {
-    .color-stop {
-      stop-color: $argo-color-gray-6;
-    }
-
-    .color-bot {
-      stop-color: $argo-color-gray-7;
-    }
-  }
-
-  #BgWarning {
-    .color-stop {
-      stop-color: $argo-status-warning-color;
-    }
-
-    .color-bot {
-      stop-color: lighten($argo-status-warning-color, 5%)
-    }
-  }
-
-  #BgRunning {
-    .color-stop {
-      stop-color: $argo-running-color;
-    }
-
-    .color-bot {
-      stop-color: lighten($argo-running-color, 5%)
-    }
-  }
-
-  #BgSucceeded {
-    .color-stop {
-      stop-color: $argo-success-color;
-    }
-
-    .color-bot {
-      stop-color: lighten($argo-success-color, 5%)
-    }
-  }
-
-  #BgFailed {
-    .color-stop {
-      stop-color: $argo-status-failed-color;
-    }
-
-    .color-bot {
-      stop-color: lighten($argo-status-failed-color, 5%)
-    }
-  }
-
-
   .group {
     rect {
       fill: transparent;
@@ -98,7 +47,7 @@
 
   text {
     text-anchor: middle;
-    dominant-baseline: middle;
+    dominant-baseline: central;
 
     &.node-label {
       fill: $argo-color-gray-8;
@@ -110,7 +59,6 @@
 
     text {
       fill: $argo-color-gray-1;
-      opacity: 90%;
 
       &.icon {
         font-family: "Font Awesome 5 Free", serif;
@@ -118,24 +66,24 @@
     }
 
     .bg {
-      fill: url(#BgDefault) $argo-color-gray-6;
+      fill: $argo-color-gray-6;
     }
 
     &.Warning, &.Pending, &.Listening {
       .bg {
-        fill: url(#BgWarning) $argo-status-warning-color;
+        fill: $argo-status-warning-color;
       }
     }
 
     &.Suspended {
       .bg {
-        fill: url(#BgDefault) $argo-color-gray-6;
+        fill: $argo-color-gray-6;
       }
     }
 
     &.Running {
       .bg {
-        fill: url(#BgRunning) $argo-running-color;
+        fill: $argo-running-color;
       }
 
       text.icon {
@@ -145,14 +93,13 @@
 
     &.Succeeded {
       .bg {
-        fill: url(#BgSucceeded) $argo-success-color;
+        fill: $argo-success-color;
       }
     }
 
     &.Error, &.Failed {
       .bg {
-
-        fill: url(#BgFailed) $argo-failed-color;
+        fill: $argo-failed-color;
       }
     }
 
