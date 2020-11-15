@@ -15,7 +15,7 @@ interface Props {
     nodeSize?: number;
     horizontal?: boolean;
     hideTypes?: boolean;
-    iconType?: 'square' | 'circle';
+    iconType?: 'rect' | 'circle';
     selectedNode?: Node;
     onNodeSelect?: (id: Node) => void;
 }
