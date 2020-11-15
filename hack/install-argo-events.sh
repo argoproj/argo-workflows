@@ -7,7 +7,7 @@ kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-
 
 # clean-up
 
-kubectl -n argo-events delete sensor,es,wf --all
+kubectl -n argo-events delete sensor,es,wf --all && killall kubectl
 
 # demo 1
 

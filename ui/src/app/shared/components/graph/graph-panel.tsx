@@ -9,12 +9,13 @@ require('./graph-panel.scss');
 
 interface Props {
     graph: Graph;
-    types: {[type: string]: boolean};
-    classNames: {[type: string]: boolean};
+    types: { [type: string]: boolean };
+    classNames: { [type: string]: boolean };
     options?: React.ReactNode;
     nodeSize?: number;
     horizontal?: boolean;
     hideTypes?: boolean;
+    iconType?: 'square' | 'circle';
     selectedNode?: Node;
     onNodeSelect?: (id: Node) => void;
 }
@@ -125,8 +126,11 @@ export const GraphPanel = (props: Props) => {
                                         <g
                                             className={`node  ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
                                             onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
-                                            <circle r={nodeSize / 2} className='bg' />
-                                            <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
+                                            {props.iconType === 'circle' ?
+                                                <circle r={nodeSize / 2} className='bg'/> :
+                                                <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} className='bg'
+                                                      rx={nodeSize / 4}/>}
+                                            <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize}/>
                                             {props.hideTypes || (
                                                 <text y={nodeSize * 0.33} className='type' style={{fontSize: nodeSize * 0.2}}>
                                                     {label.type}

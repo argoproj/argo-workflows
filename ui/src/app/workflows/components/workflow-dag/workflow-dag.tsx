@@ -81,7 +81,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 selectedNode={this.props.selectedNodeId}
                 onNodeSelect={id => this.selectNode(id)}
                 nodeSize={40}
-                options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />}
+                iconType='circle'
+                options={<WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)}/>}
                 hideTypes={true}
             />
         );
