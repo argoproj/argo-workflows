@@ -15,7 +15,7 @@ interface Props {
     nodeSize?: number;
     horizontal?: boolean;
     hideTypes?: boolean;
-    iconType?: 'rect' | 'circle';
+    iconShape?: 'rect' | 'circle';
     selectedNode?: Node;
     onNodeSelect?: (id: Node) => void;
 }
@@ -62,16 +62,16 @@ export const GraphPanel = (props: Props) => {
                     }}
                 />
                 <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
-                    <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`} />
+                    <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'}`}/>
                 </a>
                 <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
-                    <i className='fa fa-search-plus' />
+                    <i className='fa fa-search-plus'/>
                 </a>
                 <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
-                    <i className='fa fa-search-minus' />
+                    <i className='fa fa-search-minus'/>
                 </a>
                 <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
-                    <i className='fa fa-bolt' />
+                    <i className='fa fa-bolt'/>
                 </a>
                 {props.options}
             </div>
@@ -82,12 +82,17 @@ export const GraphPanel = (props: Props) => {
                     <svg key='graph' width={width + nodeSize * 2} height={height + nodeSize * 2}>
                         <defs>
                             <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={nodeSize / 8} markerHeight={nodeSize / 8} orient='auto-start-reverse'>
-                                <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
+                                <path d='M 0 0 L 10 5 L 0 10 z' className='arrow'/>
                             </marker>
+                            {['BgDefault', 'BgWarning', 'BgRunning', 'BgSucceeded', 'BgFailed'].map(x =>
+                                <linearGradient id={x} x2="0.35" y2="1">
+                                    <stop offset="0%" className='color-stop'/>
+                                    <stop offset="100%" className='color-bot'/>
+                                </linearGradient>)}
                         </defs>
                         <g transform={`translate(${nodeSize},${nodeSize})`}>
                             {Array.from(props.graph.nodeGroups).map(([g, nodes]) => {
-                                const r: {x1: number; y1: number; x2: number; y2: number} = {
+                                const r: { x1: number; y1: number; x2: number; y2: number } = {
                                     x1: width,
                                     y1: height,
                                     x2: 0,
@@ -102,7 +107,7 @@ export const GraphPanel = (props: Props) => {
                                 });
                                 return (
                                     <g key={`group/${g}`} className='group' transform={`translate(${r.x1 - nodeSize},${r.y1 - nodeSize})`}>
-                                        <rect width={r.x2 - r.x1 + 2 * nodeSize} height={r.y2 - r.y1 + 2 * nodeSize} />
+                                        <rect width={r.x2 - r.x1 + 2 * nodeSize} height={r.y2 - r.y1 + 2 * nodeSize}/>
                                     </g>
                                 );
                             })}
@@ -110,7 +115,7 @@ export const GraphPanel = (props: Props) => {
                                 .filter(([, label]) => label.points)
                                 .map(([e, label]) => (
                                     <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
-                                        <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
+                                        <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line'/>
                                         <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
                                             <text className='edge-label' style={{fontSize: nodeSize / 6}}>
                                                 {formatLabel(label.label)}
@@ -124,9 +129,9 @@ export const GraphPanel = (props: Props) => {
                                     <g key={`node/${n}`} transform={`translate(${label.x},${label.y})`}>
                                         <title>{n}</title>
                                         <g
-                                            className={`node  ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
+                                            className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
                                             onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
-                                            {props.iconType === 'circle' ?
+                                            {props.iconShape === 'circle' ?
                                                 <circle r={nodeSize / 2} className='bg'/> :
                                                 <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} className='bg'
                                                       rx={nodeSize / 4}/>}
