@@ -12,10 +12,13 @@ export class SensorService {
             .map(line => JSON.parse(line).result as SensorWatchEvent);
     }
 
-    public sensorsLogs(namespace: string, name = '', triggerName = '', tailLines = -1) {
+    public sensorsLogs(namespace: string, name = '', triggerName = '', grep = '', tailLines = -1) {
         const params = ['podLogOptions.follow=true'];
         if (name) {
             params.push('name=' + name);
+        }
+        if (grep) {
+            params.push('grep=' + grep);
         }
         if (triggerName) {
             params.push('triggerName=' + triggerName);

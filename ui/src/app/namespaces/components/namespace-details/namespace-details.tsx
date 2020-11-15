@@ -259,8 +259,8 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                                                         key: 'logs',
                                                         loadLogs: () =>
                                                             selected.kind === 'Sensor'
-                                                                ? services.sensor.sensorsLogs(this.namespace, selected.name, selected.key, 50).map(log)
-                                                                : services.eventSource.eventSourcesLogs(this.namespace, selected.name, '', selected.key, 50).map(log),
+                                                                ? services.sensor.sensorsLogs(this.namespace, selected.name, selected.key, '', 50).map(log)
+                                                                : services.eventSource.eventSourcesLogs(this.namespace, selected.name, '', selected.key, '', 50).map(log),
                                                         shouldRepeat: () => false
                                                     }}
                                                 />
@@ -425,7 +425,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         this.markActivationsSubscriptions = [
             services.eventSource
-                .eventSourcesLogs(this.namespace, '', '', '', 0)
+                .eventSourcesLogs(this.namespace, '', '', '', 'dispatching', 0)
                 .filter(e => !!e.eventSourceName)
                 .subscribe(
                     e =>
@@ -439,7 +439,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         ),
                     error => this.setState({error})
                 ),
-            services.sensor.sensorsLogs(this.namespace, '', '', 0).subscribe(
+            services.sensor.sensorsLogs(this.namespace, '', '', 'successfully processed', 0).subscribe(
                 e => {
                     this.markActive(
                         ID.join({

@@ -15,23 +15,27 @@ message ListSensorsRequest {
 
 message SensorsLogsRequest {
     string namespace = 1;
-    // optional
+    // optional - only return entries for this sensor name
     string name = 2;
-    // optional
+    // optional - only return entries for this trigger
     string triggerName = 3;
-    k8s.io.api.core.v1.PodLogOptions podLogOptions = 4;
+    // option - only return entries where `msg` contains this regular expressions
+    string grep = 4;
+    k8s.io.api.core.v1.PodLogOptions podLogOptions = 5;
 }
 
 // structured log entry
 message LogEntry {
     string namespace = 1;
     string sensorName = 2;
-    // optional
+    // optional - any trigger name
     string triggerName = 3;
     string level = 5;
     k8s.io.apimachinery.pkg.apis.meta.v1.Time time = 6;
     string msg = 7;
+    // optional - trigger dependency name
     string dependencyName = 8;
+    // optional - Cloud Event context
     string eventContext = 9;
 }
 

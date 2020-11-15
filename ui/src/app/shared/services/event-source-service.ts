@@ -12,7 +12,7 @@ export class EventSourceService {
             .map(line => JSON.parse(line).result as EventSourceWatchEvent);
     }
 
-    public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', tailLines = -1) {
+    public eventSourcesLogs(namespace: string, name = '', eventSourceType = '', eventName = '', grep = '', tailLines = -1) {
         const params = ['podLogOptions.follow=true'];
         if (name) {
             params.push('name=' + name);
@@ -22,6 +22,9 @@ export class EventSourceService {
         }
         if (eventName) {
             params.push('eventName=' + eventName);
+        }
+        if (grep) {
+            params.push('grep=' + grep);
         }
         if (tailLines >= 0) {
             params.push('podLogOptions.tailLines=' + tailLines);

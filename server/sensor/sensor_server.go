@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	esv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	sv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
@@ -33,6 +34,10 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 	if in.Name != "" {
 		listOptions.LabelSelector += "=" + in.Name
 	}
+	grep, err := regexp.Compile(in.Grep)
+	if err != nil {
+		return err
+	}
 	return logs.LogPods(
 		svr.Context(),
 		in.Namespace,
@@ -49,6 +54,10 @@ func (s *sensorServer) SensorsLogs(in *sensorpkg.SensorsLogsRequest, svr sensorp
 			}
 			_ = json.Unmarshal(data, e)
 			if in.TriggerName != "" && in.TriggerName != e.TriggerName {
+				return nil
+			}
+
+			if !grep.MatchString(e.Msg) {
 				return nil
 			}
 			return svr.Send(e)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	esv1 "github.com/argoproj/argo-events/pkg/apis/eventsource/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,10 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 	if in.Name != "" {
 		listOptions.LabelSelector += "=" + in.Name
 	}
+	grep, err := regexp.Compile(in.Grep)
+	if err != nil {
+		return err
+	}
 	return logs.LogPods(
 		svr.Context(),
 		in.Namespace,
@@ -51,6 +56,9 @@ func (e *eventSourceServer) EventSourcesLogs(in *eventsourcepkg.EventSourcesLogs
 				return nil
 			}
 			if in.EventName != "" && in.EventName != e.EventName {
+				return nil
+			}
+			if !grep.MatchString(e.Msg) {
 				return nil
 			}
 			return svr.Send(e)
