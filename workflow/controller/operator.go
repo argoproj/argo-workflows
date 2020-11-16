@@ -206,6 +206,7 @@ func (woc *wfOperationCtx) operate() {
 			return
 		}
 		woc.wf.Status.ArtifactRepositoryRef = ref
+		woc.updated = true
 	}
 
 	repo, err := woc.controller.artifactRepositories.Get(woc.wf.Status.ArtifactRepositoryRef)
