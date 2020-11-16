@@ -9,7 +9,7 @@ export class SensorService {
     public watch(namespace: string, resourceVersion: string) {
         return requests
             .loadEventSource(`api/v1/stream/sensors/${namespace}?listOptions.resourceVersion=${resourceVersion}`)
-            .map(line => JSON.parse(line).result as SensorWatchEvent);
+            .map(line => line && (JSON.parse(line).result as SensorWatchEvent));
     }
 
     public sensorsLogs(namespace: string, name = '', triggerName = '', grep = '', tailLines = -1) {

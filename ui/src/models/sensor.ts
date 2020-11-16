@@ -43,10 +43,7 @@ export interface LogEntry {
     msg: string;
 }
 
-export interface SensorWatchEvent {
-    type: 'ADDED' | 'UPDATED' | 'DELETED';
-    object: Sensor;
-}
+export type SensorWatchEvent = kubernetes.WatchEvent<Sensor>;
 
 export const triggerTypes: {[key: string]: string} = {
     argoWorkflow: 'ArgoWorkflow',

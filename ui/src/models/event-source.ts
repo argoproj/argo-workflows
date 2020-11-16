@@ -47,12 +47,9 @@ export interface LogEntry {
     msg: string;
 }
 
-export interface EventSourceWatchEvent {
-    type: 'ADDED' | 'UPDATED' | 'DELETED';
-    object: EventSource;
-}
+export type EventSourceWatchEvent = kubernetes.WatchEvent<EventSource>;
 
-export const eventSources: {[key: string]: string} = {
+export const eventSourceTypes: {[key: string]: string} = {
     amqp: 'AMQP',
     azureEventsHub: 'AzureEventsHub',
     calendar: 'Calendar',

@@ -23,7 +23,7 @@ const reconnectAfterMs = 3000;
  */
 export class ListWatch<T extends Resource> {
     private readonly list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>;
-    private readonly watch: (resourceVersion: string) => Observable<{object: T; type: Type}>;
+    private readonly watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>;
     private readonly onLoad: (metadata: kubernetes.ListMeta) => void;
     private readonly onChange: (items: T[]) => void;
     private readonly onError: (error: Error) => void;
@@ -35,7 +35,7 @@ export class ListWatch<T extends Resource> {
 
     constructor(
         list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>,
-        watch: (resourceVersion: string) => Observable<{object: T; type: Type}>,
+        watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>,
         onLoad: (metadata: kubernetes.ListMeta) => void, // called when the list is loaded
         onChange: (items: T[]) => void, // called whenever items change, also called, when watches is re-established after error, so should clear any errors
         onError: (error: Error) => void, // called on any error
@@ -54,7 +54,7 @@ export class ListWatch<T extends Resource> {
     public start() {
         this.list()
             .then(x => {
-                this.items = x.items.sort(this.sorter);
+                this.items = (x.items || []).sort(this.sorter);
                 this.lastResourceVersion = x.metadata.resourceVersion;
                 this.onLoad(x.metadata);
                 this.onChange(this.items);
@@ -103,7 +103,7 @@ export class ListWatch<T extends Resource> {
  * This is used to update (or delete) and item in a the list.
  */
 const mergeItem = <T extends Resource>(item: T, type: Type, items: T[]): T[] => {
-    const index = items.findIndex(x => x.metadata.uid === x.metadata.uid);
+    const index = items.findIndex(x => x.metadata.uid === item.metadata.uid);
     if (type === 'DELETED') {
         if (index > -1) {
             items.splice(index, 1);

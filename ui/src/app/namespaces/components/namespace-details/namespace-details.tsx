@@ -2,8 +2,8 @@ import {Page, SlidingPanel, Tabs} from 'argo-ui/src/index';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Subscription} from 'rxjs';
-import {Condition, kubernetes} from '../../../../models';
-import {EventSource, eventSources} from '../../../../models/event-source';
+import {Condition} from '../../../../models';
+import {EventSource, eventSourceTypes} from '../../../../models/event-source';
 import {Sensor, triggerTypes} from '../../../../models/sensor';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
@@ -12,11 +12,12 @@ import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
+import {ZeroState} from '../../../shared/components/zero-state';
+import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
-import {EventsZeroState} from './events-zero-state';
 import {icons} from './icons';
 import {ID, Type} from './id';
 
@@ -28,7 +29,8 @@ interface State {
     selectedId?: string;
     tab?: string;
     error?: Error;
-    resources: {[id: string]: {metadata: kubernetes.ObjectMeta; status?: {conditions?: Condition[]}}};
+    eventSources?: EventSource[];
+    sensors?: Sensor[];
     active: {[id: string]: any};
 }
 
@@ -41,7 +43,7 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
 
 const types = () => {
     const v: {[label: string]: boolean} = {sensor: true, conditions: true};
-    Object.keys(eventSources)
+    Object.keys(eventSourceTypes)
         .concat(Object.keys(triggerTypes))
         .forEach(label => (v[label] = true));
     return v;
@@ -49,7 +51,8 @@ const types = () => {
 
 export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
     private markActivationsSubscriptions: Subscription[];
-    private watchSubscriptions: Subscription[] = [];
+    private eventSourceListWatch: ListWatch<EventSource>;
+    private sensorListWatch: ListWatch<Sensor>;
 
     private set selectedId(selectedId: string) {
         this.setState({selectedId}, this.saveHistory);
@@ -90,90 +93,80 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
 
     private get graph(): Graph {
         const graph = new Graph();
-        Object.entries(this.state.resources)
-            .filter(([id]) => ID.split(id).type === 'Sensor')
-            .forEach(([sensorId, sensor]) => {
-                graph.nodes.set(sensorId, {
-                    type: 'sensor',
-                    label: sensor.metadata.name,
-                    icon: icons.Sensor,
-                    classNames: status(sensor)
-                });
-            });
-
-        Object.entries(this.state.resources)
-            .filter(([eventSourceId]) => ID.split(eventSourceId).type === 'EventSource')
-            .forEach(([, eventSource]) => {
-                const spec = (eventSource as EventSource).spec;
-                Object.entries(spec)
-                    .filter(([typeKey]) => ['template', 'service'].indexOf(typeKey) < 0)
-                    .forEach(([typeKey, type]) => {
-                        Object.keys(type).forEach(key => {
-                            const eventId = ID.join({
-                                type: 'EventSource',
-                                namespace: eventSource.metadata.namespace,
-                                name: eventSource.metadata.name,
-                                key
-                            });
-                            graph.nodes.set(eventId, {
-                                type: typeKey,
-                                label: key,
-                                classNames: status(eventSource),
-                                icon: icons[eventSources[typeKey] + 'EventSource']
-                            });
+        (this.state.eventSources || []).forEach(eventSource => {
+            Object.entries(eventSource.spec)
+                .filter(([typeKey]) => ['template', 'service'].indexOf(typeKey) < 0)
+                .forEach(([typeKey, type]) => {
+                    Object.keys(type).forEach(key => {
+                        const eventId = ID.join({
+                            type: 'EventSource',
+                            namespace: eventSource.metadata.namespace,
+                            name: eventSource.metadata.name,
+                            key
+                        });
+                        graph.nodes.set(eventId, {
+                            type: typeKey,
+                            label: key,
+                            classNames: status(eventSource),
+                            icon: icons[eventSourceTypes[typeKey] + 'EventSource']
                         });
                     });
-            });
-        Object.entries(this.state.resources)
-            .filter(([sensorId]) => ID.split(sensorId).type === 'Sensor')
-            .forEach(([sensorId, sensor]) => {
-                const spec = (sensor as Sensor).spec;
-                (spec.dependencies || []).forEach(d => {
-                    const eventId = ID.join({
-                        type: 'EventSource',
-                        namespace: sensor.metadata.namespace,
-                        name: d.eventSourceName,
-                        key: d.eventName
-                    });
-                    graph.edges.set({v: eventId, w: sensorId}, {label: d.name, classNames: this.edgeClassNames(eventId)});
                 });
-                (spec.triggers || [])
-                    .map(t => t.template)
-                    .filter(template => template)
-                    .forEach(template => {
-                        const triggerTypeKey = Object.keys(template).filter(t => ['name', 'conditions'].indexOf(t) === -1)[0];
-                        const triggerId = ID.join({
-                            type: 'Trigger',
+        });
+        (this.state.sensors || []).forEach(sensor => {
+            const sensorId = ID.join({type: 'Sensor', namespace: sensor.metadata.namespace, name: sensor.metadata.name});
+            graph.nodes.set(sensorId, {
+                type: 'sensor',
+                label: sensor.metadata.name,
+                icon: icons.Sensor,
+                classNames: status(sensor)
+            });
+            (sensor.spec.dependencies || []).forEach(d => {
+                const eventId = ID.join({
+                    type: 'EventSource',
+                    namespace: sensor.metadata.namespace,
+                    name: d.eventSourceName,
+                    key: d.eventName
+                });
+                graph.edges.set({v: eventId, w: sensorId}, {label: d.name, classNames: this.edgeClassNames(eventId)});
+            });
+            (sensor.spec.triggers || [])
+                .map(t => t.template)
+                .filter(template => template)
+                .forEach(template => {
+                    const triggerTypeKey = Object.keys(template).filter(t => ['name', 'conditions'].indexOf(t) === -1)[0];
+                    const triggerId = ID.join({
+                        type: 'Trigger',
+                        namespace: sensor.metadata.namespace,
+                        name: sensor.metadata.name,
+                        key: template.name
+                    });
+                    graph.nodes.set(triggerId, {
+                        label: template.name,
+                        type: triggerTypeKey,
+                        classNames: status(sensor),
+                        icon: icons[triggerTypes[triggerTypeKey] + 'Trigger']
+                    });
+                    if (template.conditions) {
+                        const conditionsId = ID.join({
+                            type: 'Conditions',
                             namespace: sensor.metadata.namespace,
                             name: sensor.metadata.name,
-                            key: template.name
+                            key: template.conditions
                         });
-                        graph.nodes.set(triggerId, {
-                            label: template.name,
-                            type: triggerTypeKey,
-                            classNames: status(sensor),
-                            icon: icons[triggerTypes[triggerTypeKey] + 'Trigger']
+                        graph.nodes.set(conditionsId, {
+                            type: 'conditions',
+                            label: template.conditions,
+                            icon: icons.Conditions,
+                            classNames: ''
                         });
-                        if (template.conditions) {
-                            const conditionsId = ID.join({
-                                type: 'Conditions',
-                                namespace: sensor.metadata.namespace,
-                                name: sensor.metadata.name,
-                                key: template.conditions
-                            });
-                            graph.nodes.set(conditionsId, {
-                                type: 'conditions',
-                                label: template.conditions,
-                                icon: icons.Conditions,
-                                classNames: ''
-                            });
-                            graph.edges.set({v: sensorId, w: conditionsId}, {classNames: this.edgeClassNames(sensorId)});
-                            graph.edges.set({v: conditionsId, w: triggerId}, {classNames: this.edgeClassNames(triggerId)});
-                        } else {
-                            graph.edges.set({v: sensorId, w: triggerId}, {classNames: this.edgeClassNames(triggerId)});
-                        }
-                    });
-            });
+                        graph.edges.set({v: sensorId, w: conditionsId}, {classNames: this.edgeClassNames(sensorId)});
+                        graph.edges.set({v: conditionsId, w: triggerId}, {classNames: this.edgeClassNames(triggerId)});
+                    } else {
+                        graph.edges.set({v: sensorId, w: triggerId}, {classNames: this.edgeClassNames(triggerId)});
+                    }
+                });
+        });
         return graph;
     }
 
@@ -185,7 +178,6 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         super(props, context);
         this.state = {
             namespace: this.props.match.params.namespace || '',
-            resources: {},
             active: {},
             selectedId: this.queryParam('selectedId'),
             tab: this.queryParam('tab'),
@@ -286,7 +278,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     public componentWillUnmount() {
-        this.stopWatches();
+        this.stopListWatches();
         this.stopMarkingActivations();
     }
 
@@ -296,30 +288,48 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         }
         const {type, namespace, name, key} = ID.split(i);
         const kind: Type = ({Trigger: 'Sensor'} as {[key: string]: Type})[type] || type;
-        return {namespace, kind, name, key, value: this.state.resources[ID.join({type: kind, namespace, name})]};
+        return {
+            namespace,
+            kind,
+            name,
+            key,
+            value:
+                kind === 'EventSource'
+                    ? this.state.eventSources.find(x => x.metadata.namespace === namespace && x.metadata.name === name)
+                    : this.state.sensors.find(x => x.metadata.namespace === namespace && x.metadata.name === name)
+        };
     }
 
     private renderGraph() {
-        if (this.state.error) {
-            return JSON.stringify(this.state.error).includes('could not find the requested resource') ? (
-                <EventsZeroState title='Not installed' />
-            ) : (
-                <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} style={{margin: 20}} />
-            );
-        }
-        const g = this.graph;
-        if (g.nodes.size === 0) {
-            return <EventsZeroState title='Nothing to show' />;
-        }
+        const graph = this.graph;
         return (
-            <GraphPanel
-                graph={g}
-                selectedNode={this.selectedId}
-                onNodeSelect={selectedId => (this.selectedId = selectedId)}
-                horizontal={true}
-                types={types()}
-                classNames={{Pending: true, Listening: true, Active: true}}
-            />
+            <>
+                {this.state.error && <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} style={{margin: 20}} />}
+                {graph.nodes.size === 0 ? (
+                    <ZeroState title='Nothing to show'>
+                        <p>
+                            Argo Events allow you to trigger workflows, lambadas, and other actions based on receiving events from things like webhooks, message, or a cron
+                            schedule.
+                        </p>
+                        <p>
+                            The "mark activations" buttons allows you to see when an entity "activates". This is determined by it writing a log entry. Helpful to debug when things
+                            are happening.
+                        </p>
+                        <p>
+                            <a href='https://argoproj.github.io/argo-events/'>Learn more</a>
+                        </p>
+                    </ZeroState>
+                ) : (
+                    <GraphPanel
+                        graph={graph}
+                        selectedNode={this.selectedId}
+                        onNodeSelect={selectedId => (this.selectedId = selectedId)}
+                        horizontal={true}
+                        types={types()}
+                        classNames={{Pending: true, Listening: true, Active: true}}
+                    />
+                )}
+            </>
         );
     }
 
@@ -339,83 +349,38 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private fetch(namespace: string) {
-        const updateResources = (s: State, type: 'EventSource' | 'Sensor', list: {items: {metadata: kubernetes.ObjectMeta}[]}) => {
-            (list.items || []).forEach(v => {
-                s.resources[ID.join({type, namespace: v.metadata.namespace, name: v.metadata.name})] = v;
-            });
-            return {resources: s.resources};
-        };
-        this.stopWatches();
-        this.setState({resources: {}}, () => {
-            Promise.all([
-                services.eventSource.list(namespace).then(list =>
-                    this.setState(
-                        s => updateResources(s, 'EventSource', list),
-                        () => {
-                            this.watchSubscriptions.push(
-                                services.sensor
-                                    .watch(namespace, list.metadata.resourceVersion)
-                                    .filter(x => !!x)
-                                    .subscribe(
-                                        x =>
-                                            this.setState(s => {
-                                                const id = ID.join({
-                                                    type: 'Sensor',
-                                                    namespace: x.object.metadata.namespace,
-                                                    name: x.object.metadata.name
-                                                });
-                                                const resources = Object.assign({}, s.resources);
-                                                if (x.type === 'DELETED') {
-                                                    delete resources[id];
-                                                } else {
-                                                    resources[id] = x.object;
-                                                }
-                                                return {resources};
-                                            }),
-                                        error => this.setState({error})
-                                    )
-                            );
-                        }
-                    )
-                ),
-                services.sensor.list(namespace).then(list => {
-                    this.setState(
-                        s => updateResources(s, 'Sensor', list),
-                        () =>
-                            this.watchSubscriptions.push(
-                                services.eventSource
-                                    .watch(namespace, list.metadata.resourceVersion)
-                                    .filter(x => !!x)
-                                    .subscribe(
-                                        x =>
-                                            this.setState(s => {
-                                                const id = ID.join({
-                                                    type: 'EventSource',
-                                                    namespace: x.object.metadata.namespace,
-                                                    name: x.object.metadata.name
-                                                });
-                                                const resources = Object.assign({}, s.resources);
-                                                if (x.type === 'DELETED') {
-                                                    delete resources[id];
-                                                } else {
-                                                    resources[id] = x.object;
-                                                }
-                                                return {resources};
-                                            }),
-                                        error => this.setState({error})
-                                    )
-                            )
-                    );
-                })
-            ])
-                .then(() => this.setState({error: null, namespace}, this.saveHistory))
-                .then(() => {
-                    if (this.markActivations) {
-                        this.startMarkingActivations();
-                    }
-                })
-                .catch(error => this.setState({error}));
+        this.setState({namespace}, () => {
+            this.stopListWatches();
+            this.eventSourceListWatch = new ListWatch<EventSource>(
+                () => services.eventSource.list(namespace),
+                resourceVersion => services.eventSource.watch(namespace, resourceVersion),
+                () => {
+                    /*noop*/
+                },
+                eventSources => this.setState({eventSources, error: null}),
+                error => this.setState({error})
+            );
+            this.sensorListWatch = new ListWatch<Sensor>(
+                () => services.sensor.list(namespace),
+                resourceVersion => services.sensor.watch(namespace, resourceVersion),
+                () => {
+                    /*noop*/
+                },
+                sensors => this.setState({sensors, error: null}),
+                error => this.setState({error})
+            );
+            this.eventSourceListWatch.start();
+            this.sensorListWatch.start();
         });
+    }
+
+    private stopListWatches() {
+        if (this.eventSourceListWatch) {
+            this.eventSourceListWatch.stop();
+        }
+        if (this.sensorListWatch) {
+            this.sensorListWatch.stop();
+        }
     }
 
     private stopMarkingActivations() {
@@ -484,11 +449,6 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
             }, 2000);
             return {active: state.active};
         });
-    }
-
-    private stopWatches() {
-        this.watchSubscriptions.forEach(x => x.unsubscribe());
-        this.watchSubscriptions = [];
     }
 
     private edgeClassNames(id: string) {
