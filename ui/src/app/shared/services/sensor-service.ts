@@ -26,6 +26,6 @@ export class SensorService {
         if (tailLines >= 0) {
             params.push('podLogOptions.tailLines=' + tailLines);
         }
-        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}/logs?${params.join('&')}`).map(line => JSON.parse(line).result as LogEntry);
+        return requests.loadEventSource(`api/v1/stream/sensors/${namespace}/logs?${params.join('&')}`).map(line => line && (JSON.parse(line).result as LogEntry));
     }
 }

@@ -353,24 +353,27 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         s => updateResources(s, 'EventSource', list),
                         () => {
                             this.watchSubscriptions.push(
-                                services.sensor.watch(namespace, list.metadata.resourceVersion).subscribe(
-                                    x =>
-                                        this.setState(s => {
-                                            const id = ID.join({
-                                                type: 'Sensor',
-                                                namespace: x.object.metadata.namespace,
-                                                name: x.object.metadata.name
-                                            });
-                                            const resources = Object.assign({}, s.resources);
-                                            if (x.type === 'DELETED') {
-                                                delete resources[id];
-                                            } else {
-                                                resources[id] = x.object;
-                                            }
-                                            return {resources};
-                                        }),
-                                    error => this.setState({error})
-                                )
+                                services.sensor
+                                    .watch(namespace, list.metadata.resourceVersion)
+                                    .filter(x => !!x)
+                                    .subscribe(
+                                        x =>
+                                            this.setState(s => {
+                                                const id = ID.join({
+                                                    type: 'Sensor',
+                                                    namespace: x.object.metadata.namespace,
+                                                    name: x.object.metadata.name
+                                                });
+                                                const resources = Object.assign({}, s.resources);
+                                                if (x.type === 'DELETED') {
+                                                    delete resources[id];
+                                                } else {
+                                                    resources[id] = x.object;
+                                                }
+                                                return {resources};
+                                            }),
+                                        error => this.setState({error})
+                                    )
                             );
                         }
                     )
@@ -380,24 +383,27 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         s => updateResources(s, 'Sensor', list),
                         () =>
                             this.watchSubscriptions.push(
-                                services.eventSource.watch(namespace, list.metadata.resourceVersion).subscribe(
-                                    x =>
-                                        this.setState(s => {
-                                            const id = ID.join({
-                                                type: 'EventSource',
-                                                namespace: x.object.metadata.namespace,
-                                                name: x.object.metadata.name
-                                            });
-                                            const resources = Object.assign({}, s.resources);
-                                            if (x.type === 'DELETED') {
-                                                delete resources[id];
-                                            } else {
-                                                resources[id] = x.object;
-                                            }
-                                            return {resources};
-                                        }),
-                                    error => this.setState({error})
-                                )
+                                services.eventSource
+                                    .watch(namespace, list.metadata.resourceVersion)
+                                    .filter(x => !!x)
+                                    .subscribe(
+                                        x =>
+                                            this.setState(s => {
+                                                const id = ID.join({
+                                                    type: 'EventSource',
+                                                    namespace: x.object.metadata.namespace,
+                                                    name: x.object.metadata.name
+                                                });
+                                                const resources = Object.assign({}, s.resources);
+                                                if (x.type === 'DELETED') {
+                                                    delete resources[id];
+                                                } else {
+                                                    resources[id] = x.object;
+                                                }
+                                                return {resources};
+                                            }),
+                                        error => this.setState({error})
+                                    )
                             )
                     );
                 })
@@ -426,7 +432,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         this.markActivationsSubscriptions = [
             services.eventSource
                 .eventSourcesLogs(this.namespace, '', '', '', 'dispatching', 0)
-                .filter(e => !!e.eventSourceName)
+                .filter(e => !!e && !!e.eventSourceName)
                 .subscribe(
                     e =>
                         this.markActive(
@@ -439,28 +445,31 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
                         ),
                     error => this.setState({error})
                 ),
-            services.sensor.sensorsLogs(this.namespace, '', '', 'successfully processed', 0).subscribe(
-                e => {
-                    this.markActive(
-                        ID.join({
-                            type: 'Sensor',
-                            namespace: e.namespace,
-                            name: e.sensorName
-                        })
-                    );
-                    if (e.triggerName) {
+            services.sensor
+                .sensorsLogs(this.namespace, '', '', 'successfully processed', 0)
+                .filter(e => !!e)
+                .subscribe(
+                    e => {
                         this.markActive(
                             ID.join({
-                                type: 'Trigger',
+                                type: 'Sensor',
                                 namespace: e.namespace,
-                                name: e.sensorName,
-                                key: e.triggerName
+                                name: e.sensorName
                             })
                         );
-                    }
-                },
-                error => this.setState({error})
-            )
+                        if (e.triggerName) {
+                            this.markActive(
+                                ID.join({
+                                    type: 'Trigger',
+                                    namespace: e.namespace,
+                                    name: e.sensorName,
+                                    key: e.triggerName
+                                })
+                            );
+                        }
+                    },
+                    error => this.setState({error})
+                )
         ];
     }
 
