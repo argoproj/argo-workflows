@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	swagger := map[string]interface{}{}
+	swagger := obj{}
 	{
 		f, err := os.Open("api/openapi-spec/swagger.json")
 		if err != nil {
@@ -18,18 +18,30 @@ func main() {
 		}
 	}
 	{
-		schema := map[string]interface{}{
+		definitions := swagger["definitions"]
+		for _, kind := range []string{
+			"CronWorkflow",
+			"ClusterWorkflowTemplate",
+			"Workflow",
+			"WorkflowEventBinding",
+			"WorkflowTemplate",
+		} {
+			v := definitions.(obj)["io.argoproj.workflow.v1alpha1."+kind].(obj)["properties"].(obj)
+			v["apiVersion"].(obj)["const"] = "argoproj.io/v1alpha1"
+			v["kind"].(obj)["const"] = kind
+		}
+		schema := obj{
 			"$id":     "http://workflows.argoproj.io/workflows.json", // don't really know what this should be
 			"$schema": "http://json-schema.org/schema#",
 			"type":    "object",
 			"oneOf": []interface{}{
-				map[string]string{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"},
-				map[string]string{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"},
-				map[string]string{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"},
-				map[string]string{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBinding"},
-				map[string]string{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
+				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"},
+				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"},
+				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"},
+				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowEventBinding"},
+				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"},
 			},
-			"definitions": swagger["definitions"],
+			"definitions": definitions,
 		}
 		f, err := os.Create("api/jsonschema/schema.json")
 		if err != nil {
