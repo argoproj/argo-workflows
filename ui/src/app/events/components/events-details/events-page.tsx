@@ -347,7 +347,7 @@ export class EventsPage extends BasePage<RouteComponentProps<any>, State> {
         if (this.markActivations) {
             params.push('markActivations=' + this.markActivations);
         }
-        this.appContext.router.history.push(uiUrl(`namespaces/${this.namespace}?${params.join('&')}`));
+        this.appContext.router.history.push(uiUrl(`events/${this.namespace}?${params.join('&')}`));
         Utils.setCurrentNamespace(this.namespace);
     }
 
