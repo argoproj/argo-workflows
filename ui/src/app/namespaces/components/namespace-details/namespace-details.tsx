@@ -88,7 +88,10 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     private set namespace(namespace: string) {
-        this.fetch(namespace);
+        this.setState({namespace}, () => {
+            this.saveHistory();
+            this.fetch();
+        });
     }
 
     private get graph(): Graph {
@@ -274,7 +277,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
     }
 
     public componentDidMount(): void {
-        this.fetch(this.namespace);
+        this.fetch();
     }
 
     public componentWillUnmount() {
@@ -304,7 +307,7 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         const graph = this.graph;
         return (
             <>
-                {this.state.error && <ErrorNotice error={this.state.error} onReload={() => this.fetch(this.namespace)} style={{margin: 20}} />}
+                <ErrorNotice error={this.state.error} onReload={() => this.fetch()} style={{margin: 20}} />
                 {graph.nodes.size === 0 ? (
                     <ZeroState title='Nothing to show'>
                         <p>
@@ -348,30 +351,26 @@ export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> 
         Utils.setCurrentNamespace(this.namespace);
     }
 
-    private fetch(namespace: string) {
-        this.setState({namespace}, () => {
-            this.stopListWatches();
-            this.eventSourceListWatch = new ListWatch<EventSource>(
-                () => services.eventSource.list(namespace),
-                resourceVersion => services.eventSource.watch(namespace, resourceVersion),
-                () => {
-                    /*noop*/
-                },
-                eventSources => this.setState({eventSources, error: null}),
-                error => this.setState({error})
-            );
-            this.sensorListWatch = new ListWatch<Sensor>(
-                () => services.sensor.list(namespace),
-                resourceVersion => services.sensor.watch(namespace, resourceVersion),
-                () => {
-                    /*noop*/
-                },
-                sensors => this.setState({sensors, error: null}),
-                error => this.setState({error})
-            );
-            this.eventSourceListWatch.start();
-            this.sensorListWatch.start();
-        });
+    private fetch() {
+        this.stopListWatches();
+        this.eventSourceListWatch = new ListWatch<EventSource>(
+            () => services.eventSource.list(this.namespace),
+            resourceVersion => services.eventSource.watch(this.namespace, resourceVersion),
+            () => this.setState({error: null}),
+            () => this.setState({error: null}),
+            eventSources => this.setState({eventSources}),
+            error => this.setState({error})
+        );
+        this.sensorListWatch = new ListWatch<Sensor>(
+            () => services.sensor.list(this.namespace),
+            resourceVersion => services.sensor.watch(this.namespace, resourceVersion),
+            () => this.setState({error: null}),
+            () => this.setState({error: null}),
+            sensors => this.setState({sensors}),
+            error => this.setState({error})
+        );
+        this.eventSourceListWatch.start();
+        this.sensorListWatch.start();
     }
 
     private stopListWatches() {

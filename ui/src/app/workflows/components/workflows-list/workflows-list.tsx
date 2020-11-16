@@ -221,7 +221,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     },
                     this.saveHistory
                 ),
-            items => this.setState({error: null, workflows: (items || []).slice(0, this.state.pagination.limit)}),
+            () => this.setState({error: null}),
+            workflows => this.setState({workflows: workflows.slice(0, this.state.pagination.limit || 999999)}),
             error => this.setState({error}),
             sortByYouth
         );

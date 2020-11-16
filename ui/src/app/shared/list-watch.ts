@@ -1,5 +1,6 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {Observable, Subscription} from 'rxjs';
+import {Observable} from 'rxjs';
+import {RetryWatch} from './retry-watch';
 
 interface Resource {
     metadata: kubernetes.ObjectMeta;
@@ -23,27 +24,34 @@ const reconnectAfterMs = 3000;
  */
 export class ListWatch<T extends Resource> {
     private readonly list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>;
-    private readonly watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>;
     private readonly onLoad: (metadata: kubernetes.ListMeta) => void;
     private readonly onChange: (items: T[]) => void;
     private readonly onError: (error: Error) => void;
     private readonly sorter: (a: T, b: T) => number;
     private items: T[];
-    private lastResourceVersion: string;
-    private subscription: Subscription;
-    private timeout: any; // should be `number`
+    private retryWatch: RetryWatch<T>;
+    private timeout: any;
 
     constructor(
         list: () => Promise<{metadata: kubernetes.ListMeta; items: T[]}>,
         watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>,
         onLoad: (metadata: kubernetes.ListMeta) => void, // called when the list is loaded
-        onChange: (items: T[]) => void, // called whenever items change, also called, when watches is re-established after error, so should clear any errors
+        onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
+        onChange: (items: T[]) => void, // called whenever items change
         onError: (error: Error) => void, // called on any error
         sorter: Sorter = sortByName
     ) {
         this.onLoad = onLoad;
         this.list = list;
-        this.watch = watch;
+        this.retryWatch = new RetryWatch<T>(
+            watch,
+            onOpen,
+            e => {
+                this.items = mergeItem(e.object, e.type, this.items).sort(this.sorter);
+                onChange(this.items);
+            },
+            onError
+        );
         this.onChange = onChange;
         this.onError = onError;
         this.sorter = sorter;
@@ -55,10 +63,9 @@ export class ListWatch<T extends Resource> {
         this.list()
             .then(x => {
                 this.items = (x.items || []).sort(this.sorter);
-                this.lastResourceVersion = x.metadata.resourceVersion;
                 this.onLoad(x.metadata);
                 this.onChange(this.items);
-                this.startWatching();
+                this.retryWatch.start(x.metadata.resourceVersion);
             })
             .catch(e => {
                 clearTimeout(this.timeout);
@@ -71,31 +78,7 @@ export class ListWatch<T extends Resource> {
     // You should almost always  invoke on component unload.
     // Idempotent.
     public stop() {
-        this.stopWatching();
-    }
-
-    private startWatching() {
-        this.stopWatching();
-        this.subscription = this.watch(this.lastResourceVersion).subscribe(
-            next => {
-                if (next) {
-                    this.items = mergeItem(next.object, next.type, this.items).sort(this.sorter);
-                    this.lastResourceVersion = next.object.metadata.resourceVersion;
-                }
-                this.onChange(this.items);
-            },
-            e => {
-                clearTimeout(this.timeout);
-                this.onError(e);
-                this.timeout = setTimeout(() => this.startWatching(), reconnectAfterMs);
-            }
-        );
-    }
-
-    private stopWatching() {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
+        this.retryWatch.stop();
     }
 }
 
