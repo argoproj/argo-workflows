@@ -34,6 +34,9 @@ func secondarySwaggerGen() {
 		"definitions": definitions,
 	}
 	f, err := os.Create("pkg/apiclient/_.secondary.swagger.json")
+	if err != nil {
+		panic(err)
+	}
 	e := json.NewEncoder(f)
 	e.SetIndent("", "  ")
 	err = e.Encode(swagger)
