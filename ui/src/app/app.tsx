@@ -1,23 +1,22 @@
+import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
+
+import {NotificationType} from 'argo-ui/src/index';
 import {createBrowserHistory} from 'history';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Redirect, Route, Router, Switch} from 'react-router';
-
-import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
-import {uiUrl} from './shared/base';
-import {ContextApis, Provider} from './shared/context';
-
-import {NotificationType} from 'argo-ui/src/index';
 import {Version} from '../models';
 import apidocs from './apidocs';
 import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
+import events from './events';
 import help from './help';
 import login from './login';
-import namespaces from './namespaces';
 import reports from './reports';
+import {uiUrl} from './shared/base';
 import ErrorBoundary from './shared/components/error-boundary';
+import {ContextApis, Provider} from './shared/context';
 import {services} from './shared/services';
 import {Utils} from './shared/utils';
 import userinfo from './userinfo';
@@ -25,7 +24,7 @@ import workflowEventBindings from './workflow-event-bindings';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
-const namespacesUrl = uiUrl('namespaces');
+const eventsUrl = uiUrl('events');
 const workflowsUrl = uiUrl('workflows');
 const workflowsEventBindingsUrl = uiUrl('workflow-event-bindings');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
@@ -43,8 +42,8 @@ export const history = createBrowserHistory();
 
 const navItems = [
     {
-        title: 'Namespace',
-        path: namespacesUrl,
+        title: 'Events',
+        path: eventsUrl,
         iconClassName: 'fa fa-broadcast-tower'
     },
     {
@@ -154,8 +153,8 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                     <Redirect to={workflowsUrl} />
                                 </Route>
                                 {this.state.namespace && (
-                                    <Route exact={true} strict={true} path={namespacesUrl}>
-                                        <Redirect to={this.namespacesUrl} />
+                                    <Route exact={true} strict={true} path={eventsUrl}>
+                                        <Redirect to={this.eventsUrl} />
                                     </Route>
                                 )}
                                 <Route exact={true} strict={true} path={timelineUrl}>
@@ -191,7 +190,7 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
                                         <Redirect to={this.reportsUrl} />
                                     </Route>
                                 )}
-                                <Route path={namespacesUrl} component={namespaces.component} />
+                                <Route path={eventsUrl} component={events.component} />
                                 <Route path={workflowsUrl} component={workflows.component} />
                                 <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
                                 <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
@@ -211,8 +210,8 @@ export class App extends React.Component<{}, {version?: Version; popupProps: Pop
         );
     }
 
-    private get namespacesUrl() {
-        return namespacesUrl + '/' + (this.state.namespace || '');
+    private get eventsUrl() {
+        return eventsUrl + '/' + (this.state.namespace || '');
     }
 
     private get archivedWorkflowsUrl() {

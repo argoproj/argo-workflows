@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {Route, RouteComponentProps, Switch} from 'react-router';
-import {NamespaceDetails} from './namespace-details/namespace-details';
+import {EventsPage} from './events-details/events-page';
 
 export const NamespaceContainer = (props: RouteComponentProps<any>) => (
     <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace`} component={NamespaceDetails} />
+        <Route exact={true} path={`${props.match.path}/:namespace`} component={EventsPage} />
     </Switch>
 );

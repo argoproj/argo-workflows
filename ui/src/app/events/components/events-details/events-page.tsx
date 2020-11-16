@@ -49,7 +49,7 @@ const types = () => {
     return v;
 };
 
-export class NamespaceDetails extends BasePage<RouteComponentProps<any>, State> {
+export class EventsPage extends BasePage<RouteComponentProps<any>, State> {
     private markActivationsSubscriptions: Subscription[];
     private eventSourceListWatch: ListWatch<EventSource>;
     private sensorListWatch: ListWatch<Sensor>;
