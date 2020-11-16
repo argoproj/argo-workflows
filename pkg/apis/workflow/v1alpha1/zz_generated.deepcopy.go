@@ -1352,12 +1352,12 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 	*out = *in
 	if in.Default != nil {
 		in, out := &in.Default, &out.Default
-		*out = new(Int64OrString)
+		*out = new(AnyString)
 		**out = **in
 	}
 	if in.Value != nil {
 		in, out := &in.Value, &out.Value
-		*out = new(Int64OrString)
+		*out = new(AnyString)
 		**out = **in
 	}
 	if in.ValueFrom != nil {
@@ -1367,7 +1367,7 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 	}
 	if in.Enum != nil {
 		in, out := &in.Enum, &out.Enum
-		*out = make([]Int64OrString, len(*in))
+		*out = make([]AnyString, len(*in))
 		copy(*out, *in)
 	}
 	return
@@ -2082,7 +2082,7 @@ func (in *ValueFrom) DeepCopyInto(out *ValueFrom) {
 	}
 	if in.Default != nil {
 		in, out := &in.Default, &out.Default
-		*out = new(Int64OrString)
+		*out = new(AnyString)
 		**out = **in
 	}
 	return

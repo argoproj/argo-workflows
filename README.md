@@ -13,6 +13,8 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 
 Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
 
+[![Argo Workflows in 5 minutes](https://img.youtube.com/vi/TZgLkCFQ2tk/0.jpg)](https://www.youtube.com/watch?v=TZgLkCFQ2tk)
+
 ## Why Argo Workflows?
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
 * Cloud agnostic and can run on any Kubernetes cluster.

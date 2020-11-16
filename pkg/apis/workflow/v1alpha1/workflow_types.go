@@ -701,11 +701,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *AnyString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *Int64OrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *AnyString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -715,7 +715,7 @@ type Parameter struct {
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
-	Enum []Int64OrString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
+	Enum []AnyString `json:"enum,omitempty" protobuf:"bytes,6,rep,name=enum"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -740,7 +740,7 @@ type ValueFrom struct {
 	Supplied *SuppliedValueFrom `json:"supplied,omitempty" protobuf:"bytes,6,opt,name=supplied"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default *Int64OrString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *AnyString `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
