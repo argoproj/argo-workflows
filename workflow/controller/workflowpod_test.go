@@ -692,7 +692,7 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	inputParameters := []wfv1.Parameter{
 		{
 			Name:  "volume-name",
-			Value: wfv1.Int64OrStringPtr("test-name"),
+			Value: wfv1.AnyStringPtr("test-name"),
 		},
 	}
 
