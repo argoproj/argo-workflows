@@ -243,6 +243,7 @@ rules:
   - secrets
   verbs:
   - get
+  - create
 - apiGroups:
   - ""
   resources:
@@ -265,10 +266,10 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
   - serviceaccounts
   verbs:
   - get
+  - list
 - apiGroups:
   - argoproj.io
   resources:

@@ -28,7 +28,6 @@ import (
 const (
 	Prefix                              = "Bearer v2:"
 	issuer                              = "argo-server"                // the JWT issuer
-	expiry                              = 10 * time.Hour               // how long JWT are valid for
 	secretName                          = "sso"                        // where we store SSO secret
 	cookieEncryptionPrivateKeySecretKey = "cookieEncryptionPrivateKey" // the key name for the private key in the secret
 )
@@ -52,6 +51,7 @@ type sso struct {
 	privateKey      crypto.PrivateKey
 	encrypter       jose.Encrypter
 	rbacConfig      *rbac.Config
+	expiry          time.Duration
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -65,7 +65,15 @@ type Config struct {
 	RedirectURL  string                  `json:"redirectUrl"`
 	RBAC         *rbac.Config            `json:"rbac,omitempty"`
 	// additional scopes (on top of "openid")
-	Scopes []string `json:"scopes,omitempty"`
+	Scopes        []string        `json:"scopes,omitempty"`
+	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
+}
+
+func (c Config) GetSessionExpiry() time.Duration {
+	if c.SessionExpiry.Duration > 0 {
+		return c.SessionExpiry.Duration
+	}
+	return 10 * time.Hour
 }
 
 // Abstract methods of oidc.Provider that our code uses into an interface. That
@@ -114,7 +122,6 @@ func newSso(
 	if err != nil {
 		return nil, err
 	}
-
 	var clientIDObj *apiv1.Secret
 	if c.ClientID.Name == c.ClientSecret.Name {
 		clientIDObj = clientSecretObj
@@ -174,6 +181,7 @@ func newSso(
 		privateKey:      privateKey,
 		encrypter:       encrypter,
 		rbacConfig:      c.RBAC,
+		expiry:          c.GetSessionExpiry(),
 	}, nil
 }
 
@@ -225,7 +233,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(expiry))}, Groups: c.Groups}
+	argoClaims := &types.Claims{Claims: jwt.Claims{Issuer: issuer, Subject: c.Subject, Expiry: jwt.NewNumericDate(time.Now().Add(s.expiry))}, Groups: c.Groups}
 	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
 	if err != nil {
 		panic(err)
@@ -236,7 +244,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Value:    value,
 		Name:     "authorization",
 		Path:     s.baseHRef,
-		Expires:  time.Now().Add(expiry),
+		Expires:  time.Now().Add(s.expiry),
 		SameSite: http.SameSiteStrictMode,
 		Secure:   s.secure,
 	})
