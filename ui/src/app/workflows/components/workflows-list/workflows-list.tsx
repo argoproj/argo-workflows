@@ -129,7 +129,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     public componentWillUnmount(): void {
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()});
         if (this.listWatch) {
-            this.listWatch.stop()
+            this.listWatch.stop();
         }
     }
 
@@ -194,7 +194,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 }
                             />
                             <p>
-                                <ExampleManifests/>.
+                                <ExampleManifests />.
                             </p>
                         </SlidingPanel>
                     </Page>
@@ -205,26 +205,27 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination): void {
         if (this.listWatch) {
-            this.listWatch.stop()
+            this.listWatch.stop();
         }
         this.listWatch = new ListWatch(
             () => services.workflows.list(namespace, selectedPhases, selectedLabels, pagination),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases: selectedPhases, labels: selectedLabels, resourceVersion}),
             metadata =>
-                this.setState(({
+                this.setState(
+                    {
                         namespace,
                         pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: metadata.continue},
                         selectedPhases,
                         selectedLabels,
                         selectedWorkflows: new Map<string, models.Workflow>()
-                    }),
+                    },
                     this.saveHistory
                 ),
-            items => this.setState(({error: null, workflows: (items || []).slice(0, this.state.pagination.limit)})),
-            error => this.setState(({error})),
+            items => this.setState({error: null, workflows: (items || []).slice(0, this.state.pagination.limit)}),
+            error => this.setState({error}),
             sortByYouth
-        )
-        this.listWatch.start()
+        );
+        this.listWatch.start();
     }
 
     private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination) {
@@ -251,19 +252,19 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private renderWorkflows() {
         const counts = this.countsByCompleted();
-        return <>
-            {this.state.error &&
-            <ErrorNotice error={this.state.error}/>}
-            {!this.state.workflows ?
-                <Loading/> :
-                this.state.workflows.length === 0 ?
+        return (
+            <>
+                {this.state.error && <ErrorNotice error={this.state.error} />}
+                {!this.state.workflows ? (
+                    <Loading />
+                ) : this.state.workflows.length === 0 ? (
                     <ZeroState title='No workflows'>
                         <p>To create a new workflow, use the button above.</p>
                         <p>
-                            <ExampleManifests/>.
+                            <ExampleManifests />.
                         </p>
                     </ZeroState>
-                    :
+                ) : (
                     <>
                         {(counts.complete > 100 || counts.incomplete > 100) && (
                             <CostOptimisationNudge name='workflow-list'>
@@ -272,7 +273,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         )}
                         <div className='argo-table-list'>
                             <div className='row argo-table-list__head'>
-                                <div className='columns workflows-list__status small-1'/>
+                                <div className='columns workflows-list__status small-1' />
                                 <div className='row small-11'>
                                     <div className='columns small-3'>NAME</div>
                                     <div className='columns small-2'>NAMESPACE</div>
@@ -320,8 +321,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             pagination={this.state.pagination}
                         />
                     </>
-            }
-        </>
+                )}
+            </>
+        );
     }
 
     private updateCurrentlySelectedAndBatchActions(newSelectedWorkflows: Map<string, Workflow>): void {
@@ -340,7 +342,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             <Query>
                 {q => (
                     <div>
-                        <i className='fa fa-search'/>
+                        <i className='fa fa-search' />
                         {q.get('search') && (
                             <i
                                 className='fa fa-times'
@@ -365,7 +367,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             )}
                             renderItem={item => (
                                 <React.Fragment>
-                                    <i className='icon argo-icon-workflow'/> {item.label}
+                                    <i className='icon argo-icon-workflow' /> {item.label}
                                 </React.Fragment>
                             )}
                             onSelect={val => {

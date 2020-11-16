@@ -39,10 +39,10 @@ export default {
         return auth(superagent.del(apiUrl(url)));
     },
 
-    loadEventSource(url: string, onopen: () => void = null): Observable<string> {
+    loadEventSource(url: string): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
             const eventSource = new EventSource(url);
-            eventSource.onopen = onopen
+            eventSource.onopen = () => observer.next(null);
             eventSource.onmessage = x => observer.next(x.data);
             eventSource.onerror = x => observer.error(x);
             return () => {
