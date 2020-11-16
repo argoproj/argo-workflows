@@ -222,12 +222,11 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	var resultSpec wfv1.WorkflowSpec
 	err := json.Unmarshal([]byte(storedSpecResult), &resultSpec)
 	assert.NoError(err)
-	cancel, controller := newControllerWithDefaults()
-	defer cancel()
-	controller.Config.WorkflowDefaults = wfDefault
-	_, err = controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wft)
-	assert.NoError(err)
 	t.Run("SubmitSimpleWorkflowRef", func(t *testing.T) {
+		cancel, controller := newController(wft)
+		defer cancel()
+		controller.Config.WorkflowDefaults = wfDefault
+
 		wf := wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Namespace: "default"}, Spec: wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "workflow-template-submittable"}}}
 		woc := newWorkflowOperationCtx(&wf, controller)
 		woc.operate()
@@ -237,6 +236,10 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	})
 
 	t.Run("SubmitComplexWorkflowRef", func(t *testing.T) {
+		cancel, controller := newController(wft)
+		defer cancel()
+		controller.Config.WorkflowDefaults = wfDefault
+
 		ttlStrategy := wfv1.TTLStrategy{
 			SecondsAfterCompletion: pointer.Int32Ptr(10),
 		}
@@ -259,9 +262,13 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	})
 
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
+		cancel, controller := newController(wft)
+		defer cancel()
+		controller.Config.WorkflowDefaults = wfDefault
+
 		param := wfv1.Parameter{
 			Name:  "Test",
-			Value: wfv1.Int64OrStringPtr("welcome"),
+			Value: wfv1.AnyStringPtr("welcome"),
 		}
 		art := wfv1.Artifact{
 			Name: "TestA",
