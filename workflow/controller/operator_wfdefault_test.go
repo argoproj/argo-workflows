@@ -261,7 +261,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 	t.Run("SubmitComplexWorkflowRefWithArguments", func(t *testing.T) {
 		param := wfv1.Parameter{
 			Name:  "Test",
-			Value: wfv1.Int64OrStringPtr("welcome"),
+			Value: wfv1.AnyStringPtr("welcome"),
 		}
 		art := wfv1.Artifact{
 			Name: "TestA",
