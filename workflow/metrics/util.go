@@ -14,6 +14,7 @@ import (
 
 var (
 	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
+	invalidMetricLabelrror = "metric label '%s' is invalid: keys may only contain alphanumeric characters, '_', or ':'"
 	descRegex              = regexp.MustCompile(fmt.Sprintf(`Desc{fqName: "%s_%s_(.+?)", help: "(.+?)", constLabels: {`, argoNamespace, workflowsSubsystem))
 )
 
@@ -56,7 +57,11 @@ func ConstructRealTimeGaugeMetric(metricSpec *wfv1.Prometheus, valueFunc func() 
 
 func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	if metric == nil {
-		metric = newCounter(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels())
+		labels := metricSpec.GetMetricLabels()
+		if err := ValidateMetricLabels(labels); err != nil {
+			return nil, err
+		}
+		metric = newCounter(metricSpec.Name, metricSpec.Help, labels)
 	}
 
 	val, err := strconv.ParseFloat(metricSpec.Counter.Value, 64)
@@ -71,7 +76,11 @@ func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.P
 
 func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	if metric == nil {
-		metric = newGauge(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels())
+		labels := metricSpec.GetMetricLabels()
+		if err := ValidateMetricLabels(labels); err != nil {
+			return nil, err
+		}
+		metric = newGauge(metricSpec.Name, metricSpec.Help, labels)
 	}
 
 	val, err := strconv.ParseFloat(metricSpec.Gauge.Value, 64)
@@ -86,7 +95,11 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Pro
 
 func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	if metric == nil {
-		metric = newHistogram(metricSpec.Name, metricSpec.Help, metricSpec.GetMetricLabels(), metricSpec.Histogram.GetBuckets())
+		labels := metricSpec.GetMetricLabels()
+		if err := ValidateMetricLabels(labels); err != nil {
+			return nil, err
+		}
+		metric = newHistogram(metricSpec.Name, metricSpec.Help, labels, metricSpec.Histogram.GetBuckets())
 	}
 
 	val, err := strconv.ParseFloat(metricSpec.Histogram.Value, 64)
@@ -177,6 +190,15 @@ func getErrorCounters() map[ErrorCause]prometheus.Counter {
 
 func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
+}
+
+func ValidateMetricLabels(metrics map[string]string) error {
+	for name := range metrics {
+		if !IsValidMetricName(name) {
+			return fmt.Errorf(invalidMetricLabelrror, name)
+		}
+	}
+	return nil
 }
 
 func mustBeRecoverable(name, help string, metric prometheus.Metric) {
