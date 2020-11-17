@@ -2992,8 +2992,9 @@ spec:
 		},
 	} {
 		wf := unmarshalWF(manifest)
-		cancel, controller := newController(wf)
 		t.Run(wf.Name, func(t *testing.T) {
+			cancel, controller := newController(wf)
+			defer cancel()
 			woc := newWorkflowOperationCtx(wf, controller)
 			woc.operate()
 			makePodsPhase(woc, apiv1.PodSucceeded)
@@ -3001,7 +3002,6 @@ spec:
 			woc.operate()
 			assert.Equal(t, want, getEvents(controller, len(want)))
 		})
-		cancel()
 	}
 }
 
