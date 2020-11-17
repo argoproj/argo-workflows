@@ -1,5 +1,5 @@
-import {NamespaceContainer} from './components/namespace-container';
+import {EventsContainer} from './components/events-container';
 
 export default {
-    component: NamespaceContainer
+    component: EventsContainer
 };
