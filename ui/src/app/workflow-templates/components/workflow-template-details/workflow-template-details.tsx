@@ -22,6 +22,7 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
     const name = match.params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
+    const [edited, setEdited] = useState(false);
 
     useEffect(
         () =>
@@ -39,10 +40,13 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
     const [status, setStatus] = useState<Status>();
     const [template, setTemplate] = useState<WorkflowTemplate>();
 
+    useEffect(() => setEdited(true), [template]);
+
     useEffect(() => {
         services.workflowTemplate
             .get(name, namespace)
             .then(setTemplate)
+            .then(() => setEdited(false)) // set back to false
             .catch(setStatus);
     }, [name, namespace]);
 
@@ -55,11 +59,13 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                         {
                             title: 'Submit',
                             iconClassName: 'fa fa-plus',
+                            disabled: edited,
                             action: () => setSidePanel(true)
                         },
                         {
                             title: 'Save',
                             iconClassName: 'fa fa-save',
+                            disabled: !edited,
                             action: () =>
                                 services.workflowTemplate
                                     .update(template, name, namespace)
@@ -70,6 +76,7 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                         {
                             title: 'Delete',
                             iconClassName: 'fa fa-trash',
+                            disabled: edited,
                             action: () => {
                                 if (!confirm('Are you sure you want to delete this workflow template?\nThere is no undo.')) {
                                     return;
