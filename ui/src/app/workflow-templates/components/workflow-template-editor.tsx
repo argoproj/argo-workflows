@@ -21,14 +21,14 @@ export const WorkflowTemplateEditor = (props: {
             onTabSelected={props.onTabSelected}
             tabs={[
                 {
-                    key: 'metadata',
-                    title: 'MetaData',
-                    content: <MetadataEditor value={props.template.metadata} onChange={metadata => props.onChange({...props.template, metadata})} />
-                },
-                {
                     key: 'spec',
                     title: 'Spec',
                     content: <WorkflowSpecEditor value={props.template.spec} onChange={spec => props.onChange({...props.template, spec})} onError={props.onError} />
+                },
+                {
+                    key: 'metadata',
+                    title: 'MetaData',
+                    content: <MetadataEditor value={props.template.metadata} onChange={metadata => props.onChange({...props.template, metadata})} />
                 },
                 {
                     key: 'manifest',

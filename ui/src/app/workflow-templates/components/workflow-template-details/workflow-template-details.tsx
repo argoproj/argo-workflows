@@ -91,10 +91,10 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                     ]
                 }
             }}>
-            <div className='argo-container'>
+            <>
                 <StatusNotice status={status} />
                 {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setStatus} onTabSelected={setTab} selectedTabKey={tab} />}
-            </div>
+            </>
             {template && (
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     <SubmitWorkflowPanel
