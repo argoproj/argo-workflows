@@ -636,8 +636,7 @@
         }
       },
       "required": [
-        "name",
-        "template"
+        "name"
       ],
       "type": "object"
     },
