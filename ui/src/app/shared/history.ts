@@ -1,7 +1,11 @@
 import {uiUrl} from './base';
 import {Utils} from './utils';
 
-export const toHistory = (path: string, params: {[key: string]: any}) => {
+/**
+ * Return a URL suitable to use with `history.push(..)`. Optionally saving the "namespace" parameter as the current namespace.
+ * Only "truthy" values are put into the query parameters. I.e. "falsey" values include null, undefined, false, "", 0.
+ */
+export const historyUrl = (path: string, params: { [key: string]: any }) => {
     const queryParams: string[] = [];
     Object.entries(params)
         .filter(([, v]) => v !== null)

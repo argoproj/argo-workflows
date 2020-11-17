@@ -4,7 +4,10 @@ import {BehaviorSubject, Observable} from 'rxjs';
 
 import {AppContext, Consumer} from '../context';
 
-export const Query = (props: {children: (params: URLSearchParams) => React.ReactNode}) => (
+/**
+ * @deprecated Use React hooks instead.
+ */
+export const Query = (props: { children: (params: URLSearchParams) => React.ReactNode }) => (
     <Consumer>{ctx => props.children(new URLSearchParams(ctx.history.location.search))}</Consumer>
 );
 

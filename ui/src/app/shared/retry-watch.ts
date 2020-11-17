@@ -8,9 +8,7 @@ interface Resource {
 const reconnectAfterMs = 3000;
 
 /**
- * ListWatch allows you to start watching for changes, automatically reconnecting on error.
- *
- * Items are sorted by creation timestamp.
+ * RetryWatch allows you to watch for changes, automatically reconnecting on error.
  */
 export class RetryWatch<T extends Resource> {
     private readonly watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>;

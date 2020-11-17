@@ -1,6 +1,5 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import {useEffect, useState} from 'react';
-import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {Condition, kubernetes} from '../../../../models';
@@ -12,13 +11,14 @@ import {Graph, Node} from '../../../shared/components/graph/types';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
-import {toHistory} from '../../../shared/history';
+import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {icons} from './icons';
 import {ID} from './id';
+import React = require('react');
 
 require('./event-page.scss');
 
@@ -99,7 +99,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
-    useEffect(() => history.push(toHistory('events/{namespace}', {namespace, showFlow, selectedNode, tab})), [namespace, showFlow, selectedNode, tab]);
+    useEffect(() => history.push(historyUrl('events/{namespace}', {namespace, showFlow, selectedNode, tab})), [namespace, showFlow, selectedNode, tab]);
 
     // internal state
     const [error, setError] = useState<Error>();

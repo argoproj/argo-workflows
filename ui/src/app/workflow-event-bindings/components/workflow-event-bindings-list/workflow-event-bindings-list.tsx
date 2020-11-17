@@ -12,7 +12,7 @@ import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Context} from '../../../shared/context';
-import {toHistory} from '../../../shared/history';
+import {historyUrl} from '../../../shared/history';
 import {services} from '../../../shared/services';
 import {ID} from './id';
 
@@ -25,7 +25,7 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(match.params.namespace);
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
-    useEffect(() => history.push(toHistory('workflow-event-bindings/{namespace}', {namespace, selectedWorkflowEventBinding})), [namespace, selectedWorkflowEventBinding]);
+    useEffect(() => history.push(historyUrl('workflow-event-bindings/{namespace}', {namespace, selectedWorkflowEventBinding})), [namespace, selectedWorkflowEventBinding]);
 
     // internal state
     const [error, setError] = useState<Error>();
