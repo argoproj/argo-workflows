@@ -13,6 +13,7 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 import {ZeroState} from '../../../shared/components/zero-state';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
+import {ID} from './id';
 
 interface State {
     namespace: string;
@@ -20,17 +21,6 @@ interface State {
     workflowEventBindings?: WorkflowEventBinding[];
     selectedWorkflowEventBinding?: {namespace: string; name: string};
 }
-
-type Type = 'WorkflowEventBinding' | 'WorkflowTemplate';
-
-const ID = {
-    join: (type: Type, namespace: string, name: string) => type + '/' + namespace + '/' + name,
-    split: (id: string) => ({
-        type: id.split('/')[0] as Type,
-        namespace: id.split('/')[1],
-        name: id.split('/')[2]
-    })
-};
 
 export class WorkflowEventBindingsList extends BasePage<RouteComponentProps<any>, State> {
     private get selectedWorkflowEventBinding(): WorkflowEventBinding {
