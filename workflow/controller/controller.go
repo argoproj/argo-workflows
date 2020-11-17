@@ -938,7 +938,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
-	if port > 0 {
+	if port == 0 {
 		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
