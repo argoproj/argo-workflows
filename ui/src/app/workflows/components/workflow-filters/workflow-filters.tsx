@@ -67,6 +67,24 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
         return results;
     }
 
+    private addCommonLabel(suggestions:string[]) {
+        const commonLabel = new Array<string>();
+        const commonLabelPool = [
+            models.labels.cronWorkflow,
+            models.labels.workflowTemplate,
+            models.labels.clusterWorkflowTemplate,
+        ]
+        commonLabelPool.forEach(labelPrefix => {
+            for (const label of suggestions) {
+                if (label.startsWith(labelPrefix)) {
+                    commonLabel.push(`${labelPrefix}`);
+                    break;
+                }
+            }
+        })
+        return commonLabel.concat(suggestions);
+    }
+
     private getLabelSuggestions(workflows: models.Workflow[]) {
         const suggestions = new Array<string>();
         workflows
@@ -80,6 +98,6 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     }
                 });
             });
-        return suggestions.sort((a, b) => a.localeCompare(b));
+        return this.addCommonLabel(suggestions.sort((a, b) => a.localeCompare(b)));
     }
 }
