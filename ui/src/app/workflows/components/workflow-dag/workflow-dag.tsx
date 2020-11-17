@@ -3,7 +3,6 @@ import * as React from 'react';
 import {NODE_PHASE, NodeStatus} from '../../../../models';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
 import {Graph} from '../../../shared/components/graph/types';
-import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {getCollapsedNodeName, getMessage, getNodeParent, isCollapsedNode} from './graph/collapsible-node';
 import {icons} from './icons';
@@ -50,13 +49,13 @@ function nodeLabel(n: NodeStatus) {
     };
 }
 
-const classNames = () => {
-    const v: {[label: string]: boolean} = {
+const classNames = (() => {
+    const v: { [label: string]: boolean } = {
         Suspended: true
     };
     Object.entries(NODE_PHASE).forEach(([, label]) => (v[label] = true));
     return v;
-};
+})();
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
     private graph: Graph;
@@ -69,15 +68,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     public render() {
-        if (!this.props.nodes) {
-            return <Loading />;
-        }
         this.prepareGraph();
         return (
             <GraphPanel
                 graph={this.graph}
                 types={types}
-                classNames={classNames()}
+                classNames={classNames}
                 selectedNode={this.props.selectedNodeId}
                 onNodeSelect={id => this.selectNode(id)}
                 nodeSize={40}
@@ -109,6 +105,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             nodeName: string;
             children: string[];
             parent: string;
+        }
+
+        if (!this.props.nodes) {
+            return;
         }
 
         const allNodes = this.props.nodes;
