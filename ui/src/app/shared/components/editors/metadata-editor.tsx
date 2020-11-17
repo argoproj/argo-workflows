@@ -7,26 +7,26 @@ export const MetadataEditor = (props: {value: kubernetes.ObjectMeta; onChange: (
     return (
         <div key='metadata' className='white-box'>
             <h5>Metadata</h5>
-            <label key='name'>
-                Name
+            <p key='name'>
+                <label>Name</label>
                 <TextInput onChange={name => props.onChange({...props.value, name})} value={props.value.name} readOnly={props.value.creationTimestamp !== null} />
-            </label>
-            <label key='namespace'>
-                Namespace
+            </p>
+            <p key='namespace'>
+                <label>Namespace</label>
                 <TextInput onChange={namespace => props.onChange({...props.value, namespace})} value={props.value.namespace} readOnly={props.value.creationTimestamp !== null} />
-            </label>
-            <label>
-                Labels
+            </p>
+            <p key='labels'>
+                <label>Labels</label>
                 <KeyValueEditor value={props.value.labels} onChange={labels => props.onChange({...props.value, labels})} />
-            </label>
-            <label>
-                Annotations
+            </p>
+            <p key='annotations'>
+                <label>Annotations</label>
                 <KeyValueEditor
                     value={props.value.annotations}
                     onChange={annotations => props.onChange({...props.value, annotations})}
                     hide={key => key === 'kubectl.kubernetes.io/last-applied-configuration'}
                 />
-            </label>
+            </p>
         </div>
     );
 };

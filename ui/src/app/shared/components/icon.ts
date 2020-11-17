@@ -30,6 +30,7 @@ export type Icon =
     | 'microchip'
     | 'play'
     | 'play-circle'
+    | 'plus-circle'
     | 'puzzle-piece'
     | 'pause'
     | 'pause-circle'

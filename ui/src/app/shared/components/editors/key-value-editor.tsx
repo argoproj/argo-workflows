@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {TextInput} from '../text-input';
 
 interface KeyValues {
     [key: string]: string;
@@ -17,30 +18,23 @@ export const KeyValueEditor = (props: {value: KeyValues; onChange: (value: KeyVa
         props.onChange(keyValues);
     };
     return (
-        <div className='wf-row-labels ' style={{cursor: 'default'}}>
+        <div>
             {Object.entries(keyValues)
                 .filter(([k]) => props.hide === undefined || !props.hide(k))
                 .map(([k, v]) => (
-                    <div className='tag' key={k}>
-                        <div className='key'>{k}</div>
-                        <div className='value'>
-                            {v}{' '}
-                            <button onClick={() => deleteItem(k)}>
-                                <i className='fa fa-times-circle' />
-                            </button>
-                        </div>
+                    <div key={k}>
+                        {k}={v}{' '}
+                        <button onClick={() => deleteItem(k)}>
+                            <i className='fa fa-times-circle' />
+                        </button>
                     </div>
                 ))}
-            <div className='tag' key='new'>
-                <div className='key'>
-                    <input value={name} onChange={e => setName(e.target.value)} />
-                </div>
-                <div className='value'>
-                    <input value={value} onChange={e => setValue(e.target.value)} />{' '}
-                    <button onClick={() => addItem()}>
-                        <i className='fa fa-plus-circle' />
-                    </button>
-                </div>
+            <div key='new'>
+                <TextInput value={name} onChange={setName} />
+                <TextInput value={value} onChange={setValue} />
+                <button onClick={() => addItem()}>
+                    <i className='fa fa-plus-circle' />
+                </button>
             </div>
         </div>
     );
