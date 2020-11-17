@@ -47,7 +47,7 @@ export const ObjectEditor = <T extends any>(props: Props<T>) => {
         <>
             <MonacoEditor
                 key='editor'
-                value={stringify(props.value, props.language)}
+                value={stringify(props.value, language)}
                 language={language}
                 height='600px'
                 onChange={value => props.onChange && props.onChange(parse(value))}
