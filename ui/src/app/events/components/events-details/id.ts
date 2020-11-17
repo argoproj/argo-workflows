@@ -10,7 +10,7 @@
 export type Type = 'EventSource' | 'Sensor' | 'Trigger' | 'Conditions';
 
 export const ID = {
-    join: (x: {type: Type; namespace: string; name: string; key?: string}) => x.namespace + '/' + x.type + '/' + x.name + (x.key ? '/' + x.key : ''),
+    join: (type: Type, namespace: string, name: string, key?: string) => namespace + '/' + type + '/' + name + (key ? '/' + key : ''),
     split: (id: string) => {
         const parts = id.split('/');
         const namespace = parts[0];

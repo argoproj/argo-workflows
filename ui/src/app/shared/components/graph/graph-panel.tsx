@@ -11,11 +11,12 @@ interface Props {
     graph: Graph;
     types: {[type: string]: boolean};
     classNames: {[type: string]: boolean};
-    options?: React.ReactNode;
-    nodeSize?: number;
-    horizontal?: boolean;
-    hideTypes?: boolean;
-    iconShape?: 'rect' | 'circle';
+    options?: React.ReactNode; // add to the option panel
+    nodeSize?: number; // default "64"
+    horizontal?: boolean; // default "false"
+    hideTypes?: boolean; // default "false"
+    iconShape?: 'rect' | 'circle'; // default "rect"
+    edgeStrokeWidthMultiple?: number; // multiple by X, default "1"
     selectedNode?: Node;
     onNodeSelect?: (id: Node) => void;
 }
@@ -109,8 +110,12 @@ export const GraphPanel = (props: Props) => {
                             {Array.from(props.graph.edges)
                                 .filter(([, label]) => label.points)
                                 .map(([e, label]) => (
-                                    <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames || 'arrow'}`}>
-                                        <path d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')} className='line' />
+                                    <g key={`edge/${e.v}/${e.w}`} className={`edge ${label.classNames !== undefined ? label.classNames : 'arrow'}`}>
+                                        <path
+                                            d={label.points.map((p, j) => (j === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ')}
+                                            className='line'
+                                            strokeWidth={((props.edgeStrokeWidthMultiple || 1) * nodeSize) / 32}
+                                        />
                                         <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
                                             <text className='edge-label' style={{fontSize: nodeSize / 6}}>
                                                 {formatLabel(label.label)}

@@ -23,6 +23,7 @@ export type Icon =
     | 'forward'
     | 'grip-vertical'
     | 'hdd'
+    | 'info-circle'
     | 'keyboard'
     | 'link'
     | 'list'

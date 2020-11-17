@@ -1,12 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
-@keyframes data-flowing {
-  to {;
-    stroke-dashoffset: -64;
-    stroke: $argo-color-yellow;
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -69,7 +62,7 @@
       fill: $argo-color-gray-6;
     }
 
-    &.Warning, &.Pending, &.Listening {
+    &.Warning, &.Pending {
       .bg {
         fill: $argo-status-warning-color;
       }
@@ -106,14 +99,12 @@
     &.selected {
       .bg {
         stroke: $argo-color-yellow;
-        stroke-width: 3;
       }
     }
 
     path.icon {
       fill: transparent;
       stroke: $argo-color-gray-2;
-      stroke-width: 4;
     }
   }
 
@@ -124,7 +115,6 @@
 
     .line {
       fill: transparent;
-      stroke-width: 2;
       stroke: $argo-color-gray-4;
     }
 
@@ -134,15 +124,6 @@
 
     &.arrow .line {
       marker-end: url(#arrow);
-    }
-
-    &.data .line {
-      stroke-dasharray: 8;
-      stroke-width: 4;
-    }
-
-    &.data.active .line {
-      animation: data-flowing 2s ease-in-out infinite;
     }
 
     &.related .line {

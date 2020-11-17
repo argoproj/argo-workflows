@@ -1,0 +1,31 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+@keyframes flowing {
+  50% {
+    stroke: $argo-color-yellow;
+  }
+  to {
+    stroke-dashoffset: -128;
+  }
+}
+
+.graph {
+  .node {
+    &.Listening {
+      .bg {
+        fill: $argo-status-warning-color;
+      }
+    }
+  }
+
+  .edge {
+    path {
+      color: $argo-status-warning-color;
+      stroke-dasharray: 8;
+    }
+
+    &.flow path {
+      animation: flowing 2s ease-in-out none;
+    }
+  }
+}
