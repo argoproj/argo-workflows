@@ -8,7 +8,7 @@ export const CheckboxList = (props: {values: {[label: string]: boolean}; onChang
             .map(([label, checked]) => (
                 <li key={label}>
                     <label>
-                        <Checkbox checked={checked} onChange={v => props.onChange(label, v)} /> {label}
+                        <Checkbox checked={checked} onChange={v => props.onChange(label, v)} /> {label || '-'}
                     </label>
                 </li>
             ))}

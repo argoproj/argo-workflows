@@ -26,7 +26,7 @@ const status = (r: {status?: {conditions?: Condition[]}}) => {
     if (!r.status || !r.status.conditions) {
         return '';
     }
-    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Listening';
+    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Ready';
 };
 
 const types = (() => {
@@ -213,7 +213,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
                     <GraphPanel
                         graph={graph}
                         types={types}
-                        classNames={{Pending: true, Listening: true}}
+                        classNames={{Pending: true, Ready: true}}
                         horizontal={true}
                         selectedNode={selectedNode}
                         onNodeSelect={setSelectedNode}

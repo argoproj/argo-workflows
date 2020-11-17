@@ -71,6 +71,7 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                                     .update(template, name, namespace)
                                     .then(setTemplate)
                                     .then(() => setStatus('Succeeded'))
+                                    .then(() => setEdited(false))
                                     .catch(setStatus)
                         },
                         {

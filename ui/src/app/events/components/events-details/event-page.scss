@@ -2,7 +2,7 @@
 
 @keyframes flowing {
   50% {
-    stroke: $argo-color-yellow;
+    stroke: $argo-running-color-light;
   }
   to {
     stroke-dashoffset: -128;
@@ -11,16 +11,15 @@
 
 .graph {
   .node {
-    &.Listening {
+    &.Ready {
       .bg {
-        fill: $argo-status-warning-color;
+        fill: $argo-running-color-light;
       }
     }
   }
 
   .edge {
     path {
-      color: $argo-status-warning-color;
       stroke-dasharray: 8;
     }
 

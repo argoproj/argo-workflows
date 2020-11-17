@@ -9,7 +9,7 @@ export const icons: {[key: string]: Icon} = {
     onExit: 'sign-out-alt',
     parameters: 'keyboard',
     resource: 'file-code',
-    script: 'box',
+    script: 'file-alt',
     step: 'check',
     steps: 'tasks',
     stepGroup: 'list',

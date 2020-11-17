@@ -8,19 +8,22 @@ import {icons} from '../workflow-spec-panel/icons';
 import {idForTemplate, onExitId, stepGroupOf, stepOf, taskOf, templateOf, typeOf} from '../workflow-spec-panel/id';
 import {WorkflowSpecPanel} from '../workflow-spec-panel/workflow-spec-panel';
 
+require('./workflow-spec-editor.scss');
+
+const type = (id: string) => {
+    const types: {[key: string]: string} = {
+        Artifacts: 'io.argoproj.workflow.v1alpha1.Artifacts',
+        Parameters: 'io.argoproj.workflow.v1alpha1.Parameters',
+        Step: 'io.argoproj.workflow.v1alpha1.WorkflowStep',
+        Template: 'io.argoproj.workflow.v1alpha1.Template',
+        Task: 'io.argoproj.workflow.v1alpha1.DagTask',
+        Workflow: 'io.argoproj.workflow.v1alpha1.WorkflowSpec'
+    };
+    return types[typeOf(id)];
+};
 export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value: WorkflowSpec) => void; onError: (error: Error) => void}) => {
     const [selectedId, setSelectedId] = React.useState<string>();
-    const type = (id: string) => {
-        const types: {[key: string]: string} = {
-            Artifacts: 'io.argoproj.workflow.v1alpha1.Artifacts',
-            Parameters: 'io.argoproj.workflow.v1alpha1.Parameters',
-            Step: 'io.argoproj.workflow.v1alpha1.WorkflowStep',
-            Template: 'io.argoproj.workflow.v1alpha1.Template',
-            Task: 'io.argoproj.workflow.v1alpha1.DagTask',
-            Workflow: 'io.argoproj.workflow.v1alpha1.WorkflowSpec'
-        };
-        return types[typeOf(id)];
-    };
+
     const object = (id: string) => {
         const template = (name: string) => props.value.templates.filter(t => !!t).find(t => t.name === name);
         switch (typeOf(id)) {
@@ -138,108 +141,112 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
     const bestTemplateName = () => (anyContainerOrScriptTemplate() || {name: 'TBD'}).name;
     return (
         <div className='white-box'>
-            <div>
-                <Button
-                    icon={icons.container}
-                    onClick={() => {
-                        const templateName = randomSillyName();
-                        props.value.templates.push(exampleTemplate(templateName));
-                        props.onChange(props.value);
-                        setSelectedId(idForTemplate(templateName));
-                    }}>
-                    Container
-                </Button>
-                <Button
-                    icon={icons.script}
-                    onClick={() => {
-                        const templateName = randomSillyName();
-                        props.value.templates.push({
-                            name: templateName,
-                            inputs: {
-                                parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
-                            },
-                            script: {
-                                image: 'docker/whalesay:latest',
-                                command: ['sh'],
-                                source: 'echo {{inputs.parameters.message}}'
-                            }
-                        });
-                        props.onChange(props.value);
-                        setSelectedId(idForTemplate(templateName));
-                    }}>
-                    Script
-                </Button>
-                <Button
-                    icon={icons.dag}
-                    onClick={() => {
-                        const templateName = randomSillyName();
-                        props.value.templates.push({
-                            name: templateName,
-                            dag: {
-                                tasks: [
-                                    {
-                                        name: 'main',
-                                        template: bestTemplateName()
+            <div className='row'>
+                <div className='columns xlarge-11'>
+                    <WorkflowSpecPanel spec={props.value} selectedId={selectedId} onSelect={setSelectedId} />
+                </div>
+                <div className='columns xlarge-1'>
+                    <div className='object-palette'>
+                        <a
+                            title='Container'
+                            onClick={() => {
+                                const templateName = randomSillyName();
+                                props.value.templates.push(exampleTemplate(templateName));
+                                props.onChange(props.value);
+                                setSelectedId(idForTemplate(templateName));
+                            }}>
+                            <i className={'fa fa-' + icons.container} />{' '}
+                        </a>
+                        <a
+                            title='Script'
+                            onClick={() => {
+                                const templateName = randomSillyName();
+                                props.value.templates.push({
+                                    name: templateName,
+                                    inputs: {
+                                        parameters: [{name: 'message', value: '{{workflow.parameters.message}}'}]
+                                    },
+                                    script: {
+                                        image: 'docker/whalesay:latest',
+                                        command: ['sh'],
+                                        source: 'echo {{inputs.parameters.message}}'
                                     }
-                                ]
-                            }
-                        });
-                        props.onChange(props.value);
-                        setSelectedId(idForTemplate(templateName));
-                    }}>
-                    DAG
-                </Button>
-                <Button
-                    icon={icons.steps}
-                    onClick={() => {
-                        const templateName = randomSillyName();
-                        props.value.templates.push({
-                            name: templateName,
-                            steps: [
-                                [
-                                    {
-                                        name: 'main',
-                                        template: bestTemplateName()
+                                });
+                                props.onChange(props.value);
+                                setSelectedId(idForTemplate(templateName));
+                            }}>
+                            <i className={'fa fa-' + icons.script} />
+                        </a>
+                        <a
+                            title='DAG'
+                            onClick={() => {
+                                const templateName = randomSillyName();
+                                props.value.templates.push({
+                                    name: templateName,
+                                    dag: {
+                                        tasks: [
+                                            {
+                                                name: 'main',
+                                                template: bestTemplateName()
+                                            }
+                                        ]
                                     }
-                                ]
-                            ]
-                        });
-                        props.onChange(props.value);
-                        setSelectedId(idForTemplate(templateName));
-                    }}>
-                    Steps
-                </Button>
-                <Button
-                    icon={icons.onExit}
-                    onClick={() => {
-                        props.value.onExit = bestTemplateName();
-                        props.onChange(props.value);
-                        setSelectedId(onExitId);
-                    }}>
-                    Exit handler
-                </Button>
+                                });
+                                props.onChange(props.value);
+                                setSelectedId(idForTemplate(templateName));
+                            }}>
+                            <i className={'fa fa-' + icons.dag} />
+                        </a>
+                        <a
+                            title='Steps'
+                            onClick={() => {
+                                const templateName = randomSillyName();
+                                props.value.templates.push({
+                                    name: templateName,
+                                    steps: [
+                                        [
+                                            {
+                                                name: 'main',
+                                                template: bestTemplateName()
+                                            }
+                                        ]
+                                    ]
+                                });
+                                props.onChange(props.value);
+                                setSelectedId(idForTemplate(templateName));
+                            }}>
+                            <i className={'fa fa-' + icons.steps} />
+                        </a>
+                        <a
+                            title='Exit handler'
+                            onClick={() => {
+                                props.value.onExit = bestTemplateName();
+                                props.onChange(props.value);
+                                setSelectedId(onExitId);
+                            }}>
+                            <i className={'fa fa-' + icons.onExit} />
+                        </a>
+                    </div>
+                </div>
             </div>
-            <WorkflowSpecPanel spec={props.value} selectedId={selectedId} onSelect={id => setSelectedId(id)} />
-            <SlidingPanel isShown={selectedId !== undefined} onClose={() => setSelectedId(undefined)}>
+            <SlidingPanel isShown={!!selectedId} onClose={() => setSelectedId(null)} isNarrow={true}>
                 {selectedId && object(selectedId) ? (
                     <>
                         <h4>{selectedId}</h4>
-                        <div>
+                        <div style={{marginBottom: '1em'}}>
                             <Button
                                 icon='trash'
                                 onClick={() => {
                                     deleteObject(selectedId);
                                     setSelectedId(undefined);
                                 }}>
-                                Remove
+                                Remove/Cancel
                             </Button>
                             <Button icon='times-circle' onClick={() => setSelectedId(undefined)}>
-                                Close
+                                OK
                             </Button>
                         </div>
-                        <div>
-                            <ObjectEditor type={type(selectedId)} value={object(selectedId)} onChange={value => setObject(selectedId, value)} onError={props.onError} />
-                        </div>
+                        <ObjectEditor type={type(selectedId)} value={object(selectedId)} onChange={value => setObject(selectedId, value)} onError={props.onError} />
                     </>
                 ) : (
                     <>

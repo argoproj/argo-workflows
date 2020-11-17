@@ -44,10 +44,9 @@ export const GraphPanel = (props: Props) => {
                     key='types'
                     values={types}
                     onChange={(label, checked) => {
-                        setTypes(from => {
-                            const to = Object.assign({}, from);
-                            to[label] = checked;
-                            return to;
+                        setTypes(v => {
+                            v[label] = checked;
+                            return Object.assign({}, v);
                         });
                     }}
                 />
@@ -55,10 +54,9 @@ export const GraphPanel = (props: Props) => {
                     key='class-names'
                     values={classNames}
                     onChange={(label, checked) => {
-                        setClassNames(from => {
-                            const to = Object.assign({}, from);
-                            to[label] = checked;
-                            return to;
+                        setClassNames(v => {
+                            v[label] = checked;
+                            return Object.assign({}, v);
                         });
                     }}
                 />
