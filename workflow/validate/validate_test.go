@@ -2318,6 +2318,33 @@ func TestInvalidMetricName(t *testing.T) {
 	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
 }
 
+var invalidMetricLabelName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: valid
+          help: "invalid"
+          labels:
+            - key: invalid.key
+              value: hi
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricLabelName(t *testing.T) {
+	_, err := validate(invalidMetricLabelName)
+	assert.EqualError(t, err, "metric label 'invalid.key' is invalid: keys may only contain alphanumeric characters, '_', or ':'")
+}
+
 var invalidMetricHelp = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
