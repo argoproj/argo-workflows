@@ -10854,17 +10854,6 @@ func (this *ArtifactLocation) String() string {
 	}, "")
 	return s
 }
-func (this *ArtifactRepositoryRef) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&ArtifactRepositoryRef{`,
-		`ConfigMap:` + fmt.Sprintf("%v", this.ConfigMap) + `,`,
-		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *ArtifactoryArtifact) String() string {
 	if this == nil {
 		return "nil"
