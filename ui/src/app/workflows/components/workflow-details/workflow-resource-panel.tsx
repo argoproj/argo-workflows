@@ -1,7 +1,7 @@
 import {Tabs} from 'argo-ui';
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {ObjectEditor} from '../../../shared/components/resource-editor/object-editor';
+import {ObjectEditor} from '../../../shared/components/object-editor/object-editor';
 import {WorkflowSpecPanel} from '../../../shared/components/workflow-spec-panel/workflow-spec-panel';
 
 export const WorkflowResourcePanel = (props: {workflow: Workflow}) => (
@@ -9,8 +9,8 @@ export const WorkflowResourcePanel = (props: {workflow: Workflow}) => (
         navTransparent={true}
         tabs={[
             {
-                key: 'visual',
-                title: 'Visual',
+                key: 'spec',
+                title: 'Spec',
                 content: <WorkflowSpecPanel spec={props.workflow.spec} />
             },
             {

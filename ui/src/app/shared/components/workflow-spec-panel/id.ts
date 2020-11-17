@@ -21,6 +21,8 @@ export const workflowTemplateRefId: Type = 'WorkflowTemplateRef';
 export const typeOf = (id: string): Type => id.split('/')[0] as Type;
 
 export const idForStepGroup = (templateName: string, i: number) => 'StepGroup/' + templateName + '/' + i;
+
+// TODO - we assume that template names are unique, but they may not be and that'll produce weird bugs
 export const stepGroupOf = (id: string) => ({
     templateName: id.split('/')[1],
     i: parseInt(id.split('/')[2], 10)

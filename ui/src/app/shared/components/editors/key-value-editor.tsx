@@ -18,24 +18,33 @@ export const KeyValueEditor = (props: {value: KeyValues; onChange: (value: KeyVa
         props.onChange(keyValues);
     };
     return (
-        <div>
+        <>
             {Object.entries(keyValues)
                 .filter(([k]) => props.hide === undefined || !props.hide(k))
                 .map(([k, v]) => (
-                    <div key={k}>
-                        {k}={v}{' '}
-                        <button onClick={() => deleteItem(k)}>
-                            <i className='fa fa-times-circle' />
-                        </button>
+                    <div className='row white-box__details-row' key={k}>
+                        <div className='columns small-4'>{k}</div>
+                        <div className='columns small-6'>{v}</div>
+                        <div className='columns small-2'>
+                            <button onClick={() => deleteItem(k)}>
+                                <i className='fa fa-times-circle' />
+                            </button>
+                        </div>
                     </div>
                 ))}
-            <div key='new'>
-                <TextInput value={name} onChange={setName} />
-                <TextInput value={value} onChange={setValue} />
-                <button onClick={() => addItem()}>
-                    <i className='fa fa-plus-circle' />
-                </button>
+            <div className='row white-box__details-row'>
+                <div className='columns small-4'>
+                    <TextInput value={name} onChange={setName} placeholder='Name...' />
+                </div>
+                <div className='columns small-6'>
+                    <TextInput value={value} onChange={setValue} placeholder='Value...' />
+                </div>
+                <div className='columns small-2'>
+                    <button onClick={() => addItem()}>
+                        <i className='fa fa-plus-circle' />
+                    </button>
+                </div>
             </div>
-        </div>
+        </>
     );
 };

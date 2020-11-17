@@ -1,5 +1,6 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import {useEffect, useState} from 'react';
+import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {Condition, kubernetes} from '../../../../models';
@@ -18,7 +19,6 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {icons} from './icons';
 import {ID} from './id';
-import React = require('react');
 
 require('./event-page.scss');
 
@@ -202,8 +202,8 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
             }}>
             <ErrorNotice error={error} />
             {graph.nodes.size === 0 ? (
-                <ZeroState title='Nothing to show'>
-                    <p>Argo Events allow you to trigger workflows, lambadas, and other actions based on receiving events from things like webhooks, message, or a cron schedule.</p>
+                <ZeroState>
+                    <p>Argo Events allow you to trigger workflows, lambadas, and other actions when an event such as a webhooks, message, or a cron schedule occurs.</p>
                     <p>
                         <a href='https://argoproj.github.io/argo-events/'>Learn more</a>
                     </p>

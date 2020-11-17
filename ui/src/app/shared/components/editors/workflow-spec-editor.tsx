@@ -3,7 +3,7 @@ import * as React from 'react';
 import {WorkflowSpec} from '../../../../models';
 import {exampleTemplate, randomSillyName} from '../../examples';
 import {Button} from '../button';
-import {ObjectEditor} from '../resource-editor/object-editor';
+import {ObjectEditor} from '../object-editor/object-editor';
 import {icons} from '../workflow-spec-panel/icons';
 import {idForTemplate, onExitId, stepGroupOf, stepOf, taskOf, templateOf, typeOf} from '../workflow-spec-panel/id';
 import {WorkflowSpecPanel} from '../workflow-spec-panel/workflow-spec-panel';
@@ -137,10 +137,8 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
     const anyContainerOrScriptTemplate = () => props.value.templates.find(t => t.container || t.script);
     const bestTemplateName = () => (anyContainerOrScriptTemplate() || {name: 'TBD'}).name;
     return (
-        <div key='workflow-spec-editor' className='white-box'>
-            <h5>Specification</h5>
-            <label>
-                Add{' '}
+        <div className='white-box'>
+            <div>
                 <Button
                     icon={icons.container}
                     onClick={() => {
@@ -220,7 +218,7 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
                     }}>
                     Exit handler
                 </Button>
-            </label>
+            </div>
             <WorkflowSpecPanel spec={props.value} selectedId={selectedId} onSelect={id => setSelectedId(id)} />
             <SlidingPanel isShown={selectedId !== undefined} onClose={() => setSelectedId(undefined)}>
                 {selectedId && object(selectedId) ? (
@@ -240,25 +238,13 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
                             </Button>
                         </div>
                         <div>
-                            <ObjectEditor
-                                language='yaml'
-                                type={type(selectedId)}
-                                value={object(selectedId)}
-                                onChange={value => setObject(selectedId, value)}
-                                onError={error => props.onError(error)}
-                            />
+                            <ObjectEditor type={type(selectedId)} value={object(selectedId)} onChange={value => setObject(selectedId, value)} onError={props.onError} />
                         </div>
                     </>
                 ) : (
                     <>
                         <h4>Specification</h4>
-                        <ObjectEditor
-                            language='yaml'
-                            type={type('WorkflowSpec')}
-                            value={props.value}
-                            onChange={value => props.onChange(value)}
-                            onError={error => props.onError(error)}
-                        />
+                        <ObjectEditor type={type('WorkflowSpec')} value={props.value} onChange={props.onChange} onError={props.onError} />
                     </>
                 )}
             </SlidingPanel>

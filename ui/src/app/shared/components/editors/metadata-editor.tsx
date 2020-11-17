@@ -5,28 +5,37 @@ import {KeyValueEditor} from './key-value-editor';
 
 export const MetadataEditor = (props: {value: kubernetes.ObjectMeta; onChange: (value: kubernetes.ObjectMeta) => void}) => {
     return (
-        <div key='metadata' className='white-box'>
-            <h5>Metadata</h5>
-            <p key='name'>
-                <label>Name</label>
-                <TextInput onChange={name => props.onChange({...props.value, name})} value={props.value.name} readOnly={props.value.creationTimestamp !== null} />
-            </p>
-            <p key='namespace'>
-                <label>Namespace</label>
-                <TextInput onChange={namespace => props.onChange({...props.value, namespace})} value={props.value.namespace} readOnly={props.value.creationTimestamp !== null} />
-            </p>
-            <p key='labels'>
-                <label>Labels</label>
+        <>
+            <div className='white-box'>
+                <div className='row white-box__details-row'>
+                    <div className='columns small-4'>Name</div>
+                    <div className='columns small-4'>
+                        <TextInput onChange={name => props.onChange({...props.value, name})} value={props.value.name} readOnly={props.value.creationTimestamp !== null} />
+                    </div>
+                </div>
+                <div className='row white-box__details-row'>
+                    <div className='columns small-4'>Namespace</div>
+                    <div className='columns small-4'>
+                        <TextInput
+                            onChange={namespace => props.onChange({...props.value, namespace})}
+                            value={props.value.namespace}
+                            readOnly={props.value.creationTimestamp !== null}
+                        />
+                    </div>
+                </div>
+            </div>
+            <div className='white-box'>
+                <h5>Labels</h5>
                 <KeyValueEditor value={props.value.labels} onChange={labels => props.onChange({...props.value, labels})} />
-            </p>
-            <p key='annotations'>
-                <label>Annotations</label>
+            </div>
+            <div className='white-box'>
+                <h5>Annotations</h5>
                 <KeyValueEditor
                     value={props.value.annotations}
                     onChange={annotations => props.onChange({...props.value, annotations})}
                     hide={key => key === 'kubectl.kubernetes.io/last-applied-configuration'}
                 />
-            </p>
-        </div>
+            </div>
+        </>
     );
 };

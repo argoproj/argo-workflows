@@ -56,13 +56,13 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
         <Page
             title='Workflow Event Bindings'
             toolbar={{
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace}/>]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
             }}>
-            <ErrorNotice error={error}/>
+            <ErrorNotice error={error} />
             {!workflowEventBindings ? (
-                <Loading/>
+                <Loading />
             ) : workflowEventBindings.length === 0 ? (
-                <ZeroState title='Workflow Event Bindings'>
+                <ZeroState>
                     <p>
                         Workflow event bindings allow you to trigger workflows when a webhook event is received. For example, start a build on a Git commit, or start a machine
                         learning pipeline from a remote system.
@@ -100,7 +100,7 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
                         }}
                     />
                     <SlidingPanel isShown={!!selectedWorkflowEventBinding} onClose={() => setSelectedWorkflowEventBinding(null)}>
-                        {selected && <ResourceEditor value={selected}/>}
+                        {selected && <ResourceEditor value={selected} />}
                     </SlidingPanel>
                 </>
             )}

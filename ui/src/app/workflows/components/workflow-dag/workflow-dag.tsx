@@ -50,7 +50,7 @@ function nodeLabel(n: NodeStatus) {
 }
 
 const classNames = (() => {
-    const v: { [label: string]: boolean } = {
+    const v: {[label: string]: boolean} = {
         Suspended: true
     };
     Object.entries(NODE_PHASE).forEach(([, label]) => (v[label] = true));

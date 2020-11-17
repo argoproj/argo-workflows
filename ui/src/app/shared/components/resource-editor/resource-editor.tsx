@@ -2,9 +2,9 @@ import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as React from 'react';
 import {Button} from '../button';
 import {ErrorNotice} from '../error-notice';
+import {ObjectEditor} from '../object-editor/object-editor';
+import {parse, stringify} from '../object-parser';
 import {ToggleButton} from '../toggle-button';
-import {ObjectEditor} from './object-editor';
-import {parse, stringify} from './resource';
 
 require('./resource.scss');
 

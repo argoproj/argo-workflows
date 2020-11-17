@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Button} from '../../../shared/components/button';
 import {DurationPanel} from '../../../shared/components/duration-panel';
 import {InlineTable} from '../../../shared/components/inline-table/inline-table';
 import {Phase} from '../../../shared/components/phase';
@@ -112,27 +113,30 @@ export const WorkflowNodeSummary = (props: Props) => {
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
+                <Button icon='file-alt' type='Secondary' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
-                </button>{' '}
+                </Button>{' '}
                 {props.node.type === 'Pod' && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
+                    <Button icon='file' type='Secondary' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
                         LOGS
-                    </button>
+                    </Button>
                 )}
                 {props.links &&
                     props.links
                         .filter(link => link.scope === 'pod')
                         .map(link => (
-                            <a
-                                className='argo-button argo-button--base-o'
-                                href={link.url
-                                    .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
-                                    .replace(/\${metadata\.name}/g, props.node.id)
-                                    .replace(/\${status\.startedAt}/g, props.node.startedAt)
-                                    .replace(/\${status\.finishedAt}/g, props.node.finishedAt)}>
-                                <i className='fa fa-link' /> {link.name}
-                            </a>
+                            <Button
+                                icon='link'
+                                type='Secondary'
+                                onClick={() =>
+                                    link.url
+                                        .replace(/\${metadata\.namespace}/g, props.workflow.metadata.namespace)
+                                        .replace(/\${metadata\.name}/g, props.node.id)
+                                        .replace(/\${status\.startedAt}/g, props.node.startedAt)
+                                        .replace(/\${status\.finishedAt}/g, props.node.finishedAt)
+                                }>
+                                {link.name}
+                            </Button>
                         ))}
             </div>
         </div>
