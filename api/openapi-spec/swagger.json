@@ -2633,8 +2633,7 @@
       "description": "DAGTask represents a node in the graph during DAG execution",
       "type": "object",
       "required": [
-        "name",
-        "template"
+        "name"
       ],
       "properties": {
         "arguments": {

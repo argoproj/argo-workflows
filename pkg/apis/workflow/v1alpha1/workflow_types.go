@@ -1958,7 +1958,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
