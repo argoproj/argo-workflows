@@ -51,6 +51,9 @@ func kubeifySwagger(in, out string) {
 
 func getKubernetesSwagger() obj {
 	f, err := os.Open("dist/kubernetes.swagger.json")
+	if err != nil {
+		panic(err)
+	}
 	swagger := obj{}
 	err = json.NewDecoder(f).Decode(&swagger)
 	if err != nil {
