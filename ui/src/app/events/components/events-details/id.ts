@@ -6,8 +6,9 @@
  * * argo-events/Sensor/webhook
  * * argo-events/Trigger/webhook/example
  * * argo-events/Conditions/webhook/example - condition
+ * * argo-events/Workflow/webhook - condition
  */
-export type Type = 'EventSource' | 'Sensor' | 'Trigger' | 'Conditions';
+export type Type = 'EventSource' | 'Sensor' | 'Trigger' | 'Conditions' | 'Workflow';
 
 export const ID = {
     join: (type: Type, namespace: string, name: string, key?: string) => namespace + '/' + type + '/' + name + (key ? '/' + key : ''),

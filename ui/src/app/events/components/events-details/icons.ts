@@ -45,5 +45,6 @@ export const icons: {[type: string]: Icon} = {
     SlackTrigger: chat,
     StorageGridEventSource: grid,
     StripeEventSource: 'credit-card',
-    WebhookEventSource: web
+    WebhookEventSource: web,
+    Workflow: 'sitemap'
 };

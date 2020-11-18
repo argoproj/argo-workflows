@@ -1,110 +1,68 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
-import {useEffect, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
-import {Condition, kubernetes} from '../../../../models';
+import {kubernetes, Workflow} from '../../../../models';
 import {EventSource, eventSourceTypes} from '../../../../models/event-source';
 import {Sensor, triggerTypes} from '../../../../models/sensor';
+import {uiUrl} from '../../../shared/base';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {GraphPanel} from '../../../shared/components/graph/graph-panel';
-import {Graph, Node} from '../../../shared/components/graph/types';
+import {Node} from '../../../shared/components/graph/types';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
+import {Context} from '../../../shared/context';
 import {historyUrl} from '../../../shared/history';
 import {ListWatch} from '../../../shared/list-watch';
 import {services} from '../../../shared/services';
 import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
-import {icons} from './icons';
+import {buildGraph} from './build-graph';
 import {ID} from './id';
 
 require('./event-page.scss');
 
-const status = (r: {status?: {conditions?: Condition[]}}) => {
-    if (!r.status || !r.status.conditions) {
-        return '';
-    }
-    return !!r.status.conditions.find(c => c.status !== 'True') ? 'Pending' : 'Ready';
-};
-
 const types = (() => {
-    const v: {[label: string]: boolean} = {sensor: true, conditions: true};
+    const v: {[label: string]: boolean} = {sensor: true, conditions: true, workflow: true};
     Object.keys(eventSourceTypes)
         .concat(Object.keys(triggerTypes))
         .forEach(label => (v[label] = true));
     return v;
 })();
 
-const buildGraph = (eventSources: EventSource[], sensors: Sensor[], flow: {[id: string]: any}) => {
-    const edgeClassNames = (id: Node) => (!!flow[id] ? 'flow' : '');
-    const graph = new Graph();
-
-    (eventSources || []).forEach(eventSource => {
-        Object.entries(eventSource.spec)
-            .filter(([typeKey]) => ['template', 'service'].indexOf(typeKey) < 0)
-            .forEach(([typeKey, type]) => {
-                Object.keys(type).forEach(key => {
-                    const eventId = ID.join('EventSource', eventSource.metadata.namespace, eventSource.metadata.name, key);
-                    graph.nodes.set(eventId, {type: typeKey, label: key, classNames: status(eventSource), icon: icons[eventSourceTypes[typeKey] + 'EventSource']});
-                });
-            });
-    });
-
-    (sensors || []).forEach(sensor => {
-        const sensorId = ID.join('Sensor', sensor.metadata.namespace, sensor.metadata.name);
-        graph.nodes.set(sensorId, {type: 'sensor', label: sensor.metadata.name, icon: icons.Sensor, classNames: status(sensor)});
-        (sensor.spec.dependencies || []).forEach(d => {
-            const eventId = ID.join('EventSource', sensor.metadata.namespace, d.eventSourceName, d.eventName);
-            graph.edges.set({v: eventId, w: sensorId}, {label: d.name, classNames: edgeClassNames(eventId)});
-        });
-        (sensor.spec.triggers || [])
-            .map(t => t.template)
-            .filter(template => template)
-            .forEach(template => {
-                const triggerTypeKey = Object.keys(template).filter(t => ['name', 'conditions'].indexOf(t) === -1)[0];
-                const triggerId = ID.join('Trigger', sensor.metadata.namespace, sensor.metadata.name, template.name);
-                graph.nodes.set(triggerId, {
-                    label: template.name,
-                    type: triggerTypeKey,
-                    classNames: status(sensor),
-                    icon: icons[triggerTypes[triggerTypeKey] + 'Trigger']
-                });
-                if (template.conditions) {
-                    const conditionsId = ID.join('Conditions', sensor.metadata.namespace, sensor.metadata.name, template.conditions);
-                    graph.nodes.set(conditionsId, {
-                        type: 'conditions',
-                        label: template.conditions,
-                        icon: icons.Conditions,
-                        classNames: ''
-                    });
-                    graph.edges.set({v: sensorId, w: conditionsId}, {classNames: edgeClassNames(sensorId)});
-                    graph.edges.set({v: conditionsId, w: triggerId}, {classNames: edgeClassNames(triggerId)});
-                } else {
-                    graph.edges.set({v: sensorId, w: triggerId}, {classNames: edgeClassNames(triggerId)});
-                }
-            });
-    });
-    return graph;
-};
-
 export const EventsPage = (props: RouteComponentProps<any>) => {
     // boiler-plate
+    const {navigation} = useContext(Context);
     const {match, location, history} = props;
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
     const [namespace, setNamespace] = useState(match.params.namespace);
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
+    const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
-    useEffect(() => history.push(historyUrl('events/{namespace}', {namespace, showFlow, selectedNode, tab})), [namespace, showFlow, selectedNode, tab]);
+    useEffect(
+        () =>
+            history.push(
+                historyUrl('events/{namespace}', {
+                    namespace,
+                    showFlow,
+                    showWorkflows,
+                    selectedNode,
+                    tab
+                })
+            ),
+        [namespace, showFlow, showWorkflows, selectedNode, tab]
+    );
 
     // internal state
     const [error, setError] = useState<Error>();
     const [eventSources, setEventSources] = useState<EventSource[]>();
     const [sensors, setSensors] = useState<Sensor[]>();
+    const [workflows, setWorkflows] = useState<Workflow[]>();
     const [flow, setFlow] = useState<{[id: string]: any}>({}); // event flowing?
 
     // when namespace changes, we must reload
@@ -132,7 +90,33 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
         listWatch.start();
         return () => listWatch.stop();
     }, [namespace]);
-
+    useEffect(() => {
+        if (!showWorkflows) {
+            setWorkflows(null);
+            return;
+        }
+        const listWatch = new ListWatch<Workflow>(
+            () =>
+                services.workflows.list(namespace, null, ['events.argoproj.io/trigger'], null, [
+                    'metadata',
+                    'items.metadata.name',
+                    'items.metadata.namespace',
+                    'items.metadata.labels'
+                ]),
+            resourceVersion =>
+                services.workflows.watch({
+                    namespace,
+                    resourceVersion,
+                    labels: ['events.argoproj.io/trigger']
+                }),
+            () => setError(null),
+            () => setError(null),
+            items => setWorkflows([...items]),
+            setError
+        );
+        listWatch.start();
+        return () => listWatch.stop();
+    }, [namespace, showWorkflows]);
     // follow logs and mark flow
     const markFlowing = (id: Node) => {
         setFlow(newFlow => {
@@ -172,7 +156,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
         return () => sub.unsubscribe();
     }, [namespace, showFlow]);
 
-    const graph = buildGraph(eventSources, sensors, flow);
+    const graph = buildGraph(eventSources, sensors, workflows, flow);
 
     const selected = (() => {
         if (!selectedNode) {
@@ -195,6 +179,11 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
                             action: () => setShowFlow(!showFlow),
                             iconClassName: showFlow ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
                             title: 'Show event-flow'
+                        },
+                        {
+                            action: () => setShowWorkflows(!showWorkflows),
+                            iconClassName: showWorkflows ? 'fa fa-toggle-on' : 'fa fa-toggle-off',
+                            title: 'Show workflows'
                         }
                     ]
                 },
@@ -214,11 +203,17 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
                         classNames='events'
                         graph={graph}
                         nodeTypes={types}
-                        nodeClassNames={{Pending: true, Ready: true}}
+                        nodeClassNames={{'': true, 'Pending': true, 'Ready': true, 'Running': true, 'Failed': true, 'Error': true}}
                         horizontal={true}
                         selectedNode={selectedNode}
-                        onNodeSelect={setSelectedNode}
-                        edgeStrokeWidthMultiple={8}
+                        onNodeSelect={x => {
+                            const id = ID.split(x);
+                            if (id.type === 'Workflow') {
+                                navigation.goto(uiUrl('workflows/' + id.namespace + '/' + id.name));
+                            } else {
+                                setSelectedNode(x);
+                            }
+                        }}
                     />
                     {showFlow && (
                         <p className='argo-container'>
