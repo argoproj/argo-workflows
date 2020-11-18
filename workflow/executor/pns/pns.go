@@ -427,7 +427,6 @@ func parseContainerIDFromCgroupLine(line string) string {
 			if strings.Contains(containerID, "cri-containerd") {
 				strList := strings.Split(containerID, ":")
 				containerID = strList[len(strList)-1]
-				containerID = strings.TrimPrefix(containerID, "cri-containerd-")
 			}
 
 			// remove possible "*-" prefix
