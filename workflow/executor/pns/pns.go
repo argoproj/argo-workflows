@@ -418,9 +418,8 @@ func parseContainerIDFromCgroupLine(line string) string {
 		if containerID := parts[len(parts)-1]; containerID != "" {
 			// need to check for empty string because the line may look like: 5:rdma:/
 
-			// for crio we need to get rid of "crio-" prefix and ".scope" suffix
-			// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
-			containerID := strings.TrimSuffix(strings.TrimPrefix(containerID, "crio-"), ".scope")
+			// remove possible ".scope" suffix
+			containerID := strings.TrimSuffix(containerID, ".scope")
 
 			// for compatibility with cri-containerd record format when using systemd cgroup path
 			// example record in /proc/{pid}/cgroup:
@@ -430,6 +429,12 @@ func parseContainerIDFromCgroupLine(line string) string {
 				containerID = strList[len(strList)-1]
 				containerID = strings.TrimPrefix(containerID, "cri-containerd-")
 			}
+
+			// remove possible "*-" prefix
+			// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
+			parts := strings.Split(containerID, "-")
+			containerID = parts[len(parts)-1]
+
 			return containerID
 		}
 	}
