@@ -45,6 +45,7 @@ export type Icon =
     | 'tasks'
     | 'trash'
     | 'th'
+    | 'times'
     | 'times-circle'
     | 'toggle-off'
     | 'toggle-on'

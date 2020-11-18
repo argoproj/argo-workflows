@@ -96,7 +96,7 @@ export const WorkflowTemplateDetails = (props: RouteComponentProps<any>) => {
                 {!template ? <Loading /> : <WorkflowTemplateEditor template={template} onChange={setTemplate} onError={setStatus} onTabSelected={setTab} selectedTabKey={tab} />}
             </>
             {template && (
-                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
+                <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)} isNarrow={true}>
                     <SubmitWorkflowPanel
                         kind='WorkflowTemplate'
                         namespace={namespace}

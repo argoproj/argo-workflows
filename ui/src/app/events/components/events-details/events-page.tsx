@@ -1,6 +1,5 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import {useEffect, useState} from 'react';
-import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {Condition, kubernetes} from '../../../../models';
@@ -19,6 +18,7 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {icons} from './icons';
 import {ID} from './id';
+import React = require('react');
 
 require('./event-page.scss');
 
@@ -211,9 +211,10 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
             ) : (
                 <>
                     <GraphPanel
+                        classNames='events'
                         graph={graph}
-                        types={types}
-                        classNames={{Pending: true, Ready: true}}
+                        nodeTypes={types}
+                        nodeClassNames={{Pending: true, Ready: true}}
                         horizontal={true}
                         selectedNode={selectedNode}
                         onNodeSelect={setSelectedNode}

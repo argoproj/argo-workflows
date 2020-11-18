@@ -87,8 +87,8 @@ export const WorkflowEventBindingsList = (props: RouteComponentProps<any>) => {
                 <>
                     <GraphPanel
                         graph={g}
-                        types={{event: true, template: true}}
-                        classNames={{'': true}}
+                        nodeTypes={{event: true, template: true}}
+                        nodeClassNames={{'': true}}
                         horizontal={true}
                         onNodeSelect={id => {
                             const x = ID.split(id);

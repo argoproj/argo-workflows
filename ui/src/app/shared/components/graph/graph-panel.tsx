@@ -9,8 +9,9 @@ require('./graph-panel.scss');
 
 interface Props {
     graph: Graph;
-    types: {[type: string]: boolean};
-    classNames: {[type: string]: boolean};
+    classNames?: string;
+    nodeTypes: {[type: string]: boolean};
+    nodeClassNames: {[type: string]: boolean};
     options?: React.ReactNode; // add to the option panel
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
@@ -21,12 +22,13 @@ interface Props {
     onNodeSelect?: (id: Node) => void;
 }
 
+const defaultNodeSize = 64;
 export const GraphPanel = (props: Props) => {
-    const [nodeSize, setNodeSize] = React.useState(props.nodeSize || 64);
+    const [nodeSize, setNodeSize] = React.useState(props.nodeSize || defaultNodeSize);
     const [horizontal, setHorizontal] = React.useState(props.horizontal);
     const [fast, setFast] = React.useState(false);
-    const [types, setTypes] = React.useState(props.types);
-    const [classNames, setClassNames] = React.useState(props.classNames);
+    const [types, setTypes] = React.useState(props.nodeTypes);
+    const [classNames, setClassNames] = React.useState(props.nodeClassNames);
 
     const visible = (id: Node) => {
         const label = props.graph.nodes.get(id);
@@ -74,7 +76,7 @@ export const GraphPanel = (props: Props) => {
                 </a>
                 {props.options}
             </div>
-            <div className='graph'>
+            <div className={'graph ' + props.classNames}>
                 {props.graph.nodes.size === 0 ? (
                     <p>Nothing to show</p>
                 ) : (
@@ -115,7 +117,7 @@ export const GraphPanel = (props: Props) => {
                                             strokeWidth={((props.edgeStrokeWidthMultiple || 1) * nodeSize) / 32}
                                         />
                                         <g transform={`translate(${label.points[label.points.length === 1 ? 0 : 1].x},${label.points[label.points.length === 1 ? 0 : 1].y})`}>
-                                            <text className='edge-label' style={{fontSize: nodeSize / 6}}>
+                                            <text className='edge-label' fontSize={nodeSize / 6}>
                                                 {formatLabel(label.label)}
                                             </text>
                                         </g>
@@ -136,13 +138,13 @@ export const GraphPanel = (props: Props) => {
                                             )}
                                             <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
                                             {props.hideTypes || (
-                                                <text y={nodeSize * 0.33} className='type' style={{fontSize: nodeSize * 0.2}}>
+                                                <text y={nodeSize * 0.33} className='type' fontSize={(12 * nodeSize) / defaultNodeSize}>
                                                     {label.type}
                                                 </text>
                                             )}
                                         </g>
                                         <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
-                                            <text className='node-label' style={{fontSize: nodeSize / 5}}>
+                                            <text className='node-label' fontSize={(16 * nodeSize) / defaultNodeSize}>
                                                 {formatLabel(label.label)}
                                             </text>
                                         </g>

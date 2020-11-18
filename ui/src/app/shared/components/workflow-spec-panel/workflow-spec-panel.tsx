@@ -11,8 +11,8 @@ export const WorkflowSpecPanel = (props: {spec: WorkflowSpec; selectedId?: strin
             selectedNode={props.selectedId}
             onNodeSelect={id => props.onSelect && props.onSelect(id)}
             horizontal={true}
-            types={types}
-            classNames={{'': true}}
+            nodeTypes={types}
+            nodeClassNames={{'': true}}
         />
     );
 };

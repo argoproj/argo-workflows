@@ -72,8 +72,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return (
             <GraphPanel
                 graph={this.graph}
-                types={types}
-                classNames={classNames}
+                nodeTypes={types}
+                nodeClassNames={classNames}
                 selectedNode={this.props.selectedNodeId}
                 onNodeSelect={id => this.selectNode(id)}
                 nodeSize={40}

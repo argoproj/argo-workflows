@@ -3,8 +3,8 @@ import * as React from 'react';
 import {Button} from '../button';
 import {ErrorNotice} from '../error-notice';
 import {ObjectEditor} from '../object-editor/object-editor';
-import {parse, stringify} from '../object-parser';
 import {ToggleButton} from '../toggle-button';
+import {UploadButton} from '../upload-button';
 
 require('./resource.scss');
 
@@ -51,14 +51,6 @@ export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends
         this.state = {editing: this.props.editing, lang: ResourceEditor.loadLang(), value: this.props.value};
     }
 
-    public handleFiles(files: FileList) {
-        files[0]
-            .text()
-            .then(value => stringify(parse(value), this.state.lang))
-            .then(value => this.setState({error: null, value: parse(value)}))
-            .catch(error => this.setState(error));
-    }
-
     public render() {
         return (
             <>
@@ -91,12 +83,7 @@ export class ResourceEditor<T extends {metadata: kubernetes.ObjectMeta}> extends
                 </ToggleButton>
                 {this.state.editing ? (
                     <>
-                        {this.props.upload && (
-                            <label className='argo-button argo-button--base-o' key='upload-file'>
-                                <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
-                                <i className='fa fa-upload' /> Upload file
-                            </label>
-                        )}
+                        {this.props.upload && <UploadButton<T> lang={this.state.lang} onUpload={value => this.setState({value})} onError={error => this.setState({error})} />}
                         {this.props.onSubmit && (
                             <Button icon='plus' onClick={() => this.submit()} key='submit'>
                                 Submit

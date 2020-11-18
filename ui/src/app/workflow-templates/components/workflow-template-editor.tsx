@@ -10,8 +10,8 @@ export const WorkflowTemplateEditor = (props: {
     template: WorkflowTemplate;
     onChange: (template: WorkflowTemplate) => void;
     onError: (error: Error) => void;
-    onTabSelected: (tab: string) => void;
-    selectedTabKey: string;
+    onTabSelected?: (tab: string) => void;
+    selectedTabKey?: string;
 }) => {
     return (
         <Tabs

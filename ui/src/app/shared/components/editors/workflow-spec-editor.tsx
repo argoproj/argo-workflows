@@ -236,14 +236,14 @@ export const WorkflowSpecEditor = (props: {value: WorkflowSpec; onChange: (value
                         <h4>{selectedId}</h4>
                         <div style={{marginBottom: '1em'}}>
                             <Button
-                                icon='trash'
+                                icon='times'
                                 onClick={() => {
                                     deleteObject(selectedId);
                                     setSelectedId(undefined);
                                 }}>
-                                Remove/Cancel
+                                Remove
                             </Button>
-                            <Button icon='times-circle' onClick={() => setSelectedId(undefined)}>
+                            <Button icon='check' onClick={() => setSelectedId(undefined)}>
                                 OK
                             </Button>
                         </div>
