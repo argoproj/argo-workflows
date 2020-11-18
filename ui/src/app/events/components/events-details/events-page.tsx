@@ -1,5 +1,6 @@
 import {Page, SlidingPanel, Tabs} from 'argo-ui';
 import {useEffect, useState} from 'react';
+import React = require('react');
 import {RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {Condition, kubernetes} from '../../../../models';
@@ -18,7 +19,6 @@ import {EventsPanel} from '../../../workflows/components/events-panel';
 import {FullHeightLogsViewer} from '../../../workflows/components/workflow-logs-viewer/full-height-logs-viewer';
 import {icons} from './icons';
 import {ID} from './id';
-import React = require('react');
 
 require('./event-page.scss');
 
@@ -114,7 +114,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
             resourceVersion => services.eventSource.watch(namespace, resourceVersion),
             () => setError(null),
             () => setError(null),
-            setEventSources,
+            items => setEventSources([...items]),
             setError
         );
         listWatch.start();
@@ -126,7 +126,7 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
             resourceVersion => services.sensor.watch(namespace, resourceVersion),
             () => setError(null),
             () => setError(null),
-            setSensors,
+            items => setSensors([...items]),
             setError
         );
         listWatch.start();

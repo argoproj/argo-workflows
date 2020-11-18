@@ -37,7 +37,7 @@ export class ListWatch<T extends Resource> {
         watch: (resourceVersion: string) => Observable<kubernetes.WatchEvent<T>>,
         onLoad: (metadata: kubernetes.ListMeta) => void, // called when the list is loaded
         onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
-        onChange: (items: T[]) => void, // called whenever items change
+        onChange: (items: T[]) => void, // called whenever items change, any users that changes state should use [...items]
         onError: (error: Error) => void, // called on any error
         sorter: Sorter = sortByName
     ) {
