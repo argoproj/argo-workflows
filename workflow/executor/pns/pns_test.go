@@ -39,6 +39,6 @@ func TestPNSExecutor_parseContainerIDFromCgroupLine(t *testing.T) {
 
 	for _, testCase := range testCases {
 		containerID := parseContainerIDFromCgroupLine(testCase.line)
-		assert.Equal(t, containerID, testCase.expected)
+		assert.Equal(t, testCase.expected, containerID)
 	}
 }
