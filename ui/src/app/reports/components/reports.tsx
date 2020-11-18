@@ -8,7 +8,7 @@ import {getColorForNodePhase, NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
 import {ErrorNotice} from '../../shared/components/error-notice';
-import {InputFilter} from '../../shared/components/input-filter';
+import {NamespaceFilter} from '../../shared/components/namespace-filter';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
@@ -257,11 +257,11 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     </div>
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
-                        <InputFilter
-                            name='namespace'
+                        <NamespaceFilter
                             value={this.state.namespace}
-                            placeholder='Namespace'
-                            onChange={namespace => this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows)}
+                            onChange={namespace => {
+                                this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows)
+                            }}
                         />
                     </div>
                     <div className='columns small-4 xlarge-12'>
