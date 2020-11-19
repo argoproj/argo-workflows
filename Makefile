@@ -462,6 +462,14 @@ wait:
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
+.PHONY: heap
+heap:
+	go tool pprof -http=localhost:6061 http://localhost:6060/debug/pprof/heap
+
+.PHONY: profile
+profile:
+	go tool pprof -http=localhost:6061 http://localhost:6060/debug/pprof/profile
+
 .PHONY: postgres-cli
 postgres-cli:
 	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
