@@ -5373,3 +5373,9 @@ func TestWFWithRetryAndWithParam(t *testing.T) {
 		}
 	})
 }
+
+func Test_inGracePeriod(t *testing.T) {
+	assert.True(t, recentlyStarted(wfv1.NodeStatus{StartedAt: metav1.Now()}))
+	assert.True(t, recentlyStarted(wfv1.NodeStatus{StartedAt: metav1.NewTime(time.Now().Add(-9*time.Second))}))
+	assert.False(t, recentlyStarted(wfv1.NodeStatus{StartedAt: metav1.NewTime(time.Now().Add(-11*time.Second))}))
+}
