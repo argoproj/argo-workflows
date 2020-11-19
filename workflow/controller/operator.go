@@ -130,9 +130,7 @@ func init() {
 	}
 	defaultRequeueTime = maxOperationTime
 	log.WithFields(log.Fields{"maxOperationTime": maxOperationTime, "defaultRequeueTime": defaultRequeueTime}).Info()
-
 }
-
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
