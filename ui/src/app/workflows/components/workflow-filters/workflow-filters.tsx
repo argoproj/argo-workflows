@@ -1,10 +1,10 @@
 import * as React from 'react';
 import * as models from '../../../../models';
 import {CheckboxFilter} from '../../../shared/components/checkbox-filter/checkbox-filter';
+import {DataLoaderDropdown} from '../../../shared/components/data-loader-dropdown';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 import {services} from '../../../shared/services';
-import {DataLoader, Select} from 'argo-ui';
 
 require('./workflow-filters.scss');
 
@@ -18,28 +18,12 @@ interface WorkflowFilterProps {
 }
 
 export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
-    private get workflowTemplate() {
-        return this.getLabel(models.labels.workflowTemplate);
-    }
-
     private set workflowTemplate(value: string) {
         this.setLabel(models.labels.workflowTemplate, value);
     }
 
-    private get cronWorkflow() {
-        return this.getLabel(models.labels.cronWorkflow);
-    }
-
     private set cronWorkflow(value: string) {
         this.setLabel(models.labels.cronWorkflow, value);
-    }
-
-    private getLabel(name: string) {
-        return (this.labelSuggestion.find(label => label.startsWith(name)) || '').replace(name + '=', '');
-    }
-
-    private setLabel(name: string, value: string) {
-        this.props.onChange(this.props.namespace, this.props.selectedPhases, [name.concat('=' + value)])
     }
 
     private get labelSuggestion() {
@@ -72,15 +56,17 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     </div>
                     <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
-                        <DataLoader load={() => services.workflowTemplate.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}>
-                            {list => <Select options={list} value={this.workflowTemplate} onChange={x => (this.workflowTemplate = x.value)} />}
-                        </DataLoader>
+                        <DataLoaderDropdown
+                            load={services.workflowTemplate.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
+                            onChange={value => (this.workflowTemplate = value)}
+                        />
                     </div>
                     <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Cron Workflow</p>
-                        <DataLoader load={() => services.cronWorkflows.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}>
-                            {list => <Select options={list} value={this.cronWorkflow} onChange={x => (this.cronWorkflow = x.value)} />}
-                        </DataLoader>
+                        <DataLoaderDropdown
+                            load={services.cronWorkflows.list(this.props.namespace).then(list => list.map(x => x.metadata.name))}
+                            onChange={value => (this.cronWorkflow = value)}
+                        />
                     </div>
                     <div className='columns small-6 xlarge-12'>
                         <p className='wf-filters-container__title'>Phases</p>
@@ -98,6 +84,10 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
         );
     }
 
+    private setLabel(name: string, value: string) {
+        this.props.onChange(this.props.namespace, this.props.selectedPhases, [name.concat('=' + value)]);
+    }
+
     private getPhaseItems(workflows: models.Workflow[]) {
         const phasesMap = new Map<string, number>();
         this.props.phaseItems.forEach(value => phasesMap.set(value, 0));
@@ -109,13 +99,9 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
         return results;
     }
 
-    private addCommonLabel(suggestions:string[]) {
+    private addCommonLabel(suggestions: string[]) {
         const commonLabel = new Array<string>();
-        const commonLabelPool = [
-            models.labels.cronWorkflow,
-            models.labels.workflowTemplate,
-            models.labels.clusterWorkflowTemplate,
-        ]
+        const commonLabelPool = [models.labels.cronWorkflow, models.labels.workflowTemplate, models.labels.clusterWorkflowTemplate];
         commonLabelPool.forEach(labelPrefix => {
             for (const label of suggestions) {
                 if (label.startsWith(labelPrefix)) {
@@ -123,7 +109,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                     break;
                 }
             }
-        })
+        });
         return commonLabel.concat(suggestions);
     }
 
