@@ -906,15 +906,13 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				continue
 			}
 
-			node.Message = "pod deleted"
-			node.Phase = wfv1.NodeError
-			// FinishedAt must be set since retry strategy depends on it to determine the backoff duration.
-			// See processNodeRetries for more details.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-			woc.wf.Status.Nodes[nodeID] = node
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("node", node.Name).Error("Pod for node deleted")
-			woc.updated = true
+			// grace-period to allow informer sync
+			if node.StartedAt.Time.After(time.Now().Add(-enoughTimeForInformerSync)) {
+				woc.log.WithField("nodeName", node.Name).Info("allowing a short grace-period before marking node as error")
+				continue
+			}
+
+			woc.markNodePhase(node.Name, wfv1.NodeError, "pod deleted")
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
 			// it is safe to extract the k8s-node information given this knowledge.
