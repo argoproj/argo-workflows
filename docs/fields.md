@@ -70,6 +70,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-disable-failFast.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-nested.yaml)
@@ -315,8 +317,6 @@ WorkflowTemplate is the definition of a workflow template resource
 - [`buildkit-template.yaml`](https://github.com/argoproj/argo/blob/master/examples/buildkit-template.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo/blob/master/examples/cron-backfill.yaml)
-
-- [`dag-enhanced-depends.yaml`](https://github.com/argoproj/argo/blob/master/examples/dag-enhanced-depends.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo/blob/master/examples/workflow-template/templates.yaml)
 </details>
