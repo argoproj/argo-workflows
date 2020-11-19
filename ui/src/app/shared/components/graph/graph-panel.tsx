@@ -1,11 +1,14 @@
 import * as React from 'react';
 import {FilterDropDown} from '../filter-drop-down';
+import {Icon} from '../icon';
 import {GraphIcon} from './icon';
 import {formatLabel} from './label';
 import {layout} from './layout';
 import {Graph, Node} from './types';
 
 require('./graph-panel.scss');
+
+type IconShape = 'rect' | 'circle';
 
 interface Props {
     graph: Graph;
@@ -16,7 +19,8 @@ interface Props {
     nodeSize?: number; // default "64"
     horizontal?: boolean; // default "false"
     hideTypes?: boolean; // default "false"
-    iconShape?: 'rect' | 'circle'; // default "rect"
+    iconShape?: IconShape; // default "rect"
+    iconShapes?: {[type: string]: Icon};
     edgeStrokeWidthMultiple?: number; // multiple by X, default "1"
     selectedNode?: Node;
     onNodeSelect?: (id: Node) => void;
@@ -131,7 +135,7 @@ export const GraphPanel = (props: Props) => {
                                         <g
                                             className={`node ${label.classNames || ''} ${props.selectedNode === n ? ' selected' : ''}`}
                                             onClick={() => props.onNodeSelect && props.onNodeSelect(n)}>
-                                            {props.iconShape === 'circle' ? (
+                                            {((props.iconShapes || {})[label.type] || props.iconShape) === 'circle' ? (
                                                 <circle r={nodeSize / 2} className='bg' />
                                             ) : (
                                                 <rect x={-nodeSize / 2} y={-nodeSize / 2} width={nodeSize} height={nodeSize} className='bg' rx={nodeSize / 4} />

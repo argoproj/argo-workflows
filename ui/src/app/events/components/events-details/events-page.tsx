@@ -203,7 +203,8 @@ export const EventsPage = (props: RouteComponentProps<any>) => {
                         classNames='events'
                         graph={graph}
                         nodeTypes={types}
-                        nodeClassNames={{'': true, 'Pending': true, 'Ready': true, 'Running': true, 'Failed': true, 'Error': true}}
+                        nodeClassNames={{'': true, 'Pending': true, 'Ready': true, 'Running': true, 'Failed': true, 'Succeeded': true, 'Error': true}}
+                        iconShapes={{workflow: 'circle', conditions: 'circle'}}
                         horizontal={true}
                         selectedNode={selectedNode}
                         onNodeSelect={x => {

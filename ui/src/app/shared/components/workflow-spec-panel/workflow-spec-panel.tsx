@@ -13,6 +13,15 @@ export const WorkflowSpecPanel = (props: {spec: WorkflowSpec; selectedId?: strin
             horizontal={true}
             nodeTypes={types}
             nodeClassNames={{'': true}}
+            iconShapes={{
+                when: 'circle',
+                withItems: 'circle',
+                withParam: 'circle',
+                withSequence: 'circle',
+                container: 'circle',
+                script: 'circle',
+                resource: 'circle'
+            }}
         />
     );
 };

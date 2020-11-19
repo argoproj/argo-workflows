@@ -2,6 +2,7 @@ import {Condition, Workflow} from '../../../../models';
 import {EventSource, eventSourceTypes} from '../../../../models/event-source';
 import {Sensor, triggerTypes} from '../../../../models/sensor';
 import {Graph, Node} from '../../../shared/components/graph/types';
+import {icons as phaseIcons} from '../../../workflows/components/workflow-dag/icons';
 import {icons} from './icons';
 import {ID} from './id';
 
@@ -68,7 +69,7 @@ export const buildGraph = (eventSources: EventSource[], sensors: Sensor[], workf
         const phase = workflow.metadata.labels['workflows.argoproj.io/phase'];
         if (sensorName && triggerName) {
             const workflowId = ID.join('Workflow', workflow.metadata.namespace, workflow.metadata.name);
-            graph.nodes.set(workflowId, {label: workflow.metadata.name, type: 'workflow', icon: icons.Workflow, classNames: phase});
+            graph.nodes.set(workflowId, {label: workflow.metadata.name, type: 'workflow', icon: phaseIcons[phase] || phaseIcons.Pending, classNames: phase});
             const triggerId = ID.join('Trigger', workflow.metadata.namespace, sensorName, triggerName);
             graph.edges.set({v: triggerId, w: workflowId}, {});
         }
