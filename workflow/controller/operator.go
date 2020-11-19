@@ -836,15 +836,18 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if node := woc.assessNodeStatus(pod, &node); node != nil {
-				woc.wf.Status.Nodes[nodeID] = *node
-				woc.markNodePhase(node.Name, node.Phase, node.Message)
-				woc.addOutputsToGlobalScope(node.Outputs)
-				if node.MemoizationStatus != nil {
-					c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-					err := c.Save(node.MemoizationStatus.Key, node.ID, node.Outputs)
+			if x := woc.assessNodeStatus(pod, &node); x != nil {
+				if node.Phase != x.Phase || node.Message != x.Message {
+					woc.markNodePhase(node.Name, x.Phase, x.Message)
+				}
+				woc.wf.Status.Nodes[nodeID] = *x
+				woc.updated = true
+				woc.addOutputsToGlobalScope(x.Outputs)
+				if x.MemoizationStatus != nil {
+					c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, x.MemoizationStatus.CacheName)
+					err := c.Save(x.MemoizationStatus.Key, x.ID, x.Outputs)
 					if err != nil {
-						woc.markNodeError(node.Name, err)
+						woc.markNodeError(x.Name, err)
 					}
 				}
 			}
@@ -893,18 +896,12 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
+			recentlyStarted := recentlyStarted(node)
+			woc.log.WithFields(log.Fields{"nodeName": node.Name, "recentlyStarted": recentlyStarted, "nodePhase": node.Phase}).Info()
 
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
-			if node.Pending() {
-				continue
-			}
-
-			// grace-period to allow informer sync
-			recentlyStarted := recentlyStarted(node)
-			woc.log.WithFields(log.Fields{"nodeName": node.Name, "recentlyStarted": recentlyStarted}).Info()
-			if recentlyStarted {
-				woc.log.WithField("nodeName", node.Name).Info("allowing a short grace-period before marking node as error")
+			if node.Pending() || recentlyStarted {
 				continue
 			}
 
@@ -923,7 +920,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Now().Sub(node.StartedAt.Time) <= 10*time.Second
+	return time.Since(node.StartedAt.Time) <= 10*time.Second
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
@@ -1032,37 +1029,30 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
 func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
-	var newPhase wfv1.NodePhase
-	var newDaemonStatus *bool
-	var message string
-	updated := false
+	new := node.DeepCopy()
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
-		newPhase = wfv1.NodePending
-		newDaemonStatus = pointer.BoolPtr(false)
-		message = getPendingReason(pod)
+		new.Phase = wfv1.NodePending
+		new.Daemoned = pointer.BoolPtr(false)
+		new.Message = getPendingReason(pod)
 	case apiv1.PodSucceeded:
-		newPhase = wfv1.NodeSucceeded
-		newDaemonStatus = pointer.BoolPtr(false)
+		new.Phase = wfv1.NodeSucceeded
+		new.Daemoned = pointer.BoolPtr(false)
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
 		if node.IsDaemoned() {
-			newPhase = wfv1.NodeSucceeded
+			new.Phase = wfv1.NodeSucceeded
 		} else {
-			newPhase, message = inferFailedReason(pod)
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Infof("Pod failed")
+			new.Phase, new.Message = inferFailedReason(pod)
 		}
-		newDaemonStatus = pointer.BoolPtr(false)
+		new.Daemoned = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		if pod.DeletionTimestamp != nil {
 			// pod is being terminated
-			newPhase = wfv1.NodeError
-			message = "pod deleted during operation"
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Error(message)
+			new.Phase = wfv1.NodeError
+			new.Message = "pod deleted during operation"
 		} else {
-			newPhase = wfv1.NodeRunning
+			new.Phase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 			if !ok {
 				log.WithField("pod", pod.ObjectMeta.Name).Warn("missing template annotation")
@@ -1082,78 +1072,55 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 					}
 				}
 				// proceed to mark node status as running (and daemoned)
-				newPhase = wfv1.NodeRunning
-				newDaemonStatus = pointer.BoolPtr(true)
+				new.Phase = wfv1.NodeRunning
+				new.Daemoned = pointer.BoolPtr(true)
 				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
 		}
 	default:
-		newPhase = wfv1.NodeError
-		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
-		woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-			WithField("pod", pod.Name).Error(message)
+		new.Phase = wfv1.NodeError
+		new.Message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 	}
 
-	if newDaemonStatus != nil {
-		if !*newDaemonStatus {
+	if new.Daemoned != nil {
+		if !*new.Daemoned {
 			// if the daemon status switched to false, we prefer to just unset daemoned status field
 			// (as opposed to setting it to false)
-			newDaemonStatus = nil
+			new.Daemoned = nil
 		}
-		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-			log.Infof("Setting node %v daemoned: %v -> %v", node.ID, node.Daemoned, newDaemonStatus)
-			node.Daemoned = newDaemonStatus
-			updated = true
+		if (new.Daemoned != nil && node.Daemoned == nil) || (new.Daemoned == nil && node.Daemoned != nil) {
 			if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
 				// only update Pod IP for daemoned nodes to reduce number of updates
 				log.Infof("Updating daemon node %s IP %s -> %s", node.ID, node.PodIP, pod.Status.PodIP)
-				node.PodIP = pod.Status.PodIP
+				new.PodIP = pod.Status.PodIP
 			}
 		}
 	}
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
-		updated = true
 		log.Infof("Setting node %v outputs", node.ID)
 		var outputs wfv1.Outputs
 		err := json.Unmarshal([]byte(outputStr), &outputs)
 		if err != nil {
-			woc.log.WithField("displayName", node.DisplayName).WithField("templateName", node.TemplateName).
-				WithField("pod", pod.Name).Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
-			node.Phase = wfv1.NodeError
+			new.Phase = wfv1.NodeError
+			new.Message = fmt.Sprintf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
 		} else {
-			node.Outputs = &outputs
+			new.Outputs = &outputs
 		}
 	}
-	if node.Phase != newPhase {
-		log.Infof("Updating node %s status %s -> %s", node.ID, node.Phase, newPhase)
-		// if we are transitioning from Pending to a different state, clear out pending message
-		if node.Phase == wfv1.NodePending {
-			node.Message = ""
+	if new.Fulfilled() && new.FinishedAt.IsZero() {
+		if !new.IsDaemoned() {
+			new.FinishedAt = getLatestFinishedAt(pod)
 		}
-		updated = true
-		node.Phase = newPhase
-	}
-	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node.ID, message)
-		updated = true
-		node.Message = message
-	}
-
-	if node.Fulfilled() && node.FinishedAt.IsZero() {
-		updated = true
-		if !node.IsDaemoned() {
-			node.FinishedAt = getLatestFinishedAt(pod)
-		}
-		if node.FinishedAt.IsZero() {
+		if new.FinishedAt.IsZero() {
 			// If we get here, the container is daemoned so the
 			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			new.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
-		node.ResourcesDuration = resource.DurationForPod(pod)
+		new.ResourcesDuration = resource.DurationForPod(pod)
 	}
-	if updated {
-		return node
+	if !reflect.DeepEqual(node, new) {
+		return new
 	}
 	return nil
 }
