@@ -803,9 +803,9 @@ func (wfc *WorkflowController) archiveWorkflowAux(obj interface{}) error {
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().Pods(wfc.GetManagedNamespace())
 	// completed=false
-	requirement, _ := labels.NewRequirement(common.LabelKeyWorkflow, selection.Exists, []string{})
+	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
-		Add(*requirement).
+		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
