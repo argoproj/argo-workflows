@@ -1,4 +1,4 @@
-import {Checkbox, DataLoader, Page, Select} from 'argo-ui/src/index';
+import {Checkbox, Page} from 'argo-ui/src/index';
 import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 import * as React from 'react';
@@ -7,8 +7,9 @@ import {RouteComponentProps} from 'react-router-dom';
 import {getColorForNodePhase, NODE_PHASE, Workflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {BasePage} from '../../shared/components/base-page';
+import {DataLoaderDropdown} from '../../shared/components/data-loader-dropdown';
 import {ErrorNotice} from '../../shared/components/error-notice';
-import {InputFilter} from '../../shared/components/input-filter';
+import {NamespaceFilter} from '../../shared/components/namespace-filter';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
 import {ZeroState} from '../../shared/components/zero-state';
 import {Consumer, ContextApis} from '../../shared/context';
@@ -43,16 +44,8 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
         this.setLabel(labelKeyPhase, value);
     }
 
-    private get workflowTemplate() {
-        return this.getLabel(labelKeyWorkflowTemplate);
-    }
-
     private set workflowTemplate(value: string) {
         this.setLabel(labelKeyWorkflowTemplate, value);
-    }
-
-    private get cronWorkflow() {
-        return this.getLabel(labelKeyCronWorkflow);
     }
 
     private set cronWorkflow(value: string) {
@@ -257,11 +250,11 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     </div>
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
-                        <InputFilter
-                            name='namespace'
+                        <NamespaceFilter
                             value={this.state.namespace}
-                            placeholder='Namespace'
-                            onChange={namespace => this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows)}
+                            onChange={namespace => {
+                                this.fetchReport(namespace, this.state.labels, this.state.archivedWorkflows);
+                            }}
                         />
                     </div>
                     <div className='columns small-4 xlarge-12'>
@@ -274,15 +267,17 @@ export class Reports extends BasePage<RouteComponentProps<any>, State> {
                     </div>
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Workflow Template</p>
-                        <DataLoader load={() => services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}>
-                            {list => <Select options={list} value={this.workflowTemplate} onChange={x => (this.workflowTemplate = x.value)} />}
-                        </DataLoader>
+                        <DataLoaderDropdown
+                            load={services.workflowTemplate.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
+                            onChange={value => (this.workflowTemplate = value)}
+                        />
                     </div>
                     <div className='columns small-4 xlarge-12'>
                         <p className='wf-filters-container__title'>Cron Workflow</p>
-                        <DataLoader load={() => services.cronWorkflows.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}>
-                            {list => <Select options={list} value={this.cronWorkflow} onChange={x => (this.cronWorkflow = x.value)} />}
-                        </DataLoader>
+                        <DataLoaderDropdown
+                            load={services.cronWorkflows.list(this.state.namespace).then(list => list.map(x => x.metadata.name))}
+                            onChange={value => (this.cronWorkflow = value)}
+                        />
                     </div>
                     <div className='columns small-43 xlarge-12'>
                         <p className='wf-filters-container__title'>Phase</p>
