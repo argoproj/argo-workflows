@@ -31,10 +31,14 @@ func TestPNSExecutor_parseContainerIDFromCgroupLine(t *testing.T) {
 			line:     "8:cpu,cpuacct:/kubepods/besteffort/pod2fad8aad-dcd0-4fef-b45a-151630b9a4b5/crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope",
 			expected: "7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42",
 		},
+		{
+			line:     "2:cpuacct,cpu:/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod1cd87fe8_8ea0_11ea_8d51_566f300c000a.slice/docker-6b40fc7f75fe3210621a287412ac056e43554b1026a01625b48ba7d136d8a125.scope",
+			expected: "6b40fc7f75fe3210621a287412ac056e43554b1026a01625b48ba7d136d8a125",
+		},
 	}
 
 	for _, testCase := range testCases {
 		containerID := parseContainerIDFromCgroupLine(testCase.line)
-		assert.Equal(t, containerID, testCase.expected)
+		assert.Equal(t, testCase.expected, containerID)
 	}
 }
