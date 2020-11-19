@@ -929,7 +929,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 }
 
 func recentlyStarted(node wfv1.NodeStatus) bool {
-	return time.Now().Sub(node.StartedAt.Time) <= 10*time.Second
+	return time.Since(node.StartedAt.Time) <= 10*time.Second
 }
 
 // shouldPrintPodSpec return eligible to print to the pod spec
