@@ -368,6 +368,7 @@ $(GOPATH)/bin/golangci-lint:
 
 .PHONY: lint
 lint: server/static/files.go $(GOPATH)/bin/golangci-lint
+	rm -Rf vendor
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -462,7 +463,7 @@ test-e2e:
 
 .PHONY: test-cli
 test-cli:
-	$(GOTEST) -timeout 10m -count 1 --tags cli -p 1 --short ./test/e2e
+	$(GOTEST) -timeout 15m -count 1 --tags cli -p 1 --short ./test/e2e
 
 .PHONY: test-e2e-cron
 test-e2e-cron:
@@ -533,7 +534,7 @@ docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) hac
 	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack docgen
 
 # generates several other files
-docs/cli/argo.go: $(CLI_PKGS) server/static/files.go hack/cli/main.go
+docs/cli/argo.md: $(CLI_PKGS) server/static/files.go hack/cli/main.go
 	go run ./hack/cli
 
 # pre-push

@@ -181,6 +181,15 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 				break
 			}
 		} else if branchPhase.FailedOrError() {
+			// If this target task has continueOn set for its current phase, then don't treat it as failed for the purposes
+			// of determining DAG status. This is so that target tasks with said continueOn do not fail the overall DAG.
+			// For non-leaf tasks, this is done by setting all of its dependents to allow for their failure or error in
+			// their "depends" clause during their respective "dependencies" to "depends" conversion. See "expandDependency"
+			// in ancestry.go
+			if task := d.GetTask(depName); task.ContinuesOn(branchPhase) {
+				continue
+			}
+
 			result = branchPhase
 			// If failFast is enabled, don't check to see if other target tasks are complete and fail now instead
 			if failFast {

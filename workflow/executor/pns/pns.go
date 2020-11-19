@@ -16,14 +16,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
-	"github.com/argoproj/argo/workflow/executor/common/wait"
-	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
+	argowait "github.com/argoproj/argo/workflow/executor/common/wait"
+	osspecific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 type PNSExecutor struct {
@@ -97,7 +98,7 @@ func (p *PNSExecutor) enterChroot() error {
 	if err := p.mainFS.Chdir(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chdir to main filesystem: %v", err)
 	}
-	err := os_specific.CallChroot()
+	err := osspecific.CallChroot()
 	if err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chroot to main filesystem: %v", err)
 	}
@@ -109,7 +110,7 @@ func (p *PNSExecutor) exitChroot() error {
 	if err := p.rootFS.Chdir(); err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err := os_specific.CallChroot()
+	err := osspecific.CallChroot()
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
@@ -167,7 +168,7 @@ func (p *PNSExecutor) Wait(containerID string) error {
 			log.Warnf("Ignoring wait failure: %v. Process assumed to have completed", err)
 			return nil
 		}
-		return wait.UntilTerminated(p.clientset, p.namespace, p.podName, containerID)
+		return argowait.UntilTerminated(p.clientset, p.namespace, p.podName, containerID)
 	}
 	log.Infof("Main pid identified as %d", mainPID)
 	for pid, f := range p.pidFileHandles {
@@ -228,7 +229,7 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 
 func (p *PNSExecutor) GetExitCode(containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
-	_, containerStatus, err := p.GetContainerStatus(containerID)
+	_, containerStatus, err := p.GetTerminatedContainerStatus(containerID)
 	if err != nil {
 		return "", fmt.Errorf("could not get container status: %s", err)
 	}
@@ -368,18 +369,25 @@ func (p *PNSExecutor) updateCtrIDMap() {
 	}
 }
 
-func (p *PNSExecutor) GetContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
-	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not get pod: %s", err)
-	}
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if execcommon.GetContainerID(&containerStatus) != containerID {
-			continue
+func (p *PNSExecutor) GetTerminatedContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+	var pod *corev1.Pod
+	var containerStatus *corev1.ContainerStatus
+	err := wait.Poll(1*time.Second, 3*time.Second, func() (bool, error) {
+		podRes, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
+		if err != nil {
+			return false, fmt.Errorf("could not get pod: %s", err)
 		}
-		return pod, &containerStatus, nil
-	}
-	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, p.podName))
+		for _, containerStatusRes := range podRes.Status.ContainerStatuses {
+			if execcommon.GetContainerID(&containerStatusRes) != containerID {
+				continue
+			}
+			pod = podRes
+			containerStatus = &containerStatusRes
+			return containerStatus.State.Terminated != nil, nil
+		}
+		return false, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, p.podName))
+	})
+	return pod, containerStatus, err
 }
 
 // parseContainerID parses the containerID of a pid
@@ -410,9 +418,8 @@ func parseContainerIDFromCgroupLine(line string) string {
 		if containerID := parts[len(parts)-1]; containerID != "" {
 			// need to check for empty string because the line may look like: 5:rdma:/
 
-			// for crio we need to get rid of "crio-" prefix and ".scope" suffix
-			// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
-			containerID := strings.TrimSuffix(strings.TrimPrefix(containerID, "crio-"), ".scope")
+			// remove possible ".scope" suffix
+			containerID := strings.TrimSuffix(containerID, ".scope")
 
 			// for compatibility with cri-containerd record format when using systemd cgroup path
 			// example record in /proc/{pid}/cgroup:
@@ -420,8 +427,13 @@ func parseContainerIDFromCgroupLine(line string) string {
 			if strings.Contains(containerID, "cri-containerd") {
 				strList := strings.Split(containerID, ":")
 				containerID = strList[len(strList)-1]
-				containerID = strings.TrimPrefix(containerID, "cri-containerd-")
 			}
+
+			// remove possible "*-" prefix
+			// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
+			parts := strings.Split(containerID, "-")
+			containerID = parts[len(parts)-1]
+
 			return containerID
 		}
 	}

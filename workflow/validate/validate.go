@@ -93,7 +93,7 @@ type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
 	s := placeholderGenerator.NextPlaceholder()
-	return &wfv1.Parameter{Name: name, Value: wfv1.Int64OrStringPtr(s)}
+	return &wfv1.Parameter{Name: name, Value: wfv1.AnyStringPtr(s)}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
@@ -449,6 +449,9 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 			if !metrics.IsValidMetricName(metric.Name) {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", tmpl.Name, metric.Name)
 			}
+			if err := metrics.ValidateMetricLabels(metric.GetMetricLabels()); err != nil {
+				return err
+			}
 			if metric.Help == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
 			}
@@ -702,7 +705,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
-		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) {
+		if !intstr.IsValidIntOrArgoVariable(tmpl.ActiveDeadlineSeconds) && !placeholderGenerator.IsPlaceholder(tmpl.ActiveDeadlineSeconds.StrVal) {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0 or an argo variable", tmpl.Name)
 		}
 		if i, err := intstr.Int(tmpl.ActiveDeadlineSeconds); err == nil && i != nil && *i < 0 {
